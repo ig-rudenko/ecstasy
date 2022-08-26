@@ -1,0 +1,5 @@
+Value INTF ((Ethernet|Gigabit[Ee]thernet)\S+\d+)
+Value DESCRIPTION (.*)
+
+Start
+  ^${INTF}\s+${DESCRIPTION} -> Record

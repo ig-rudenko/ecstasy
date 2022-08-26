@@ -1,0 +1,6 @@
+Value INTF ((Eth|GE|FE|FA)\S+\d+)
+Value PHY ((up|down|\*down)(\(l\)){0,})
+Value DESCRIPTION (.*)
+
+Start
+  ^.*${INTF}\s+${PHY}\s+((up|down)(\(l\)|\(s\)|\(e\)|\(d\)|--){0,1})\s+${DESCRIPTION} -> Record

@@ -1,0 +1,37 @@
+<span>Всего: {{ macs|length }}</span>
+<table class="table">
+  <thead>
+    <tr>
+      <th></th>
+      <th scope="col">VLAN</th>
+      <th scope="col">MAC</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="tbody-macs">
+     {% for mac in macs %}
+        <tr>
+            <td></td>
+            <td style="font-family: monospace; font-size: x-large;">{{ mac.0 }}</td>
+            <td style="font-family: monospace; font-size: x-large;">{{ mac.1 }}</td>
+            <td>
+                {% if perms >= 3 %}
+{#                  Посмотреть MAC     #}
+                  <form method="get" action="{% url 'parse_mac' %}">
+                      <input type="text" name="device" value="{{ dev.name }}" hidden>
+                      <input type="text" name="desc" value="{{ desc }}" hidden>
+                      <input type="text" name="port" value="{{ port }}" hidden>
+                      <input type="text" name="mac" value="{{ mac.1 }}" hidden>
+                      <span class="badge rounded-pill bg-info text-dark" style="cursor: pointer">
+                          <input type="submit" value="BRAS" class="btn btn-sm">
+                      </span>
+                  </form>
+                {% endif %}
+            </td>
+        </tr>
+     {% empty %}
+        <td>No MAC's</td>
+     {% endfor %}
+  </tbody>
+
+</table>

@@ -1,0 +1,33 @@
+{% extends 'check/base.html' %}
+
+{% block title %}
+{{ mac }}
+{% endblock %}
+
+{% block content %}
+    <h2 style="text-align: center">{{ device }}</h2>
+    <h3>Порт: {{ port }}</h3>
+    <h3 class="alert alert-secondary">{{ desc }}</h3>
+    <h3 style="text-align: center; font-family: monospace" class="alert alert-primary">{{ mac }}</h3>
+
+    <form method="post" action="{% url 'cut-session' %}">
+      {% csrf_token %}
+      <input type="text" name="device" value="{{ device }}" hidden>
+      <input type="text" name="port" value="{{ port }}" hidden>
+      <input type="text" name="mac" value="{{ mac }}" hidden>
+      <span class="badge rounded-pill bg-info text-dark" style="cursor: pointer">
+          <input type="submit" value="Сбросить сессию" class="btn">
+      </span>
+    </form>
+    <hr>
+    {% for bras, res in result.items %}
+        <h4>{{ bras }}</h4>
+        <div>
+            {{ res|linebreaks }}
+        </div>
+        <hr>
+    {% empty %}
+        <div>Not Found :(</div>
+    {% endfor %}
+
+{% endblock %}

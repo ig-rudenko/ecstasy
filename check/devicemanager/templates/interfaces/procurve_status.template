@@ -1,0 +1,6 @@
+Value INTF ([ABCD]*\d+(-Trk\d+){0,1})
+Value PHY (Yes|No)
+Value STATUS (Up|Down)
+
+Start
+  ^\s+${INTF}\s+\d\S+\s+\|\s+\S+\s+${PHY}\s+${STATUS}\s+ -> Record

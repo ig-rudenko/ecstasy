@@ -1,0 +1,6 @@
+Value INTF (\d+)
+Value State ([DE-]\S+)
+Value LINK (\S+)
+
+Start
+  ^${INTF}\s*${State}\s+${LINK}\s*\S+\s*\S+\s*\S+\s*\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\S+\s+ -> Record

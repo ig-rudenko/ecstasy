@@ -1,0 +1,5 @@
+Value VID (\d+)
+Value NAME (\S+)
+
+Start
+  ^\s*${VID}\s+\S+\s+${NAME} -> Record

@@ -1,0 +1,11 @@
+Value VLANID (\d+)
+Value NAME ([\W\S]+)
+Value TPORT ([\d\-,]*)
+Value UTPORT (\S*)
+Value STATUS (enabled|disabled)
+
+Start
+  ^.*VlanId\s+:\s+${VLANID}\s+VlanStatus:\s+${STATUS}
+  ^.*VlanName:\s*${NAME}
+  ^.*Tagged ports\s+:\s*${TPORT}
+  ^.*Untagged ports\s+:\s*${UTPORT} -> Record

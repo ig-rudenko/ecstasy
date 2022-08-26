@@ -1,0 +1,7 @@
+Value INTF ([GgTtEeFf]\S\d\S+\d)
+Value State (Up|Down)
+Value LINK (Up|Down)
+Value DESCRIPTION (\S*)
+
+Start
+  ^.*${INTF}\s+(\S+|Access\s*\(\d+\))\s+${State}\s+${LINK}+\s*${DESCRIPTION}(\s+) -> Record

@@ -1,0 +1,5 @@
+Value VLANID (\d+)
+Value NAME (\S+)
+
+Start
+  ^${VLANID}\s*(enable|disable)\s*\S+\s*\S+\s*\S+\s*${NAME} -> Record

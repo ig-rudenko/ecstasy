@@ -1,0 +1,7 @@
+Value INTF (\S+\d)
+Value LINK (A-DOWN|DOWN|UP)
+Value DESC (\S*)
+
+Start
+  ^${INTF}\s+${LINK}\/(DOWN|UP)\s+\S+\s+\S+\s+\S+\s+\S+\s+${DESC} -> Record
+

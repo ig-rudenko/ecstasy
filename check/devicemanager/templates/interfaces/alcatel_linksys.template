@@ -1,0 +1,5 @@
+Value Port (\S+\d+)
+Value State (\S+)
+
+Start
+  ^${Port}\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+${State} -> Record

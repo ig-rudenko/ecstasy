@@ -1,0 +1,9 @@
+Value INTF (\S+\d)
+Value AD_STAT (up\S+|down)
+Value LINK (up|down)
+Value DESC (\S+)
+
+Start
+  ^.*Interface ${INTF}:
+  ^.*description ${DESC}
+  ^.*link ${LINK}, phy-link ${AD_STAT} -> Record

@@ -1,0 +1,10 @@
+Value INTF (\d+)
+Value AD_STAT (\S+)
+Value LINK (\S+)
+Value DESC (\S*)
+
+Start
+  ^.*PortId\s*:\s*${INTF}
+  ^.*(PortName|Description)\s*:\s+${DESC}
+  ^.*PortEnable\s*:\s+${AD_STAT}
+  ^.*PortClass\s*:\s+\S+\s+Link\s+:\s+${LINK} -> Record

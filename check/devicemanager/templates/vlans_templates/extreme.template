@@ -1,0 +1,5 @@
+Value VID (\d+)
+Value PORTS (.+)
+
+Start
+  ^.*v[lm]an v${VID} add ports ${PORTS} (tagged|untagged) -> Record

@@ -1,0 +1,236 @@
+{% extends 'check/base.html' %}
+
+{% block title %}
+{{ dev.name }}
+{% endblock %}
+
+
+{% block toast %}
+<div aria-live="polite" aria-atomic="true" class="sticky-top">
+  <div class="toast-container position-absolute top-0 end-0 p-3">
+
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <svg class="bd-placeholder-img rounded me-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg"
+             aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false">
+            <rect id="toast_color"  width="100%" height="100%" fill="#007aff"></rect>
+        </svg>
+        <strong id="toast_title" class="me-auto">INFO</strong>
+        <small id="toast_extra" class="text-muted">только что</small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+      </div>
+      <div id="toast_message" class="toast-body">
+        Сообщение
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block content %}
+    <h2 style="margin-bottom: 10px;">{{ dev.name }} ({{ dev.ip }})
+        {% if not ping %}
+            <span class="badge bg-danger">Оборудование недоступно</span>
+        {% endif %}
+    </h2>
+    <button class="btn btn-info" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling"
+            aria-controls="offcanvasScrolling">Подробная информация</button>
+
+    <a class="btn btn-danger" target="_blank" href="http://10.100.0.50/zabbix/hostinventories.php?hostid={{ zabbix_host_id }}">В Zabbix -></a>
+
+{#    Ссылка на карту#}
+    {% if dev.zabbix_info.inventory.coordinates %}
+        {% with dev.zabbix_info.inventory.coordinates as coord %}
+    <div style="margin-top: 20px;">
+        <a class="text-decoration-none text-dark" target="_blank" href="https://yandex.ru/maps/959/sevastopol/?mode=search&sll={{ coord.0 }}%2C{{ coord.1 }}&text={{ coord.0 }}%2C{{ coord.1 }}&z=17">
+            <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1a9.002 9.002 0 0 0-6.366 15.362c1.63 1.63 5.466 3.988 5.693 6.465.034.37.303.673.673.673.37
+                0 .64-.303.673-.673.227-2.477 4.06-4.831 5.689-6.46A9.002 9.002 0 0 0 12 1z" fill="#F43"></path>
+                <path d="M12 13.079a3.079 3.079 0 1 1 0-6.158 3.079 3.079 0 0 1 0 6.158z" fill="#fff"></path>
+            </svg>Yandex (Посмотреть на карте)
+        </a>
+    </div>
+        {% endwith %}
+    {% endif %}
+{#    #}
+
+    <figure class="text-end">
+      <blockquote class="blockquote">
+        {% if current_status %}
+        <p>Интерфейсы были опрошены <time id="time_passed">только что</time></p>
+        {% else %}
+        <p>Интерфейсы были взяты из предыдущего опроса</p>
+        {% endif %}
+      </blockquote>
+
+
+        {% if current_status %}
+      <figcaption class="blockquote-footer">
+        Для обновления, требуется перезагрузить страницу
+      </figcaption>
+        {% else %}
+      <figcaption class="blockquote-footer">
+    <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+       onclick="window.location.href='{% url 'device_info' dev.name %}?current_status=1'">
+        Посмотреть текущее состояние портов</a>
+      </figcaption>
+        {% endif %}
+    </figure>
+
+
+{% if current_status %}
+    {#    Обновлять ИНТЕРФЕЙСЫ автоматически   #}
+    <div class="form-check form-switch" style="margin-bottom: 30px">
+      <input class="form-check-input" type="checkbox" role="switch" id="auto-update-interfaces" checked>
+      <label class="form-check-label" for="auto-update-interfaces">Обновлять автоматически</label>
+    </div>
+{% endif %}
+
+    {# БУДУЩАЯ ТАБЛИЦА С ИНТЕРФЕЙСАМИ #}
+    <div id="interfaces-table">
+        <div class="d-flex align-items-center">
+          <strong>Загрузка...</strong><span class=""> Некоторое оборудование может грузиться около 30 секунд</span>
+          <div class="spinner-border ms-auto" role="status" aria-hidden="true"></div>
+        </div>
+    </div>
+
+<!-- Информация с Zabbix -->
+<div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Информация с Zabbix</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div>
+        <div class="card card-body">{{ dev.zabbix_info.description }}</div>
+        {% for k, v in dev.zabbix_info.inventory.to_dict.items %}
+            <p>{{ k }}:</p>
+            <ul>{{ v|linebreaks }}</ul>
+        {% endfor %}
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
+{% block js %}
+
+{% csrf_token %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
+<script>
+
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+{% if perms > 0 or request.user.is_superuser %}
+    function reload_port(port, desc, status) {
+        if (confirm('Слыш!\nУверен(а), что хочешь ' + status + ' порт:\n"' + desc + '"?')) {
+            let data = {
+                    port: port,
+                    device: "{{ dev.name }}",
+                    desc: desc,
+                    status: status,
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value
+                }
+            $.ajax( {
+                url: "{% url 'port_reload' %}",
+                type: 'POST',
+                data: data,
+                success: function( data ) {
+                    $('#toast_message').html(data.message)
+                    $('#toast_color').attr('fill', data.color)
+                    $('#toast_title').html(data.status)
+                    $('.toast').toast('show')
+                }
+            } );
+        }
+    }
+{% endif %}
+
+var last_time = {% now "U" %};  {# Время создания шаблона #}
+
+{% if current_status %}
+    var time = document.getElementById('time_passed');
+
+    function time_passed(value) {
+        let min_ = Math.floor(value / 60);
+        let sec = (value - (min_ * 60)).toString()
+        let min = min_.toString()
+
+        let sec_str = ''
+        let min_str = ''
+
+        if (min_ !== 0) {  // Если есть минуты
+            if (/1$/.test(min)) { min_str = ' минуту ' }
+            if (/[2-4]$/.test(min)) { min_str = ' минуты '}
+            if (/[05-9]$/.test(min)) { min_str = ' минут ' }
+        } else { min = '' }
+
+        if (/1$/.test(sec)) { sec_str = ' секунду ' }
+        if (/[2-4]$/.test(sec)) { sec_str = ' секунды '}
+        if (/[05-9]$/.test(sec)) { sec_str = ' секунд ' }
+
+        return min+min_str+sec+sec_str
+    }
+    function count() {
+        time.textContent = time_passed(Math.round(Date.now() / 1000 - last_time)) + 'назад';
+        timer();
+    }
+    function timer() {
+        setTimeout(count, 1000);
+    }
+    timer();
+
+{% endif %}
+
+
+function get_interfaces(first=false) {
+
+    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+    if ( document.getElementById('auto-update-interfaces').checked || first) {
+    {% endif %}
+
+
+    {# Если нажато автообновление, то отправляем результаты #}
+
+        $.ajax({
+            url: "{% url 'device_info' dev.name %}?current_status={{ current_status }}&ajax=1",
+            type: 'GET',
+            success: function( data ) {
+                $('#interfaces-table').html(data.data)
+                if (first){ document.getElementById('auto-update-interfaces').checked = false; }
+                window.last_time = Date.now() / 1000
+            },
+        });
+
+
+    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+    }
+    interface_timer()
+    {% endif %}
+
+    {# Создаем всплывающие подсказки #}
+    window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+}
+
+{% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+    {# Повторный сбор интерфейсов через 20 секунд #}
+    function interface_timer() {
+        setTimeout(get_interfaces, 20000);
+    }
+{% endif %}
+
+{# ЗАПРОС ИНТЕРФЕЙСОВ #}
+get_interfaces(true);
+
+
+</script>
+
+{% endblock %}

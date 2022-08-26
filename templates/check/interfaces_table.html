@@ -1,0 +1,91 @@
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th></th>
+      <th scope="col" style="text-align: center">Порт</th>
+      <th scope="col" style="text-align: center">Статус</th>
+      <th scope="col">Описание</th>
+      <th scope="col">VLAN's</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for intf in interfaces %}
+    <tr>
+
+      <td>
+        <div class="btn-group" role="group">
+        {% autoescape on %}
+          {% if perms >= 2 %}
+          <div class="btn-group-vertical" role="group">
+              <button type="button" class="btn btn-outline-success" style="height: 12px; font-size: 10px; padding-top: 2px;"
+                     onclick="reload_port(`{{ intf.name }}`, `{{ intf.desc }}`, `up`)"
+                     data-bs-toggle="tooltip" data-bs-placement="left"
+                     data-bs-title="Включить порт">
+                  ▲
+              </button>
+
+              <button type="button" class="btn btn-outline-danger" style="height: 12px; font-size: 10px; padding-top: 2px;"
+                     onclick="reload_port(`{{ intf.name }}`, `{{ intf.desc }}`, `down`)"
+                     data-bs-toggle="tooltip" data-bs-placement="left"
+                     data-bs-title="Выключить порт">
+                  ▼
+              </button>
+          </div>
+          {% endif %}
+
+          <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-warning" style="cursor: pointer"
+                         onclick="reload_port(`{{ intf.name }}`, `{{ intf.desc }}`, `reload`)"
+                         data-bs-toggle="tooltip" data-bs-placement="top"
+                         data-bs-title="Перезагрузить порт">
+                  Reload
+              </button>
+
+    {#                  Посмотреть МАКИ             #}
+              <a class="btn btn-info" style="cursor: pointer"
+                      onclick="window.location.href=`{% url 'get_mac' %}?device={{ dev.name }}&port={{ intf.name }}&desc={{ intf.desc }}`;"
+                     data-bs-toggle="tooltip" data-bs-placement="top"
+                     data-bs-title="Посмотреть MAC на порту">MAC
+              </a>
+          </div>
+        {% endautoescape %}
+
+        </div>
+      </td>
+
+
+      <td style="text-align: center">{{ intf.name }}</td>
+
+      <td style="width: 100px; text-align: center; background-color:
+
+                    {% if intf.status == 'admin down' %}#ffb4bb    {# красный #}
+                    {% elif intf.status == 'notPresent' %}#c1c1c1  {# серый #}
+                    {% elif intf.status == 'dormant' %}#ffe389
+                    {% elif intf.status != 'down' %}#22e58b        {# зеленый #}
+                    {% endif %};"
+
+          {% if intf.status == 'dormant' %}
+            data-bs-toggle="tooltip" data-bs-placement="top"
+            data-bs-title="Интерфейс ожидает внешних действий
+                           (например, последовательная линия, ожидающая входящего соединения)"
+          {% elif intf.status == 'notPresent' %}
+            data-bs-toggle="tooltip" data-bs-placement="top"
+            data-bs-title="Интерфейс имеет отсутствующие компоненты
+                           (как правило, аппаратные)"
+          {% endif %}
+
+      >{% if intf.status == 'dormant' %}activating...{% else %}{{ intf.status }}{% endif %}</td>
+
+
+      <td>{{ intf.desc }}</td>
+      <td>{{ intf.vlan|join:', ' }}</td>
+
+    </tr>
+
+    {% empty %}
+
+    <h1>{% if not status %}Нет сохраненных интерфейсов{% else %}{{ status }}{% endif %}</h1>
+
+    {% endfor %}
+  </tbody>
+</table>

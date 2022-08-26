@@ -1,0 +1,7 @@
+Value VID (\d+)
+Value VNAME (\S+)
+Value PORTS ([\d+\,\-]+)
+
+Start
+  ^.*VID\s*:\s*${VID}\s+VLAN \S+\s*:\s*${VNAME}
+  ^.*Member Ports\s*:\s*${PORTS} -> Record

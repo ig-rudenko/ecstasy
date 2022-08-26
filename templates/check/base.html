@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    {% load static %}
+    <link type="image/x-icon" rel="shortcut icon" href="{% static 'favicon.ico' %}">
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.5/dist/umd/popper.min.js" integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+{% block toast %}{% endblock %}
+
+
+    {% block menu %}
+<nav class="nav">
+    <div style="margin-left: 20px">
+        <svg height="70px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve">
+        <g>
+            <path fill="#2E628C" d="M232.9,217.3c114.1-71.7,230.4-96.2,274.6-60.9c-1.2-5.3-3.2-10.4-6.1-14.9c-32.4-51.6-160.2-29.7-285.4,49   C90.9,269.1,15.7,374.7,48.1,426.3c2.9,4.6,6.5,8.5,10.8,11.9C46.3,383.1,118.8,289,232.9,217.3z"/>
+            <path fill="#2E628C" d="M320.2,212.7c71.7,114.1,96.2,230.4,60.9,274.6c5.3-1.2,10.3-3.2,14.9-6.1c51.6-32.4,29.7-160.2-49-285.3   C268.4,70.7,162.8-4.5,111.2,28c-4.6,2.9-8.5,6.5-11.9,10.8C154.4,26.1,248.5,98.6,320.2,212.7z"/>
+            <path fill="#0FB0F5" d="M320.3,356.4C206.2,428.1,88.2,453.2,44,417.9c1.2,5.3,4.1,10.6,7,15.1c32.4,51.6,161,28.9,286.2-49.7   C462.3,304.6,533.9,201,505.4,147.1c-2.5-4.7-7-11-11.3-14.4C506.8,187.8,434.4,284.7,320.3,356.4z"/>
+            <path fill="#0579F7" d="M191.9,152.2c114.1-71.7,230.4-96.2,274.6-60.9c-1.2-5.3-3.2-10.3-6.1-14.9c-32.4-51.6-160.2-29.7-285.4,49   C49.9,204-25.3,309.6,7.2,361.2c2.9,4.5,6.5,8.5,10.8,11.9C5.3,317.9,77.8,223.9,191.9,152.2z"/>
+            <path fill="#0FB0F5" d="M181.1,300.1C109.4,186,84.3,68,119.7,23.8c-5.3,1.2-10.6,4.1-15.1,7c-51.6,32.4-28.9,161,49.8,286.2   c78.7,125.2,182.3,196.7,236.2,168.3c4.7-2.5,11-7,14.4-11.3C349.7,486.6,252.8,414.3,181.1,300.1z"/>
+            <path fill="#06D4FB" d="M279.4,291.2C165.2,363,47.2,388,3,352.7c1.2,5.3,4.1,10.6,7,15.1c32.4,51.6,161,28.9,286.2-49.8   c125.2-78.7,196.7-182.3,168.3-236.2c-2.5-4.7-7-11-11.3-14.4C465.8,122.6,393.5,219.5,279.4,291.2z"/>
+        </g>
+        </svg>
+    </div>
+    <div style="margin: 20px 10px 10px 20px">
+        <a href="{% url 'home' %}" class="text-dark text-decoration-none" style="font-size: 20px; margin-right: 20px">
+            Оборудование
+        </a>
+        <a href="{% url 'logout' %}" class="text-dark text-decoration-none" style="font-size: 20px">
+            Выйти
+        </a>
+    </div>
+
+</nav>
+    {% endblock %}
+
+<hr>
+
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+<div class="container py-3">
+{% block footer %}
+<footer class="pt-4 my-md-5 pt-md-5 border-top">
+    <div class="row">
+      <div class="col-2 col-md"></div>
+      <div class="col-10 col-md" style="margin-bottom: 20px">
+            <svg height="64px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve">
+            <g>
+                <path fill="#2E628C" d="M232.9,217.3c114.1-71.7,230.4-96.2,274.6-60.9c-1.2-5.3-3.2-10.4-6.1-14.9c-32.4-51.6-160.2-29.7-285.4,49   C90.9,269.1,15.7,374.7,48.1,426.3c2.9,4.6,6.5,8.5,10.8,11.9C46.3,383.1,118.8,289,232.9,217.3z"/>
+                <path fill="#2E628C" d="M320.2,212.7c71.7,114.1,96.2,230.4,60.9,274.6c5.3-1.2,10.3-3.2,14.9-6.1c51.6-32.4,29.7-160.2-49-285.3   C268.4,70.7,162.8-4.5,111.2,28c-4.6,2.9-8.5,6.5-11.9,10.8C154.4,26.1,248.5,98.6,320.2,212.7z"/>
+                <path fill="#0FB0F5" d="M320.3,356.4C206.2,428.1,88.2,453.2,44,417.9c1.2,5.3,4.1,10.6,7,15.1c32.4,51.6,161,28.9,286.2-49.7   C462.3,304.6,533.9,201,505.4,147.1c-2.5-4.7-7-11-11.3-14.4C506.8,187.8,434.4,284.7,320.3,356.4z"/>
+                <path fill="#0579F7" d="M191.9,152.2c114.1-71.7,230.4-96.2,274.6-60.9c-1.2-5.3-3.2-10.3-6.1-14.9c-32.4-51.6-160.2-29.7-285.4,49   C49.9,204-25.3,309.6,7.2,361.2c2.9,4.5,6.5,8.5,10.8,11.9C5.3,317.9,77.8,223.9,191.9,152.2z"/>
+                <path fill="#0FB0F5" d="M181.1,300.1C109.4,186,84.3,68,119.7,23.8c-5.3,1.2-10.6,4.1-15.1,7c-51.6,32.4-28.9,161,49.8,286.2   c78.7,125.2,182.3,196.7,236.2,168.3c4.7-2.5,11-7,14.4-11.3C349.7,486.6,252.8,414.3,181.1,300.1z"/>
+                <path fill="#06D4FB" d="M279.4,291.2C165.2,363,47.2,388,3,352.7c1.2,5.3,4.1,10.6,7,15.1c32.4,51.6,161,28.9,286.2-49.8   c125.2-78.7,196.7-182.3,168.3-236.2c-2.5-4.7-7-11-11.3-14.4C465.8,122.6,393.5,219.5,279.4,291.2z"/>
+            </g>
+            </svg>
+            Ecstasy
+        <small class="text-muted">© 2022</small>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-2 col-md"></div>
+      <div class="col-3 col-md">
+        <h5>Навигация</h5>
+        <ul class="list-unstyled text-small">
+          <li class="mb-1"><a class="link-secondary text-decoration-none" href="/admin">Панель администратора</a></li>
+          <li class="mb-1"><a class="link-secondary text-decoration-none" href="{% url 'home' %}">Список оборудования</a></li>
+          <li class="mb-1"><a class="link-secondary text-decoration-none" href="{% url 'logout' %}">Выход</a></li>
+
+        </ul>
+      </div>
+      <div class="col-3 col-md">
+        <h5>Дополнительные ресурсы</h5>
+        <ul class="list-unstyled text-small">
+          <li class="mb-1"><a class="link-secondary text-decoration-none" target="_blank" href="http://10.100.0.50/zabbix/">Zabbix</a></li>
+          <li class="mb-1"><a class="link-secondary text-decoration-none" target="_blank" href="http://10.29.29.33/">Taged</a></li>
+
+        </ul>
+      </div>
+      <div class="col-3 col-md">
+        <h5>О программе</h5>
+        <span class="text-muted">Ecstasy - Equipment Control System To Assist You -
+            программа для управления сетевым оборудованием.
+        Просмотр MAC адресов на портах, а также сессий абонентов.</span>
+      </div>
+    </div>
+</footer>
+{% endblock %}
+</div>
+
+{% block js %}{% endblock %}
+
+</body>
+
+</html>

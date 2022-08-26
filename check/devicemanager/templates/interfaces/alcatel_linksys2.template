@@ -1,0 +1,4 @@
+Value DESCRIPTION (\S*$)
+
+Start
+  ^(\S+\d+)\s*${DESCRIPTION} -> Record

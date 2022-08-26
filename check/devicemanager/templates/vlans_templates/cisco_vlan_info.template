@@ -1,0 +1,6 @@
+Value VLANID (\d+)
+Value NAME (\S+)
+Value STATUS (\S+)
+
+Start
+  ^${VLANID}\s*${NAME}\s*${STATUS} -> Record

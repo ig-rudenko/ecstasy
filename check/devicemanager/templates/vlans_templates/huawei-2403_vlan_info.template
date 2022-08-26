@@ -1,0 +1,6 @@
+Value VLANID (\d+)
+Value NAME ([\W\S]+)
+
+Start
+  ^.*VLAN ID:\s*${VLANID}
+  ^.*Description:\s*${NAME} -> Record

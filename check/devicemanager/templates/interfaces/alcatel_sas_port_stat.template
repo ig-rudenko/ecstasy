@@ -1,0 +1,6 @@
+Value Port (\S+\d+)
+Value Admin (Up|Down)
+Value Link (Up|Down)
+
+Start
+  ^${Port}\s+${Admin}\s+(Yes|No)\s+${Link} -> Record

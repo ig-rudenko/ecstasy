@@ -1,0 +1,6 @@
+Value INTF ((Ethernet|Gigabit[Ee]thernet)\S+\d+)
+Value PHY (\S+)
+Value PROTOCOL (\S+)
+
+Start
+  ^${INTF}\s+${PHY}\s+${PROTOCOL} -> Record

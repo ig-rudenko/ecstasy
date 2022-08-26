@@ -1,0 +1,1556 @@
+import re
+import time
+
+import pexpect
+import os
+import yaml
+import textfsm
+from re import findall, sub, match
+from abc import ABC, abstractmethod
+from functools import lru_cache
+
+TEMPLATE_FOLDER = os.path.split(os.path.abspath(__file__))[0]
+
+
+__all__ = [
+    'ProCurve',
+    'ZTE',
+    'Huawei',
+    'Cisco',
+    'AlcatelSAS',
+    'Dlink',
+    'Alcatel',
+    'EdgeCore',
+    'EltexMES',
+    'EltexESR',
+    'Extreme',
+    'Qtech',
+    'HuaweiMA5600T',
+    'Juniper',
+    'DeviceFactory'
+]
+
+
+copper_type = [
+    'T', 'TX', 'VG', 'CX', 'CR'
+]
+
+fiber_type = [
+    'FOIRL', 'F', 'FX', 'SX', 'LX', 'BX', 'EX', 'ZX', 'SR', 'ER', 'SW', 'LW', 'EW', 'LRM', 'PR', 'LR', 'ER', 'FR'
+]
+
+
+
+def _interface_normal_view(interface) -> str:
+    """
+    Приводит имя интерфейса к виду принятому по умолчанию для коммутаторов\n
+    Например: Eth 0/1 -> Ethernet0/1
+              GE1/0/12 -> GigabitEthernet1/0/12\n
+    :param interface:   Интерфейс в сыром виде (raw)
+    :return:            Интерфейс в общепринятом виде
+    """
+    interface_number = findall(r'(\d+([/\\]?\d*)*)', str(interface))
+    if match(r'^[Ee]t', interface):
+        return f"Ethernet {interface_number[0][0]}"
+    elif match(r'^[Ff]a', interface):
+        return f"FastEthernet {interface_number[0][0]}"
+    elif match(r'^[Gg][ieE]', interface):
+        return f"GigabitEthernet {interface_number[0][0]}"
+    elif match(r'^\d+', interface):
+        return findall(r'^\d+', interface)[0]
+    elif match(r'^[Tt]e', interface):
+        return f'TenGigabitEthernet {interface_number[0][0]}'
+    else:
+        return interface
+
+
+def _range_to_numbers(ports_string: str) -> list:
+    ports_split = []
+    if 'to' in ports_string:
+        # Если имеется формат "trunk,1 to 7 12 to 44"
+        vv = [list(range(int(v[0]), int(v[1]) + 1)) for v in
+              [range_ for range_ in findall(r'(\d+)\s*to\s*(\d+)', ports_string)]]
+        for v in vv:
+            ports_split += v
+        return sorted(ports_split)
+    elif ',' in ports_string:
+        ports_split = ports_string.replace(' ', '').split(',')
+    else:
+        ports_split = ports_string.split()
+
+    res_ports = []
+    for p in ports_split:
+        try:
+            if '-' in p:
+                port_range = list(range(int(p.split('-')[0]), int(p.split('-')[1]) + 1))
+                for pr in port_range:
+                    res_ports.append(int(pr))
+            else:
+                res_ports.append(int(p))
+        except:
+            pass
+
+    return sorted(res_ports)
+
+
+class BaseDevice(ABC):
+    prompt: str
+    space_prompt: str
+    mac_format = ''
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
+        self.session: pexpect.spawn = session
+        self.ip = ip
+        self.model: str = model
+        self.auth: dict = auth
+        self.mac: str = ''
+        self.serialno: str = ''
+        self.os: str = ''
+        self.os_version: str = ''
+        self.vendor = self.__class__.__name__
+
+    @staticmethod
+    def find_or_empty(pattern, string):
+        m = findall(pattern, string)
+        if m:
+            return m[0]
+        else:
+            return ''
+
+    def send_command(self, command: str, before_catch: str = None, expect_command=True, num_of_expect=10,
+                     space_prompt=None, prompt=None) -> str:
+
+        if space_prompt is None:
+            space_prompt = self.space_prompt
+        if prompt is None:
+            prompt = self.prompt
+
+        output = ''
+        self.session.sendline(command)  # Отправляем команду
+
+        if expect_command:
+            self.session.expect(command[-num_of_expect:])  # Считываем введенную команду с поправкой по длине символов
+        if before_catch:
+            self.session.expect(before_catch)
+
+        if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
+            while True:
+                match = self.session.expect(
+                    [
+                        prompt,  # 0 - конец
+                        space_prompt,  # 1 - далее
+                        pexpect.TIMEOUT  # 2
+                    ],
+                    timeout=20
+                )
+                output += self.session.before.decode(errors='ignore')  # Убираем лишние символы
+                if match == 0:
+                    break
+                elif match == 1:
+                    self.session.send(" ")  # Отправляем символ пробела, для дальнейшего вывода
+                    output += '\n'
+                else:
+                    print(f'{self.ip} - timeout во время выполнения команды "{command}"')
+                    break
+        else:  # Если вывод команды выдается полностью, то пропускаем цикл
+            try:
+                self.session.expect(prompt)
+            except pexpect.TIMEOUT:
+                pass
+            output = self.session.before.decode('utf-8')
+        return output
+
+    @abstractmethod
+    def get_interfaces(self) -> list:
+        pass
+
+    @abstractmethod
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port) -> list:
+        return []
+
+    def reload_port(self, port) -> str:
+        return ''
+
+
+class ProCurve(BaseDevice):
+    prompt = r"\S+#"
+    space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super(ProCurve, self).__init__(session, ip, auth, model)
+        sys_info = self.send_command('show system-information', before_catch='General System Information', expect_command=False)
+        self.model = self.find_or_empty(r'Base MAC Addr\s+: (\S+)', sys_info)
+        self.serialno = self.find_or_empty(r'Serial Number\s+: (\S+)', sys_info)
+        self.os_version = self.find_or_empty(r'Software revision\s+: (\S+)', sys_info)
+
+    def get_interfaces(self) -> list:
+        result = []
+        raw_intf_status = self.send_command('show interfaces brief', expect_command=False)
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/procurve_status.template') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+        intf_status = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
+        for line in intf_status:
+            port = self.find_or_empty(r'[ABCD]*\d+', line[0])
+            port_output = self.send_command(f'show interfaces ethernet {port}', expect_command=False)
+            descr = findall(r'Name\s*(:\s*\S*)\W+Link', port_output)
+            result.append(
+                [
+                    line[0],
+                    line[2].lower() if line[1] == "Yes" else "admin down",
+                    descr[0][1:] if descr else ''
+                ]
+            )
+        return result
+
+    def get_vlans(self) -> list:
+        pass
+
+
+class ZTE(BaseDevice):
+    prompt = r'\S+\(cfg\)#|\S+>'
+    space_prompt = "----- more -----"
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super().__init__(session, ip, auth, model)
+        version = self.send_command('show version')
+        self.mac = self.find_or_empty(r'Mac Address: (\S+)', version)
+
+    def get_interfaces(self) -> list:
+        output = self.send_command('show port')
+
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/zte.template') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],  # interface
+                line[2] if 'enabled' in line[1] else 'admin down',  # status
+                line[3]  # desc
+            ]
+            for line in result
+        ]
+
+    def get_vlans(self):
+        interfaces = self.get_interfaces()
+        output = self.send_command('show vlan')
+
+        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/zte_vlan.template', 'r') as template_file:
+            vlan_templ = textfsm.TextFSM(template_file)
+            result_vlan = vlan_templ.ParseText(output)
+
+        vlan_port = {}
+        for vlan in result_vlan:
+            # Если не нашли влан, или он деактивирован, то пропускаем
+            if not vlan[0] or vlan[4] == "disabled":
+                continue
+            # Объединяем тегированные вланы и нетегированные в один список
+            vlan_port[int(vlan[0])] = _range_to_numbers(','.join([vlan[2], vlan[3]]))
+
+        interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
+
+        for line in interfaces:
+            vlans = []  # Строка со списком VLANов с переносами
+            for vlan_id in vlan_port:
+                if int(line[0]) in vlan_port[vlan_id]:
+                    vlans.append(vlan_id)
+            interfaces_vlan.append(line + [vlans])
+        return interfaces_vlan
+
+
+class Huawei(BaseDevice):
+    prompt = r'<\S+>$|\[\S+\]$|Unrecognized command'
+    space_prompt = r"---- More ----"
+    mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super().__init__(session, ip, auth, model)
+        self.session.sendline('super')
+        v = session.expect(
+            [
+                'Unrecognized command|Now user privilege is 3 level',  # 0 - huawei-2326
+                '[Pp]ass',  # 1 - huawei-2403 повышение уровня привилегий
+                'User privilege level is'  # 2 - huawei-2403 уже привилегированный
+            ]
+        )
+        if v == 1:
+            self.session.sendline(self.auth['privilege_mode_password'])
+
+        if self.session.expect(
+                [
+                    r'<\S+>',  # 0 - режим просмотра
+                    r'\[\S+\]'  # 1 - режим редактирования
+                ]
+        ):  # Если находимся в режиме редактирования, то понижаем до режима просмотра
+            self.session.sendline('quit')
+            self.session.expect(r'<\S+>$')
+
+        version = self.send_command('display version')
+        self.model = self.find_or_empty(r'Quidway (\S+) [Routing Switch]*uptime', version)
+
+        if 'S2403' in self.model:
+            manuinfo = self.send_command('display device manuinfo')
+            self.mac = self.find_or_empty(r'MAC ADDRESS\s+:\s+(\S+)', manuinfo)
+            self.serialno = self.find_or_empty(r'DEVICE SERIAL NUMBER\s+:\s+(\S+)', manuinfo)
+
+        elif 'S2326' in self.model:
+            mac = self.send_command('display bridge mac-address')
+            self.mac = self.find_or_empty(r'System Bridge Mac Address\s+:\s+(\S+)\.', mac)
+
+            elabel = self.send_command('display elabel')
+            self.serialno = self.find_or_empty(r'BarCode=(\S+)', elabel)
+
+    def get_interfaces(self):
+        output = ''
+        if 'S2403' in self.model:
+            ht = 'huawei-2403'
+            output = self.send_command('display brief interface')
+        elif 'S2326' in self.model:
+            ht = 'huawei-2326'
+            output = self.send_command('display interface description')
+        else:
+            ht = 'huawei'
+
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/{ht}.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],  # interface
+                line[1].lower().replace('adm', 'admin').replace('*', 'admin '),  # status
+                line[2]  # desc
+            ]
+            for line in result if not line[0].startswith('NULL') and not line[0].startswith('V')
+        ]
+
+    def get_vlans(self) -> list:
+        interfaces = self.get_interfaces()
+        result = []
+        for line in interfaces:
+            if not line[0].startswith('V') and not line[0].startswith('NU') and not line[0].startswith('A'):
+                output = self.send_command(f"display current-configuration interface {_interface_normal_view(line[0])}", expect_command=False)
+
+                vlans_group = sub(r'(?<=undo).+vlan (.+)', '', output)  # Убираем строчки, где есть "undo"
+                vlans_group = list(set(findall(r'vlan (.+)', vlans_group)))  # Ищем строчки вланов, без повторений
+                port_vlans = []
+                for v in vlans_group:
+                    port_vlans = _range_to_numbers(v)
+                result.append(line + [port_vlans])
+
+        return result
+
+    def get_mac(self, port) -> list:
+        """
+        Поиск маков на порту
+        :param port:
+        :return: [ ('vid', 'mac'), ... ]
+        """
+
+        mac_list = []
+
+        if '2403' in self.model:
+            mac_str = self.send_command(f'display mac-address interface {_interface_normal_view(port)}')
+            for i in findall(rf'({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+', mac_str):
+                mac_list.append(i[::-1])
+
+        elif '2326' in self.model:
+            mac_str = self.send_command(f'display mac-address {_interface_normal_view(port)}')
+            for i in findall(rf'({self.mac_format})\s+(\d+)/\S+\s+\S+\s+\S+', mac_str):
+                mac_list.append(i[::-1])
+
+        return mac_list
+
+    def reload_port(self, port) -> str:
+        self.session.sendline('system-view')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.sendline('shutdown')
+        time.sleep(1)
+        self.session.sendline('undo shutdown')
+        self.session.sendline('quit')
+        self.session.expect(r'\[\S+\]')
+        return self.session.before.decode(errors='ignore')
+
+    def set_port(self, port, status) -> str:
+        self.session.sendline('system-view')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        if status == 'up':
+            self.session.sendline('undo shutdown')
+        elif status == 'down':
+            self.session.sendline('shutdown')
+
+        self.session.sendline('quit')
+        self.session.expect(r'\[\S+\]')
+        self.session.sendline('save')
+        self.session.sendline('Y')
+        self.session.sendline('\n')
+        self.session.expect(['success', r'\[\S+\]'])
+
+        return self.session.before.decode(errors='ignore')
+
+    def port_config(self, port):
+        config = self.send_command(
+            f'display current-configuration interface {_interface_normal_view(port)}',
+            expect_command=False, before_catch=r'#'
+        )
+        return config
+
+
+class Cisco(BaseDevice):
+    prompt = r'\S+#$'
+    space_prompt = r'--More--'
+    mac_format = r'\S\S\S\S\.\S\S\S\S\.\S\S\S\S'  # 0018.e7d3.1d43
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
+        super(Cisco, self).__init__(session, ip, auth, model)
+        version = self.send_command('show version')
+        self.serialno = self.find_or_empty(r'System serial number\s+: (\S+)', version)
+        self.mac = self.find_or_empty(r'[MACmac] [Aa]ddress\s+: (\S+)', version)
+
+    def get_interfaces(self) -> list:
+        output = self.send_command('show int des')
+        output = sub('.+\nInterface', 'Interface', output)
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/cisco.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],  # interface
+                line[2].lower() if 'up' in line[1].lower() else line[1].lower(),  # status
+                line[3]  # desc
+            ]
+            for line in result if not line[0].startswith('V')
+        ]
+
+    def get_vlans(self) -> list:
+        result = []
+        for line in self.get_interfaces():
+            if not line[0].startswith('V'):
+                output = self.send_command(
+                    command=f"show running-config interface {_interface_normal_view(line[0])}",
+                    before_catch="Building configuration",
+                    expect_command=False
+                )
+                vlans_group = findall(r'(?<=access|llowed) vlan [ad\s]*(\S*\d)', output)  # Строчки вланов
+                result.append(line + [vlans_group])
+
+        return result
+
+    def get_mac(self, port) -> list:
+        mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
+        print(mac_str)
+        return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
+
+    def reload_port(self, port) -> str:
+        self.session.sendline('configure terminal')
+        self.session.expect(r'#')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.sendline('shutdown')
+        time.sleep(1)
+        self.session.sendline('no shutdown')
+        self.session.sendline('exit')
+        self.session.expect(r'#')
+        return self.session.before.decode(errors='ignore')
+
+    def set_port(self, port, status):
+        self.session.sendline('configure terminal')
+        self.session.expect(r'\(config\)#')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+
+        if status == 'up':
+            self.session.sendline('no shutdown')
+        elif status == 'down':
+            self.session.sendline('shutdown')
+        self.session.sendline('end')
+
+        self.session.expect(r'#')
+        self.session.sendline('write')
+        self.session.expect(r'Building configuration')
+        self.session.expect(r'#')
+        return self.session.before.decode(errors='ignore')
+
+    @lru_cache
+    def get_port_info(self, port):
+        """Общая информация о порте"""
+
+        port_type = self.send_command(f'show interfaces {_interface_normal_view(port)} | include media')
+        return f'<p>{port_type}</p>'
+
+    def port_type(self, port):
+        """Определяем тип порта: медь или оптика"""
+
+        port_type = self.find_or_empty(r'[Bb]ase(\S{1,2})', self.get_port_info(port))
+        if 'SFP' in self.get_port_info(port) or port_type in fiber_type:
+            return 'SFP'
+
+        return 'COPPER'
+
+    def port_config(self, port):
+        """Конфигурация порта"""
+
+        config = self.send_command(
+            f'show running-config interface {_interface_normal_view(port)}',
+            before_catch=r'Current configuration.+?\!'
+        )
+        return config
+
+
+class AlcatelSAS(BaseDevice):
+    prompt = r'\S+#\s*$'
+    space_prompt = r'Press any key to continue \(Q to quit\)'
+
+
+class Dlink(BaseDevice):
+    prompt = r'\S+#'
+    space_prompt = None
+    mac_format = r'\S\S-'*5+r'\S\S'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
+        super().__init__(session, ip, auth, model)
+
+        status = True
+        self.session.sendline('enable admin')  # Повышает уровень привилегий до уровня администратора
+        if not session.expect(
+                [
+                    "[Pp]ass",  # 0 - ввод пароля
+                    r"You already have"  # 1 - уже администратор
+                ]
+        ):
+            self.session.sendline(self.auth['privilege_mode_password'])  # Вводим пароль администратора
+        while self.session.expect([self.prompt, 'Fail!']):
+            self.session.sendline('\n')
+            print(self.ip, 'privilege_mode_password wrong!')
+            status = False
+        if status:
+            self.session.sendline('disable clipaging')  # отключение режима постраничного вывода
+            self.session.expect(self.prompt)
+
+        # Уровень администратора
+        self._admin_status: bool = status
+
+        # Смотрим характеристики устройства
+        version = self.send_command('show switch')
+        self.mac = self.find_or_empty(r'MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)', version)
+        self.model = self.model or self.find_or_empty(r'Device Type\s+:\s+(\S+)\s', version)
+        self.serialno = self.find_or_empty(r'Serial Number\s+:\s+(\S+)', version)
+
+    def send_command(self, command: str, before_catch: str = None, expect_command=False, num_of_expect=10):
+        return super(Dlink, self).send_command(command, before_catch or command, expect_command, num_of_expect)
+
+    def get_interfaces(self) -> list:
+        self.session.sendline("show ports des")
+        self.session.expect('#')
+        output = self.session.before.decode('utf-8')
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/d-link.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],  # interface
+                line[2].replace('LinkDown', 'down') if 'Enabled' in line[1] else 'admin down',  # status
+                line[3]  # desc
+            ]
+            for line in result
+        ]
+
+    def get_vlans(self) -> list:
+
+        interfaces = self.get_interfaces()
+
+        self.session.sendline('show vlan')
+        self.session.expect(self.prompt, timeout=20)
+        output = self.session.before.decode('utf-8')
+        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/d-link.template', 'r') as template_file:
+            vlan_templ = textfsm.TextFSM(template_file)
+            result_vlan = vlan_templ.ParseText(output)
+        # сортируем и выбираем уникальные номера портов из списка интерфейсов
+        port_num = set(sorted([int(findall(r'\d+', p[0])[0]) for p in interfaces]))
+
+        # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
+        ports_vlan = {str(num): [] for num in range(1, len(port_num) + 1)}
+
+        for vlan in result_vlan:
+            for port in _range_to_numbers(vlan[2]):
+                # Добавляем вланы на порты
+                ports_vlan[str(port)].append(vlan[0])
+        interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
+        for line in interfaces:
+            interfaces_vlan.append(line + [ports_vlan.get(line[0], '')])
+        return interfaces_vlan
+
+    def get_mac(self, port) -> list:
+        port = sub(r'\D', '', port)
+
+        mac_str = self.send_command(f'show fdb port {port}')
+        return findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
+
+    def reload_port(self, port) -> str:
+        if 'F' in port:
+            media_type = ' medium_type fiber'
+        elif 'C' in port:
+            media_type = ' medium_type copper'
+        else:
+            media_type = ''
+
+        port = sub(r'\D', '', port)
+        s1 = self.send_command(f'config ports {port} {media_type} state disable')
+        time.sleep(1)
+        s2 = self.send_command(f'config ports {port} {media_type} state enable')
+        return s1 + s2
+
+    def set_port(self, port, status) -> str:
+        if 'F' in port:
+            media_type = 'medium_type fiber'
+        elif 'C' in port:
+            media_type = 'medium_type copper'
+        else:
+            media_type = ''
+
+        port = sub(r'\D', '', port)
+
+        if status == 'up':
+            state = 'enable'
+        elif status == 'down':
+            state = 'disable'
+        else:
+            state = ''
+
+        return self.send_command(f'config ports {port} {media_type} state {state}')
+
+
+class Alcatel(BaseDevice):
+    prompt = r'\S+#\s*$'
+    space_prompt = r'More: <space>,  Quit: q, One line: <return> '
+
+
+class EdgeCore(BaseDevice):
+    prompt = r'\S+#$'
+    space_prompt = '---More---'
+
+
+class _Eltex(BaseDevice):
+    prompt = r'\S+#\s*'
+    space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
+                   r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super().__init__(session, ip, auth, model)
+        system = self.send_command('show system')
+        self.mac = self.find_or_empty(r'System MAC [Aa]ddress:\s+(\S+)', system)
+        self.model = self.find_or_empty(r'System Description:\s+(\S+)|System type:\s+Eltex (\S+)', system)
+        self.model = self.model[0] or self.model[1]
+
+
+class EltexMES(BaseDevice):
+    prompt = r'\S+#\s*'
+    space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
+                   r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
+    _template_name = 'eltex-mes'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', mac=''):
+        super(EltexMES, self).__init__(session, ip, auth, model)
+        self.mac = mac
+        inv = self.send_command('show inventory')
+        self.serialno = self.find_or_empty(r'SN: (\S+)', inv)
+
+    def get_interfaces(self) -> list:
+        self.session.sendline("show int des")
+        self.session.expect("show int des")
+        output = ''
+        while True:
+            match = self.session.expect([self.prompt, self.space_prompt, pexpect.TIMEOUT])
+            output += self.session.before.decode('utf-8').strip()
+            if 'Ch       Port Mode (VLAN)' in output:
+                self.session.sendline('q')
+                self.session.expect(self.prompt)
+                break
+            if match == 0:
+                break
+            elif match == 1:
+                self.session.send(" ")
+            else:
+                print(self.ip, "Ошибка: timeout")
+                break
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/{self._template_name}.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],  # interface
+                line[2].lower() if 'up' in line[1].lower() else 'admin down',  # status
+                line[3]  # desc
+            ]
+            for line in result if not line[0].startswith('V')
+        ]
+
+    def get_vlans(self) -> list:
+        result = []
+        interfaces = self.get_interfaces()
+        for line in interfaces:
+            if not line[0].startswith('V'):
+                output = self.send_command(
+                    f'show running-config interface {_interface_normal_view(line[0])}', expect_command=False
+                )
+                vlans_group = findall(r'vlan [add ]*(\S*\d)', output)  # Строчки вланов
+                port_vlans = []
+                if vlans_group:
+                    for v in vlans_group:
+                        port_vlans += _range_to_numbers(v)
+                # switchport_mode = findall(r'switchport mode (\S+)', output)  # switchport mode
+                # max_letters_in_string = 20  # Ограничение на кол-во символов в одной строке в столбце VLAN's
+                # vlans_compact_str = ''  # Строка со списком VLANов с переносами
+                # line_str = ''
+                # for part in ','.join(switchport_mode + vlans_group).split(','):
+                #     if len(line_str) + len(part) <= max_letters_in_string:
+                #         line_str += f'{part},'
+                #     else:
+                #         vlans_compact_str += f'{line_str}\n'
+                #         line_str = f'{part},'
+                # else:
+                #     vlans_compact_str += line_str[:-1]
+                result.append(line + [port_vlans])
+
+        # vlans_info = self.send_command('show vlan')
+        #
+        # with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/eltex_vlan_info.template', 'r') as template_file:
+        #     vlans_info_template = textfsm.TextFSM(template_file)
+        #     vlans_info_table = vlans_info_template.ParseText(vlans_info)  # Ищем интерфейсы
+
+        return result
+
+
+class EltexESR(EltexMES):
+    _template_name = 'eltex-esr'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model, mac):
+        super(EltexESR, self).__init__(session, ip, auth, model, mac)
+        system = self.send_command('show system')
+        self.mac = mac
+        self.serialno = self.find_or_empty(r'serial number:\s+(\S+)', system)
+
+
+class Extreme(BaseDevice):
+    prompt = r'\S+\s*#\s*$'
+    space_prompt = "Press <SPACE> to continue or <Q> to quit:"
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super(Extreme, self).__init__(session, ip, auth, model)
+        system = self.send_command('show switch')
+        self.mac = self.find_or_empty(r'System MAC:\s+(\S+)', system)
+        self.model = self.find_or_empty(r'System Type:\s+(\S+)', system)
+        version = self.send_command('show version')
+        self.serialno = self.find_or_empty(r'Switch\s+: \S+ (\S+)', version)
+
+    def get_interfaces(self) -> list:
+        # LINKS
+        output_links = self.send_command('show ports information')
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/extreme_links.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result_port_state = int_des_.ParseText(output_links)  # Ищем интерфейсы
+        for position, line in enumerate(result_port_state):
+            if result_port_state[position][1].startswith('D'):
+                result_port_state[position][1] = 'Disable'
+            elif result_port_state[position][1].startswith('E'):
+                result_port_state[position][1] = 'Enable'
+            else:
+                result_port_state[position][1] = 'None'
+
+        # DESC
+        output_des = self.send_command('show ports description')
+
+        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/extreme_des.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result_des = int_des_.ParseText(output_des)  # Ищем desc
+
+        result = [result_port_state[n] + result_des[n] for n in range(len(result_port_state))]
+        return [
+            [
+                line[0],  # interface
+                line[2].replace('ready', 'down').replace('active', 'up') if 'Enable' in line[1] else 'admin down',
+                # status
+                line[3]  # desc
+            ]
+            for line in result
+        ]
+
+    def get_vlans(self):
+
+        interfaces = self.get_interfaces()
+
+        output_vlans = self.send_command('show configuration "vlan"', before_catch=r'Module vlan configuration\.')
+
+        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/extreme.template', 'r') as template_file:
+            vlan_templ = textfsm.TextFSM(template_file)
+            result_vlans = vlan_templ.ParseText(output_vlans)
+
+        # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
+        ports_vlan = {num: [] for num in range(1, len(interfaces) + 1)}
+
+        for vlan in result_vlans:
+            for port in _range_to_numbers(vlan[1]):
+                # Добавляем вланы на порты
+                ports_vlan[port].append(vlan[0])
+        interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
+
+        for line in interfaces:
+            max_letters_in_string = 20  # Ограничение на кол-во символов в одной строке в столбце VLAN's
+            vlans_compact_str = ''  # Строка со списком VLANов с переносами
+            line_str = ''
+            for part in ports_vlan[int(line[0])]:
+                if len(line_str) + len(part) <= max_letters_in_string:
+                    line_str += f'{part},'
+                else:
+                    vlans_compact_str += f'{line_str}\n'
+                    line_str = f'{part},'
+            else:
+                vlans_compact_str += line_str[:-1]
+            # Итоговая строка: порт, статус, описание + вланы
+            interfaces_vlan.append(line + [vlans_compact_str])
+
+        # Описание VLAN'ов
+        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/extreme_vlan_info.template', 'r') as template_file:
+            vlan_templ = textfsm.TextFSM(template_file)
+            vlans_info = vlan_templ.ParseText(output_vlans)
+        vlans_info = sorted(vlans_info, key=lambda line: int(line[0]))  # Сортировка по возрастанию vlan
+        return vlans_info, interfaces_vlan
+
+
+class Qtech(BaseDevice):
+    prompt = r'\S+#$'
+    space_prompt = "--More--"
+
+
+class HuaweiMA5600T(BaseDevice):
+    prompt = r'config\S+#|\S+#'
+    space_prompt = r'---- More \( Press \'Q\' to break \) ----'
+    mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super(HuaweiMA5600T, self).__init__(session, ip, auth, model)
+        self.session.sendline('enable')
+        self.session.expect(r'\S+#')
+
+    def split_port(self, port: str) -> tuple:
+        """
+        Разделяет строку порта на тип интерфейса и плата, слот, порт
+
+        ADSL 0/2/4 -> "adsl", ["0", "2", "4"]
+
+        Смотрит платы
+
+            # display board
+
+            #-------------------------------------------------------------------------
+            SlotID  BoardName  Status         SubType0 SubType1    Online/Offline
+            #-------------------------------------------------------------------------
+            0
+            1
+            2       H808ADLF   Normal
+            3       H808ADLF   Normal
+            4       H808ADLF   Normal
+            5       H808ADLF   Normal
+            6       H808ADLF   Normal
+            7
+            8       H805ADPD   Normal
+            9       H801SCUB   Active_normal
+
+
+        ethernet0/9/2 -> "scu", ["0", "9", "2"]
+
+        """
+
+        port = port.lower().strip()
+        type_ = self.find_or_empty(r'^ethernet|^adsl|^gpon', port)
+        indexes = re.sub(r'^[a-z]+', '', port).split('/')
+        if type_ == 'ethernet':
+            board_info = self.send_command(f'display board {indexes[0]}')
+            print(board_info)
+            board_list = self.find_or_empty(rf'\s+({indexes[1]})\s+(\S+)\s+\S+', board_info)
+            if board_list:
+                if 'SCU' in board_list[1]:
+                    return 'scu', indexes
+                elif 'GI' in board_list[1]:
+                    return 'giu', indexes
+
+            return 'eth', indexes
+
+        return type_, indexes
+
+    def port_info_parser(self, info: str):
+        """
+        Преобразовываем информацию о порте для отображения на странице
+        """
+
+        def color(val: float, s: str) -> str:
+            """ Определяем цвета в зависимости от числовых значений показателя """
+            if 'channel SNR margin' in s:
+                gradient = [5, 7, 10, 20]
+            elif 'channel attenuation' in s:
+                gradient = [-60, -50, -40, -20]
+                val = -val
+            elif 'total output power' in s:
+                return '#95e522' if val >= 10 else '#e5a522'
+            else:
+                return ''
+            # проверяем значения по градиенту
+            if val <= gradient[0]:
+                return '#e55d22'
+            if val <= gradient[1]:
+                return '#e5a522'
+            if val <= gradient[2]:
+                return '#dde522'
+            if val <= gradient[3]:
+                return '#95e522'
+            else:
+                return '#22e536'
+
+        lines = info.strip().split('\n')  # Построчно создаем список
+        html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
+        table = """
+            <div class="col-8">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th scope="col" style="text-align: center;">Downstream</th>
+                      <th scope="col" style="text-align: center;">Upstream</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                """
+        table_dict = {
+            'Do': [],
+            'Up': []
+        }
+        for line in lines:  # Построчно смотрим данные
+            line = line.strip()
+
+            if line.startswith('-' * 10):  # Прерываем, если дошли до строки с разделителем ------------
+                break
+
+            if not findall(r'^[DU].+?(-?\d+\.?\d*)', line):
+                html += f'<p>{line}</p>'  # Записываем в первую колонку данные
+            else:
+                value = self.find_or_empty(r'-?\d+\.?\d*', line)  # Числовое значение
+                if value:
+                    line_new = f'<td style="text-align: center; background-color: {color(float(value), line)};">{value}</td>'
+                else:  # Если нет значения - ошибка
+                    line_new = f'<td style="text-align: center; background-color: #e55d22;">0</td>'
+
+                table_dict[line[:2]].append(line_new)  # Обновляем ключ Do или Up
+
+        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
+                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)', 'Общая выходная мощность (dBm)']
+
+        # Наполняем таблицу
+        for line in zip(names, table_dict['Do'], table_dict['Up']):
+            table += f"""
+            <tr>
+                <td style="text-align: right";>{line[0]}</td>
+                {line[1]}
+                {line[2]}
+            </tr>
+            """
+        else:
+            table += "</tbody></table></div>"  # Закрываем таблицу
+
+        html += '</div>'  # Закрываем первую колонку
+        html += table     # Добавляем вторую колонку - таблицу
+        html += '</div>'  # Закрываем ряд
+        return html
+
+    def get_port_info(self, port: str):
+        """Смотрим информацию на порту"""
+
+        type_, indexes = self.split_port(port)
+
+        if not type_ or len(indexes) != 3:
+            return f'Неверный порт! ({port})'
+
+        self.session.sendline('config')
+        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
+        self.session.expect(r'\S+#')
+        self.session.sendline(f'display line operation {indexes[2]}')
+        if self.session.expect([r'Are you sure to continue', 'Unknown command']):
+            return ''
+        output = self.send_command('y', expect_command=True, before_catch=r'Failure|------[-]+')
+
+        if 'is not activated' in output:  # У данного порта нет таких команд
+            return ''
+
+        profile_output = self.send_command(f'display port state {indexes[2]}')
+        profile_index = self.find_or_empty(rf'\s+\d+\s+\S+\s+(\d+)', profile_output)
+        profile_output = self.send_command(f'display adsl line-profile {profile_index}')
+        profile_name = f'Profile name: <strong>' + self.find_or_empty(r"Name:\s+(\S+)", profile_output) + '</strong>\n'
+
+        return self.port_info_parser(profile_name + output)
+
+    def get_mac(self, port) -> list:
+        """
+        Смотрим MAC'и на порту и отдаем в виде списка
+
+        [ ["vlan", "mac"],  ... ]
+        """
+
+        type_, indexes = self.split_port(port)
+
+        if len(indexes) != 3:  # Неверный порт
+            return []
+
+        self.session.sendline(f'display mac-address port {"/".join(indexes)}')
+        com = self.send_command('\n', expect_command=False, before_catch='display mac-address')
+        macs1 = findall(rf'\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)', com)
+
+        # Попробуем еще одну команду
+        self.session.sendline(f'display security bind mac {"/".join(indexes)}')
+        com = self.send_command('\n', expect_command=False, before_catch='display security')
+        macs2 = findall(rf'\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)', com)
+
+        res = []
+        print(macs1+macs2)
+        for m in macs1+macs2:
+            res.append(m[::-1])
+        return res
+
+    @staticmethod
+    def _up_down_command(port_type: str, status: str):
+        """В зависимости от типа порта возвращает команды для управления его статусом"""
+        if port_type == 'scu' or port_type == 'giu':
+            if status == 'down':
+                return 'shutdown'
+            if status == 'up':
+                return 'undo shutdown'
+
+        if port_type == 'adsl':
+            if status == 'down':
+                return 'deactivate'
+            if status == 'up':
+                return 'activate'
+
+    def reload_port(self, port) -> str:
+        """Перезагружаем порт"""
+
+        type_, indexes = self.split_port(port)
+        if not type_ or len(indexes) != 3:
+            return f'Неверный порт! ({port})'
+
+        self.session.sendline('config')
+        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
+        self.session.expect(r'\S+#')
+
+        cmd = f"{self._up_down_command(type_, 'down')} {indexes[2]}"  # Выключить порт
+        self.session.sendline(cmd)
+        self.session.expect(cmd)
+        self.session.sendline('\n')
+        time.sleep(1)  # Пауза
+
+        cmd = f"{self._up_down_command(type_, 'up')} {indexes[2]}"  # Включить порт
+        self.session.sendline(cmd)
+        self.session.expect(cmd)
+
+        s = self.session.before.decode()
+
+        self.session.sendline('\n')
+        self.session.expect(r'\S+#$')
+
+        s += self.session.before.decode()
+        return s
+
+    def set_port(self, port, status) -> str:
+        type_, indexes = self.split_port(port)
+        if not type_ or len(indexes) != 3:
+            return f'Неверный порт! ({port})'
+
+        self.session.sendline('config')
+        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
+        self.session.expect(r'\S+#')
+
+        # Выключаем или включаем порт, в зависимости от типа будут разные команды
+        s = self.send_command(f'{self._up_down_command(type_, status)} {indexes[2]}', expect_command=False)
+        self.send_command('\n', expect_command=False)
+
+        return s
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+
+class IskratelControl(BaseDevice):
+    prompt = r'\(\S+\)\s*#'
+    space_prompt = r'--More-- or \(q\)uit'
+    mac_format = r'\S\S:'*5+r'\S\S'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super(IskratelControl, self).__init__(session, ip, auth, model)
+
+    def get_mac(self, port) -> list:
+        """
+        Смотрим MAC'и на порту и отдаем в виде списка
+
+        [ ["vlan", "mac"],  ... ]
+        """
+
+        if not findall(r'\d+/\d+', port):  # Неверный порт
+            return []
+
+        output = self.send_command(f'show mac-addr-table interface {port}')
+        macs = findall(rf'({self.mac_format})\s+(\d+)', output)
+
+        res = []
+        for m in macs:
+            res.append(m[::-1])
+        return res
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def reload_port(self, port) -> str:
+        pass
+
+    def set_port(self, port):
+        pass
+
+
+class IskratelMBan(BaseDevice):
+    prompt = r'mBAN>\s'
+    space_prompt = r'Press any key to continue or Esc to stop scrolling\.'
+    mac_format = r'\S\S:'*5+r'\S\S'
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+        super(IskratelMBan, self).__init__(session, ip, auth, model)
+
+    @property
+    def get_service_ports(self):
+        return ['1_32', '1_33', '1_40']
+
+    def port_info_parser(self, info: str) -> str:
+
+        def color(val: str, s: str) -> str:
+            if not val:
+                return ''
+            val = float(val)
+
+            """ Определяем цвета в зависимости от числовых значений показателя """
+            if 'Сигнал/Шум' in s:
+                gradient = [5, 7, 10, 20]
+            elif 'Затухание линии' in s:
+                gradient = [-60, -50, -40, -20]
+                val = -val
+            elif 'total output power' in s:
+                return '#95e522' if val >= 10 else '#e5a522'
+            else:
+                return ''
+            # проверяем значения по градиенту
+            if val <= gradient[0]:
+                return '#e55d22'
+            if val <= gradient[1]:
+                return '#e5a522'
+            if val <= gradient[2]:
+                return '#dde522'
+            if val <= gradient[3]:
+                return '#95e522'
+            else:
+                return '#22e536'
+
+        html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
+        table = """
+            <div class="col-8">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th scope="col" style="text-align: center;">Downstream</th>
+                      <th scope="col" style="text-align: center;">Upstream</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                """
+        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
+                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)']
+
+        oper_state = self.find_or_empty(r'Operational State\s+(\S+)\/', info)
+        if self.find_or_empty(r'Equipment\s+Unequipped', info):
+            html += '<p style="color: red">Порт - ADMIN DOWN</p>'
+        elif oper_state == 'Down':
+            html += '<p>Порт - DOWN</p>'
+        elif oper_state == 'Up':
+            html += '<p style="color: green">Порт - UP</p>'
+
+        html += f'<p>'+self.find_or_empty(r"Type .*", info)+'</p>'
+        html += f'<p>'+self.find_or_empty(r"Profile Name\s+\S+", info)+'</p>'
+
+        # Данные для таблицы
+        data_rate = findall(r'DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit', info) or [('', '')]
+        max_rate = [(self.find_or_empty(r'Maximum DS attainable aggregate rate\s+(\d+) kbit', info),
+                    self.find_or_empty(r'Maximum US attainable aggregate rate\s+(\d+) kbit', info))]
+
+        snr = findall(r'DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)', info) or [('', '')]
+        intl = findall(r'DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)', info) or [('', '')]
+        att = findall(r'DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)', info) or [('', '')]
+
+        # Наполняем таблицу
+        for line in zip(names, data_rate + max_rate + snr + intl + att):
+            table += f"""
+            <tr>
+                <td style="text-align: right";>{line[0]}</td>
+                <td style="text-align: center; background-color: {color(line[1][0], line[0])};">{line[1][0]}</td>
+                <td style="text-align: center; background-color: {color(line[1][1], line[0])};">{line[1][1]}</td>
+            </tr>
+            """
+        else:
+            table += "</tbody></table></div>"  # Закрываем таблицу
+
+        html += '</div>'  # Закрываем первую колонку
+        html += table     # Добавляем вторую колонку - таблицу
+        html += '</div>'  # Закрываем ряд
+        return html
+
+    def get_port_info(self, port: str):
+        port = port.strip()
+        # Верные порты: port1, fasteth3, adsl2:1_40
+        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
+            return ''
+
+        if 'port' in port:  # Если указан физический adsl порт
+            cmd = f'show dsl port {port[4:]} detail'
+            before_catch = r'Name\s+\S+'
+        else:
+            cmd = f'show interface {port}'
+            before_catch = r'\[Enabled Connected Bridging\]'
+
+        output = self.send_command(cmd, expect_command=False, before_catch=before_catch)
+        return self.port_info_parser(output)
+
+    def get_mac(self, port: str) -> list:
+        """
+        Смотрим MAC'и на порту и отдаем в виде списка
+
+        [ ["vlan", "mac"],  ... ]
+        """
+
+        port = port.strip()
+        # Верные порты: port1, fasteth3, adsl2:1_40
+        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
+            return []
+
+        if 'port' in port:  # Если указан физический adsl порт
+            macs = []  # Итоговый список маков
+            port = port[4:]  # убираем слово port, оставляя только номер
+
+            for sp in self.get_service_ports:  # смотрим маки на сервис портах
+                output = self.send_command(f'show bridge mactable interface dsl{port}:{sp}', expect_command=False)
+                macs.extend(findall(rf'(\d+)\s+({self.mac_format})', output))
+
+        else:
+            output = self.send_command(f'show bridge mactable interface {port}', expect_command=False)
+            macs = findall(rf'(\d+)\s+({self.mac_format})', output)
+
+        return macs
+
+    def reload_port(self, port: str) -> str:
+        port = port.strip()
+        index = findall(r'^port(\d+)$', port)
+        if not index:
+            return f'Порт ({port}) нельзя перезагрузить'
+
+        s1 = self.send_command(f'set dsl port {index[0]} port_equp unequipped', expect_command=False)
+        time.sleep(1)
+        s2 = self.send_command(f'set dsl port {index[0]} port_equp equipped', expect_command=False)
+
+        return s1 + s2
+
+    def set_port(self, port: str, status: str):
+        port = port.strip()
+        index = findall(r'^port(\d+)$', port)
+        if not index:
+            return f'Порт ({port}) нельзя перезагрузить'
+
+        # Меняем состояние порта
+        return self.send_command(
+            f'set dsl port {index[0]} port_equp {"equipped" if status == "up" else "unequipped"}',
+            expect_command=False
+        )
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+
+class Juniper(BaseDevice):
+    prompt = r'-> $'
+    space_prompt = '--- more --- '
+
+
+class DeviceFactory:
+    """Подключение к оборудованию, определение вендора и возврат соответствующего класса"""
+    def __init__(self, ip: str, auth_groups: (str, list), protocol: str, auth_file: str, auth_obj=None):
+        self.ip = ip
+        self.auth_groups = auth_groups if isinstance(auth_groups, list) else [auth_groups]
+        self.protocol = protocol
+        self.login = []
+        self.password = []
+        self.privilege_mode_password = 'enable'
+
+        if not auth_obj:
+            # Из файла
+            with open(auth_file) as file:
+                auth_dict = yaml.safe_load(file)
+
+            for group in self.auth_groups:
+                iter_dict = auth_dict.get(group)
+                if not iter_dict:
+                    continue
+
+                self.login += [iter_dict.get('login')] or ['admin']
+                self.password += [iter_dict.get('password')] or ['admin']
+                self.privilege_mode_password = iter_dict.get('privilege_mode_password') or 'enable'
+
+        elif isinstance(auth_obj, list):
+            # Список объектов
+            for auth_ in auth_obj:
+                self.login.append(auth_.login)
+                self.password.append(auth_.password)
+                self.privilege_mode_password = auth_.secret or 'enable'
+
+        else:
+            # Один объект
+            self.login = [auth_obj.login] or ['admin']
+            self.password = [auth_obj.password] or ['admin']
+            self.privilege_mode_password = auth_obj.secret or 'enable'
+
+    def __get_device(self):
+        auth = {
+            'login': self.login,
+            'password': self.password,
+            'privilege_mode_password': self.privilege_mode_password
+        }
+
+        self.session.sendline('show version')
+        version = ''
+        while True:
+            m = self.session.expect(
+                [
+                    r']$',
+                    r'-More-|--\(more\)--',
+                    r'>\s*$',
+                    r'#\s*',
+                    pexpect.TIMEOUT
+                ],
+                timeout=3
+            )
+            version += str(self.session.before.decode('utf-8'))
+            if m == 1:
+                self.session.send(' ')
+            elif m == 4:
+                self.session.sendcontrol('C')
+            else:
+                break
+
+        # ProCurve
+        if 'Image stamp:' in version:
+            return ProCurve(self.session, self.ip, auth)
+
+        # ZTE
+        elif ' ZTE Corporation:' in version:
+            model = findall(r'Module 0:\s*(\S+\s\S+);\s*fasteth', version)
+            return ZTE(self.session, self.ip, auth, *model)
+
+        # HUAWEI
+        elif 'Unrecognized command' in version:
+            return Huawei(self.session, self.ip, auth)
+
+        # CISCO
+        elif 'cisco' in version.lower():
+            model = findall(r'Model number\s*:\s*(\S+)', version)
+            return Cisco(self.session, self.ip, auth, *model)
+
+        # ALCATEL
+        elif 'alcatel sas' in version.lower():
+            model = findall(r'(ALCATEL.+) COPYRIGHT \(C\)', version.upper())
+            return AlcatelSAS(self.session, self.ip, auth, *model)
+
+        # D_LINK
+        elif 'Next possible completions:' in version:
+            return Dlink(self.session, self.ip, auth)
+
+        # ALCATEL
+        elif findall(r'SW version\s+', version):
+            return Alcatel(self.session, self.ip, auth)
+
+        # Edge Core
+        elif 'Hardware version' in version:
+            return EdgeCore(self.session, self.ip, auth)
+
+        # Eltex
+        elif 'Active-image:' in version or 'Boot version:' in version:
+            d = _Eltex(self.session, self.ip, self.privilege_mode_password)
+            if 'MES' in d.model:
+                return EltexMES(d.session, self.ip, auth, d.model, d.mac)
+            elif 'ESR' in d.model:
+                return EltexESR(d.session, self.ip, auth, d.model, d.mac)
+
+        # Extreme
+        elif 'ExtremeXOS' in version:
+            return Extreme(self.session, self.ip, auth)
+
+        elif 'QTECH' in version:
+            return Qtech(self.session, self.ip, auth)
+
+        # ISKRATEL CONTROL
+        elif 'ISKRATEL' in version:
+            return IskratelControl(self.session, self.ip, auth, 'ISKRATEL Switching')
+
+        # ISKRATEL mBAN>
+        elif 'IskraTEL' in version:
+            model = findall(r'CPU: IskraTEL \S+ (\S+)', version)
+            return IskratelMBan(self.session, self.ip, auth, *model)
+
+        elif '% Unknown command' in version:
+            self.session.sendline('display version')
+            while True:
+                m = self.session.expect([r']$', '---- More', r'>$', r'#', pexpect.TIMEOUT, '{'])
+                if m == 5:
+                    self.session.expect(r'\}:')
+                    self.session.sendline('\n')
+                    continue
+                version += str(self.session.before.decode('utf-8'))
+                if m == 1:
+                    self.session.sendline(' ')
+                if m == 4:
+                    self.session.sendcontrol('C')
+                else:
+                    break
+            if findall(r'VERSION : MA5600', version):
+                model = findall(r'VERSION : (MA5600\S+)', version)
+                return HuaweiMA5600T(self.session, self.ip, auth, *model)
+
+        elif 'show: invalid command, valid commands are' in version:
+            self.session.sendline('sys info show')
+            while True:
+                m = self.session.expect([r']$', '---- More', r'>\s*$', r'#\s*$', pexpect.TIMEOUT])
+                version += str(self.session.before.decode('utf-8'))
+                if m == 1:
+                    self.session.sendline(' ')
+                if m == 4:
+                    self.session.sendcontrol('C')
+                else:
+                    break
+            if 'ZyNOS version' in version:
+                pass
+
+        elif 'unknown keyword show' in version:
+            return Juniper(self.session, self.ip, auth)
+
+        else:
+            return 'Не удалось распознать оборудование'
+
+    def __enter__(self, algorithm: str = '', cipher: str = '', timeout: int = 30):
+        connected = False
+        if self.protocol == 'ssh':
+            algorithm_str = f' -oKexAlgorithms=+{algorithm}' if algorithm else ''
+            cipher_str = f' -c {cipher}' if cipher else ''
+            for login, password in zip(self.login + ['admin'], self.password + ['admin']):
+                self.session = pexpect.spawn(
+                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                )
+                while not connected:
+                    login_stat = self.session.expect(
+                        [
+                            r'no matching key exchange method found',  # 0
+                            r'no matching cipher found',  # 1
+                            r'Are you sure you want to continue connecting',  # 2
+                            r'[Pp]assword:',  # 3
+                            r'[#>\]]\s*$',  # 4
+                            r'Connection closed'  # 5
+                        ],
+                        timeout=timeout
+                    )
+                    if login_stat == 0:
+                        self.session.expect(pexpect.EOF)
+                        algorithm = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                        if algorithm:
+                            algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
+                            self.session = pexpect.spawn(
+                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                            )
+                    if login_stat == 1:
+                        self.session.expect(pexpect.EOF)
+                        cipher = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                        if cipher:
+                            cipher_str = f' -c {cipher[0].split(",")[-1]}'
+                            self.session = pexpect.spawn(
+                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                            )
+                    if login_stat == 2:
+                        self.session.sendline('yes')
+                    if login_stat == 3:
+                        self.session.sendline(password)
+                        if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
+                            connected = True
+                            break
+                        else:
+                            break  # Пробуем новый логин/пароль
+                    if login_stat == 4:
+                        connected = True
+                if connected:
+                    break
+
+        if self.protocol == 'telnet':
+            self.session = pexpect.spawn(f'telnet {self.ip}')
+            try:
+                for login, password in zip(self.login + ['admin'], self.password + ['admin']):
+                    while not connected:  # Если не авторизировались
+                        login_stat = self.session.expect(
+                            [
+                                r"[Ll]ogin(?![-\siT]).*:\s*$",  # 0
+                                r"[Uu]ser\s(?![lfp]).*:\s*$|User:$",  # 1
+                                r"[Nn]ame.*:\s*$",  # 2
+                                r'[Pp]ass.*:\s*$',  # 3
+                                r'Connection closed',  # 4
+                                r'Unable to connect',  # 5
+                                r'[#>\]]\s*$',  # 6
+                                r'Press any key to continue'  # 7
+                            ],
+                            timeout=timeout
+                        )
+                        if login_stat == 7:  # Если необходимо нажать любую клавишу, чтобы продолжить
+                            self.session.send(' ')
+                            self.session.sendline(login)  # Вводим логин
+                            self.session.sendline(password)  # Вводим пароль
+                            self.session.expect(r'[#>\]]\s*')
+
+                        if login_stat < 3:
+                            self.session.sendline(login)  # Вводим логин
+                            continue
+                        if 4 <= login_stat <= 5:
+                            return f'Telnet недоступен! ({self.ip})'
+                        if login_stat == 3:
+                            self.session.sendline(password)  # Вводим пароль
+                        if login_stat >= 6:  # Если был поймал символ начала ввода команды
+                            connected = True  # Подключились
+                        break  # Выход из цикла
+
+                    if connected:
+                        self.login = login
+                        self.password = password
+                        break
+
+                else:  # Если не удалось зайти под логинами и паролями из списка аутентификации
+                    return f'Неверный логин или пароль! ({self.ip})'
+            except pexpect.exceptions.TIMEOUT:
+                return f'Login Error: Время ожидания превышено! ({self.ip})'
+
+        return self.__get_device()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.close()
+        del self
