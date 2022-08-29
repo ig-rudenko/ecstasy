@@ -98,7 +98,7 @@ class BaseDevice(ABC):
     space_prompt: str
     mac_format = ''
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor: str = ''):
         self.session: pexpect.spawn = session
         self.ip = ip
         self.model: str = model
@@ -107,7 +107,7 @@ class BaseDevice(ABC):
         self.serialno: str = ''
         self.os: str = ''
         self.os_version: str = ''
-        self.vendor = self.__class__.__name__
+        self.vendor: str = vendor
 
     @staticmethod
     def find_or_empty(pattern, string):
@@ -179,8 +179,8 @@ class ProCurve(BaseDevice):
     prompt = r"\S+#"
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super(ProCurve, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super(ProCurve, self).__init__(session, ip, auth, model, vendor)
         sys_info = self.send_command('show system-information', before_catch='General System Information', expect_command=False)
         self.model = self.find_or_empty(r'Base MAC Addr\s+: (\S+)', sys_info)
         self.serialno = self.find_or_empty(r'Serial Number\s+: (\S+)', sys_info)
@@ -213,8 +213,8 @@ class ZTE(BaseDevice):
     prompt = r'\S+\(cfg\)#|\S+>'
     space_prompt = "----- more -----"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super().__init__(session, ip, auth, model, vendor)
         version = self.send_command('show version')
         self.mac = self.find_or_empty(r'Mac Address: (\S+)', version)
 
@@ -265,8 +265,8 @@ class Huawei(BaseDevice):
     space_prompt = r"---- More ----"
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super().__init__(session, ip, auth, model, vendor)
         self.session.sendline('super')
         v = session.expect(
             [
@@ -402,8 +402,8 @@ class Cisco(BaseDevice):
     space_prompt = r'--More--'
     mac_format = r'\S\S\S\S\.\S\S\S\S\.\S\S\S\S'  # 0018.e7d3.1d43
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
-        super(Cisco, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor=''):
+        super(Cisco, self).__init__(session, ip, auth, model, vendor)
         version = self.send_command('show version')
         self.serialno = self.find_or_empty(r'System serial number\s+: (\S+)', version)
         self.mac = self.find_or_empty(r'[MACmac] [Aa]ddress\s+: (\S+)', version)
@@ -506,8 +506,8 @@ class Dlink(BaseDevice):
     space_prompt = None
     mac_format = r'\S\S-'*5+r'\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ''):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor=''):
+        super().__init__(session, ip, auth, model, vendor)
 
         status = True
         self.session.sendline('enable admin')  # Повышает уровень привилегий до уровня администратора
@@ -634,8 +634,8 @@ class _Eltex(BaseDevice):
     space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
                    r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super().__init__(session, ip, auth, model, vendor)
         system = self.send_command('show system')
         self.mac = self.find_or_empty(r'System MAC [Aa]ddress:\s+(\S+)', system)
         self.model = self.find_or_empty(r'System Description:\s+(\S+)|System type:\s+Eltex (\S+)', system)
@@ -648,8 +648,8 @@ class EltexMES(BaseDevice):
                    r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
     _template_name = 'eltex-mes'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model='', mac=''):
-        super(EltexMES, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor='', mac=''):
+        super(EltexMES, self).__init__(session, ip, auth, model, vendor)
         self.mac = mac
         inv = self.send_command('show inventory')
         self.serialno = self.find_or_empty(r'SN: (\S+)', inv)
@@ -723,8 +723,8 @@ class EltexMES(BaseDevice):
 class EltexESR(EltexMES):
     _template_name = 'eltex-esr'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model, mac):
-        super(EltexESR, self).__init__(session, ip, auth, model, mac)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor='', mac=''):
+        super(EltexESR, self).__init__(session, ip, auth, model, vendor)
         system = self.send_command('show system')
         self.mac = mac
         self.serialno = self.find_or_empty(r'serial number:\s+(\S+)', system)
@@ -734,8 +734,8 @@ class Extreme(BaseDevice):
     prompt = r'\S+\s*#\s*$'
     space_prompt = "Press <SPACE> to continue or <Q> to quit:"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super(Extreme, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super(Extreme, self).__init__(session, ip, auth, model, vendor)
         system = self.send_command('show switch')
         self.mac = self.find_or_empty(r'System MAC:\s+(\S+)', system)
         self.model = self.find_or_empty(r'System Type:\s+(\S+)', system)
@@ -826,8 +826,8 @@ class HuaweiMA5600T(BaseDevice):
     space_prompt = r'---- More \( Press \'Q\' to break \) ----'
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super(HuaweiMA5600T, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super(HuaweiMA5600T, self).__init__(session, ip, auth, model, vendor)
         self.session.sendline('enable')
         self.session.expect(r'\S+#')
 
@@ -1084,8 +1084,8 @@ class IskratelControl(BaseDevice):
     space_prompt = r'--More-- or \(q\)uit'
     mac_format = r'\S\S:'*5+r'\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super(IskratelControl, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super(IskratelControl, self).__init__(session, ip, auth, model, vendor)
 
     def get_mac(self, port) -> list:
         """
@@ -1123,8 +1123,8 @@ class IskratelMBan(BaseDevice):
     space_prompt = r'Press any key to continue or Esc to stop scrolling\.'
     mac_format = r'\S\S:'*5+r'\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
-        super(IskratelMBan, self).__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
+        super(IskratelMBan, self).__init__(session, ip, auth, model, vendor)
 
     @property
     def get_service_ports(self):
@@ -1361,30 +1361,26 @@ class DeviceFactory:
 
         # ZTE
         elif ' ZTE Corporation:' in version:
-            model = findall(r'Module 0:\s*(\S+\s\S+);\s*fasteth', version)
-            return ZTE(self.session, self.ip, auth, *model)
+            model = BaseDevice.find_or_empty(r'Module 0:\s*(\S+\s\S+);\s*fasteth', version)
+            return ZTE(self.session, self.ip, auth, model=model, vendor='ZTE')
 
         # HUAWEI
         elif 'Unrecognized command' in version:
-            return Huawei(self.session, self.ip, auth)
+            return Huawei(self.session, self.ip, auth, vendor='Huawei')
 
         # CISCO
         elif 'cisco' in version.lower():
-            model = findall(r'Model number\s*:\s*(\S+)', version)
-            return Cisco(self.session, self.ip, auth, *model)
+            model = BaseDevice.find_or_empty(r'Model number\s*:\s*(\S+)', version)
+            return Cisco(self.session, self.ip, auth, model=model, vendor='Cisco')
 
         # ALCATEL
         elif 'alcatel sas' in version.lower():
-            model = findall(r'(ALCATEL.+) COPYRIGHT \(C\)', version.upper())
-            return AlcatelSAS(self.session, self.ip, auth, *model)
+            model = BaseDevice.find_or_empty(r'(ALCATEL.+) COPYRIGHT \(C\)', version.upper())
+            return AlcatelSAS(self.session, self.ip, auth, model=model, vendor='Alcatel')
 
-        # D_LINK
+        # D-LINK
         elif 'Next possible completions:' in version:
-            return Dlink(self.session, self.ip, auth)
-
-        # ALCATEL
-        elif findall(r'SW version\s+', version):
-            return Alcatel(self.session, self.ip, auth)
+            return Dlink(self.session, self.ip, auth, vendor='D-Link')
 
         # Edge Core
         elif 'Hardware version' in version:
@@ -1394,25 +1390,25 @@ class DeviceFactory:
         elif 'Active-image:' in version or 'Boot version:' in version:
             d = _Eltex(self.session, self.ip, self.privilege_mode_password)
             if 'MES' in d.model:
-                return EltexMES(d.session, self.ip, auth, d.model, d.mac)
+                return EltexMES(d.session, self.ip, auth, model=d.model, vendor='Eltex', mac=d.mac)
             elif 'ESR' in d.model:
-                return EltexESR(d.session, self.ip, auth, d.model, d.mac)
+                return EltexESR(d.session, self.ip, auth, model=d.model, vendor='Eltex', mac=d.mac)
 
         # Extreme
         elif 'ExtremeXOS' in version:
-            return Extreme(self.session, self.ip, auth)
+            return Extreme(self.session, self.ip, auth, vendor='Extreme')
 
         elif 'QTECH' in version:
-            return Qtech(self.session, self.ip, auth)
+            return Qtech(self.session, self.ip, auth, vendor='Q-Tech')
 
         # ISKRATEL CONTROL
         elif 'ISKRATEL' in version:
-            return IskratelControl(self.session, self.ip, auth, 'ISKRATEL Switching')
+            return IskratelControl(self.session, self.ip, auth, model='ISKRATEL Switching', vendor='Iskratel')
 
         # ISKRATEL mBAN>
         elif 'IskraTEL' in version:
-            model = findall(r'CPU: IskraTEL \S+ (\S+)', version)
-            return IskratelMBan(self.session, self.ip, auth, *model)
+            model = BaseDevice.find_or_empty(r'CPU: IskraTEL \S+ (\S+)', version)
+            return IskratelMBan(self.session, self.ip, auth, model=model, vendor='Iskratel')
 
         elif '% Unknown command' in version:
             self.session.sendline('display version')
@@ -1430,8 +1426,8 @@ class DeviceFactory:
                 else:
                     break
             if findall(r'VERSION : MA5600', version):
-                model = findall(r'VERSION : (MA5600\S+)', version)
-                return HuaweiMA5600T(self.session, self.ip, auth, *model)
+                model = BaseDevice.find_or_empty(r'VERSION : (MA5600\S+)', version)
+                return HuaweiMA5600T(self.session, self.ip, auth, model=model, vendor='Huawei')
 
         elif 'show: invalid command, valid commands are' in version:
             self.session.sendline('sys info show')
@@ -1448,7 +1444,7 @@ class DeviceFactory:
                 pass
 
         elif 'unknown keyword show' in version:
-            return Juniper(self.session, self.ip, auth)
+            return Juniper(self.session, self.ip, auth, vendor='Juniper')
 
         else:
             return 'Не удалось распознать оборудование'
@@ -1458,51 +1454,54 @@ class DeviceFactory:
         if self.protocol == 'ssh':
             algorithm_str = f' -oKexAlgorithms=+{algorithm}' if algorithm else ''
             cipher_str = f' -c {cipher}' if cipher else ''
+
             for login, password in zip(self.login + ['admin'], self.password + ['admin']):
-                self.session = pexpect.spawn(
-                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
-                )
-                while not connected:
-                    login_stat = self.session.expect(
-                        [
-                            r'no matching key exchange method found',  # 0
-                            r'no matching cipher found',  # 1
-                            r'Are you sure you want to continue connecting',  # 2
-                            r'[Pp]assword:',  # 3
-                            r'[#>\]]\s*$',  # 4
-                            r'Connection closed'  # 5
-                        ],
-                        timeout=timeout
-                    )
-                    if login_stat == 0:
-                        self.session.expect(pexpect.EOF)
-                        algorithm = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
-                        if algorithm:
-                            algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
-                            self.session = pexpect.spawn(
-                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
-                            )
-                    if login_stat == 1:
-                        self.session.expect(pexpect.EOF)
-                        cipher = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
-                        if cipher:
-                            cipher_str = f' -c {cipher[0].split(",")[-1]}'
-                            self.session = pexpect.spawn(
-                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
-                            )
-                    if login_stat == 2:
-                        self.session.sendline('yes')
-                    if login_stat == 3:
-                        self.session.sendline(password)
-                        if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
+
+                with pexpect.spawn(f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}') as self.session:
+
+                    while not connected:
+                        login_stat = self.session.expect(
+                            [
+                                r'no matching key exchange method found',  # 0
+                                r'no matching cipher found',  # 1
+                                r'Are you sure you want to continue connecting',  # 2
+                                r'[Pp]assword:',  # 3
+                                r'[#>\]]\s*$',  # 4
+                                r'Connection closed'  # 5
+                            ],
+                            timeout=timeout
+                        )
+                        if login_stat == 0:
+                            self.session.expect(pexpect.EOF)
+                            algorithm = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                            if algorithm:
+                                algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
+                                self.session = pexpect.spawn(
+                                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                                )
+                        if login_stat == 1:
+                            self.session.expect(pexpect.EOF)
+                            cipher = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                            if cipher:
+                                cipher_str = f' -c {cipher[0].split(",")[-1]}'
+                                self.session = pexpect.spawn(
+                                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                                )
+                        if login_stat == 2:
+                            self.session.sendline('yes')
+                        if login_stat == 3:
+                            self.session.sendline(password)
+                            if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
+                                connected = True
+                                break
+                            else:
+                                break  # Пробуем новый логин/пароль
+                        if login_stat == 4:
                             connected = True
-                            break
-                        else:
-                            break  # Пробуем новый логин/пароль
-                    if login_stat == 4:
-                        connected = True
-                if connected:
-                    break
+                    if connected:
+                        self.login = login
+                        self.password = password
+                        break
 
         if self.protocol == 'telnet':
             self.session = pexpect.spawn(f'telnet {self.ip}')
@@ -1535,13 +1534,16 @@ class DeviceFactory:
                             return f'Telnet недоступен! ({self.ip})'
                         if login_stat == 3:
                             self.session.sendline(password)  # Вводим пароль
+
+                            # Сохраняем текущие введенные логин и пароль, в надежде, что они являются верными
+                            self.login = login
+                            self.password = password
+
                         if login_stat >= 6:  # Если был поймал символ начала ввода команды
                             connected = True  # Подключились
                         break  # Выход из цикла
 
                     if connected:
-                        self.login = login
-                        self.password = password
                         break
 
                 else:  # Если не удалось зайти под логинами и паролями из списка аутентификации

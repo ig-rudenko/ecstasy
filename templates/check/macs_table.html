@@ -13,19 +13,19 @@
         <tr>
             <td></td>
             <td style="font-family: monospace; font-size: x-large;">{{ mac.0 }}</td>
-            <td style="font-family: monospace; font-size: x-large;">{{ mac.1 }}</td>
+            <td style="font-family: monospace; font-size: x-large; max-width: 100px;">{{ mac.1 }}</td>
             <td>
                 {% if perms >= 3 %}
 {#                  Посмотреть MAC     #}
-                  <form method="get" action="{% url 'parse_mac' %}">
-                      <input type="text" name="device" value="{{ dev.name }}" hidden>
-                      <input type="text" name="desc" value="{{ desc }}" hidden>
-                      <input type="text" name="port" value="{{ port }}" hidden>
-                      <input type="text" name="mac" value="{{ mac.1 }}" hidden>
-                      <span class="badge rounded-pill bg-info text-dark" style="cursor: pointer">
-                          <input type="submit" value="BRAS" class="btn btn-sm">
-                      </span>
-                  </form>
+                  <a class="btn btn-outline-primary"
+                     href="{% url 'parse_mac' %}?device={{ dev.name }}&port={{ port }}&desc={{ desc }}&mac={{ mac.1 }}"
+                  >BRAS</a>
+                {% endif %}
+                {% if mac_finder_url %}
+                  <a class="btn btn-outline-secondary" target="_blank"
+                     href="{{ mac_finder_url }}/{{ mac.1 }}">
+                  FIND
+                  </a>
                 {% endif %}
             </td>
         </tr>

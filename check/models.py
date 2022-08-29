@@ -17,6 +17,7 @@ class DeviceGroup(models.Model):
 
 
 class AuthGroup(models.Model):
+    """Группа авторизации для удаленного подключения к сетевым устройствам"""
     name = models.CharField(max_length=100, null=False, verbose_name='Название')
     login = models.CharField(max_length=64, null=False, verbose_name='Логин')
     password = models.CharField(max_length=64, null=False, verbose_name='Пароль')
@@ -28,27 +29,64 @@ class AuthGroup(models.Model):
 
     class Meta:
         db_table = 'device_auth_groups'
-        ordering = ('name',)
+        ordering = ('id',)
         verbose_name = 'Auth group'
         verbose_name_plural = 'Auth groups'
 
 
 class Devices(models.Model):
+    """Модель для сетевых устройств"""
+
     PROTOCOLS = (
         ('snmp', 'snmp'),
         ('telnet', 'telnet'),
         ('ssh', 'ssh')
     )
 
-    group = models.ForeignKey(DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name='Группа')
-    ip = models.CharField(max_length=15, null=False, unique=True, verbose_name='IP адрес')
-    name = models.CharField(max_length=100, null=False, unique=True, verbose_name='Имя оборудования')
-    model = models.CharField(max_length=100, null=True, blank=True, verbose_name='Модель')
-    vendor = models.CharField(max_length=100, null=True, verbose_name='Производитель')
-    auth_group = models.ForeignKey(AuthGroup, on_delete=models.SET_NULL, null=True, verbose_name='Группа авторизации')
-    snmp_community = models.CharField(max_length=64, null=True, blank=True, verbose_name='(SNMP v2c) community')
-    protocol = models.CharField(choices=PROTOCOLS, max_length=6, default='telnet', verbose_name='Протокол для поиска '
-                                                                                                'интерфейсов')
+    group = models.ForeignKey(
+        DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name='Группа'
+    )
+    ip = models.GenericIPAddressField(
+        protocol='ipv4',
+        null=False, unique=True, verbose_name='IP адрес', help_text='ipv4'
+    )
+    name = models.CharField(
+        max_length=100, null=False, unique=True,
+        verbose_name='Имя оборудования', help_text='Уникальное поле'
+    )
+    model = models.CharField(
+        max_length=100, null=True, blank=True,
+        verbose_name='Модель', help_text='Если не указано, то обновится автоматически при подключении к устройству'
+    )
+    vendor = models.CharField(
+        max_length=100, null=True, blank=True,
+        verbose_name='Производитель',
+        help_text='Если не указано, то обновится автоматически при подключении к устройству'
+    )
+    auth_group = models.ForeignKey(
+        AuthGroup, on_delete=models.SET_NULL, null=True,
+        verbose_name='Группа авторизации', help_text='Указываем группу, для удаленного подключения к оборудованию. '
+                                                     'Используется для протоколов telnet и ssh. Если на оборудовании '
+                                                     'логин/пароль из указанной группы не подошли, то будут '
+                                                     'автоматически подбираться пары логин/пароль по очереди, указанной'
+                                                     ' в этом списке (кроме неверного)'
+    )
+    snmp_community = models.CharField(
+        max_length=64, null=True, blank=True,
+        verbose_name='SNMP community', help_text='Версия - v2c. Используется для сбора интерфейсов, если указан '
+                                                 'протокол - SNMP'
+    )
+    port_scan_protocol = models.CharField(
+        choices=PROTOCOLS, max_length=6, default='telnet', null=False,
+        verbose_name='Протокол для поиска интерфейсов', help_text='Выберите протокол, с помощью которого будет '
+                                                                  'осуществляться сканирование интерфейсов'
+    )
+    cmd_protocol = models.CharField(
+        choices=PROTOCOLS[1:], max_length=6, default='telnet', null=False,
+        verbose_name='Протокол для выполнения команд', help_text='Выберите протокол, с помощью которого будет '
+                                                                 'осуществляться подключение для вызова команд '
+                                                                 '(например: поиск MAC адресов или сброс порта)'
+    )
 
     def __str__(self):
         return f'{self.name} ({self.ip})'
@@ -67,6 +105,9 @@ class Devices(models.Model):
 
 
 class Bras(models.Model):
+    """
+    Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
+    """
     name = models.CharField(max_length=10, null=False, verbose_name='Название')
     ip = models.CharField(max_length=15, null=False, unique=True, verbose_name='IP адрес')
     login = models.CharField(max_length=64, null=False, verbose_name='Логин')

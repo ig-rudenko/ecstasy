@@ -20,7 +20,7 @@ class DevicesAdmin(admin.ModelAdmin):
         ('Характеристика', {'fields': ('ip', 'name')}),
         ('Тип', {'fields': ('vendor', 'model')}),
         ('Принадлежность', {'fields': ('group', 'auth_group')}),
-        ('Удаленное подключение', {'fields': ('snmp_community', 'protocol')})
+        ('Удаленное подключение', {'fields': ('snmp_community', 'port_scan_protocol', 'cmd_protocol')})
     )
 
     @admin.display(description='SCAN')

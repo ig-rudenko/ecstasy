@@ -524,6 +524,9 @@ class Device:
                 if s.model:
                     self.zabbix_info.inventory.model = s.model
 
+                if s.vendor:
+                    self.zabbix_info.inventory.vendor = s.vendor
+
                 # Получаем верные логин/пароль
                 self.auth_obj = s.auth
 

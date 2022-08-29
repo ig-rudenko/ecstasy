@@ -11,6 +11,7 @@ from datetime import datetime
 import pexpect
 import re
 from django.contrib.auth.decorators import login_required
+from configparser import ConfigParser
 
 Config.set(settings.ZABBIX_CONFIG_FILE)
 
@@ -94,7 +95,7 @@ def device_info(request, name):
         return HttpResponseForbidden()
 
     dev = Device(name)
-    dev.protocol = model_dev.protocol  # Устанавливаем протокол для подключения
+    dev.protocol = model_dev.port_scan_protocol  # Устанавливаем протокол для подключения
     dev.snmp_community = model_dev.snmp_community  # Устанавливаем community для подключения
     ping = dev.ping()  # Оборудование доступно или нет
 
@@ -120,11 +121,13 @@ def device_info(request, name):
         vlans=with_vlans, current_status=current_status, auth_obj=model_dev.auth_group
     )
 
+    model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
+
     # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
     if 'Неверный логин или пароль' in str(status):
 
         # Создаем список объектов авторизации
-        al = list(models.AuthGroup.objects.exclude(name=model_dev.auth_group.name).all())
+        al = list(models.AuthGroup.objects.exclude(name=model_dev.auth_group.name).order_by('id').all())
 
         # Собираем интерфейсы снова
         status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status, auth_obj=al)
@@ -142,12 +145,23 @@ def device_info(request, name):
                     secret=dev.auth_obj['privilege_mode_password']
                 )
 
-            model_dev.auth_group = a  # Сохраняем новый логин/пароль для этого устройства
+            model_dev.auth_group = a  # Указываем новый логин/пароль для этого устройства
+            model_update_fields.append('auth_group')  # Добавляем это поле в список изменений
 
     # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
+    # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
     if dev.zabbix_info.inventory.model and dev.zabbix_info.inventory.model != model_dev.model:
         model_dev.model = dev.zabbix_info.inventory.model
-        model_dev.save(update_fields=['model'])
+        model_update_fields.append('model')
+
+    # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
+    if dev.zabbix_info.inventory.vendor and dev.zabbix_info.inventory.vendor != model_dev.vendor:
+        model_dev.vendor = dev.zabbix_info.inventory.vendor
+        model_update_fields.append('vendor')
+
+    # Сохраняем изменения
+    if model_update_fields:
+        model_dev.save(update_fields=model_update_fields)
 
     data = {
         'dev': dev,
@@ -159,7 +173,7 @@ def device_info(request, name):
         'perms': models.Profile.permissions_level.index(models.Profile.objects.get(user_id=request.user.id).permissions)
     }
 
-    # Отправляем JSON, если вызов AJAX
+    # Отправляем JSON, вызов AJAX
     return JsonResponse({
         'data': render_to_string('check/interfaces_table.html', data)
     })
@@ -170,6 +184,11 @@ def device_info(request, name):
 def get_port_mac(request):
     """Смотрим MAC на порту"""
 
+    # Стороннее приложение для поиска по маку
+    parser = ConfigParser()
+    parser.read(f"{settings.BASE_DIR}/zabbix_conf")
+    mac_finder_app_url = parser.get('MAC', 'finder_url')
+
     if request.method == 'GET' and request.GET.get('device') and request.GET.get('port'):
         model_dev = get_object_or_404(models.Devices, name=request.GET.get('device'))
 
@@ -177,12 +196,14 @@ def get_port_mac(request):
             return HttpResponseForbidden()
 
         dev = Device(request.GET['device'])
+        dev.protocol = model_dev.cmd_protocol
 
         data = {
             'dev': dev,
             'port': request.GET.get('port'),
             'desc': request.GET.get('desc'),
-            'perms': models.Profile.permissions_level.index(request.user.profile.permissions)
+            'perms': models.Profile.permissions_level.index(request.user.profile.permissions),
+            'mac_finder_url': mac_finder_app_url or None
         }
 
         if dev.ping():
@@ -236,10 +257,13 @@ def reload_port(request):
     print(request.POST, request.user)
     if request.method == 'POST' and request.POST.get('port') and request.POST.get('device') and request.POST.get(
             'status'):
+
         dev = Device(request.POST['device'])
+        model_dev = get_object_or_404(models.Devices, name=dev.name)
+        dev.protocol = model_dev.cmd_protocol
+
         port = request.POST['port']
         status = request.POST['status']
-        model_dev = get_object_or_404(models.Devices, name=dev.name)
 
         # У пользователя нет доступа к группе данного оборудования
         if not has_permission_to_device(model_dev, request.user):
@@ -328,14 +352,14 @@ def parse_mac(request):
             user_info = {}
 
             for b in brases:
-                print(b)
+
                 with pexpect.spawn(f"telnet {b.ip}") as telnet:
                     telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
                     telnet.sendline(b.login)
-                    # print('login')
+
                     telnet.expect("[Pp]ass")
                     telnet.sendline(b.password)
-                    # print('password')
+
                     if telnet.expect(['>', 'password needs to be changed. Change now?']):
                         telnet.sendline('N')
 
@@ -372,7 +396,8 @@ def cut_user_session(request):
         if not has_permission_to_device(model_dev, request.user):
             return HttpResponseForbidden()
 
-        if len(mac_letters) == 12:
+        # Если мак верный и оборудование доступно
+        if len(mac_letters) == 12 and dev.ping():
 
             mac = '{}{}{}{}-{}{}{}{}-{}{}{}{}'.format(*mac_letters)
 
@@ -383,26 +408,25 @@ def cut_user_session(request):
                 with pexpect.spawn(f"telnet {b.ip}") as telnet:
                     telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
                     telnet.sendline(b.login)
-                    # print('login')
+
                     telnet.expect(r"[Pp]ass")
                     telnet.sendline(b.password)
-                    # print('password')
+
                     if telnet.expect(['>', 'password needs to be changed. Change now?']):
                         telnet.sendline('N')
 
                     telnet.sendline('system-view')
                     telnet.sendline('aaa')
                     telnet.sendline(f'cut access-user mac-address {mac}')
-                    print(telnet.before.decode())
+
                     # Логи
                     log(request.user.username, b.ip, b.name, f'cut access-user mac-address {mac}')
 
-            if dev.ping():
-                with dev.connect(auth_groups=models.Devices.objects.get(ip=dev.ip).auth_group.name) as session:
-                    s = session.reload_port(request.POST['port'])
+            with dev.connect(auth_groups=models.Devices.objects.get(ip=dev.ip).auth_group.name) as session:
+                s = session.reload_port(request.POST['port'])
 
-                    # Логи
-                    log(request.user.username, dev.ip, dev.name, f'reload port {request.POST["port"]} \n{s}')
+                # Логи
+                log(request.user.username, dev.ip, dev.name, f'reload port {request.POST["port"]} \n{s}')
 
     return HttpResponseRedirect(
         f'/device/parse_mac?device={request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}')
