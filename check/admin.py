@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 
 @admin.register(DeviceGroup)
 class DeviceGroupAdmin(admin.ModelAdmin):
-    list_display = ['name']
+    list_display = ['name', 'description']
 
 
 @admin.register(Devices)
@@ -34,7 +34,7 @@ class DevicesAdmin(admin.ModelAdmin):
 
 @admin.register(AuthGroup)
 class AuthGroupAdmin(admin.ModelAdmin):
-    list_display = ['name', 'login']
+    list_display = ['name', 'login', 'description']
     search_fields = ['name', 'login']
 
 
@@ -58,7 +58,8 @@ admin.site.unregister(User)
 
 @admin.register(User)
 class UserProfileAdmin(UserAdmin):
-    list_display = ['username', 'first_name', 'last_name', 'is_active', 'last_login', 'permission', 'dev_groups']
+    list_display = ['username', 'first_name', 'last_name', 'email', 'is_active', 'is_superuser', 'last_login',
+                    'permission', 'dev_groups']
 
     @admin.display(description='Права')
     def permission(self, obj: User):
