@@ -31,11 +31,11 @@ __all__ = [
 ]
 
 
-copper_type = [
+COOPER_TYPES = [
     'T', 'TX', 'VG', 'CX', 'CR'
 ]
 
-fiber_type = [
+FIBER_TYPES = [
     'FOIRL', 'F', 'FX', 'SX', 'LX', 'BX', 'EX', 'ZX', 'SR', 'ER', 'SW', 'LW', 'EW', 'LRM', 'PR', 'LR', 'ER', 'FR'
 ]
 
@@ -168,11 +168,17 @@ class BaseDevice(ABC):
     def get_vlans(self) -> list:
         pass
 
-    def get_mac(self, port) -> list:
-        return []
+    @abstractmethod
+    def get_mac(self, port: str) -> list:
+        pass
 
-    def reload_port(self, port) -> str:
-        return ''
+    @abstractmethod
+    def reload_port(self, port: str) -> str:
+        pass
+
+    @abstractmethod
+    def set_port(self, port: str, status: str) -> str:
+        pass
 
 
 class ProCurve(BaseDevice):
@@ -379,7 +385,7 @@ class Huawei(BaseDevice):
             self.session.sendline('undo shutdown')
         elif status == 'down':
             self.session.sendline('shutdown')
-
+        self.session.expect(r'\[\S+\]')
         self.session.sendline('quit')
         self.session.expect(r'\[\S+\]')
         self.session.sendline('save')
@@ -439,7 +445,6 @@ class Cisco(BaseDevice):
 
     def get_mac(self, port) -> list:
         mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
-        print(mac_str)
         return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
     def reload_port(self, port) -> str:
@@ -481,7 +486,7 @@ class Cisco(BaseDevice):
         """Определяем тип порта: медь или оптика"""
 
         port_type = self.find_or_empty(r'[Bb]ase(\S{1,2})', self.get_port_info(port))
-        if 'SFP' in self.get_port_info(port) or port_type in fiber_type:
+        if 'SFP' in self.get_port_info(port) or port_type in FIBER_TYPES:
             return 'SFP'
 
         return 'COPPER'
@@ -641,12 +646,28 @@ class _Eltex(BaseDevice):
         self.model = self.find_or_empty(r'System Description:\s+(\S+)|System type:\s+Eltex (\S+)', system)
         self.model = self.model[0] or self.model[1]
 
+    def get_mac(self, port) -> list:
+        pass
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
+
 
 class EltexMES(BaseDevice):
     prompt = r'\S+#\s*'
     space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
                    r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
     _template_name = 'eltex-mes'
+    mac_format = r'\S\S:' * 5 + r'\S\S'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor='', mac=''):
         super(EltexMES, self).__init__(session, ip, auth, model, vendor)
@@ -697,27 +718,69 @@ class EltexMES(BaseDevice):
                 if vlans_group:
                     for v in vlans_group:
                         port_vlans += _range_to_numbers(v)
-                # switchport_mode = findall(r'switchport mode (\S+)', output)  # switchport mode
-                # max_letters_in_string = 20  # Ограничение на кол-во символов в одной строке в столбце VLAN's
-                # vlans_compact_str = ''  # Строка со списком VLANов с переносами
-                # line_str = ''
-                # for part in ','.join(switchport_mode + vlans_group).split(','):
-                #     if len(line_str) + len(part) <= max_letters_in_string:
-                #         line_str += f'{part},'
-                #     else:
-                #         vlans_compact_str += f'{line_str}\n'
-                #         line_str = f'{part},'
-                # else:
-                #     vlans_compact_str += line_str[:-1]
                 result.append(line + [port_vlans])
-
-        # vlans_info = self.send_command('show vlan')
-        #
-        # with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/eltex_vlan_info.template', 'r') as template_file:
-        #     vlans_info_template = textfsm.TextFSM(template_file)
-        #     vlans_info_table = vlans_info_template.ParseText(vlans_info)  # Ищем интерфейсы
-
         return result
+
+    def get_mac(self, port) -> list:
+        mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
+        return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
+
+    def reload_port(self, port) -> str:
+        self.session.sendline('configure terminal')
+        self.session.expect(r'#')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.sendline('shutdown')
+        time.sleep(1)
+        self.session.sendline('no shutdown')
+        self.session.sendline('exit')
+        self.session.expect(r'#')
+        return self.session.before.decode(errors='ignore')
+
+    def set_port(self, port, status):
+        self.session.sendline('configure terminal')
+        self.session.expect(r'\(config\)#')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        if status == 'up':
+            self.session.sendline('no shutdown')
+        elif status == 'down':
+            self.session.sendline('shutdown')
+        self.session.sendline('end')
+
+        self.session.expect(r'#')
+        self.session.sendline('write')
+        self.session.sendline('Y')
+        self.session.expect(r'#', timeout=15)
+        return self.session.before.decode(errors='ignore')
+
+    @lru_cache
+    def get_port_info(self, port):
+        """Общая информация о порте"""
+
+        info = self.send_command(f'show interfaces advertise {_interface_normal_view(port)}').split('\n')
+        html = ''
+        for line in info:
+            if 'Preference' in line:
+                break
+            html += f'<p>{line}</p>'
+
+        return html
+
+    def port_type(self, port):
+        """Определяем тип порта: медь, оптика или комбо"""
+
+        port_type = self.find_or_empty(r'Type: (\S+)', self.get_port_info(port))
+        if 'Fiber' in port_type:
+            return 'SFP'
+        elif 'Copper' in port_type:
+            return 'COPPER'
+        elif 'Combo-F' in port_type:
+            return 'COMBO-FIBER'
+        elif 'Combo-C' in port_type:
+            return 'COMBO-COPPER'
+
+    def port_config(self, port):
+        """Конфигурация порта"""
+        return self.send_command(f'show running-config interface {_interface_normal_view(port)}').strip()
 
 
 class EltexESR(EltexMES):
@@ -733,6 +796,7 @@ class EltexESR(EltexMES):
 class Extreme(BaseDevice):
     prompt = r'\S+\s*#\s*$'
     space_prompt = "Press <SPACE> to continue or <Q> to quit:"
+    mac_format = r'\S\S:' * 5 + r'\S\S'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
         super(Extreme, self).__init__(session, ip, auth, model, vendor)
@@ -814,6 +878,65 @@ class Extreme(BaseDevice):
             vlans_info = vlan_templ.ParseText(output_vlans)
         vlans_info = sorted(vlans_info, key=lambda line: int(line[0]))  # Сортировка по возрастанию vlan
         return vlans_info, interfaces_vlan
+
+    def check_port(self, port: str):
+        port = port.strip()
+        if not port.isdigit():
+            return False
+        return True
+
+    def get_mac(self, port: str) -> list:
+        """
+        Смотрим MAC'и на порту и отдаем в виде списка
+
+        [ ["vlan", "mac"],  ... ]
+        """
+        if not self.check_port(port):
+            return []
+
+        output = self.send_command(f'show fdb ports {port}', expect_command=False)
+        macs = findall(rf'({self.mac_format})\s+v(\d+)', output)
+
+        res = []
+        print(macs)
+        for m in macs:
+            res.append(m[::-1])
+        return res
+
+    def reload_port(self, port) -> str:
+        if not self.check_port(port):
+            return f'Неверный порт! {port}'
+
+        self.session.sendline(f'disable ports {port}')
+        self.session.expect(self.prompt)
+        time.sleep(1)
+        self.session.sendline(f'enable ports {port}')
+        self.session.expect(self.prompt)
+        return self.session.before.decode(errors='ignore')
+
+    def set_port(self, port: str, status: str) -> str:
+        if not self.check_port(port):
+            return f'Неверный порт! {port}'
+
+        if status == 'up':
+            cmd = 'enable'
+        elif status == 'down':
+            cmd = 'disable'
+        else:
+            cmd = ''
+
+        self.session.sendline(f'{cmd} ports {port}')
+        self.session.expect(self.prompt)
+
+    def port_type(self, port):
+        """Определяем тип порта: медь, оптика или комбо"""
+        if not self.check_port(port):
+            return f'Неверный порт'
+
+        if 'Media Type' in self.send_command(f'show ports {port} transceiver information detail | include Media'):
+            return 'SFP'
+        else:
+            return 'COPPER'
 
 
 class Qtech(BaseDevice):
@@ -1114,7 +1237,7 @@ class IskratelControl(BaseDevice):
     def reload_port(self, port) -> str:
         pass
 
-    def set_port(self, port):
+    def set_port(self, port: str, status: str) -> str:
         pass
 
 
@@ -1236,21 +1359,28 @@ class IskratelMBan(BaseDevice):
         """
 
         port = port.strip()
-        # Верные порты: port1, fasteth3, adsl2:1_40
-        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
+        macs = []  # Итоговый список маков
+
+        # Верные порты: port1, fasteth3, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
+        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+\/\d+$', port):
             return []
 
-        if 'port' in port:  # Если указан физический adsl порт
-            macs = []  # Итоговый список маков
-            port = port[4:]  # убираем слово port, оставляя только номер
-
-            for sp in self.get_service_ports:  # смотрим маки на сервис портах
-                output = self.send_command(f'show bridge mactable interface dsl{port}:{sp}', expect_command=False)
-                macs.extend(findall(rf'(\d+)\s+({self.mac_format})', output))
-
-        else:
+        if 'fasteth' in port or 'adsl' in port:
             output = self.send_command(f'show bridge mactable interface {port}', expect_command=False)
             macs = findall(rf'(\d+)\s+({self.mac_format})', output)
+            return macs
+
+        elif 'port' in port:  # Если указан физический adsl порт
+            port = port[4:]  # убираем слово port, оставляя только номер
+
+        elif 'ISKRATEL' in port:
+            port = self.find_or_empty(r'\d+$', port)
+            if not port:
+                return []
+
+        for sp in self.get_service_ports:  # смотрим маки на сервис портах
+            output = self.send_command(f'show bridge mactable interface dsl{port}:{sp}', expect_command=False)
+            macs.extend(findall(rf'(\d*)\s+({self.mac_format})', output))
 
         return macs
 
@@ -1279,10 +1409,21 @@ class IskratelMBan(BaseDevice):
         )
 
     def get_interfaces(self) -> list:
-        pass
+        output = self.send_command(f'show dsl port', expect_command=False)
+        res = []
+        for line in output.split('\n'):
+            interface = findall(r'(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)', line)
+            if interface:
+                res.append([
+                    interface[0][0],    # name
+                    interface[0][3].lower() if interface[0][2] == 'Equipped' else 'admin down',
+                    interface[0][1],    # desc
+                ])
+
+        return res
 
     def get_vlans(self) -> list:
-        pass
+        return self.get_interfaces()
 
 
 class Juniper(BaseDevice):

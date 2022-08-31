@@ -25,13 +25,26 @@
         {% for dev in devs %}
             <tr>
               <td>
-                  <button data-bs-toggle_help="tooltip"
-                          data-bs-placement="top" data-bs-title="Просканировать интерфейсы в реальном времени"
-                          onclick="window.location.href='{% url 'device_info' dev.name %}?current_status=1'"
-                          class="badge rounded-pill bg-info text-dark">SCAN</button>
+                  <a class="badge rounded-pill bg-info text-dark"
+                     data-bs-toggle_help="tooltip" data-bs-placement="top"
+                     data-bs-title="Просканировать интерфейсы в реальном времени"
+                     href="{% url 'device_info' dev.name %}?current_status=1"
+                  >INTF</a>
 
-                  <a class="badge rounded-pill bg-secondary text-decoration-none" data-bs-toggle_help="tooltip" data-bs-placement="top"
-                     data-bs-title="Последние сохраненные интерфейсы" href="{% url 'device_info' dev.name %}">LAST</a>
+                  {% if dev.port_scan_protocol != 'snmp' %}
+                  <a class="badge rounded-pill bg-info text-dark"
+                     data-bs-toggle_help="tooltip" data-bs-placement="top"
+                     data-bs-title="Просканировать интерфейсы и VLANS в реальном времени"
+                     href="{% url 'device_info' dev.name %}?current_status=1&vlans=1"
+                  >VLANS</a>
+                  {% endif %}
+
+                  <a class="badge rounded-pill bg-secondary text-decoration-none"
+                     data-bs-toggle_help="tooltip" data-bs-placement="top"
+                     data-bs-title="Последние сохраненные интерфейсы"
+                     href="{% url 'device_info' dev.name %}"
+                  >LAST</a>
+
               </td>
               <td>{{ dev.name }}</td>
               <td>{{ dev.ip }}</td>

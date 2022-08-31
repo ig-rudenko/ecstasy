@@ -68,7 +68,7 @@ class Interfaces:
                 elif isinstance(intf, list):
                     if len(intf) == 3:  # Без VLAN
                         self.__interfaces.append(Interface(
-                            intf[0], intf[1], intf[2]
+                            intf[0], intf[1], intf[2], []
                         ))
                     elif len(intf) == 4:  # + VLAN
                         self.__interfaces.append(Interface(

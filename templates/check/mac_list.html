@@ -200,16 +200,17 @@ function start() {
                 >Конфигурация порта</button>`)
             }
 
-
             $('#port-info').html(data.port_info)
             $('#macs-table').html(data.macs)
-
 
             if (data.port_type === 'SFP') {
                 $('#port-type').css({"backgroundColor":"#3e6cff"}).html('sfp')
             }
             if (data.port_type === 'COPPER') {
                 $('#port-type').css({"backgroundColor":"#b87333"}).html('copper')
+            }
+            if (data.port_type.includes('COMBO')) {
+                $('#port-type').css({"backgroundColor":"#8133b8"}).html(data.port_type.toLowerCase())
             }
 
             window.popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))

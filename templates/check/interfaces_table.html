@@ -5,7 +5,7 @@
       <th scope="col" style="text-align: center">Порт</th>
       <th scope="col" style="text-align: center">Статус</th>
       <th scope="col">Описание</th>
-      <th scope="col">VLAN's</th>
+      <th scope="col"><a href="{% url 'device_info' dev.name %}?current_status=1&vlans=1">VLAN's</a></th>
     </tr>
   </thead>
   <tbody>
@@ -43,7 +43,7 @@
 
     {#                  Посмотреть МАКИ             #}
               <a class="btn btn-info" style="cursor: pointer"
-                      onclick="window.location.href=`{% url 'get_mac' %}?device={{ dev.name }}&port={{ intf.name }}&desc={{ intf.desc }}`;"
+                     href="{% url 'get_mac' %}?device={{ dev.name }}&port={{ intf.name }}&desc={{ intf.desc }}"
                      data-bs-toggle="tooltip" data-bs-placement="top"
                      data-bs-title="Посмотреть MAC на порту">MAC
               </a>

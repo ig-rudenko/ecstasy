@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, resolve_url
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -35,10 +35,11 @@ def permission(perm=None):
     def decorator(func):
         def _wrapper(request, *args, **kwargs):
             # Проверяем уровень привилегий
-            if p.index(perm) > p.index(models.Profile.objects.get(user_id=request.user.id).permissions):
+            if request.user.is_superuser or \
+                    p.index(perm) <= p.index(models.Profile.objects.get(user_id=request.user.id).permissions):
+                return func(request, *args, **kwargs)
+            else:
                 return HttpResponseForbidden()
-            return func(request, *args, **kwargs)
-
         return _wrapper
 
     return decorator
@@ -48,7 +49,9 @@ def by_zabbix_hostid(request, hostid):
     dev = Device.from_hostid(hostid)
     try:
         if dev and models.Devices.objects.get(name=dev.name):
-            return redirect('device_info', name=dev.name)
+            return HttpResponseRedirect(
+                resolve_url('device_info', name=dev.name) + '?current_status=1'
+            )
     except (ValueError, TypeError, models.Devices.DoesNotExist):
         return HttpResponseRedirect(request.META.get('HTTP_REFERER') + '/zabbix')
 
@@ -114,7 +117,7 @@ def device_info(request, name):
         return render(request, 'check/device_info.html', data)
 
     # Вместе с VLAN?
-    with_vlans = False if dev.protocol == 'snmp' else True
+    with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
 
     # Собираем интерфейсы
     status = dev.collect_interfaces(
