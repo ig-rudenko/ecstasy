@@ -6,7 +6,7 @@
 <form method="get">
     <div class="input-group mb-3">
       <input name="s" type="text" class="form-control" placeholder="Введите IP или имя оборудования" aria-label="Поиск"
-             aria-describedby="button-addon2" value="{{ search|default_if_none:'' }}">
+             aria-describedby="button-addon2" value="{{ search|default_if_none:'' }}" autofocus>
       <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Найти</button>
     </div>
 </form>

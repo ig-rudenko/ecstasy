@@ -97,6 +97,8 @@ class BaseDevice(ABC):
     prompt: str
     space_prompt: str
     mac_format = ''
+    SAVED_OK = 'Saved OK'
+    SAVED_ERR = 'Saved Error'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor: str = ''):
         self.session: pexpect.spawn = session
@@ -308,6 +310,15 @@ class Huawei(BaseDevice):
             elabel = self.send_command('display elabel')
             self.serialno = self.find_or_empty(r'BarCode=(\S+)', elabel)
 
+    def save_config(self):
+        self.session.sendline('save')
+        self.session.expect(r'[Aa]re you sure.*\[Y\/N\]')
+        self.session.sendline('Y')
+        self.session.sendline('\n')
+        if self.session.expect([self.prompt, r'successfully'], timeout=20):
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
     def get_interfaces(self):
         output = ''
         if 'S2403' in self.model:
@@ -376,7 +387,11 @@ class Huawei(BaseDevice):
         self.session.sendline('undo shutdown')
         self.session.sendline('quit')
         self.session.expect(r'\[\S+\]')
-        return self.session.before.decode(errors='ignore')
+        self.session.sendline('quit')
+        self.session.expect(r'\[\S+\]')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def set_port(self, port, status) -> str:
         self.session.sendline('system-view')
@@ -388,12 +403,11 @@ class Huawei(BaseDevice):
         self.session.expect(r'\[\S+\]')
         self.session.sendline('quit')
         self.session.expect(r'\[\S+\]')
-        self.session.sendline('save')
-        self.session.sendline('Y')
-        self.session.sendline('\n')
-        self.session.expect(['success', r'\[\S+\]'])
-
-        return self.session.before.decode(errors='ignore')
+        self.session.sendline('quit')
+        self.session.expect(r'\[\S+\]')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def port_config(self, port):
         config = self.send_command(
@@ -413,6 +427,14 @@ class Cisco(BaseDevice):
         version = self.send_command('show version')
         self.serialno = self.find_or_empty(r'System serial number\s+: (\S+)', version)
         self.mac = self.find_or_empty(r'[MACmac] [Aa]ddress\s+: (\S+)', version)
+
+    def save_config(self):
+        for _ in range(3):  # Пробуем 3 раза, если ошибка
+            self.session.sendline('write')
+            # self.session.expect(r'Building configuration')
+            if self.session.expect([self.prompt, r'\[OK\]']):
+                return self.SAVED_OK
+        return self.SAVED_ERR
 
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
@@ -449,31 +471,34 @@ class Cisco(BaseDevice):
 
     def reload_port(self, port) -> str:
         self.session.sendline('configure terminal')
-        self.session.expect(r'#')
+        self.session.expect(self.prompt)
         self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.expect(self.prompt)
         self.session.sendline('shutdown')
         time.sleep(1)
         self.session.sendline('no shutdown')
-        self.session.sendline('exit')
-        self.session.expect(r'#')
-        return self.session.before.decode(errors='ignore')
+        self.session.expect(self.prompt)
+        self.session.sendline('end')
+
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def set_port(self, port, status):
         self.session.sendline('configure terminal')
-        self.session.expect(r'\(config\)#')
+        self.session.expect(self.prompt)
         self.session.sendline(f'interface {_interface_normal_view(port)}')
-
+        self.session.expect(self.prompt)
         if status == 'up':
             self.session.sendline('no shutdown')
         elif status == 'down':
             self.session.sendline('shutdown')
         self.session.sendline('end')
+        self.session.expect(self.prompt)
 
-        self.session.expect(r'#')
-        self.session.sendline('write')
-        self.session.expect(r'Building configuration')
-        self.session.expect(r'#')
-        return self.session.before.decode(errors='ignore')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     @lru_cache
     def get_port_info(self, port):
@@ -540,6 +565,12 @@ class Dlink(BaseDevice):
         self.model = self.model or self.find_or_empty(r'Device Type\s+:\s+(\S+)\s', version)
         self.serialno = self.find_or_empty(r'Serial Number\s+:\s+(\S+)', version)
 
+    def save_config(self):
+        self.session.sendline('save')
+        if self.session.expect([self.prompt, r'[Ss]uccess']):
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
     def send_command(self, command: str, before_catch: str = None, expect_command=False, num_of_expect=10):
         return super(Dlink, self).send_command(command, before_catch or command, expect_command, num_of_expect)
 
@@ -599,10 +630,11 @@ class Dlink(BaseDevice):
             media_type = ''
 
         port = sub(r'\D', '', port)
-        s1 = self.send_command(f'config ports {port} {media_type} state disable')
+        r1 = self.send_command(f'config ports {port} {media_type} state disable')
         time.sleep(1)
-        s2 = self.send_command(f'config ports {port} {media_type} state enable')
-        return s1 + s2
+        r2 = self.send_command(f'config ports {port} {media_type} state enable')
+        s = self.save_config()
+        return r1 + r2 + s
 
     def set_port(self, port, status) -> str:
         if 'F' in port:
@@ -621,7 +653,9 @@ class Dlink(BaseDevice):
         else:
             state = ''
 
-        return self.send_command(f'config ports {port} {media_type} state {state}')
+        r = self.send_command(f'config ports {port} {media_type} state {state}')
+        s = self.save_config()
+        return r + s
 
 
 class Alcatel(BaseDevice):
@@ -674,6 +708,17 @@ class EltexMES(BaseDevice):
         self.mac = mac
         inv = self.send_command('show inventory')
         self.serialno = self.find_or_empty(r'SN: (\S+)', inv)
+
+    def save_config(self):
+        self.session.sendline('end')
+        self.session.expect(self.prompt)
+        for _ in range(3):  # Пробуем 3 раза, если ошибка
+            self.session.sendline('write')
+            status = self.send_command('Y', expect_command=False)
+            if 'succeed' in status:
+                return self.SAVED_OK
+
+        return self.SAVED_ERR
 
     def get_interfaces(self) -> list:
         self.session.sendline("show int des")
@@ -734,7 +779,9 @@ class EltexMES(BaseDevice):
         self.session.sendline('no shutdown')
         self.session.sendline('exit')
         self.session.expect(r'#')
-        return self.session.before.decode(errors='ignore')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def set_port(self, port, status):
         self.session.sendline('configure terminal')
@@ -750,7 +797,9 @@ class EltexMES(BaseDevice):
         self.session.sendline('write')
         self.session.sendline('Y')
         self.session.expect(r'#', timeout=15)
-        return self.session.before.decode(errors='ignore')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     @lru_cache
     def get_port_info(self, port):
@@ -805,6 +854,13 @@ class Extreme(BaseDevice):
         self.model = self.find_or_empty(r'System Type:\s+(\S+)', system)
         version = self.send_command('show version')
         self.serialno = self.find_or_empty(r'Switch\s+: \S+ (\S+)', version)
+
+    def save_config(self):
+        self.session.sendline('save')
+        self.session.sendline('y')
+        if self.session.expect([self.prompt, r'successfully']):
+            return self.SAVED_OK
+        return self.SAVED_ERR
 
     def get_interfaces(self) -> list:
         # LINKS
@@ -912,7 +968,9 @@ class Extreme(BaseDevice):
         time.sleep(1)
         self.session.sendline(f'enable ports {port}')
         self.session.expect(self.prompt)
-        return self.session.before.decode(errors='ignore')
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def set_port(self, port: str, status: str) -> str:
         if not self.check_port(port):
@@ -927,6 +985,9 @@ class Extreme(BaseDevice):
 
         self.session.sendline(f'{cmd} ports {port}')
         self.session.expect(self.prompt)
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
 
     def port_type(self, port):
         """Определяем тип порта: медь, оптика или комбо"""

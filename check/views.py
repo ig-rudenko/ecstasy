@@ -250,6 +250,11 @@ def get_port_mac(request):
 def reload_port(request):
     """Изменяем состояния порта"""
 
+    color_warning = '#d3ad23'
+    color_success = '#08b736'
+    color_error = '#d53c3c'
+    color = color_success  # Значение по умолчанию
+
     if re.findall(r'svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras',
                   request.POST.get('desc', '').lower()) and not request.user.is_superuser:
         return JsonResponse({
@@ -258,6 +263,7 @@ def reload_port(request):
             'color': '#d3ad23'
         })
     print(request.POST, request.user)
+
     if request.method == 'POST' and request.POST.get('port') and request.POST.get('device') and request.POST.get(
             'status'):
 
@@ -280,17 +286,24 @@ def reload_port(request):
 
         if dev.ping():
             with dev.connect(auth_groups=model_dev.auth_group.name, auth_obj=model_dev.auth_group) as session:
-                print(status)
+                # Перезагрузка
                 if status == 'reload':
-                    s = session.reload_port(port)
-                    message = f'Порт {port} был перезагружен!'
-
+                    try:
+                        s = session.reload_port(port)
+                        message = f'Порт {port} был перезагружен!'
+                    except pexpect.TIMEOUT:
+                        message = 'Timeout'
+                        color = color_error
+                # UP and DOWN
                 elif user_permission_level >= 2 and status in ['up', 'down']:
-                    s = session.set_port(port, status=status)
-                    message = f'Порт {port} был переключен в состояние {status}!'
-
+                    try:
+                        s = session.set_port(port, status=status)
+                        message = f'Порт {port} был переключен в состояние {status}!'
+                    except pexpect.TIMEOUT:
+                        message = 'Timeout'
+                        color = color_error
+                # Нет прав
                 else:
-
                     # Логи
                     log(request.user.username, dev.ip, dev.name,
                         f'Tried to set port {port} ({request.POST.get("desc")})'
@@ -298,28 +311,39 @@ def reload_port(request):
                     return JsonResponse({
                         'message': f'У вас недостаточно прав, для изменения состояния порта!',
                         'status': 'WARNING',
-                        'color': '#d3ad23'
+                        'color': color_warning
                     })
 
-                # Логи
-                log(request.user.username, dev.ip, dev.name, f'{status} port {port} ({request.POST.get("desc")}) \n{s}')
+            if 'Saved Error' in s:
+                config_status = ' Конфигурация НЕ была сохранена'
+                color = color_error
 
-                print(s)
-                return JsonResponse({
-                    'message': message,
-                    'status': 'SUCCESS',
-                    'color': '#08b736'
-                })
+            elif 'Saved OK' in s:
+                config_status = ' Конфигурация была сохранена'
+
+            else:
+                config_status = ''
+
+            message += config_status
+
+            # Логи
+            log(request.user.username, dev.ip, dev.name, f'{status} port {port} ({request.POST.get("desc")}) \n{s}')
+
+            return JsonResponse({
+                'message': message,
+                'status': color,
+                'color': '#08b736'
+            })
 
         return JsonResponse({
             'message': f'Оборудование недоступно!',
-            'status': 'WARNING',
+            'status': color_warning,
             'color': '#d3ad23'
         })
 
     return JsonResponse({
         'message': f'Ошибка отправки данных {request.POST}',
-        'color': '#d53c3c',
+        'color': color_error,
         'status': 'ERROR'
     })
 

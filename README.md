@@ -18,6 +18,7 @@
 
 В данный момент поддерживаются следующие вендоры:
 - Cisco
+- Eltex
 - Huawei
 - Huawei DSL
 - Iskratel DSL
