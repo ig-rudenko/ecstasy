@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
-from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
@@ -16,11 +16,45 @@ from configparser import ConfigParser
 Config.set(settings.ZABBIX_CONFIG_FILE)
 
 
-def log(user, ip, device_, operation):
-    with open(f'{settings.BASE_DIR}/logs', 'a') as log_file:
-        log_file.write(
-            f'{datetime.now():%d.%m.%Y %H:%M:%S} | {user:<10} | {ip:<15} | {device_} | {operation}\n'
+def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
+
+    if not isinstance(user, models.User) or not isinstance(model_device, (models.Devices, models.Bras)) \
+            or not isinstance(operation, str):
+        with open(settings.LOG_FILE, 'a') as log_file:
+            log_file.write(
+                f'{datetime.now():%d.%m.%Y %H:%M:%S} '
+                f'| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}\n'
+            )
+        return
+
+    # В базу
+    operation_max_length = models.UsersActions._meta.get_field('action').max_length
+    if len(operation) > operation_max_length:
+        operation = operation[:operation_max_length]
+
+    if isinstance(model_device, models.Devices):
+        models.UsersActions.objects.create(
+            user=user,
+            device=model_device,
+            action=operation
         )
+        # В файл
+        with open(settings.LOG_FILE, 'a') as log_file:
+            log_file.write(
+                f'{datetime.now():%d.%m.%Y %H:%M:%S} '
+                f'| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n'
+            )
+    else:
+        models.UsersActions.objects.create(
+            user=user,
+            action=f"{model_device} | " + operation
+        )
+        # В файл
+        with open(settings.LOG_FILE, 'a') as log_file:
+            log_file.write(
+                f'{datetime.now():%d.%m.%Y %H:%M:%S} '
+                f'| {user.username:<10} |  | {model_device} | {operation}\n'
+            )
 
 
 def has_permission_to_device(device_to_check: models.Devices, user):
@@ -52,14 +86,18 @@ def by_zabbix_hostid(request, hostid):
             return HttpResponseRedirect(
                 resolve_url('device_info', name=dev.name) + '?current_status=1'
             )
+        else:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
     except (ValueError, TypeError, models.Devices.DoesNotExist):
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER') + '/zabbix')
+        if request.META.get('HTTP_REFERER'):
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER') + '/zabbix')
+        else:
+            raise Http404
 
 
 @login_required
 def show_devices(request):
     p = request.GET.get('page', 1)
-
     try:
         p = int(p)
     except (ValueError, TypeError):
@@ -100,6 +138,7 @@ def device_info(request, name):
     dev = Device(name)
     dev.protocol = model_dev.port_scan_protocol  # Устанавливаем протокол для подключения
     dev.snmp_community = model_dev.snmp_community  # Устанавливаем community для подключения
+    dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
     ping = dev.ping()  # Оборудование доступно или нет
 
     # Сканируем интерфейсы в реальном времени?
@@ -120,9 +159,7 @@ def device_info(request, name):
     with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
 
     # Собираем интерфейсы
-    status = dev.collect_interfaces(
-        vlans=with_vlans, current_status=current_status, auth_obj=model_dev.auth_group
-    )
+    status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status)
 
     model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 
@@ -139,13 +176,13 @@ def device_info(request, name):
             # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
             try:
                 # Смотрим объект у которого такие логин и пароль
-                a = models.AuthGroup.objects.get(login=dev.auth_obj['login'], password=dev.auth_obj['password'])
+                a = models.AuthGroup.objects.get(login=dev.success_auth['login'], password=dev.success_auth['password'])
 
             except (TypeError, ValueError, models.AuthGroup.DoesNotExist):
                 # Если нет такого объекта, значит нужно создать
                 a = models.AuthGroup.objects.create(
-                    name=dev.auth_obj['login'], login=dev.auth_obj['login'], password=dev.auth_obj['password'],
-                    secret=dev.auth_obj['privilege_mode_password']
+                    name=dev.success_auth['login'], login=dev.success_auth['login'], password=dev.success_auth['password'],
+                    secret=dev.success_auth['privilege_mode_password']
                 )
 
             model_dev.auth_group = a  # Указываем новый логин/пароль для этого устройства
@@ -199,7 +236,6 @@ def get_port_mac(request):
             return HttpResponseForbidden()
 
         dev = Device(request.GET['device'])
-        dev.protocol = model_dev.cmd_protocol
 
         data = {
             'dev': dev,
@@ -212,10 +248,10 @@ def get_port_mac(request):
         if dev.ping():
             if not request.GET.get('ajax'):
                 # ЛОГИ
-                log(request.user.username, dev.ip, dev.name, f'show mac\'s port {data["port"]}')
+                log(request.user, model_dev, f'show mac\'s port {data["port"]}')
                 return render(request, 'check/mac_list.html', data)
 
-            with dev.connect(auth_groups=model_dev.auth_group.name, auth_obj=model_dev.auth_group) as session:
+            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
                 data['macs'] = session.get_mac(data['port'])
 
                 # Отправляем JSON, если вызов AJAX = mac
@@ -285,7 +321,7 @@ def reload_port(request):
         user_permission_level = models.Profile.permissions_level.index(request.user.profile.permissions)
 
         if dev.ping():
-            with dev.connect(auth_groups=model_dev.auth_group.name, auth_obj=model_dev.auth_group) as session:
+            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
                 # Перезагрузка
                 if status == 'reload':
                     try:
@@ -305,9 +341,9 @@ def reload_port(request):
                 # Нет прав
                 else:
                     # Логи
-                    log(request.user.username, dev.ip, dev.name,
-                        f'Tried to set port {port} ({request.POST.get("desc")})'
-                        f' to the {status} state, but was refused \n')
+                    log(request.user, model_dev, f'Tried to set port {port} ({request.POST.get("desc")})'
+                                                 f' to the {status} state, but was refused \n'
+                        )
                     return JsonResponse({
                         'message': f'У вас недостаточно прав, для изменения состояния порта!',
                         'status': 'WARNING',
@@ -327,7 +363,7 @@ def reload_port(request):
             message += config_status
 
             # Логи
-            log(request.user.username, dev.ip, dev.name, f'{status} port {port} ({request.POST.get("desc")}) \n{s}')
+            log(request.user, model_dev, f'{status} port {port} ({request.POST.get("desc")}) \n{s}')
 
             return JsonResponse({
                 'message': message,
@@ -398,7 +434,7 @@ def parse_mac(request):
                         user_info[b.name] = bras_output
 
                 # Логи
-                log(request.user.username, b.ip, b.name, f'display access-user mac-address {mac}')
+                log(request.user, b, f'display access-user mac-address {mac}')
 
             return render(
                 request, 'check/bras_info.html',
@@ -447,13 +483,13 @@ def cut_user_session(request):
                     telnet.sendline(f'cut access-user mac-address {mac}')
 
                     # Логи
-                    log(request.user.username, b.ip, b.name, f'cut access-user mac-address {mac}')
+                    log(request.user, b, f'cut access-user mac-address {mac}')
 
-            with dev.connect(auth_groups=models.Devices.objects.get(ip=dev.ip).auth_group.name) as session:
+            with dev.connect(protocol=model_dev.port_scan_protocol, auth_obj=model_dev.auth_group) as session:
                 s = session.reload_port(request.POST['port'])
 
                 # Логи
-                log(request.user.username, dev.ip, dev.name, f'reload port {request.POST["port"]} \n{s}')
+                log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
 
     return HttpResponseRedirect(
         f'/device/parse_mac?device={request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}')

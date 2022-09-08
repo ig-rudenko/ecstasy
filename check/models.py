@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 
 
 class DeviceGroup(models.Model):
@@ -109,7 +111,12 @@ class Bras(models.Model):
     Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
     """
     name = models.CharField(max_length=10, null=False, verbose_name='Название')
-    ip = models.CharField(max_length=15, null=False, unique=True, verbose_name='IP адрес')
+    ip = models.GenericIPAddressField(
+        protocol='ipv4',
+        null=False,
+        unique=True,
+        verbose_name='IP адрес'
+    )
     login = models.CharField(max_length=64, null=False, verbose_name='Логин')
     password = models.CharField(max_length=64, null=False, verbose_name='Пароль')
     secret = models.CharField(max_length=64, null=True, blank=True, verbose_name='Пароль от привилегированного режима')
@@ -130,7 +137,7 @@ class Profile(models.Model):
     UP_DOWN = 'up_down'
     BRAS = 'bras'
 
-    permissions_level = ['read', 'reboot', 'up_down', 'bras']
+    permissions_level = [READ, REBOOT, UP_DOWN, BRAS]
 
     PERMS = (
         (READ, 'Чтение'),
@@ -150,3 +157,36 @@ class Profile(models.Model):
         ordering = ('user',)
         verbose_name = 'User Profile'
         verbose_name_plural = 'User Profiles'
+
+
+class UsersActions(models.Model):
+
+    time = models.DateTimeField(auto_now_add=True, verbose_name='Дата/время')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    device = models.ForeignKey(Devices, on_delete=models.CASCADE, null=True, verbose_name='Оборудование')
+    action = models.TextField(max_length=1024, verbose_name='Действия')
+
+    class Meta:
+        db_table = 'users_actions'
+        ordering = ('-time',)
+        indexes = [
+            models.Index(
+                fields=['time'],
+                name='logs_time_index'
+            )
+        ]
+        verbose_name = 'User Action'
+        verbose_name_plural = 'Users Actions'
+
+    def __str__(self):
+        return f'{self.time.strftime("%d.%m.%Y %H:%M:%S")} |' \
+               f' {self.user.username:<10} | {self.device or ""} |' \
+               f' {self.action}'
+
+
+@receiver(post_save, sender=User)
+def auto_create_profile(sender, instance: User, created: bool, **kwargs):
+    if created:
+        Profile.objects.create(
+            user=instance
+        )

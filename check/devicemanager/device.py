@@ -413,8 +413,8 @@ class Device:
         self.interfaces = []
         self.protocol: str = 'telnet'
         self.snmp_community = ''
-        self.auth_groups: list = []
-        self.auth_obj: dict = {}
+        self.auth_obj = None
+        self.success_auth: dict = {}
 
     def collect_zabbix_info(self):
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
@@ -485,7 +485,7 @@ class Device:
         if host:
             return Device(host[0]['name'])
 
-    def collect_interfaces(self, vlans=True, current_status=False, auth_file=Config.AUTH_FILE, auth_obj=None):
+    def collect_interfaces(self, vlans=True, current_status=False, auth_obj=None):
         """Собираем интерфейсы оборудования"""
         if not current_status:  # Смотрим из истории
             resp = requests.get(
@@ -513,11 +513,11 @@ class Device:
         else:
 
             # CMD
-            if not self.auth_groups and not auth_obj:
+            if not auth_obj and not self.auth_obj:
                 return 'Не указан профиль авторизации для данного оборудования'
             if not self.protocol:
                 return 'Не указан протокол для подключения к оборудованию'
-            with self.connect(self.auth_groups, self.protocol, auth_file=auth_file, auth_obj=auth_obj) as s:
+            with self.connect(self.protocol, auth_obj=auth_obj or self.auth_obj) as s:
                 if isinstance(s, str) or s is None:
                     return s or 'None'
 
@@ -528,7 +528,7 @@ class Device:
                     self.zabbix_info.inventory.vendor = s.vendor
 
                 # Получаем верные логин/пароль
-                self.auth_obj = s.auth
+                self.success_auth = s.auth
 
                 if vlans:
                     # Если не получилось собрать vlan тогда собираем интерфейсы
@@ -565,7 +565,7 @@ class Device:
                 self._location = Location(**l.raw['address'])
         return self._location
 
-    def connect(self, auth_groups: (str, list), protocol='telnet', auth_file: str = Config.AUTH_FILE, auth_obj=None):
-        d: Any = DeviceFactory(self.ip, auth_groups=auth_groups, protocol=protocol, auth_file=auth_file, auth_obj=auth_obj)
+    def connect(self, protocol=None, auth_obj=None):
+        d: Any = DeviceFactory(self.ip, protocol=protocol or self.protocol, auth_obj=auth_obj or self.auth_obj)
         return d
 

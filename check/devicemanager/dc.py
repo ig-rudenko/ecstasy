@@ -120,7 +120,7 @@ class BaseDevice(ABC):
             return ''
 
     def send_command(self, command: str, before_catch: str = None, expect_command=True, num_of_expect=10,
-                     space_prompt=None, prompt=None) -> str:
+                     space_prompt=None, prompt=None, pages_limit=None) -> str:
 
         if space_prompt is None:
             space_prompt = self.space_prompt
@@ -136,7 +136,7 @@ class BaseDevice(ABC):
             self.session.expect(before_catch)
 
         if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
-            while True:
+            while pages_limit is None or pages_limit > 0:
                 match = self.session.expect(
                     [
                         prompt,  # 0 - конец
@@ -154,6 +154,11 @@ class BaseDevice(ABC):
                 else:
                     print(f'{self.ip} - timeout во время выполнения команды "{command}"')
                     break
+
+                # Если задано кол-во страниц
+                if pages_limit:
+                    pages_limit -= 1
+
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             try:
                 self.session.expect(prompt)
@@ -621,6 +626,18 @@ class Dlink(BaseDevice):
         mac_str = self.send_command(f'show fdb port {port}')
         return findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
 
+    @staticmethod
+    def validate_port(port: str):
+        port = port.strip()
+        if findall(r'^\d\/\d+$', port):
+            port = sub(r'^\d\/', '', port)
+        elif findall(r'\d+|\d+\s*\([FC]\)', port):
+            port = sub(r'\D', '', port)
+        else:
+            port = ''
+        if port.isdigit():
+            return port
+
     def reload_port(self, port) -> str:
         if 'F' in port:
             media_type = ' medium_type fiber'
@@ -629,7 +646,11 @@ class Dlink(BaseDevice):
         else:
             media_type = ''
 
-        port = sub(r'\D', '', port)
+        port = self.validate_port(port)
+
+        if port is None:
+            return 'Неверный порт'
+
         r1 = self.send_command(f'config ports {port} {media_type} state disable')
         time.sleep(1)
         r2 = self.send_command(f'config ports {port} {media_type} state enable')
@@ -644,7 +665,10 @@ class Dlink(BaseDevice):
         else:
             media_type = ''
 
-        port = sub(r'\D', '', port)
+        port = self.validate_port(port)
+
+        if port is None:
+            return 'Неверный порт'
 
         if status == 'up':
             state = 'enable'
@@ -861,6 +885,10 @@ class Extreme(BaseDevice):
         if self.session.expect([self.prompt, r'successfully']):
             return self.SAVED_OK
         return self.SAVED_ERR
+
+    def get_logs(self, lines=5):
+        logs = self.send_command(f'show log', pages_limit=lines)
+        return logs
 
     def get_interfaces(self) -> list:
         # LINKS
@@ -1494,29 +1522,15 @@ class Juniper(BaseDevice):
 
 class DeviceFactory:
     """Подключение к оборудованию, определение вендора и возврат соответствующего класса"""
-    def __init__(self, ip: str, auth_groups: (str, list), protocol: str, auth_file: str, auth_obj=None):
+    def __init__(self, ip: str, protocol: str, auth_obj=None):
         self.ip = ip
-        self.auth_groups = auth_groups if isinstance(auth_groups, list) else [auth_groups]
+
         self.protocol = protocol
         self.login = []
         self.password = []
         self.privilege_mode_password = 'enable'
 
-        if not auth_obj:
-            # Из файла
-            with open(auth_file) as file:
-                auth_dict = yaml.safe_load(file)
-
-            for group in self.auth_groups:
-                iter_dict = auth_dict.get(group)
-                if not iter_dict:
-                    continue
-
-                self.login += [iter_dict.get('login')] or ['admin']
-                self.password += [iter_dict.get('password')] or ['admin']
-                self.privilege_mode_password = iter_dict.get('privilege_mode_password') or 'enable'
-
-        elif isinstance(auth_obj, list):
+        if isinstance(auth_obj, list):
             # Список объектов
             for auth_ in auth_obj:
                 self.login.append(auth_.login)

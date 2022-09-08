@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile
+from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 from django.utils.safestring import mark_safe
 
 
@@ -71,3 +71,10 @@ class UserProfileAdmin(UserAdmin):
         for g in obj.profile.devices_groups.all():
             s += f'<li>{g}</li>'
         return mark_safe(s)
+
+
+@admin.register(UsersActions)
+class UsersActionsAdmin(admin.ModelAdmin):
+    list_display = ['time', 'user', 'device', 'action']
+    search_fields = ['user.username', 'device']
+    readonly_fields = list_display
