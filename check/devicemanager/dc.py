@@ -61,7 +61,7 @@ def _interface_normal_view(interface) -> str:
     elif match(r'^[Tt]e', interface):
         return f'TenGigabitEthernet {interface_number[0][0]}'
     else:
-        return interface
+        return ''
 
 
 def _range_to_numbers(ports_string: str) -> list:
@@ -384,6 +384,42 @@ class Huawei(BaseDevice):
 
         return mac_list
 
+    @lru_cache
+    def __port_info(self, port):
+        return self.send_command(f'display interface {_interface_normal_view(port)}')
+
+    def port_type(self, port) -> str:
+        res = self.__port_info(port)
+
+        type_ = self.find_or_empty(r'Port hardware type is (\S+)|Port Mode: (.*)', res)
+        print(f'{type_=}')
+        if type_:
+
+            type_ = type_[0] if type_[0] else type_[1]
+
+            if "COMBO" in type_:
+                return 'COMBO-' + self.find_or_empty(r'Current Work Mode: (\S+)', res)
+
+            elif "FIBER" in type_ or 'SFP' in type_:
+                return 'SFP'
+
+            elif "COPPER" in type_:
+                return 'COPPER'
+
+            else:
+                sub_type = self.find_or_empty(r'\d+_BASE_(\S+)', type_)
+                if sub_type in COOPER_TYPES:
+                    return 'COPPER'
+                elif sub_type in FIBER_TYPES:
+                    return 'FIBER'
+                else:
+                    return ''
+        else:
+            return ''
+
+    def get_port_errors(self, port):
+        return self.__port_info(port)
+
     def reload_port(self, port) -> str:
         self.session.sendline('system-view')
         self.session.sendline(f'interface {_interface_normal_view(port)}')
@@ -576,8 +612,13 @@ class Dlink(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    def send_command(self, command: str, before_catch: str = None, expect_command=False, num_of_expect=10):
-        return super(Dlink, self).send_command(command, before_catch or command, expect_command, num_of_expect)
+    def send_command(self, command: str, before_catch: str = None, expect_command=False, num_of_expect=10,
+                     space_prompt=None, prompt=None, pages_limit=None):
+        return super(Dlink, self).send_command(
+            command,
+            before_catch=before_catch or command, expect_command=expect_command, num_of_expect=num_of_expect,
+            space_prompt=space_prompt, prompt=prompt, pages_limit=pages_limit
+        )
 
     def get_interfaces(self) -> list:
         self.session.sendline("show ports des")
@@ -629,8 +670,8 @@ class Dlink(BaseDevice):
     @staticmethod
     def validate_port(port: str):
         port = port.strip()
-        if findall(r'^\d\/\d+$', port):
-            port = sub(r'^\d\/', '', port)
+        if findall(r'^\d/\d+$', port):
+            port = sub(r'^\d/', '', port)
         elif findall(r'\d+|\d+\s*\([FC]\)', port):
             port = sub(r'\D', '', port)
         else:
@@ -788,7 +829,7 @@ class EltexMES(BaseDevice):
                 output = self.send_command(
                     f'show running-config interface {_interface_normal_view(line[0])}', expect_command=False
                 )
-                vlans_group = findall(r'vlan [add ]*(\S*\d)', output)  # Строчки вланов
+                vlans_group = findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
                 port_vlans = []
                 if vlans_group:
                     for v in vlans_group:
@@ -1457,7 +1498,7 @@ class IskratelMBan(BaseDevice):
         macs = []  # Итоговый список маков
 
         # Верные порты: port1, fasteth3, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
-        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+\/\d+$', port):
+        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+/\d+$', port):
             return []
 
         if 'fasteth' in port or 'adsl' in port:
