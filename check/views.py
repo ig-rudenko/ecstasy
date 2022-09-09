@@ -108,7 +108,7 @@ def show_devices(request):
 
     if request.GET.get('s'):
         s = request.GET['s'].strip()
-        query = (Q(ip__contains=s) | Q(name__contains=s))
+        query = (Q(ip__contains=s) | Q(name__icontains=s))
     else:
         query = Q()
 
@@ -269,6 +269,9 @@ def get_port_mac(request):
 
                 if hasattr(session, 'port_config'):
                     data['port_config'] = session.port_config(data['port'])
+
+                if hasattr(session, 'get_port_errors'):
+                    data['port_errors'] = session.get_port_errors(data['port'])
 
                 if request.GET.get('ajax') == 'all':
                     data['macs'] = render_to_string('check/macs_table.html', data)

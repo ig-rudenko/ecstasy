@@ -1,4 +1,5 @@
 {% extends 'check/base.html' %}
+{% load static %}
 
 {% block title %}
 {{ dev.name }}
@@ -114,119 +115,75 @@
   </div>
 </div>
 
+{% csrf_token %}
+
 {% endblock %}
 
 
 
 {% block js %}
 
-{% csrf_token %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
-<script>
-
-{% if perms > 0 or request.user.is_superuser %}
-    function reload_port(port, desc, status) {
-        if (confirm('Слыш!\nУверен(а), что хочешь ' + status + ' порт:\n"' + desc + '"?')) {
-            let data = {
-                    port: port,
-                    device: "{{ dev.name }}",
-                    desc: desc,
-                    status: status,
-                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value
-                }
-            $.ajax( {
-                url: "{% url 'port_reload' %}",
-                type: 'POST',
-                data: data,
-                success: function( data ) {
-                    $('#toast_message').html(data.message)
-                    $('#toast_color').attr('fill', data.color)
-                    $('#toast_title').html(data.status)
-                    $('.toast').toast('show')
-                }
-            } );
-        }
-    }
-{% endif %}
-
-var last_time = {% now "U" %};  {# Время создания шаблона #}
-
-{% if current_status %}
-    var time = document.getElementById('time_passed');
-
-    function time_passed(value) {
-        let min_ = Math.floor(value / 60);
-        let sec = (value - (min_ * 60)).toString()
-        let min = min_.toString()
-
-        let sec_str = ''
-        let min_str = ''
-
-        if (min_ !== 0) {  // Если есть минуты
-            if (/1$/.test(min)) { min_str = ' минуту ' }
-            if (/[2-4]$/.test(min)) { min_str = ' минуты '}
-            if (/[05-9]$/.test(min)) { min_str = ' минут ' }
-        } else { min = '' }
-
-        if (/1$/.test(sec)) { sec_str = ' секунду ' }
-        if (/[2-4]$/.test(sec)) { sec_str = ' секунды '}
-        if (/[05-9]$/.test(sec)) { sec_str = ' секунд ' }
-
-        return min+min_str+sec+sec_str
-    }
-    function count() {
-        time.textContent = time_passed(Math.round(Date.now() / 1000 - last_time)) + 'назад';
-        timer();
-    }
-    function timer() {
-        setTimeout(count, 1000);
-    }
-    timer();
-
-{% endif %}
-
-
-function get_interfaces(first=false) {
-
-    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
-    if ( document.getElementById('auto-update-interfaces').checked || first) {
-    {% endif %}
-
-
-    {# Если нажато автообновление, то отправляем результаты #}
-
-        $.ajax({
-            url: "{% url 'device_info' dev.name %}?current_status={{ current_status }}&ajax=1&vlans={{ request.GET.vlans }}",
-            type: 'GET',
-            success: function( data ) {
-                $('#interfaces-table').html(data.data)
-                if (first){ document.getElementById('auto-update-interfaces').checked = false; }
-                window.last_time = Date.now() / 1000
-
-                {# Создаем всплывающие подсказки #}
-                window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-                window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-            },
-        });
-
-
-    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
-    }
-    interface_timer()
-    {% endif %}
-
-}
-
-{% if current_status %}  {# Автообновление доступно только при сканировании портов #}
-    {# Повторный сбор интерфейсов через 20 секунд #}
-    function interface_timer() {
-        setTimeout(get_interfaces, 20000);
-    }
-{% endif %}
-
-{# ЗАПРОС ИНТЕРФЕЙСОВ #}
-get_interfaces(true);
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous">
 </script>
 
+<script>
+var last_time = {% now "U" %};  {# Время создания шаблона #}
+</script>
+
+{% if perms > 0 or request.user.is_superuser %}
+    <script src="{% static 'js/port_control.js' %}"></script>
+{% endif %}
+
+{% if current_status %}
+    <script src="{% static 'js/timer.js' %}"></script>
+    <script src="{% static 'js/get_interfaces_auto.js' %}"></script>
+{% else %}
+    <script src="{% static 'js/get_interfaces.js' %}"></script>
+{% endif %}
+
 {% endblock %}
+{#<script>#}
+{#function get_interfaces(first=false) {#}
+{##}
+{#    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+{#    if ( document.getElementById('auto-update-interfaces').checked || first) {#}
+{#    {% endif %}#}
+{##}
+{##}
+    {# Если нажато автообновление, то отправляем результаты #}
+{##}
+{#        $.ajax({#}
+{#            url: "{% url 'device_info' dev.name %}?current_status={{ current_status }}&ajax=1&vlans={{ request.GET.vlans }}",#}
+{#            type: 'GET',#}
+{#            success: function( data ) {#}
+{#                $('#interfaces-table').html(data.data)#}
+{#                if (first){ document.getElementById('auto-update-interfaces').checked = false; }#}
+{#                window.last_time = Date.now() / 1000#}
+{##}
+                {# Создаем всплывающие подсказки #}
+{#                window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')#}
+{#                window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))#}
+{#            },#}
+{#        });#}
+{##}
+{##}
+{#    {% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+{#    }#}
+{#    interface_timer()#}
+{#    {% endif %}#}
+{##}
+{#}#}
+{##}
+{#{% if current_status %}  {# Автообновление доступно только при сканировании портов #}
+    {# Повторный сбор интерфейсов через 20 секунд #}
+{#    function interface_timer() {#}
+{#        setTimeout(get_interfaces, 20000);#}
+{#    }#}
+{#{% endif %}#}
+{##}
+{# ЗАПРОС ИНТЕРФЕЙСОВ #}
+{#get_interfaces(true);#}
+{##}
+{#</script>#}
+

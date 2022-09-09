@@ -76,5 +76,7 @@ class UserProfileAdmin(UserAdmin):
 @admin.register(UsersActions)
 class UsersActionsAdmin(admin.ModelAdmin):
     list_display = ['time', 'user', 'device', 'action']
-    search_fields = ['user.username', 'device']
+    list_filter = ['user']
+    search_fields = ['action']
     readonly_fields = list_display
+    list_per_page = 50

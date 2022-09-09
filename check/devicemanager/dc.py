@@ -657,6 +657,12 @@ class Dlink(BaseDevice):
         s = self.save_config()
         return r1 + r2 + s
 
+    def get_port_errors(self, port):
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт'
+        return self.send_command(f'show error ports {port}')
+
     def set_port(self, port, status) -> str:
         if 'F' in port:
             media_type = 'medium_type fiber'
@@ -1733,7 +1739,8 @@ class DeviceFactory:
                                 r'Connection closed',  # 4
                                 r'Unable to connect',  # 5
                                 r'[#>\]]\s*$',  # 6
-                                r'Press any key to continue'  # 7
+                                r'Press any key to continue',  # 7
+                                r'Timeout or some unexpected error happened on server host'  # 8 - Ошибка радиуса
                             ],
                             timeout=timeout
                         )
@@ -1746,17 +1753,22 @@ class DeviceFactory:
                         if login_stat < 3:
                             self.session.sendline(login)  # Вводим логин
                             continue
-                        if 4 <= login_stat <= 5:
-                            return f'Telnet недоступен! ({self.ip})'
-                        if login_stat == 3:
-                            self.session.sendline(password)  # Вводим пароль
 
+                        elif 4 <= login_stat <= 5:
+                            return f'Telnet недоступен! ({self.ip})'
+
+                        elif login_stat == 3:
+                            self.session.sendline(password)  # Вводим пароль
                             # Сохраняем текущие введенные логин и пароль, в надежде, что они являются верными
                             self.login = login
                             self.password = password
+                            continue
 
-                        if login_stat >= 6:  # Если был поймал символ начала ввода команды
+                        elif login_stat == 6:  # Если был поймал символ начала ввода команды
                             connected = True  # Подключились
+                        elif login_stat == 8:
+                            continue  # Если ошибка радиуса, то вводим те же данные еще раз
+
                         break  # Выход из цикла
 
                     if connected:
