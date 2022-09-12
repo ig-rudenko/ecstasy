@@ -5,7 +5,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from ecstasy_project import settings
 from . import models
-from .devicemanager import *
+from devicemanager import *
 
 from datetime import datetime
 import pexpect
@@ -217,6 +217,30 @@ def device_info(request, name):
     return JsonResponse({
         'data': render_to_string('check/interfaces_table.html', data)
     })
+
+
+@login_required
+@permission(models.Profile.READ)
+def get_logs(request, dev_name):
+    model_dev = models.Devices.objects.get(name=dev_name)
+
+    if request.GET.get('ajax', None):
+        dev = Device(dev_name)
+        dev.protocol = model_dev.port_scan_protocol
+        dev.snmp_community = model_dev.snmp_community
+        dev.auth_obj = model_dev.auth_group
+
+        with dev.connect() as conn:
+            if hasattr(conn, 'get_logs'):
+                logs = conn.get_logs()
+            else:
+                logs = 'Не поддерживается просмотр логов для данного устройства'
+        return JsonResponse({
+            'logs': logs
+        })
+
+    else:
+        return render(request, 'check/logs.html', {"dev": model_dev})
 
 
 @login_required

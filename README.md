@@ -23,6 +23,7 @@
 - Huawei DSL
 - Iskratel DSL
 - D-Link
+- Extreme
 
 
 При выборе устройства открывается окно с его интерфейсами

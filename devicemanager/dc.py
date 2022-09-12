@@ -3,7 +3,6 @@ import time
 
 import pexpect
 import os
-import yaml
 import textfsm
 from re import findall, sub, match
 from abc import ABC, abstractmethod
@@ -38,7 +37,6 @@ COOPER_TYPES = [
 FIBER_TYPES = [
     'FOIRL', 'F', 'FX', 'SX', 'LX', 'BX', 'EX', 'ZX', 'SR', 'ER', 'SW', 'LW', 'EW', 'LRM', 'PR', 'LR', 'ER', 'FR'
 ]
-
 
 
 def _interface_normal_view(interface) -> str:
@@ -460,7 +458,7 @@ class Huawei(BaseDevice):
 
 class Cisco(BaseDevice):
     prompt = r'\S+#$'
-    space_prompt = r'--More--'
+    space_prompt = r' --More-- '
     mac_format = r'\S\S\S\S\.\S\S\S\S\.\S\S\S\S'  # 0018.e7d3.1d43
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor=''):
@@ -476,6 +474,9 @@ class Cisco(BaseDevice):
             if self.session.expect([self.prompt, r'\[OK\]']):
                 return self.SAVED_OK
         return self.SAVED_ERR
+
+    def get_logs(self):
+        return self.send_command('show logging').replace('', '')
 
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
@@ -507,7 +508,7 @@ class Cisco(BaseDevice):
         return result
 
     def get_mac(self, port) -> list:
-        mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
+        mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}', expect_command=False)
         return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
     def reload_port(self, port) -> str:
@@ -556,6 +557,9 @@ class Cisco(BaseDevice):
             return 'SFP'
 
         return 'COPPER'
+
+    def get_port_errors(self, port):
+        return self.send_command(f'show interfaces {_interface_normal_view(port)} | include error')
 
     def port_config(self, port):
         """Конфигурация порта"""

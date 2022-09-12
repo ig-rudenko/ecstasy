@@ -1,0 +1,7 @@
+Value INTF ((Gi|Te|Et|Fa)\S+\d)
+Value PHY (up|down|admin down)
+Value STATUS (\S+)
+Value DESCRIPTION ([\W\S*]*)
+
+Start
+  ^.*?${INTF}\s+${PHY}\s+${STATUS}\s*${DESCRIPTION} -> Record

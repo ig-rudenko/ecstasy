@@ -2,13 +2,13 @@ function reload_port(port, desc, status) {
     if (confirm('Слыш!\nУверен(а), что хочешь ' + status + ' порт:\n"' + desc + '"?')) {
         let data = {
                 port: port,
-                device: "{{ dev.name }}",
+                device: $("name").html(),
                 desc: desc,
                 status: status,
                 csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value
             }
         $.ajax( {
-            url: "{% url 'port_reload' %}",
+            url: "/device/port/reload",
             type: 'POST',
             data: data,
             success: function( data ) {

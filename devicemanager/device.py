@@ -8,7 +8,7 @@ from configparser import ConfigParser
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 from geopy.geocoders import Nominatim
-from check.devicemanager import snmp
+from . import snmp
 
 from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
 from .exceptions import AuthException, ConfigError

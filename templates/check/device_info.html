@@ -31,7 +31,7 @@
 
 
 {% block content %}
-    <h2 style="margin-bottom: 10px;">{{ dev.name }} ({{ dev.ip }})
+    <h2 style="margin-bottom: 10px;"><name>{{ dev.name }}</name> ({{ dev.ip }})
         {% if not ping %}
             <span class="badge bg-danger">Оборудование недоступно</span>
         {% endif %}
@@ -40,6 +40,9 @@
             aria-controls="offcanvasScrolling">Подробная информация</button>
 
     <a class="btn btn-danger" target="_blank" href="http://10.100.0.50/zabbix/hostinventories.php?hostid={{ zabbix_host_id }}">В Zabbix -></a>
+
+    <a class="btn btn-info" target="_blank" href="{% url 'get_logs' dev.name %}">Логи</a>
+
 
 {#    Ссылка на карту#}
     {% if dev.zabbix_info.inventory.coordinates %}
