@@ -737,10 +737,40 @@ class Alcatel(BaseDevice):
     prompt = r'\S+#\s*$'
     space_prompt = r'More: <space>,  Quit: q, One line: <return> '
 
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port: str) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
+
 
 class EdgeCore(BaseDevice):
     prompt = r'\S+#$'
     space_prompt = '---More---'
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port: str) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
 
 
 class _Eltex(BaseDevice):
@@ -974,8 +1004,12 @@ class Extreme(BaseDevice):
         ]
 
     def get_vlans(self):
+        """Смотрим интерфейсы и VLAN на них"""
 
         interfaces = self.get_interfaces()
+
+        for i, line in enumerate(interfaces, start=1):
+            print(i, line)
 
         output_vlans = self.send_command('show configuration "vlan"', before_catch=r'Module vlan configuration\.')
 
@@ -983,42 +1017,34 @@ class Extreme(BaseDevice):
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlans = vlan_templ.ParseText(output_vlans)
 
-        # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
+        # Создаем словарь, где ключи это порты, а значениями будут вланы на них
         ports_vlan = {num: [] for num in range(1, len(interfaces) + 1)}
 
+        print(ports_vlan)
+
         for vlan in result_vlans:
+            print('--------------', vlan)
             for port in _range_to_numbers(vlan[1]):
+                print('++++', port)
                 # Добавляем вланы на порты
                 ports_vlan[port].append(vlan[0])
+
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
-
         for line in interfaces:
-            max_letters_in_string = 20  # Ограничение на кол-во символов в одной строке в столбце VLAN's
-            vlans_compact_str = ''  # Строка со списком VLANов с переносами
-            line_str = ''
-            for part in ports_vlan[int(line[0])]:
-                if len(line_str) + len(part) <= max_letters_in_string:
-                    line_str += f'{part},'
-                else:
-                    vlans_compact_str += f'{line_str}\n'
-                    line_str = f'{part},'
-            else:
-                vlans_compact_str += line_str[:-1]
-            # Итоговая строка: порт, статус, описание + вланы
-            interfaces_vlan.append(line + [vlans_compact_str])
+            interfaces_vlan.append(line + [ports_vlan.get(int(line[0]), '')])
 
-        # Описание VLAN'ов
-        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/extreme_vlan_info.template', 'r') as template_file:
-            vlan_templ = textfsm.TextFSM(template_file)
-            vlans_info = vlan_templ.ParseText(output_vlans)
-        vlans_info = sorted(vlans_info, key=lambda line: int(line[0]))  # Сортировка по возрастанию vlan
-        return vlans_info, interfaces_vlan
+        return interfaces_vlan
 
-    def check_port(self, port: str):
+    @staticmethod
+    def validate_port(port: str):
+        """
+        Проверяем правильность полученного порта
+        Для Extreme порт должен быть числом
+        """
+
         port = port.strip()
-        if not port.isdigit():
-            return False
-        return True
+        if port.isdigit():
+            return port
 
     def get_mac(self, port: str) -> list:
         """
@@ -1026,7 +1052,8 @@ class Extreme(BaseDevice):
 
         [ ["vlan", "mac"],  ... ]
         """
-        if not self.check_port(port):
+        port = self.validate_port(port)
+        if port is None:
             return []
 
         output = self.send_command(f'show fdb ports {port}', expect_command=False)
@@ -1038,8 +1065,21 @@ class Extreme(BaseDevice):
             res.append(m[::-1])
         return res
 
+    def get_port_errors(self, port: str):
+        """Смотрим ошибки на порту"""
+
+        port = self.validate_port(port)
+        if port is None:
+            return ''
+        rx_errors = self.send_command(f'show ports {port} rxerrors no-refresh')
+        tx_errors = self.send_command(f'show ports {port} txerrors no-refresh')
+
+        return rx_errors + '\n' + tx_errors
+
     def reload_port(self, port) -> str:
-        if not self.check_port(port):
+        """Перезагружаем порт и сохраняем конфигурацию"""
+
+        if not self.validate_port(port):
             return f'Неверный порт! {port}'
 
         self.session.sendline(f'disable ports {port}')
@@ -1052,7 +1092,9 @@ class Extreme(BaseDevice):
         return r + s
 
     def set_port(self, port: str, status: str) -> str:
-        if not self.check_port(port):
+        """Меням состояние порта и сохраняем конфигурацию"""
+
+        if not self.validate_port(port):
             return f'Неверный порт! {port}'
 
         if status == 'up':
@@ -1070,7 +1112,9 @@ class Extreme(BaseDevice):
 
     def port_type(self, port):
         """Определяем тип порта: медь, оптика или комбо"""
-        if not self.check_port(port):
+
+        port = self.validate_port(port)
+        if port is None:
             return f'Неверный порт'
 
         if 'Media Type' in self.send_command(f'show ports {port} transceiver information detail | include Media'):
