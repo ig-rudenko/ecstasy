@@ -385,7 +385,7 @@ def reload_port(request):
                 config_status = ' Конфигурация была сохранена'
 
             else:
-                config_status = ''
+                config_status = s
 
             message += config_status
 

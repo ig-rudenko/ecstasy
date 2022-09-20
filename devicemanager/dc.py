@@ -92,11 +92,13 @@ def _range_to_numbers(ports_string: str) -> list:
 
 
 class BaseDevice(ABC):
-    prompt: str
+    prompt: str  # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
+
+    # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
     space_prompt: str
-    mac_format = ''
-    SAVED_OK = 'Saved OK'
-    SAVED_ERR = 'Saved Error'
+    mac_format = ''  # Регулярное выражение, которое определяет отображение МАС адреса
+    SAVED_OK = 'Saved OK'  # Конфигурация была сохранена
+    SAVED_ERR = 'Saved Error'  # Ошибка при сохранении конфигурации
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor: str = ''):
         self.session: pexpect.spawn = session
@@ -111,6 +113,8 @@ class BaseDevice(ABC):
 
     @staticmethod
     def find_or_empty(pattern, string):
+        """Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку"""
+
         m = findall(pattern, string)
         if m:
             return m[0]
@@ -119,6 +123,21 @@ class BaseDevice(ABC):
 
     def send_command(self, command: str, before_catch: str = None, expect_command=True, num_of_expect=10,
                      space_prompt=None, prompt=None, pages_limit=None) -> str:
+        """
+        Отправляет команду на оборудование и считывает её вывод
+
+        Вывод будет содержать в себе строки от момента ввода команды, до (prompt: str), указанного в классе
+
+        :param command: Команда, которую необходимо выполнить на оборудовании
+        :param before_catch: Регулярное выражение, указывающее начало
+        :param expect_command: Не вносить текст команды в вывод
+        :param num_of_expect: Кол-во символов с конца команды, по которым необходимо её находить
+        :param space_prompt: Регулярное выражение, которое указывает на ожидание ввода клавиши,
+                             для последующего отображения информации
+        :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды
+        :param pages_limit: Кол-во страниц, если надо, которые будут выведены при постраничном отображении
+        :return: Строка с результатом команды
+        """
 
         if space_prompt is None:
             space_prompt = self.space_prompt
@@ -167,23 +186,41 @@ class BaseDevice(ABC):
 
     @abstractmethod
     def get_interfaces(self) -> list:
+        """
+        Интерфейсы на оборудовании
+        :return: [ ['name', 'status', 'desc'], ... ]
+        """
         pass
 
     @abstractmethod
     def get_vlans(self) -> list:
+        """
+        Интерфейсы и VLAN на оборудовании
+        :return: [ ['name', 'status', 'desc', 'vlans'], ... ]
+        """
         pass
 
     @abstractmethod
     def get_mac(self, port: str) -> list:
+        """
+        Поиск маков на порту
+        :return: [ ('vid', 'mac'), ... ]
+        """
         pass
 
     @abstractmethod
     def reload_port(self, port: str) -> str:
+        """Перезагрузка порта"""
         pass
 
     @abstractmethod
     def set_port(self, port: str, status: str) -> str:
+        """Изменение состояния порта"""
         pass
+
+    @abstractmethod
+    def save_config(self):
+        """"""
 
 
 class ProCurve(BaseDevice):
@@ -223,11 +260,26 @@ class ProCurve(BaseDevice):
 class ZTE(BaseDevice):
     prompt = r'\S+\(cfg\)#|\S+>'
     space_prompt = "----- more -----"
+    mac_format = r'\S\S\.' * 5 + r'\S\S'  # e1.3f.45.d6.23.53
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
         super().__init__(session, ip, auth, model, vendor)
         version = self.send_command('show version')
         self.mac = self.find_or_empty(r'Mac Address: (\S+)', version)
+
+        # Turning on privileged mode
+        self.session.sendline('enable')
+        match_ = self.session.expect([self.prompt, r'password', r'[Ss]imultaneous'])  # Если ещё не привилегированный
+        if match_ == 1:
+            self.session.sendline(self.auth.get('privilege_mode_password'))  # send secret
+            if self.session.expect([r'refused', r'\(cfg\)#']):
+                self.__privileged = True
+            else:
+                self.__privileged = False
+        elif match_ == 2:
+            self.__privileged = False
+        else:
+            self.__privileged = True
 
     def get_interfaces(self) -> list:
         output = self.send_command('show port')
@@ -269,6 +321,108 @@ class ZTE(BaseDevice):
                     vlans.append(vlan_id)
             interfaces_vlan.append(line + [vlans])
         return interfaces_vlan
+
+    @staticmethod
+    def validate_port(port):
+        """
+        Проверяем правильность полученного порта
+        Для ZTE порт должен быть числом
+        """
+
+        port = str(port).strip()
+        if port.isdigit():
+            return port
+
+    def get_mac(self, port: str) -> list:
+        """
+        Поиск маков на порту
+        :return: [ ('vid', 'mac'), ... ]
+        """
+
+        port = self.validate_port(port)
+        if port is None:
+            return []
+
+        output_macs = self.send_command(f'show fdb port {port} detail')
+        mac_list = []
+        for i in findall(rf'({self.mac_format})\s+(\d+)', output_macs):
+            mac_list.append(i[::-1])
+
+        return mac_list
+
+    def save_config(self):
+        self.session.sendline('saveconfig')
+        if self.session.expect([r'please wait a minute', 'Command not found']):
+            self.session.sendline('write')
+            self.session.expect(r'please wait a minute')
+
+        if self.session.expect([self.prompt, r'[Dd]one']):
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
+    def reload_port(self, port: str) -> str:
+        if not self.__privileged:
+            return 'Не привилегированный. Операция отклонена!'
+
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        self.session.sendline(f'set port {port} disable')
+        time.sleep(1)
+        self.session.sendline(f'set port {port} enable')
+        return f'reset port {port} ' + self.save_config()
+
+    def set_port(self, port: str, status: str) -> str:
+        if not self.__privileged:
+            return 'Не привилегированный. Операция отклонена!'
+
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        if status == 'down':
+            self.session.sendline(f'set port {port} disable')
+        elif status == 'up':
+            self.session.sendline(f'set port {port} enable')
+        else:
+            return f'Неверный статус {status}'
+
+        return f'{status} port {port} ' + self.save_config()
+
+    def port_config(self, port: str):
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        running_config = self.send_command('show running-config').split('\n')
+        port_config = ''
+        for line in running_config:
+            s = self.find_or_empty(rf'.+port {port} .*', line)
+            if s:
+                port_config += s + '\n'
+
+        return port_config
+
+    def port_type(self, port: str):
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        output = self.send_command(f'show port {port} brief')
+        type_ = self.find_or_empty(r'\d+\s+\d+Base(\S+)\s+', output)
+
+        if type_ in COOPER_TYPES:
+            return 'COPPER'
+        elif type_ in FIBER_TYPES or type_ == 'X':
+            return 'SFP'
+
+    def get_port_errors(self, port: str):
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        return self.send_command(f'show port {port} statistics')
 
 
 class Huawei(BaseDevice):
@@ -476,7 +630,9 @@ class Cisco(BaseDevice):
         return self.SAVED_ERR
 
     def get_logs(self):
-        return self.send_command('show logging').replace('', '')
+        logs = self.send_command('show logging').replace('', '')
+        logs = '\n'.join(reversed(logs.split('\n')))
+        return logs
 
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
@@ -634,7 +790,7 @@ class Dlink(BaseDevice):
         return [
             [
                 line[0],  # interface
-                line[2].replace('LinkDown', 'down') if 'Enabled' in line[1] else 'admin down',  # status
+                re.sub(r'Link\s*?Down', 'down', line[2]) if 'Enabled' in line[1] else 'admin down',  # status
                 line[3]  # desc
             ]
             for line in result
@@ -784,6 +940,9 @@ class _Eltex(BaseDevice):
         self.mac = self.find_or_empty(r'System MAC [Aa]ddress:\s+(\S+)', system)
         self.model = self.find_or_empty(r'System Description:\s+(\S+)|System type:\s+Eltex (\S+)', system)
         self.model = self.model[0] or self.model[1]
+
+    def save_config(self):
+        pass
 
     def get_mac(self, port) -> list:
         pass
@@ -1138,6 +1297,9 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline('enable')
         self.session.expect(r'\S+#')
 
+    def save_config(self):
+        pass
+
     def split_port(self, port: str) -> tuple:
         """
         Разделяет строку порта на тип интерфейса и плата, слот, порт
@@ -1394,6 +1556,9 @@ class IskratelControl(BaseDevice):
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
         super(IskratelControl, self).__init__(session, ip, auth, model, vendor)
 
+    def save_config(self):
+        pass
+
     def get_mac(self, port) -> list:
         """
         Смотрим MAC'и на порту и отдаем в виде списка
@@ -1432,6 +1597,9 @@ class IskratelMBan(BaseDevice):
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
         super(IskratelMBan, self).__init__(session, ip, auth, model, vendor)
+
+    def save_config(self):
+        pass
 
     @property
     def get_service_ports(self):
@@ -1817,7 +1985,7 @@ class DeviceFactory:
         if self.protocol == 'telnet':
             self.session = pexpect.spawn(f'telnet {self.ip}')
             try:
-                for login, password in zip(self.login + ['admin'], self.password + ['admin']):
+                for login, password in zip(self.login, self.password):
                     while not connected:  # Если не авторизировались
                         login_stat = self.session.expect(
                             [
