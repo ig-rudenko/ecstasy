@@ -1,14 +1,16 @@
 import re
 import time
-
+import pathlib
 import pexpect
-import os
 import textfsm
 from re import findall, sub, match
 from abc import ABC, abstractmethod
 from functools import lru_cache
 
-TEMPLATE_FOLDER = os.path.split(os.path.abspath(__file__))[0]
+
+TEMPLATE_FOLDER = pathlib.Path(__file__).parent / 'templates'
+
+# TEMPLATE_FOLDER = os.path.split(os.path.abspath(__file__))[0] + 'templates'
 
 
 __all__ = [
@@ -228,7 +230,7 @@ class ProCurve(BaseDevice):
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
-        super(ProCurve, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         sys_info = self.send_command('show system-information', before_catch='General System Information', expect_command=False)
         self.model = self.find_or_empty(r'Base MAC Addr\s+: (\S+)', sys_info)
         self.serialno = self.find_or_empty(r'Serial Number\s+: (\S+)', sys_info)
@@ -237,7 +239,7 @@ class ProCurve(BaseDevice):
     def get_interfaces(self) -> list:
         result = []
         raw_intf_status = self.send_command('show interfaces brief', expect_command=False)
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/procurve_status.template') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/procurve_status.template') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
         intf_status = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
         for line in intf_status:
@@ -284,7 +286,7 @@ class ZTE(BaseDevice):
     def get_interfaces(self) -> list:
         output = self.send_command('show port')
 
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/zte.template') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/zte.template') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -300,7 +302,7 @@ class ZTE(BaseDevice):
         interfaces = self.get_interfaces()
         output = self.send_command('show vlan')
 
-        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/zte_vlan.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template', 'r') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
 
@@ -487,7 +489,7 @@ class Huawei(BaseDevice):
         else:
             ht = 'huawei'
 
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/{ht}.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/{ht}.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -616,7 +618,7 @@ class Cisco(BaseDevice):
     mac_format = r'\S\S\S\S\.\S\S\S\S\.\S\S\S\S'  # 0018.e7d3.1d43
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = '', vendor=''):
-        super(Cisco, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         version = self.send_command('show version')
         self.serialno = self.find_or_empty(r'System serial number\s+: (\S+)', version)
         self.mac = self.find_or_empty(r'[MACmac] [Aa]ddress\s+: (\S+)', version)
@@ -637,7 +639,7 @@ class Cisco(BaseDevice):
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
         output = sub('.+\nInterface', 'Interface', output)
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/cisco.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/cisco.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -784,7 +786,7 @@ class Dlink(BaseDevice):
         self.session.sendline("show ports des")
         self.session.expect('#')
         output = self.session.before.decode('utf-8')
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/d-link.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/d-link.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -803,7 +805,7 @@ class Dlink(BaseDevice):
         self.session.sendline('show vlan')
         self.session.expect(self.prompt, timeout=20)
         output = self.session.before.decode('utf-8')
-        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/d-link.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/d-link.template', 'r') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
         # сортируем и выбираем уникальные номера портов из списка интерфейсов
@@ -968,7 +970,7 @@ class EltexMES(BaseDevice):
     mac_format = r'\S\S:' * 5 + r'\S\S'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor='', mac=''):
-        super(EltexMES, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         self.mac = mac
         inv = self.send_command('show inventory')
         self.serialno = self.find_or_empty(r'SN: (\S+)', inv)
@@ -1002,7 +1004,7 @@ class EltexMES(BaseDevice):
             else:
                 print(self.ip, "Ошибка: timeout")
                 break
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/{self._template_name}.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/{self._template_name}.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -1100,7 +1102,7 @@ class EltexESR(EltexMES):
     _template_name = 'eltex-esr'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor='', mac=''):
-        super(EltexESR, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         system = self.send_command('show system')
         self.mac = mac
         self.serialno = self.find_or_empty(r'serial number:\s+(\S+)', system)
@@ -1112,7 +1114,7 @@ class Extreme(BaseDevice):
     mac_format = r'\S\S:' * 5 + r'\S\S'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
-        super(Extreme, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         system = self.send_command('show switch')
         self.mac = self.find_or_empty(r'System MAC:\s+(\S+)', system)
         self.model = self.find_or_empty(r'System Type:\s+(\S+)', system)
@@ -1133,7 +1135,7 @@ class Extreme(BaseDevice):
     def get_interfaces(self) -> list:
         # LINKS
         output_links = self.send_command('show ports information')
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/extreme_links.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_links.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result_port_state = int_des_.ParseText(output_links)  # Ищем интерфейсы
         for position, line in enumerate(result_port_state):
@@ -1147,7 +1149,7 @@ class Extreme(BaseDevice):
         # DESC
         output_des = self.send_command('show ports description')
 
-        with open(f'{TEMPLATE_FOLDER}/templates/interfaces/extreme_des.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_des.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result_des = int_des_.ParseText(output_des)  # Ищем desc
 
@@ -1172,7 +1174,7 @@ class Extreme(BaseDevice):
 
         output_vlans = self.send_command('show configuration "vlan"', before_catch=r'Module vlan configuration\.')
 
-        with open(f'{TEMPLATE_FOLDER}/templates/vlans_templates/extreme.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/extreme.template', 'r') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlans = vlan_templ.ParseText(output_vlans)
 
@@ -1285,6 +1287,157 @@ class Extreme(BaseDevice):
 class Qtech(BaseDevice):
     prompt = r'\S+#$'
     space_prompt = "--More--"
+    mac_format = r'\S\S-'*5 + r'\S\S'
+
+    def get_interfaces(self) -> list:
+        output = self.send_command(
+            command='show interface ethernet status',
+            expect_command=False
+        )
+        output = sub(r'[\W\S]+\nInterface', '\nInterface', output)
+        with open(f'{TEMPLATE_FOLDER}/interfaces/q-tech.template', 'r') as template_file:
+            int_des_ = textfsm.TextFSM(template_file)
+            result = int_des_.ParseText(output)  # Ищем интерфейсы
+        return [
+            [
+                line[0],
+                line[1].lower().replace('a-', 'admin '),
+                line[2]
+            ]
+            for line in result
+        ]
+
+    def get_vlans(self) -> list:
+        result = []
+        for line in self.get_interfaces():
+            if not line[0].startswith('V'):
+                output = self.send_command(
+                    command=f"show running-config interface ethernet {line[0]}"
+                )
+                vlans_group = findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
+                vlans = []
+                for v in vlans_group:
+                    vlans += v.split(';')
+                # switchport_mode = findall(r'switchport mode (\S+)', output)  # switchport mode
+
+                result.append(line + [vlans])
+
+        return result
+
+    @staticmethod
+    def validate_port(port: str):
+        port = port.strip()
+        if bool(findall(r'^\d+/\d+/\d+$', port)):
+            return port
+
+    def get_mac(self, port: str) -> list:
+        """
+        Поиск маков на порту
+        :return: [ ('vid', 'mac'), ... ]
+        """
+        port = self.validate_port(port)
+        if port is None:
+            return []
+
+        output = self.send_command(f'show mac-address-table interface ethernet {port}')
+        macs = findall(rf'(\d+)\s+({self.mac_format})', output)
+        return macs
+
+    def reload_port(self, port: str) -> str:
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        self.session.sendline('configure terminal')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.expect(self.prompt)
+        self.session.sendline('shutdown')
+        time.sleep(1)
+        self.session.sendline('no shutdown')
+        self.session.expect(self.prompt)
+        self.session.sendline('end')
+
+        r = self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return r + s
+
+    def set_port(self, port, status):
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        self.session.sendline('config terminal')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'interface ethernet {port}')
+        self.session.expect(self.prompt)
+        if status == 'up':
+            self.session.sendline('no shutdown')
+        elif status == 'down':
+            self.session.sendline('shutdown')
+        self.session.sendline('end')
+        self.session.expect(self.prompt)
+
+        self.session.before.decode(errors='ignore')
+        s = self.save_config()
+        return s
+
+    def save_config(self):
+        self.session.sendline('write')
+        self.session.sendline('Y')
+        if self.session.expect([self.prompt, 'successful']):
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
+    @lru_cache
+    def __get_port_info(self, port):
+        """Общая информация о порте"""
+
+        port_type = self.send_command(f'show interface ethernet{port}')
+        return f'<p>{port_type}</p>'
+
+    def get_port_info(self, port):
+        """Общая информация о порте"""
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        return '<br>'.join(self.__get_port_info(port).split('\n')[:10])
+
+    def port_type(self, port):
+        """Определяем тип порта: медь или оптика"""
+
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        port_type = self.find_or_empty(r'Hardware is (\S+)', self.__get_port_info(port))
+        if 'SFP' in port_type:
+            return 'SFP'
+
+        return 'COPPER'
+
+    def get_port_errors(self, port):
+
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        result = []
+        for line in self.__get_port_info(port).split('\n'):
+            if 'error' in line:
+                result.append(line)
+
+        return '\n'.join(result)
+
+    def port_config(self, port):
+        """Конфигурация порта"""
+
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        return self.send_command(f'show running-config interface ethernet {port}')
 
 
 class HuaweiMA5600T(BaseDevice):
@@ -1293,7 +1446,7 @@ class HuaweiMA5600T(BaseDevice):
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
-        super(HuaweiMA5600T, self).__init__(session, ip, auth, model, vendor)
+        super().__init__(session, ip, auth, model, vendor)
         self.session.sendline('enable')
         self.session.expect(r'\S+#')
 
@@ -1553,9 +1706,6 @@ class IskratelControl(BaseDevice):
     space_prompt = r'--More-- or \(q\)uit'
     mac_format = r'\S\S:'*5+r'\S\S'
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
-        super(IskratelControl, self).__init__(session, ip, auth, model, vendor)
-
     def save_config(self):
         pass
 
@@ -1594,9 +1744,6 @@ class IskratelMBan(BaseDevice):
     prompt = r'mBAN>\s'
     space_prompt = r'Press any key to continue or Esc to stop scrolling\.'
     mac_format = r'\S\S:'*5+r'\S\S'
-
-    def __init__(self, session: pexpect, ip: str, auth: dict, model='', vendor=''):
-        super(IskratelMBan, self).__init__(session, ip, auth, model, vendor)
 
     def save_config(self):
         pass
@@ -1877,8 +2024,10 @@ class DeviceFactory:
         elif 'ExtremeXOS' in version:
             return Extreme(self.session, self.ip, auth, vendor='Extreme')
 
+        # Q-Tech
         elif 'QTECH' in version:
-            return Qtech(self.session, self.ip, auth, vendor='Q-Tech')
+            model = BaseDevice.find_or_empty(r'\s+(\S+)\s+Device', version)
+            return Qtech(self.session, self.ip, auth, model=model, vendor='Q-Tech')
 
         # ISKRATEL CONTROL
         elif 'ISKRATEL' in version:

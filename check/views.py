@@ -394,14 +394,14 @@ def reload_port(request):
 
             return JsonResponse({
                 'message': message,
-                'status': color,
-                'color': '#08b736'
+                'status': '',
+                'color': color
             })
 
         return JsonResponse({
             'message': f'Оборудование недоступно!',
-            'status': color_warning,
-            'color': '#d3ad23'
+            'status': 'WARNING',
+            'color': color_warning
         })
 
     return JsonResponse({
