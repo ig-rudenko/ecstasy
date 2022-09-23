@@ -1,12 +1,12 @@
 Value INTF (\S+\s\S+\d)
 Value ADM (\S+)
 Value LINK (\S+)
-Value OPERSTAT (\S+)
+Value DESC (\S*)
 
 Start
   ^.*Information of ${INTF}
   ^.*Configuration:\s
+  ^.*Name:\s*${DESC}
   ^.*Port admin: ${ADM}
   ^.*Current status:\s
-  ^  Link status: ${LINK}
-  ^  Port operation status: ${OPERSTAT} -> Record
+  ^  Link status: ${LINK} -> Record
