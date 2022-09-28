@@ -1,6 +1,6 @@
-Value INTF (\S+\d)
+Value INTF ((Eth|GE|FE|FA)\S+\d+)
 Value PHY (\S+\s{0,1}\S+)
 Value DESCRIPTION ([\W\S]*$)
 
 Start
-  ^${INTF}\s+${PHY}\s+\S+\s+\S+\s+\S+\s+\d+\s+${DESCRIPTION} -> Record
+  ^.*${INTF}\s+${PHY}\s+\S+\s+\S+\s+\S+\s+\d+\s+${DESCRIPTION} -> Record
