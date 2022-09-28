@@ -1050,8 +1050,12 @@ class _Eltex(BaseDevice):
 
 
 class EltexMES(BaseDevice):
+    prompt = r'\S+#\s*'
+    space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
+                   r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
     _template_name = 'eltex-mes'
     mac_format = r'\S\S:' * 5 + r'\S\S'
+    vendor = 'Eltex'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model='', mac=''):
         super().__init__(session, ip, auth, model)
