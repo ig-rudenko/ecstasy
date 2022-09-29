@@ -133,7 +133,7 @@ class Interface:
     name: str = ''
     status: str = ''
     desc: str = ''
-    vlan: list = field(default_factory=[])
+    vlan: list = field(default_factory=list)
 
 
 @dataclass

@@ -1,3 +1,6 @@
+import json
+
+import requests
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
 from django.db.models import Q
@@ -202,6 +205,44 @@ def device_info(request, name):
     # Сохраняем изменения
     if model_update_fields:
         model_dev.save(update_fields=model_update_fields)
+
+    # Отправляем собранные интерфейсы через REST API
+    if current_status:
+        if with_vlans:
+            interfaces_to_save = [
+                {
+                    "Interface": line.name,
+                    "Status": line.status,
+                    "Description": line.desc,
+                    "VLAN's": line.vlan
+                } for line in dev.interfaces
+            ]
+
+        else:
+            interfaces_to_save = [
+                {
+                    "Interface": line.name,
+                    "Status": line.status,
+                    "Description": line.desc
+                } for line in dev.interfaces
+            ]
+        with open('logs', 'a') as f:
+            f.write(f'{interfaces_to_save}\n')
+
+        # Отправляем
+        url = Config.INTERFACE_API_URL
+        url += "vlans/" if with_vlans else 'interfaces/'
+        resp = requests.post(
+            url,
+            headers={"api-key": Config.INTERFACE_API_KEY},
+            data={
+                'interfaces': json.dumps(interfaces_to_save),
+                'dev': dev.name
+            }
+        )
+        with open('logs', 'a') as f:
+            f.write(f'{resp.status_code} {resp.text}\n')
+            print(resp.status_code, resp.text)
 
     data = {
         'dev': dev,

@@ -1,9 +1,16 @@
 function get_interfaces(first=false) {
 
     if ( document.getElementById('auto-update-interfaces').checked || first) {
+        let request_url = window.location.href
+
+        if (window.location.href.includes('?')) {
+            request_url += '&ajax=1'
+        } else {
+            request_url += '?ajax=1'
+        }
 
         $.ajax({
-            url: window.location.href + '&ajax=1',
+            url: request_url,
             type: 'GET',
             success: function( data ) {
                 $('#interfaces-table').html(data.data)
