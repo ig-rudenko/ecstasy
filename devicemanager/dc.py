@@ -3,7 +3,6 @@ import time
 import pathlib
 import pexpect
 import textfsm
-from re import findall, sub, match
 from abc import ABC, abstractmethod
 from functools import lru_cache
 
@@ -52,16 +51,16 @@ def _interface_normal_view(interface) -> str:
     'GigabitEthernet 1/0/12'
     """
 
-    interface_number = findall(r'(\d+([/\\]?\d*)*)', str(interface))
-    if match(r'^[Ee]t', interface):
+    interface_number = re.findall(r'(\d+([/\\]?\d*)*)', str(interface))
+    if re.match(r'^[Ee]t', interface):
         return f"Ethernet {interface_number[0][0]}"
-    elif match(r'^[Ff]a', interface):
+    elif re.match(r'^[Ff]a', interface):
         return f"FastEthernet {interface_number[0][0]}"
-    elif match(r'^[Gg][ieE]', interface):
+    elif re.match(r'^[Gg][ieE]', interface):
         return f"GigabitEthernet {interface_number[0][0]}"
-    elif match(r'^\d+', interface):
-        return findall(r'^\d+', interface)[0]
-    elif match(r'^[Tt]e', interface):
+    elif re.match(r'^\d+', interface):
+        return re.findall(r'^\d+', interface)[0]
+    elif re.match(r'^[Tt]e', interface):
         return f'TenGigabitEthernet {interface_number[0][0]}'
     else:
         return ''
@@ -84,7 +83,7 @@ def _range_to_numbers(ports_string: str) -> list:
     if 'to' in ports_string:
         # Если имеется формат "trunk,1 to 7 12 to 44"
         vv = [list(range(int(v[0]), int(v[1]) + 1)) for v in
-              [range_ for range_ in findall(r'(\d+)\s*to\s*(\d+)', ports_string)]]
+              [range_ for range_ in re.findall(r'(\d+)\s*to\s*(\d+)', ports_string)]]
         for v in vv:
             ports_split += v
         return sorted(ports_split)
@@ -136,7 +135,7 @@ class BaseDevice(ABC):
     def find_or_empty(pattern, string):
         """ Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку """
 
-        m = findall(pattern, string)
+        m = re.findall(pattern, string)
         if m:
             return m[0]
         else:
@@ -263,7 +262,7 @@ class ProCurve(BaseDevice):
         for line in intf_status:
             port = self.find_or_empty(r'[ABCD]*\d+', line[0])
             port_output = self.send_command(f'show interfaces ethernet {port}', expect_command=False)
-            descr = findall(r'Name\s*(:\s*\S*)\W+Link', port_output)
+            descr = re.findall(r'Name\s*(:\s*\S*)\W+Link', port_output)
             result.append(
                 [
                     line[0],
@@ -376,7 +375,7 @@ class ZTE(BaseDevice):
 
         output_macs = self.send_command(f'show fdb port {port} detail')
         mac_list = []
-        for i in findall(rf'({self.mac_format})\s+(\d+)', output_macs):
+        for i in re.findall(rf'({self.mac_format})\s+(\d+)', output_macs):
             mac_list.append(i[::-1])
 
         return mac_list
@@ -546,8 +545,8 @@ class Huawei(BaseDevice):
             if not line[0].startswith('V') and not line[0].startswith('NU') and not line[0].startswith('A'):
                 output = self.send_command(f"display current-configuration interface {_interface_normal_view(line[0])}", expect_command=False)
 
-                vlans_group = sub(r'(?<=undo).+vlan (.+)', '', output)  # Убираем строчки, где есть "undo"
-                vlans_group = list(set(findall(r'vlan (.+)', vlans_group)))  # Ищем строчки вланов, без повторений
+                vlans_group = re.sub(r'(?<=undo).+vlan (.+)', '', output)  # Убираем строчки, где есть "undo"
+                vlans_group = list(set(re.findall(r'vlan (.+)', vlans_group)))  # Ищем строчки вланов, без повторений
                 port_vlans = []
                 for v in vlans_group:
                     port_vlans = _range_to_numbers(v)
@@ -566,12 +565,12 @@ class Huawei(BaseDevice):
 
         if '2403' in self.model:
             mac_str = self.send_command(f'display mac-address interface {_interface_normal_view(port)}')
-            for i in findall(rf'({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+', mac_str):
+            for i in re.findall(rf'({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+', mac_str):
                 mac_list.append(i[::-1])
 
         elif '2326' in self.model:
             mac_str = self.send_command(f'display mac-address {_interface_normal_view(port)}')
-            for i in findall(rf'({self.mac_format})\s+(\d+)/\S+\s+\S+\s+\S+', mac_str):
+            for i in re.findall(rf'({self.mac_format})\s+(\d+)/\S+\s+\S+\s+\S+', mac_str):
                 mac_list.append(i[::-1])
 
         return mac_list
@@ -686,7 +685,7 @@ class Cisco(BaseDevice):
 
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
-        output = sub('.+\nInterface', 'Interface', output)
+        output = re.sub('.+\nInterface', 'Interface', output)
         with open(f'{TEMPLATE_FOLDER}/interfaces/cisco.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
@@ -708,14 +707,14 @@ class Cisco(BaseDevice):
                     before_catch="Building configuration",
                     expect_command=False
                 )
-                vlans_group = findall(r'(?<=access|llowed) vlan [ad\s]*(\S*\d)', output)  # Строчки вланов
+                vlans_group = re.findall(r'(?<=access|llowed) vlan [ad\s]*(\S*\d)', output)  # Строчки вланов
                 result.append(line + [vlans_group])
 
         return result
 
     def get_mac(self, port) -> list:
         mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}', expect_command=False)
-        return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
+        return re.findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
     def reload_port(self, port) -> str:
         self.session.sendline('configure terminal')
@@ -865,7 +864,7 @@ class Dlink(BaseDevice):
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
         # сортируем и выбираем уникальные номера портов из списка интерфейсов
-        port_num = set(sorted([int(findall(r'\d+', p[0])[0]) for p in interfaces]))
+        port_num = set(sorted([int(re.findall(r'\d+', p[0])[0]) for p in interfaces]))
 
         # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
         ports_vlan = {str(num): [] for num in range(1, len(port_num) + 1)}
@@ -880,18 +879,18 @@ class Dlink(BaseDevice):
         return interfaces_vlan
 
     def get_mac(self, port) -> list:
-        port = sub(r'\D', '', port)
+        port = re.sub(r'\D', '', port)
 
         mac_str = self.send_command(f'show fdb port {port}')
-        return findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
+        return re.findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
 
     @staticmethod
     def validate_port(port: str):
         port = port.strip()
-        if findall(r'^\d/\d+$', port):
-            port = sub(r'^\d/', '', port)
-        elif findall(r'\d+|\d+\s*\([FC]\)', port):
-            port = sub(r'\D', '', port)
+        if re.findall(r'^\d/\d+$', port):
+            port = re.sub(r'^\d/', '', port)
+        elif re.findall(r'\d+|\d+\s*\([FC]\)', port):
+            port = re.sub(r'\D', '', port)
         else:
             port = ''
         if port.isdigit():
@@ -981,7 +980,7 @@ class EdgeCore(BaseDevice):
                 vlans = []
                 [
                     vlans.extend(v.split(','))
-                    for v in findall(r'VLAN[ad ]*([\d,]*)', piece)
+                    for v in re.findall(r'VLAN[ad ]*([\d,]*)', piece)
                 ]
                 int_vlan[self.find_or_empty(r'^ethernet \d+/\d+', piece)] = sorted(list(set(vlans)))
 
@@ -1000,7 +999,7 @@ class EdgeCore(BaseDevice):
     @staticmethod
     def validate_port(port: str):
         port = port.strip()
-        if findall(r'^\S+ \d+/\d+$', port):
+        if re.findall(r'^\S+ \d+/\d+$', port):
             return _interface_normal_view(port)
 
     def get_mac(self, port: str) -> list:
@@ -1009,7 +1008,7 @@ class EdgeCore(BaseDevice):
             return []
 
         output = self.send_command(f'show mac-address-table interface {port}')
-        macs = findall(rf'({self.mac_format})\s+(\d+)', output)
+        macs = re.findall(rf'({self.mac_format})\s+(\d+)', output)
         return [m[::-1] for m in macs]
 
     def reload_port(self, port: str) -> str:
@@ -1077,7 +1076,7 @@ class EdgeCore(BaseDevice):
 
         output = self.send_command(f'show interfaces counters {port}').split('\n')
         for line in output:
-            if findall('Error', line):
+            if re.findall('Error', line):
                 return line
 
 
@@ -1191,7 +1190,7 @@ class EltexMES(BaseDevice):
                 output = self.send_command(
                     f'show running-config interface {_interface_normal_view(line[0])}', expect_command=False
                 )
-                vlans_group = findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
+                vlans_group = re.findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
                 port_vlans = []
                 if vlans_group:
                     for v in vlans_group:
@@ -1201,7 +1200,7 @@ class EltexMES(BaseDevice):
 
     def get_mac(self, port) -> list:
         mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
-        return findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
+        return re.findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
     def reload_port(self, port) -> str:
         self.session.sendline('configure terminal')
@@ -1390,7 +1389,7 @@ class Extreme(BaseDevice):
             return []
 
         output = self.send_command(f'show fdb ports {port}', expect_command=False)
-        macs = findall(rf'({self.mac_format})\s+v(\d+)', output)
+        macs = re.findall(rf'({self.mac_format})\s+v(\d+)', output)
 
         res = []
         print(macs)
@@ -1474,7 +1473,7 @@ class Qtech(BaseDevice):
             command='show interface ethernet status',
             expect_command=False
         )
-        output = sub(r'[\W\S]+\nInterface', '\nInterface', output)
+        output = re.sub(r'[\W\S]+\nInterface', '\nInterface', output)
         with open(f'{TEMPLATE_FOLDER}/interfaces/q-tech.template', 'r') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
@@ -1494,11 +1493,11 @@ class Qtech(BaseDevice):
                 output = self.send_command(
                     command=f"show running-config interface ethernet {line[0]}"
                 )
-                vlans_group = findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
+                vlans_group = re.findall(r'vlan [ad ]*(\S*\d)', output)  # Строчки вланов
                 vlans = []
                 for v in vlans_group:
                     vlans += v.split(';')
-                # switchport_mode = findall(r'switchport mode (\S+)', output)  # switchport mode
+                # switchport_mode = re.findall(r'switchport mode (\S+)', output)  # switchport mode
 
                 result.append(line + [vlans])
 
@@ -1507,7 +1506,7 @@ class Qtech(BaseDevice):
     @staticmethod
     def validate_port(port: str):
         port = port.strip()
-        if bool(findall(r'^\d+/\d+/\d+$', port)):
+        if bool(re.findall(r'^\d+/\d+/\d+$', port)):
             return port
 
     def get_mac(self, port: str) -> list:
@@ -1520,7 +1519,7 @@ class Qtech(BaseDevice):
             return []
 
         output = self.send_command(f'show mac-address-table interface ethernet {port}')
-        macs = findall(rf'(\d+)\s+({self.mac_format})', output)
+        macs = re.findall(rf'(\d+)\s+({self.mac_format})', output)
         return macs
 
     def reload_port(self, port: str) -> str:
@@ -1736,7 +1735,7 @@ class HuaweiMA5600T(BaseDevice):
             if line.startswith('-' * 10):  # Прерываем, если дошли до строки с разделителем ------------
                 break
 
-            if not findall(r'^[DU].+?(-?\d+\.?\d*)', line):
+            if not re.findall(r'^[DU].+?(-?\d+\.?\d*)', line):
                 html += f'<p>{line}</p>'  # Записываем в первую колонку данные
             else:
                 value = self.find_or_empty(r'-?\d+\.?\d*', line)  # Числовое значение
@@ -1807,12 +1806,12 @@ class HuaweiMA5600T(BaseDevice):
 
         self.session.sendline(f'display mac-address port {"/".join(indexes)}')
         com = self.send_command('\n', expect_command=False, before_catch='display mac-address')
-        macs1 = findall(rf'\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)', com)
+        macs1 = re.findall(rf'\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)', com)
 
         # Попробуем еще одну команду
         self.session.sendline(f'display security bind mac {"/".join(indexes)}')
         com = self.send_command('\n', expect_command=False, before_catch='display security')
-        macs2 = findall(rf'\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)', com)
+        macs2 = re.findall(rf'\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)', com)
 
         res = []
         print(macs1+macs2)
@@ -1906,11 +1905,11 @@ class IskratelControl(BaseDevice):
         [ ["vlan", "mac"],  ... ]
         """
 
-        if not findall(r'\d+/\d+', port):  # Неверный порт
+        if not re.findall(r'\d+/\d+', port):  # Неверный порт
             return []
 
         output = self.send_command(f'show mac-addr-table interface {port}')
-        macs = findall(rf'({self.mac_format})\s+(\d+)', output)
+        macs = re.findall(rf'({self.mac_format})\s+(\d+)', output)
 
         res = []
         for m in macs:
@@ -2012,13 +2011,13 @@ class IskratelMBan(BaseDevice):
         html += f'<p>'+self.find_or_empty(r"Profile Name\s+\S+", info)+'</p>'
 
         # Данные для таблицы
-        data_rate = findall(r'DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit', info) or [('', '')]
+        data_rate = re.findall(r'DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit', info) or [('', '')]
         max_rate = [(self.find_or_empty(r'Maximum DS attainable aggregate rate\s+(\d+) kbit', info),
                     self.find_or_empty(r'Maximum US attainable aggregate rate\s+(\d+) kbit', info))]
 
-        snr = findall(r'DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)', info) or [('', '')]
-        intl = findall(r'DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)', info) or [('', '')]
-        att = findall(r'DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)', info) or [('', '')]
+        snr = re.findall(r'DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)', info) or [('', '')]
+        intl = re.findall(r'DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)', info) or [('', '')]
+        att = re.findall(r'DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)', info) or [('', '')]
 
         # Наполняем таблицу
         for line in zip(names, data_rate + max_rate + snr + intl + att):
@@ -2040,7 +2039,7 @@ class IskratelMBan(BaseDevice):
     def get_port_info(self, port: str):
         port = port.strip()
         # Верные порты: port1, fasteth3, adsl2:1_40
-        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
+        if not re.findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
             return ''
 
         if 'port' in port:  # Если указан физический adsl порт
@@ -2064,12 +2063,12 @@ class IskratelMBan(BaseDevice):
         macs = []  # Итоговый список маков
 
         # Верные порты: port1, fasteth3, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
-        if not findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+/\d+$', port):
+        if not re.findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+/\d+$', port):
             return []
 
         if 'fasteth' in port or 'adsl' in port:
             output = self.send_command(f'show bridge mactable interface {port}', expect_command=False)
-            macs = findall(rf'(\d+)\s+({self.mac_format})', output)
+            macs = re.findall(rf'(\d+)\s+({self.mac_format})', output)
             return macs
 
         elif 'port' in port:  # Если указан физический adsl порт
@@ -2082,13 +2081,13 @@ class IskratelMBan(BaseDevice):
 
         for sp in self.get_service_ports:  # смотрим маки на сервис портах
             output = self.send_command(f'show bridge mactable interface dsl{port}:{sp}', expect_command=False)
-            macs.extend(findall(rf'(\d*)\s+({self.mac_format})', output))
+            macs.extend(re.findall(rf'(\d*)\s+({self.mac_format})', output))
 
         return macs
 
     def reload_port(self, port: str) -> str:
         port = port.strip()
-        index = findall(r'^port(\d+)$', port)
+        index = re.findall(r'^port(\d+)$', port)
         if not index:
             return f'Порт ({port}) нельзя перезагрузить'
 
@@ -2100,7 +2099,7 @@ class IskratelMBan(BaseDevice):
 
     def set_port(self, port: str, status: str):
         port = port.strip()
-        index = findall(r'^port(\d+)$', port)
+        index = re.findall(r'^port(\d+)$', port)
         if not index:
             return f'Порт ({port}) нельзя перезагрузить'
 
@@ -2114,7 +2113,7 @@ class IskratelMBan(BaseDevice):
         output = self.send_command(f'show dsl port', expect_command=False)
         res = []
         for line in output.split('\n'):
-            interface = findall(r'(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)', line)
+            interface = re.findall(r'(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)', line)
             if interface:
                 res.append([
                     interface[0][0],    # name
@@ -2254,7 +2253,7 @@ class DeviceFactory:
                     self.session.sendcontrol('C')
                 else:
                     break
-            if findall(r'VERSION : MA5600', version):
+            if re.findall(r'VERSION : MA5600', version):
                 model = BaseDevice.find_or_empty(r'VERSION : (MA5600\S+)', version)
                 return HuaweiMA5600T(self.session, self.ip, auth, model=model)
 
@@ -2302,7 +2301,7 @@ class DeviceFactory:
                         )
                         if login_stat == 0:
                             self.session.expect(pexpect.EOF)
-                            algorithm = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                            algorithm = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
                             if algorithm:
                                 algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
                                 self.session = pexpect.spawn(
@@ -2310,7 +2309,7 @@ class DeviceFactory:
                                 )
                         if login_stat == 1:
                             self.session.expect(pexpect.EOF)
-                            cipher = findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                            cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
                             if cipher:
                                 cipher_str = f' -c {cipher[0].split(",")[-1]}'
                                 self.session = pexpect.spawn(
