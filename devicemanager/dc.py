@@ -7,7 +7,7 @@ from re import findall, sub, match
 from abc import ABC, abstractmethod
 from functools import lru_cache
 
-
+# Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent / 'templates'
 
 
@@ -28,10 +28,12 @@ __all__ = [
 ]
 
 
+# Обозначения медных типов по стандарту IEEE 802.3
 COOPER_TYPES = [
     'T', 'TX', 'VG', 'CX', 'CR'
 ]
 
+# Обозначения оптических типов по стандарту IEEE 802.3
 FIBER_TYPES = [
     'FOIRL', 'F', 'FX', 'SX', 'LX', 'BX', 'EX', 'ZX', 'SR', 'ER', 'SW', 'LW', 'EW', 'LRM', 'PR', 'LR', 'ER', 'FR'
 ]
@@ -39,12 +41,17 @@ FIBER_TYPES = [
 
 def _interface_normal_view(interface) -> str:
     """
-    Приводит имя интерфейса к виду принятому по умолчанию для коммутаторов\n
-    Например: Eth 0/1 -> Ethernet 0/1
-              GE1/0/12 -> GigabitEthernet 1/0/12\n
-    :param interface:   Интерфейс в сыром виде (raw)
-    :return:            Интерфейс в общепринятом виде
+    Приводит имя интерфейса к виду принятому по умолчанию для коммутаторов
+
+    Например:
+
+    >>> _interface_normal_view("Eth 0/1")
+    'Ethernet 0/1'
+
+    >>> _interface_normal_view("GE1/0/12")
+    'GigabitEthernet 1/0/12'
     """
+
     interface_number = findall(r'(\d+([/\\]?\d*)*)', str(interface))
     if match(r'^[Ee]t', interface):
         return f"Ethernet {interface_number[0][0]}"
@@ -61,6 +68,18 @@ def _interface_normal_view(interface) -> str:
 
 
 def _range_to_numbers(ports_string: str) -> list:
+    """
+    Переводит строку с диапазоном чисел в список
+
+    Например:
+
+    >>> _range_to_numbers("10 to 14")
+    [10, 11, 12, 13, 14]
+
+    >>> _range_to_numbers("134-136, 234, 411")
+    [134, 135, 136, 234, 411]
+    """
+
     ports_split = []
     if 'to' in ports_string:
         # Если имеется формат "trunk,1 to 7 12 to 44"
@@ -90,6 +109,10 @@ def _range_to_numbers(ports_string: str) -> list:
 
 
 class BaseDevice(ABC):
+    """
+    Базовый класс для устройств, содержит обязательные методы и начальные параметры для выполнения удаленных команд
+    """
+
     prompt: str  # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
 
     # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
@@ -111,7 +134,7 @@ class BaseDevice(ABC):
 
     @staticmethod
     def find_or_empty(pattern, string):
-        """Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку"""
+        """ Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку """
 
         m = findall(pattern, string)
         if m:
@@ -186,39 +209,37 @@ class BaseDevice(ABC):
     def get_interfaces(self) -> list:
         """
         Интерфейсы на оборудовании
+
         :return: [ ['name', 'status', 'desc'], ... ]
         """
-        pass
 
     @abstractmethod
     def get_vlans(self) -> list:
         """
         Интерфейсы и VLAN на оборудовании
+
         :return: [ ['name', 'status', 'desc', 'vlans'], ... ]
         """
-        pass
 
     @abstractmethod
     def get_mac(self, port: str) -> list:
         """
         Поиск маков на порту
+
         :return: [ ('vid', 'mac'), ... ]
         """
-        pass
 
     @abstractmethod
     def reload_port(self, port: str) -> str:
         """Перезагрузка порта"""
-        pass
 
     @abstractmethod
     def set_port(self, port: str, status: str) -> str:
         """Изменение состояния порта"""
-        pass
 
     @abstractmethod
     def save_config(self):
-        """"""
+        """ Сохраняем конфигурацию оборудования """
 
 
 class ProCurve(BaseDevice):
@@ -257,6 +278,16 @@ class ProCurve(BaseDevice):
 
 
 class ZTE(BaseDevice):
+    """
+    Для оборудования от производителя ZTE
+
+    Проверено для:
+     - ZXR10 2928E
+     - ZXR10 2936-FI
+     - ZXR10 2952E
+
+    """
+
     prompt = r'\S+\(cfg\)#|\S+>'
     space_prompt = "----- more -----"
     mac_format = r'\S\S\.' * 5 + r'\S\S'  # e1.3f.45.d6.23.53
@@ -426,6 +457,14 @@ class ZTE(BaseDevice):
 
 
 class Huawei(BaseDevice):
+    """
+    Для оборудования от производителя Huawei
+
+    Проверено для:
+     - S2403TP
+     - S2326TP
+    """
+
     prompt = r'<\S+>$|\[\S+\]$|Unrecognized command'
     space_prompt = r"---- More ----"
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
@@ -612,6 +651,20 @@ class Huawei(BaseDevice):
 
 
 class Cisco(BaseDevice):
+    """
+    Для оборудования от производителя Cisco
+
+    Проверено для:
+     - WC-C3550
+     - WC-C3560
+     - WC-C3750G
+     - WC-C4500X
+     - ME-3400
+     - ME-3600X
+     - ME-3800X
+     - ME-4924
+    """
+
     prompt = r'\S+#$'
     space_prompt = r' --More-- '
     mac_format = r'\S\S\S\S\.\S\S\S\S\.\S\S\S\S'  # 0018.e7d3.1d43
@@ -630,11 +683,6 @@ class Cisco(BaseDevice):
             if self.session.expect([self.prompt, r'\[OK\]']):
                 return self.SAVED_OK
         return self.SAVED_ERR
-
-    def get_logs(self):
-        logs = self.send_command('show logging').replace('', '')
-        logs = '\n'.join(reversed(logs.split('\n')))
-        return logs
 
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
@@ -730,6 +778,18 @@ class Cisco(BaseDevice):
 
 
 class Dlink(BaseDevice):
+    """
+    Для оборудования от производителя D-Link
+
+    Проверено для:
+     - DES-1228
+     - DES-3028
+     - DES-3200
+     - DES-3526
+     - DGS-1210
+     - DGS-3420
+    """
+
     prompt = r'\S+#'
     space_prompt = None
     mac_format = r'\S\S-'*5+r'\S\S'
@@ -888,6 +948,10 @@ class Dlink(BaseDevice):
 
 
 class EdgeCore(BaseDevice):
+    """
+    Для оборудования от производителя Edge-Core
+    """
+
     prompt = r'\S+#$'
     space_prompt = '---More---'
     vendor = 'Edge-Core'
@@ -1018,6 +1082,13 @@ class EdgeCore(BaseDevice):
 
 
 class _Eltex(BaseDevice):
+    """
+    Для оборудования от производителя Eltex
+
+    Промежуточный класс, используется, чтобы определить модель
+
+    """
+
     prompt = r'\S+#\s*'
     space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
                    r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
@@ -1050,6 +1121,14 @@ class _Eltex(BaseDevice):
 
 
 class EltexMES(BaseDevice):
+    """
+    Для оборудования от производителя Eltex модель MES
+
+    Проверено для:
+     - 2324
+     - 3324
+    """
+
     prompt = r'\S+#\s*'
     space_prompt = r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |" \
                    r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
@@ -1197,6 +1276,14 @@ class EltexESR(EltexMES):
 
 
 class Extreme(BaseDevice):
+    """
+    Для оборудования от производителя Extreme
+
+    Проверено для:
+     - X460
+     - X670
+    """
+
     prompt = r'\S+\s*#\s*$'
     space_prompt = "Press <SPACE> to continue or <Q> to quit:"
     mac_format = r'\S\S:' * 5 + r'\S\S'
@@ -1216,10 +1303,6 @@ class Extreme(BaseDevice):
         if self.session.expect([self.prompt, r'successfully']):
             return self.SAVED_OK
         return self.SAVED_ERR
-
-    def get_logs(self, lines=5):
-        logs = self.send_command(f'show log', pages_limit=lines)
-        return logs
 
     def get_interfaces(self) -> list:
         # LINKS
@@ -1374,6 +1457,13 @@ class Extreme(BaseDevice):
 
 
 class Qtech(BaseDevice):
+    """
+    Для оборудования от производителя Q-Tech
+
+    Проверено для:
+     - QSW-8200
+    """
+
     prompt = r'\S+#$'
     space_prompt = "--More--"
     mac_format = r'\S\S-'*5 + r'\S\S'
@@ -1531,6 +1621,10 @@ class Qtech(BaseDevice):
 
 
 class HuaweiMA5600T(BaseDevice):
+    """
+    Для оборудования DSLAM MA5600T от производителя Huawei
+    """
+
     prompt = r'config\S+#|\S+#'
     space_prompt = r'---- More \( Press \'Q\' to break \) ----'
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
@@ -1793,6 +1887,10 @@ class HuaweiMA5600T(BaseDevice):
 
 
 class IskratelControl(BaseDevice):
+    """
+    Для плат управления DSLAM от производителя Iskratel
+    """
+
     prompt = r'\(\S+\)\s*#'
     space_prompt = r'--More-- or \(q\)uit'
     mac_format = r'\S\S:'*5+r'\S\S'
@@ -1833,6 +1931,13 @@ class IskratelControl(BaseDevice):
 
 
 class IskratelMBan(BaseDevice):
+    """
+    Для плат DSLAM от производителя Iskratel
+
+    Проверено для:
+     - MPC8560
+    """
+
     prompt = r'mBAN>\s'
     space_prompt = r'Press any key to continue or Esc to stop scrolling\.'
     mac_format = r'\S\S:'*5+r'\S\S'
@@ -1843,9 +1948,14 @@ class IskratelMBan(BaseDevice):
 
     @property
     def get_service_ports(self):
+        """ Сервисные порты для DSLAM """
         return ['1_32', '1_33', '1_40']
 
     def port_info_parser(self, info: str) -> str:
+        """
+        Парсит информацию о порте DSL и создает таблицу html для представления показателей сигнал/шума, затухания,
+        мощности и прочей информации
+        """
 
         def color(val: str, s: str) -> str:
             if not val:
@@ -2024,7 +2134,10 @@ class Juniper(BaseDevice):
 
 
 class DeviceFactory:
-    """Подключение к оборудованию, определение вендора и возврат соответствующего класса"""
+    """
+    Подключение к оборудованию, определение вендора и возврат соответствующего класса
+    """
+
     def __init__(self, ip: str, protocol: str, auth_obj=None):
         self.ip = ip
 

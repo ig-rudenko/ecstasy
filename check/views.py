@@ -1,25 +1,35 @@
+import re
 import json
-
+import pexpect
 import requests
-from django.shortcuts import render, redirect, get_object_or_404, resolve_url
+
+from datetime import datetime
+from configparser import ConfigParser
+
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
+from django.shortcuts import render, redirect, get_object_or_404, resolve_url
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+
 from ecstasy_project import settings
 from . import models
 from devicemanager import *
 
-from datetime import datetime
-import pexpect
-import re
-from django.contrib.auth.decorators import login_required
-from configparser import ConfigParser
-
+# Устанавливаем файл конфигурации для работы с devicemanager'ом
 Config.set(settings.ZABBIX_CONFIG_FILE)
 
 
-def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
+def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str) -> None:
+    """
+    Записываем логи о действиях пользователя "user"
+
+    :param user: Пользователь, который совершил действие
+    :param model_device: Оборудование, по отношению к которому было совершено действие
+    :param operation: Описание действия
+    :return: None
+    """
 
     if not isinstance(user, models.User) or not isinstance(model_device, (models.Devices, models.Bras)) \
             or not isinstance(operation, str):
@@ -61,12 +71,16 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
 
 
 def has_permission_to_device(device_to_check: models.Devices, user):
+    """ Определяет, имеет ли пользователь "user" право взаимодействовать с оборудованием "device_to_check" """
+
     if device_to_check.group_id in [g['id'] for g in user.profile.devices_groups.all().values('id')]:
         return True
     return False
 
 
 def permission(perm=None):
+    """ Декоратор для определения прав пользователя """
+
     p = models.Profile.permissions_level
 
     def decorator(func):
@@ -83,6 +97,8 @@ def permission(perm=None):
 
 
 def by_zabbix_hostid(request, hostid):
+    """ Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy """
+
     dev = Device.from_hostid(hostid)
     try:
         if dev and models.Devices.objects.get(name=dev.name):
@@ -100,6 +116,8 @@ def by_zabbix_hostid(request, hostid):
 
 @login_required
 def show_devices(request):
+    """ Список всех имеющихся устройств """
+
     p = request.GET.get('page', 1)
     try:
         p = int(p)
@@ -132,7 +150,8 @@ def show_devices(request):
 
 @login_required
 def device_info(request, name):
-    print('device info')
+    """ Вывод главной информации об устройстве и его интерфейсов """
+
     model_dev = get_object_or_404(models.Devices, name=name)  # Получаем объект устройства из БД
 
     if not has_permission_to_device(model_dev, request.user):
@@ -151,10 +170,12 @@ def device_info(request, name):
     elastic_settings = models.LogsElasticStackSettings.load()
     if elastic_settings.is_set():
         try:
+            # Форматируем строку поиска логов
             query_str = elastic_settings.query_str.format(device=model_dev)
         except AttributeError:
             query_str = ''
 
+        # Формируем ссылку для kibana
         logs_url = f"{elastic_settings.kibana_url}?_g=(filters:!(),refreshInterval:(pause:!t,value:0)," \
                    f"time:(from:now-{elastic_settings.time_range},to:now))" \
                    f"&_a=(columns:!({elastic_settings.output_columns}),interval:auto," \
@@ -280,30 +301,6 @@ def device_info(request, name):
 
 @login_required
 @permission(models.Profile.READ)
-def get_logs(request, dev_name):
-    model_dev = models.Devices.objects.get(name=dev_name)
-
-    if request.GET.get('ajax', None):
-        dev = Device(dev_name)
-        dev.protocol = model_dev.port_scan_protocol
-        dev.snmp_community = model_dev.snmp_community
-        dev.auth_obj = model_dev.auth_group
-
-        with dev.connect() as conn:
-            if hasattr(conn, 'get_logs'):
-                logs = conn.get_logs()
-            else:
-                logs = 'Не поддерживается просмотр логов для данного устройства'
-        return JsonResponse({
-            'logs': logs
-        })
-
-    else:
-        return render(request, 'check/logs.html', {"dev": model_dev})
-
-
-@login_required
-@permission(models.Profile.READ)
 def get_port_mac(request):
     """Смотрим MAC на порту"""
 
@@ -416,6 +413,7 @@ def reload_port(request):
                     except pexpect.TIMEOUT:
                         message = 'Timeout'
                         color = color_error
+
                 # UP and DOWN
                 elif user_permission_level >= 2 and status in ['up', 'down']:
                     try:
@@ -578,4 +576,6 @@ def cut_user_session(request):
                 log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
 
     return HttpResponseRedirect(
-        f'/device/parse_mac?device={request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}')
+        f'/device/parse_mac?device='
+        f'{request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}'
+    )

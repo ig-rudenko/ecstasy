@@ -26,7 +26,6 @@ urlpatterns = [
     path('device/parse_mac', views.parse_mac, name='parse_mac'),
     path('device/cut-session', views.cut_user_session, name='cut-session'),
     path('device/<name>', views.device_info, name='device_info'),
-    path('device/<dev_name>/logs', views.get_logs, name='get_logs'),
     path('by-zabbix/<hostid>', views.by_zabbix_hostid, name='by-zabbix-hostid'),
 
     path('accounts/', include('django.contrib.auth.urls')),
