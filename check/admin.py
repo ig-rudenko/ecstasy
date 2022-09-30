@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
+from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions, LogsElasticStackSettings
 from django.utils.safestring import mark_safe
 
 
@@ -80,3 +80,8 @@ class UsersActionsAdmin(admin.ModelAdmin):
     search_fields = ['action']
     readonly_fields = list_display
     list_per_page = 50
+
+
+@admin.register(LogsElasticStackSettings)
+class LogsElasticStackSettingsAdmin(admin.ModelAdmin):
+    list_display = ['kibana_url', 'time_range', 'query_str']

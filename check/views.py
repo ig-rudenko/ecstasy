@@ -147,9 +147,27 @@ def device_info(request, name):
     # Сканируем интерфейсы в реальном времени?
     current_status = bool(request.GET.get('current_status', False)) and ping
 
+    # Elastic Stack settings
+    elastic_settings = models.LogsElasticStackSettings.load()
+    if elastic_settings.is_set():
+        try:
+            query_str = elastic_settings.query_str.format(device=model_dev)
+        except AttributeError:
+            query_str = ''
+
+        logs_url = f"{elastic_settings.kibana_url}?_g=(filters:!(),refreshInterval:(pause:!t,value:0)," \
+                   f"time:(from:now-{elastic_settings.time_range},to:now))" \
+                   f"&_a=(columns:!({elastic_settings.output_columns}),interval:auto," \
+                   f"query:(language:{elastic_settings.query_lang}," \
+                   f"query:'{query_str}')," \
+                   f"sort:!(!('{elastic_settings.time_field}',desc)))"
+    else:
+        logs_url = ''
+
     data = {
         'dev': dev,
         'ping': ping,
+        'logs_url': logs_url,
         'zabbix_host_id': dev.zabbix_info.hostid,
         'current_status': current_status,
         'perms': models.Profile.permissions_level.index(models.Profile.objects.get(user_id=request.user.id).permissions)
