@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ru">
+<link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static "css/styles.css" %}" />
+    <link rel="stylesheet" href="{% static "css/circle_load.css" %}" />
+    <link rel="stylesheet" href="{% static "css/menu.css" %}" />
+    <link rel="stylesheet" href="{% static "css/input.css" %}" />
+    {% block style %}
+    {% endblock %}
+    <title>
+        {% block title %}
+        Find Description
+        {% endblock %}
+    </title>
+</head>
+<body>
+    <ul class="menu-main">
+        <li><a href="{% url 'find-descr' %}" >Find Description</a></li>
+        <li><a href="{% url 'vlan-traceroute' %}" >Vlan traceroute</a></li>
+        <li><a href="{% url 'search-mac' %}" >MAC decode</a></li>
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+    {% block body %}
+        <h1 class="center_" style="text-align: center; margin-bottom: 10px;">
+            {% block header %}{% endblock %}
+        </h1>
+            {% block content %}{% endblock %}
+        <div class="footer" style="padding-bottom: 20px; text-align: center">
+            {% block footer %}
+                Если нашли несоответствие, то пишите на <a href="mailto:irudenko@sevtelecom.ru">irudenko@sevtelecom.ru</a>
+            {% endblock %}
+        </div>
+    {% endblock %}
+    {% block javascript %}{% endblock %}
+</body>
+</html>

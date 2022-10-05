@@ -1,0 +1,38 @@
+{% extends "tools/base.html" %}
+{% load static %}
+
+{% block header %}
+    Поиск по описанию портов
+{% endblock %}
+{% block content %}
+    <div style="text-align: left">
+        <p style="margin: 5px">Всего оборудования имеется: {{ devs_count }}</p>
+        <p style="margin: 5px">Из них интерфейсов собрано: {{ intf_count }}</p>
+    </div>
+    <div class="center_">
+        <div style="text-align: center">
+            <label style="text-align: center">
+                Необходимо найти:
+                <input id="find_str" type="text" required autofocus
+                       style="width: 450px; margin: 10px; margin-right: 0; font-size: 22px"
+                       content="asd">
+            </label>
+            <input class="atuin-btn" type="button" value="строгий поиск" onclick="start_find('string')">
+            <input class="atuin-btn" type="button" value="как регулярное выражение" onclick="start_find('regex')">
+            <input id="stop-btn" class="atuin-btn" type="button" value="остановить поиск" onclick="stop_search()"
+                   style="display: none; background: #e35f5f">
+            <div id="load_circle" class="cssload-container" style="margin: 30px; padding-bottom: 20px; display: none">
+                <div class="cssload-whirlpool"></div>
+            </div>
+        </div>
+    </div>
+    <div style="min-height: 60%">
+        <div id="content-point" style="text-align: center; margin: 20px"></div>
+    </div>
+
+{% endblock %}
+
+{% block javascript %}
+<script src="{% static '/js/jquery.min.js' %}"></script>
+<script src="{% static 'js/find_description.js' %}"></script>
+{% endblock %}

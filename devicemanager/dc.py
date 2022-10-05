@@ -775,6 +775,19 @@ class Cisco(BaseDevice):
         )
         return config
 
+    def search_mac(self, mac_address: str):
+
+        formatted_mac = '{}{}{}{}.{}{}{}{}.{}{}{}{}'.format(*mac_address)
+
+        match = self.send_command(f'show arp | include {formatted_mac}')
+
+        # Форматируем вывод
+        with open(f'{TEMPLATE_FOLDER}/templates/arp_format/{self.vendor}.template') as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+
+        return formatted_result
+
 
 class Dlink(BaseDevice):
     """
@@ -2130,6 +2143,39 @@ class IskratelMBan(BaseDevice):
 class Juniper(BaseDevice):
     prompt = r'-> $'
     space_prompt = '--- more --- '
+    vendor = 'juniper'
+    mac_format = '\S\S:'*5 + '\S\S'
+
+    def search_mac(self, mac_address: str):
+
+        formatted_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*mac_address)
+
+        match = self.send_command(f'show arp | match {formatted_mac}')
+
+        # Форматируем вывод
+        with open(f'{TEMPLATE_FOLDER}/templates/arp_format/{self.vendor}-{self.model}.template') as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+
+        return formatted_result
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port: str) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
+
+    def save_config(self):
+        pass
 
 
 class DeviceFactory:
@@ -2171,13 +2217,15 @@ class DeviceFactory:
             m = self.session.expect(
                 [
                     r']$',
-                    r'-More-|--\(more\)--',
+                    r'-More-|-+\(more.*?\)-+',
                     r'>\s*$',
                     r'#\s*',
                     pexpect.TIMEOUT
                 ],
                 timeout=3
             )
+            print(m)
+
             version += str(self.session.before.decode('utf-8'))
             if m == 1:
                 self.session.send(' ')
@@ -2237,6 +2285,10 @@ class DeviceFactory:
         elif 'IskraTEL' in version:
             model = BaseDevice.find_or_empty(r'CPU: IskraTEL \S+ (\S+)', version)
             return IskratelMBan(self.session, self.ip, auth, model=model)
+
+        elif 'JUNOS' in version:
+            model = BaseDevice.find_or_empty(r'Model: (\S+)', version)
+            return Juniper(self.session, self.ip, auth, model)
 
         elif '% Unknown command' in version:
             self.session.sendline('display version')
@@ -2384,7 +2436,7 @@ class DeviceFactory:
                     return f'Неверный логин или пароль! ({self.ip})'
             except pexpect.exceptions.TIMEOUT:
                 return f'Login Error: Время ожидания превышено! ({self.ip})'
-
+        self.session.sendline('\n')
         return self.__get_device()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

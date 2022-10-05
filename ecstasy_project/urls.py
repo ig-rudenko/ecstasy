@@ -29,4 +29,6 @@ urlpatterns = [
     path('by-zabbix/<hostid>', views.by_zabbix_hostid, name='by-zabbix-hostid'),
 
     path('accounts/', include('django.contrib.auth.urls')),
+
+    path('tools/', include('net_tools.urls'))
 ]

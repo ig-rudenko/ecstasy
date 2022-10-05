@@ -1,0 +1,65 @@
+{% extends "tools/base.html" %}
+{% load static %}
+{% block title %}
+MAC decode
+{% endblock %}
+{% block style %}
+    <link rel="stylesheet" href="{% static "css/mac_page.css" %}" />
+{% endblock %}
+{% block content %}
+
+    <div id="mac-element" style="text-align: center" class="mac-element">
+        <input id="mac" type="text" required placeholder="00:00:00:00:00:00" maxlength="17"
+               value="{{ mac|default_if_none:'' }}"
+        >
+    </div>
+
+    <div id="result" class="block_hide">
+        <div class="back">
+            <div id="vendor" class="vendor block_hide">
+                <h1>
+                    vendor
+                </h1>
+                <div></div>
+                <p id="vendor_name">
+
+                </p>
+            </div>
+
+            <div id="zabbix" class="zabbix block_hide">
+                <h1>
+                    zabbix
+                </h1>
+                <div></div>
+                <p id="zabbix_host_name">
+
+                </p>
+            </div>
+
+            <div id="info" class="info block_hide">
+                <h1>
+                    IP/VLAN
+                </h1>
+                <div></div>
+                <p id="info_ip"></p>
+                <p id="info_mac"></p>
+                <p id="info_vlan"></p>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block javascript %}
+<script src="{% static '/js/jquery.min.js' %}"></script>
+<script src="{% static 'js/search_mac.js' %}"></script>
+<script>
+{% if mac %}
+start_mac_search()
+{% endif %}
+</script>
+{% endblock %}

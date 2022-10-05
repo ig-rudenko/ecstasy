@@ -14,11 +14,13 @@ from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
 from ecstasy_project import settings
+from app_settings.models import LogsElasticStackSettings
 from . import models
+from app_settings.models import ZabbixConfig
 from devicemanager import *
 
 # Устанавливаем файл конфигурации для работы с devicemanager'ом
-Config.set(settings.ZABBIX_CONFIG_FILE)
+Config.set(ZabbixConfig.load())
 
 
 def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str) -> None:
@@ -167,7 +169,7 @@ def device_info(request, name):
     current_status = bool(request.GET.get('current_status', False)) and ping
 
     # Elastic Stack settings
-    elastic_settings = models.LogsElasticStackSettings.load()
+    elastic_settings = LogsElasticStackSettings.load()
     if elastic_settings.is_set():
         try:
             # Форматируем строку поиска логов
@@ -569,7 +571,7 @@ def cut_user_session(request):
                     # Логи
                     log(request.user, b, f'cut access-user mac-address {mac}')
 
-            with dev.connect(protocol=model_dev.port_scan_protocol, auth_obj=model_dev.auth_group) as session:
+            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
                 s = session.reload_port(request.POST['port'])
 
                 # Логи
