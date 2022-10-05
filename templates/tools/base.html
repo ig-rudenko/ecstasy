@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 {% load static %}
+<!--suppress ALL -->
 <html lang="ru">
 <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
 <head>
     <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
     <link rel="stylesheet" href="{% static "css/circle_load.css" %}" />
     <link rel="stylesheet" href="{% static "css/menu.css" %}" />
@@ -17,12 +20,57 @@
     </title>
 </head>
 <body>
-    <ul class="menu-main">
-        <li><a href="{% url 'find-descr' %}" >Find Description</a></li>
-        <li><a href="{% url 'vlan-traceroute' %}" >Vlan traceroute</a></li>
-        <li><a href="{% url 'search-mac' %}" >MAC decode</a></li>
-        <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
+
+{% include 'menu-icons.html' %}
+
+<div class="px-3 py-2 text-bg-dark">
+  <div class="container">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+
+      <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
+        <svg class="bi me-2" width="70" height="70" role="img" aria-label="Ecstasy">
+            <use xlink:href="#ecstasy"></use>
+        </svg>
+          <h4>Ecstasy</h4>
+      </a>
+
+      <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
+
+{#              HOME #}
+        <li>
+          <a href="{% url 'home' %}" class="nav-link text-white">
+            <svg class="bi d-block mx-auto mb-1" width="24" height="24"><use xlink:href="#home"></use></svg>
+            Main
+          </a>
+        </li>
+
+{#              LIST DEVICES #}
+        <li>
+          <a href="#" class="nav-link text-white">
+            <svg class="bi d-block mx-auto mb-1" width="24" height="24"><use xlink:href="#table"></use></svg>
+            List Devices
+          </a>
+        </li>
+
+{#              TOOLS #}
+        <li>
+          <a href="{% url 'find-descr' %}" class="nav-link text-white">
+            <svg class="bi d-block mx-auto mb-1" width="24" height="24"><use xlink:href="#grid"></use></svg>
+            Tools
+          </a>
+        </li>
+
+{#              LOGOUT #}
+        <li>
+          <a href="{% url 'logout' %}" class="nav-link text-white">
+            <svg class="bi d-block mx-auto mb-1" width="24" height="24"><use xlink:href="#logout"></use></svg>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
     {% block body %}
         <h1 class="center_" style="text-align: center; margin-bottom: 10px;">
             {% block header %}{% endblock %}
