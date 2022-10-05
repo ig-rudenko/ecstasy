@@ -1,14 +1,12 @@
 import os
 from re import findall
 import requests as requests_lib
-# from dc.arp_info import get_arp
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 
 from net_tools.finder import find_description, find_vlan
 from net_tools.models import VlanName, DevicesForMacSearch
-from check.models import AuthGroup
 from devicemanager.device import Device
 
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
@@ -31,7 +29,7 @@ def get_vendor(request, mac):
 
 @login_required
 def find_as_str(request):
-    """  """
+    """ Вывод результата поиска портов по описанию """
 
     if not request.GET.get('string'):
         return JsonResponse({
@@ -49,6 +47,8 @@ def find_as_str(request):
 
 
 def get_mac_from(model_dev, mac_address: str, result: list):
+    """ Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result """
+
     dev = Device(model_dev.name)
     with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
         if hasattr(session, 'search_mac'):
@@ -61,16 +61,22 @@ def get_mac_from(model_dev, mac_address: str, result: list):
 
 @login_required
 def mac_info(request, mac):
+    """
+    Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
+
+    В многопоточном режиме собирает данные [ip, mac, vlan] из оборудования и проверяет,
+    есть ли в Zabbix узел сети с таким IP и добавляет имя и hostid
+    """
+
     devices_for_search = DevicesForMacSearch.objects.all()
 
     mac_address = ''.join(findall(r'[a-zA-Z\d]', mac)).lower()
     if not mac_address or len(mac_address) < 6 or len(mac_address) > 12:
         return []
     match = []
-    # with ThreadPoolExecutor(max_workers=1) as execute:
-    for dev in devices_for_search:
-        # execute.submit(get_mac_from, dev.device, mac, match)
-        get_mac_from(dev.device, mac, match)
+    with ThreadPoolExecutor() as execute:
+        for dev in devices_for_search:
+            execute.submit(get_mac_from, dev.device, mac, match)
 
     names = []  # Список имен оборудования и его hostid из Zabbix
 

@@ -18,6 +18,7 @@
           <th scope="col">Имя</th>
           <th scope="col">IP</th>
           <th scope="col">Тип</th>
+          <th scope="col">Модель</th>
           <th scope="col">Группа</th>
         </tr>
       </thead>
@@ -48,7 +49,8 @@
               </td>
               <td>{{ dev.name }}</td>
               <td>{{ dev.ip }}</td>
-              <td>{{ dev.vendor }}</td>
+              <td>{{ dev.vendor | default_if_none:'' }}</td>
+              <td>{{ dev.model | default_if_none:'' }}</td>
               <td>{{ dev.group.name }}</td>
             </tr>
         {% endfor %}
