@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'check.apps.CheckConfig',
+    'check',
     'net_tools',
     'app_settings'
 ]

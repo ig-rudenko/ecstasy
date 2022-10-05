@@ -117,6 +117,11 @@ def by_zabbix_hostid(request, hostid):
 
 
 @login_required
+def home(request):
+    return render(request, 'home.html')
+
+
+@login_required
 def show_devices(request):
     """ Список всех имеющихся устройств """
 

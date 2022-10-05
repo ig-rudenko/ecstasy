@@ -20,7 +20,8 @@ from check import views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('', views.show_devices, name='home'),
+    path('', views.home, name='home'),
+    path('devices', views.show_devices, name='devices-list'),
     path('device/port/mac', views.get_port_mac, name='get_mac'),
     path('device/port/reload', views.reload_port, name='port_reload'),
     path('device/parse_mac', views.parse_mac, name='parse_mac'),
