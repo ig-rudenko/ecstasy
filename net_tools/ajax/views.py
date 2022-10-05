@@ -50,19 +50,17 @@ def find_as_str(request):
 
 def get_mac_from(model_dev, mac_address: str, result: list):
     dev = Device(model_dev.name)
-    print(dev.name, dev.ping())
     with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
-        print(session, session.vendor, session.model)
         if hasattr(session, 'search_mac'):
             res = session.search_mac(mac_address)
-            print(res)
             if res:
                 result.append([', '.join(res[0])])
+
+    print(result)
 
 
 @login_required
 def mac_info(request, mac):
-    print(request, mac)
     devices_for_search = DevicesForMacSearch.objects.all()
 
     mac_address = ''.join(findall(r'[a-zA-Z\d]', mac)).lower()
@@ -71,7 +69,6 @@ def mac_info(request, mac):
     match = []
     # with ThreadPoolExecutor(max_workers=1) as execute:
     for dev in devices_for_search:
-        print('dev--', dev.device)
         # execute.submit(get_mac_from, dev.device, mac, match)
         get_mac_from(dev.device, mac, match)
 
@@ -81,7 +78,7 @@ def mac_info(request, mac):
         # Если получили совпадение
         ip = findall(r'\d+\.\d+\.\d+\.\d+', str(match))
 
-        zabbix_settings = ZabbixConfig
+        zabbix_settings = ZabbixConfig.load()
         zbx = ZabbixAPI(server=zabbix_settings.url)
         zbx.login(user=zabbix_settings.login, password=zabbix_settings.password)
         # Ищем хост по IP
