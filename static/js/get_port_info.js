@@ -61,27 +61,33 @@ function start() {
 
             if (data.port_config) {
                 $('#port-config').html(
-                `<button id="port-config" style="margin-left: 30px" type="button" class="btn btn-outline-primary"
+                `<button id="port-config" type="button" class="btn "
                     data-bs-toggle="popover" data-bs-placement="bottom"
                     data-bs-custom-class="custom-popover"
                     data-bs-title="Текущая"
                     data-bs-content="`+data.port_config.replace(re, '<br>')+`"
-                >Конфигурация порта</button>`)
+                >
+                <svg class="bi me-2" width="16" height="16" role="img" aria-label="Ecstasy">
+                    <use xlink:href="#gear-icon"></use></svg>                
+                Конфигурация порта</button>`)
             }
 
             console.log(data.port_errors)
             if (data.port_errors) {
                 $('#port-errors').html(
-                `<button id="port-errors" style="margin-left: 30px" type="button" class="btn btn-outline-warning"
-                    data-bs-toggle="popover" data-bs-placement="bottom"
+                `<button id="port-errors" type="button" class="btn "
+                    data-bs-toggle="popover" data-bs-placement="right"
                     data-bs-custom-class="custom-popover"
                     data-bs-title="Ошибки"
                     data-bs-content="`+data.port_errors.replace(RegExp(' ', 'g'), '&nbsp;').replace(re, '<br>')+`"
-                >Ошибки на порту</button>`)
+                >
+                <svg class="bi me-2" width="16" height="16" role="img">
+                    <use xlink:href="#warning-icon"></use></svg>
+                Ошибки на порту</button>`)
             }
 
 
-            $('#port-info').html(data.port_info)
+            $('#port-info').html(data.port_info+'<hr>')
             $('#macs-table').html(data.macs)
 
             if (data.port_type) {

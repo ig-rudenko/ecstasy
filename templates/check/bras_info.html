@@ -4,32 +4,96 @@
 {{ mac }}
 {% endblock %}
 
-{% block content %}
-    <h2 style="text-align: center">{{ device }}</h2>
-    <h3>Порт: {{ port }}</h3>
-    <h3 class="alert alert-secondary">{{ desc }}</h3>
-    <h3 style="text-align: center; font-family: monospace" class="alert alert-primary">{{ mac }}</h3>
 
+
+{% block content %}
+    <h2 class="alert" style="text-align: center">
+        <a class="text-dark text-decoration-none" href="{% url 'device_info' device %}?current_status=1">{{ device }}</a>
+    </h2>
+
+
+    <div class="container text-center">
+        <div class="row row-cols-auto">
+            {# Имя порта #}
+            <div class="col">
+                <a class="btn btn-light position-relative"
+                href="{% url 'get_mac' %}?device={{ device }}&port={{ port }}&desc={{ desc }}">
+                    {{ port }}
+                </a>
+            </div>
+
+            {# DESCRIPTION #}
+            <div class="col" style="margin-left: 10px">
+                <h3><span class="badge bg-info">{{ desc }}</span></h3>
+            </div>
+
+        </div>
+    </div>
+
+
+<style>
+#mac {
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-size: 22px;
+    padding: 0;
+    color: rgb(33,37,41);
+    border: 0;
+    outline: 0;
+    width: 220px;
+    border-radius: 5px;
+    text-align: center;
+    background: lightgrey;
+    vertical-align: middle;
+}
+</style>
+
+{#    ФОРМА СБРОСА СЕССИИ    #}
+
+{% if result %}
     <form method="post" action="{% url 'cut-session' %}">
       {% csrf_token %}
       <input type="text" name="device" value="{{ device }}" hidden>
       <input type="text" name="port" value="{{ port }}" hidden>
-      <input type="text" name="mac" value="{{ mac }}" hidden>
-      <span class="badge rounded-pill bg-info text-dark" style="cursor: pointer">
-          <input type="submit" value="Сбросить сессию" class="btn">
+
+{#        СБРОСИТЬ СЕССИЮ  #}
+      <span class="badge rounded-pill text-dark" style="cursor: pointer">
+            <svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-bootstrap-reboot" viewBox="0 0 16 16">
+              <path d="M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 1 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8z"/>
+              <path d="M6.641 11.671V8.843h1.57l1.498 2.828h1.314L9.377 8.665c.897-.3 1.427-1.106 1.427-2.1 0-1.37-.943-2.246-2.456-2.246H5.5v7.352h1.141zm0-3.75V5.277h1.57c.881 0 1.416.499 1.416 1.32 0 .84-.504 1.324-1.386 1.324h-1.6z"/>
+            </svg>
+            <input type="submit" value="Сбросить сессию" class="btn">
       </span>
+
+{#        MAC  #}
+      <input id="mac" type="text" name="mac" value="{{ mac }}" disabled>
+
     </form>
+{% endif %}
     <hr>
-    {% for bras, res in result.items %}
-        <h4>{{ bras }}</h4>
-        <div>
-            {{ res|linebreaks }}
+
+    {% for err in errors %}
+        <div class="alert alert-danger">
+            <span>{{ err }}</span>
         </div>
-        <hr>
-    {% empty %}
-        <div>Not Found :(</div>
     {% endfor %}
 
+    {% for bras, res in result.items %}
+        <div class="container border rounded-5 h-100 p-4 ">
+            <h4><img height="50px" src="{% static 'img/bras.svg' %}"> {{ bras }}</h4>
+            <div>
+                {{ res|linebreaks }}
+            </div>
+        </div>
+    {% empty %}
+    <div class="container text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" fill="currentColor" class="bi bi-emoji-frown" viewBox="0 0 16 16">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+          <path d="M4.285 12.433a.5.5 0 0 0 .683-.183A3.498 3.498 0 0 1 8 10.5c1.295 0 2.426.703 3.032 1.75a.5.5 0 0 0 .866-.5A4.498 4.498 0 0 0 8 9.5a4.5 4.5 0 0 0-3.898 2.25.5.5 0 0 0 .183.683zM7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5z"/>
+        </svg>
+    </div>
+    {% endfor %}
+
+{#    КНОПКА ВВЕРХ #}
 <button
     type="button"
     class="btn btn-primary btn-floating btn-lg"

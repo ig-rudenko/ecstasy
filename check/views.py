@@ -1,10 +1,9 @@
-import re
 import json
+import re
 import pexpect
-import requests
 
 from datetime import datetime
-from configparser import ConfigParser
+from net_tools.models import DevicesInfo
 
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
@@ -168,10 +167,12 @@ def device_info(request, name):
     dev.protocol = model_dev.port_scan_protocol  # Устанавливаем протокол для подключения
     dev.snmp_community = model_dev.snmp_community  # Устанавливаем community для подключения
     dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
+    dev.ip = model_dev.ip  # IP адрес
     ping = dev.ping()  # Оборудование доступно или нет
 
     # Сканируем интерфейсы в реальном времени?
     current_status = bool(request.GET.get('current_status', False)) and ping
+    print(' Сканируем интерфейсы в реальном времени?')
 
     # Elastic Stack settings
     elastic_settings = LogsElasticStackSettings.load()
@@ -179,6 +180,7 @@ def device_info(request, name):
         try:
             # Форматируем строку поиска логов
             query_str = elastic_settings.query_str.format(device=model_dev)
+            print('Форматируем строку поиска логов')
         except AttributeError:
             query_str = ''
 
@@ -189,6 +191,7 @@ def device_info(request, name):
                    f"query:(language:{elastic_settings.query_lang}," \
                    f"query:'{query_str}')," \
                    f"sort:!(!('{elastic_settings.time_field}',desc)))"
+        print('Формируем ссылку для kibana')
     else:
         logs_url = ''
 
@@ -209,6 +212,7 @@ def device_info(request, name):
 
     # Собираем интерфейсы
     status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status)
+    print('Собираем интерфейсы')
 
     model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 
@@ -242,18 +246,24 @@ def device_info(request, name):
     if dev.zabbix_info.inventory.model and dev.zabbix_info.inventory.model != model_dev.model:
         model_dev.model = dev.zabbix_info.inventory.model
         model_update_fields.append('model')
+    print('Обновляем модель устройства, взятую непосредственно во время подключения')
 
     # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
     if dev.zabbix_info.inventory.vendor and dev.zabbix_info.inventory.vendor != model_dev.vendor:
         model_dev.vendor = dev.zabbix_info.inventory.vendor
         model_update_fields.append('vendor')
+    print('Обновляем вендора оборудования, если он отличается от реального либо еще не существует')
 
     # Сохраняем изменения
     if model_update_fields:
         model_dev.save(update_fields=model_update_fields)
+    print('Сохраняем изменения')
 
-    # Отправляем собранные интерфейсы через REST API
+    # Сохраняем интерфейсы
     if current_status:
+        print('Сохраняем интерфейсы')
+        current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
+
         if with_vlans:
             interfaces_to_save = [
                 {
@@ -263,8 +273,13 @@ def device_info(request, name):
                     "VLAN's": line.vlan
                 } for line in dev.interfaces
             ]
+            current_device_info.vlans = json.dumps(interfaces_to_save)
+            current_device_info.vlans_date = datetime.now()
+            current_device_info.save(update_fields=['vlans', 'vlans_date'])
 
         else:
+            print('interfaces_to_save')
+            print(dev.interfaces)
             interfaces_to_save = [
                 {
                     "Interface": line.name,
@@ -272,23 +287,10 @@ def device_info(request, name):
                     "Description": line.desc
                 } for line in dev.interfaces
             ]
-        with open('logs', 'a') as f:
-            f.write(f'{interfaces_to_save}\n')
-
-        # Отправляем
-        url = Config.INTERFACE_API_URL
-        url += "vlans/" if with_vlans else 'interfaces/'
-        resp = requests.post(
-            url,
-            headers={"api-key": Config.INTERFACE_API_KEY},
-            data={
-                'interfaces': json.dumps(interfaces_to_save),
-                'dev': dev.name
-            }
-        )
-        with open('logs', 'a') as f:
-            f.write(f'{resp.status_code} {resp.text}\n')
-            print(resp.status_code, resp.text)
+            print('current_device_info.interfaces')
+            current_device_info.interfaces = json.dumps(interfaces_to_save)
+            current_device_info.interfaces_date = datetime.now()
+            current_device_info.save(update_fields=['interfaces', 'interfaces_date'])
 
     data = {
         'dev': dev,
@@ -311,11 +313,6 @@ def device_info(request, name):
 def get_port_mac(request):
     """Смотрим MAC на порту"""
 
-    # Стороннее приложение для поиска по маку
-    parser = ConfigParser()
-    parser.read(f"{settings.BASE_DIR}/zabbix_conf")
-    mac_finder_app_url = parser.get('MAC', 'finder_url')
-
     if request.method == 'GET' and request.GET.get('device') and request.GET.get('port'):
         model_dev = get_object_or_404(models.Devices, name=request.GET.get('device'))
 
@@ -329,7 +326,6 @@ def get_port_mac(request):
             'port': request.GET.get('port'),
             'desc': request.GET.get('desc'),
             'perms': models.Profile.permissions_level.index(request.user.profile.permissions),
-            'mac_finder_url': mac_finder_app_url or None
         }
 
         if dev.ping():
@@ -504,25 +500,31 @@ def parse_mac(request):
 
             brases = models.Bras.objects.all()
             user_info = {}
+            errors = []
 
             for b in brases:
 
-                with pexpect.spawn(f"telnet {b.ip}") as telnet:
-                    telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
-                    telnet.sendline(b.login)
+                try:
+                    with pexpect.spawn(f"telnet {b.ip}") as telnet:
+                        telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=10)
+                        telnet.sendline(b.login)
 
-                    telnet.expect("[Pp]ass")
-                    telnet.sendline(b.password)
+                        telnet.expect("[Pp]ass")
+                        telnet.sendline(b.password)
 
-                    if telnet.expect(['>', 'password needs to be changed. Change now?']):
-                        telnet.sendline('N')
+                        if telnet.expect(['>', 'password needs to be changed. Change now?']):
+                            telnet.sendline('N')
 
-                    bras_output = send_command(telnet, f'display access-user mac-address {mac}')
-                    if 'No online user!' not in bras_output:
-                        user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
-                        if user_index:
-                            bras_output = send_command(telnet, f'display access-user user-id {user_index[0]} verbose')
-                        user_info[b.name] = bras_output
+                        bras_output = send_command(telnet, f'display access-user mac-address {mac}')
+                        if 'No online user!' not in bras_output:
+                            user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
+                            if user_index:
+                                bras_output = send_command(telnet, f'display access-user user-id {user_index[0]} verbose')
+                            user_info[b.name] = bras_output
+                except pexpect.TIMEOUT:
+                    errors.append(
+                        'Не удалось подключиться к ' + b.name
+                    )
 
                 # Логи
                 log(request.user, b, f'display access-user mac-address {mac}')
@@ -531,7 +533,8 @@ def parse_mac(request):
                 request, 'check/bras_info.html',
                 {
                     'mac': mac, 'result': user_info, 'port': request.GET['port'],
-                    'device': request.GET['device'], 'desc': request.GET.get('desc')
+                    'device': request.GET['device'], 'desc': request.GET.get('desc'),
+                    'errors': errors
                 }
             )
 
@@ -557,31 +560,36 @@ def cut_user_session(request):
 
             brases = models.Bras.objects.all()
 
-            for b in brases:
-                print(b)
-                with pexpect.spawn(f"telnet {b.ip}") as telnet:
-                    telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
-                    telnet.sendline(b.login)
+            try:
+                for b in brases:
+                    print(b)
+                    with pexpect.spawn(f"telnet {b.ip}") as telnet:
+                        telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
+                        telnet.sendline(b.login)
 
-                    telnet.expect(r"[Pp]ass")
-                    telnet.sendline(b.password)
+                        telnet.expect(r"[Pp]ass")
+                        telnet.sendline(b.password)
 
-                    if telnet.expect(['>', 'password needs to be changed. Change now?']):
-                        telnet.sendline('N')
+                        if telnet.expect(['>', 'password needs to be changed. Change now?']):
+                            telnet.sendline('N')
 
-                    telnet.sendline('system-view')
-                    telnet.sendline('aaa')
-                    telnet.sendline(f'cut access-user mac-address {mac}')
+                        telnet.sendline('system-view')
+                        telnet.sendline('aaa')
+                        telnet.sendline(f'cut access-user mac-address {mac}')
+
+                        # Логи
+                        log(request.user, b, f'cut access-user mac-address {mac}')
+            except pexpect.TIMEOUT:
+                pass
+
+            else:
+                with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
+                    s = session.reload_port(request.POST['port'])
 
                     # Логи
-                    log(request.user, b, f'cut access-user mac-address {mac}')
+                    log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
 
-            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
-                s = session.reload_port(request.POST['port'])
-
-                # Логи
-                log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
-
+    # Возвращаем обратно на страницу просмотра сессии
     return HttpResponseRedirect(
         f'/device/parse_mac?device='
         f'{request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}'

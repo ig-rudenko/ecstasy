@@ -23,7 +23,7 @@
                 {% endif %}
                 {% if mac_finder_url %}
                   <a class="btn btn-outline-secondary" target="_blank"
-                     href="{{ mac_finder_url }}/{{ mac.1 }}">
+                     href="{% url 'search-mac-address' mac.1 %}">
                   FIND
                   </a>
                 {% endif %}
