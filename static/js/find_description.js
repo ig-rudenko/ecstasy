@@ -59,7 +59,7 @@ function add_row(data, add_after, search_id){
 function start_find (find_type) {
     let find_str = document.getElementById('find_str').value
     if (!find_str){return}
-    start_search(find_str, find_type)
+    // start_search(find_str, find_type)
     $.ajax({
         data: {
             'string': find_str,
@@ -69,27 +69,28 @@ function start_find (find_type) {
         url: '/tools/ajax/find',
         success: function (response) {
             console.log(response)
-            if (response.data.length && SEARCH) {
+            $('#content-point').html(response)
+            // if (response.data) {
 
                 // Добавляем первую строчку в таблицу
-                add_row(
-                    response.data,
-                    'end-table-head'+hashCode(find_str)+hashCode(find_type),
-                    hashCode(find_str)+hashCode(find_type)
-                )
+                // add_row(
+                //     response.data,
+                //     'end-table-head'+hashCode(find_str)+hashCode(find_type),
+                //     hashCode(find_str)+hashCode(find_type)
+                // )
+                //
+                // document.getElementById('data_table'+hashCode(find_str)+hashCode(find_type)).style.display = ''
+                //
+                // document.getElementById('percent-'+hashCode(find_str)+hashCode(find_type)).innerHTML = response.data[0].percent
+                //     + ' Найдено: ' + count_dict.get(hashCode(find_str)+hashCode(find_type))
+                //
+                // stop_search()
 
-                document.getElementById('data_table'+hashCode(find_str)+hashCode(find_type)).style.display = ''
-
-                document.getElementById('percent-'+hashCode(find_str)+hashCode(find_type)).innerHTML = response.data[0].percent
-                    + ' Найдено: ' + count_dict.get(hashCode(find_str)+hashCode(find_type))
-
-                stop_search()
-
-            } else {
-                stop_search()
-                document.getElementById('content-point').innerHTML = 'Ничего не найдено'
-                document.getElementById('data_div'+hashCode(find_str)+hashCode(find_type)).style.display = 'none'
-                }
+            // } else {
+            //     stop_search()
+            //     document.getElementById('content-point').innerHTML = 'Ничего не найдено'
+            //     document.getElementById('data_div'+hashCode(find_str)+hashCode(find_type)).style.display = 'none'
+            //     }
         },
         error: function (response) {
             console.log(response)

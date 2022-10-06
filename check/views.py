@@ -212,7 +212,6 @@ def device_info(request, name):
 
     # Собираем интерфейсы
     status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status)
-    print('Собираем интерфейсы')
 
     model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 

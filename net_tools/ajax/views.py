@@ -40,10 +40,13 @@ def find_as_str(request):
         re_string=request.GET.get('string') if request.GET.get('type') == 'regex' else ''
     )
 
-    return JsonResponse({
-        'data': result,
-        'status': 'end'
-    })
+    return render(
+        request, 'tools/descriptions_table.html',
+        {
+            'data': result,
+            'pattern': request.GET.get('string')
+        }
+    )
 
 
 def get_mac_from(model_dev, mac_address: str, result: list):

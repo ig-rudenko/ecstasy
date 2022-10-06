@@ -1,4 +1,4 @@
-from re import findall, sub
+from re import findall, sub, IGNORECASE
 from net_tools.models import DevicesInfo, DescNameFormat
 import json
 
@@ -32,13 +32,20 @@ def find_description(finding_string: str, re_string: str):
                 continue
             for line in interfaces:
                 if (finding_string and finding_string.lower() in line.get('Description').lower()) or \
-                        (re_string and findall(re_string, line.get('Description'))):
+                        (re_string and findall(re_string, line.get('Description'), flags=IGNORECASE)):
                     # Если нашли совпадение в строке
+
+                    # Ищем искомый фрагмент
+                    replaced_str = findall(finding_string or re_string, line['Description'], flags=IGNORECASE)[0]
 
                     result.append({
                         'Device': device.device_name or 'Dev' + ' ' + device.ip,
                         'Interface': line['Interface'],
-                        'Description': line['Description'],
+
+                        # Выделяем искомый фрагмент с помощью тега <mark></mark>
+                        'Description': sub(
+                            replaced_str, f'<mark>{replaced_str}</mark>', line['Description'], flags=IGNORECASE
+                        ),
                         'SavedTime': device.interfaces_date.strftime('%d.%m.%Y %H:%M:%S'),
                         'percent': '100%'
                     })
