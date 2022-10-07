@@ -1,89 +1,67 @@
-{% extends 'tools/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}
 Vlan traceroute
 {% endblock %}
-{% block header %}
-    <p style="color: #dcdcdc">VLAN traceroute</p>
+
+{% block links %}
+    <link rel="stylesheet" href="{% static "css/circle_load.css" %}" />
+    <link rel="stylesheet" href="{% static "css/input.css" %}" />
 {% endblock %}
+
+
+
 {% block content %}
     <style>
         body {
             background-image: url("/static/img/background.png");
             background-repeat: no-repeat;
-            background-position: center center;
+            background-position: top center;
             background-color: #222222;
         }
     </style>
-    <div style="text-align: left">
-        <p style="margin: 5px; color: #909090">Оборудования в базе: {{ devs_count }}</p>
-        <p style="margin: 5px; color: #909090">Проанализировано: {{ intf_count }}</p>
-        <div id="container" style="width: 220px; height: 10px"></div>
+
+    <div class="row">
+        <h4 class="text-light py-2">Traceroute</h4>
+        <div class="col-md-1">
+          <input style="text-align: center" type="email" class="form-control rounded-5" id="vlan" autofocus placeholder="vlan">
+        </div>
+        <div class="col-md-auto">
+            <h3>
+                <span class="text-light badge bg-secondary" id="vlan_desc">
+                    vlan-desc
+                </span>
+            </h3>
+        </div>
     </div>
-    <div class="center_">
-        <div style="text-align: center">
-            <div>
-                <input type="text" class="input-search" id="vlan" autofocus
-                       style="text-align: center; background-color: #3e3e3e">
-                <label class="search" for="input-search"></label>
-            </div>
-            <div style="margin-top: 20px; color: white">
-                <label id="vlan-desc" style="border-radius: 5px; background-color: #3e3e3e; margin-top: 10px"></label>
-            </div>
-            <div style="text-align: right; color: white">
-                <label>
-                Показывать пустые порты
-                <input type="checkbox" id="empty-ports">
-            </label>
-            </div>
 
-            <div style="text-align: right; color: white">
-                <label>
-                Обозначать admin down порты тонкой линией связи
-                <input type="checkbox" id="only-admin-up">
-            </label>
+    <div class="row">
+        <div class="col-md-3 py-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="only-admin-up">
+              <label class="form-check-label text-light" for="only-admin-up">Указывать выключенные порты</label>
             </div>
-
-            <div id="load_circle" class="cssload-container" style="margin: 30px; padding-bottom: 20px; display: none">
-                <div class="cssload-whirlpool"></div>
+            <div class="form-check form-switch py-1">
+              <input class="form-check-input" type="checkbox" role="switch" id="empty-ports">
+              <label class="form-check-label text-light" for="empty-ports">Показывать пустые порты</label>
             </div>
         </div>
     </div>
-    <div style="height: 0%" id="includedContent"></div>
-    <div id="main-div" style="padding-bottom: 10px;">
 
-        <div id="content-point" style="text-align: center; margin: 20px"></div>
+    <div class="" style="height: 900px" id="includedContent">
+
     </div>
 
 {% endblock %}
 
-{% block footer %}
-    <label style="color: white; padding: 10px; border-radius: 5px; background-color: #222222">Если нашли несоответствие, то пишите на
-        <a style="color: #4ac1f7" href="mailto:irudenko@sevtelecom.ru">irudenko@sevtelecom.ru</a>
-    </label>
-{% endblock %}
 
-{% block javascript %}
+{% block js %}
 <link  href="{% static 'css/vis-4.15.1.css' %}" rel="stylesheet" type="text/css"/>
 <script src="{% static 'js/jquery.min.js' %}" type="text/javascript"></script>
-<script src="{% static 'js/progressbar.min.js' %}" type="text/javascript"></script>
+{#<script src="{% static 'js/progressbar.min.js' %}" type="text/javascript"></script>#}
 <script src="{% static 'js/vis-network-4.16.1.min.js' %}" type="text/javascript"></script>
 <script src="{% static 'js/vlan_traceroute.js' %}" type="text/javascript"></script>
-<script>
-
-var bar = new ProgressBar.Line(
-    '#container',
-    {
-        easing: 'easeInOut',
-        {#color: 'blue',#}
-        trailColor: "#900000",
-        duration: 2000,
-        strokeWidth: 2.1,
-    }
-);
-bar.animate({{ percent }});  // Value from 0.0 to 1.0
-
-</script>
-
 {% endblock %}
+
+{% block footer %}{% endblock %}

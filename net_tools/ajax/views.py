@@ -35,7 +35,7 @@ def find_as_str(request):
         return JsonResponse({
             'data': []
         })
-    result = find_description(
+    result, count = find_description(
         finding_string=request.GET.get('string') if request.GET.get('type') == 'string' else '',
         re_string=request.GET.get('string') if request.GET.get('type') == 'regex' else ''
     )
@@ -44,6 +44,7 @@ def find_as_str(request):
         request, 'tools/descriptions_table.html',
         {
             'data': result,
+            'count': count,
             'pattern': request.GET.get('string')
         }
     )
@@ -58,8 +59,6 @@ def get_mac_from(model_dev, mac_address: str, result: list):
             res = session.search_mac(mac_address)
             if res:
                 result.append([', '.join(res[0])])
-
-    print(result)
 
 
 @login_required

@@ -17,10 +17,11 @@ def get_stat(st: str):
     return devs_count, intf_count
 
 
-def find_description(finding_string: str, re_string: str):
+def find_description(finding_string: str, re_string: str) -> tuple:
     """ Поиск портов на всем оборудовании, описание которых совпадает с finding_string """
 
     result = []
+    count = 0
 
     all_devices = DevicesInfo.objects.all()
 
@@ -46,16 +47,17 @@ def find_description(finding_string: str, re_string: str):
                         'Description': sub(
                             replaced_str, f'<mark>{replaced_str}</mark>', line['Description'], flags=IGNORECASE
                         ),
+                        'original_desc': line['Description'],
                         'SavedTime': device.interfaces_date.strftime('%d.%m.%Y %H:%M:%S'),
                         'percent': '100%'
                     })
+                    count += 1
 
         except Exception as e:
             print(e)
             pass
 
-    print(result)
-    return result
+    return result, count
 
 
 def reformatting(name: str):
@@ -125,7 +127,6 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
     intf_found_count = 0  # Кол-во найденных интерфейсов на этом устройстве
 
     for line in interfaces:
-        print(line)
         vlans_list = []  # Список VLAN'ов на порту
 
         # Если вланы сохранены в виде строки
@@ -142,7 +143,6 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
                     for v in vv:
                         vlans_list += v
                     # Добавляем единичные 711 800 to 801 1959 1961 1994 2005
-                    print(line["VLAN's"].split())
 
                     vlans_list += line["VLAN's"].split()
                 else:

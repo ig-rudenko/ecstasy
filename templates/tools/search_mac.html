@@ -1,11 +1,15 @@
-{% extends "tools/base.html" %}
+{% extends "base.html" %}
 {% load static %}
+
 {% block title %}
 MAC decode
 {% endblock %}
-{% block style %}
+
+{% block links %}
+    <link rel="stylesheet" href="{% static "css/circle_load.css" %}" />
     <link rel="stylesheet" href="{% static "css/mac_page.css" %}" />
 {% endblock %}
+
 {% block content %}
 
     <div id="mac-element" style="text-align: center" class="mac-element">
@@ -55,7 +59,7 @@ MAC decode
 {% endblock %}
 
 {% block javascript %}
-<script src="{% static '/js/jquery.min.js' %}"></script>
+<script src="{% static 'js/jquery.min.js' %}"></script>
 <script src="{% static 'js/search_mac.js' %}"></script>
 <script>
 {% if mac %}

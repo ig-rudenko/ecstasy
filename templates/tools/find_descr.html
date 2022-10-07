@@ -1,20 +1,22 @@
-{% extends "check/base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}
     Поиск по описанию портов
 {% endblock %}
+
 {% block content %}
+
 <style>
-mark {
-    padding: 0;
-}
-tr {
-    text-align: center;
-}
-a {
-    cursor: pointer;
-}
+    mark {
+        padding: 0;
+    }
+    tr {
+        text-align: center;
+    }
+    a {
+        cursor: pointer;
+    }
 </style>
 
 <div class="row py-3">
@@ -24,36 +26,59 @@ a {
     </div>
 
     <div class="col-md-2" style="text-align: right">
-        <img height="100px" src="{% static 'img/search-description-2.svg' %}">
+        <img height="100px" src="{% static 'img/search-description-2.svg' %}" alt="search-description-image">
     </div>
 </div>
 
-    <div class="input-group mb-3">
-        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Поиск</button>
-        <ul class="dropdown-menu">
+<div class="input-group mb-3">
+    <button id="search-menu" class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Поиск
+    </button>
+    <ul class="dropdown-menu">
 
-            <li><a class="dropdown-item" onclick="start_find('string')">
-                <svg style="margin-right: 5px" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-distribute-vertical" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M1 1.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 0-1h-13a.5.5 0 0 0-.5.5zm0 13a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 0-1h-13a.5.5 0 0 0-.5.5z"/>
-                  <path d="M2 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7z"/>
-                </svg>
-                Строгий поиск
-            </a></li>
+        <li><a class="dropdown-item" onclick="start_find('string')">
+            <svg style="margin-right: 5px" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-distribute-vertical" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1 1.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 0-1h-13a.5.5 0 0 0-.5.5zm0 13a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 0-1h-13a.5.5 0 0 0-.5.5z"></path>
+              <path d="M2 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7z"></path>
+            </svg>
+            Строгий поиск
+        </a></li>
 
-            <li><a class="dropdown-item" onclick="start_find('regex')">
-                <svg style="margin-right: 5px" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-r-circle" viewBox="0 0 16 16">
-                  <path d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8Zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0ZM5.5 4.002h3.11c1.71 0 2.741.973 2.741 2.46 0 1.138-.667 1.94-1.495 2.24L11.5 12H9.98L8.52 8.924H6.836V12H5.5V4.002Zm1.335 1.09v2.777h1.549c.995 0 1.573-.463 1.573-1.36 0-.913-.596-1.417-1.537-1.417H6.835Z"/>
-                </svg>
-                Как регулярное выражение
-            </a></li>
-        </ul>
-        <input class="form-control" id="find_str" type="text" required autofocus placeholder="Введите строку для поиска">
-    </div>
+        <li><a class="dropdown-item" onclick="start_find('regex')">
+            <svg style="margin-right: 5px" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-r-circle" viewBox="0 0 16 16">
+              <path d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8Zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0ZM5.5 4.002h3.11c1.71 0 2.741.973 2.741 2.46 0 1.138-.667 1.94-1.495 2.24L11.5 12H9.98L8.52 8.924H6.836V12H5.5V4.002Zm1.335 1.09v2.777h1.549c.995 0 1.573-.463 1.573-1.36 0-.913-.596-1.417-1.537-1.417H6.835Z"></path>
+            </svg>
+            Как регулярное выражение
+        </a></li>
+    </ul>
+    <input class="form-control" id="find_str" type="text" required autofocus placeholder="Введите строку для поиска">
+</div>
 
-    <div id="content-point">
 
-    </div>
+{#    ДЛЯ НАЙДЕНЫХ    #}
+<div id="content-point">
 
+</div>
+
+{#    ПЕРЕМЕСТИТЬСЯ ВВЕРХ    #}
+<button
+    type="button"
+    class="btn btn-primary btn-floating btn-lg"
+    id="btn-back-to-top"
+    style="position: fixed;
+          bottom: 20px;
+          right: 20px;
+          display: none;">
+<svg id="i-chevron-top" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+    <path d="M30 20 L16 8 2 20"></path>
+</svg>
+</button>
+
+{% endblock %}
+
+
+{% block js %}
+<script src="{% static 'js/back_to_top.js' %}"></script>
 <script src="{% static 'js/jquery.min.js' %}"></script>
 <script src="{% static 'js/find_description.js' %}"></script>
 {% endblock %}
