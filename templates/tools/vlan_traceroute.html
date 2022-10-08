@@ -13,12 +13,20 @@ Vlan traceroute
 
 
 {% block content %}
+    <img src="/static/img/background.png"
+    style="position: absolute; z-index: -1; left: 0; top: 0; width: 100%;">
+
     <style>
         body {
-            background-image: url("/static/img/background.png");
-            background-repeat: no-repeat;
-            background-position: top center;
             background-color: #222222;
+        }
+        .fullScreen {
+            z-index: 9;
+            position: absolute;
+            top: -8px;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
 
@@ -29,9 +37,7 @@ Vlan traceroute
         </div>
         <div class="col-md-auto">
             <h3>
-                <span class="text-light badge bg-secondary" id="vlan_desc">
-                    vlan-desc
-                </span>
+                <span class="text-light badge bg-secondary" id="vlan_desc"></span>
             </h3>
         </div>
     </div>
@@ -49,7 +55,26 @@ Vlan traceroute
         </div>
     </div>
 
-    <div class="" style="height: 900px" id="includedContent">
+{#    FULL SCREEN   #}
+    <div id="fullScreen" style="display: none; text-align: right">
+        <button id="fullScreenButton" type="button" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-expand" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"></path>
+            </svg>
+        </button>
+    </div>
+
+{#    COLLAPSE SCREEN   #}
+    <div id="collapseScreen" style="z-index: 10; display: none; right: 0; top: 0; position: absolute; margin: 10px 10px 0 0">
+        <button id="collapseScreenButton" type="button" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"></path>
+        </svg>
+        </button>
+    </div>
+
+{#    VLAN MAP   #}
+    <div style="height: 500px" id="includedContent">
 
     </div>
 
