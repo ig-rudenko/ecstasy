@@ -28,12 +28,20 @@ Vlan traceroute
             width: 100%;
             height: 100%;
         }
+        .fullScreenButton {
+            display: none;
+            text-align: right;
+            position: relative;
+            z-index: 1;
+            top: 57px;
+            right: 10px;
+        }
     </style>
 
     <div class="row">
         <h4 class="text-light py-2">Traceroute</h4>
         <div class="col-md-1">
-          <input style="text-align: center" type="email" class="form-control rounded-5" id="vlan" autofocus placeholder="vlan">
+          <input style="text-align: center; width: 70px" type="text" class="form-control rounded-5" id="vlan" autofocus placeholder="vlan">
         </div>
         <div class="col-md-auto">
             <h3>
@@ -56,9 +64,9 @@ Vlan traceroute
     </div>
 
 {#    FULL SCREEN   #}
-    <div id="fullScreen" style="display: none; text-align: right" title="На весь экран">
+    <div id="fullScreen" class="fullScreenButton" title="На весь экран">
         <button id="fullScreenButton" type="button" class="btn btn-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-expand" viewBox="0 0 16 16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" fill="currentColor" class="bi bi-arrows-angle-expand" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"></path>
             </svg>
         </button>
@@ -66,9 +74,9 @@ Vlan traceroute
 
 {#    COLLAPSE SCREEN   #}
     <div id="collapseScreen" title="Свернуть"
-         style="z-index: 10; display: none; right: 0; top: 0; position: absolute; margin: 10px 10px 0 0">
+         style="z-index: 10; display: none; right: 0; top: 0; position: absolute; margin: 10px 10px 0 0;">
         <button id="collapseScreenButton" type="button" class="btn btn-secondary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"></path>
         </svg>
         </button>

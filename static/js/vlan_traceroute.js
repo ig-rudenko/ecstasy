@@ -35,7 +35,7 @@ function show_map() {
       $("#includedContent").load(
           '/tools/ajax/vlantraceroute?vlan=' + vlan + '&ep=' + empty_ports + '&ad=' + only_admin_up,
           function (response, status) {
-              if (status === "success") {
+              if (status === "success" && response !== 'empty') {
                   $("#fullScreen").css('display', 'block');
                   network_map = document.getElementById('mynetwork')
                   network_map.style.borderRadius = '20px'

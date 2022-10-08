@@ -2,7 +2,7 @@ import os
 from re import findall
 import requests as requests_lib
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
 from net_tools.finder import find_description, find_vlan
@@ -129,14 +129,12 @@ def get_vlan(request):
     vlan_start = vlan_traceroute_settings.vlan_start.split(', ')
 
     # Определяем паттерн для поиска интерфейсов
-    # Не используем configparser, так как он использует символ % как служебный, открываем просто как файл
     if not vlan_traceroute_settings.find_device_pattern:
         # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
         vlan_start = []
 
     for start_dev in vlan_start:
-        # TREE = {}  # Древовидный вывод
-        passed = set()  # Имена уже проверненных устройств
+        passed = set()  # Имена уже проверенных устройств
         result = []  # Список узлов сети, соседей и линий связи для визуализации
 
         try:
@@ -158,7 +156,7 @@ def get_vlan(request):
             break
 
     else:  # Если поиск не дал результатов
-        return JsonResponse({})
+        return HttpResponse('empty')
 
     net = Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
 
