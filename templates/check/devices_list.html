@@ -4,9 +4,20 @@
 {% block title %}Оборудование{% endblock %}
 
 {% block content %}
+
+<div class="row py-2">
+    <div class="col-4">
+        <h4 class="fw-bold py-4">Выберите оборудование</h4>
+    </div>
+    <div class="col-8" style="text-align: right">
+        <img width="200px" src="{% static 'img/device-icon.svg' %}" alt="search-description-image">
+    </div>
+
+</div>
+
 <form method="get">
     <div class="input-group mb-3">
-      <input name="s" type="text" class="form-control" placeholder="Введите IP или имя оборудования" aria-label="Поиск"
+      <input name="s" type="text" class="form-control" placeholder="Введите IP или имя" aria-label="Поиск"
              aria-describedby="button-addon2" value="{{ search|default_if_none:'' }}" autofocus>
       <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Найти</button>
     </div>
