@@ -86,8 +86,9 @@ function start() {
                 Ошибки на порту</button>`)
             }
 
-
-            $('#port-info').html(data.port_info+'<hr>')
+            if (data.port_info) {
+                $('#port-info').html(data.port_info+'<hr>')
+            }
             $('#macs-table').html(data.macs)
 
             if (data.port_type) {
@@ -103,10 +104,11 @@ function start() {
             }
 
             window.popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-            window.popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-                        return new bootstrap.Popover(popoverTriggerEl,{html: true})
-                    });
-
+            window.popoverList = popoverTriggerList.map(
+                function (popoverTriggerEl) {
+                    return new bootstrap.Popover(popoverTriggerEl,{html: true})
+                }
+            );
         }
     });
 }
