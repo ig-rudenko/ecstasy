@@ -1,3 +1,4 @@
+<!--suppress ALL -->
 <span>Всего: {{ macs|length }}</span>
 <table class="table">
   <thead>
@@ -12,8 +13,22 @@
      {% for mac in macs %}
         <tr>
             <td></td>
+
+            {# VLAN #}
             <td style="font-family: monospace; font-size: x-large;">{{ mac.0 }}</td>
-            <td style="font-family: monospace; font-size: x-large; max-width: 100px;">{{ mac.1 }}</td>
+
+            {# MAC #}
+            <td id="mac-line" style="font-family: monospace; font-size: x-large; max-width: 100px;">
+                <span style="cursor: pointer" title="Поиск MAC"
+                      onclick="start_search_mac('{{ mac.1 }}')"
+                      data-bs-toggle="modal" data-bs-target="#modal-mac">
+                    {{ mac.1 }}
+                    <svg class="bi me-2" width="24" height="24" role="img">
+                        <use xlink:href="#search-icon"></use>
+                    </svg>
+                </span>
+            </td>
+
             <td>
                 {% if perms >= 3 %}
 {#                  Посмотреть MAC     #}

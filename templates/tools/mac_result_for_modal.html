@@ -1,0 +1,35 @@
+<div class="accordion" id="accordionPanelsStayOpenExample">
+{% for line in info %}
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-{{ line.3 }}" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+              Найдено на {{ line.3 }}
+          </button>
+        </h2>
+        <div id="#panelsStayOpen-{{ line.3 }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+          <div class="accordion-body">
+
+                {% for zabbix_data in zabbix %}
+                    <div class="fs-5">
+                        <a class="badge text-decoration-none text-bg-danger" target="_blank"
+                           href="http://10.100.0.50/zabbix/hostinventories.php?hostid={{ zabbix_data.1 }}">
+                            {{ zabbix_data.0 }}
+                        </a>
+                    </div>
+                {% endfor %}
+
+                <h4 class="fs-5" style="margin-top: 10px;"
+                    >IP - <span id="modal-mac-ip">{{ line.0 }}</span></h4>
+
+                <h4 class="fs-5"
+                    >VLAN - <span id="modal-mac-vlan">{{ line.2 }}</span></h4>
+
+          </div>
+        </div>
+      </div>
+{% endfor %}
+</div>
+
+<div>
+
+</div>

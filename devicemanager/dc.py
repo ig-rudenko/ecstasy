@@ -751,7 +751,9 @@ class Cisco(BaseDevice):
     def get_port_info(self, port):
         """Общая информация о порте"""
 
-        port_type = self.send_command(f'show interfaces {_interface_normal_view(port)} | include media')
+        port_type = self.send_command(
+            f'show interfaces {_interface_normal_view(port)} | include media', expect_command=False
+        )
         return f'<p>{port_type}</p>'
 
     def port_type(self, port):
@@ -764,7 +766,9 @@ class Cisco(BaseDevice):
         return 'COPPER'
 
     def get_port_errors(self, port):
-        return self.send_command(f'show interfaces {_interface_normal_view(port)} | include error')
+        return self.send_command(
+            f'show interfaces {_interface_normal_view(port)} | include error', expect_command=False
+        )
 
     def port_config(self, port):
         """Конфигурация порта"""
@@ -2142,7 +2146,7 @@ class IskratelMBan(BaseDevice):
 
 class Juniper(BaseDevice):
     prompt = r'> $'
-    space_prompt = '-+\(more.*?\)-+'
+    space_prompt = r'-+\(more.*?\)-+'
     vendor = 'juniper'
     mac_format = '\S\S:'*5 + '\S\S'
 
@@ -2156,8 +2160,10 @@ class Juniper(BaseDevice):
         with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template') as template_file:
             template = textfsm.TextFSM(template_file)
         formatted_result = template.ParseText(match)
-
-        return formatted_result
+        if formatted_result:
+            return formatted_result[0]
+        else:
+            return []
 
     def get_interfaces(self) -> list:
         pass

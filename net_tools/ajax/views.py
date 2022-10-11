@@ -58,7 +58,8 @@ def get_mac_from(model_dev, mac_address: str, result: list):
         if hasattr(session, 'search_mac'):
             res = session.search_mac(mac_address)
             if res:
-                result.append([', '.join(res[0])])
+                res.append(model_dev.name)
+                result.append(res)
 
 
 @login_required
@@ -78,7 +79,8 @@ def mac_info(request, mac):
     match = []
     with ThreadPoolExecutor() as execute:
         for dev in devices_for_search:
-            execute.submit(get_mac_from, dev.device, mac, match)
+            print(dev.device, mac_address)
+            execute.submit(get_mac_from, dev.device, mac_address, match)
 
     names = []  # Список имен оборудования и его hostid из Zabbix
 
@@ -93,7 +95,10 @@ def mac_info(request, mac):
         hosts = zbx.host.get(output=['name', 'status'], filter={'ip': ip}, selectInterfaces=['ip'])
         names = [[h['name'], h['hostid']] for h in hosts if h['status'] == '0']
 
-    return JsonResponse({
+    print(match)
+    print(names)
+
+    return render(request, 'tools/mac_result_for_modal.html', {
         'info': match,
         'zabbix': names
     })
