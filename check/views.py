@@ -179,7 +179,6 @@ def device_info(request, name):
 
     # Сканируем интерфейсы в реальном времени?
     current_status = bool(request.GET.get('current_status', False)) and ping
-    print(' Сканируем интерфейсы в реальном времени?')
 
     # Elastic Stack settings
     elastic_settings = LogsElasticStackSettings.load()
@@ -187,7 +186,6 @@ def device_info(request, name):
         try:
             # Форматируем строку поиска логов
             query_str = elastic_settings.query_str.format(device=model_dev)
-            print('Форматируем строку поиска логов')
         except AttributeError:
             query_str = ''
 
@@ -198,7 +196,6 @@ def device_info(request, name):
                    f"query:(language:{elastic_settings.query_lang}," \
                    f"query:'{query_str}')," \
                    f"sort:!(!('{elastic_settings.time_field}',desc)))"
-        print('Формируем ссылку для kibana')
     else:
         logs_url = ''
 
@@ -252,23 +249,22 @@ def device_info(request, name):
     if dev.zabbix_info.inventory.model and dev.zabbix_info.inventory.model != model_dev.model:
         model_dev.model = dev.zabbix_info.inventory.model
         model_update_fields.append('model')
-    print('Обновляем модель устройства, взятую непосредственно во время подключения')
 
     # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
     if dev.zabbix_info.inventory.vendor and dev.zabbix_info.inventory.vendor != model_dev.vendor:
         model_dev.vendor = dev.zabbix_info.inventory.vendor
         model_update_fields.append('vendor')
-    print('Обновляем вендора оборудования, если он отличается от реального либо еще не существует')
 
     # Сохраняем изменения
     if model_update_fields:
         model_dev.save(update_fields=model_update_fields)
-    print('Сохраняем изменения')
 
     # Сохраняем интерфейсы
     if current_status:
-        print('Сохраняем интерфейсы')
-        current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
+        try:
+            current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
+        except DevicesInfo.DoesNotExist:
+            current_device_info = DevicesInfo.objects.create(ip=model_dev.ip, device_name=model_dev.name)
 
         if with_vlans:
             interfaces_to_save = [
@@ -284,8 +280,6 @@ def device_info(request, name):
             current_device_info.save(update_fields=['vlans', 'vlans_date'])
 
         else:
-            print('interfaces_to_save')
-            print(dev.interfaces)
             interfaces_to_save = [
                 {
                     "Interface": line.name,
@@ -293,7 +287,6 @@ def device_info(request, name):
                     "Description": line.desc
                 } for line in dev.interfaces
             ]
-            print('current_device_info.interfaces')
             current_device_info.interfaces = json.dumps(interfaces_to_save)
             current_device_info.interfaces_date = datetime.now()
             current_device_info.save(update_fields=['interfaces', 'interfaces_date'])
