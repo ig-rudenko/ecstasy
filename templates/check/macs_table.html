@@ -49,9 +49,9 @@ tr:hover {
 
             <td>
                 {% if perms >= 3 %}
-{#                  Посмотреть MAC     #}
+{#                  Посмотреть сессию     #}
                   <a class="btn btn-outline-primary"
-                     href="{% url 'parse_mac' %}?device={{ dev.name }}&port={{ port }}&desc={{ desc }}&mac={{ mac.1 }}"
+                     href="{% url 'show-session' %}?device={{ dev.name }}&port={{ port }}&desc={{ desc }}&mac={{ mac.1 }}"
                   >BRAS</a>
                 {% endif %}
                 {% if mac_finder_url %}

@@ -496,7 +496,7 @@ def send_command(session: pexpect, command):
 
 @login_required
 @permission(models.Profile.BRAS)
-def parse_mac(request):
+def show_session(request):
     """Смотрим сессию клиента"""
     if request.method == 'GET' and request.GET.get('mac') and request.GET.get('device') and request.GET.get('port'):
         mac_letters = re.findall(r'[\w\d]', request.GET['mac'])
@@ -508,41 +508,50 @@ def parse_mac(request):
             user_info = {}
             errors = []
 
-            for b in brases:
+            if request.GET.get('ajax'):
 
-                try:
-                    with pexpect.spawn(f"telnet {b.ip}") as telnet:
-                        telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=10)
-                        telnet.sendline(b.login)
+                for b in brases:
+                    try:
+                        with pexpect.spawn(f"telnet {b.ip}") as telnet:
+                            telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=10)
+                            telnet.sendline(b.login)
 
-                        telnet.expect("[Pp]ass")
-                        telnet.sendline(b.password)
+                            telnet.expect("[Pp]ass")
+                            telnet.sendline(b.password)
 
-                        if telnet.expect(['>', 'password needs to be changed. Change now?']):
-                            telnet.sendline('N')
+                            if telnet.expect(['>', 'password needs to be changed. Change now?']):
+                                telnet.sendline('N')
 
-                        bras_output = send_command(telnet, f'display access-user mac-address {mac}')
-                        if 'No online user!' not in bras_output:
-                            user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
-                            if user_index:
-                                bras_output = send_command(telnet, f'display access-user user-id {user_index[0]} verbose')
-                            user_info[b.name] = bras_output
-                except pexpect.TIMEOUT:
-                    errors.append(
-                        'Не удалось подключиться к ' + b.name
-                    )
+                            bras_output = send_command(telnet, f'display access-user mac-address {mac}')
+                            if 'No online user!' not in bras_output:
+                                user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
+                                if user_index:
+                                    bras_output = send_command(
+                                        telnet, f'display access-user user-id {user_index[0]} verbose'
+                                    )
+                                user_info[b.name] = bras_output
+                    except pexpect.TIMEOUT:
+                        errors.append(
+                            'Не удалось подключиться к ' + b.name
+                        )
 
-                # Логи
-                log(request.user, b, f'display access-user mac-address {mac}')
+                    # Логи
+                    log(request.user, b, f'display access-user mac-address {mac}')
 
-            return render(
-                request, 'check/bras_info.html',
-                {
+                return render(request, 'check/bras_table.html', {
                     'mac': mac, 'result': user_info, 'port': request.GET['port'],
                     'device': request.GET['device'], 'desc': request.GET.get('desc'),
-                    'errors': errors
-                }
-            )
+                })
+
+            else:
+                return render(
+                    request, 'check/bras_info.html',
+                    {
+                        'mac': mac, 'result': user_info, 'port': request.GET['port'],
+                        'device': request.GET['device'], 'desc': request.GET.get('desc'),
+                        'errors': errors
+                    }
+                )
 
     return redirect('/')
 
