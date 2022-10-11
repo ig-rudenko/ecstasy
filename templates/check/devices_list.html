@@ -82,18 +82,18 @@
             {# Первая страница #}
             {% if page > 2 %}
             <li class="page-item">
-                <a class="page-link" href="{% url 'devices-list' %}?page=1&s={{ search_str }}">1 << </a>
+                <a class="page-link" href="{% url 'devices-list' %}?page=1&s={{ search }}">1 << </a>
             </li>
             {% endif %}
 
             <li class="page-item {% if page == 1 %}disabled{% endif %}">
-              <a class="page-link" href="{% url 'devices-list' %}?page={{ page | add:'-1' }}&s={{ search_str }}">Предыдущая</a>
+              <a class="page-link" href="{% url 'devices-list' %}?page={{ page | add:'-1' }}&s={{ search }}">Предыдущая</a>
             </li>
 
             {# Предыдущая страница #}
             {% if page != 1 %}
                 <li class="page-item">
-                    <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'-1' }}&s={{ search_str }}">{{ page|add:'-1' }}</a>
+                    <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'-1' }}&s={{ search }}">{{ page|add:'-1' }}</a>
                 </li>
             {% endif %}
 
@@ -107,26 +107,26 @@
             {# Следующая страница #}
             {% if num_pages != page %}
             <li class="page-item">
-                <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'1' }}&s={{ search_str }}">{{ page|add:'1' }}</a>
+                <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'1' }}&s={{ search }}">{{ page|add:'1' }}</a>
             </li>
             {% endif %}
 
             {# Запасная страница #}
             {% if page == 1 and page < num_pages %}
             <li class="page-item">
-                <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'2' }}&s={{ search_str }}">{{ page|add:'2' }}</a>
+                <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'2' }}&s={{ search }}">{{ page|add:'2' }}</a>
             </li>
             {% endif %}
 
             {# Следующая страница #}
             <li class="page-item {% if page == num_pages %}disabled{% endif %}">
-              <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'1' }}&s={{ search_str }}">Следующая</a>
+              <a class="page-link" href="{% url 'devices-list' %}?page={{ page|add:'1' }}&s={{ search }}">Следующая</a>
             </li>
 
             {# Последняя страница #}
             {% if page < num_pages|add:'-1' %}
             <li class="page-item">
-              <a class="page-link" href="{% url 'devices-list' %}?page={{ num_pages }}&s={{ search_str }}"> >> {{ num_pages }}</a>
+              <a class="page-link" href="{% url 'devices-list' %}?page={{ num_pages }}&s={{ search }}"> >> {{ num_pages }}</a>
             </li>
             {% endif %}
 
