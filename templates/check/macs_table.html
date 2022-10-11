@@ -1,4 +1,22 @@
 <!--suppress ALL -->
+<style>
+tr:hover {
+    background: #e8efff;
+}
+#mac-line:hover bi {
+    visibility: visible;
+    color: #558af1;
+}
+#mac-line:hover span {
+    color: #558af1;
+}
+
+#mac-line:not(:hover) .bi {
+    visibility: hidden;
+}
+</style>
+
+
 <span>Всего: {{ macs|length }}</span>
 <table class="table">
   <thead>

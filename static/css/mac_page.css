@@ -1,5 +1,5 @@
 body {
-    background: #4b4b4b;
+    background: #222;
 }
 .menu-main a.current, .menu-main a:hover{
     color: #4ac1f7;
@@ -37,7 +37,7 @@ body {
     overflow: hidden;
     display: flex;
     align-items: center;
-    background: #4b4b4b;
+    background: #222;
 
 }
 .load_border::before {
@@ -51,7 +51,7 @@ body {
     background-repeat: no-repeat;
     background-size: 50% 50%, 50% 50%;
     background-position: 0 0, 100% 0, 100% 100%, 0 100%;
-    background-image: linear-gradient(#4b4b4b, #4b4b4b), linear-gradient(#4ac1f7, #4ac1f7), linear-gradient(#4b4b4b, #4b4b4b), linear-gradient(#4b4b4b, #4b4b4b);
+    background-image: linear-gradient(rgb(34, 34, 34), rgb(34, 34, 34)), linear-gradient(#4ac1f7, #4ac1f7), linear-gradient(#4b4b4b, #4b4b4b), linear-gradient(#4b4b4b, #4b4b4b);
     animation: anim_load_border 4s linear infinite;
 }
 .load_border::after {
@@ -62,7 +62,7 @@ body {
     top: 6px;
     width: calc(100% - 12px);
     height: calc(100% - 12px);
-    background: #4b4b4b;
+    background: #222;
     border-radius: 5px;
 }
 @keyframes anim_load_border {
@@ -106,7 +106,7 @@ body {
     width: 1400px;
     height: 374px;
 
-    background: #4b4b4b;
+    background: #222222;
     border-radius: 20px;
 }
 
