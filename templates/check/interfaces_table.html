@@ -1,8 +1,17 @@
+<style>
+    #control:hover .btn-group {
+        visibility: visible;
+    }
+    #control:not(:hover) .btn-group {
+        visibility: hidden;
+    }
+</style>
+
+
 <table class="table table-striped">
   <thead>
     <tr>
-      <th scope="col" style="text-align: right">Порт</th>
-      <th style="width: 100px"></th>
+      <th scope="col" style="text-align: center">Порт</th>
       <th scope="col" style="text-align: center">Статус</th>
       <th scope="col">Описание</th>
       <th scope="col">
@@ -14,10 +23,11 @@
     {% for intf in interfaces %}
     <tr>
 
-      <td class="blockquote" style="text-align: right">{{ intf.name }}</td>
-
-      <td>
-        <div class="btn-group" role="group">
+      <td id="control" style="text-align: right">
+        <div class="row">
+          <div class="col blockquote" style="margin-bottom: 0;">{{ intf.name }}</div>
+          <div class="col-auto">
+              <div class="btn-group" role="group">
         {% autoescape on %}
           {% if perms >= 2 %}
 
@@ -76,6 +86,8 @@
           </div>
         {% endautoescape %}
 
+        </div>
+          </div>
         </div>
       </td>
 

@@ -26,13 +26,22 @@ modal_ok = document.getElementById('modal-yes')
 function update_modal(port, desc, status) {
     let text = ''
     if (status === 'reload') {
-        text = 'Вы уверены, что хотите перезагрузить порт '
+        text = `Вы уверены, что хотите <br>перезагрузить 
+         <svg class="bi me-2" width="24" height="24" role="img">
+             <use xlink:href="#port-reload-icon"></use>
+         </svg>порт `
     }
     if (status === 'up') {
-        text = 'Вы уверены, что хотите включить порт '
+        text = `Вы уверены, что хотите <br>включить 
+         <svg class="bi me-2" width="24" height="24" role="img">
+             <use xlink:href="#port-up-icon"></use>
+         </svg>порт `
     }
     if (status === 'down') {
-        text = 'Вы уверены, что хотите выключить порт '
+        text = `Вы уверены, что хотите <br>выключить 
+         <svg class="bi me-2" width="24" height="24" role="img">
+             <use xlink:href="#port-down-icon"></use>
+         </svg>порт `
     }
 
     modal_text.innerHTML = text + port + '?'
