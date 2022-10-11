@@ -751,7 +751,9 @@ class Cisco(BaseDevice):
     def get_port_info(self, port):
         """Общая информация о порте"""
 
-        port_type = self.send_command(f'show interfaces {_interface_normal_view(port)} | include media')
+        port_type = self.send_command(
+            f'show interfaces {_interface_normal_view(port)} | include media', expect_command=False
+        )
         return f'<p>{port_type}</p>'
 
     def port_type(self, port):
@@ -764,7 +766,9 @@ class Cisco(BaseDevice):
         return 'COPPER'
 
     def get_port_errors(self, port):
-        return self.send_command(f'show interfaces {_interface_normal_view(port)} | include error')
+        return self.send_command(
+            f'show interfaces {_interface_normal_view(port)} | include error', expect_command=False
+        )
 
     def port_config(self, port):
         """Конфигурация порта"""
@@ -774,6 +778,19 @@ class Cisco(BaseDevice):
             before_catch=r'Current configuration.+?\!'
         )
         return config
+
+    def search_mac(self, mac_address: str):
+
+        formatted_mac = '{}{}{}{}.{}{}{}{}.{}{}{}{}'.format(*mac_address.lower())
+
+        match = self.send_command(f'show arp | include {formatted_mac}')
+
+        # Форматируем вывод
+        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template') as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+
+        return formatted_result
 
 
 class Dlink(BaseDevice):
@@ -2128,8 +2145,43 @@ class IskratelMBan(BaseDevice):
 
 
 class Juniper(BaseDevice):
-    prompt = r'-> $'
-    space_prompt = '--- more --- '
+    prompt = r'> $'
+    space_prompt = r'-+\(more.*?\)-+'
+    vendor = 'juniper'
+    mac_format = '\S\S:'*5 + '\S\S'
+
+    def search_mac(self, mac_address: str):
+
+        formatted_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*mac_address)
+
+        match = self.send_command(f'show arp | match {formatted_mac}', expect_command=False)
+
+        # Форматируем вывод
+        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template') as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+        if formatted_result:
+            return formatted_result[0]
+        else:
+            return []
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port: str) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
+
+    def save_config(self):
+        pass
 
 
 class DeviceFactory:
@@ -2171,13 +2223,14 @@ class DeviceFactory:
             m = self.session.expect(
                 [
                     r']$',
-                    r'-More-|--\(more\)--',
+                    r'-More-|-+\(more.*?\)-+',
                     r'>\s*$',
                     r'#\s*',
                     pexpect.TIMEOUT
                 ],
                 timeout=3
             )
+
             version += str(self.session.before.decode('utf-8'))
             if m == 1:
                 self.session.send(' ')
@@ -2238,6 +2291,10 @@ class DeviceFactory:
             model = BaseDevice.find_or_empty(r'CPU: IskraTEL \S+ (\S+)', version)
             return IskratelMBan(self.session, self.ip, auth, model=model)
 
+        elif 'JUNOS' in version:
+            model = BaseDevice.find_or_empty(r'Model: (\S+)', version)
+            return Juniper(self.session, self.ip, auth, model)
+
         elif '% Unknown command' in version:
             self.session.sendline('display version')
             while True:
@@ -2285,51 +2342,51 @@ class DeviceFactory:
 
             for login, password in zip(self.login + ['admin'], self.password + ['admin']):
 
-                with pexpect.spawn(f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}') as self.session:
+                self.session = pexpect.spawn(f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}')
 
-                    while not connected:
-                        login_stat = self.session.expect(
-                            [
-                                r'no matching key exchange method found',  # 0
-                                r'no matching cipher found',  # 1
-                                r'Are you sure you want to continue connecting',  # 2
-                                r'[Pp]assword:',  # 3
-                                r'[#>\]]\s*$',  # 4
-                                r'Connection closed'  # 5
-                            ],
-                            timeout=timeout
-                        )
-                        if login_stat == 0:
-                            self.session.expect(pexpect.EOF)
-                            algorithm = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
-                            if algorithm:
-                                algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
-                                self.session = pexpect.spawn(
-                                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
-                                )
-                        if login_stat == 1:
-                            self.session.expect(pexpect.EOF)
-                            cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
-                            if cipher:
-                                cipher_str = f' -c {cipher[0].split(",")[-1]}'
-                                self.session = pexpect.spawn(
-                                    f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
-                                )
-                        if login_stat == 2:
-                            self.session.sendline('yes')
-                        if login_stat == 3:
-                            self.session.sendline(password)
-                            if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
-                                connected = True
-                                break
-                            else:
-                                break  # Пробуем новый логин/пароль
-                        if login_stat == 4:
+                while not connected:
+                    login_stat = self.session.expect(
+                        [
+                            r'no matching key exchange method found',  # 0
+                            r'no matching cipher found',  # 1
+                            r'Are you sure you want to continue connecting',  # 2
+                            r'[Pp]assword:',  # 3
+                            r'[#>\]]\s*$',  # 4
+                            r'Connection closed'  # 5
+                        ],
+                        timeout=timeout
+                    )
+                    if login_stat == 0:
+                        self.session.expect(pexpect.EOF)
+                        algorithm = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                        if algorithm:
+                            algorithm_str = f' -oKexAlgorithms=+{algorithm[0]}'
+                            self.session = pexpect.spawn(
+                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                            )
+                    if login_stat == 1:
+                        self.session.expect(pexpect.EOF)
+                        cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
+                        if cipher:
+                            cipher_str = f' -c {cipher[0].split(",")[-1]}'
+                            self.session = pexpect.spawn(
+                                f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
+                            )
+                    if login_stat == 2:
+                        self.session.sendline('yes')
+                    if login_stat == 3:
+                        self.session.sendline(password)
+                        if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
                             connected = True
-                    if connected:
-                        self.login = login
-                        self.password = password
-                        break
+                            break
+                        else:
+                            break  # Пробуем новый логин/пароль
+                    if login_stat == 4:
+                        connected = True
+                if connected:
+                    self.login = login
+                    self.password = password
+                    break
 
         if self.protocol == 'telnet':
             self.session = pexpect.spawn(f'telnet {self.ip}')

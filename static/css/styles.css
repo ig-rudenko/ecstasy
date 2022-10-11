@@ -1,0 +1,160 @@
+html{
+    height: 100%;
+}
+
+/*body{*/
+/*    font-family: 'Teams', sans-serif;*/
+/*    height: 90%;*/
+/*    background-color: #ffffff;*/
+/*    margin: 0;*/
+/*}*/
+
+h1{
+    color: #000000;
+}
+
+.center_
+{
+    text-align: center;
+    display: block;
+    margin: auto;
+    width: 50%;
+}
+
+.font20{
+    font-size: 20px;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+select {
+    width: 140px;
+    height: 35px;
+    padding: 4px;
+    border-radius:4px;
+    box-shadow: 2px 2px 8px #999;
+    background: #eee;
+    border: none;
+    outline: none;
+    display: inline-block;
+    -webkit-appearance:none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+
+table {
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
+    font-size: 14px;
+    background: white;
+    border-collapse: collapse;
+    text-align: center;
+    border-spacing: 0;
+}
+th {
+    font-weight: normal;
+    color: #000000;
+    border-bottom: 1px solid #000000;
+    padding: 10px 8px;
+}
+td {
+    color: #242424;
+    padding: 9px 8px;
+    transition: .3s linear;
+}
+tr:hover td {
+    background-color: #ececec;
+}
+
+
+text {
+  border-radius:10px;
+  border: 1px solid #eee;
+  transition: .3s border-color;
+}
+text:hover {
+  border: 1px solid #aaa;
+}
+
+
+
+
+/* КНОПКА INPUT*/
+
+.atuin-btn {
+    /*display: inline-flex;*/
+    width: 320px;
+    /*margin: 0px;*/
+    text-decoration: none;
+    border: 2px solid #ffffff;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 20px;
+    padding: 9px;
+    color: #FFF;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
+    background: #33b76e;
+    transition: box-shadow 0.3s, transform 0.3s;
+    cursor: pointer;
+}
+.atuin-btn:hover,
+.atuin-btn:active,
+.atuin-btn:focus {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 16px 20px rgba(0,0,0,0.2);
+    color: #FFF;
+}
+.atuin-btn:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(-45deg, transparent, rgba(191, 226, 255, 0.3), transparent);
+    transition: left 0.7s;
+}
+.atuin-btn:hover:before,
+.atuin-btn:active:before,
+.atuin-btn:focus:before {
+    left: 100%;
+}
+
+/* КОНЕЦ КНОПКИ */
+
+
+.first {
+    cursor: pointer;
+    /*font-family: 'Ubuntu Condensed', sans-serif;*/
+    font-family: 'Teams', sans-serif;
+    text-indent: 22px;
+    line-height: 33px;
+    border: 1px solid #000000;
+    background: #afc1ff;
+    font-size: 18px;
+}
+
+.first_blue {
+    /*font-family: 'Ubuntu Condensed', sans-serif;*/
+    font-family: 'Teams', sans-serif;
+    cursor: pointer;
+    background: #ffffff;
+    font-size: 18px;
+    color: #000000;
+    text-indent: 22px;
+    line-height: 33px;
+    border: 1PX SOLID #b7b7b7;
+}
+
+.show-button {
+    font-family: 'Ubuntu Condensed', sans-serif;
+    width: 20px;
+    height: 20px;
+}

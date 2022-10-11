@@ -1,35 +1,73 @@
-{% extends 'check/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
+
 {% block title %}
-{{ mac }}
+Session: {{ mac }}
 {% endblock %}
 
-{% block content %}
-    <h2 style="text-align: center">{{ device }}</h2>
-    <h3>Порт: {{ port }}</h3>
-    <h3 class="alert alert-secondary">{{ desc }}</h3>
-    <h3 style="text-align: center; font-family: monospace" class="alert alert-primary">{{ mac }}</h3>
 
-    <form method="post" action="{% url 'cut-session' %}">
-      {% csrf_token %}
-      <input type="text" name="device" value="{{ device }}" hidden>
-      <input type="text" name="port" value="{{ port }}" hidden>
-      <input type="text" name="mac" value="{{ mac }}" hidden>
-      <span class="badge rounded-pill bg-info text-dark" style="cursor: pointer">
-          <input type="submit" value="Сбросить сессию" class="btn">
-      </span>
-    </form>
-    <hr>
-    {% for bras, res in result.items %}
-        <h4>{{ bras }}</h4>
-        <div>
-            {{ res|linebreaks }}
+{% block content %}
+    <h2 class="alert" style="text-align: center">
+        <a class="text-dark text-decoration-none" href="{% url 'device_info' device %}?current_status=1">{{ device }}</a>
+    </h2>
+
+
+    <div class="container text-center">
+        <div class="row row-cols-auto">
+            {# Имя порта #}
+            <div class="col">
+                <a class="btn btn-light position-relative"
+                href="{% url 'get_mac' %}?device={{ device }}&port={{ port }}&desc={{ desc }}">
+                    {{ port }}
+                </a>
+            </div>
+
+            {# DESCRIPTION #}
+            <div class="col" style="margin-left: 10px">
+                <h3><span class="badge bg-info">{{ desc }}</span></h3>
+            </div>
+
         </div>
-        <hr>
-    {% empty %}
-        <div>Not Found :(</div>
+    </div>
+
+
+<style>
+#mac {
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-size: 22px;
+    padding: 0;
+    color: rgb(33,37,41);
+    border: 0;
+    outline: 0;
+    width: 220px;
+    border-radius: 5px;
+    text-align: center;
+    background: lightgrey;
+    vertical-align: middle;
+}
+</style>
+
+
+    <hr>
+
+    {% for err in errors %}
+        <div class="alert alert-danger">
+            <span>{{ err }}</span>
+        </div>
     {% endfor %}
 
+
+{#    BRAS DATA   #}
+    <div id="brases-data">
+        <div class="text-center">
+            <div class="spinner-grow text-primary" role="status" style="width: 100px; height: 100px;">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+
+{#    КНОПКА ВВЕРХ #}
 <button
     type="button"
     class="btn btn-primary btn-floating btn-lg"
@@ -39,7 +77,7 @@
           right: 20px;
           display: none;">
 <svg id="i-chevron-top" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-    <path d="M30 20 L16 8 2 20" />
+    <path d="M30 20 L16 8 2 20"></path>
 </svg>
 </button>
 
@@ -47,4 +85,8 @@
 
 {% block js %}
 <script src="{% static 'js/back_to_top.js' %}"></script>
+<script src="{% static 'js/get_session.js' %}"></script>
+<script>
+get_session("{{ mac }}", "{{ device }}", "{{ port }}")
+</script>
 {% endblock %}

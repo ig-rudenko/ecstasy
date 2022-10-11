@@ -1,17 +1,18 @@
+import json
+
 import requests
 import tabulate
 import re
 import os
 import subprocess
 from pyzabbix import ZabbixAPI
-from configparser import ConfigParser
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 from geopy.geocoders import Nominatim
 from . import snmp
 
 from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
-from .exceptions import AuthException, ConfigError
+from .exceptions import AuthException
 from .dc import DeviceFactory, _range_to_numbers
 from alive_progress import alive_bar
 
@@ -28,16 +29,10 @@ class Config:
     TABLE_FORMAT = "simple"
 
     @staticmethod
-    def set(config_file: str):
-        if not os.path.exists(config_file):
-            raise ConfigError(f'Файл {os.path.join(os.getcwd(), config_file)} не существует')
-        cfg = ConfigParser()
-        cfg.read(config_file)
-        Config.ZABBIX_URL = cfg.get('Zabbix', 'url')
-        Config.ZABBIX_USER = cfg.get('Zabbix', 'user')
-        Config.ZABBIX_PASSWORD = cfg.get('Zabbix', 'password')
-        Config.INTERFACE_API_KEY = cfg.get('Interfaces-API', 'key')
-        Config.INTERFACE_API_URL = cfg.get('Interfaces-API', 'url')
+    def set(obj):
+        Config.ZABBIX_URL = obj.url
+        Config.ZABBIX_USER = obj.login
+        Config.ZABBIX_PASSWORD = obj.password
 
 
 class Interfaces:
@@ -337,7 +332,7 @@ class DevicesCollection:
         with alive_bar(self.count, title='Собираем интерфейсы') as bar:
             with ThreadPoolExecutor() as ex:
                 for d in self.collection:
-                    ex.submit(d.collect_interfaces, vlans, current_status, Config.AUTH_FILE, bar)
+                    ex.submit(d.collect_interfaces, vlans, current_status, bar)
         self.interfaces_collected = True
         return self
 
@@ -488,17 +483,14 @@ class Device:
     def collect_interfaces(self, vlans=True, current_status=False, auth_obj=None):
         """Собираем интерфейсы оборудования"""
         if not current_status:  # Смотрим из истории
-            resp = requests.get(
-                f'{Config.INTERFACE_API_URL}{"vlans" if vlans else "interfaces"}',
-                params={'dev': self.name},
-                headers={'api-key': Config.INTERFACE_API_KEY}
-            )
-            if resp.status_code == 200:
-                self.interfaces = Interfaces([v for v in resp.json() if snmp.physical_interface(v['Interface'])])
-            elif resp.status_code == 400:
-                self.interfaces = []
-            else:
-                return f"{self.name} can't collect interfaces! Request status code: {resp.status_code}"
+
+            from net_tools.models import DevicesInfo
+
+            device_data_history = DevicesInfo.objects.get(device_name=self.name)
+
+            self.interfaces = Interfaces(json.loads(
+                device_data_history.vlans if vlans else device_data_history.interfaces
+            ))
 
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == 'snmp':

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions, LogsElasticStackSettings
+from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 from django.utils.safestring import mark_safe
 
 
@@ -15,7 +15,7 @@ class DevicesAdmin(admin.ModelAdmin):
     list_display = ['ip', 'name', 'vendor', 'model', 'group', 'auth_group', 'intf_scan', 'intf_last']
     search_fields = ['ip', 'name']
     list_per_page = 50
-    list_filter = ['vendor', 'model', 'group', 'auth_group']
+    list_filter = ['vendor', 'group', 'auth_group', 'model']
     fieldsets = (
         ('Характеристика', {'fields': ('ip', 'name')}),
         ('Тип', {'fields': ('vendor', 'model')}),
@@ -80,8 +80,3 @@ class UsersActionsAdmin(admin.ModelAdmin):
     search_fields = ['action']
     readonly_fields = list_display
     list_per_page = 50
-
-
-@admin.register(LogsElasticStackSettings)
-class LogsElasticStackSettingsAdmin(admin.ModelAdmin):
-    list_display = ['kibana_url', 'time_range', 'query_str']

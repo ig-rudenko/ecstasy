@@ -1,0 +1,200 @@
+body {
+    background: #222;
+}
+.menu-main a.current, .menu-main a:hover{
+    color: #4ac1f7;
+}
+.menu-main a:before,
+.menu-main a:after {
+    background: #4ac1f7;
+}
+
+.mac-element {
+    margin: auto;
+    margin-top: 250px;
+    border: 10px;
+}
+
+#mac {
+    width: 450px;
+    height: 50px;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-size: 40px;
+    color: #4ac1f7;
+    border: 0;
+    outline: 0;
+    text-align: center;
+    background: transparent;
+}
+
+
+.load_border {
+    position: relative;
+    z-index: 0;
+    width: 450px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    background: #222;
+
+}
+.load_border::before {
+    content: '';
+    position: absolute;
+    z-index: -2;
+    left: -50%;
+    top: -50%;
+    width: 200%;
+    height: 200%;
+    background-repeat: no-repeat;
+    background-size: 50% 50%, 50% 50%;
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    background-image: linear-gradient(rgb(34, 34, 34), rgb(34, 34, 34)), linear-gradient(#4ac1f7, #4ac1f7), linear-gradient(#4b4b4b, #4b4b4b), linear-gradient(#4b4b4b, #4b4b4b);
+    animation: anim_load_border 4s linear infinite;
+}
+.load_border::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 6px;
+    top: 6px;
+    width: calc(100% - 12px);
+    height: calc(100% - 12px);
+    background: #222;
+    border-radius: 5px;
+}
+@keyframes anim_load_border {
+    100% {
+        transform: rotate(2turn);
+    }
+}
+
+.block_hide {
+    display: none;
+}
+
+.block_visible {
+    animation: fadeInFromNone 0.6s ease-in-out forwards;
+}
+
+@keyframes fadeInFromNone {
+   0% {
+      /*height: 0;*/
+      opacity: 0;
+   }
+
+   50% {
+      /*height: 0;*/
+      opacity: 0;
+   }
+
+   100% {
+      /*height: 100%;*/
+      opacity: 1;
+   }
+}
+
+.back {
+    margin: auto;
+    margin-top: 100px;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 1400px;
+    height: 374px;
+
+    background: #222222;
+    border-radius: 20px;
+}
+
+.vendor, .zabbix, .info {
+
+    margin: 20px;
+    width: 659px;
+    height: 87px;
+    background: #33B76E;
+    border: 2px solid #000000;
+    box-sizing: border-box;
+    border-radius: 20px;
+}
+
+.vendor p, .zabbix p, .info p {
+    position: relative;
+    /*width: 628px;*/
+    /*height: 30px;*/
+    top: -81px;
+    z-index: 40;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-style: normal;
+    /*font-weight: 400;*/
+    font-size: 24px;
+    line-height: 31px;
+    text-align: center;
+
+    color: #000000;
+}
+
+.vendor h1, .zabbix h1, .info h1 {
+    position: relative;
+    z-index: 30;
+    top: -35px;
+    left: 284px;
+    width: 84px;
+    height: 31px;
+
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 31px;
+
+    color: #000000;
+}
+.vendor div, .zabbix div, .info div {
+    position: relative;
+    z-index: 20;
+    left: 257px;
+    top: -65px;
+    width: 136.34px;
+    height: 18px;
+
+    background: #33B76E;
+}
+
+.zabbix {
+    background: #ff6f6f;
+}
+.zabbix a {
+    color: #121212;
+}
+.zabbix div {
+    background: #ff6f6f;
+}
+
+.info {
+    width: 1337px;
+    background: #4AC1F7;
+}
+.info div {
+    background: #4AC1F7;
+    left: 602px;
+}
+.info h1 {
+    left: 620px;
+}
+
+#info_ip {
+    left: 100px;
+    width: 1000px;
+    z-index: 40;
+
+}
+
+#info_vlan {
+    width: 50px;
+    left: 1000px;
+    top: -135px;
+}

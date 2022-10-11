@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'check.apps.CheckConfig',
+    'check',
+    'net_tools',
+    'app_settings'
 ]
 
 MIDDLEWARE = [
@@ -83,6 +85,17 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'ecstasy',
+#         'USER': 'ecstasy',
+#         'PASSWORD': 'ecstasy_password',
+#         'HOST': 'localhost',
+#         'PORT': '3306'
+#     }
+# }
 
 
 # Password validation
@@ -130,8 +143,6 @@ LOG_FILE = BASE_DIR / 'logs'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-ZABBIX_CONFIG_FILE = BASE_DIR / 'zabbix_conf'
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'

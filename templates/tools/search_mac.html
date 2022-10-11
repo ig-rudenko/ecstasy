@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+MAC search
+{% endblock %}
+
+{% block links %}
+    <link rel="stylesheet" href="{% static "css/mac_page.css" %}" />
+{% endblock %}
+
+{% block content %}
+
+    <div id="mac-element" style="text-align: center; margin-bottom: 20px" class="mac-element">
+        <input id="mac" type="text" required placeholder="00:00:00:00:00:00" maxlength="17"
+               value="{{ mac|default_if_none:'' }}"
+        >
+    </div>
+
+      {# TEXT #}
+      <div class="modal-body">
+        <h4 id="modal-mac-content">
+            <svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="white" class="bi bi-ethernet" viewBox="0 0 16 16">
+              <path d="M14 13.5v-7a.5.5 0 0 0-.5-.5H12V4.5a.5.5 0 0 0-.5-.5h-1v-.5A.5.5 0 0 0 10 3H6a.5.5 0 0 0-.5.5V4h-1a.5.5 0 0 0-.5.5V6H2.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5ZM3.75 11h.5a.25.25 0 0 1 .25.25v1.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-1.5a.25.25 0 0 1 .25-.25Zm2 0h.5a.25.25 0 0 1 .25.25v1.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-1.5a.25.25 0 0 1 .25-.25Zm1.75.25a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v1.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-1.5ZM9.75 11h.5a.25.25 0 0 1 .25.25v1.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-1.5a.25.25 0 0 1 .25-.25Zm1.75.25a.25.25 0 0 1 .25-.25h.5a.25.25 0 0 1 .25.25v1.5a.25.25 0 0 1-.25.25h-.5a.25.25 0 0 1-.25-.25v-1.5Z"></path>
+              <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2ZM1 2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2Z"></path>
+            </svg>
+            <span class="text-light" id="modal-mac-vendor" style="margin-left: 20px">
+
+            </span>
+        </h4>
+
+        <div id="modal-mac-result" class="py-3" style="text-align: center;">
+
+        </div>
+
+      </div>
+
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/modal_mac_search.js' %}"></script>
+<script>
+function collect_mac() {
+    let macAddress = $('#mac').val().replace(/[^A-Za-z\d]/g,"").substring(0,12);
+
+    if (macAddress.length === 12) {
+
+        vendor.innerText = ''
+
+        result_div.innerHTML = `<div class="text-light spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+        </div>`
+
+        get_vendor(macAddress)
+        get_mac_info(macAddress)
+
+    }
+}
+$(function (){
+    $('#mac').on('input', collect_mac)
+})
+{% if mac %}
+collect_mac()
+{% endif %}
+</script>
+{% endblock %}

@@ -20,13 +20,16 @@ from check import views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('', views.show_devices, name='home'),
+    path('', views.home, name='home'),
+    path('devices', views.show_devices, name='devices-list'),
     path('device/port/mac', views.get_port_mac, name='get_mac'),
     path('device/port/reload', views.reload_port, name='port_reload'),
-    path('device/parse_mac', views.parse_mac, name='parse_mac'),
+    path('session', views.show_session, name='show-session'),
     path('device/cut-session', views.cut_user_session, name='cut-session'),
     path('device/<name>', views.device_info, name='device_info'),
     path('by-zabbix/<hostid>', views.by_zabbix_hostid, name='by-zabbix-hostid'),
 
     path('accounts/', include('django.contrib.auth.urls')),
+
+    path('tools/', include('net_tools.urls'))
 ]
