@@ -249,10 +249,17 @@
 
 {#        VLAN#}
       <div class="col-md-4">
-        <div class="h-100 p-4 border rounded-5 text-center">
-            <h4 class="fw-bold"><a class="text-dark" href="{% url 'vlan-traceroute' %}">VLAN traceroute</a></h4>
+{#          <img src="/static/img/background.png" style="position: absolute; height: 200px">#}
+        <div class="h-100 p-4 border rounded-5 text-center text-light"
+             style="
+             background-image: url('/static/img/background.png');
+             background-position: center center;
+             background-repeat: no-repeat;
+             background-size: 200%;
+            ">
+            <h4 class="fw-bold"><a class="text-light" href="{% url 'vlan-traceroute' %}">VLAN traceroute</a></h4>
             <br>
-            <svg class="bi me-2" width="250" height="200" role="img" aria-label="Ecstasy">
+            <svg class="bi me-2 text-warning" width="250" height="200" role="img" aria-label="Ecstasy">
                 <use xlink:href="#vlan-icon"></use>
             </svg>
 
