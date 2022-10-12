@@ -153,7 +153,7 @@ def show_devices(request):
         request, 'check/devices_list.html',
         {
             'devs': paginator.page(p),
-            'search': request.GET.get('s'),
+            'search': request.GET.get('s', ''),
             'page': p,
             'num_pages': paginator.num_pages,
             'device_icon_number': random.randint(1, 5)

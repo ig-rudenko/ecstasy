@@ -2,11 +2,12 @@
 {% for line in info %}
       <div class="accordion-item">
         <h2 class="accordion-header" id="panelsStayOpen-headingOne">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-{{ line.3 }}" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-              Найдено на {{ line.3 }}
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-{{ line|last }}" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+              Найдено на {{ line|last }}
           </button>
         </h2>
-        <div id="#panelsStayOpen-{{ line.3 }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+
+        <div id="#panelsStayOpen-{{ line|last }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
           <div class="accordion-body">
 
                 {% for zabbix_data in zabbix %}
@@ -23,6 +24,15 @@
 
                 <h4 class="fs-5"
                     >VLAN - <span id="modal-mac-vlan">{{ line.2 }}</span></h4>
+
+                {#  ДЛЯ BRAS  #}
+                {% if line|length >= 5 %}
+                    <h4 class="fs-5" style="margin-top: 10px;"
+                        >Device - <span id="modal-mac-ip">{{ line.3 }}</span></h4>
+
+                    <h4 class="fs-5" style="margin-top: 10px;"
+                        > <span id="modal-mac-ip">{{ line.4 }}</span></h4>
+                {% endif %}
 
           </div>
         </div>

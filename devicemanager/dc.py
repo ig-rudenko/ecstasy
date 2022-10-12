@@ -132,10 +132,10 @@ class BaseDevice(ABC):
         self.os_version: str = ''
 
     @staticmethod
-    def find_or_empty(pattern, string):
+    def find_or_empty(pattern, string, *args, **kwargs):
         """ Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку """
 
-        m = re.findall(pattern, string)
+        m = re.findall(pattern, string, *args, **kwargs)
         if m:
             return m[0]
         else:
@@ -647,6 +647,51 @@ class Huawei(BaseDevice):
             expect_command=False, before_catch=r'#'
         )
         return config
+
+
+class HuaweiCX600(BaseDevice):
+    prompt = r'<\S+>$|\[\S+\]$|Unrecognized command'
+    space_prompt = r"  ---- More ----"
+    mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
+    vendor = 'Huawei'
+
+    def search_mac(self, mac_address: str):
+        formatted_mac = '{}{}{}{}-{}{}{}{}-{}{}{}{}'.format(*mac_address)
+
+        match = self.send_command(
+            f'display access-user mac-address {formatted_mac}',
+            prompt=self.prompt + '|Are you sure to display some information',
+            expect_command=False
+        )
+        self.session.sendline('N')
+        # Форматируем вывод
+        print(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template')
+        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template') as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+        print(formatted_result)
+        if formatted_result:
+            return formatted_result[0]
+        else:
+            return []
+
+    def get_interfaces(self) -> list:
+        pass
+
+    def get_vlans(self) -> list:
+        pass
+
+    def get_mac(self, port: str) -> list:
+        pass
+
+    def reload_port(self, port: str) -> str:
+        pass
+
+    def set_port(self, port: str, status: str) -> str:
+        pass
+
+    def save_config(self):
+        pass
 
 
 class Cisco(BaseDevice):
@@ -2210,14 +2255,10 @@ class DeviceFactory:
             self.password = [auth_obj.password] or ['admin']
             self.privilege_mode_password = auth_obj.secret or 'enable'
 
-    def __get_device(self):
-        auth = {
-            'login': self.login,
-            'password': self.password,
-            'privilege_mode_password': self.privilege_mode_password
-        }
+    def send_command(self, command: str):
+        """ Простой метод для отправки команды с постраничной записью вывода результата """
 
-        self.session.sendline('show version')
+        self.session.sendline(command)
         version = ''
         while True:
             m = self.session.expect(
@@ -2238,6 +2279,16 @@ class DeviceFactory:
                 self.session.sendcontrol('C')
             else:
                 break
+        return version
+
+    def __get_device(self):
+        auth = {
+            'login': self.login,
+            'password': self.password,
+            'privilege_mode_password': self.privilege_mode_password
+        }
+
+        version = self.send_command('show version')
 
         # ProCurve
         if 'Image stamp:' in version:
@@ -2250,7 +2301,13 @@ class DeviceFactory:
 
         # HUAWEI
         elif 'Unrecognized command' in version:
-            return Huawei(self.session, self.ip, auth)
+            version = self.send_command('display version')
+            if 'huawei' in version.lower():
+                if 'CX600' in version:
+                    model = BaseDevice.find_or_empty(r'HUAWEI (\S+) uptime', version, flags=re.IGNORECASE)
+                    return HuaweiCX600(self.session, self.ip, auth, model=model)
+                elif 'quidway':
+                    return Huawei(self.session, self.ip, auth)
 
         # CISCO
         elif 'cisco' in version.lower():
@@ -2352,7 +2409,8 @@ class DeviceFactory:
                             r'Are you sure you want to continue connecting',  # 2
                             r'[Pp]assword:',  # 3
                             r'[#>\]]\s*$',  # 4
-                            r'Connection closed'  # 5
+                            r'Connection closed',  # 5
+                            r'The password needs to be changed'  # 6
                         ],
                         timeout=timeout
                     )
@@ -2364,7 +2422,7 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
-                    if login_stat == 1:
+                    elif login_stat == 1:
                         self.session.expect(pexpect.EOF)
                         cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
                         if cipher:
@@ -2372,17 +2430,20 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
-                    if login_stat == 2:
+                    elif login_stat == 2:
                         self.session.sendline('yes')
-                    if login_stat == 3:
+                    elif login_stat == 3:
                         self.session.sendline(password)
                         if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
                             connected = True
                             break
                         else:
                             break  # Пробуем новый логин/пароль
-                    if login_stat == 4:
+                    elif login_stat == 4:
                         connected = True
+                    elif login_stat == 6:
+                        self.session.sendline('N')
+
                 if connected:
                     self.login = login
                     self.password = password
@@ -2403,7 +2464,8 @@ class DeviceFactory:
                                 r'Unable to connect',  # 5
                                 r'[#>\]]\s*$',  # 6
                                 r'Press any key to continue',  # 7
-                                r'Timeout or some unexpected error happened on server host'  # 8 - Ошибка радиуса
+                                r'Timeout or some unexpected error happened on server host',  # 8 - Ошибка радиуса
+                                r'The password needs to be changed'  # 9
                             ],
                             timeout=timeout
                         )
@@ -2431,6 +2493,9 @@ class DeviceFactory:
                             connected = True  # Подключились
                         elif login_stat == 8:
                             continue  # Если ошибка радиуса, то вводим те же данные еще раз
+                        elif login_stat == 9:
+                            self.session.sendline('N')
+                            continue
 
                         break  # Выход из цикла
 
