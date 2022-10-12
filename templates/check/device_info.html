@@ -109,25 +109,26 @@
     </div>
 
     <figure class="text-end">
-      <blockquote class="blockquote">
+        <blockquote class="blockquote">
         {% if current_status %}
-        <p>Интерфейсы были опрошены <time id="time_passed">только что</time></p>
+            <p>Интерфейсы были опрошены <time id="time_passed">только что</time></p>
         {% else %}
-        <p>Интерфейсы были взяты из предыдущего опроса</p>
+            <p>Интерфейсы были взяты из предыдущего опроса @{{ last_interface_update }}</p>
         {% endif %}
-      </blockquote>
+        </blockquote>
 
 
         {% if current_status %}
-      <figcaption class="blockquote-footer">
-        Для обновления, требуется перезагрузить страницу
-      </figcaption>
+          <figcaption class="blockquote-footer">
+            Для обновления, требуется перезагрузить страницу
+          </figcaption>
         {% else %}
-      <figcaption class="blockquote-footer">
-    <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-       onclick="window.location.href='{% url 'device_info' dev.name %}?current_status=1'">
-        Посмотреть текущее состояние портов</a>
-      </figcaption>
+          <figcaption class="blockquote-footer">
+            <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+               onclick="window.location.href='{% url 'device_info' dev.name %}?current_status=1'">
+                Посмотреть текущее состояние портов
+            </a>
+          </figcaption>
         {% endif %}
     </figure>
 

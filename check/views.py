@@ -180,6 +180,10 @@ def device_info(request, name):
     # Сканируем интерфейсы в реальном времени?
     current_status = bool(request.GET.get('current_status', False)) and ping
 
+    # Вместе с VLAN?
+    with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
+
+
     # Elastic Stack settings
     elastic_settings = LogsElasticStackSettings.load()
     if elastic_settings.is_set():
@@ -199,20 +203,26 @@ def device_info(request, name):
     else:
         logs_url = ''
 
+    # Время последнего обновления интерфейсов
+    last_interface_update = ''
+    if not current_status:
+        if with_vlans:
+            last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).vlans_date
+        else:
+            last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).interfaces_date
+
     data = {
         'dev': dev,
         'ping': ping,
         'logs_url': logs_url,
         'zabbix_host_id': dev.zabbix_info.hostid,
         'current_status': current_status,
+        'last_interface_update': last_interface_update,
         'perms': models.Profile.permissions_level.index(models.Profile.objects.get(user_id=request.user.id).permissions)
     }
 
     if not request.GET.get('ajax', None):  # Eсли вызов НЕ AJAX
         return render(request, 'check/device_info.html', data)
-
-    # Вместе с VLAN?
-    with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
 
     # Собираем интерфейсы
     status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status)

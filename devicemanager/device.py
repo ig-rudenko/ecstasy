@@ -405,7 +405,7 @@ class Device:
         if zabbix_info:  # Собираем данные с Zabbix
             self.collect_zabbix_info()
 
-        self.interfaces = []
+        self.interfaces = Interfaces()
         self.protocol: str = 'telnet'
         self.snmp_community = ''
         self.auth_obj = None
