@@ -2,3 +2,9 @@ templates/tools/vlans
 venv
 db.sqlite3*
 test.py
+_test*
+celerybeat-schedule*
+*.json
+.coverage
+lib
+ecstasy_project/settings_prod.py

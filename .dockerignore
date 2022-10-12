@@ -3,6 +3,7 @@
 !check
 !devicemanager
 !ecstasy_project
+ecstasy_project/settings_prod.py
 !net_tools
 !static
 !templates
