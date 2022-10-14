@@ -562,6 +562,13 @@ def show_session(request):
 @login_required
 @permission(models.Profile.BRAS)
 def cut_user_session(request):
+    status = 'miss'
+
+    color_warning = '#d3ad23'
+    color_success = '#08b736'
+    color_error = '#d53c3c'
+    status_color = color_error  # Значение по умолчанию
+
     if request.method == 'POST' and request.POST.get('mac') and request.POST.get('device') and request.POST.get('port'):
         mac_letters = re.findall(r'[\w\d]', request.POST['mac'])
 
@@ -571,6 +578,9 @@ def cut_user_session(request):
         if not has_permission_to_device(model_dev, request.user):
             return HttpResponseForbidden()
 
+        # Если неверный MAC
+        status = 'invalid MAC'
+
         # Если мак верный и оборудование доступно
         if len(mac_letters) == 12 and dev.ping():
 
@@ -578,8 +588,9 @@ def cut_user_session(request):
 
             brases = models.Bras.objects.all()
 
-            try:
-                for b in brases:
+            status = ''  # Обновляем статус
+            for b in brases:
+                try:
                     print(b)
                     with pexpect.spawn(f"telnet {b.ip}") as telnet:
                         telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
@@ -597,18 +608,32 @@ def cut_user_session(request):
 
                         # Логи
                         log(request.user, b, f'cut access-user mac-address {mac}')
-            except pexpect.TIMEOUT:
-                pass
+
+                except pexpect.TIMEOUT:
+                    status += b.name + ' timeout\n'  # Кто был недоступен
+                    status_color = color_warning
 
             else:
                 with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
                     s = session.reload_port(request.POST['port'])
 
+                    status += s
+                    status_color = color_success  # Успех
+
                     # Логи
                     log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
 
     # Возвращаем обратно на страницу просмотра сессии
-    return HttpResponseRedirect(
-        f'/device/parse_mac?device='
-        f'{request.POST.get("device")}&mac={request.POST.get("mac")}&port={request.POST.get("port")}'
+    # return HttpResponseRedirect(
+    #     f'/session?device='
+    #     f'{request.POST.get("device")}&mac={request.POST.get("mac")}'
+    #     f'&port={request.POST.get("port")}&desc={request.POST.get("desc")}'
+    # )
+
+    return JsonResponse(
+        {
+            'message': status,
+            'color': status_color,
+            'status': 'cut session'
+        }
     )
