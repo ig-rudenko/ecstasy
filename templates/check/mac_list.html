@@ -31,8 +31,9 @@
 
 <h2 class="alert" style="text-align: center">
     <a class="text-dark text-decoration-none" href="{% url 'device_info' dev.name %}?current_status=1">
-        <name>{{ dev.name }}</name> ({{ dev.ip }})
+        <name>{{ dev.name }}</name>
     </a>
+     ({{ dev.ip }})
 </h2>
 
 <div class="container text-center">
