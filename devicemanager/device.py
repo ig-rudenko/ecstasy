@@ -1,6 +1,5 @@
 import json
 
-import requests
 import tabulate
 import re
 import os
@@ -13,7 +12,8 @@ from . import snmp
 
 from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
 from .exceptions import AuthException
-from .dc import DeviceFactory, _range_to_numbers
+from .dc import DeviceFactory
+from .vendors.base import _range_to_numbers
 from alive_progress import alive_bar
 
 from typing import Any
@@ -560,4 +560,3 @@ class Device:
     def connect(self, protocol=None, auth_obj=None):
         d: Any = DeviceFactory(self.ip, protocol=protocol or self.protocol, auth_obj=auth_obj or self.auth_obj)
         return d
-

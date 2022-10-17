@@ -1,11 +1,11 @@
 import subprocess
-from re import findall
+from re import findall, IGNORECASE
 from concurrent.futures import ThreadPoolExecutor
 
 
 def physical_interface(name: str) -> bool:
     name = name.lower()
-    if 'loop' in name or 'null' in name or 'meth' in name or 'vlan' in name:
+    if findall(r'802\.1Q|loop|null|meth|vlan|sys', name, IGNORECASE):
         return False
     return True
 

@@ -11,8 +11,6 @@ from app_settings.models import ZabbixConfig
 
 
 def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
-    print('-'*50)
-    print('    Start:', model_dev)
     dev = Device(name=model_dev.name)
     ping = dev.ping()  # Оборудование доступно или нет
 
@@ -69,11 +67,6 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
     # Сохраняем изменения
     if model_update_fields:
         model_dev.save(update_fields=model_update_fields)
-
-    print('    Updated', model_update_fields or 'none')
-    print('    Type:', type(dev.interfaces))
-    print('            ', dev.interfaces)
-    print('    Interfaces:', dev.interfaces.count)
     if not dev.interfaces.count:
         return
 
@@ -82,7 +75,6 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
         current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
     except DevicesInfo.DoesNotExist:
         current_device_info = DevicesInfo.objects.create(ip=model_dev.ip, device_name=model_dev.name)
-    print(current_device_info)
     if with_vlans:
         interfaces_to_save = [
             {
@@ -96,7 +88,7 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
         current_device_info.vlans = json.dumps(interfaces_to_save)
         current_device_info.vlans_date = datetime.now()
         current_device_info.save(update_fields=['vlans', 'vlans_date'])
-        print('    Saved VLANS')
+        print('Saved VLANS      ---', model_dev)
 
     else:
         interfaces_to_save = [
@@ -109,7 +101,7 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
         current_device_info.interfaces = json.dumps(interfaces_to_save)
         current_device_info.interfaces_date = datetime.now()
         current_device_info.save(update_fields=['interfaces', 'interfaces_date'])
-        print('    Saved Interfaces')
+        print('Saved Interfaces ---', model_dev)
 
 
 @app.task(ignore_result=True)
@@ -119,5 +111,5 @@ def periodically_scan():
     with_vlans = False
 
     with ThreadPoolExecutor() as execute:
-        for device in ModelDevices.objects.filter(group__name='SSW')[:2]:
+        for device in ModelDevices.objects.all():
             execute.submit(save_interfaces, device, with_vlans)

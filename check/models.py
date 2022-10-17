@@ -1,7 +1,9 @@
+from typing import Any
 from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from devicemanager.dc import DeviceFactory
 
 
 class DeviceGroup(models.Model):
@@ -95,6 +97,10 @@ class Devices(models.Model):
 
     def get_absolute_url(self):
         return f'/device/{self.name}'
+
+    def connect(self):
+        dev_conn: Any = DeviceFactory(self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group)
+        return dev_conn
 
     class Meta:
         db_table = 'devices'

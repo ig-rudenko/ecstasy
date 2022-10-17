@@ -337,13 +337,16 @@ def get_port_mac(request):
             'perms': models.Profile.permissions_level.index(request.user.profile.permissions),
         }
 
+        # Если оборудование доступно
         if dev.ping():
+
             if not request.GET.get('ajax'):
                 # ЛОГИ
                 log(request.user, model_dev, f'show mac\'s port {data["port"]}')
                 return render(request, 'check/mac_list.html', data)
 
-            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
+            # Подключаемся к оборудованию
+            with model_dev.connect() as session:
                 data['macs'] = session.get_mac(data['port'])
 
                 # Отправляем JSON, если вызов AJAX = mac
@@ -366,6 +369,7 @@ def get_port_mac(request):
                     data['port_errors'] = session.get_port_errors(data['port'])
 
                 if request.GET.get('ajax') == 'all':
+                    # Отправляем все собранные данные
                     data['macs'] = render_to_string('check/macs_table.html', data)
                     del data['dev']
                     del data['perms']
@@ -415,8 +419,11 @@ def reload_port(request):
 
         user_permission_level = models.Profile.permissions_level.index(request.user.profile.permissions)
 
+        # Если оборудование доступно, то можно поменять состояние порта
         if dev.ping():
-            with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
+
+            # Подключаемся к оборудованию
+            with model_dev.connect() as session:
                 # Перезагрузка
                 if status == 'reload':
                     try:
@@ -622,13 +629,6 @@ def cut_user_session(request):
 
                     # Логи
                     log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
-
-    # Возвращаем обратно на страницу просмотра сессии
-    # return HttpResponseRedirect(
-    #     f'/session?device='
-    #     f'{request.POST.get("device")}&mac={request.POST.get("mac")}'
-    #     f'&port={request.POST.get("port")}&desc={request.POST.get("desc")}'
-    # )
 
     return JsonResponse(
         {
