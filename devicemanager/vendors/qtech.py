@@ -169,4 +169,30 @@ class Qtech(BaseDevice):
         return self.send_command(f'show running-config interface ethernet {port}')
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт {port}'
+
+        desc = self.clear_description(desc)  # Очищаем описание
+
+        # Переходим к редактированию порта
+        self.session.sendline('config terminal')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'interface ethernet {port}')
+        self.session.expect(self.prompt)
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            status = self.send_command(f'no description', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            status = self.send_command(f'description {desc}', expect_command=False)
+
+        self.session.sendline('end')  # Выходим из режима редактирования
+
+        if 'is too large' in status:
+            # Если длина описания больше чем доступно на оборудовании
+            output = self.send_command('description ?')
+            return 'Max length:' + self.find_or_empty(r'<1-(\d+)>', output)
+
+        # Возвращаем строку с результатом работы и сохраняем конфигурацию
+        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
