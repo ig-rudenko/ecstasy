@@ -186,4 +186,17 @@ class Extreme(BaseDevice):
             return 'COPPER'
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт'
+
+        desc = self.clear_description(desc)  # Очищаем описание от лишних символов
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            self.send_command(f'unconfigure ports 11 description-string', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            self.send_command(f'configure ports {port} description-string {desc}', expect_command=False)
+
+        # Возвращаем строку с результатом работы и сохраняем конфигурацию
+        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'

@@ -111,6 +111,15 @@ class BaseDevice(ABC):
         self.os_version: str = ''
 
     @staticmethod
+    def clear_description(desc: str):
+        """ Очищаем описание порта от лишних символов """
+
+        desc = desc.strip().replace(' ', '_')
+        desc = re.sub(r'\s', '', desc)
+        desc = desc.replace('\\', '/')
+        return desc[:220]
+
+    @staticmethod
     def find_or_empty(pattern, string, *args, **kwargs):
         """ Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку """
 

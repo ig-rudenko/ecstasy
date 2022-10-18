@@ -35,6 +35,7 @@ class Cisco(BaseDevice):
     def save_config(self):
         for _ in range(3):  # Пробуем 3 раза, если ошибка
             self.session.sendline('write')
+            print('write')
             # self.session.expect(r'Building configuration')
             if self.session.expect([self.prompt, r'\[OK\]']):
                 return self.SAVED_OK
@@ -153,4 +154,23 @@ class Cisco(BaseDevice):
         return formatted_result
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        desc = self.clear_description(desc)  # Очищаем описание
+
+        # Переходим к редактированию порта
+        self.session.sendline('configure terminal')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.expect(self.prompt)
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            res = self.send_command(f'no description', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            res = self.send_command(f'description {desc}', expect_command=False)
+
+        self.session.sendline('end')  # Выходим из режима редактирования
+        if 'Invalid input detected' in res:
+            return 'Invalid input detected'
+
+        # Возвращаем строку с результатом работы и сохраняем конфигурацию
+        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'

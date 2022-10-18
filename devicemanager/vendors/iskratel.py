@@ -206,27 +206,38 @@ class IskratelMBan(BaseDevice):
 
         return macs
 
-    def reload_port(self, port: str) -> str:
-        port = port.strip()
-        index = re.findall(r'^port(\d+)$', port)
-        if not index:
-            return f'Порт ({port}) нельзя перезагрузить'
+    @staticmethod
+    def validate_port(port: str):
+        """
+        Проверяем правильность полученного порта
+        Для Iskratel порт должен быть числом
 
-        s1 = self.send_command(f'set dsl port {index[0]} port_equp unequipped', expect_command=False)
+        port23 -> 23
+
+        """
+        port = re.findall(r'^port(\d+)$', port.strip())
+        if port:
+            return port[0]
+
+    def reload_port(self, port: str) -> str:
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт!'
+
+        s1 = self.send_command(f'set dsl port {port} port_equp unequipped', expect_command=False)
         sleep(1)
-        s2 = self.send_command(f'set dsl port {index[0]} port_equp equipped', expect_command=False)
+        s2 = self.send_command(f'set dsl port {port} port_equp equipped', expect_command=False)
 
         return s1 + s2
 
     def set_port(self, port: str, status: str):
-        port = port.strip()
-        index = re.findall(r'^port(\d+)$', port)
-        if not index:
-            return f'Порт ({port}) нельзя перезагрузить'
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт!'
 
         # Меняем состояние порта
         return self.send_command(
-            f'set dsl port {index[0]} port_equp {"equipped" if status == "up" else "unequipped"}',
+            f'set dsl port {port} port_equp {"equipped" if status == "up" else "unequipped"}',
             expect_command=False
         )
 
@@ -248,5 +259,15 @@ class IskratelMBan(BaseDevice):
         return self.get_interfaces()
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        port = self.validate_port(port)
+        if port is None:
+            return f'Неверный порт!'
 
+        desc = self.clear_description(desc)
+
+        if len(desc) > 32:
+            return 'Max length:32'
+
+        self.send_command(f'set dsl port {port} name {desc}', expect_command=False)
+
+        return f'Description has been {"changed" if desc else "cleared"}.'

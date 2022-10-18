@@ -42,7 +42,7 @@ class EltexBase(BaseDevice):
     def set_port(self, port: str, status: str) -> str:
         pass
 
-    def set_description(self, port: str) -> str:
+    def set_description(self, port: str, desc: str) -> str:
         pass
 
 
@@ -191,7 +191,27 @@ class EltexMES(BaseDevice):
         return self.send_command(f'show running-config interface {_interface_normal_view(port)}').strip()
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        desc = self.clear_description(desc)  # Очищаем описание
+
+        # Переходим к редактированию порта
+        self.session.sendline('configure terminal')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.expect(self.prompt)
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            res = self.send_command(f'no description', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            res = self.send_command(f'description {desc}', expect_command=False)
+
+        if 'bad parameter value' in res:
+            # Если длина описания больше чем доступно на оборудовании
+            output = self.send_command('description ?')
+            return 'Max length:' + self.find_or_empty(r' Up to (\d+) characters', output)
+
+        # Возвращаем строку с результатом работы и сохраняем конфигурацию
+        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
 
 class EltexESR(EltexMES):

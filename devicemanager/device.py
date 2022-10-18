@@ -1,22 +1,21 @@
-import json
-
-import tabulate
 import re
 import os
+import json
+import tabulate
 import subprocess
-from pyzabbix import ZabbixAPI
-from typing import List
-from concurrent.futures import ThreadPoolExecutor
-from geopy.geocoders import Nominatim
-from . import snmp
-
-from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
-from .exceptions import AuthException
-from .dc import DeviceFactory
-from .vendors.base import _range_to_numbers
-from alive_progress import alive_bar
 
 from typing import Any
+from typing import List
+from pyzabbix import ZabbixAPI
+from alive_progress import alive_bar
+from geopy.geocoders import Nominatim
+from concurrent.futures import ThreadPoolExecutor
+
+from . import snmp
+from .dc import DeviceFactory
+from .exceptions import AuthException
+from .vendors.base import _range_to_numbers
+from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
 
 
 class Config:
@@ -486,11 +485,14 @@ class Device:
 
             from net_tools.models import DevicesInfo
 
-            device_data_history = DevicesInfo.objects.get(device_name=self.name)
+            try:
+                device_data_history = DevicesInfo.objects.get(device_name=self.name)
 
-            self.interfaces = Interfaces(json.loads(
-                device_data_history.vlans if vlans else device_data_history.interfaces
-            ))
+                self.interfaces = Interfaces(json.loads(
+                    device_data_history.vlans if vlans else device_data_history.interfaces
+                ))
+            except DevicesInfo.DoesNotExist:
+                self.interfaces = []
 
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == 'snmp':

@@ -204,12 +204,15 @@ def device_info(request, name):
         logs_url = ''
 
     # Время последнего обновления интерфейсов
-    last_interface_update = ''
+    last_interface_update = None
     if not current_status:
-        if with_vlans:
-            last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).vlans_date
-        else:
-            last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).interfaces_date
+        try:
+            if with_vlans:
+                last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).vlans_date
+            else:
+                last_interface_update = DevicesInfo.objects.get(ip=model_dev.ip).interfaces_date
+        except DevicesInfo.DoesNotExist:
+            pass
 
     data = {
         'dev': dev,
@@ -221,7 +224,7 @@ def device_info(request, name):
         'perms': models.Profile.permissions_level.index(models.Profile.objects.get(user_id=request.user.id).permissions)
     }
 
-    if not request.GET.get('ajax', None):  # Eсли вызов НЕ AJAX
+    if not request.GET.get('ajax', None):  # Если вызов НЕ AJAX
         return render(request, 'check/device_info.html', data)
 
     # Собираем интерфейсы
@@ -635,5 +638,59 @@ def cut_user_session(request):
             'message': status,
             'color': status_color,
             'status': 'cut session'
+        }
+    )
+
+
+@login_required
+@permission(models.Profile.REBOOT)
+def set_description(request):
+    """ Изменяем описание на порту у оборудования """
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(permitted_methods=['POST'])
+
+    if request.POST.get('device_name') and request.POST.get('port'):
+        dev = get_object_or_404(models.Devices, name=request.POST.get('device_name'))
+
+        new_description = request.POST.get('description')
+        port = request.POST.get('port')
+
+        max_length = 64  # По умолчанию максимальная длина описания 64 символа
+        status = 'success'  # По умолчанию успешно
+
+        with dev.connect() as session:
+            if hasattr(session, 'set_description'):
+                set_description_status = session.set_description(port=port, desc=new_description)
+                new_description = session.clear_description(new_description)
+
+            else:
+                set_description_status = 'Недоступно для данного оборудования'
+                status = 'warning'  # Описание цветовой палитры для bootstrap
+
+        # Проверяем результат изменения описания
+        if 'Max length' in set_description_status:
+            # Описание слишком длинное
+            max_length = set_description_status.split(':')[1]  # Находим в строке "Max length:32" число "32"
+            if max_length.isdigit():
+                max_length = int(max_length)
+            else:
+                max_length = 32
+            set_description_status = f'Слишком длинное описание! Укажите не более {max_length} символов.'
+            status = 'warning'
+
+        return JsonResponse(
+            {
+                'status': status,
+                'description': new_description,
+                'info': set_description_status,
+                'max_length': max_length
+            }
+        )
+
+    return JsonResponse(
+        {
+            'status': 'danger',
+            'info': 'Invalid data',
         }
     )

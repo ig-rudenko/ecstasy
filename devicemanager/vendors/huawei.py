@@ -204,7 +204,24 @@ class Huawei(BaseDevice):
         return config
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        self.session.sendline('system-view')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+
+        desc = self.clear_description(desc)  # Очищаем описание от лишних символов
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            status = self.send_command(f'undo description', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            status = self.send_command(f'description {desc}', expect_command=False)
+
+        if 'Wrong parameter found' in status:
+            # Если длина описания больше чем доступно на оборудовании
+            output = self.send_command('description ?')
+            return 'Max length:' + self.find_or_empty(r'no more than (\d+) characters', output)
+
+        self.session.sendline('quit')
+        self.session.sendline('quit')
 
 
 class HuaweiMA5600T(BaseDevice):
@@ -473,7 +490,28 @@ class HuaweiMA5600T(BaseDevice):
         pass
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        """ Меняем описание на порту """
+
+        type_, indexes = self.split_port(port)
+        if not type_ or len(indexes) != 3:
+            return f'Неверный порт! ({port})'
+
+        desc = self.clear_description(desc)
+
+        if len(desc) > 32:
+            # Длина описания не
+            return 'Max length:32'
+
+        self.session.sendline('config')
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            self.session.sendline(f'undo port desc {indexes[0]}/{indexes[1]}/{indexes[2]}')
+
+        else:  # В другом случае, меняем описание на оборудовании
+            self.session.sendline(f'port desc {indexes[0]}/{indexes[1]}/{indexes[2]} description {desc}')
+
+        self.session.sendline('quit')
+        self.session.expect(self.prompt)
 
 
 class HuaweiCX600(BaseDevice):

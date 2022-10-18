@@ -60,7 +60,7 @@ class Dlink(BaseDevice):
 
     def send_command(self, command: str, before_catch: str = None, expect_command=False, num_of_expect=10,
                      space_prompt=None, prompt=None, pages_limit=None):
-        return super(Dlink, self).send_command(
+        return super().send_command(
             command,
             before_catch=before_catch or command, expect_command=expect_command, num_of_expect=num_of_expect,
             space_prompt=space_prompt, prompt=prompt, pages_limit=pages_limit
@@ -178,5 +178,26 @@ class Dlink(BaseDevice):
         return r + s
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
 
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт'
+
+        desc = self.clear_description(desc)  # Очищаем описание от лишних символов
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            status = self.send_command(f'config ports {port} clear_description', expect_command=False, before_catch='desc')
+
+        else:  # В другом случае, меняем описание на оборудовании
+            status = self.send_command(f'config ports {port} description {desc}', expect_command=False, before_catch='desc')
+
+        if 'Next possible completions' in status:
+            # Если длина описания больше чем доступно на оборудовании
+            return 'Max length:' + self.find_or_empty(r'<desc (\d+)>', status)
+
+        elif 'Success' in status:  # Успешно поменяли описание
+            # Возвращаем строку с результатом работы и сохраняем конфигурацию
+            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+        # Уникальный случай
+        return status

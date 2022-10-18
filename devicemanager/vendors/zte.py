@@ -184,4 +184,24 @@ class ZTE(BaseDevice):
         return self.send_command(f'show port {port} statistics')
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        if not self.__privileged:
+            return 'Не привилегированный. Операция отклонена!'
+
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт!'
+
+        desc = self.clear_description(desc)
+
+        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            status = self.send_command(f'clear port {port} description', expect_command=False)
+
+        else:  # В другом случае, меняем описание на оборудовании
+            status = self.send_command(f'set port {port} description {desc}', expect_command=False)
+
+        if 'Parameter too long' in status:
+            # Если длина описания больше чем доступно на оборудовании
+            output = self.send_command(f'set port {port} description ?')
+            return 'Max length:' + self.find_or_empty(r'maxsize:(\d+)', output)
+
+        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()

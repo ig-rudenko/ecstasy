@@ -113,7 +113,7 @@
         {% if current_status %}
             <p>Интерфейсы были опрошены <time id="time_passed">только что</time></p>
         {% else %}
-            <p>Интерфейсы были взяты из предыдущего опроса @{{ last_interface_update }}</p>
+            <p>Интерфейсы были взяты из предыдущего опроса @{{ last_interface_update|default_if_none:" которого не было" }}</p>
         {% endif %}
         </blockquote>
 
