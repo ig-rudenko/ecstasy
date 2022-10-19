@@ -217,13 +217,11 @@ class IskratelMBan(BaseDevice):
         """
         port = port.strip()
 
-        if 'ISKRATEL' in port:
-            port = re.findall(r'\d+$', port)
-        else:
-            port = re.findall(r'^port(\d+)$', port)
+        # Для портов типа: 12, port1, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
+        port = re.findall(r'^(\d+)$|^port(\d+)$|^ISKRATEL.+/(\d+)$|^dsl(\d+):\S+$', port)
 
-        if port:
-            return port[0]
+        if port and any(port[0]):
+            return ''.join(port[0])  # Возвращаем номер порта
 
     def reload_port(self, port: str) -> str:
         port = self.validate_port(port)

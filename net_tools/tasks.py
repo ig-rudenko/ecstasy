@@ -84,7 +84,6 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
                 "VLAN's": line.vlan
             } for line in dev.interfaces
         ]
-        print(interfaces_to_save)
         current_device_info.vlans = json.dumps(interfaces_to_save)
         current_device_info.vlans_date = datetime.now()
         current_device_info.save(update_fields=['vlans', 'vlans_date'])

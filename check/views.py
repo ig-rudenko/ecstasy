@@ -183,7 +183,6 @@ def device_info(request, name):
     # Вместе с VLAN?
     with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
 
-
     # Elastic Stack settings
     elastic_settings = LogsElasticStackSettings.load()
     if elastic_settings.is_set():
@@ -234,7 +233,6 @@ def device_info(request, name):
 
     # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
     if 'Неверный логин или пароль' in str(status):
-
         # Создаем список объектов авторизации
         al = list(models.AuthGroup.objects.exclude(name=model_dev.auth_group.name).order_by('id').all())
 
@@ -273,7 +271,7 @@ def device_info(request, name):
         model_dev.save(update_fields=model_update_fields)
 
     # Сохраняем интерфейсы
-    if current_status:
+    if current_status and dev.interfaces:
         try:
             current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
         except DevicesInfo.DoesNotExist:

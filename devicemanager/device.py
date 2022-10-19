@@ -90,7 +90,7 @@ class Interfaces:
         return self.__interfaces[item]
 
     def __bool__(self):
-        return self.__interfaces
+        return bool(self.__interfaces)
 
     @property
     def count(self) -> int:
