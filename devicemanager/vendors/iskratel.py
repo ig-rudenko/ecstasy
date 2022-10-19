@@ -215,7 +215,13 @@ class IskratelMBan(BaseDevice):
         port23 -> 23
 
         """
-        port = re.findall(r'^port(\d+)$', port.strip())
+        port = port.strip()
+
+        if 'ISKRATEL' in port:
+            port = re.findall(r'\d+$', port)
+        else:
+            port = re.findall(r'^port(\d+)$', port)
+
         if port:
             return port[0]
 

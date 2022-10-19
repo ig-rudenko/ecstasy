@@ -22,6 +22,7 @@ class DevicesAdmin(admin.ModelAdmin):
         ('Принадлежность', {'fields': ('group', 'auth_group')}),
         ('Удаленное подключение', {'fields': ('snmp_community', 'port_scan_protocol', 'cmd_protocol')})
     )
+    actions = ['set_telnet', 'set_snmp', 'set_ssh']
 
     @admin.display(description='SCAN')
     def intf_scan(self, obj: Devices):
@@ -30,6 +31,18 @@ class DevicesAdmin(admin.ModelAdmin):
     @admin.display(description='LAST')
     def intf_last(self, obj: Devices):
         return mark_safe(f'<a target="_blank" href="{obj.get_absolute_url()}">LAST</a>')
+
+    @admin.action(description='telnet Протокол для поиска интерфейсов')
+    def set_telnet(self, request, queryset):
+        queryset.update(cmd_protocol='telnet')
+
+    @admin.action(description='snmp Протокол для поиска интерфейсов')
+    def set_snmp(self, request, queryset):
+        queryset.update(cmd_protocol='snmp')
+
+    @admin.action(description='ssh Протокол для поиска интерфейсов')
+    def set_ssh(self, request, queryset):
+        queryset.update(cmd_protocol='ssh')
 
 
 @admin.register(AuthGroup)
