@@ -223,6 +223,8 @@ class Huawei(BaseDevice):
         self.session.sendline('quit')
         self.session.sendline('quit')
 
+        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+
 
 class HuaweiMA5600T(BaseDevice):
     """
