@@ -61,15 +61,15 @@ function start() {
 
             if (data.port_config) {
                 $('#port-config').html(
-                `<button id="port-config" type="button" class="btn "
+                `<button id="port-config-button" type="button" class="btn "
                     data-bs-toggle="popover" data-bs-placement="bottom"
                     data-bs-custom-class="custom-popover"
                     data-bs-title="Текущая"
-                    data-bs-content="`+data.port_config.replace(re, '<br>')+`"
                 >
                 <svg class="bi me-2" width="16" height="16" role="img" aria-label="Ecstasy">
-                    <use xlink:href="#gear-icon"></use></svg>                
-                Конфигурация порта</button>`)
+                    <use xlink:href="#gear-icon"></use></svg>
+                Конфигурация порта</button>`);
+                $('#port-config-button').attr('data-bs-content', data.port_config.replace(re, '<br>'))
             }
 
             console.log(data.port_errors)

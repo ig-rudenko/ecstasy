@@ -185,7 +185,7 @@
 
     <div class="mb-4 p-4 bg-light rounded-4">
       <div class="container-fluid py-1">
-        <h4 class="fw-bold">Добро пожаловать, {{ request.user.username }}</h4>
+        <h4 class="fw-bold">Добро пожаловать, {{ request.user.first_name|default:request.user.username }}</h4>
         <p class="col-md-8 fs-6"></p>
       </div>
     </div>

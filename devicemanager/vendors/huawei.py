@@ -1,8 +1,10 @@
+import datetime
 import re
-from time import sleep
-from functools import lru_cache
 import pexpect
 import textfsm
+from time import sleep
+from functools import lru_cache
+from django.template.loader import render_to_string
 from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, _range_to_numbers, \
     _interface_normal_view
 
@@ -228,7 +230,7 @@ class Huawei(BaseDevice):
 
 class HuaweiMA5600T(BaseDevice):
     """
-    Для оборудования DSLAM MA5600T от производителя Huawei
+    Для оборудования MA5600T от производителя Huawei
     """
 
     prompt = r'config\S+#|\S+#'
@@ -241,8 +243,35 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline('enable')
         self.session.expect(r'\S+#')
 
+    def send_command(self, command: str, before_catch: str = None, expect_command=True, num_of_expect=10,
+                     space_prompt=None, prompt=None, pages_limit=None) -> str:
+        res = super(HuaweiMA5600T, self).send_command(
+            command, before_catch, expect_command, num_of_expect, space_prompt, prompt, pages_limit
+        )
+        return res.replace('\n[37D                                     [37D', '')
+
     def save_config(self):
         pass
+
+    def port_config(self, port: str):
+        port_type, indexes = self.split_port(port)
+
+        # Для GPON ONT используем отдельный поиск
+        if port_type == 'gpon' and len(indexes) == 4:
+            i: tuple = indexes
+            self.session.sendline('config')
+            self.session.expect(self.prompt)
+            config = self.send_command(
+                f'display current-configuration ont {i[0]}/{i[1]}/{i[2]} {i[3]}',
+                prompt=r'\S+config\S+#',
+                expect_command=False,
+                before_catch=r'\[\S+: \S+\]'
+            )
+            self.session.sendline('quit')
+            self.session.expect(self.prompt)
+            return config.replace('<', '&#8249;').replace('>', '&#8250;')
+
+        return ''
 
     def split_port(self, port: str) -> tuple:
         """
@@ -250,7 +279,14 @@ class HuaweiMA5600T(BaseDevice):
 
         ADSL 0/2/4 -> "adsl", ["0", "2", "4"]
 
-        Смотрит платы
+        >>> self.split_port('ADSL 0/2/4')
+        ('adsl', ['0', '2', '4'])
+
+        >>> self.split_port('GPON 0/6/7/1')
+        ('gpon', ['0', '6', '7', '1'])
+
+
+        Также смотрит слоты
 
             # display board
 
@@ -268,17 +304,20 @@ class HuaweiMA5600T(BaseDevice):
             8       H805ADPD   Normal
             9       H801SCUB   Active_normal
 
+        Чтобы понять тип
 
-        ethernet0/9/2 -> "scu", ["0", "9", "2"]
+        >>> self.split_port('ethernet0/9/2')
+        ('scu', ['0', '9', '2'])
+
 
         """
 
         port = port.lower().strip()
-        type_ = self.find_or_empty(r'^ethernet|^adsl|^gpon', port)
+        port_type = self.find_or_empty(r'^ethernet|^adsl|^gpon', port)
         indexes = re.sub(r'^[a-z]+', '', port).split('/')
-        if type_ == 'ethernet':
+        if port_type == 'ethernet':
             board_info = self.send_command(f'display board {indexes[0]}')
-            print(board_info)
+            # print(board_info)
             board_list = self.find_or_empty(rf'\s+({indexes[1]})\s+(\S+)\s+\S+', board_info)
             if board_list:
                 if 'SCU' in board_list[1]:
@@ -288,7 +327,7 @@ class HuaweiMA5600T(BaseDevice):
 
             return 'eth', indexes
 
-        return type_, indexes
+        return port_type, tuple(indexes)
 
     def port_info_parser(self, info: str):
         """
@@ -373,16 +412,110 @@ class HuaweiMA5600T(BaseDevice):
         html += '</div>'  # Закрываем ряд
         return html
 
+    def __get_gpon_port_info(self, indexes: tuple):
+        """ Смотрим информацию на порту, который относится к GPON """
+
+        from check.models import Devices
+
+        # Проверяем индексы
+        if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
+            return f'Неверный порт! (GPON {"/".join(indexes)})'
+
+        self.session.sendline('config')  # Переходим в режим конфигурации
+        self.session.expect(self.prompt)
+        i: tuple = indexes  # Упрощаем запись переменной
+
+        if len(indexes) == 3:
+            # Смотрим порт
+            output = self.send_command(
+                f'display ont info summary {"/".join(i)}', before_catch='Please wait', expect_command=False
+            )
+            self.session.sendline('quit')
+
+            data = {
+                'device': Devices.objects.get(ip=self.ip).name,
+                'port': f'GPON {"/".join(i)}',
+                'total_count': self.find_or_empty(r'the total of ONTs are: (\d+), online: \d+', output),
+                'online_count': self.find_or_empty(r'the total of ONTs are: \d+, online: (\d+)', output)
+            }
+
+            lines = re.findall(
+                r'(\d+)\s+(online|offline)\s+(\d+-\d+-\d+ \d+:\d+:\d+)\s+(\d+-\d+-\d+ \d+:\d+:\d+)\s+(\S+)',
+                output
+            )
+
+            ont_info = re.findall(
+                r'\d+\s+\S+\s+\S+\s+([-\d]+)\s+(-?\d+\.?\d+/-?\d+\.?\d+|-/-)\s+\S+',
+                output
+            )
+
+            data['onts_lines'] = []
+
+            for j in range(len(lines)):
+                part1 = list(lines[j])
+                part2 = list(ont_info[j])
+
+                part1[2] = datetime.datetime.strptime(part1[2], '%Y-%m-%d %H:%M:%S')
+                part1[3] = datetime.datetime.strptime(part1[3], '%Y-%m-%d %H:%M:%S')
+
+                data['onts_lines'].append(part1 + part2)
+
+            return render_to_string('check/gpon_port_info.html', data)
+
+        else:
+            # Смотрим ONT
+            data = self.__get_ont_port_info(indexes=i)
+            self.session.sendline('quit')
+            return render_to_string('check/ont_port_info.html', {'ont_info': data})
+
+    @lru_cache
+    def __get_ont_port_info(self, indexes: tuple):
+        """
+        Смотрим информацию на конкретном ONT
+
+        display ont wan-info 0/1 1 11
+
+        """
+        i: tuple = indexes  # Упрощаем запись переменной
+        info = self.send_command(f'display ont wan-info {i[0]}/{i[1]} {i[2]} {i[3]}', expect_command=False)
+        data = []  # Общий список
+
+        # Разделяем на сервисы
+        parts = info.split('---------------------------------------------------------------')
+
+        for service_part in parts:
+            if 'Service type' not in service_part:
+                # Пропускаем те части, которые не содержат информации о сервисе
+                continue
+
+            data.append({
+                'type': self.find_or_empty(r'Service type\s+: (\S+)', service_part),
+                'index': self.find_or_empty(r'Index\s+: (\d+)', service_part),
+                'ipv4_status': self.find_or_empty(r'IPv4 Connection status\s+: (\S+)', service_part),
+                'ipv4_access_type': self.find_or_empty(r'IPv4 access type\s+: (\S+)', service_part),
+                'ipv4_address': self.find_or_empty(r'IPv4 address\s+: (\S+)', service_part),
+                'subnet_mask': self.find_or_empty(r'Subnet mask\s+: (\S+)', service_part),
+                'manage_vlan': self.find_or_empty(r'Manage VLAN\s+: (\d+)', service_part),
+                'mac': self.find_or_empty(r'MAC address\s+: ([0-9A-F]+-[0-9A-F]+-[0-9A-F]+)', service_part)
+            })
+
+        return data
+
     def get_port_info(self, port: str):
-        """Смотрим информацию на порту"""
+        """ Смотрим информацию на порту """
 
-        type_, indexes = self.split_port(port)
+        port_type, indexes = self.split_port(port)
 
-        if not type_ or len(indexes) != 3:
+        # Для GPON используем отдельный метод
+        if port_type == 'gpon':
+            return self.__get_gpon_port_info(indexes=indexes)
+
+        # Для других
+        if not port_type or len(indexes) != 3:
             return f'Неверный порт! ({port})'
 
         self.session.sendline('config')
-        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
+        self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')
         self.session.expect(r'\S+#')
         self.session.sendline(f'display line operation {indexes[2]}')
         if self.session.expect([r'Are you sure to continue', 'Unknown command']):
@@ -395,6 +528,8 @@ class HuaweiMA5600T(BaseDevice):
         profile_output = self.send_command(f'display port state {indexes[2]}')
         profile_index = self.find_or_empty(rf'\s+\d+\s+\S+\s+(\d+)', profile_output)
         profile_output = self.send_command(f'display adsl line-profile {profile_index}')
+        self.session.sendline('quit')
+
         profile_name = f'Profile name: <strong>' + self.find_or_empty(r"Name:\s+(\S+)", profile_output) + '</strong>\n'
 
         return self.port_info_parser(profile_name + output)
@@ -406,7 +541,16 @@ class HuaweiMA5600T(BaseDevice):
         [ ["vlan", "mac"],  ... ]
         """
 
-        type_, indexes = self.split_port(port)
+        port_type, indexes = self.split_port(port)
+
+        # Для GPON ONT используем отдельный поиск
+        if port_type == 'gpon' and len(indexes) == 4:
+            data = self.__get_ont_port_info(indexes)  # Получаем информацию с порта абонента
+            macs = []
+            for service in data:
+                if service.get('mac'):  # Если есть МАС для сервиса
+                    macs.append([service.get('manage_vlan'), service['mac']])
+            return macs
 
         if len(indexes) != 3:  # Неверный порт
             return []
@@ -421,21 +565,24 @@ class HuaweiMA5600T(BaseDevice):
         macs2 = re.findall(rf'\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)', com)
 
         res = []
-        print(macs1+macs2)
+        # print(macs1+macs2)
         for m in macs1+macs2:
             res.append(m[::-1])
         return res
 
     @staticmethod
     def _up_down_command(port_type: str, status: str):
-        """В зависимости от типа порта возвращает команды для управления его статусом"""
-        if port_type == 'scu' or port_type == 'giu':
+        """
+        В зависимости от типа порта возвращает команды для управления его статусом
+        """
+
+        if port_type in ('scu', 'giu', 'gpon'):
             if status == 'down':
                 return 'shutdown'
             if status == 'up':
                 return 'undo shutdown'
 
-        if port_type == 'adsl':
+        if port_type in ('adsl', 'ont'):
             if status == 'down':
                 return 'deactivate'
             if status == 'up':
@@ -444,44 +591,87 @@ class HuaweiMA5600T(BaseDevice):
     def reload_port(self, port) -> str:
         """Перезагружаем порт"""
 
-        type_, indexes = self.split_port(port)
-        if not type_ or len(indexes) != 3:
+        port_type, indexes = self.split_port(port)
+
+        if not port_type or len(indexes) not in [3, 4]:
             return f'Неверный порт! ({port})'
 
         self.session.sendline('config')
-        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
-        self.session.expect(r'\S+#')
+        self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')
+        self.session.expect(self.prompt)
 
-        cmd = f"{self._up_down_command(type_, 'down')} {indexes[2]}"  # Выключить порт
-        self.session.sendline(cmd)
-        self.session.expect(cmd)
-        self.session.sendline('\n')
-        sleep(1)  # Пауза
+        if port_type == 'gpon' and len(indexes) == 4:
+            # Перезагрузка ONT
+            self.session.sendline(f'ont reset {indexes[2]} {indexes[3]}')
+            self.session.sendline('y')
+            self.session.expect(self.prompt)
 
-        cmd = f"{self._up_down_command(type_, 'up')} {indexes[2]}"  # Включить порт
-        self.session.sendline(cmd)
-        self.session.expect(cmd)
+        else:
+            cmd = f"{self._up_down_command(port_type, 'down')} {indexes[2]}"  # Выключить порт
+            self.session.sendline(cmd)
+            self.session.expect(cmd)
+            self.session.sendline('\n')
+            sleep(1)  # Пауза
 
-        s = self.session.before.decode()
+            cmd = f"{self._up_down_command(port_type, 'up')} {indexes[2]}"  # Включить порт
+            self.session.sendline(cmd)
+            self.session.expect(cmd)
 
-        self.session.sendline('\n')
-        self.session.expect(r'\S+#$')
+            s = self.session.before.decode()
 
-        s += self.session.before.decode()
+            self.session.sendline('\n')
+            self.session.expect(r'\S+#$')
+
+            s += self.session.before.decode()
+
+        self.session.sendline('quit')
         return s
 
     def set_port(self, port, status) -> str:
-        type_, indexes = self.split_port(port)
-        if not type_ or len(indexes) != 3:
+        """
+        Меняем состояние порта up/down
+
+        В зависимости от типа порта команды разнятся
+
+        Для порта adsl 0/1/2:
+            # interface adsl 0/1
+            # deactivate 2
+
+        Для порта gpon 0/3/2/14:
+            # interface gpon 0/3
+            # ont port deactivate 2 14
+
+        :param port: строка с портом (например: adsl 0/2/4)
+        :param status: 'up' или 'down'
+        :return:
+        """
+
+        port_type, indexes = self.split_port(port)
+
+        if not port_type or len(indexes) not in [3, 4]:
             return f'Неверный порт! ({port})'
 
         self.session.sendline('config')
-        self.session.sendline(f'interface {type_} {indexes[0]}/{indexes[1]}')
-        self.session.expect(r'\S+#')
+        self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')
+        self.session.expect(self.prompt)
 
-        # Выключаем или включаем порт, в зависимости от типа будут разные команды
-        s = self.send_command(f'{self._up_down_command(type_, status)} {indexes[2]}', expect_command=False)
-        self.send_command('\n', expect_command=False)
+        if port_type == 'gpon' and len(indexes) == 4:
+            # Для ONT
+            s = self.send_command(
+                f'ont port {self._up_down_command(port_type, status)} {indexes[2]} {indexes[3]}'
+            )
+            self.send_command('\n', expect_command=False)
+
+        else:
+            # Другие порты
+            # Выключаем или включаем порт, в зависимости от типа будут разные команды
+            s = self.send_command(
+                f'{self._up_down_command(port_type, status)} {indexes[2]}',
+                expect_command=False
+            )
+            self.send_command('\n', expect_command=False)
+
+        self.session.sendline('quit')
 
         return s
 
@@ -494,8 +684,8 @@ class HuaweiMA5600T(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         """ Меняем описание на порту """
 
-        type_, indexes = self.split_port(port)
-        if not type_ or len(indexes) != 3:
+        port_type, indexes = self.split_port(port)
+        if not port_type or len(indexes) != 3:
             return f'Неверный порт! ({port})'
 
         desc = self.clear_description(desc)
@@ -514,6 +704,8 @@ class HuaweiMA5600T(BaseDevice):
 
         self.session.sendline('quit')
         self.session.expect(self.prompt)
+
+        return f'Description has been {"changed" if desc else "cleared"}.'
 
 
 class HuaweiCX600(BaseDevice):

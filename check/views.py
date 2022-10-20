@@ -321,7 +321,7 @@ def device_info(request, name):
 @login_required
 @permission(models.Profile.READ)
 def get_port_mac(request):
-    """Смотрим MAC на порту"""
+    """Смотрим информацию о порте"""
 
     if request.method == 'GET' and request.GET.get('device') and request.GET.get('port'):
         model_dev = get_object_or_404(models.Devices, name=request.GET.get('device'))
