@@ -666,6 +666,9 @@ def set_description(request):
                 set_description_status = 'Недоступно для данного оборудования'
                 status = 'warning'  # Описание цветовой палитры для bootstrap
 
+        if 'Неверный порт' in set_description_status:
+            status = 'warning'
+
         # Проверяем результат изменения описания
         if 'Max length' in set_description_status:
             # Описание слишком длинное

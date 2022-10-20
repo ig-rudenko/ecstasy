@@ -111,7 +111,7 @@
         <div class="col">
 
             <span class="badge bg-light text-dark" style="padding: 9px; font-size: larger;">
-                <description>{{ desc }}</description>
+                <description>{{ desc|default_if_none:'' }}</description>
 
                 <svg data-bs-toggle="modal" data-bs-target="#modal-desc"
                      onclick="change_description('{{ port }}', '{{ desc }}')"
