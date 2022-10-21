@@ -39,6 +39,16 @@ function get_macs() {
         t = setTimeout(get_macs, 10000);
     }
     timer();
+
+function format_to_html(string) {
+    let space_re = new RegExp(' ', 'g');
+    let n_re = new RegExp('\n', 'g');
+
+    string.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+
+    return string
+}
+
 function start() {
 
     let data = {
@@ -57,7 +67,7 @@ function start() {
         success: function( data ) {
             console.log(data)
 
-            var re = new RegExp('\n', 'g');
+
 
             if (data.port_config) {
                 $('#port-config').html(
@@ -69,17 +79,16 @@ function start() {
                 <svg class="bi me-2" width="16" height="16" role="img" aria-label="Ecstasy">
                     <use xlink:href="#gear-icon"></use></svg>
                 Конфигурация порта</button>`);
-                $('#port-config-button').attr('data-bs-content', data.port_config.replace(re, '<br>'))
+                $('#port-config-button').attr('data-bs-content', format_to_html(data.port_config))
             }
 
-            console.log(data.port_errors)
             if (data.port_errors) {
                 $('#port-errors').html(
                 `<button id="port-errors" type="button" class="btn "
                     data-bs-toggle="popover" data-bs-placement="right"
                     data-bs-custom-class="custom-popover"
                     data-bs-title="Ошибки"
-                    data-bs-content="`+data.port_errors.replace(RegExp(' ', 'g'), '&nbsp;').replace(re, '<br>')+`"
+                    data-bs-content="`+format_to_html(data.port_errors)+`"
                 >
                 <svg class="bi me-2" width="16" height="16" role="img">
                     <use xlink:href="#warning-icon"></use></svg>

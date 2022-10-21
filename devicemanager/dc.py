@@ -8,6 +8,23 @@ class DeviceFactory:
     Подключение к оборудованию, определение вендора и возврат соответствующего класса
     """
 
+    prompt_expect = r'[#>\]]\s*$'
+
+    login_input_expect = r"[Ll]ogin(?![-\siT]).*:\s*$|[Uu]ser\s(?![lfp]).*:\s*$|User:$|[Nn]ame.*:\s*$"
+    password_input_expect = r'[Pp]ass.*:\s*$'
+
+    telnet_unavailable = r'Connection closed|Unable to connect'
+
+    authentication_expect = [
+        login_input_expect,  # 0
+        password_input_expect,  # 1
+        prompt_expect,  # 2
+        telnet_unavailable,  # 3
+        r'Press any key to continue',  # 4
+        r'Timeout or some unexpected error happened on server host',  # 5 - Ошибка радиуса
+        r'The password needs to be changed'  # 6
+    ]
+
     def __init__(self, ip: str, protocol: str, auth_obj=None):
         self.ip = ip
 
@@ -165,6 +182,71 @@ class DeviceFactory:
         else:
             return 'Не удалось распознать оборудование'
 
+    def __login_to_by_telnet(self, login: str, password: str, timeout: int, pre_expect_index=None) -> str:
+
+        login_try = 1
+
+        try:
+            while True:
+                # Ловим команды
+                if pre_expect_index is not None:
+                    expect_index = pre_expect_index
+                    pre_expect_index = None
+
+                else:
+                    expect_index = self.session.expect(
+                        self.authentication_expect,
+                        timeout=timeout
+                    )
+
+                print(expect_index)
+
+                # Login
+                if expect_index == 0:
+
+                    if login_try > 1:
+                        print('login ', login_try)
+                        # Если это вторая попытка ввода логина, то предыдущий был неверный
+                        return f'Неверный логин или пароль! ({self.ip})'
+
+                    self.session.sendline(login)  # Вводим логин
+                    login_try += 1
+                    continue
+
+                # Password
+                elif expect_index == 1:
+                    self.session.sendline(password)  # Вводим пароль
+                    continue
+
+                # PROMPT
+                elif expect_index == 2:  # Если был поймал символ начала ввода команды
+                    return 'Connected'
+
+                # TELNET FAIL
+                elif expect_index == 3:
+                    return f'Telnet недоступен! ({self.ip})'
+
+                # Press any key to continue
+                elif expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
+                    self.session.send(' ')
+                    self.session.sendline(login)  # Вводим логин
+                    self.session.sendline(password)  # Вводим пароль
+                    self.session.expect(r'[#>\]]\s*')
+
+                # Timeout or some unexpected error happened on server host' - Ошибка радиуса
+                elif expect_index == 5:
+                    continue  # Вводим те же данные еще раз
+
+                # The password needs to be changed
+                elif expect_index == 6:
+                    self.session.sendline('N')  # Не меняем пароль, когда спрашивает
+                    continue
+
+                break
+
+        except pexpect.exceptions.TIMEOUT:
+            return f'Login Error: Время ожидания превышено! ({self.ip})'
+
     def __enter__(self, algorithm: str = '', cipher: str = '', timeout: int = 30):
         connected = False
         if self.protocol == 'ssh':
@@ -176,7 +258,7 @@ class DeviceFactory:
                 self.session = pexpect.spawn(f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}')
 
                 while not connected:
-                    login_stat = self.session.expect(
+                    expect_index = self.session.expect(
                         [
                             r'no matching key exchange method found',  # 0
                             r'no matching cipher found',  # 1
@@ -188,7 +270,7 @@ class DeviceFactory:
                         ],
                         timeout=timeout
                     )
-                    if login_stat == 0:
+                    if expect_index == 0:
                         self.session.expect(pexpect.EOF)
                         algorithm = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
                         if algorithm:
@@ -196,7 +278,7 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
-                    elif login_stat == 1:
+                    elif expect_index == 1:
                         self.session.expect(pexpect.EOF)
                         cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
                         if cipher:
@@ -204,18 +286,18 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
-                    elif login_stat == 2:
+                    elif expect_index == 2:
                         self.session.sendline('yes')
-                    elif login_stat == 3:
+                    elif expect_index == 3:
                         self.session.sendline(password)
                         if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
                             connected = True
                             break
                         else:
                             break  # Пробуем новый логин/пароль
-                    elif login_stat == 4:
+                    elif expect_index == 4:
                         connected = True
-                    elif login_stat == 6:
+                    elif expect_index == 6:
                         self.session.sendline('N')
 
                 if connected:
@@ -225,61 +307,29 @@ class DeviceFactory:
 
         if self.protocol == 'telnet':
             self.session = pexpect.spawn(f'telnet {self.ip}')
-            try:
-                for login, password in zip(self.login, self.password):
-                    while not connected:  # Если не авторизировались
-                        login_stat = self.session.expect(
-                            [
-                                r"[Ll]ogin(?![-\siT]).*:\s*$",  # 0
-                                r"[Uu]ser\s(?![lfp]).*:\s*$|User:$",  # 1
-                                r"[Nn]ame.*:\s*$",  # 2
-                                r'[Pp]ass.*:\s*$',  # 3
-                                r'Connection closed',  # 4
-                                r'Unable to connect',  # 5
-                                r'[#>\]]\s*$',  # 6
-                                r'Press any key to continue',  # 7
-                                r'Timeout or some unexpected error happened on server host',  # 8 - Ошибка радиуса
-                                r'The password needs to be changed'  # 9
-                            ],
-                            timeout=timeout
-                        )
-                        if login_stat == 7:  # Если необходимо нажать любую клавишу, чтобы продолжить
-                            self.session.send(' ')
-                            self.session.sendline(login)  # Вводим логин
-                            self.session.sendline(password)  # Вводим пароль
-                            self.session.expect(r'[#>\]]\s*')
 
-                        if login_stat < 3:
-                            self.session.sendline(login)  # Вводим логин
-                            continue
+            pre_set_index = None  # По умолчанию стартуем без начального индекса
+            status = 'Не был передал логин/пароль'
+            for login, password in zip(self.login, self.password):
+                print(login, password)
 
-                        elif 4 <= login_stat <= 5:
-                            return f'Telnet недоступен! ({self.ip})'
+                status = self.__login_to_by_telnet(login, password, timeout, pre_set_index)
+                print(status)
+                if status == 'Connected':
+                    # Сохраняем текущие введенные логин и пароль, они являются верными
+                    self.login = login
+                    self.password = password
+                    break
 
-                        elif login_stat == 3:
-                            self.session.sendline(password)  # Вводим пароль
-                            # Сохраняем текущие введенные логин и пароль, в надежде, что они являются верными
-                            self.login = login
-                            self.password = password
-                            continue
+                elif 'Неверный логин или пароль' in status:
+                    pre_set_index = 0  # Следующий ввод будет логином
+                    continue
 
-                        elif login_stat == 6:  # Если был поймал символ начала ввода команды
-                            connected = True  # Подключились
-                        elif login_stat == 8:
-                            continue  # Если ошибка радиуса, то вводим те же данные еще раз
-                        elif login_stat == 9:
-                            self.session.sendline('N')
-                            continue
+                elif 'Telnet недоступен' in status or 'Время ожидания превышено' in status:
+                    return status
 
-                        break  # Выход из цикла
-
-                    if connected:
-                        break
-
-                else:  # Если не удалось зайти под логинами и паролями из списка аутентификации
-                    return f'Неверный логин или пароль! ({self.ip})'
-            except pexpect.exceptions.TIMEOUT:
-                return f'Login Error: Время ожидания превышено! ({self.ip})'
+            else:
+                return status
 
         return self.__get_device()
 

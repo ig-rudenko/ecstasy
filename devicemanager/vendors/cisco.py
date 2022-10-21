@@ -113,9 +113,11 @@ class Cisco(BaseDevice):
         """Общая информация о порте"""
 
         port_type = self.send_command(
-            f'show interfaces {_interface_normal_view(port)} | include media', expect_command=False
-        )
-        return f'<p>{port_type}</p>'
+            f'show interfaces {_interface_normal_view(port)}', expect_command=False
+        ).split('\r\n')
+
+        media_type = [line for line in port_type if 'media' in line]
+        return f'<p>{"".join(media_type)}</p>'
 
     def port_type(self, port):
         """Определяем тип порта: медь или оптика"""
@@ -127,9 +129,12 @@ class Cisco(BaseDevice):
         return 'COPPER'
 
     def get_port_errors(self, port):
-        return self.send_command(
+        output = self.send_command(
             f'show interfaces {_interface_normal_view(port)} | include error', expect_command=False
-        )
+        ).split('\r\n')
+
+        media_type = [line for line in output if 'errors' in line]
+        return "<p>" + "\n".join(media_type) + "</p>"
 
     def port_config(self, port):
         """Конфигурация порта"""
@@ -137,7 +142,7 @@ class Cisco(BaseDevice):
         config = self.send_command(
             f'show running-config interface {_interface_normal_view(port)}',
             before_catch=r'Current configuration.+?\!'
-        )
+        ).strip()
         return config
 
     def search_mac(self, mac_address: str):
