@@ -311,10 +311,9 @@ class DeviceFactory:
             pre_set_index = None  # По умолчанию стартуем без начального индекса
             status = 'Не был передал логин/пароль'
             for login, password in zip(self.login, self.password):
-                print(login, password)
 
                 status = self.__login_to_by_telnet(login, password, timeout, pre_set_index)
-                print(status)
+
                 if status == 'Connected':
                     # Сохраняем текущие введенные логин и пароль, они являются верными
                     self.login = login
