@@ -73,6 +73,7 @@ class EltexMES(BaseDevice):
         self.session.expect(self.prompt)
         for _ in range(3):  # Пробуем 3 раза, если ошибка
             self.session.sendline('write')
+            self.session.expect('write')
             status = self.send_command('Y', expect_command=False)
             if 'succeed' in status:
                 return self.SAVED_OK

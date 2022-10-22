@@ -54,7 +54,7 @@ class Dlink(BaseDevice):
 
     def save_config(self):
         self.session.sendline('save')
-        if self.session.expect([self.prompt, r'[Ss]uccess']):
+        if self.session.expect([self.prompt, r'[Ss]uccess|[Dd]one']):
             return self.SAVED_OK
         return self.SAVED_ERR
 
