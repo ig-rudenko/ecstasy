@@ -97,8 +97,12 @@ class DeviceFactory:
                 if 'CX600' in version:
                     model = BaseDevice.find_or_empty(r'HUAWEI (\S+) uptime', version, flags=re.IGNORECASE)
                     return HuaweiCX600(self.session, self.ip, auth, model=model)
-                elif 'quidway':
+                elif 'quidway' in version:
                     return Huawei(self.session, self.ip, auth)
+
+            # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
+            elif 'Unrecognized command' in version:
+                return Huawei(self.session, self.ip, auth)
 
         # CISCO
         elif 'cisco' in version.lower():
