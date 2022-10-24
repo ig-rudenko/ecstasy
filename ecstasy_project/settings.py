@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'check',
     'net_tools',
-    'app_settings'
+    'app_settings',
+    'django.contrib.humanize'
 ]
 
 MIDDLEWARE = [
@@ -126,6 +127,8 @@ LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
+
+USE_L10N = True
 
 # USE_TZ = True
 

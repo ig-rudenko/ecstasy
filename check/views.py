@@ -6,6 +6,7 @@ import pexpect
 from datetime import datetime
 from net_tools.models import DevicesInfo
 
+from django.urls import reverse
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
 from django.db.models import Q
@@ -125,6 +126,12 @@ def home(request):
 def show_devices(request):
     """ Список всех имеющихся устройств """
 
+    filter_by_group = request.GET.get('group', '')
+    group_param = f'group={filter_by_group}' if filter_by_group else ''
+
+    filter_by_vendor = request.GET.get('vendor', '')
+    vendor_param = f'&vendor={filter_by_vendor}' if filter_by_vendor else ''
+
     p = request.GET.get('page', 1)
     try:
         p = int(p)
@@ -132,15 +139,48 @@ def show_devices(request):
         p = 1
 
     # Группы оборудования, доступные текущему пользователю
-    user_groups = [g['id'] for g in request.user.profile.devices_groups.all().values('id')]
+    user_groups_ids = []
+    user_groups_names = []
+    for g in request.user.profile.devices_groups.all().values('id', 'name'):
+        user_groups_ids.append(g['id'])
+        user_groups_names.append(g['name'])
 
+    user_groups_names = {
+        g: reverse('devices-list') + '?' + f'group={g}' + vendor_param
+        for g in user_groups_names
+    }
+
+    # Вендоры оборудования, что доступны пользователю
+    unique_vendors_list = sorted(
+        list(
+            set(
+                d['vendor'] for d in models.Devices.objects.filter(group__in=user_groups_ids).values('vendor')
+                if d['vendor']
+            )
+        )
+    )
+    vendors = {
+        g: reverse('devices-list') + '?' + group_param + f'&vendor={g}'
+        for g in unique_vendors_list
+    }
+
+    full_url = reverse('devices-list') + '?' + group_param + vendor_param
+
+    # Фильтруем запрос
+    query = Q(group__in=user_groups_ids)
     if request.GET.get('s'):
         s = request.GET['s'].strip()
-        query = (Q(ip__contains=s) | Q(name__icontains=s))
-    else:
-        query = Q()
+        query &= (Q(ip__contains=s) | Q(name__icontains=s))
 
-    devs = models.Devices.objects.filter(Q(group__in=user_groups) & query)
+    # Фильтруем по группе
+    if filter_by_group in user_groups_names:
+        query &= Q(group__name=filter_by_group)
+
+    # Фильтруем по вендору
+    if filter_by_vendor:
+        query &= Q(vendor=filter_by_vendor)
+
+    devs = models.Devices.objects.filter(query)
 
     paginator = Paginator(devs, per_page=50)
 
@@ -156,7 +196,10 @@ def show_devices(request):
             'search': request.GET.get('s', ''),
             'page': p,
             'num_pages': paginator.num_pages,
-            'device_icon_number': random.randint(1, 5)
+            'device_icon_number': random.randint(1, 5),
+            'devices_groups': user_groups_names,
+            'vendors': vendors,
+            'full_url': full_url
         }
     )
 

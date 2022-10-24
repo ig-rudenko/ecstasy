@@ -1,0 +1,63 @@
+<footer class="text-center text-lg-start text-muted">
+    <div class="container p-4">
+
+        {% if num_pages > 1 %}
+        <nav aria-label="...">
+          <ul class="pagination justify-content-center">
+
+            {# Первая страница #}
+            {% if page > 2 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ full_url }}&page=1">1 << </a>
+            </li>
+            {% endif %}
+
+            <li class="page-item {% if page == 1 %}disabled{% endif %}">
+              <a class="page-link" href="{{ full_url }}&page={{ page | add:'-1' }}">Предыдущая</a>
+            </li>
+
+            {# Предыдущая страница #}
+            {% if page != 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ full_url }}&page={{ page|add:'-1' }}">{{ page|add:'-1' }}</a>
+                </li>
+            {% endif %}
+
+
+            {# Текущая страница #}
+            <li class="page-item active" aria-current="page">
+              <a class="page-link">{{ page }}</a>
+            </li>
+
+
+            {# Следующая страница #}
+            {% if num_pages != page %}
+            <li class="page-item">
+                <a class="page-link" href="{{ full_url }}&page={{ page|add:'1' }}">{{ page|add:'1' }}</a>
+            </li>
+            {% endif %}
+
+            {# Запасная страница #}
+            {% if page == 1 and page < num_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ full_url }}&page={{ page|add:'2' }}">{{ page|add:'2' }}</a>
+            </li>
+            {% endif %}
+
+            {# Следующая страница #}
+            <li class="page-item {% if page == num_pages %}disabled{% endif %}">
+              <a class="page-link" href="{{ full_url }}&page={{ page|add:'1' }}">Следующая</a>
+            </li>
+
+            {# Последняя страница #}
+            {% if page < num_pages|add:'-1' %}
+            <li class="page-item">
+              <a class="page-link" href="{{ full_url }}&page={{ num_pages }}"> >> {{ num_pages }}</a>
+            </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+    {% endif %}
+    </div>
+</footer>
