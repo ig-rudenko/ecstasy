@@ -194,6 +194,7 @@ def show_devices(request):
         {
             'devs': paginator.page(p),
             'search': request.GET.get('s', ''),
+            'total_count': paginator.count,
             'page': p,
             'num_pages': paginator.num_pages,
             'device_icon_number': random.randint(1, 5),
