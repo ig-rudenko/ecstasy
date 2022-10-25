@@ -8,3 +8,4 @@ celerybeat-schedule*
 .coverage
 lib
 ecstasy_project/settings_prod.py
+.idea

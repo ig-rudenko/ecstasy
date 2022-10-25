@@ -600,9 +600,11 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')
         self.session.expect(self.prompt)
 
+        s = ''
         if port_type == 'gpon' and len(indexes) == 4:
             # Перезагрузка ONT
             self.session.sendline(f'ont reset {indexes[2]} {indexes[3]}')
+            self.session.expect('Are you sure to reset the ONT')
             self.session.sendline('y')
             self.session.expect(self.prompt)
 
