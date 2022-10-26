@@ -20,7 +20,7 @@ class Huawei(BaseDevice):
 
     prompt = r'<\S+>$|\[\S+\]$|Unrecognized command'
     space_prompt = r"---- More ----"
-    mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
+    mac_format = r'[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}'
     vendor = 'Huawei'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
@@ -61,13 +61,20 @@ class Huawei(BaseDevice):
             self.serialno = self.find_or_empty(r'BarCode=(\S+)', elabel)
 
     def save_config(self):
-        self.session.sendline('save')
-        self.session.expect(r'[Aa]re you sure.*\[Y\/N\]')
-        self.session.sendline('Y')
-        self.session.sendline('\n')
-        if self.session.expect([self.prompt, r'successfully'], timeout=20):
-            return self.SAVED_OK
-        return self.SAVED_ERR
+        n = 1
+        while n < 4:
+            self.session.sendline('save')
+            self.session.expect(r'[Aa]re you sure.*\[Y\/N\]')
+            self.session.sendline('Y')
+            self.session.sendline('\n')
+            match = self.session.expect([self.prompt, r'successfully', r'[Ss]ystem is busy'], timeout=20)
+            if match == 1:
+                return self.SAVED_OK
+            elif match == 2:
+                sleep(2)
+                n += 1
+                continue
+            return self.SAVED_ERR
 
     def get_interfaces(self):
         output = ''
@@ -122,12 +129,23 @@ class Huawei(BaseDevice):
 
         if '2403' in self.model:
             mac_str = self.send_command(f'display mac-address interface {_interface_normal_view(port)}')
-            for i in re.findall(rf'({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+', mac_str):
+            for i in re.findall(r'(' + self.mac_format + r')\s+(\d+)\s+\S+\s+\S+\s+\S+', mac_str):
                 mac_list.append(i[::-1])
 
         elif '2326' in self.model:
             mac_str = self.send_command(f'display mac-address {_interface_normal_view(port)}')
-            for i in re.findall(rf'({self.mac_format})\s+(\d+)/\S+\s+\S+\s+\S+', mac_str):
+
+            if 'Wrong parameter' in mac_str:
+                # Если необходимо ввести тип
+                mac_str1 = self.send_command(
+                    f'display mac-address dynamic {_interface_normal_view(port)}', expect_command=False
+                )
+                mac_str2 = self.send_command(
+                    f'display mac-address secure-dynamic {_interface_normal_view(port)}', expect_command=False
+                )
+                mac_str = mac_str1 + mac_str2
+
+            for i in re.findall(r'(' + self.mac_format + r')\s+(\d+)', mac_str):
                 mac_list.append(i[::-1])
 
         return mac_list
@@ -166,9 +184,10 @@ class Huawei(BaseDevice):
             return ''
 
     def get_port_errors(self, port):
-        return self.__port_info(port)
+        errors = self.__port_info(port).split('\n')
+        return '\n'.join([line.strip() for line in errors if 'errors' in line])
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         self.session.sendline('system-view')
         self.session.sendline(f'interface {_interface_normal_view(port)}')
         self.session.sendline('shutdown')
@@ -179,10 +198,10 @@ class Huawei(BaseDevice):
         self.session.sendline('quit')
         self.session.expect(r'\[\S+\]')
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def set_port(self, port, status) -> str:
+    def set_port(self, port, status, save_config=True) -> str:
         self.session.sendline('system-view')
         self.session.sendline(f'interface {_interface_normal_view(port)}')
         if status == 'up':
@@ -195,7 +214,7 @@ class Huawei(BaseDevice):
         self.session.sendline('quit')
         self.session.expect(r'\[\S+\]')
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     def port_config(self, port):
@@ -226,6 +245,16 @@ class Huawei(BaseDevice):
         self.session.sendline('quit')
 
         return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+
+    # def virtual_cable_test(self, port: str):
+    #     self.session.sendline('system-view')
+    #     self.session.sendline(f'interface {_interface_normal_view(port)}')
+    #     self.session.expect(self.prompt)
+    #     self.session.sendline('virtual-cable-test')
+    #     if self.session.expect([self.prompt, 'continue']):
+    #         self.session.sendline('Y')
+    #         self.session.expect(self.prompt)
+    #     return self.session.before.decode()
 
 
 class HuaweiMA5600T(BaseDevice):
@@ -588,7 +617,7 @@ class HuaweiMA5600T(BaseDevice):
             if status == 'up':
                 return 'activate'
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         """Перезагружаем порт"""
 
         port_type, indexes = self.split_port(port)
@@ -629,7 +658,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline('quit')
         return s
 
-    def set_port(self, port, status) -> str:
+    def set_port(self, port, status, save_config=True) -> str:
         """
         Меняем состояние порта up/down
 
@@ -645,6 +674,7 @@ class HuaweiMA5600T(BaseDevice):
 
         :param port: строка с портом (например: adsl 0/2/4)
         :param status: 'up' или 'down'
+        :param save_config: Сохранять конфигурацию?
         :return:
         """
 
@@ -745,10 +775,10 @@ class HuaweiCX600(BaseDevice):
     def get_mac(self, port: str) -> list:
         pass
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         pass
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
     def save_config(self):

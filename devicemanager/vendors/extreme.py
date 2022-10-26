@@ -139,7 +139,7 @@ class Extreme(BaseDevice):
 
         return rx_errors + '\n' + tx_errors
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         """Перезагружаем порт и сохраняем конфигурацию"""
 
         if not self.validate_port(port):
@@ -151,10 +151,10 @@ class Extreme(BaseDevice):
         self.session.sendline(f'enable ports {port}')
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         """Меням состояние порта и сохраняем конфигурацию"""
 
         if not self.validate_port(port):
@@ -170,7 +170,7 @@ class Extreme(BaseDevice):
         self.session.sendline(f'{cmd} ports {port}')
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     def port_type(self, port):

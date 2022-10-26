@@ -32,10 +32,10 @@ class Juniper(BaseDevice):
     def get_mac(self, port: str) -> list:
         pass
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         pass
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
     def save_config(self):

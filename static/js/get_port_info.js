@@ -41,6 +41,10 @@ function get_macs() {
     timer();
 
 function format_to_html(string) {
+    // Превращаем строки в html, для корректного отображения
+    // Заменяем перенос строки на <br>
+    //          пробелы на &nbsp;
+
     let space_re = new RegExp(' ', 'g');
     let n_re = new RegExp('\n', 'g');
 
@@ -49,6 +53,7 @@ function format_to_html(string) {
 }
 
 function start() {
+    // Собираем информацию о порте
 
     let data = {
         port: $('#id-port')[0].value,
@@ -66,8 +71,7 @@ function start() {
         success: function( data ) {
             console.log(data)
 
-
-
+            // Конфигурация порта
             if (data.port_config) {
                 $('#port-config').html(
                 `<button id="port-config-button" type="button" class="btn "
@@ -81,6 +85,7 @@ function start() {
                 $('#port-config-button').attr('data-bs-content', format_to_html(data.port_config))
             }
 
+            // Ошибки на порту
             if (data.port_errors) {
                 $('#port-errors').html(
                 `<button id="port-errors" type="button" class="btn "
@@ -94,11 +99,57 @@ function start() {
                 Ошибки на порту</button>`)
             }
 
+            // Информация на порту
             if (data.port_info) {
                 $('#port-info').html(data.port_info+'<hr>')
             }
+
+            // Диагностика кабеля
+            if (data.cable_test) {
+                $('#cable-diag').html(
+                `<button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modal-cable-diag">
+                    <svg class="bi me-2" width="16" height="16" role="img">
+                    <use xlink:href="#cable-diag-icon"></use>
+                    </svg>
+                    Диагностика кабеля
+                </button>`)
+
+                $('#cable-length').html(data.cable_test.len)  // Длина кабеля
+                $('#cable-status').html(data.cable_test.status)  // Статус
+                if (data.cable_test.status === 'Up') {
+                    // Link Up
+                    $('#cable-status-icon').attr('fill', '#58bf8e')
+                } else if (data.cable_test.status === 'Down') {
+                    // Link Down
+                    $('#cable-status-icon').attr('fill', '#f18889')
+                } else if (data.cable_test.status === 'Empty') {
+                    // Нет кабеля
+                    $('#cable-status-icon').attr('fill', '#6fc9e4')
+                } else {
+                    $('#cable-status-icon').attr('fill', '#c6bcb0')
+                }
+
+                // Отдельно каждую пару
+                let pair_info_html = ''
+                if (data.cable_test.pair1) {
+                    // Первая пара
+                    pair_info_html = pair_info_html + `<div>` + `Пара 1: ` + data.cable_test.pair1.len + ` м.`
+                        + `<img title="` + data.cable_test.pair1.status + `" style="vertical-align: middle; margin-left: 10px;" height="40px;" 
+                                src="/static/img/status-` + data.cable_test.pair1.status + `.png"></div>`
+                }
+                if (data.cable_test.pair2) {
+                    // Вторая пара
+                    pair_info_html = pair_info_html + `<div>` + `Пара 2: ` + data.cable_test.pair2.len + ` м.`
+                        + `<img style="vertical-align: middle; margin-left: 10px;" height="40px;" 
+                                src="/static/img/status-` + data.cable_test.pair1.status + `.png"></div>`
+                }
+                $('#pair-info').html(pair_info_html)
+            }
+
+            // MAC'и на порту
             $('#macs-table').html(data.macs)
 
+            // Тип порта copper, sfp
             if (data.port_type) {
                 if (data.port_type === 'SFP') {
                     $('#port-type').css({"backgroundColor": "#3e6cff"}).html('sfp')

@@ -4,6 +4,9 @@ import re
 import pexpect
 
 from datetime import datetime
+
+import requests
+
 from net_tools.models import DevicesInfo
 
 from django.urls import reverse
@@ -413,6 +416,9 @@ def get_port_mac(request):
                 if hasattr(session, 'get_port_errors'):
                     data['port_errors'] = session.get_port_errors(data['port'])
 
+                if hasattr(session, 'virtual_cable_test'):
+                    data['cable_test'] = session.virtual_cable_test(data['port'])
+
                 if request.GET.get('ajax') == 'all':
                     # Отправляем все собранные данные
                     data['macs'] = render_to_string('check/macs_table.html', data)
@@ -435,8 +441,9 @@ def reload_port(request):
     color_error = '#d53c3c'
     color = color_success  # Значение по умолчанию
 
-    if re.findall(r'svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras',
-                  request.POST.get('desc', '').lower()) and not request.user.is_superuser:
+    if not request.user.is_superuser and\
+            re.findall(r'svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras',
+                       request.POST.get('desc', '').lower()):
         return JsonResponse({
             'message': f'Запрещено изменять состояние данного порта!',
             'status': 'WARNING',
@@ -451,8 +458,9 @@ def reload_port(request):
         model_dev = get_object_or_404(models.Devices, name=dev.name)
         dev.protocol = model_dev.cmd_protocol
 
-        port = request.POST['port']
-        status = request.POST['status']
+        port: str = request.POST['port']
+        status: str = request.POST['status']
+        save_config: bool = request.POST.get('save') != 'no'  # По умолчанию сохранять
 
         # У пользователя нет доступа к группе данного оборудования
         if not has_permission_to_device(model_dev, request.user):
@@ -472,7 +480,7 @@ def reload_port(request):
                 # Перезагрузка
                 if status == 'reload':
                     try:
-                        s = session.reload_port(port)
+                        s = session.reload_port(port=port, save_config=save_config)
                         message = f'Порт {port} был перезагружен!'
                     except pexpect.TIMEOUT:
                         message = 'Timeout'
@@ -481,7 +489,7 @@ def reload_port(request):
                 # UP and DOWN
                 elif user_permission_level >= 2 and status in ['up', 'down']:
                     try:
-                        s = session.set_port(port, status=status)
+                        s = session.set_port(port=port, status=status, save_config=save_config)
                         message = f'Порт {port} был переключен в состояние {status}!'
                     except pexpect.TIMEOUT:
                         message = 'Timeout'
@@ -667,7 +675,8 @@ def cut_user_session(request):
 
             else:
                 with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
-                    s = session.reload_port(request.POST['port'])
+                    # Перезагружаем порт без сохранения конфигурации
+                    s = session.reload_port(request.POST['port'], save_config=False)
 
                     status += s
                     status_color = color_success  # Успех

@@ -18,7 +18,8 @@ class ZTE(BaseDevice):
 
     prompt = r'\S+\(cfg\)#|\S+>'
     space_prompt = "----- more -----"
-    mac_format = r'\S\S\.' * 5 + r'\S\S'  # e1.3f.45.d6.23.53
+    # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
+    mac_format = r'\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S' + '|' + r'[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}'
     vendor = 'ZTE'
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
@@ -102,7 +103,10 @@ class ZTE(BaseDevice):
         if port is None:
             return []
 
-        output_macs = self.send_command(f'show fdb port {port} detail')
+        output_macs = self.send_command(f'show fdb port {port} detail', expect_command=False)
+        if 'not found' in output_macs:
+            output_macs = self.send_command(f'show mac dynamic port {port}', expect_command=False)
+
         mac_list = []
         for i in re.findall(rf'({self.mac_format})\s+(\d+)', output_macs):
             mac_list.append(i[::-1])
@@ -119,7 +123,7 @@ class ZTE(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         if not self.__privileged:
             return 'Не привилегированный. Операция отклонена!'
 
@@ -130,9 +134,11 @@ class ZTE(BaseDevice):
         self.session.sendline(f'set port {port} disable')
         sleep(1)
         self.session.sendline(f'set port {port} enable')
-        return f'reset port {port} ' + self.save_config()
 
-    def set_port(self, port: str, status: str) -> str:
+        s = self.save_config() if save_config else 'Without saving'
+        return f'reset port {port} ' + s
+
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         if not self.__privileged:
             return 'Не привилегированный. Операция отклонена!'
 
@@ -147,7 +153,8 @@ class ZTE(BaseDevice):
         else:
             return f'Неверный статус {status}'
 
-        return f'{status} port {port} ' + self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
+        return f'{status} port {port} ' + s
 
     def port_config(self, port: str):
         port = self.validate_port(port)

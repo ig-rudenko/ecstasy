@@ -171,6 +171,7 @@ class BaseDevice(ABC):
                     timeout=20
                 )
                 output += self.session.before.decode(errors='ignore')  # Убираем лишние символы
+                output = output.replace('[42D                                          [42D', '')
                 if match == 0:
                     break
                 elif match == 1:
@@ -217,11 +218,11 @@ class BaseDevice(ABC):
         """
 
     @abstractmethod
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         """Перезагрузка порта"""
 
     @abstractmethod
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         """Изменение состояния порта"""
 
     @abstractmethod

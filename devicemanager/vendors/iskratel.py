@@ -40,10 +40,10 @@ class IskratelControl(BaseDevice):
     def get_vlans(self) -> list:
         pass
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         pass
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
     def set_description(self, port: str, desc: str) -> str:
@@ -223,7 +223,7 @@ class IskratelMBan(BaseDevice):
         if port and any(port[0]):
             return ''.join(port[0])  # Возвращаем номер порта
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         port = self.validate_port(port)
         if port is None:
             return f'Неверный порт!'
@@ -234,7 +234,7 @@ class IskratelMBan(BaseDevice):
 
         return s1 + s2
 
-    def set_port(self, port: str, status: str):
+    def set_port(self, port: str, status: str, save_config=True):
         port = self.validate_port(port)
         if port is None:
             return f'Неверный порт!'

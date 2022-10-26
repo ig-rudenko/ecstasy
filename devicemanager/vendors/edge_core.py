@@ -71,7 +71,7 @@ class EdgeCore(BaseDevice):
         macs = re.findall(rf'({self.mac_format})\s+(\d+)', output)
         return [m[::-1] for m in macs]
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         port = self.validate_port(port)
         if port is None:
             return 'Неверный порт!'
@@ -87,9 +87,10 @@ class EdgeCore(BaseDevice):
         self.session.sendline('end')
         self.session.expect(self.prompt)
 
-        return self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
+        return s
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         port = self.validate_port(port)
         if port is None:
             return 'Неверный порт!'
@@ -106,7 +107,7 @@ class EdgeCore(BaseDevice):
         self.session.expect(self.prompt)
 
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     @lru_cache

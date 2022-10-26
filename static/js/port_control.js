@@ -2,12 +2,13 @@ let csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]')[0].value
 let device_name = $("name")
 let port_description = $("description")
 
-function reload_port(port, desc, status) {
+function reload_port(port, desc, status, save_config='yes') {
     let data = {
-            port: port,
-            device: device_name.html(),
-            desc: desc,
-            status: status,
+            port: port,                 // Сам порт
+            device: device_name.html(), // Имя оборудования
+            desc: desc,                 // Описание порта
+            status: status,             // Что сделать с портом
+            save: save_config,   // Сохранить конфигурацию после действия?
             csrfmiddlewaretoken: csrfmiddlewaretoken
         }
     $.ajax( {
@@ -19,6 +20,9 @@ function reload_port(port, desc, status) {
             $('#toast_color').attr('fill', data.color)
             $('#toast_title').html(data.status)
             $('.toast').toast('show')
+        },
+        error: function (data) {
+            console.log(data)
         }
     });
 }
@@ -50,7 +54,8 @@ function update_modal(port, desc, status) {
     modal_text.innerHTML = text + port + '?'
     modal_port_desc.innerHTML = desc
 
-    $('#modal-yes').attr('onclick', `reload_port("${port}", "${desc}", "${status}")`)
+    $('#modal-button-no-save').attr('onclick', `reload_port("${port}", "${desc}", "${status}", "no")`)
+    $('#modal-button-save').attr('onclick', `reload_port("${port}", "${desc}", "${status}")`)
 
 }
 

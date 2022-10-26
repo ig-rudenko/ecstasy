@@ -36,10 +36,10 @@ class EltexBase(BaseDevice):
     def get_vlans(self) -> list:
         pass
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         pass
 
-    def set_port(self, port: str, status: str) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
     def set_description(self, port: str, desc: str) -> str:
@@ -130,7 +130,7 @@ class EltexMES(BaseDevice):
         mac_str = self.send_command(f'show mac address-table interface {_interface_normal_view(port)}')
         return re.findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         self.session.sendline('configure terminal')
         self.session.expect(r'#')
         self.session.sendline(f'interface {_interface_normal_view(port)}')
@@ -140,10 +140,10 @@ class EltexMES(BaseDevice):
         self.session.sendline('exit')
         self.session.expect(r'#')
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def set_port(self, port, status):
+    def set_port(self, port, status, save_config=True):
         self.session.sendline('configure terminal')
         self.session.expect(r'\(config\)#')
         self.session.sendline(f'interface {_interface_normal_view(port)}')
@@ -158,7 +158,7 @@ class EltexMES(BaseDevice):
         self.session.sendline('Y')
         self.session.expect(r'#', timeout=15)
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     @lru_cache

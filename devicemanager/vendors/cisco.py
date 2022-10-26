@@ -77,7 +77,7 @@ class Cisco(BaseDevice):
         )
         return re.findall(rf'(\d+)\s+({self.mac_format})\s+\S+\s+\S+', mac_str)
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         self.session.sendline('configure terminal')
         self.session.expect(self.prompt)
         self.session.sendline(f'interface {_interface_normal_view(port)}')
@@ -89,10 +89,10 @@ class Cisco(BaseDevice):
         self.session.sendline('end')
 
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def set_port(self, port, status):
+    def set_port(self, port, status, save_config=True):
         self.session.sendline('configure terminal')
         self.session.expect(self.prompt)
         self.session.sendline(f'interface {_interface_normal_view(port)}')
@@ -105,7 +105,7 @@ class Cisco(BaseDevice):
         self.session.expect(self.prompt)
 
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     @lru_cache

@@ -108,7 +108,10 @@ class Dlink(BaseDevice):
         return interfaces_vlan
 
     def get_mac(self, port) -> list:
-        port = re.sub(r'\D', '', port)
+        port = self.validate_port(port)
+
+        if port is None:
+            return []
 
         mac_str = self.send_command(f'show fdb port {port}', expect_command=False)
         return re.findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
@@ -128,7 +131,7 @@ class Dlink(BaseDevice):
         if port.isdigit():
             return port
 
-    def reload_port(self, port) -> str:
+    def reload_port(self, port, save_config=True) -> str:
         if 'F' in port:
             media_type = ' medium_type fiber'
         elif 'C' in port:
@@ -144,16 +147,22 @@ class Dlink(BaseDevice):
         r1 = self.send_command(f'config ports {port} {media_type} state disable')
         sleep(1)
         r2 = self.send_command(f'config ports {port} {media_type} state enable')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r1 + r2 + s
 
     def get_port_errors(self, port):
         port = self.validate_port(port)
         if port is None:
             return 'Неверный порт'
-        return self.send_command(f'show error ports {port}')
+        self.session.sendline(f'show error ports {port}')
 
-    def set_port(self, port, status) -> str:
+        # Если не удалось отключить clipaging
+        if self.session.expect([self.prompt, 'Previous Page']):
+            self.session.sendline('q')
+
+        return self.session.before.decode()
+
+    def set_port(self, port, status, save_config=True) -> str:
         if 'F' in port:
             media_type = 'medium_type fiber'
         elif 'C' in port:
@@ -174,7 +183,7 @@ class Dlink(BaseDevice):
             state = ''
 
         r = self.send_command(f'config ports {port} {media_type} state {state}')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
     def set_description(self, port: str, desc: str) -> str:
@@ -201,3 +210,54 @@ class Dlink(BaseDevice):
 
         # Уникальный случай
         return status
+
+    def virtual_cable_test(self, port: str):
+        port = self.validate_port(port)
+        if port is None:
+            return 'Неверный порт'
+
+        diag_output = self.send_command(f'cable_diag ports {port}', expect_command=False)
+
+        result = {
+            'len': '-',  # Length
+            'status': '',  # Up, Down
+            'pair1': {
+                'status': '',  # Open, Short
+                'len': ''  # Length
+            },
+            'pair2': {
+                'status': '',
+                'len': ''
+            }
+        }
+
+        if 'No Cable' in diag_output:
+            # Нет кабеля
+            result['status'] = 'Empty'
+            del result['pair1']
+            del result['pair2']
+            return result
+
+        if re.findall(r'Link (Up|Down)\s+OK', diag_output):
+            # Если статус OK
+            match = self.find_or_empty(r'\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)', diag_output)
+            if len(match) == 2:
+                result['len'] = match[1]  # Длина
+                result['status'] = match[0]  # Up или Down
+                del result['pair1']
+                del result['pair2']
+        else:
+            # C ошибкой
+            result['status'] = self.find_or_empty(r'\s+\d+\s+\S+\s+Link (Up|Down)', diag_output)
+            pair1 = self.find_or_empty(r'Pair1 (\S+)\s+at (\d+)', diag_output)
+            pair2 = self.find_or_empty(r'Pair2 (\S+)\s+at (\d+)', diag_output)
+            # Пара 1
+            if pair1:
+                result['pair1']['status'] = pair1[0].lower()  # Open, Short
+                result['pair1']['len'] = pair1[1]  # Длина
+            # Пара 2
+            if pair2:
+                result['pair2']['status'] = pair2[0].lower()  # Open, Short
+                result['pair2']['len'] = pair2[1]  # Длина
+
+        return result

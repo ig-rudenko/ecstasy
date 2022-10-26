@@ -72,7 +72,7 @@ class Qtech(BaseDevice):
         macs = re.findall(rf'(\d+)\s+({self.mac_format})', output)
         return macs
 
-    def reload_port(self, port: str) -> str:
+    def reload_port(self, port: str, save_config=True) -> str:
         port = self.validate_port(port)
         if port is None:
             return f'Неверный порт {port}'
@@ -88,10 +88,10 @@ class Qtech(BaseDevice):
         self.session.sendline('end')
 
         r = self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def set_port(self, port, status):
+    def set_port(self, port, status, save_config=True):
         port = self.validate_port(port)
         if port is None:
             return f'Неверный порт {port}'
@@ -108,7 +108,7 @@ class Qtech(BaseDevice):
         self.session.expect(self.prompt)
 
         self.session.before.decode(errors='ignore')
-        s = self.save_config()
+        s = self.save_config() if save_config else 'Without saving'
         return s
 
     def save_config(self):
