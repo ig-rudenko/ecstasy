@@ -4,6 +4,10 @@ var popoverList
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
+const isDigit = (string) => {
+    return string && /^\d+$/.test(string);
+};
+
 function get_macs() {
 
     if ( document.getElementById('auto-update-macs').checked ) {
@@ -114,7 +118,11 @@ function start() {
                     Диагностика кабеля
                 </button>`)
 
-                $('#cable-length').html(data.cable_test.len)  // Длина кабеля
+                if (isDigit(data.cable_test.len)) {
+                    console.log(isDigit(data.cable_test.len))
+                    $('#cable-length').html("Длина кабеля - " + data.cable_test.len + " м.")  // Длина кабеля
+                }
+
                 $('#cable-status').html(data.cable_test.status)  // Статус
                 if (data.cable_test.status === 'Up') {
                     // Link Up
@@ -126,24 +134,30 @@ function start() {
                     // Нет кабеля
                     $('#cable-status-icon').attr('fill', '#19b7f4')
                 } else {
+                    // Другое ?
                     $('#cable-status-icon').attr('fill', '#c6bcb0')
                 }
 
                 // Отдельно каждую пару
                 let pair_info_html = ''
+
+                // Первая пара
                 if (data.cable_test.pair1) {
-                    // Первая пара
                     pair_info_html = pair_info_html + `<div>` + `Пара 1 - ` + data.cable_test.pair1.len + ` м.`
                         + `<img title="` + data.cable_test.pair1.status +
                         `" style="vertical-align: middle; margin: 0 3px 0 10px;" height="40px;" 
                                 src="/static/img/rj45-status-` + data.cable_test.pair1.status + `-left.png"></div>`
                 }
+
+                // Вторая пара
                 if (data.cable_test.pair2) {
-                    // Вторая пара
                     pair_info_html = pair_info_html + `<div>` + `Пара 2 - ` + data.cable_test.pair2.len + ` м.`
-                        + `<img style="vertical-align: middle; margin-left: 12px;" height="40px;" 
+                        + `<img title="` + data.cable_test.pair2.status +
+                        `" style="vertical-align: middle; margin-left: 12px;" height="40px;"
                                 src="/static/img/rj45-status-` + data.cable_test.pair2.status + `-right.png"></div>`
                 }
+
+                // Добавляем информацию
                 $('#pair-info').html(pair_info_html)
             }
 
