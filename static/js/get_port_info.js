@@ -142,7 +142,7 @@ function start() {
                     // Вторая пара
                     pair_info_html = pair_info_html + `<div>` + `Пара 2 - ` + data.cable_test.pair2.len + ` м.`
                         + `<img style="vertical-align: middle; margin-left: 12px;" height="40px;" 
-                                src="/static/img/rj45-status-` + data.cable_test.pair1.status + `-right.png"></div>`
+                                src="/static/img/rj45-status-` + data.cable_test.pair2.status + `-right.png"></div>`
                 }
                 $('#pair-info').html(pair_info_html)
             }
