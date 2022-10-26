@@ -140,7 +140,6 @@ class Dlink(BaseDevice):
             media_type = ''
 
         port = self.validate_port(port)
-
         if port is None:
             return 'Неверный порт'
 
@@ -211,12 +210,15 @@ class Dlink(BaseDevice):
         # Уникальный случай
         return status
 
-    def virtual_cable_test(self, port: str):
+    def virtual_cable_test(self, port: str) -> dict:
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт'
+            return {}
 
         diag_output = self.send_command(f'cable_diag ports {port}', expect_command=False)
+
+        if 'Available commands' in diag_output:
+            return {}
 
         result = {
             'len': '-',  # Length
@@ -255,9 +257,14 @@ class Dlink(BaseDevice):
             if pair1:
                 result['pair1']['status'] = pair1[0].lower()  # Open, Short
                 result['pair1']['len'] = pair1[1]  # Длина
+            else:
+                del result['pair1']
+
             # Пара 2
             if pair2:
                 result['pair2']['status'] = pair2[0].lower()  # Open, Short
                 result['pair2']['len'] = pair2[1]  # Длина
+            else:
+                del result['pair2']
 
         return result

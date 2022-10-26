@@ -417,7 +417,9 @@ def get_port_mac(request):
                     data['port_errors'] = session.get_port_errors(data['port'])
 
                 if hasattr(session, 'virtual_cable_test'):
-                    data['cable_test'] = session.virtual_cable_test(data['port'])
+                    cable_test = session.virtual_cable_test(data['port'])
+                    if cable_test:  # Если имеются данные
+                        data['cable_test'] = cable_test
 
                 if request.GET.get('ajax') == 'all':
                     # Отправляем все собранные данные
