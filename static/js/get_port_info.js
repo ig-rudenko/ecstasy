@@ -4,9 +4,15 @@ var popoverList
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
+
 const isDigit = (string) => {
     return string && /^\d+$/.test(string);
 };
+
+let device_port = $('#id-port')[0].value
+let device_name = $('#id-device_name')[0].value
+let device_port_desc = $('#id-desc')[0].value
+
 
 function get_macs() {
 
@@ -15,16 +21,15 @@ function get_macs() {
         // Если нажато автообновление, то отправляем результаты
 
         let data = {
-            port: $('#id-port').value,
-            device: $('#id-device_name').value,
-            desc: $('#id-desc').value,
-            ajax: 'mac',
-            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value
+            port: device_port,
+            device: device_name,
+            desc: device_port_desc,
+            ajax: 'mac'
         }
         console.log(data)
 
         $.ajax({
-            url: "/device/port/mac",
+            url: "/device/port/",
             type: 'GET',
             data: data,
             success: function( data ) {
@@ -38,11 +43,11 @@ function get_macs() {
 }
 
 // Повторный сбор маков через 10 секунд
-    let t
-    function timer() {
-        t = setTimeout(get_macs, 10000);
-    }
-    timer();
+let t
+function timer() {
+    t = setTimeout(get_macs, 10000);
+}
+timer();
 
 function format_to_html(string) {
     // Превращаем строки в html, для корректного отображения
@@ -60,16 +65,15 @@ function start() {
     // Собираем информацию о порте
 
     let data = {
-        port: $('#id-port')[0].value,
-        device: $('#id-device_name')[0].value,
-        desc: $('#id-desc')[0].value,
-        ajax: 'all',
-        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value
+        port: device_port,
+        device: device_name,
+        desc: device_port_desc,
+        ajax: 'all'
     }
     console.log(data)
 
     $.ajax({
-        url: "/device/port/mac",
+        url: "/device/port",
         type: 'GET',
         data: data,
         success: function( data ) {
@@ -108,57 +112,16 @@ function start() {
                 $('#port-info').html(data.port_info+'<hr>')
             }
 
-            // Диагностика кабеля
             if (data.cable_test) {
                 $('#cable-diag').html(
-                `<button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modal-cable-diag">
-                    <svg class="bi me-2" width="16" height="16" role="img">
-                    <use xlink:href="#cable-diag-icon"></use>
-                    </svg>
-                    Диагностика кабеля
-                </button>`)
-
-                if (isDigit(data.cable_test.len)) {
-                    console.log(isDigit(data.cable_test.len))
-                    $('#cable-length').html("Длина кабеля - " + data.cable_test.len + " м.")  // Длина кабеля
-                }
-
-                $('#cable-status').html(data.cable_test.status)  // Статус
-                if (data.cable_test.status === 'Up') {
-                    // Link Up
-                    $('#cable-status-icon').attr('fill', '#39d286')
-                } else if (data.cable_test.status === 'Down') {
-                    // Link Down
-                    $('#cable-status-icon').attr('fill', '#ff4b4d')
-                } else if (data.cable_test.status === 'Empty') {
-                    // Нет кабеля
-                    $('#cable-status-icon').attr('fill', '#19b7f4')
-                } else {
-                    // Другое ?
-                    $('#cable-status-icon').attr('fill', '#c6bcb0')
-                }
-
-                // Отдельно каждую пару
-                let pair_info_html = ''
-
-                // Первая пара
-                if (data.cable_test.pair1) {
-                    pair_info_html = pair_info_html + `<div>` + `Пара 1 - ` + data.cable_test.pair1.len + ` м.`
-                        + `<img title="` + data.cable_test.pair1.status +
-                        `" style="vertical-align: middle; margin: 0 3px 0 10px;" height="40px;" 
-                                src="/static/img/rj45-status-` + data.cable_test.pair1.status + `-left.png"></div>`
-                }
-
-                // Вторая пара
-                if (data.cable_test.pair2) {
-                    pair_info_html = pair_info_html + `<div>` + `Пара 2 - ` + data.cable_test.pair2.len + ` м.`
-                        + `<img title="` + data.cable_test.pair2.status +
-                        `" style="vertical-align: middle; margin-left: 12px;" height="40px;"
-                                src="/static/img/rj45-status-` + data.cable_test.pair2.status + `-right.png"></div>`
-                }
-
-                // Добавляем информацию
-                $('#pair-info').html(pair_info_html)
+                    `<button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modal-cable-diag"
+                        onclick="cable_diag()">
+                        <svg class="bi me-2" width="16" height="16" role="img">
+                        <use xlink:href="#cable-diag-icon"></use>
+                        </svg>
+                        Диагностика кабеля
+                    </button>`
+                )
             }
 
             // MAC'и на порту
@@ -187,3 +150,74 @@ function start() {
     });
 }
 start()
+
+
+let cable_diag_load_div = $('#cable-diag-load')  // Блок спиннера загрузки
+let cable_diag_info_div = $('#cable-diag-info')  // Блок информации диагностики
+
+
+function cable_diag() {
+    // отправляем запрос на диагностику кабеля порта
+
+    let data = {
+        port: device_port,
+        device: device_name,
+    }
+
+    cable_diag_info_div.prop('hidden', true)  // Показываем загрузку
+    cable_diag_load_div.prop('hidden', false)  // Скрываем блок информации
+
+    $.ajax({
+        url: "/device/port/cable-diag",
+        type: 'GET',
+        data: data,
+        success: function( data ) {
+            console.log(data)
+
+            if (isDigit(data.cable_test.len)) {
+                console.log(isDigit(data.cable_test.len))
+                $('#cable-length').html("Длина кабеля - " + data.cable_test.len + " м.")  // Длина кабеля
+            }
+
+            $('#cable-status').html(data.cable_test.status)  // Статус
+            if (data.cable_test.status === 'Up') {
+                // Link Up
+                $('#cable-status-icon').attr('fill', '#39d286')
+            } else if (data.cable_test.status === 'Down') {
+                // Link Down
+                $('#cable-status-icon').attr('fill', '#ff4b4d')
+            } else if (data.cable_test.status === 'Empty') {
+                // Нет кабеля
+                $('#cable-status-icon').attr('fill', '#19b7f4')
+            } else {
+                // Другое ?
+                $('#cable-status-icon').attr('fill', '#c6bcb0')
+            }
+
+            // Отдельно каждую пару
+            let pair_info_html = ''
+
+            // Первая пара
+            if (data.cable_test.pair1) {
+                pair_info_html = pair_info_html + `<div>` + `Пара 1 - ` + data.cable_test.pair1.len + ` м.`
+                    + `<img title="` + data.cable_test.pair1.status +
+                    `" style="vertical-align: middle; margin: 0 3px 0 10px;" height="40px;" 
+                            src="/static/img/rj45-status-` + data.cable_test.pair1.status + `-left.png"></div>`
+            }
+
+            // Вторая пара
+            if (data.cable_test.pair2) {
+                pair_info_html = pair_info_html + `<div>` + `Пара 2 - ` + data.cable_test.pair2.len + ` м.`
+                    + `<img title="` + data.cable_test.pair2.status +
+                    `" style="vertical-align: middle; margin-left: 12px;" height="40px;"
+                            src="/static/img/rj45-status-` + data.cable_test.pair2.status + `-right.png"></div>`
+            }
+
+            // Добавляем информацию
+            $('#pair-info').html(pair_info_html)
+
+            cable_diag_load_div.prop('hidden', true)  // Скрываем загрузку
+            cable_diag_info_div.prop('hidden', false)  // Показываем информацию
+        }
+    });
+}

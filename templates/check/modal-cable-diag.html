@@ -7,7 +7,6 @@
 
       {# HEADER #}
       <div class="modal-header">
-{#        <img src="{% static 'img/RJ45-horiz.png' %}" style="height: 34px; left: -33px; position: relative;">#}
 
         <h1 class="modal-title fs-5 text-center" id="exampleModalLabel" style="padding-left: 10px">
             Диагностика состояния кабеля на порту {{ port }}
@@ -26,10 +25,12 @@
                        Сканирование
                     </h4>
 
+                    <div id="cable-diag-load" class="spinner-border text-info" role="status"></div>
+
                     {# Длина кабеля #}
                     <div id="cable-length" class="py-3"></div>
 
-                    <div class="py-3">
+                    <div id="cable-diag-info" class="py-3" hidden>
                         Состояние:
                         <span id="cable-status">OK</span>
                         <svg id="cable-status-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="green" class="bi bi-ethernet" viewBox="0 0 16 16">
@@ -40,9 +41,6 @@
                     <div id="pair-info">
 
                     </div>
-{#                    <div>#}
-{#                        <img style="height: 260px" src="/static/img/RJ45-pins.png" alt="RJ45">#}
-{#                    </div>#}
                 </div>
 
                 <div class="col-auto">

@@ -79,7 +79,7 @@
 
 {#                  Посмотреть МАКИ #}
               <a class="btn" style="padding: 6px 6px 2px 6px"
-                     href="{% url 'get_mac' %}?device={{ dev.name }}&port={{ intf.name }}&desc={{ intf.desc }}"
+                     href="{% url 'show-port-info' %}?device={{ dev.name }}&port={{ intf.name }}&desc={{ intf.desc }}"
                      data-bs-toggle="tooltip" data-bs-placement="top"
                      data-bs-title="Перейти к порту">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box" viewBox="0 0 16 16">

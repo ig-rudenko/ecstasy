@@ -22,15 +22,9 @@ urlpatterns = [
 
     path('', views.home, name='home'),
     path('devices', views.show_devices, name='devices-list'),
-    path('device/port/mac', views.get_port_mac, name='get_mac'),
-    path('device/port/reload', views.reload_port, name='port_reload'),
-    path('device/port/set-description', views.set_description, name='set-new-description'),
-    path('session', views.show_session, name='show-session'),
-    path('device/cut-session', views.cut_user_session, name='cut-session'),
-    path('device/<name>', views.device_info, name='device_info'),
     path('by-zabbix/<hostid>', views.by_zabbix_hostid, name='by-zabbix-hostid'),
 
+    path('device/', include('check.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-
     path('tools/', include('net_tools.urls'))
 ]

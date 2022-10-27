@@ -367,7 +367,7 @@ def device_info(request, name):
 
 @login_required
 @permission(models.Profile.READ)
-def get_port_mac(request):
+def get_port_detail(request):
     """Смотрим информацию о порте"""
 
     if request.method == 'GET' and request.GET.get('device') and request.GET.get('port'):
@@ -380,8 +380,8 @@ def get_port_mac(request):
 
         data = {
             'dev': dev,
-            'port': request.GET.get('port'),
-            'desc': request.GET.get('desc'),
+            'port': request.GET['port'],
+            'desc': request.GET.get('desc', ''),
             'perms': models.Profile.permissions_level.index(request.user.profile.permissions),
         }
 
@@ -391,7 +391,7 @@ def get_port_mac(request):
             if not request.GET.get('ajax'):
                 # ЛОГИ
                 log(request.user, model_dev, f'show mac\'s port {data["port"]}')
-                return render(request, 'check/mac_list.html', data)
+                return render(request, 'check/port_page.html', data)
 
             # Подключаемся к оборудованию
             with model_dev.connect() as session:
@@ -438,9 +438,10 @@ def get_port_mac(request):
 def reload_port(request):
     """Изменяем состояния порта"""
 
-    color_warning = '#d3ad23'
-    color_success = '#08b736'
-    color_error = '#d53c3c'
+    color_warning = '#d3ad23'  # Оранжевый
+    color_success = '#08b736'  # Зеленый
+    color_info = '#31d2f2'  # Голубой
+    color_error = '#d53c3c'  # Красный
     color = color_success  # Значение по умолчанию
 
     if not request.user.is_superuser and\
@@ -515,8 +516,9 @@ def reload_port(request):
             elif 'Saved OK' in s:
                 config_status = ' Конфигурация была сохранена'
 
-            else:
-                config_status = s
+            elif 'Without saving':
+                config_status = ' Конфигурация НЕ была сохранена'
+                color = color_info
 
             message += config_status
 
@@ -525,7 +527,7 @@ def reload_port(request):
 
             return JsonResponse({
                 'message': message,
-                'status': '',
+                'status': f'Порт {status}',
                 'color': color
             })
 
@@ -750,3 +752,27 @@ def set_description(request):
             'info': 'Invalid data',
         }
     )
+
+
+@login_required
+@permission(models.Profile.READ)
+def start_cable_diag(request):
+    """ Запускаем диагностику кабеля на порту """
+
+    if request.method == 'GET' and request.GET.get('device') and request.GET.get('port'):
+        model_dev = get_object_or_404(models.Devices, name=request.GET['device'])
+        dev = Device(request.GET['device'], zabbix_info=False)
+
+        if not has_permission_to_device(model_dev, request.user):
+            return HttpResponseForbidden()
+
+        data = {}
+        # Если оборудование доступно
+        if dev.ping():
+            with model_dev.connect() as session:
+                if hasattr(session, 'virtual_cable_test'):
+                    cable_test = session.virtual_cable_test(request.GET['port'])
+                    if cable_test:  # Если имеются данные
+                        data['cable_test'] = cable_test
+
+        return JsonResponse(data)

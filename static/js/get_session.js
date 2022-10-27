@@ -9,7 +9,7 @@ function get_session(mac, device_name, port){
     }
 
     $.ajax({
-        url: "/session",
+        url: "/device/session",
         type: 'GET',
         data: data,
         success: function( data ) {

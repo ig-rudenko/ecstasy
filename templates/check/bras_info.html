@@ -42,8 +42,8 @@ Session: {{ mac }}
             {# Имя порта #}
             <div class="col">
                 <a class="btn btn-light position-relative"
-                href="{% url 'get_mac' %}?device={{ device }}&port={{ port }}&desc={{ desc }}">
-                    {{ port }}
+                href="{% url 'show-port-info' %}?device={{ device }}&port={{ port }}&desc={{ desc }}">
+                    Порт: {{ port }}
                 </a>
             </div>
 

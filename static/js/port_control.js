@@ -1,15 +1,15 @@
-let csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]')[0].value
-let device_name = $("name")
+let csrf_token = $('input[name=csrfmiddlewaretoken]')[0].value
+let device_name_ = $("name").html()
 let port_description = $("description")
 
 function reload_port(port, desc, status, save_config='yes') {
     let data = {
             port: port,                 // Сам порт
-            device: device_name.html(), // Имя оборудования
+            device: device_name_,       // Имя оборудования
             desc: desc,                 // Описание порта
             status: status,             // Что сделать с портом
-            save: save_config,   // Сохранить конфигурацию после действия?
-            csrfmiddlewaretoken: csrfmiddlewaretoken
+            save: save_config,          // Сохранить конфигурацию после действия?
+            csrfmiddlewaretoken: csrf_token
         }
     $.ajax( {
         url: "/device/port/reload",
@@ -82,9 +82,9 @@ function set_description(port) {
 
     let data = {
         port: port,
-        device_name: device_name.html(),
+        device_name: device_name_,
         description: new_description.value,
-        csrfmiddlewaretoken: csrfmiddlewaretoken
+        csrfmiddlewaretoken: csrf_token
     }
 
     $.ajax( {
@@ -105,6 +105,7 @@ function set_description(port) {
             }
         },
         error: function ( data ) {
+            console.log(data)
             modal_desc_info.innerHTML = 'Неверное описание';
             $('button').prop('disabled', false);
         }
