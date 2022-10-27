@@ -180,19 +180,7 @@ function cable_diag() {
             }
 
             $('#cable-status').html(data.cable_test.status)  // Статус
-            if (data.cable_test.status === 'Up') {
-                // Link Up
-                $('#cable-status-icon').attr('fill', '#39d286')
-            } else if (data.cable_test.status === 'Down') {
-                // Link Down
-                $('#cable-status-icon').attr('fill', '#ff4b4d')
-            } else if (data.cable_test.status === 'Empty') {
-                // Нет кабеля
-                $('#cable-status-icon').attr('fill', '#19b7f4')
-            } else {
-                // Другое ?
-                $('#cable-status-icon').attr('fill', '#c6bcb0')
-            }
+            // Up, Down, Empty, Open, Short
 
             // Отдельно каждую пару
             let pair_info_html = ''
@@ -215,6 +203,17 @@ function cable_diag() {
 
             // Добавляем информацию
             $('#pair-info').html(pair_info_html)
+
+            // Цвет статуса
+            let status_color = {
+                'Up': '#39d286',
+                'Down': '#ff4b4d',
+                'Empty': '#19b7f4',
+                'Open': '#c1c1c1',
+                'Short': '#f4bd19',
+            }
+
+            $('#cable-status-icon').attr('fill', status_color[data.cable_test.status])
 
             cable_diag_load_div.prop('hidden', true)  // Скрываем загрузку
             cable_diag_info_div.prop('hidden', false)  // Показываем информацию

@@ -246,15 +246,66 @@ class Huawei(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
 
-    # def virtual_cable_test(self, port: str):
-    #     self.session.sendline('system-view')
-    #     self.session.sendline(f'interface {_interface_normal_view(port)}')
-    #     self.session.expect(self.prompt)
-    #     self.session.sendline('virtual-cable-test')
-    #     if self.session.expect([self.prompt, 'continue']):
-    #         self.session.sendline('Y')
-    #         self.session.expect(self.prompt)
-    #     return self.session.before.decode()
+    def __parse_virtual_cable_test_data(self, data: str) -> dict:
+        parse_data = {
+            'len': '-',  # Length
+            'status': '',  # Up, Down, Open, Short
+            'pair1': {
+                'status': '',  # Open, Short
+                'len': ''  # Length
+            },
+            'pair2': {
+                'status': '',
+                'len': ''
+            }
+        }
+        if 'not support' in data:
+            return parse_data
+
+        if '2326' in self.model:
+            # Для Huawei 2326
+            parse_data['pair1']['len'] = self.find_or_empty(r'Pair A length: (\d+)meter', data)
+            parse_data['pair2']['len'] = self.find_or_empty(r'Pair B length: (\d+)meter', data)
+            parse_data['pair1']['status'] = self.find_or_empty(r'Pair A state: (\S+)', data).lower()
+            parse_data['pair2']['status'] = self.find_or_empty(r'Pair B state: (\S+)', data).lower()
+
+            if parse_data['pair1']['status'] == parse_data['pair2']['status'] == 'ok':
+                parse_data['status'] = 'Up'
+                # Вычисляем среднюю длину
+                parse_data['len'] = (int(parse_data['pair1']['len']) + int(parse_data['pair1']['len'])) / 2
+                del parse_data['pair1']
+                del parse_data['pair2']
+
+            else:
+                # Порт выключен
+                parse_data['status'] = 'Down'
+
+        elif '2403' in self.model:
+            # Для Huawei 2403
+            parse_data['len'] = self.find_or_empty(r'(\d+) meter', data)
+
+            status = self.find_or_empty(r'Cable status: (normal)', data) or \
+                     self.find_or_empty(r'Cable status: abnormal\((\S+)\),', data)
+
+            parse_data['status'] = 'Up' if status == 'normal' else status.capitalize()
+            del parse_data['pair1']
+            del parse_data['pair2']
+
+        return parse_data
+
+    def virtual_cable_test(self, port: str):
+        self.session.sendline('system-view')
+        self.session.sendline(f'interface {_interface_normal_view(port)}')
+        self.session.expect(self.prompt)
+        self.session.sendline('virtual-cable-test')
+        self.session.expect('virtual-cable-test')
+        if self.session.expect([self.prompt, 'continue']):  # Требуется подтверждение?
+            self.session.sendline('Y')
+            self.session.expect(self.prompt)
+        cable_test_data = self.session.before.decode('utf-8')
+        print(type(cable_test_data), cable_test_data)
+        self.session.sendline('quit')
+        return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
 
 
 class HuaweiMA5600T(BaseDevice):
@@ -422,7 +473,8 @@ class HuaweiMA5600T(BaseDevice):
                 table_dict[line[:2]].append(line_new)  # Обновляем ключ Do или Up
 
         names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
-                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)', 'Общая выходная мощность (dBm)']
+                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)',
+                 'Общая выходная мощность (dBm)']
 
         # Наполняем таблицу
         for line in zip(names, table_dict['Do'], table_dict['Up']):
@@ -437,7 +489,7 @@ class HuaweiMA5600T(BaseDevice):
             table += "</tbody></table></div>"  # Закрываем таблицу
 
         html += '</div>'  # Закрываем первую колонку
-        html += table     # Добавляем вторую колонку - таблицу
+        html += table  # Добавляем вторую колонку - таблицу
         html += '</div>'  # Закрываем ряд
         return html
 
@@ -586,7 +638,8 @@ class HuaweiMA5600T(BaseDevice):
 
         self.session.sendline(f'display mac-address port {"/".join(indexes)}')
         com = self.send_command('\n', expect_command=False, before_catch='display mac-address')
-        macs1 = re.findall(rf'\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)', com)
+        macs1 = re.findall(rf'\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)',
+                           com)
 
         # Попробуем еще одну команду
         self.session.sendline(f'display security bind mac {"/".join(indexes)}')
@@ -595,7 +648,7 @@ class HuaweiMA5600T(BaseDevice):
 
         res = []
         # print(macs1+macs2)
-        for m in macs1+macs2:
+        for m in macs1 + macs2:
             res.append(m[::-1])
         return res
 
