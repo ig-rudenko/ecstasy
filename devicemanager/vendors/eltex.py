@@ -174,6 +174,10 @@ class EltexMES(BaseDevice):
 
         return html
 
+    @lru_cache
+    def _get_port_stats(self, port):
+        return self.send_command(f'show interfaces {_interface_normal_view(port)}').split('\n')
+
     def port_type(self, port):
         """Определяем тип порта: медь, оптика или комбо"""
 
@@ -187,9 +191,19 @@ class EltexMES(BaseDevice):
         elif 'Combo-C' in port_type:
             return 'COMBO-COPPER'
 
-    def port_config(self, port):
+    def port_config(self, port: str):
         """Конфигурация порта"""
         return self.send_command(f'show running-config interface {_interface_normal_view(port)}').strip()
+
+    def get_port_errors(self, port: str):
+        """ Ошибки на порту """
+
+        port_info = self._get_port_stats(port)
+        errors = []
+        for line in port_info:
+            if 'error' in line:
+                errors.append(line.strip())
+        return '\n'.join(errors)
 
     def set_description(self, port: str, desc: str) -> str:
         desc = self.clear_description(desc)  # Очищаем описание

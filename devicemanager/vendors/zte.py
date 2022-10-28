@@ -248,9 +248,9 @@ class ZTE(BaseDevice):
 
         # Смотрим пары
         for i, pair in enumerate(port_cable_diag, start=1):
-            if 'open' in pair[0]:
+            if 'open' in pair[0].lower():
                 status = 'open'
-            elif 'short' in pair[0]:
+            elif 'short' in pair[0].lower():
                 status = 'short'
             else:
                 # Разница в сопротивлении (слишком большое затухание в линии).
