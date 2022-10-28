@@ -495,7 +495,7 @@ class Device:
         """ Собирает информацию по данному оборудованию из Zabbix """
 
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+            with ZabbixAPI(server=Config.ZABBIX_URL, timeout=5) as zbx:
                 zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
                 zabbix_info = zbx.host.get(
                     filter={'name': self.name},
@@ -637,7 +637,7 @@ class Device:
                     self.interfaces = Interfaces(session.get_vlans() or session.get_interfaces())
                 else:
                     self.interfaces = Interfaces(session.get_interfaces())
-        return 'OK'
+        return ''
 
     def __str__(self):
         return f'Device(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'

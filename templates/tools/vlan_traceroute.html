@@ -13,12 +13,16 @@ Vlan traceroute
 
 
 {% block content %}
-    <img src="/static/img/background.png"
-    style="position: absolute; z-index: -1; left: 0; top: 0; width: 100%;">
+{#    <img src="/static/img/background.png"#}
+{#    style="position: absolute; z-index: -1; left: 0; top: 0; width: 100%;">#}
 
     <style>
         body {
             background-color: #222222;
+            background-image: url(/static/img/background.png);
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
         }
         .fullScreen {
             z-index: 9;
