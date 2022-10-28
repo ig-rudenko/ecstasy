@@ -2,7 +2,7 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, _range_to_numbers
+from .base import BaseDevice, TEMPLATE_FOLDER, range_to_numbers
 
 
 class Extreme(BaseDevice):
@@ -37,7 +37,7 @@ class Extreme(BaseDevice):
     def get_interfaces(self) -> list:
         # LINKS
         output_links = self.send_command('show ports information')
-        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_links.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_links.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result_port_state = int_des_.ParseText(output_links)  # Ищем интерфейсы
         for position, line in enumerate(result_port_state):
@@ -51,7 +51,7 @@ class Extreme(BaseDevice):
         # DESC
         output_des = self.send_command('show ports description')
 
-        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_des.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/extreme_des.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result_des = int_des_.ParseText(output_des)  # Ищем desc
 
@@ -76,7 +76,7 @@ class Extreme(BaseDevice):
 
         output_vlans = self.send_command('show configuration "vlan"', before_catch=r'Module vlan configuration\.')
 
-        with open(f'{TEMPLATE_FOLDER}/vlans_templates/extreme.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/extreme.template', 'r', encoding='utf-8') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlans = vlan_templ.ParseText(output_vlans)
 
@@ -87,7 +87,7 @@ class Extreme(BaseDevice):
 
         for vlan in result_vlans:
             print('--------------', vlan)
-            for port in _range_to_numbers(vlan[1]):
+            for port in range_to_numbers(vlan[1]):
                 print('++++', port)
                 # Добавляем вланы на порты
                 ports_vlan[port].append(vlan[0])
@@ -99,15 +99,15 @@ class Extreme(BaseDevice):
         return interfaces_vlan
 
     @staticmethod
-    def validate_port(port: str):
+    def validate_port(port: str) -> (str, None):
         """
         Проверяем правильность полученного порта
         Для Extreme порт должен быть числом
         """
-
         port = port.strip()
         if port.isdigit():
             return port
+        return None
 
     def get_mac(self, port: str) -> list:
         """
@@ -173,17 +173,17 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else 'Without saving'
         return r + s
 
-    def port_type(self, port):
+    def port_type(self, port) -> str:
         """Определяем тип порта: медь, оптика или комбо"""
 
         port = self.validate_port(port)
         if port is None:
-            return f'Неверный порт'
+            return 'Неверный порт'
 
         if 'Media Type' in self.send_command(f'show ports {port} transceiver information detail | include Media'):
             return 'SFP'
-        else:
-            return 'COPPER'
+
+        return 'COPPER'
 
     def set_description(self, port: str, desc: str) -> str:
         port = self.validate_port(port)
@@ -193,7 +193,7 @@ class Extreme(BaseDevice):
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            self.send_command(f'unconfigure ports 11 description-string', expect_command=False)
+            self.send_command('unconfigure ports 11 description-string', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             self.send_command(f'configure ports {port} description-string {desc}', expect_command=False)

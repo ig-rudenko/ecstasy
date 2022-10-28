@@ -22,7 +22,7 @@ class ProCurve(BaseDevice):
     def get_interfaces(self) -> list:
         result = []
         raw_intf_status = self.send_command('show interfaces brief', expect_command=False)
-        with open(f'{TEMPLATE_FOLDER}/interfaces/procurve_status.template') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/procurve_status.template', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
         intf_status = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
         for line in intf_status:

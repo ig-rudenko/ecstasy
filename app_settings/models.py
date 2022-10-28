@@ -1,3 +1,12 @@
+"""
+Модели для сохранения настроек для взаимодействия Ecstasy с Zabbix, Elastic, VLAN Traceroute
+
+Каждая модель представляет из себя singleton
+Так как настройка должна быть только в единственном варианте
+
+"""
+
+
 from django.db import models
 
 
@@ -13,7 +22,7 @@ class SingletonModel(models.Model):
         are any.
         """
         self.__class__.objects.exclude(id=self.id).delete()
-        super(SingletonModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @classmethod
     def load(cls):

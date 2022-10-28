@@ -25,7 +25,8 @@ def show_interfaces(device_ip, community, snmp_port=161):
             ['snmpwalk', '-Oq', '-v2c', '-c', community, f'{ip}:{port}', mib],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            encoding='utf-8'
+            encoding='utf-8',
+            check=False
         )
         for line in result.stdout.split('\n'):
             if not line:
@@ -40,7 +41,7 @@ def show_interfaces(device_ip, community, snmp_port=161):
         for key in snmp_result:
             snmp_executor.submit(snmpget, community, device_ip, snmp_port, key)
     result = []
-    name_index = {}
+
     for snmp_index in snmp_result["IF-MIB::ifIndex"]:
         result.append(
             (

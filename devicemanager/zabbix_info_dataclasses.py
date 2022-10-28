@@ -80,8 +80,8 @@ class ZabbixInventory:
     def coordinates(self, reverse=False):
         if reverse:
             return self.location_lon, self.location_lat
-        else:
-            return self.location_lat, self.location_lon
+
+        return self.location_lat, self.location_lon
 
     def print(self):
         """Выводит в терминал данные инвентаризации, только те, что имеются"""

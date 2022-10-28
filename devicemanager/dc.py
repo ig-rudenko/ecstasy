@@ -1,3 +1,7 @@
+"""
+Модуль для подключения к оборудованию через SSH, TELNET
+"""
+
 import re
 import pexpect
 from .vendors import *
@@ -27,7 +31,7 @@ class DeviceFactory:
 
     def __init__(self, ip: str, protocol: str, auth_obj=None):
         self.ip = ip
-
+        self.session: pexpect.spawn
         self.protocol = protocol
         self.login = []
         self.password = []
@@ -52,7 +56,7 @@ class DeviceFactory:
         self.session.sendline(command)
         version = ''
         while True:
-            m = self.session.expect(
+            match = self.session.expect(
                 [
                     r']$',
                     r'-More-|-+\(more.*?\)-+',
@@ -64,9 +68,9 @@ class DeviceFactory:
             )
 
             version += str(self.session.before.decode('utf-8'))
-            if m == 1:
+            if match == 1:
                 self.session.send(' ')
-            elif m == 4:
+            elif match == 4:
                 self.session.sendcontrol('C')
             else:
                 break
@@ -86,79 +90,79 @@ class DeviceFactory:
             return ProCurve(self.session, self.ip, auth)
 
         # ZTE
-        elif ' ZTE Corporation:' in version:
+        if ' ZTE Corporation:' in version:
             model = BaseDevice.find_or_empty(r'Module 0:\s*(\S+\s\S+);\s*fasteth', version)
             return ZTE(self.session, self.ip, auth, model=model)
 
         # HUAWEI
-        elif 'Unrecognized command' in version:
+        if 'Unrecognized command' in version:
             version = self.send_command('display version')
             if 'huawei' in version.lower():
                 if 'CX600' in version:
                     model = BaseDevice.find_or_empty(r'HUAWEI (\S+) uptime', version, flags=re.IGNORECASE)
                     return HuaweiCX600(self.session, self.ip, auth, model=model)
-                elif 'quidway' in version.lower():
+                if 'quidway' in version.lower():
                     return Huawei(self.session, self.ip, auth)
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
-            elif 'Unrecognized command' in version:
+            if 'Unrecognized command' in version:
                 return Huawei(self.session, self.ip, auth)
 
         # CISCO
-        elif 'cisco' in version.lower():
+        if 'cisco' in version.lower():
             model = BaseDevice.find_or_empty(r'Model number\s*:\s*(\S+)', version)
             return Cisco(self.session, self.ip, auth, model=model)
 
         # D-LINK
-        elif 'Next possible completions:' in version:
+        if 'Next possible completions:' in version:
             return Dlink(self.session, self.ip, auth)
 
         # Edge Core
-        elif 'Hardware version' in version:
+        if 'Hardware version' in version:
             return EdgeCore(self.session, self.ip, auth)
 
         # Eltex
-        elif 'Active-image:' in version or 'Boot version:' in version:
-            d = EltexBase(self.session, self.ip, self.privilege_mode_password)
-            if 'MES' in d.model:
-                return EltexMES(d.session, self.ip, auth, model=d.model, mac=d.mac)
-            elif 'ESR' in d.model:
-                return EltexESR(d.session, self.ip, auth, model=d.model, mac=d.mac)
+        if 'Active-image:' in version or 'Boot version:' in version:
+            eltex_device = EltexBase(self.session, self.ip, self.privilege_mode_password)
+            if 'MES' in eltex_device.model:
+                return EltexMES(eltex_device.session, self.ip, auth, model=eltex_device.model, mac=eltex_device.mac)
+            if 'ESR' in eltex_device.model:
+                return EltexESR(eltex_device.session, self.ip, auth, model=eltex_device.model, mac=eltex_device.mac)
 
         # Extreme
-        elif 'ExtremeXOS' in version:
+        if 'ExtremeXOS' in version:
             return Extreme(self.session, self.ip, auth)
 
         # Q-Tech
-        elif 'QTECH' in version:
+        if 'QTECH' in version:
             model = BaseDevice.find_or_empty(r'\s+(\S+)\s+Device', version)
             return Qtech(self.session, self.ip, auth, model=model)
 
         # ISKRATEL CONTROL
-        elif 'ISKRATEL' in version:
+        if 'ISKRATEL' in version:
             return IskratelControl(self.session, self.ip, auth, model='ISKRATEL Switching')
 
         # ISKRATEL mBAN>
-        elif 'IskraTEL' in version:
+        if 'IskraTEL' in version:
             model = BaseDevice.find_or_empty(r'CPU: IskraTEL \S+ (\S+)', version)
             return IskratelMBan(self.session, self.ip, auth, model=model)
 
-        elif 'JUNOS' in version:
+        if 'JUNOS' in version:
             model = BaseDevice.find_or_empty(r'Model: (\S+)', version)
             return Juniper(self.session, self.ip, auth, model)
 
-        elif '% Unknown command' in version:
+        if '% Unknown command' in version:
             self.session.sendline('display version')
             while True:
-                m = self.session.expect([r']$', '---- More', r'>$', r'#', pexpect.TIMEOUT, '{'])
-                if m == 5:
+                match = self.session.expect([r']$', '---- More', r'>$', r'#', pexpect.TIMEOUT, '{'])
+                if match == 5:
                     self.session.expect(r'\}:')
                     self.session.sendline('\n')
                     continue
                 version += str(self.session.before.decode('utf-8'))
-                if m == 1:
+                if match == 1:
                     self.session.sendline(' ')
-                if m == 4:
+                elif match == 4:
                     self.session.sendcontrol('C')
                 else:
                     break
@@ -166,25 +170,24 @@ class DeviceFactory:
                 model = BaseDevice.find_or_empty(r'VERSION : (MA5600\S+)', version)
                 return HuaweiMA5600T(self.session, self.ip, auth, model=model)
 
-        elif 'show: invalid command, valid commands are' in version:
+        if 'show: invalid command, valid commands are' in version:
             self.session.sendline('sys info show')
             while True:
-                m = self.session.expect([r']$', '---- More', r'>\s*$', r'#\s*$', pexpect.TIMEOUT])
+                match = self.session.expect([r']$', '---- More', r'>\s*$', r'#\s*$', pexpect.TIMEOUT])
                 version += str(self.session.before.decode('utf-8'))
-                if m == 1:
+                if match == 1:
                     self.session.sendline(' ')
-                if m == 4:
+                if match == 4:
                     self.session.sendcontrol('C')
                 else:
                     break
             if 'ZyNOS version' in version:
-                pass
+                pass  # TODO Для Zyxel
 
-        elif 'unknown keyword show' in version:
+        if 'unknown keyword show' in version:
             return Juniper(self.session, self.ip, auth)
 
-        else:
-            return 'Не удалось распознать оборудование'
+        return 'Не удалось распознать оборудование'
 
     def __login_to_by_telnet(self, login: str, password: str, timeout: int, pre_expect_index=None) -> str:
 
@@ -218,20 +221,20 @@ class DeviceFactory:
                     continue
 
                 # Password
-                elif expect_index == 1:
+                if expect_index == 1:
                     self.session.sendline(password)  # Вводим пароль
                     continue
 
                 # PROMPT
-                elif expect_index == 2:  # Если был поймал символ начала ввода команды
+                if expect_index == 2:  # Если был поймал символ начала ввода команды
                     return 'Connected'
 
                 # TELNET FAIL
-                elif expect_index == 3:
+                if expect_index == 3:
                     return f'Telnet недоступен! ({self.ip})'
 
                 # Press any key to continue
-                elif expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
+                if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
                     self.session.send(' ')
                     self.session.sendline(login)  # Вводим логин
                     self.session.sendline(password)  # Вводим пароль
@@ -242,7 +245,7 @@ class DeviceFactory:
                     continue  # Вводим те же данные еще раз
 
                 # The password needs to be changed
-                elif expect_index == 6:
+                if expect_index == 6:
                     self.session.sendline('N')  # Не меняем пароль, когда спрашивает
                     continue
 
@@ -274,6 +277,7 @@ class DeviceFactory:
                         ],
                         timeout=timeout
                     )
+
                     if expect_index == 0:
                         self.session.expect(pexpect.EOF)
                         algorithm = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
@@ -282,6 +286,7 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
+
                     elif expect_index == 1:
                         self.session.expect(pexpect.EOF)
                         cipher = re.findall(r'Their offer: (\S+)', self.session.before.decode('utf-8'))
@@ -290,17 +295,20 @@ class DeviceFactory:
                             self.session = pexpect.spawn(
                                 f'ssh {login}@{self.ip}{algorithm_str}{cipher_str}'
                             )
+
                     elif expect_index == 2:
                         self.session.sendline('yes')
+
                     elif expect_index == 3:
                         self.session.sendline(password)
                         if self.session.expect(['[Pp]assword:', r'[#>\]]\s*$']):
                             connected = True
-                            break
-                        else:
-                            break  # Пробуем новый логин/пароль
+
+                        break  # Пробуем новый логин/пароль
+
                     elif expect_index == 4:
                         connected = True
+
                     elif expect_index == 6:
                         self.session.sendline('N')
 
@@ -324,11 +332,11 @@ class DeviceFactory:
                     self.password = password
                     break
 
-                elif 'Неверный логин или пароль' in status:
+                if 'Неверный логин или пароль' in status:
                     pre_set_index = 0  # Следующий ввод будет логином
                     continue
 
-                elif 'Telnet недоступен' in status or 'Время ожидания превышено' in status:
+                if 'Telnet недоступен' in status or 'Время ожидания превышено' in status:
                     return status
 
             else:

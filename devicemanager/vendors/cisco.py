@@ -44,7 +44,7 @@ class Cisco(BaseDevice):
     def get_interfaces(self) -> list:
         output = self.send_command('show int des')
         output = re.sub('.+\nInterface', 'Interface', output)
-        with open(f'{TEMPLATE_FOLDER}/interfaces/cisco.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/cisco.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -152,7 +152,7 @@ class Cisco(BaseDevice):
         match = self.send_command(f'show arp | include {formatted_mac}')
 
         # Форматируем вывод
-        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template', encoding='utf-8') as template_file:
             template = textfsm.TextFSM(template_file)
         formatted_result = template.ParseText(match)
 
@@ -168,7 +168,7 @@ class Cisco(BaseDevice):
         self.session.expect(self.prompt)
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            res = self.send_command(f'no description', expect_command=False)
+            res = self.send_command('no description', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             res = self.send_command(f'description {desc}', expect_command=False)

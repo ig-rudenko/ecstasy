@@ -3,7 +3,7 @@ from time import sleep
 from functools import lru_cache
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, _range_to_numbers, _interface_normal_view
+from .base import BaseDevice, TEMPLATE_FOLDER, range_to_numbers, _interface_normal_view
 
 
 class EltexBase(BaseDevice):
@@ -93,14 +93,17 @@ class EltexMES(BaseDevice):
                 break
             if match == 0:
                 break
-            elif match == 1:
+            if match == 1:
                 self.session.send(" ")
             else:
                 print(self.ip, "Ошибка: timeout")
                 break
-        with open(f'{TEMPLATE_FOLDER}/interfaces/{self._template_name}.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/{self._template_name}.template', 'r',
+                  encoding='utf-8') as template_file:
+
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
+
         return [
             [
                 line[0],  # interface
@@ -122,7 +125,7 @@ class EltexMES(BaseDevice):
                 port_vlans = []
                 if vlans_group:
                     for v in vlans_group:
-                        port_vlans += _range_to_numbers(v)
+                        port_vlans += range_to_numbers(v)
                 result.append(line + [port_vlans])
         return result
 
@@ -178,24 +181,25 @@ class EltexMES(BaseDevice):
     def _get_port_stats(self, port):
         return self.send_command(f'show interfaces {_interface_normal_view(port)}').split('\n')
 
-    def port_type(self, port):
+    def port_type(self, port) -> str:
         """Определяем тип порта: медь, оптика или комбо"""
 
         port_type = self.find_or_empty(r'Type: (\S+)', self.get_port_info(port))
         if 'Fiber' in port_type:
             return 'SFP'
-        elif 'Copper' in port_type:
+        if 'Copper' in port_type:
             return 'COPPER'
-        elif 'Combo-F' in port_type:
+        if 'Combo-F' in port_type:
             return 'COMBO-FIBER'
-        elif 'Combo-C' in port_type:
+        if 'Combo-C' in port_type:
             return 'COMBO-COPPER'
+        return '?'
 
-    def port_config(self, port: str):
+    def port_config(self, port: str) -> str:
         """Конфигурация порта"""
         return self.send_command(f'show running-config interface {_interface_normal_view(port)}').strip()
 
-    def get_port_errors(self, port: str):
+    def get_port_errors(self, port: str) -> str:
         """ Ошибки на порту """
 
         port_info = self._get_port_stats(port)
@@ -215,7 +219,7 @@ class EltexMES(BaseDevice):
         self.session.expect(self.prompt)
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            res = self.send_command(f'no description', expect_command=False)
+            res = self.send_command('no description', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             res = self.send_command(f'description {desc}', expect_command=False)

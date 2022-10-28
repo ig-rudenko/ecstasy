@@ -1,3 +1,10 @@
+"""
+
+Модели для оборудования
+
+"""
+
+
 from typing import Any
 from django.db import models
 from django.contrib.auth.models import User
@@ -7,6 +14,8 @@ from devicemanager.dc import DeviceFactory
 
 
 class DeviceGroup(models.Model):
+    """ Группа для оборудования """
+
     name = models.CharField(max_length=100, verbose_name='Название')
     description = models.TextField(max_length=255, null=True, blank=True, verbose_name='Описание')
 
@@ -22,6 +31,7 @@ class DeviceGroup(models.Model):
 
 class AuthGroup(models.Model):
     """Группа авторизации для удаленного подключения к сетевым устройствам"""
+
     name = models.CharField(max_length=100, null=False, verbose_name='Название')
     login = models.CharField(max_length=64, null=False, verbose_name='Логин')
     password = models.CharField(max_length=64, null=False, verbose_name='Пароль')
@@ -96,9 +106,13 @@ class Devices(models.Model):
         return f'{self.name} ({self.ip})'
 
     def get_absolute_url(self):
+        """ Возвращает ссылку, которая ведет к просмотру оборудования """
+
         return f'/device/{self.name}'
 
     def connect(self):
+        """ Удаленное подключение к оборудованию """
+
         dev_conn: Any = DeviceFactory(self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group)
         return dev_conn
 
@@ -116,6 +130,7 @@ class Bras(models.Model):
     """
     Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
     """
+
     name = models.CharField(max_length=10, null=False, verbose_name='Название')
     ip = models.GenericIPAddressField(
         protocol='ipv4',
@@ -138,6 +153,8 @@ class Bras(models.Model):
 
 
 class Profile(models.Model):
+    """ Профиль пользователя """
+
     READ = 'read'
     REBOOT = 'reboot'
     UP_DOWN = 'up_down'
@@ -166,6 +183,7 @@ class Profile(models.Model):
 
 
 class UsersActions(models.Model):
+    """ Логирование действий пользователя """
 
     time = models.DateTimeField(auto_now_add=True, verbose_name='Дата/время')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
@@ -192,7 +210,7 @@ class UsersActions(models.Model):
 
 @receiver(post_save, sender=User)
 def auto_create_profile(sender, instance: User, created: bool, **kwargs):
+    """ Автоматически создаем профиль пользователя после его создания """
+
     if created:
-        Profile.objects.create(
-            user=instance
-        )
+        Profile.objects.create(user=instance)

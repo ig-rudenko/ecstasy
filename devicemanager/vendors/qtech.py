@@ -24,7 +24,7 @@ class Qtech(BaseDevice):
             expect_command=False
         )
         output = re.sub(r'[\W\S]+\nInterface', '\nInterface', output)
-        with open(f'{TEMPLATE_FOLDER}/interfaces/q-tech.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/q-tech.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -54,10 +54,11 @@ class Qtech(BaseDevice):
         return result
 
     @staticmethod
-    def validate_port(port: str):
+    def validate_port(port: str) -> (str, None):
         port = port.strip()
         if bool(re.findall(r'^\d+/\d+/\d+$', port)):
             return port
+        return None
 
     def get_mac(self, port: str) -> list:
         """
@@ -182,7 +183,7 @@ class Qtech(BaseDevice):
         self.session.expect(self.prompt)
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            status = self.send_command(f'no description', expect_command=False)
+            status = self.send_command('no description', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             status = self.send_command(f'description {desc}', expect_command=False)

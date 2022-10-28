@@ -2,7 +2,7 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, _range_to_numbers
+from .base import BaseDevice, TEMPLATE_FOLDER, range_to_numbers
 
 
 class Dlink(BaseDevice):
@@ -70,7 +70,7 @@ class Dlink(BaseDevice):
         self.session.sendline("show ports des")
         self.session.expect('#')
         output = self.session.before.decode('utf-8')
-        with open(f'{TEMPLATE_FOLDER}/interfaces/d-link.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/d-link.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -89,7 +89,7 @@ class Dlink(BaseDevice):
         self.session.sendline('show vlan')
         self.session.expect(self.prompt, timeout=20)
         output = self.session.before.decode('utf-8')
-        with open(f'{TEMPLATE_FOLDER}/vlans_templates/d-link.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/d-link.template', 'r', encoding='utf-8') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
         # сортируем и выбираем уникальные номера портов из списка интерфейсов
@@ -99,7 +99,7 @@ class Dlink(BaseDevice):
         ports_vlan = {str(num): [] for num in range(1, len(port_num) + 1)}
 
         for vlan in result_vlan:
-            for port in _range_to_numbers(vlan[2]):
+            for port in range_to_numbers(vlan[2]):
                 # Добавляем вланы на порты
                 ports_vlan[str(port)].append(vlan[0])
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
@@ -117,7 +117,7 @@ class Dlink(BaseDevice):
         return re.findall(rf'(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+', mac_str)
 
     @staticmethod
-    def validate_port(port: str):
+    def validate_port(port: str) -> (str, None):
         """ Проверяем порт на валидность """
 
         port = port.strip()
@@ -130,6 +130,8 @@ class Dlink(BaseDevice):
             port = ''
         if port.isdigit():
             return port
+
+        return None
 
     def reload_port(self, port, save_config=True) -> str:
         if 'F' in port:
@@ -203,7 +205,7 @@ class Dlink(BaseDevice):
             # Если длина описания больше чем доступно на оборудовании
             return 'Max length:' + self.find_or_empty(r'<desc (\d+)>', status)
 
-        elif 'Success' in status:  # Успешно поменяли описание
+        if 'Success' in status:  # Успешно поменяли описание
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 

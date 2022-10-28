@@ -18,7 +18,7 @@ class EdgeCore(BaseDevice):
 
     def get_interfaces(self) -> list:
         output = self.send_command('show interfaces status')
-        with open(f'{TEMPLATE_FOLDER}/interfaces/edge_core.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/edge_core.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
         result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -31,17 +31,17 @@ class EdgeCore(BaseDevice):
         ]
 
     def get_vlans(self) -> list:
-        running_config = self.send_command(f'show running-config')
+        running_config = self.send_command('show running-config')
         interfaces = self.get_interfaces()
         split_config = running_config.split('interface ')
         int_vlan = {}
         for piece in split_config:
             if piece.startswith('ethernet'):
                 vlans = []
-                [
+
+                for v in re.findall(r'VLAN[ad ]*([\d,]*)', piece):
                     vlans.extend(v.split(','))
-                    for v in re.findall(r'VLAN[ad ]*([\d,]*)', piece)
-                ]
+
                 int_vlan[self.find_or_empty(r'^ethernet \d+/\d+', piece)] = sorted(list(set(vlans)))
 
         for line in interfaces:
@@ -61,6 +61,8 @@ class EdgeCore(BaseDevice):
         port = port.strip()
         if re.findall(r'^\S+ \d+/\d+$', port):
             return _interface_normal_view(port)
+
+        return None
 
     def get_mac(self, port: str) -> list:
         port = self.validate_port(port)
@@ -129,6 +131,7 @@ class EdgeCore(BaseDevice):
         for piece in split_config:
             if piece.startswith(_interface_normal_view(port).lower()):
                 return piece
+        return ''
 
     def get_port_errors(self, port: str) -> str:
         port = self.validate_port(port)
@@ -140,6 +143,8 @@ class EdgeCore(BaseDevice):
             if re.findall('Error', line):
                 return line
 
+        return ''
+
     def set_description(self, port: str, desc: str) -> str:
         desc = self.clear_description(desc)  # Очищаем описание
 
@@ -148,7 +153,7 @@ class EdgeCore(BaseDevice):
         self.session.sendline(f'interface {_interface_normal_view(port)}')
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            res = self.send_command(f'no description', expect_command=False)
+            res = self.send_command('no description', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             res = self.send_command(f'description {desc}', expect_command=False)

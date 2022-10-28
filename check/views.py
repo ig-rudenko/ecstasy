@@ -1,11 +1,12 @@
+"""
+Функции представления для взаимодействия с оборудованием
+"""
+
 import json
 import random
 import re
-import pexpect
-
 from datetime import datetime
-
-from net_tools.models import DevicesInfo
+import pexpect
 
 from django.urls import reverse
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
@@ -15,14 +16,14 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
-from net_tools.models import VlanName
+from net_tools.models import VlanName, DevicesInfo
 from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
-from . import models
 from app_settings.models import ZabbixConfig
 from devicemanager import *
+from . import models
 
-# Устанавливаем файл конфигурации для работы с devicemanager'ом
+# Устанавливаем конфигурацию для работы с devicemanager
 Config.set(ZabbixConfig.load())
 
 
@@ -38,7 +39,7 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
 
     if not isinstance(user, models.User) or not isinstance(model_device, (models.Devices, models.Bras)) \
             or not isinstance(operation, str):
-        with open(settings.LOG_FILE, 'a') as log_file:
+        with open(settings.LOG_FILE, 'a', encoding="utf-8") as log_file:
             log_file.write(
                 f'{datetime.now():%d.%m.%Y %H:%M:%S} '
                 f'| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}\n'
@@ -57,7 +58,7 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
             action=operation
         )
         # В файл
-        with open(settings.LOG_FILE, 'a') as log_file:
+        with open(settings.LOG_FILE, 'a', encoding="utf-8") as log_file:
             log_file.write(
                 f'{datetime.now():%d.%m.%Y %H:%M:%S} '
                 f'| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n'
@@ -68,7 +69,7 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
             action=f"{model_device} | " + operation
         )
         # В файл
-        with open(settings.LOG_FILE, 'a') as log_file:
+        with open(settings.LOG_FILE, 'a', encoding="utf-8") as log_file:
             log_file.write(
                 f'{datetime.now():%d.%m.%Y %H:%M:%S} '
                 f'| {user.username:<10} |  | {model_device} | {operation}\n'
@@ -83,21 +84,24 @@ def has_permission_to_device(device_to_check: models.Devices, user):
     return False
 
 
-def permission(perm=None):
+def permission(required_perm=None):
     """ Декоратор для определения прав пользователя """
 
-    p = models.Profile.permissions_level
+    all_permissions = models.Profile.permissions_level
 
     def decorator(func):
         def _wrapper(request, *args, **kwargs):
             # Проверяем уровень привилегий
-            if request.user.is_superuser or \
-                    p.index(perm) <= p.index(models.Profile.objects.get(user_id=request.user.id).permissions):
-                return func(request, *args, **kwargs)
-            else:
-                return HttpResponseForbidden()
-        return _wrapper
+            user_permission = models.Profile.objects.get(user_id=request.user.id).permissions
 
+            # Если суперпользователь или его уровень привилегий равен или выше требуемых
+            if request.user.is_superuser or \
+                    all_permissions.index(required_perm) <= all_permissions.index(user_permission):
+                return func(request, *args, **kwargs)  # Выполняем функцию
+
+            return HttpResponseForbidden()  # Недостаточно прав
+
+        return _wrapper
     return decorator
 
 
@@ -110,17 +114,20 @@ def by_zabbix_hostid(request, hostid):
             return HttpResponseRedirect(
                 resolve_url('device_info', name=dev.name) + '?current_status=1'
             )
-        else:
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-    except (ValueError, TypeError, models.Devices.DoesNotExist):
+
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+    except (ValueError, TypeError, models.Devices.DoesNotExist) as exception:
         if request.META.get('HTTP_REFERER'):
             return HttpResponseRedirect(request.META.get('HTTP_REFERER') + '/zabbix')
-        else:
-            raise Http404
+
+        raise Http404 from exception
 
 
 @login_required
 def home(request):
+    """ Домашняя страница """
+
     return render(request, 'home.html')
 
 
@@ -134,22 +141,22 @@ def show_devices(request):
     filter_by_vendor = request.GET.get('vendor', '')
     vendor_param = f'&vendor={filter_by_vendor}' if filter_by_vendor else ''
 
-    p = request.GET.get('page', 1)
+    page = request.GET.get('page', 1)
     try:
-        p = int(p)
+        page = int(page)
     except (ValueError, TypeError):
-        p = 1
+        page = 1
 
     # Группы оборудования, доступные текущему пользователю
     user_groups_ids = []
     user_groups_names = []
-    for g in request.user.profile.devices_groups.all().values('id', 'name'):
-        user_groups_ids.append(g['id'])
-        user_groups_names.append(g['name'])
+    for group in request.user.profile.devices_groups.all().values('id', 'name'):
+        user_groups_ids.append(group['id'])
+        user_groups_names.append(group['name'])
 
     user_groups_names = {
-        g: reverse('devices-list') + '?' + f'group={g}' + vendor_param
-        for g in user_groups_names
+        group: reverse('devices-list') + '?' + f'group={group}' + vendor_param
+        for group in user_groups_names
     }
 
     # Вендоры оборудования, что доступны пользователю
@@ -171,8 +178,8 @@ def show_devices(request):
     # Фильтруем запрос
     query = Q(group__in=user_groups_ids)
     if request.GET.get('s'):
-        s = request.GET['s'].strip()
-        query &= (Q(ip__contains=s) | Q(name__icontains=s))
+        search_string = request.GET['s'].strip()
+        query &= (Q(ip__contains=search_string) | Q(name__icontains=search_string))
 
     # Фильтруем по группе
     if filter_by_group in user_groups_names:
@@ -186,18 +193,18 @@ def show_devices(request):
 
     paginator = Paginator(devs, per_page=50)
 
-    if p < 1:
-        p = 1
-    elif p > paginator.num_pages:
-        p = paginator.num_pages
+    if page < 1:
+        page = 1
+    elif page > paginator.num_pages:
+        page = paginator.num_pages
 
     return render(
         request, 'check/devices_list.html',
         {
-            'devs': paginator.page(p),
+            'devs': paginator.page(page),
             'search': request.GET.get('s', ''),
             'total_count': paginator.count,
-            'page': p,
+            'page': page,
             'num_pages': paginator.num_pages,
             'device_icon_number': random.randint(1, 5),
             'devices_groups': user_groups_names,
@@ -280,25 +287,28 @@ def device_info(request, name):
     # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
     if 'Неверный логин или пароль' in str(status):
         # Создаем список объектов авторизации
-        al = list(models.AuthGroup.objects.exclude(name=model_dev.auth_group.name).order_by('id').all())
+        all_auth = list(models.AuthGroup.objects.exclude(name=model_dev.auth_group.name).order_by('id').all())
 
         # Собираем интерфейсы снова
-        status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status, auth_obj=al)
+        status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status, auth_obj=all_auth)
 
         if status is None:  # Если статус сбора интерфейсов успешный
             # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
             try:
                 # Смотрим объект у которого такие логин и пароль
-                a = models.AuthGroup.objects.get(login=dev.success_auth['login'], password=dev.success_auth['password'])
+                success_auth_obj = models.AuthGroup.objects.get(
+                    login=dev.success_auth['login'], password=dev.success_auth['password']
+                )
 
             except (TypeError, ValueError, models.AuthGroup.DoesNotExist):
                 # Если нет такого объекта, значит нужно создать
-                a = models.AuthGroup.objects.create(
-                    name=dev.success_auth['login'], login=dev.success_auth['login'], password=dev.success_auth['password'],
+                success_auth_obj = models.AuthGroup.objects.create(
+                    name=dev.success_auth['login'],
+                    login=dev.success_auth['login'], password=dev.success_auth['password'],
                     secret=dev.success_auth['privilege_mode_password']
                 )
 
-            model_dev.auth_group = a  # Указываем новый логин/пароль для этого устройства
+            model_dev.auth_group = success_auth_obj  # Указываем новый логин/пароль для этого устройства
             model_update_fields.append('auth_group')  # Добавляем это поле в список изменений
 
     # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
@@ -364,6 +374,28 @@ def device_info(request, name):
     })
 
 
+def add_names_to_vlan(vlan_mac_list: list) -> list:
+    """ Добавляет к списку VLAN, MAC еще и название VLAN из таблицы соответствий """
+    result = []
+    vlan_passed = {}  # Словарь с VLAN, имена для которых уже найдены
+    for vid, mac in vlan_mac_list:  # Смотрим VLAN и MAC
+
+        # Если еще не искали такой VLAN
+        if not vlan_passed.get(vid):
+            # Ищем название VLAN'a
+            try:
+                vlan_name = VlanName.objects.get(vid=int(vid)).name
+            except VlanName.DoesNotExist:
+                vlan_name = ''
+            # Добавляем в множество вланов, которые участвовали в поиске имени
+            vlan_passed[vid] = vlan_name
+
+        # Обновляем
+        result.append([vid, mac, vlan_passed.get(vid)])
+
+    return result
+
+
 @login_required
 @permission(models.Profile.READ)
 def get_port_detail(request):
@@ -384,64 +416,63 @@ def get_port_detail(request):
             'perms': models.Profile.permissions_level.index(request.user.profile.permissions),
         }
 
-        # Если оборудование доступно
-        if dev.ping():
+        # Если оборудование недоступно
+        if not dev.ping():
+            return redirect('device_info', request.GET['device'])
 
-            if not request.GET.get('ajax'):
-                # ЛОГИ
-                log(request.user, model_dev, f'show mac\'s port {data["port"]}')
-                return render(request, 'check/port_page.html', data)
+        if not request.GET.get('ajax'):
+            # ЛОГИ
+            log(request.user, model_dev, f'show mac\'s port {data["port"]}')
+            return render(request, 'check/port_page.html', data)
 
-            # Подключаемся к оборудованию
-            with model_dev.connect() as session:
+        # Подключаемся к оборудованию
+        with model_dev.connect() as session:
 
-                data['macs'] = []  # Итоговый список
-                vlan_passed = set()  # Множество уникальных VLAN
-                for vid, mac in session.get_mac(data['port']):  # Смотрим VLAN и MAC
+            data['macs'] = []  # Итоговый список
+            vlan_passed = set()  # Множество уникальных VLAN
+            for vid, mac in session.get_mac(data['port']):  # Смотрим VLAN и MAC
 
-                    # Если еще не искали такой VLAN
-                    if vid not in vlan_passed:
-                        # Добавляем в множество вланов, которые участвовали в поиске имени
-                        vlan_passed.add(vid)
-                        # Ищем название VLAN'a
-                        try:
-                            vlan_name = VlanName.objects.get(vid=int(vid)).name
-                        except VlanName.DoesNotExist:
-                            vlan_name = ''
+                # Если еще не искали такой VLAN
+                if vid not in vlan_passed:
+                    # Добавляем в множество вланов, которые участвовали в поиске имени
+                    vlan_passed.add(vid)
+                    # Ищем название VLAN'a
+                    try:
+                        vlan_name = VlanName.objects.get(vid=int(vid)).name
+                    except VlanName.DoesNotExist:
+                        vlan_name = ''
 
-                    # Обновляем
-                    data['macs'].append([vid, mac, vlan_name])
+                # Обновляем
+                data['macs'].append([vid, mac, vlan_name])
 
-                # Отправляем JSON, если вызов AJAX = mac
-                if request.GET.get('ajax') == 'mac':
-                    macs_tbody = render_to_string('check/macs_table.html', data)
-                    return JsonResponse({
-                        'macs': macs_tbody
-                    })
+            # Отправляем JSON, если вызов AJAX = mac
+            if request.GET.get('ajax') == 'mac':
+                macs_tbody = render_to_string('check/macs_table.html', data)
+                return JsonResponse({
+                    'macs': macs_tbody
+                })
 
-                if hasattr(session, 'get_port_info'):
-                    data['port_info'] = session.get_port_info(data['port'])
+            if hasattr(session, 'get_port_info'):
+                data['port_info'] = session.get_port_info(data['port'])
 
-                if hasattr(session, 'port_type'):
-                    data['port_type'] = session.port_type(data['port'])
+            if hasattr(session, 'port_type'):
+                data['port_type'] = session.port_type(data['port'])
 
-                if hasattr(session, 'port_config'):
-                    data['port_config'] = session.port_config(data['port'])
+            if hasattr(session, 'port_config'):
+                data['port_config'] = session.port_config(data['port'])
 
-                if hasattr(session, 'get_port_errors'):
-                    data['port_errors'] = session.get_port_errors(data['port'])
+            if hasattr(session, 'get_port_errors'):
+                data['port_errors'] = session.get_port_errors(data['port'])
 
-                if hasattr(session, 'virtual_cable_test'):
-                    data['cable_test'] = 'has'
+            if hasattr(session, 'virtual_cable_test'):
+                data['cable_test'] = 'has'
 
-                if request.GET.get('ajax') == 'all':
-                    # Отправляем все собранные данные
-                    data['macs'] = render_to_string('check/macs_table.html', data)
-                    del data['dev']
-                    del data['perms']
-                    return JsonResponse(data)
-
-        return redirect('device_info', request.GET['device'])
+            if request.GET.get('ajax') == 'all':
+                # Отправляем все собранные данные
+                data['macs'] = render_to_string('check/macs_table.html', data)
+                del data['dev']
+                del data['perms']
+                return JsonResponse(data)
 
     return HttpResponseNotAllowed(['GET'])
 
@@ -457,108 +488,112 @@ def reload_port(request):
     color_error = '#d53c3c'  # Красный
     color = color_success  # Значение по умолчанию
 
-    if not request.user.is_superuser and\
-            re.findall(r'svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras',
-                       request.POST.get('desc', '').lower()):
+    # Если не суперпользователь, то нельзя изменять состояние определенных портов
+    port_guard_pattern = r'svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras'
+
+    if not request.user.is_superuser and \
+            re.findall(port_guard_pattern, request.POST.get('desc', '').lower()):
         return JsonResponse({
-            'message': f'Запрещено изменять состояние данного порта!',
+            'message': 'Запрещено изменять состояние данного порта!',
             'status': 'WARNING',
             'color': '#d3ad23'
         })
-    print(request.POST, request.user)
 
-    if request.method == 'POST' and request.POST.get('port') and request.POST.get('device') and request.POST.get(
-            'status'):
-
-        dev = Device(request.POST['device'])
-        model_dev = get_object_or_404(models.Devices, name=dev.name)
-        dev.protocol = model_dev.cmd_protocol
-
-        port: str = request.POST['port']
-        status: str = request.POST['status']
-        save_config: bool = request.POST.get('save') != 'no'  # По умолчанию сохранять
-
-        # У пользователя нет доступа к группе данного оборудования
-        if not has_permission_to_device(model_dev, request.user):
-            return JsonResponse({
-                'message': f'Вы не имеете права управляет этим устройством',
-                'status': 'ERROR',
-                'color': '#d53c3c'
-            })
-
-        user_permission_level = models.Profile.permissions_level.index(request.user.profile.permissions)
-
-        # Если оборудование доступно, то можно поменять состояние порта
-        if dev.ping():
-
-            # Подключаемся к оборудованию
-            with model_dev.connect() as session:
-                # Перезагрузка
-                if status == 'reload':
-                    try:
-                        s = session.reload_port(port=port, save_config=save_config)
-                        message = f'Порт {port} был перезагружен!'
-                    except pexpect.TIMEOUT:
-                        message = 'Timeout'
-                        color = color_error
-
-                # UP and DOWN
-                elif user_permission_level >= 2 and status in ['up', 'down']:
-                    try:
-                        s = session.set_port(port=port, status=status, save_config=save_config)
-                        message = f'Порт {port} был переключен в состояние {status}!'
-                    except pexpect.TIMEOUT:
-                        message = 'Timeout'
-                        color = color_error
-                # Нет прав
-                else:
-                    # Логи
-                    log(request.user, model_dev, f'Tried to set port {port} ({request.POST.get("desc")})'
-                                                 f' to the {status} state, but was refused \n'
-                        )
-                    return JsonResponse({
-                        'message': f'У вас недостаточно прав, для изменения состояния порта!',
-                        'status': 'WARNING',
-                        'color': color_warning
-                    })
-
-            if 'Saved Error' in s:
-                config_status = ' Конфигурация НЕ была сохранена'
-                color = color_error
-
-            elif 'Saved OK' in s:
-                config_status = ' Конфигурация была сохранена'
-
-            elif 'Without saving':
-                config_status = ' Конфигурация НЕ была сохранена'
-                color = color_info
-
-            message += config_status
-
-            # Логи
-            log(request.user, model_dev, f'{status} port {port} ({request.POST.get("desc")}) \n{s}')
-
-            return JsonResponse({
-                'message': message,
-                'status': f'Порт {status}',
-                'color': color
-            })
-
+    # Если неправильный метод или не все обязательные данные были переданы
+    if request.method != 'POST' or not request.POST.get('port') or not request.POST.get('device') or not \
+            request.POST.get('status'):
         return JsonResponse({
-            'message': f'Оборудование недоступно!',
+            'message': f'Ошибка отправки данных {request.POST}',
+            'color': color_error,
+            'status': 'ERROR'
+        })
+
+    dev = Device(request.POST['device'])
+    model_dev = get_object_or_404(models.Devices, name=dev.name)
+
+    port: str = request.POST['port']
+    status: str = request.POST['status']
+    save_config: bool = request.POST.get('save') != 'no'  # По умолчанию сохранять
+
+    # У пользователя нет доступа к группе данного оборудования
+    if not has_permission_to_device(model_dev, request.user):
+        return JsonResponse({
+            'message': 'Вы не имеете права управлять этим устройством',
+            'status': 'ERROR',
+            'color': '#d53c3c'
+        })
+
+    # Уровень привилегий пользователя
+    user_permission_level = models.Profile.permissions_level.index(request.user.profile.permissions)
+
+    # Если недостаточно привилегий для изменения статуса порта
+    if user_permission_level < 2 and status in ['up', 'down']:
+        # Логи
+        log(
+            request.user, model_dev,
+            f'Tried to set port {port} ({request.POST.get("desc")}) to the {status} state, but was refused \n'
+        )
+        return JsonResponse({
+            'message': 'У вас недостаточно прав, для изменения состояния порта!',
             'status': 'WARNING',
             'color': color_warning
         })
 
+    # Если оборудование Недоступно
+    if not dev.ping():
+        return JsonResponse({
+            'message': 'Оборудование недоступно!',
+            'status': 'WARNING',
+            'color': color_warning
+        })
+
+    # Теперь наконец можем подключиться к оборудованию :)
+    with model_dev.connect() as session:
+        try:
+            # Перезагрузка порта
+            if status == 'reload':
+                port_change_status = session.reload_port(port=port, save_config=save_config)
+                message = f'Порт {port} был перезагружен!'
+
+            # UP and DOWN
+            else:
+                port_change_status = session.set_port(port=port, status=status, save_config=save_config)
+                message = f'Порт {port} был переключен в состояние {status}!'
+
+        except pexpect.TIMEOUT:
+            message = 'Timeout'
+            color = color_error
+
+    if 'Saved Error' in port_change_status:
+        config_status = ' Конфигурация НЕ была сохранена'
+        color = color_error
+
+    elif 'Saved OK' in port_change_status:
+        config_status = ' Конфигурация была сохранена'
+
+    elif 'Without saving' in port_change_status:
+        config_status = ' Конфигурация НЕ была сохранена'
+        color = color_info
+
+    else:
+        config_status = port_change_status
+
+    message += config_status
+
+    # Логи
+    log(request.user, model_dev, f'{status} port {port} ({request.POST.get("desc")}) \n{port_change_status}')
+
     return JsonResponse({
-        'message': f'Ошибка отправки данных {request.POST}',
-        'color': color_error,
-        'status': 'ERROR'
+        'message': message,
+        'status': f'Порт {status}',
+        'color': color
     })
 
 
 # BRAS COMMAND
 def send_command(session: pexpect, command):
+    """ Отправляем команду на BRAS """
+
     session.sendline(command)
     session.expect(command)
     result = ''
@@ -568,16 +603,18 @@ def send_command(session: pexpect, command):
         )
         result += session.before.decode('utf-8').replace('\x1b[42D', '').replace('?(Y/N)[Y]:', '')
         if match:
-            break
-        else:
-            session.sendline(' ')
+            break  # Считали все данные, прерываем
+
+        session.sendline(' ')  # Листаем дальше
+
     return result
 
 
 @login_required
 @permission(models.Profile.BRAS)
 def show_session(request):
-    """Смотрим сессию клиента"""
+    """ Смотрим сессию клиента """
+
     if request.method == 'GET' and request.GET.get('mac') and request.GET.get('device') and request.GET.get('port'):
         mac_letters = re.findall(r'[\w\d]', request.GET['mac'])
         if len(mac_letters) == 12:
@@ -588,42 +625,8 @@ def show_session(request):
             user_info = {}
             errors = []
 
-            if request.GET.get('ajax'):
-
-                for b in brases:
-                    try:
-                        with pexpect.spawn(f"telnet {b.ip}") as telnet:
-                            telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=10)
-                            telnet.sendline(b.login)
-
-                            telnet.expect("[Pp]ass")
-                            telnet.sendline(b.password)
-
-                            if telnet.expect(['>', 'password needs to be changed. Change now?']):
-                                telnet.sendline('N')
-
-                            bras_output = send_command(telnet, f'display access-user mac-address {mac}')
-                            if 'No online user!' not in bras_output:
-                                user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
-                                if user_index:
-                                    bras_output = send_command(
-                                        telnet, f'display access-user user-id {user_index[0]} verbose'
-                                    )
-                                user_info[b.name] = bras_output
-                    except pexpect.TIMEOUT:
-                        errors.append(
-                            'Не удалось подключиться к ' + b.name
-                        )
-
-                    # Логи
-                    log(request.user, b, f'display access-user mac-address {mac}')
-
-                return render(request, 'check/bras_table.html', {
-                    'mac': mac, 'result': user_info, 'port': request.GET['port'],
-                    'device': request.GET['device'], 'desc': request.GET.get('desc'),
-                })
-
-            else:
+            if not request.GET.get('ajax'):
+                # Если это асинхронный запрос, то отправляем html
                 return render(
                     request, 'check/bras_info.html',
                     {
@@ -633,15 +636,50 @@ def show_session(request):
                     }
                 )
 
+            for bras in brases:
+                try:
+                    with pexpect.spawn(f"telnet {bras.ip}") as telnet:
+                        telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=10)
+                        telnet.sendline(bras.login)
+
+                        telnet.expect("[Pp]ass")
+                        telnet.sendline(bras.password)
+
+                        if telnet.expect(['>', 'password needs to be changed. Change now?']):
+                            telnet.sendline('N')
+
+                        bras_output = send_command(telnet, f'display access-user mac-address {mac}')
+                        if 'No online user!' not in bras_output:
+                            user_index = re.findall(r'User access index\s+:\s+(\d+)', bras_output)
+                            if user_index:
+                                bras_output = send_command(
+                                    telnet, f'display access-user user-id {user_index[0]} verbose'
+                                )
+                            user_info[bras.name] = bras_output
+                except pexpect.TIMEOUT:
+                    errors.append(
+                        'Не удалось подключиться к ' + bras.name
+                    )
+
+                # Логи
+                log(request.user, bras, f'display access-user mac-address {mac}')
+
+            return render(request, 'check/bras_table.html', {
+                'mac': mac, 'result': user_info, 'port': request.GET['port'],
+                'device': request.GET['device'], 'desc': request.GET.get('desc'),
+            })
+
     return redirect('/')
 
 
 @login_required
 @permission(models.Profile.BRAS)
 def cut_user_session(request):
+    """ Сбрасываем сессию по MAC адресу """
+
     status = 'miss'
 
-    color_warning = '#d3ad23'
+    # color_warning = '#d3ad23'
     color_success = '#08b736'
     color_error = '#d53c3c'
     status_color = color_error  # Значение по умолчанию
@@ -666,15 +704,15 @@ def cut_user_session(request):
             brases = models.Bras.objects.all()
 
             status = ''  # Обновляем статус
-            for b in brases:
+            for bras in brases:
                 try:
-                    print(b)
-                    with pexpect.spawn(f"telnet {b.ip}") as telnet:
+                    print(bras)
+                    with pexpect.spawn(f"telnet {bras.ip}") as telnet:
                         telnet.expect(["Username", 'Unable to connect', 'Connection closed'], timeout=20)
-                        telnet.sendline(b.login)
+                        telnet.sendline(bras.login)
 
                         telnet.expect(r"[Pp]ass")
-                        telnet.sendline(b.password)
+                        telnet.sendline(bras.password)
 
                         if telnet.expect(['>', 'password needs to be changed. Change now?']):
                             telnet.sendline('N')
@@ -684,22 +722,20 @@ def cut_user_session(request):
                         telnet.sendline(f'cut access-user mac-address {mac}')
 
                         # Логи
-                        log(request.user, b, f'cut access-user mac-address {mac}')
+                        log(request.user, bras, f'cut access-user mac-address {mac}')
 
                 except pexpect.TIMEOUT:
-                    status += b.name + ' timeout\n'  # Кто был недоступен
-                    status_color = color_warning
+                    status += bras.name + ' timeout\n'  # Кто был недоступен
 
-            else:
-                with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
-                    # Перезагружаем порт без сохранения конфигурации
-                    s = session.reload_port(request.POST['port'], save_config=False)
+            with model_dev.connect() as session:
+                # Перезагружаем порт без сохранения конфигурации
+                reload_port_status = session.reload_port(request.POST['port'], save_config=False)
 
-                    status += s
-                    status_color = color_success  # Успех
+                status += reload_port_status
+                status_color = color_success  # Успех
 
-                    # Логи
-                    log(request.user, model_dev, f'reload port {request.POST["port"]} \n{s}')
+                # Логи
+                log(request.user, model_dev, f'reload port {request.POST["port"]} \n{reload_port_status}')
 
     return JsonResponse(
         {

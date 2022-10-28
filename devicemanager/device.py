@@ -1,52 +1,71 @@
+"""
+Модуль для взаимодействия с узлами сети через Zabbix API
+Сбор интерфейсов
+"""
+
 import re
 import os
 import json
-import tabulate
 import subprocess
-
 from typing import Any
 from typing import List
+from concurrent.futures import ThreadPoolExecutor
+
+import tabulate
 from pyzabbix import ZabbixAPI
 from alive_progress import alive_bar
 from geopy.geocoders import Nominatim
-from concurrent.futures import ThreadPoolExecutor
 
 from . import snmp
 from .dc import DeviceFactory
 from .exceptions import AuthException
-from .vendors.base import _range_to_numbers
+from .vendors.base import range_to_numbers
 from .zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup, Interface, Location
 
 
 class Config:
+    """ Конфигурация для работы с Zabbix API """
     ZABBIX_URL: str
     ZABBIX_USER: str
     ZABBIX_PASSWORD: str
-    INTERFACE_API_KEY: str
-    INTERFACE_API_URL: str
-    AUTH_FILE = 'auth.yaml'
     TABLE_FORMAT = "simple"
 
     @staticmethod
     def set(obj):
+        """ Задаем настройки """
         Config.ZABBIX_URL = obj.url
         Config.ZABBIX_USER = obj.login
         Config.ZABBIX_PASSWORD = obj.password
 
 
 class Interfaces:
+    """
+    Взаимодействие с интерфейсами оборудования
+
+    Необходимо передать интерфейсы в следующем виде:
+
+    >>> Interfaces(['eth1', 'up', 'description', [10, 20]])
+
+    >>> Interfaces({"Interface": "eth1", "Status": "up", "Description": "desc", "VLAN's": [10, 20]})
+
+    >>> Interfaces({'Interface': 'eth1', 'Admin Status': 'up', 'Link': 'up', 'Description': 'desc', "VLAN's": [10, 20]})
+
+    >>> Interfaces(Interface())
+
+    """
+
     def __init__(self, data=None):
         if not data:  # Если не были переданы интерфейсы, то создаем пустой список
             self.__interfaces = []
         else:
             self.__interfaces: List[Interface, None] = []
-            for i, intf in enumerate(data):
+            for intf in data:
 
-                # Если был передан словарь от API
+                # Если был передан словарь
                 if isinstance(intf, dict):
                     vlans = []
-                    for v in intf.get("VLAN's") or []:
-                        vlans += _range_to_numbers(v)
+                    for vlan in intf.get("VLAN's") or []:
+                        vlans += range_to_numbers(vlan)
 
                     if not intf.get('Status'):
                         intf['Status'] = 'admin down' if intf['Admin Status'] == 'down' else intf['Link']
@@ -77,7 +96,10 @@ class Interfaces:
         if not self.__interfaces:
             return 'None'
         return tabulate.tabulate(
-            [[i.name, i.status, i.desc.strip(), ", ".join(map(str, i.vlan)) or ' ' if i.vlan else ' '] for i in self.__interfaces],
+            [
+                [i.name, i.status, i.desc.strip(), ", ".join(map(str, i.vlan)) or ' ' if i.vlan else ' ']
+                for i in self.__interfaces
+            ],
             headers=['Interface', 'Status', 'Description', 'VLAN'],
             maxcolwidths=[None, None, None, 40],
             tablefmt=Config.TABLE_FORMAT
@@ -98,46 +120,47 @@ class Interfaces:
         return len(self.__interfaces)
 
     def up(self, only_count=False):
-        """Интерфейсы, состояние которых UP
+        """
+        Интерфейсы, состояние которых UP
 
         :param only_count: bool Только кол-во?
         """
-        c = 0
+        count = 0
         intf = []
         for i in self.__interfaces:
             if 'down' not in i.status and 'disable' not in i.status.lower():
-                c += 1
+                count += 1
                 if not only_count:
                     intf.append(i)
-        return c if only_count else Interfaces(intf)
+        return count if only_count else Interfaces(intf)
 
     def down(self, only_count=False):
         """Интерфейсы, состояние которых DOWN
 
         :param only_count: bool Только кол-во?
         """
-        c = 0
+        count = 0
         intf = []
         for i in self.__interfaces:
             if i.status == 'down':
-                c += 1
+                count += 1
                 if not only_count:
                     intf.append(i)
-        return c if only_count else Interfaces(intf)
+        return count if only_count else Interfaces(intf)
 
     def admin_down(self, only_count=False):
         """Интерфейсы, состояние которых ADMIN DOWN
 
         :param only_count: bool Только кол-во?
         """
-        c = 0
+        count = 0
         intf = []
         for i in self.__interfaces:
             if i.status == 'admin down':
-                c += 1
+                count += 1
                 if not only_count:
                     intf.append(i)
-        return c if only_count else Interfaces(intf)
+        return count if only_count else Interfaces(intf)
 
     def free(self, only_count=False):
         """
@@ -145,14 +168,14 @@ class Interfaces:
 
         :param only_count: bool Только кол-во?
         """
-        c = 0
+        count = 0
         intf = []
         for i in self.__interfaces:
             if 'down' in i.status.lower() and (not i.desc or 'HUAWEI, Quidway Series' in i.desc):
-                c += 1
+                count += 1
                 if not only_count:
                     intf.append(i)
-        return c if only_count else Interfaces(intf)
+        return count if only_count else Interfaces(intf)
 
     def abons(self, only_count=False):
         """
@@ -160,7 +183,7 @@ class Interfaces:
 
         :param only_count: bool Только кол-во?
         """
-        c = 0
+        count = 0
         intf = []
         for i in self.__interfaces:
             if re.findall(r'power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras', i.desc.lower()):
@@ -171,10 +194,10 @@ class Interfaces:
                 continue
             if re.findall('Quidway Series', i.desc) and i.status == 'down':
                 continue
-            c += 1
+            count += 1
             if not only_count:
                 intf.append(i)
-        return c if only_count else Interfaces(intf)
+        return count if only_count else Interfaces(intf)
 
     @property
     def unique_vlans(self) -> list:
@@ -194,6 +217,7 @@ class Interfaces:
         if isinstance(vlans, list):
             vlans = list(map(int, vlans))
             return Interfaces([i for i in self.__interfaces if set(vlans) & set(i.vlan)])
+        return Interfaces()
 
     def filter_by_desc(self, pattern: str):
         """Интерфейсы, описание которых совпадает с шаблоном"""
@@ -201,6 +225,7 @@ class Interfaces:
 
 
 class DevicesCollection:
+    """ Создает коллекцию из узлов сети, для комплексной работы с ними """
 
     def __init__(self, devs: (list, tuple), intf_coll=False, zbx_coll=False):
 
@@ -221,10 +246,19 @@ class DevicesCollection:
 
     @property
     def count(self) -> int:
+        """ Количество устройств в коллекции """
+
         return len(self.collection)
 
     @classmethod
-    def from_zabbix_groups(cls, groups_name: (str, list), zabbix_info: bool):
+    def from_zabbix_groups(cls, groups_name: (str, list), zabbix_info: bool) -> "DevicesCollection":
+        """
+        Создаем коллекцию из групп узлов сети Zabbix
+
+        :param groups_name: Имя группы или список имен групп Zabbix
+        :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
+        """
+
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
             zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
             groups = zbx.hostgroup.get(
@@ -238,17 +272,24 @@ class DevicesCollection:
                     sortfield=['name']
                 )
             else:
-                return []
+                return DevicesCollection([])
         with alive_bar(len(hosts), title='Создаем коллекцию') as bar:
             devs = []
-            for h in hosts:
-                bar.text = f'-> Собираем данные с {h["name"]}'
-                devs.append(Device(h['name'], zabbix_info=zabbix_info))
+            for host in hosts:
+                bar.text = f'-> Собираем данные с {host["name"]}'
+                devs.append(Device(host['name'], zabbix_info=zabbix_info))
                 bar()
         return DevicesCollection(devs)
 
     @classmethod
-    def from_zabbix_ips(cls, ips: (str, list), zabbix_info: bool):
+    def from_zabbix_ips(cls, ips: (str, list), zabbix_info: bool) -> "DevicesCollection":
+        """
+        Создаем коллекцию из переданных IP адресов
+
+        :param ips: IP адрес или список IP адресов
+        :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
+        """
+
         if ips.count(' '):
             ips = ips.split()
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
@@ -258,16 +299,16 @@ class DevicesCollection:
                 output=['name'],
                 sortfield=['name']
             )
-            if hosts:
-                with alive_bar(len(hosts), title='Создаем коллекцию') as bar:
-                    devs = []
-                    for h in hosts:
-                        bar.text = f'-> Собираем данные с {h["name"]}'
-                        devs.append(Device(h['name'], zabbix_info=zabbix_info))
-                        bar()
-                return DevicesCollection(devs)
-            else:
-                return []
+        if hosts:
+            with alive_bar(len(hosts), title='Создаем коллекцию') as bar:
+                devs = []
+                for h in hosts:
+                    bar.text = f'-> Собираем данные с {h["name"]}'
+                    devs.append(Device(h['name'], zabbix_info=zabbix_info))
+                    bar()
+            return DevicesCollection(devs)
+
+        return DevicesCollection([])
 
     def __str__(self):
         string = 'DevicesCollection:\n'
@@ -288,16 +329,22 @@ class DevicesCollection:
 
         return string
 
-    def filter_by_name(self, pattern: str):
-        """Фильтр по имени узлов сети с помощью регулярного выражения"""
+    def filter_by_name(self, pattern: str) -> "DevicesCollection":
+        """
+        Фильтр по имени узлов сети с помощью регулярного выражения
+        """
         return DevicesCollection([dev for dev in self.collection if re.search(pattern, dev.name)])
 
-    def filter_by(self, field: str, pattern: str):
-        """Фильтр по переданному полю узлов сети с помощью регулярного выражения"""
+    def filter_by(self, field: str, pattern: str) -> "DevicesCollection":
+        """
+        Фильтр по переданному полю узлов сети с помощью регулярного выражения
+        """
         return DevicesCollection([dev for dev in self.collection if re.search(pattern, str(dev.__dict__[field]))])
 
-    def filter_by_inventory(self, inventory: str, pattern: str):
-        """Фильтр по переданному полю в инвентаризации узлов сети с помощью регулярного выражения"""
+    def filter_by_inventory(self, inventory: str, pattern: str) -> "DevicesCollection":
+        """
+        Фильтр по переданному полю в инвентаризации узлов сети с помощью регулярного выражения
+        """
         if not self.zabbix_collected:
             self.collect_zabbix_info()
         return DevicesCollection(
@@ -324,33 +371,45 @@ class DevicesCollection:
     def __iadd__(self, other):
         return self.__add__(other)
 
-    def collect_interfaces(self, vlans, current_status=False):
+    def collect_interfaces(self, vlans, current_status=False) -> "DevicesCollection":
+        """ Конкурентно собираем интерфейсы оборудования из коллекции """
+
         if current_status and not self.auth_groups:
-            raise AuthException(f'Не указаны группы авторизации для коллекции!')
+            raise AuthException('Не указаны группы авторизации для коллекции!')
 
         with alive_bar(self.count, title='Собираем интерфейсы') as bar:
             with ThreadPoolExecutor() as ex:
-                for d in self.collection:
-                    ex.submit(d.collect_interfaces, vlans, current_status, bar)
+                for device in self.collection:
+                    ex.submit(device.collect_interfaces, vlans, current_status, bar)
         self.interfaces_collected = True
         return self
 
-    def collect_zabbix_info(self):
+    def collect_zabbix_info(self) -> "DevicesCollection":
+        """ Конкурентно собираем информацию об устройствах в коллекции из Zabbix """
+
         with ThreadPoolExecutor() as ex:
-            for d in self.collection:
-                ex.submit(d.collect_zabbix_info)
+            for device in self.collection:
+                ex.submit(device.collect_zabbix_info)
         self.zabbix_collected = True
         return self
 
     @property
-    def available(self):
+    def available(self) -> "DevicesCollection":
+        """
+        Возвращаем новую коллекцию, в которой все узлы сети по информации из Zabbix находятся в активном статусе
+        """
+
         return DevicesCollection([d for d in self.collection if d.zabbix_info.status])
 
     @property
-    def unavailable(self):
+    def unavailable(self) -> "DevicesCollection":
+        """
+        Возвращаем новую коллекцию, в которой все узлы сети по информации из Zabbix имеют неактивный статус
+        """
+
         return DevicesCollection([d for d in self.collection if not d.zabbix_info.status])
 
-    def sort_by(self, field: str):
+    def sort_by(self, field: str) -> "DevicesCollection":
         """
         Сортировка коллекции по указанному параметру
 
@@ -364,36 +423,50 @@ class DevicesCollection:
                     site_state, site_country, site_zip, site_rack, site_notes, poc_1_name, poc_1_email, poc_1_phone_a,
                     poc_1_phone_b, poc_1_cell, poc_1_screen, poc_1_notes, poc_2_name, poc_2_email, poc_2_phone_a,
                     poc_2_phone_b, poc_2_cell, poc_2_screen, poc_2_notes
-        :return:
+        :return: "DeviceCollection"
         """
         if not self.zabbix_collected and field != 'name':
             self.collect_zabbix_info()
 
-        if field in ZabbixInventory.__dict__.keys():
-            key_ = lambda d: d.zabbix_info.inventory.__dict__[field]
-        else:
-            key_ = lambda d: d.__dict__[field]
-        return DevicesCollection(sorted(self.collection, key=key_))
+        if field in ZabbixInventory.__dict__:
+            return DevicesCollection(sorted(self.collection, key=lambda d: d.zabbix_info.inventory.__dict__[field]))
 
-    def ping_devs(self, unavailable=False):
-        a, u = [], []
+        return DevicesCollection(sorted(self.collection, key=lambda d: d.__dict__[field]))
 
-        def pd(dev):
-            if dev.ping():
-                a.append(dev)
-            else:
-                u.append(dev)
+    def ping_devs(self, unavailable=False) -> "DevicesCollection":
+        """
+        Конкурентно пингуем оборудования из коллекции и возвращаем новую коллекцию
+         из доступных или недоступных узлов сети в зависимости от параметра unavailable
 
+        :param unavailable: Возвращать недоступные?
+        """
+
+        available_devices, unavailable_devices = [], []
+
+        def __ping_device(dev):
+            """ Пингуем оборудование и записываем его в нужный список """
+            if dev.ping() and not unavailable:
+                available_devices.append(dev)
+
+            elif unavailable:
+                unavailable_devices.append(dev)
+
+        # Запускаем пинг
         with ThreadPoolExecutor() as executor:
-            for d in self.collection:
-                executor.submit(pd, d)
+            for device in self.collection:
+                executor.submit(__ping_device, device)
 
         if unavailable:
-            return DevicesCollection(u)
-        return DevicesCollection(a)
+            return DevicesCollection(unavailable_devices)
+
+        return DevicesCollection(available_devices)
 
 
 class Device:
+    """
+    Собирает информации с Zabbix для одного узла сети
+    Сканирует интерфейсы оборудования в реальном времени
+    """
 
     def __init__(self, name, zabbix_info=True):
         self.name: str = name
@@ -411,6 +484,8 @@ class Device:
         self.success_auth: dict = {}
 
     def collect_zabbix_info(self):
+        """ Собирает информацию по данному оборудованию из Zabbix """
+
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
             zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
             zabbix_info = zbx.host.get(
@@ -442,8 +517,8 @@ class Device:
 
             self._zabbix_info = ZabbixHostInfo(
                 *zabbix_info[0].values(),
-                ZabbixInventory(*inventory),
-                tuple([ZabbixHostGroup(*g.values()) for g in groups])
+                inventory=ZabbixInventory(*inventory),
+                hostgroups=tuple(ZabbixHostGroup(*group.values()) for group in groups)
             )
             self._zabbix_info_collected = True
 
@@ -455,32 +530,42 @@ class Device:
         """Обновляем инвентарные данные узла сети в Zabbix"""
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
             zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            resp = zbx.host.update(
+            zbx.host.update(
                 hostid=self.zabbix_info.hostid,
                 inventory={k: v for k, v in self.zabbix_info.inventory.__dict__.items() if v}  # Только заполненные поля
             )
 
     @property
     def zabbix_info(self) -> ZabbixHostInfo:
+        """ Обращаемся к информации из Zabbix """
         return self._zabbix_info
 
     @classmethod
     def from_ip(cls, ip: str) -> DevicesCollection:
+        """
+        Создаем коллекцию оборудований по IP адресу
+        Коллекция, потому что по данному IP могут быть несколько записей в Zabbix
+        """
+
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
             zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
             hosts = zbx.host.get(filter={'ip': ip}, output=['name'])
         return DevicesCollection([Device(d['name']) for d in hosts])
 
     @classmethod
-    def from_hostid(cls, hostid: str):
+    def from_hostid(cls, hostid: str) -> ("Device", None):
+        """ Создаем объект через переданный hostid Zabbix """
+
         with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
             zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
             host = zbx.host.get(hostids=hostid, output=['name'])
         if host:
             return Device(host[0]['name'])
+        return None
 
-    def collect_interfaces(self, vlans=True, current_status=False, auth_obj=None):
+    def collect_interfaces(self, vlans=True, current_status=False, auth_obj=None) -> str:
         """Собираем интерфейсы оборудования"""
+
         if not current_status:  # Смотрим из истории
 
             from net_tools.models import DevicesInfo
@@ -511,24 +596,25 @@ class Device:
                 return 'Не указан профиль авторизации для данного оборудования'
             if not self.protocol:
                 return 'Не указан протокол для подключения к оборудованию'
-            with self.connect(self.protocol, auth_obj=auth_obj or self.auth_obj) as s:
-                if isinstance(s, str) or s is None:
-                    return s or 'None'
+            with self.connect(self.protocol, auth_obj=auth_obj or self.auth_obj) as session:
+                if isinstance(session, str) or session is None:
+                    return session or 'None'
 
-                if s.model:
-                    self.zabbix_info.inventory.model = s.model
+                if session.model:
+                    self.zabbix_info.inventory.model = session.model
 
-                if s.vendor:
-                    self.zabbix_info.inventory.vendor = s.vendor
+                if session.vendor:
+                    self.zabbix_info.inventory.vendor = session.vendor
 
                 # Получаем верные логин/пароль
-                self.success_auth = s.auth
+                self.success_auth = session.auth
 
                 if vlans:
                     # Если не получилось собрать vlan тогда собираем интерфейсы
-                    self.interfaces = Interfaces(s.get_vlans() or s.get_interfaces())
+                    self.interfaces = Interfaces(session.get_vlans() or session.get_interfaces())
                 else:
-                    self.interfaces = Interfaces(s.get_interfaces())
+                    self.interfaces = Interfaces(session.get_interfaces())
+        return 'OK'
 
     def __str__(self):
         return f'Device(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
@@ -537,6 +623,8 @@ class Device:
         return self.__str__()
 
     def ping(self) -> int:
+        """ Пингуем устройство """
+
         if not self.ip:
             self.collect_zabbix_info()
             if not self.ip:
@@ -544,21 +632,31 @@ class Device:
         flags = '-w 500 -n 1' if os.name == 'nt' else '-W 1 -c 1'
         if not subprocess.call(f'ping {flags} {self.ip}', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True):
             return 1
-        else:
-            return 0
+
+        return 0
 
     def address(self):
         """Выводит местоположение оборудования"""
+
         if not self._zabbix_info_collected:
             self.collect_zabbix_info()
         if self._zabbix_info.inventory.location:
             return self._zabbix_info.inventory.location
         if self._zabbix_info.inventory.location_lat and self._zabbix_info.inventory.location_lon and not self._location:
-            l = Nominatim(user_agent='coordinateconverter').reverse(', '.join(self._zabbix_info.inventory.coordinates))
-            if l:
-                self._location = Location(**l.raw['address'])
+            location = Nominatim(
+                user_agent='coordinateconverter').reverse(', '.join(self._zabbix_info.inventory.coordinates))
+            if location:
+                self._location = Location(**location.raw['address'])
         return self._location
 
-    def connect(self, protocol=None, auth_obj=None):
-        d: Any = DeviceFactory(self.ip, protocol=protocol or self.protocol, auth_obj=auth_obj or self.auth_obj)
-        return d
+    def connect(self, protocol: str = None, auth_obj: (None, object) = None) -> Any:
+        """
+        Устанавливаем подключение к оборудованию
+
+        :param protocol: Протокол подключения telnet/ssh
+        :param auth_obj: Объект профиля авторизации с атрибутами "login", "password", "privilege_mode_password"
+        :return: Экземпляр класса в зависимости от типа оборудования с установленным подключением
+        """
+
+        session: Any = DeviceFactory(self.ip, protocol=protocol or self.protocol, auth_obj=auth_obj or self.auth_obj)
+        return session

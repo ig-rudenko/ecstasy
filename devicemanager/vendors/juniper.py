@@ -15,13 +15,17 @@ class Juniper(BaseDevice):
         match = self.send_command(f'show arp | match {formatted_mac}', expect_command=False)
 
         # Форматируем вывод
-        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template') as template_file:
+        with open(
+                f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template',
+                encoding='utf-8'
+        ) as template_file:
             template = textfsm.TextFSM(template_file)
+
         formatted_result = template.ParseText(match)
         if formatted_result:
             return formatted_result[0]
-        else:
-            return []
+
+        return []
 
     def get_interfaces(self) -> list:
         pass

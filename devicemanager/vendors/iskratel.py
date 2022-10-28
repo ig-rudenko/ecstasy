@@ -82,7 +82,7 @@ class IskratelMBan(BaseDevice):
                 return ''
             val = float(val)
 
-            """ Определяем цвета в зависимости от числовых значений показателя """
+            # Определяем цвета в зависимости от числовых значений показателя
             if 'Сигнал/Шум' in s:
                 gradient = [5, 7, 10, 20]
             elif 'Затухание линии' in s:
@@ -101,8 +101,8 @@ class IskratelMBan(BaseDevice):
                 return '#dde522'
             if val <= gradient[3]:
                 return '#95e522'
-            else:
-                return '#22e536'
+
+            return '#22e536'
 
         html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
         table = """
@@ -128,8 +128,8 @@ class IskratelMBan(BaseDevice):
         elif oper_state == 'Up':
             html += '<p style="color: green">Порт - UP</p>'
 
-        html += f'<p>'+self.find_or_empty(r"Type .*", info)+'</p>'
-        html += f'<p>'+self.find_or_empty(r"Profile Name\s+\S+", info)+'</p>'
+        html += '<p>'+self.find_or_empty(r"Type .*", info)+'</p>'
+        html += '<p>'+self.find_or_empty(r"Profile Name\s+\S+", info)+'</p>'
 
         # Данные для таблицы
         data_rate = re.findall(r'DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit', info) or [('', '')]
@@ -149,8 +149,8 @@ class IskratelMBan(BaseDevice):
                 <td style="text-align: center; background-color: {color(line[1][1], line[0])};">{line[1][1]}</td>
             </tr>
             """
-        else:
-            table += "</tbody></table></div>"  # Закрываем таблицу
+
+        table += "</tbody></table></div>"  # Закрываем таблицу
 
         html += '</div>'  # Закрываем первую колонку
         html += table     # Добавляем вторую колонку - таблицу
@@ -192,7 +192,7 @@ class IskratelMBan(BaseDevice):
             macs = re.findall(rf'(\d+)\s+({self.mac_format})', output)
             return macs
 
-        elif 'port' in port:  # Если указан физический adsl порт
+        if 'port' in port:  # Если указан физический adsl порт
             port = port[4:]  # убираем слово port, оставляя только номер
 
         elif 'ISKRATEL' in port:
@@ -207,7 +207,7 @@ class IskratelMBan(BaseDevice):
         return macs
 
     @staticmethod
-    def validate_port(port: str):
+    def validate_port(port: str) -> (str, None):
         """
         Проверяем правильность полученного порта
         Для Iskratel порт должен быть числом
@@ -222,11 +222,12 @@ class IskratelMBan(BaseDevice):
 
         if port and any(port[0]):
             return ''.join(port[0])  # Возвращаем номер порта
+        return None
 
     def reload_port(self, port: str, save_config=True) -> str:
         port = self.validate_port(port)
         if port is None:
-            return f'Неверный порт!'
+            return 'Неверный порт!'
 
         s1 = self.send_command(f'set dsl port {port} port_equp unequipped', expect_command=False)
         sleep(1)
@@ -237,7 +238,7 @@ class IskratelMBan(BaseDevice):
     def set_port(self, port: str, status: str, save_config=True):
         port = self.validate_port(port)
         if port is None:
-            return f'Неверный порт!'
+            return 'Неверный порт!'
 
         # Меняем состояние порта
         return self.send_command(
@@ -246,7 +247,7 @@ class IskratelMBan(BaseDevice):
         )
 
     def get_interfaces(self) -> list:
-        output = self.send_command(f'show dsl port', expect_command=False)
+        output = self.send_command('show dsl port', expect_command=False)
         res = []
         for line in output.split('\n'):
             interface = re.findall(r'(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)', line)
@@ -265,7 +266,7 @@ class IskratelMBan(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         port = self.validate_port(port)
         if port is None:
-            return f'Неверный порт!'
+            return 'Неверный порт!'
 
         desc = self.clear_description(desc)
 

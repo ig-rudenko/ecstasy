@@ -1,3 +1,8 @@
+"""
+URL Configuration
+Расширенное от /device/
+"""
+
 from django.urls import path
 from check import views
 

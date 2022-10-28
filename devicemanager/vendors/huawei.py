@@ -5,7 +5,7 @@ import textfsm
 from time import sleep
 from functools import lru_cache
 from django.template.loader import render_to_string
-from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, _range_to_numbers, \
+from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, range_to_numbers, \
     _interface_normal_view
 
 
@@ -70,7 +70,7 @@ class Huawei(BaseDevice):
             match = self.session.expect([self.prompt, r'successfully', r'[Ss]ystem is busy'], timeout=20)
             if match == 1:
                 return self.SAVED_OK
-            elif match == 2:
+            if match == 2:
                 sleep(2)
                 n += 1
                 continue
@@ -87,7 +87,7 @@ class Huawei(BaseDevice):
         else:
             ht = 'huawei'
 
-        with open(f'{TEMPLATE_FOLDER}/interfaces/{ht}.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/{ht}.template', 'r', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -113,7 +113,7 @@ class Huawei(BaseDevice):
                 vlans_group = list(set(re.findall(r'vlan (.+)', vlans_group)))  # Ищем строчки вланов, без повторений
                 port_vlans = []
                 for v in vlans_group:
-                    port_vlans = _range_to_numbers(v)
+                    port_vlans = range_to_numbers(v)
                 result.append(line + [port_vlans])
 
         return result
@@ -158,7 +158,7 @@ class Huawei(BaseDevice):
         res = self.__port_info(port)
 
         type_ = self.find_or_empty(r'Port hardware type is (\S+)|Port Mode: (.*)', res)
-        print(f'{type_=}')
+
         if type_:
 
             type_ = type_[0] if type_[0] else type_[1]
@@ -166,22 +166,19 @@ class Huawei(BaseDevice):
             if "COMBO" in type_:
                 return 'COMBO-' + self.find_or_empty(r'Current Work Mode: (\S+)', res)
 
-            elif "FIBER" in type_ or 'SFP' in type_:
+            if "FIBER" in type_ or 'SFP' in type_:
                 return 'SFP'
 
-            elif "COPPER" in type_:
+            if "COPPER" in type_:
                 return 'COPPER'
 
-            else:
-                sub_type = self.find_or_empty(r'\d+_BASE_(\S+)', type_)
-                if sub_type in COOPER_TYPES:
-                    return 'COPPER'
-                elif sub_type in FIBER_TYPES:
-                    return 'FIBER'
-                else:
-                    return ''
-        else:
-            return ''
+            sub_type = self.find_or_empty(r'\d+_BASE_(\S+)', type_)
+            if sub_type in COOPER_TYPES:
+                return 'COPPER'
+            if sub_type in FIBER_TYPES:
+                return 'FIBER'
+
+        return '?'
 
     def get_port_errors(self, port):
         errors = self.__port_info(port).split('\n')
@@ -231,7 +228,7 @@ class Huawei(BaseDevice):
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
         if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            status = self.send_command(f'undo description', expect_command=False)
+            status = self.send_command('undo description', expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             status = self.send_command(f'description {desc}', expect_command=False)
@@ -325,10 +322,10 @@ class HuaweiMA5600T(BaseDevice):
 
     def send_command(self, command: str, before_catch: str = None, expect_command=True, num_of_expect=10,
                      space_prompt=None, prompt=None, pages_limit=None) -> str:
-        res = super(HuaweiMA5600T, self).send_command(
+        res = super().send_command(
             command, before_catch, expect_command, num_of_expect, space_prompt, prompt, pages_limit
         )
-        return res.replace('\n[37D                                     [37D', '')
+        return res.replace('\n\x1B[37D                                     \x1B[37D', '')
 
     def save_config(self):
         pass
@@ -402,7 +399,7 @@ class HuaweiMA5600T(BaseDevice):
             if board_list:
                 if 'SCU' in board_list[1]:
                     return 'scu', indexes
-                elif 'GI' in board_list[1]:
+                if 'GI' in board_list[1]:
                     return 'giu', indexes
 
             return 'eth', indexes
@@ -434,8 +431,8 @@ class HuaweiMA5600T(BaseDevice):
                 return '#dde522'
             if val <= gradient[3]:
                 return '#95e522'
-            else:
-                return '#22e536'
+
+            return '#22e536'
 
         lines = info.strip().split('\n')  # Построчно создаем список
         html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
@@ -468,7 +465,7 @@ class HuaweiMA5600T(BaseDevice):
                 if value:
                     line_new = f'<td style="text-align: center; background-color: {color(float(value), line)};">{value}</td>'
                 else:  # Если нет значения - ошибка
-                    line_new = f'<td style="text-align: center; background-color: #e55d22;">0</td>'
+                    line_new = '<td style="text-align: center; background-color: #e55d22;">0</td>'
 
                 table_dict[line[:2]].append(line_new)  # Обновляем ключ Do или Up
 
@@ -485,8 +482,8 @@ class HuaweiMA5600T(BaseDevice):
                 {line[2]}
             </tr>
             """
-        else:
-            table += "</tbody></table></div>"  # Закрываем таблицу
+
+        table += "</tbody></table></div>"  # Закрываем таблицу
 
         html += '</div>'  # Закрываем первую колонку
         html += table  # Добавляем вторую колонку - таблицу
@@ -543,11 +540,10 @@ class HuaweiMA5600T(BaseDevice):
 
             return render_to_string('check/gpon_port_info.html', data)
 
-        else:
-            # Смотрим ONT
-            data = self.__get_ont_port_info(indexes=i)
-            self.session.sendline('quit')
-            return render_to_string('check/ont_port_info.html', {'ont_info': data})
+        # Смотрим ONT
+        data = self.__get_ont_port_info(indexes=i)
+        self.session.sendline('quit')
+        return render_to_string('check/ont_port_info.html', {'ont_info': data})
 
     @lru_cache
     def __get_ont_port_info(self, indexes: tuple):
@@ -607,11 +603,11 @@ class HuaweiMA5600T(BaseDevice):
             return ''
 
         profile_output = self.send_command(f'display port state {indexes[2]}')
-        profile_index = self.find_or_empty(rf'\s+\d+\s+\S+\s+(\d+)', profile_output)
+        profile_index = self.find_or_empty(r'\s+\d+\s+\S+\s+(\d+)', profile_output)
         profile_output = self.send_command(f'display adsl line-profile {profile_index}')
         self.session.sendline('quit')
 
-        profile_name = f'Profile name: <strong>' + self.find_or_empty(r"Name:\s+(\S+)", profile_output) + '</strong>\n'
+        profile_name = 'Profile name: <strong>' + self.find_or_empty(r"Name:\s+(\S+)", profile_output) + '</strong>\n'
 
         return self.port_info_parser(profile_name + output)
 
@@ -653,7 +649,7 @@ class HuaweiMA5600T(BaseDevice):
         return res
 
     @staticmethod
-    def _up_down_command(port_type: str, status: str):
+    def _up_down_command(port_type: str, status: str) -> str:
         """
         В зависимости от типа порта возвращает команды для управления его статусом
         """
@@ -669,6 +665,8 @@ class HuaweiMA5600T(BaseDevice):
                 return 'deactivate'
             if status == 'up':
                 return 'activate'
+
+        return ''
 
     def reload_port(self, port, save_config=True) -> str:
         """Перезагружаем порт"""
@@ -799,7 +797,7 @@ class HuaweiCX600(BaseDevice):
     mac_format = r'\S\S\S\S-\S\S\S\S-\S\S\S\S'
     vendor = 'Huawei'
 
-    def search_mac(self, mac_address: str):
+    def search_mac(self, mac_address: str) -> list:
         formatted_mac = '{}{}{}{}-{}{}{}{}-{}{}{}{}'.format(*mac_address)
 
         match = self.send_command(
@@ -808,16 +806,19 @@ class HuaweiCX600(BaseDevice):
             expect_command=False
         )
         self.session.sendline('N')
+
         # Форматируем вывод
-        print(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template')
-        with open(f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template') as template_file:
+        with open(
+                f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template',
+                encoding='utf-8'
+        ) as template_file:
             template = textfsm.TextFSM(template_file)
+
         formatted_result = template.ParseText(match)
-        print(formatted_result)
         if formatted_result:
             return formatted_result[0]
-        else:
-            return []
+
+        return []
 
     def get_interfaces(self) -> list:
         pass

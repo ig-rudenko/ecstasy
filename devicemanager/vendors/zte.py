@@ -2,7 +2,7 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, _range_to_numbers
+from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, range_to_numbers
 
 
 class ZTE(BaseDevice):
@@ -44,7 +44,7 @@ class ZTE(BaseDevice):
     def get_interfaces(self) -> list:
         output = self.send_command('show port')
 
-        with open(f'{TEMPLATE_FOLDER}/interfaces/zte.template') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/interfaces/zte.template', encoding='utf-8') as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -60,7 +60,7 @@ class ZTE(BaseDevice):
         interfaces = self.get_interfaces()
         output = self.send_command('show vlan')
 
-        with open(f'{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template', 'r') as template_file:
+        with open(f'{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template', 'r', encoding='utf-8') as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
 
@@ -70,7 +70,7 @@ class ZTE(BaseDevice):
             if not vlan[0] or vlan[4] == "disabled":
                 continue
             # Объединяем тегированные вланы и нетегированные в один список
-            vlan_port[int(vlan[0])] = _range_to_numbers(','.join([vlan[2], vlan[3]]))
+            vlan_port[int(vlan[0])] = range_to_numbers(','.join([vlan[2], vlan[3]]))
 
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
 
@@ -83,7 +83,7 @@ class ZTE(BaseDevice):
         return interfaces_vlan
 
     @staticmethod
-    def validate_port(port):
+    def validate_port(port) -> (str, None):
         """
         Проверяем правильность полученного порта
         Для ZTE порт должен быть числом
@@ -92,6 +92,7 @@ class ZTE(BaseDevice):
         port = str(port).strip()
         if port.isdigit():
             return port
+        return None
 
     def get_mac(self, port: str) -> list:
         """
@@ -180,8 +181,10 @@ class ZTE(BaseDevice):
 
         if type_ in COOPER_TYPES:
             return 'COPPER'
-        elif type_ in FIBER_TYPES or type_ == 'X':
+        if type_ in FIBER_TYPES or type_ == 'X':
             return 'SFP'
+
+        return '?'
 
     def get_port_errors(self, port: str):
         port = self.validate_port(port)

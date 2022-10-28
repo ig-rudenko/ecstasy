@@ -1,6 +1,12 @@
 import os
 from re import findall
+
+from concurrent.futures import ThreadPoolExecutor
+
 import requests as requests_lib
+from pyzabbix import ZabbixAPI
+from pyvis.network import Network
+
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -11,10 +17,6 @@ from devicemanager.device import Device
 
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
 from ecstasy_project.settings import BASE_DIR
-from pyzabbix import ZabbixAPI
-from pyvis.network import Network
-
-from concurrent.futures import ThreadPoolExecutor
 
 
 @login_required
@@ -53,8 +55,7 @@ def find_as_str(request):
 def get_mac_from(model_dev, mac_address: str, result: list):
     """ Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result """
 
-    dev = Device(model_dev.name)
-    with dev.connect(protocol=model_dev.cmd_protocol, auth_obj=model_dev.auth_group) as session:
+    with model_dev.connect() as session:
         if hasattr(session, 'search_mac'):
             res = session.search_mac(mac_address)
             if res:
