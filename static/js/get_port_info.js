@@ -211,6 +211,7 @@ function cable_diag() {
                 'Empty': '#19b7f4',
                 'Open': '#c1c1c1',
                 'Short': '#f4bd19',
+                'Mismatch': '#1a1a1a',
             }
 
             $('#cable-status-icon').attr('fill', status_color[data.cable_test.status])

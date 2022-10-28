@@ -212,3 +212,56 @@ class ZTE(BaseDevice):
             return 'Max length:' + self.find_or_empty(r'maxsize:(\d+)', output)
 
         return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+
+    def virtual_cable_test(self, port: str):
+        """
+        Реализация виртуального тестирования линий VCT (Virtual Line Detection) благодаря TDR.
+        С помощью этого метода модно выполнять диагностику неисправного состояния линии, например обрыв линии
+        (Open), короткое замыкание (Short), рассогласование импеданса (Impedance Mismatch).
+        """
+
+        port = self.validate_port(port)
+        if port is None:
+            return {}
+
+        result = {
+            'len': '-',  # Length
+            'status': '',  # Up, Down
+        }
+
+        cable_diag = self.send_command(f'show vct port {port}')
+        if "doesn't support VCT" in cable_diag:  # Порт не поддерживает Virtual Cable Test
+            result['status'] = "Doesn't support VCT"
+            return result
+
+        if 'No problem' in cable_diag:
+            # Нет проблем
+            result['status'] = 'Up'
+            return result
+
+        port_cable_diag = re.findall(
+            r'Cable Test Passed[ \.]+(with Impedance Mismatch|Cable is \S+)\.\s*\n\s+Approximately (\d+) meters',
+            cable_diag
+        )
+
+        result['status'] = 'Down'
+
+        # Смотрим пары
+        for i, pair in enumerate(port_cable_diag, start=1):
+            if 'open' in pair[0]:
+                status = 'open'
+            elif 'short' in pair[0]:
+                status = 'short'
+            else:
+                # Разница в сопротивлении (слишком большое затухание в линии).
+                # Плохая скрутка, либо кабель с некорректным сопротивлением. Или, к примеру, очень большая длина.
+                status = 'mismatch'
+
+            result[f'pair{i}'] = {}
+            result[f'pair{i}']['status'] = status
+            result[f'pair{i}']['len'] = pair[1]
+
+        if result['pair1']['status'] == result['pair1']['status']:
+            result['status'] = result[f'pair1']['status'].capitalize()
+
+        return result
