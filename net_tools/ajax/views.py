@@ -1,10 +1,10 @@
 import os
 from re import findall
-
 from concurrent.futures import ThreadPoolExecutor
 
 import requests as requests_lib
 from pyzabbix import ZabbixAPI
+from requests import ConnectionError as ZabbixConnectionError
 from pyvis.network import Network
 
 from django.shortcuts import render
@@ -13,8 +13,6 @@ from django.contrib.auth.decorators import login_required
 
 from net_tools.finder import find_description, find_vlan
 from net_tools.models import VlanName, DevicesForMacSearch
-from devicemanager.device import Device
-
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
 from ecstasy_project.settings import BASE_DIR
 
@@ -90,14 +88,14 @@ def mac_info(request, mac):
         ip = findall(r'\d+\.\d+\.\d+\.\d+', str(match))
 
         zabbix_settings = ZabbixConfig.load()
-        zbx = ZabbixAPI(server=zabbix_settings.url)
-        zbx.login(user=zabbix_settings.login, password=zabbix_settings.password)
-        # Ищем хост по IP
-        hosts = zbx.host.get(output=['name', 'status'], filter={'ip': ip}, selectInterfaces=['ip'])
-        names = [[h['name'], h['hostid']] for h in hosts if h['status'] == '0']
-
-    print(match)
-    print(names)
+        try:
+            with ZabbixAPI(server=zabbix_settings.url) as zbx:
+                zbx.login(user=zabbix_settings.login, password=zabbix_settings.password)
+                # Ищем хост по IP
+                hosts = zbx.host.get(output=['name', 'status'], filter={'ip': ip}, selectInterfaces=['ip'])
+            names = [[h['name'], h['hostid']] for h in hosts if h['status'] == '0']
+        except ZabbixConnectionError:
+            pass
 
     return render(request, 'tools/mac_result_for_modal.html', {
         'info': match,

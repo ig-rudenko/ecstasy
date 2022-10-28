@@ -44,9 +44,9 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
         """ Отображает, можно ли подключиться к Zabbix по указанным настройкам """
 
         try:
-            zabbix_api = ZabbixAPI(server=obj.url)
-            zabbix_api.login(user=obj.login, password=obj.password)
-            return '✅' if zabbix_api.api_version() else '❌'
+            with ZabbixAPI(server=obj.url) as zabbix_api:
+                zabbix_api.login(user=obj.login, password=obj.password)
+                return '✅' if zabbix_api.api_version() else '❌'
         except ZabbixConnectionError:
             return '❌'
 

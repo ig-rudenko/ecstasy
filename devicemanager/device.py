@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import tabulate
 from pyzabbix import ZabbixAPI
+from requests import ConnectionError as ZabbixConnectionError
 from alive_progress import alive_bar
 from geopy.geocoders import Nominatim
 
@@ -258,21 +259,24 @@ class DevicesCollection:
         :param groups_name: Имя группы или список имен групп Zabbix
         :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
         """
-
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            groups = zbx.hostgroup.get(
-                filter={'name': groups_name},
-                output=['groupid']
-            )
-            if groups:
-                hosts = zbx.host.get(
-                    groupids=[g['groupid'] for g in groups],
-                    output=['name'],
-                    sortfield=['name']
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                groups = zbx.hostgroup.get(
+                    filter={'name': groups_name},
+                    output=['groupid']
                 )
-            else:
-                return DevicesCollection([])
+                if groups:
+                    hosts = zbx.host.get(
+                        groupids=[g['groupid'] for g in groups],
+                        output=['name'],
+                        sortfield=['name']
+                    )
+                else:
+                    return DevicesCollection([])
+        except ZabbixConnectionError:
+            return DevicesCollection([])
+
         with alive_bar(len(hosts), title='Создаем коллекцию') as bar:
             devs = []
             for host in hosts:
@@ -292,13 +296,17 @@ class DevicesCollection:
 
         if ips.count(' '):
             ips = ips.split()
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            hosts = zbx.host.get(
-                filter={'ip': ips},
-                output=['name'],
-                sortfield=['name']
-            )
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                hosts = zbx.host.get(
+                    filter={'ip': ips},
+                    output=['name'],
+                    sortfield=['name']
+                )
+        except ZabbixConnectionError:
+            return DevicesCollection([])
+
         if hosts:
             with alive_bar(len(hosts), title='Создаем коллекцию') as bar:
                 devs = []
@@ -486,21 +494,25 @@ class Device:
     def collect_zabbix_info(self):
         """ Собирает информацию по данному оборудованию из Zabbix """
 
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            zabbix_info = zbx.host.get(
-                filter={'name': self.name},
-                output=[
-                        'hostid',
-                        'host',
-                        'name',
-                        'status',
-                        'description'
-                    ],
-                selectGroups=['groupid', 'name'],
-                selectInterfaces=['ip'],
-                selectInventory='extend'
-            )
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                zabbix_info = zbx.host.get(
+                    filter={'name': self.name},
+                    output=[
+                            'hostid',
+                            'host',
+                            'name',
+                            'status',
+                            'description'
+                        ],
+                    selectGroups=['groupid', 'name'],
+                    selectInterfaces=['ip'],
+                    selectInventory='extend'
+                )
+        except ZabbixConnectionError:
+            return
+
         if zabbix_info:
             # Форматируем вывод активировано/деактивировано для узла сети
             zabbix_info[0]['status'] = 1 if zabbix_info[0]['status'] == '0' else 0
@@ -522,18 +534,25 @@ class Device:
             )
             self._zabbix_info_collected = True
 
-            self.ip = [i for i in self.zabbix_info.ip if len(self.zabbix_info.ip) > 1 and i != '127.0.0.1' or len(self.zabbix_info.ip) == 1][0]
-        else:
-            self._zabbix_info = ZabbixHostInfo()
+            self.ip = [
+                i for i in self.zabbix_info.ip
+                if len(self.zabbix_info.ip) > 1 and i != '127.0.0.1' or len(self.zabbix_info.ip) == 1
+            ][0]
 
     def push_zabbix_inventory(self):
         """Обновляем инвентарные данные узла сети в Zabbix"""
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            zbx.host.update(
-                hostid=self.zabbix_info.hostid,
-                inventory={k: v for k, v in self.zabbix_info.inventory.__dict__.items() if v}  # Только заполненные поля
-            )
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                zbx.host.update(
+                    hostid=self.zabbix_info.hostid,
+                    inventory={
+                        key: value for key, value in self.zabbix_info.inventory.__dict__.items()
+                        if value  # Только заполненные поля
+                    }
+                )
+        except ZabbixConnectionError:
+            pass
 
     @property
     def zabbix_info(self) -> ZabbixHostInfo:
@@ -546,21 +565,25 @@ class Device:
         Создаем коллекцию оборудований по IP адресу
         Коллекция, потому что по данному IP могут быть несколько записей в Zabbix
         """
-
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            hosts = zbx.host.get(filter={'ip': ip}, output=['name'])
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                hosts = zbx.host.get(filter={'ip': ip}, output=['name'])
+        except ZabbixConnectionError:
+            return DevicesCollection([])
         return DevicesCollection([Device(d['name']) for d in hosts])
 
     @classmethod
     def from_hostid(cls, hostid: str) -> ("Device", None):
         """ Создаем объект через переданный hostid Zabbix """
-
-        with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-            zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-            host = zbx.host.get(hostids=hostid, output=['name'])
-        if host:
-            return Device(host[0]['name'])
+        try:
+            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
+                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+                host = zbx.host.get(hostids=hostid, output=['name'])
+            if host:
+                return Device(host[0]['name'])
+        except ZabbixConnectionError:
+            pass
         return None
 
     def collect_interfaces(self, vlans=True, current_status=False, auth_obj=None) -> str:
