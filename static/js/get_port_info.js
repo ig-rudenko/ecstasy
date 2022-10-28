@@ -1,8 +1,8 @@
 var popoverTriggerList
 var popoverList
 
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+var tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
 
 const isDigit = (string) => {
@@ -29,7 +29,7 @@ function get_macs() {
         console.log(data)
 
         $.ajax({
-            url: "/device/port/",
+            url: "/device/port",
             type: 'GET',
             data: data,
             success: function( data ) {

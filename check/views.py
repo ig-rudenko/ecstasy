@@ -5,8 +5,6 @@ import pexpect
 
 from datetime import datetime
 
-import requests
-
 from net_tools.models import DevicesInfo
 
 from django.urls import reverse
@@ -17,6 +15,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
+from net_tools.models import VlanName
 from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
 from . import models
@@ -395,7 +394,23 @@ def get_port_detail(request):
 
             # Подключаемся к оборудованию
             with model_dev.connect() as session:
-                data['macs'] = session.get_mac(data['port'])
+
+                data['macs'] = []  # Итоговый список
+                vlan_passed = set()  # Множество уникальных VLAN
+                for vid, mac in session.get_mac(data['port']):  # Смотрим VLAN и MAC
+
+                    # Если еще не искали такой VLAN
+                    if vid not in vlan_passed:
+                        # Добавляем в множество вланов, которые участвовали в поиске имени
+                        vlan_passed.add(vid)
+                        # Ищем название VLAN'a
+                        try:
+                            vlan_name = VlanName.objects.get(vid=int(vid)).name
+                        except VlanName.DoesNotExist:
+                            vlan_name = ''
+
+                    # Обновляем
+                    data['macs'].append([vid, mac, vlan_name])
 
                 # Отправляем JSON, если вызов AJAX = mac
                 if request.GET.get('ajax') == 'mac':

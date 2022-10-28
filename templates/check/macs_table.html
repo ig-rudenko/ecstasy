@@ -1,3 +1,4 @@
+<!--suppress ALL -->
 <style>
 tr:hover {
     background: #e8efff;
@@ -27,19 +28,25 @@ tr:hover {
     </tr>
   </thead>
   <tbody id="tbody-macs">
-     {% for mac in macs %}
+     {% for vid, mac, vlan_name in macs %}
         <tr>
             <td></td>
 
             {# VLAN #}
-            <td style="font-family: monospace; font-size: x-large;">{{ mac.0 }}</td>
+            <td style="font-family: monospace; font-size: x-large;">
+                <span {% if vlan_name %}data-bs-toggle="tooltip" data-bs-placement="right"
+                       data-bs-title="{{ vlan_name }}"{% endif %}
+                    style="cursor: help">
+                    {{ vid }}
+                </span>
+            </td>
 
             {# MAC #}
             <td id="mac-line" style="font-family: monospace; font-size: x-large; max-width: 100px;">
                 <span style="cursor: pointer" title="Поиск MAC"
-                      onclick="start_search_mac('{{ mac.1 }}')"
+                      onclick="start_search_mac('{{ mac }}')"
                       data-bs-toggle="modal" data-bs-target="#modal-mac">
-                    {{ mac.1 }}
+                    {{ mac }}
                     <svg class="bi me-2" width="24" height="24" role="img">
                         <use xlink:href="#search-icon"></use>
                     </svg>
@@ -50,12 +57,12 @@ tr:hover {
                 {% if perms >= 3 %}
 {#                  Посмотреть сессию     #}
                   <a class="btn btn-outline-primary"
-                     href="{% url 'show-session' %}?device={{ dev.name }}&port={{ port }}&desc={{ desc }}&mac={{ mac.1 }}"
+                     href="{% url 'show-session' %}?device={{ dev.name }}&port={{ port }}&desc={{ desc }}&mac={{ mac }}"
                   >BRAS</a>
                 {% endif %}
                 {% if mac_finder_url %}
                   <a class="btn btn-outline-secondary" target="_blank"
-                     href="{% url 'search-mac-address' mac.1 %}">
+                     href="{% url 'search-mac-address' mac %}">
                   FIND
                   </a>
                 {% endif %}
@@ -67,3 +74,8 @@ tr:hover {
   </tbody>
 
 </table>
+
+<script>  // Обновляем tooltip
+window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+</script>
