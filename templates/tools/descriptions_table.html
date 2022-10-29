@@ -29,6 +29,7 @@ tr:hover {
     <h6 class="py-2" style="margin-left: 20px;">Найдено {{ count }}</h6>
 </div>
 
+<div class="table-responsive-lg">
     <table class="table table-striped">
       <thead>
         <tr>
@@ -57,7 +58,7 @@ tr:hover {
           </td>
 
 {#            INTERFACE  #}
-          <td>
+          <td class="nowrap">
             <a class="text-decoration-none device text-dark" title="Посмотреть порт"
                href="{% url 'show-port-info' %}?device={{ intf.Device }}&port={{ intf.Interface }}&desc={{ intf.original_desc }}">
                 <svg style="vertical-align: middle; margin-right: 5px;"
@@ -78,6 +79,7 @@ tr:hover {
         {% endfor %}
       </tbody>
     </table>
+</div>
 </div>
 
 {% else %}

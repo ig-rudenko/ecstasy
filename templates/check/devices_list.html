@@ -72,7 +72,7 @@
         Всего найдено: {{ total_count }}
     </li>
 </ul>
-
+<div class="table-responsive-lg">
 <table class="table table-striped">
   <thead>
     <tr>
@@ -112,7 +112,7 @@
               >L</a>
 
           </td>
-          <td>{{ dev.name }}</td>
+            <td><span class="nowrap">{{ dev.name }}</span></td>
           <td>{{ dev.ip }}</td>
           <td>{{ dev.vendor | default_if_none:'' }}</td>
           <td>{{ dev.model | default_if_none:'' }}</td>
@@ -121,7 +121,7 @@
     {% endfor %}
   </tbody>
 </table>
-
+</div>
 {% include 'pagination.html' %}
 
 {# ПЕРЕМЕСТИТЬСЯ ВВЕРХ #}
@@ -142,9 +142,6 @@
 
 {% block js %}
 <script src="{% static 'js/back_to_top.js' %}"></script>
-{#<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"#}
-{#        integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous">#}
-{#</script>#}
 <script>
 
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle_help="tooltip"]')

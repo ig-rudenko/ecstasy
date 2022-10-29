@@ -10,7 +10,7 @@
     }
 </style>
 
-
+<div class="table-responsive-lg">
 <table class="table table-striped">
   <thead>
     <tr>
@@ -123,6 +123,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 
 {% else %}
 <h1 class="py-5" style="text-align: center;">{% if not status %}Нет сохраненных интерфейсов{% else %}{{ status }}{% endif %}</h1>

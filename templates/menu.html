@@ -1,7 +1,7 @@
 {% load static %}
-<div class="px-3 py-2 text-bg-dark">
+<nav class="navbar navbar-expand-xl navbar-dark bg-dark">
   <div class="container">
-    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+{#    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">#}
 
       <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
         <svg class="bi me-2" width="70" height="70"
@@ -19,63 +19,70 @@
           <h4>Ecstasy</h4>
       </a>
 
-      <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-{#              HOME #}
-        <li>
-          <a href="{% url 'home' %}" class="nav-link text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-              <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"></path>
-            </svg>
-            Home
-          </a>
-        </li>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+          <ul class="navbar-nav d-flex text-center">
 
-{#              LIST DEVICES #}
-        <li>
-          <a href="{% url 'devices-list' %}" class="nav-link text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-              <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"></path>
-            </svg>
-            List Devices
-          </a>
-        </li>
+    {#              HOME #}
+            <li class="nav-item active">
+              <a href="{% url 'home' %}" class="nav-link text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
+                  <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"></path>
+                </svg>
+                Home
+              </a>
+            </li>
 
-{#              Search Desc #}
-        <li>
-          <a href="{% url 'find-descr' %}" class="nav-link text-white">
-            <img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/search-description-icon.svg' %}">
-            Search Desc
-          </a>
-        </li>
+    {#              LIST DEVICES #}
+            <li class="nav-item active">
+              <a href="{% url 'devices-list' %}" class="nav-link text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
+                  <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"></path>
+                </svg>
+                List Devices
+              </a>
+            </li>
 
-{#              VLAN Traceroute #}
-        <li>
-          <a href="{% url 'vlan-traceroute' %}" class="nav-link text-white">
-            <div><img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/vlan-traceroute-icon.svg' %}"></div>
-            VLAN
-          </a>
-        </li>
+    {#              Search Desc #}
+            <li class="nav-item active">
+              <a href="{% url 'find-descr' %}" class="nav-link text-white">
+                <img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/search-description-icon.svg' %}">
+                Search Desc
+              </a>
+            </li>
 
-{#              MAC Search #}
-        <li>
-          <a href="{% url 'search-mac' %}" class="nav-link text-white">
-            <img class="bi d-block mx-auto mb-1" height="25" src="{% static 'img/mac-icon.svg' %}">
-            MAC search
-          </a>
-        </li>
+    {#              VLAN Traceroute #}
+            <li class="nav-item active">
+              <a href="{% url 'vlan-traceroute' %}" class="nav-link text-white">
+                <div><img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/vlan-traceroute-icon.svg' %}"></div>
+                VLAN
+              </a>
+            </li>
 
-{#              LOGOUT #}
-        <li>
-          <a href="{% url 'logout' %}" class="nav-link text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"></path>
-              <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"></path>
-            </svg>
-            Logout
-          </a>
-        </li>
-      </ul>
-    </div>
+    {#              MAC Search #}
+            <li class="nav-item active">
+              <a href="{% url 'search-mac' %}" class="nav-link text-white">
+                <img class="bi d-block mx-auto mb-1" height="25" src="{% static 'img/mac-icon.svg' %}">
+                MAC search
+              </a>
+            </li>
+
+    {#              LOGOUT #}
+            <li class="nav-item active">
+              <a href="{% url 'logout' %}" class="nav-link text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"></path>
+                  <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"></path>
+                </svg>
+                Logout
+              </a>
+            </li>
+
+          </ul>
+      </div>
+{#    </div>#}
   </div>
-</div>
+</nav>

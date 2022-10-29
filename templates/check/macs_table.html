@@ -18,6 +18,7 @@ tr:hover {
 
 
 <span>Всего: {{ macs|length }}</span>
+<div class="table-responsive-lg">
 <table class="table">
   <thead>
     <tr>
@@ -72,8 +73,8 @@ tr:hover {
         <td>No MAC's</td>
      {% endfor %}
   </tbody>
-
 </table>
+</div>
 
 <script>  // Обновляем tooltip
 window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
