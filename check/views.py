@@ -231,7 +231,7 @@ def device_info(request, name):
     ping = dev.ping()  # Оборудование доступно или нет
 
     # Сканируем интерфейсы в реальном времени?
-    current_status = bool(request.GET.get('current_status', False)) and ping
+    current_status = bool(request.GET.get('current_status', False)) and ping > 0
 
     # Вместе с VLAN?
     with_vlans = False if dev.protocol == 'snmp' else request.GET.get('vlans') == '1'
@@ -417,7 +417,7 @@ def get_port_detail(request):
         }
 
         # Если оборудование недоступно
-        if not dev.ping():
+        if dev.ping() <= 0:
             return redirect('device_info', request.GET['device'])
 
         if not request.GET.get('ajax'):
@@ -540,7 +540,7 @@ def reload_port(request):
         })
 
     # Если оборудование Недоступно
-    if not dev.ping():
+    if dev.ping() <= 0:
         return JsonResponse({
             'message': 'Оборудование недоступно!',
             'status': 'WARNING',
@@ -697,7 +697,7 @@ def cut_user_session(request):
         status = 'invalid MAC'
 
         # Если мак верный и оборудование доступно
-        if len(mac_letters) == 12 and dev.ping():
+        if len(mac_letters) == 12 and dev.ping() > 0:
 
             mac = '{}{}{}{}-{}{}{}{}-{}{}{}{}'.format(*mac_letters)
 
@@ -817,7 +817,7 @@ def start_cable_diag(request):
 
         data = {}
         # Если оборудование доступно
-        if dev.ping():
+        if dev.ping() > 0:
             with model_dev.connect() as session:
                 if hasattr(session, 'virtual_cable_test'):
                     cable_test = session.virtual_cable_test(request.GET['port'])
