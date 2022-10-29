@@ -11,6 +11,7 @@ from typing import Any
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 
+from ping3 import ping as socket_ping
 import tabulate
 from pyzabbix import ZabbixAPI
 from requests import ConnectionError as ZabbixConnectionError
@@ -652,8 +653,7 @@ class Device:
             self.collect_zabbix_info()
             if not self.ip:
                 return -1
-        flags = '-w 500 -n 1' if os.name == 'nt' else '-W 1 -c 1'
-        if not subprocess.call(f'ping {flags} {self.ip}', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True):
+        if socket_ping(self.ip, timeout=2):
             return 1
 
         return 0
