@@ -7,7 +7,8 @@ pyzabbix>=1.0.0
 geopy>=2.2.0
 alive-progress
 Django~=4.1.2
-mysqlclient>=2.1.1
+#mysqlclient>=2.1.1
 pyvis==0.1.9
 celery
 ping3
+gunicorn

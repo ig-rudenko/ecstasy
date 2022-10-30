@@ -1,4 +1,5 @@
 import os
+import time
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -118,59 +119,9 @@ def get_vlan_desc(request):
         return JsonResponse({'vlan_desc': vlan_name})
 
 
-@login_required
-def get_vlan(request):
-    """ Трассировка VLAN """
+def create_nodes(result: list, net: Network, show_admin_down_ports: str):
+    """ Создает элементы и связи между ними """
 
-    if not request.GET.get('vlan'):
-        return JsonResponse({
-            'data': {}
-        })
-
-    vlan_traceroute_settings = VlanTracerouteConfig.load()
-
-    # Определяем список устройств откуда будет начинаться трассировка vlan
-    vlan_start = vlan_traceroute_settings.vlan_start.split(', ')
-
-    # Определяем паттерн для поиска интерфейсов
-    if not vlan_traceroute_settings.find_device_pattern:
-        # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
-        vlan_start = []
-
-    for start_dev in vlan_start:
-        passed = set()  # Имена уже проверенных устройств
-        result = []  # Список узлов сети, соседей и линий связи для визуализации
-
-        try:
-            vlan = int(request.GET['vlan'])
-        except ValueError:
-            break
-
-        # трассировка vlan
-        find_vlan(
-            device=start_dev,
-            vlan_to_find=vlan,
-            passed_devices=passed,
-            result=result,
-            empty_ports=request.GET.get('ep'),
-            only_admin_up=request.GET.get('ad'),
-            find_device_pattern=vlan_traceroute_settings.find_device_pattern
-        )
-        if result:  # Если поиск дал результат, то прекращаем
-            break
-
-    else:  # Если поиск не дал результатов
-        return HttpResponse('empty')
-
-    net = Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
-
-    # Создаем невидимые элементы, для инициализации групп 0-9
-    # 0 - голубой;  1 - желтый;  2 - красный;  3 - зеленый;  4 - розовый;
-    # 5 - пурпурный;  6 - оранжевый;  7 - синий;  8 - светло-красный;  9 - светло-зеленый
-    for i in range(10):
-        net.add_node(i, i, title='', group=i, hidden=True)
-
-    # Создаем элементы и связи между ними
     for e in result:
         src = e[0]
         dst = e[1]
@@ -246,7 +197,7 @@ def get_vlan(request):
             dst_label = dst.split('d:(')[1][:-1]
 
         # Если стиль отображения admin down status
-        if request.GET.get('ad') == 'true' and admin_status == 'down':
+        if show_admin_down_ports == 'true' and admin_status == 'down':
             w = 0.5  # ширина линии связи
         # print(src, admin_status)
 
@@ -259,6 +210,62 @@ def get_vlan(request):
             net.add_node(dst, dst_label, title=src_label, group=dst_gr, shape=dst_shape)
 
         net.add_edge(src, dst, value=w, title=desc)
+
+
+@login_required
+def get_vlan(request):
+    """ Трассировка VLAN """
+
+    if not request.GET.get('vlan'):
+        return JsonResponse({
+            'data': {}
+        })
+
+    vlan_traceroute_settings = VlanTracerouteConfig.load()
+
+    # Определяем список устройств откуда будет начинаться трассировка vlan
+    vlan_start = vlan_traceroute_settings.vlan_start.split(', ')
+
+    # Определяем паттерн для поиска интерфейсов
+    if not vlan_traceroute_settings.find_device_pattern:
+        # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
+        vlan_start = []
+
+    for start_dev in vlan_start:
+        passed = set()  # Имена уже проверенных устройств
+        result = []  # Список узлов сети, соседей и линий связи для визуализации
+
+        try:
+            vlan = int(request.GET['vlan'])
+        except ValueError:
+            break
+
+        # трассировка vlan
+        find_vlan(
+            device=start_dev,
+            vlan_to_find=vlan,
+            passed_devices=passed,
+            result=result,
+            empty_ports=request.GET.get('ep'),
+            only_admin_up=request.GET.get('ad'),
+            find_device_pattern=vlan_traceroute_settings.find_device_pattern
+        )
+        if result:  # Если поиск дал результат, то прекращаем
+            break
+
+    else:  # Если поиск не дал результатов
+        return HttpResponse('empty')
+
+    net = Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
+
+    # Создаем невидимые элементы, для инициализации групп 0-9
+    # 0 - голубой;  1 - желтый;  2 - красный;  3 - зеленый;  4 - розовый;
+    # 5 - пурпурный;  6 - оранжевый;  7 - синий;  8 - светло-красный;  9 - светло-зеленый
+    for i in range(10):
+        net.add_node(i, i, title='', group=i, hidden=True)
+
+    # Создаем элементы и связи между ними
+    create_nodes(result, net, request.GET.get('ad'))
 
     neighbor_map = net.get_adj_list()
     nodes_count = len(net.nodes)
