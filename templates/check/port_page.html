@@ -49,7 +49,7 @@
 
 <h2 class="alert" style="text-align: center">
     <a class="text-dark text-decoration-none" href="{% url 'device_info' dev.name %}?current_status=1">
-        <name>{{ dev.name }}</name>
+        <name style="word-wrap: break-word">{{ dev.name }}</name>
     </a>
      ({{ dev.ip }})
 </h2>
@@ -168,14 +168,12 @@
 
 
 {# Таблица МАКОВ #}
-<div class="table-responsive-lg">
 <div id="macs-table">
     <div class="d-flex justify-content-center">
         <div class="spinner-grow text-primary" role="status" style="height: 100px; width: 100px;">
           <span class="visually-hidden">Loading...</span>
         </div>
     </div>
-</div>
 </div>
 
 

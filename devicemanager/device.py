@@ -601,7 +601,7 @@ class Device:
                     device_data_history.vlans if vlans else device_data_history.interfaces
                 ))
             except DevicesInfo.DoesNotExist:
-                self.interfaces = []
+                self.interfaces = Interfaces()
 
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == 'snmp':
