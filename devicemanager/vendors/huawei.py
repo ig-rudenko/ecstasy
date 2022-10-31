@@ -406,7 +406,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def port_info_parser(self, info: str):
+    def port_info_parser(self, info: str, profile_name: str):
         """
         Преобразовываем информацию о порте для отображения на странице
         """
@@ -435,23 +435,14 @@ class HuaweiMA5600T(BaseDevice):
             return '#22e536'
 
         lines = info.strip().split('\n')  # Построчно создаем список
-        html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
-        table = """
-            <div class="col-8">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th scope="col" style="text-align: center;">Downstream</th>
-                      <th scope="col" style="text-align: center;">Upstream</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                """
+
         table_dict = {
-            'Do': [],
-            'Up': []
+            'Do': [],  # Down Stream info
+            'Up': []   # Up   Stream info
         }
+
+        first_col_info = []
+
         for line in lines:  # Построчно смотрим данные
             line = line.strip()
 
@@ -459,36 +450,24 @@ class HuaweiMA5600T(BaseDevice):
                 break
 
             if not re.findall(r'^[DU].+?(-?\d+\.?\d*)', line):
-                html += f'<p>{line}</p>'  # Записываем в первую колонку данные
+                first_col_info.append(line)
             else:
                 value = self.find_or_empty(r'-?\d+\.?\d*', line)  # Числовое значение
                 if value:
-                    line_new = f'<td style="text-align: center; background-color: {color(float(value), line)};">{value}</td>'
+                    line_new = {'color': color(float(value), line), 'value': value}
                 else:  # Если нет значения - ошибка
-                    line_new = '<td style="text-align: center; background-color: #e55d22;">0</td>'
+                    line_new = {'color': '#e55d22', 'value': 0}
 
-                table_dict[line[:2]].append(line_new)  # Обновляем ключ Do или Up
+                table_dict[line[:2]].append(line_new)  # Обновляем ключ "Do" или "Up"
 
-        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
-                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)',
-                 'Общая выходная мощность (dBm)']
-
-        # Наполняем таблицу
-        for line in zip(names, table_dict['Do'], table_dict['Up']):
-            table += f"""
-            <tr>
-                <td style="text-align: right";>{line[0]}</td>
-                {line[1]}
-                {line[2]}
-            </tr>
-            """
-
-        table += "</tbody></table></div>"  # Закрываем таблицу
-
-        html += '</div>'  # Закрываем первую колонку
-        html += table  # Добавляем вторую колонку - таблицу
-        html += '</div>'  # Закрываем ряд
-        return html
+        return render_to_string(
+            'check/adsl-port-info.html',
+            {
+                'profile_name': profile_name,
+                'first_col': first_col_info,
+                'streams': table_dict
+            }
+        )
 
     def __get_gpon_port_info(self, indexes: tuple):
         """ Смотрим информацию на порту, который относится к GPON """
@@ -607,9 +586,9 @@ class HuaweiMA5600T(BaseDevice):
         profile_output = self.send_command(f'display adsl line-profile {profile_index}')
         self.session.sendline('quit')
 
-        profile_name = 'Profile name: <strong>' + self.find_or_empty(r"Name:\s+(\S+)", profile_output) + '</strong>\n'
+        profile_name = self.find_or_empty(r"Name:\s+(\S+)", profile_output)
 
-        return self.port_info_parser(profile_name + output)
+        return self.port_info_parser(output, profile_name)
 
     def get_mac(self, port) -> list:
         """
