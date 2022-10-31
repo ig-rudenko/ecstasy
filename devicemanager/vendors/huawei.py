@@ -346,6 +346,7 @@ class HuaweiMA5600T(BaseDevice):
             )
             self.session.sendline('quit')
             self.session.expect(self.prompt)
+            # Меняем "<" ">" на их представление, чтобы не обозначалось как теги html
             return config.replace('<', '&#8249;').replace('>', '&#8250;')
 
         return ''
@@ -406,7 +407,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def port_info_parser(self, info: str, profile_name: str):
+    def port_info_parser(self, info: str, profile_name: str, all_profiles: list):
         """
         Преобразовываем информацию о порте для отображения на странице
         """
@@ -465,7 +466,8 @@ class HuaweiMA5600T(BaseDevice):
             {
                 'profile_name': profile_name,
                 'first_col': first_col_info,
-                'streams': table_dict
+                'streams': table_dict,
+                'profiles': all_profiles
             }
         )
 
@@ -585,10 +587,40 @@ class HuaweiMA5600T(BaseDevice):
         profile_index = self.find_or_empty(r'\s+\d+\s+\S+\s+(\d+)', profile_output)
         profile_output = self.send_command(f'display adsl line-profile {profile_index}')
         self.session.sendline('quit')
+        self.session.sendline('quit')
+        self.session.expect(r'\S+#')
+        all_profiles = self.send_command('display adsl line-profile\n', before_catch='display adsl line-profile', expect_command=False)
 
         profile_name = self.find_or_empty(r"Name:\s+(\S+)", profile_output)
 
-        return self.port_info_parser(output, profile_name)
+        # Парсим профиля
+        res = re.findall(
+            r'(\d+)\s+(.+?)\s+\S+\s+\S+\s+\d+\s+\d+\s+(\d+)\s+(\d+)([\s\S]*?)(?= \d+ \S+[ ]+\S+)',
+            all_profiles
+        )
+
+        profiles = []
+        for line in res:
+            line = list(line)
+            profiles.append([line[0], line[1] + line[-1].replace(' ', '').replace('\n', ''), line[2], line[3]])
+
+        return self.port_info_parser(output, profile_name, profiles)
+
+    def change_profile(self, port: str, profile_index: int):
+        port_type, indexes = self.split_port(port)
+
+        # Проверяем индекс профиля и порт
+        if port_type != 'adsl' or len(indexes) != 3 or profile_index <= 0:  # Неверный порт
+            return []
+
+        self.session.sendline('config')
+        self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')
+        self.session.expect(self.prompt)
+        self.session.sendline(f'deactivate {indexes[2]}')
+        self.session.expect(self.prompt)
+        status = self.send_command(f'activate {indexes[2]} profile-index {profile_index}')
+        self.session.sendline('quit')
+        return status
 
     def get_mac(self, port) -> list:
         """

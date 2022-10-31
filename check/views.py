@@ -7,6 +7,7 @@ import random
 import re
 from datetime import datetime
 import pexpect
+import ping3
 
 from django.urls import reverse
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed, HttpResponseRedirect, Http404
@@ -825,3 +826,41 @@ def start_cable_diag(request):
                         data['cable_test'] = cable_test
 
         return JsonResponse(data)
+
+
+@login_required
+@permission(models.Bras)
+def change_adsl_profile(request):
+    port: str = request.POST.get('port')
+    profile_index: str = request.POST.get('index')
+
+    if request.method != 'POST':
+        return JsonResponse({
+            'error': 'Method not allowed!'
+        }, status=403)
+
+    if not port or not profile_index or not profile_index.isdigit() or int(profile_index) <= 0:
+        return JsonResponse({
+            'error': 'Invalid data',
+            'data': request.POST
+        }, status=400)
+
+    model_dev = get_object_or_404(models.Devices, name=request.POST.get('device_name'))
+
+    if not ping3.ping(model_dev.ip, timeout=2):
+        return JsonResponse({
+            'error': 'Device down'
+        })
+
+    with model_dev.connect() as session:
+        if hasattr(session, 'change_profile'):
+            status = session.change_profile(port, int(profile_index))
+
+            return JsonResponse({
+                'status': status
+            })
+
+        else:
+            return JsonResponse({
+                'error': 'Device can\'t change profile'
+            }, status=400)
