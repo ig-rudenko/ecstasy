@@ -77,7 +77,6 @@
 
       {# HEADER #}
       <div class="modal-header">
-
         <h1 class="modal-title fs-5 text-center" id="exampleModalLabel" style="padding-left: 10px">
             Выберите новый профиль для порта
         </h1>
@@ -114,14 +113,33 @@
             </table>
            </div>
         </div>
+
+      {# STATUS #}
+      <div class="modal-open">
+        <div id="profile-load" class="text-center" hidden>
+          <div class="spinner-border" role="status">
+          </div>
+        </div>
+        <div id="profile-status" class="alert" hidden>
+        </div>
+      </div>
+
+
     </div>
   </div>
 </div>
 
 <script>
+
+let profile_load_div = $('#profile-load')
+let profile_status_div = $('#profile-status')
+
 function change_port_profile(profile_index, profile_name) {
-    // Если нажато автообновление, то отправляем результаты
+
     $('button').prop('disabled', true);
+    profile_load_div.prop('hidden', false);
+    profile_status_div.prop('hidden', true)
+
     let data = {
         port: device_port,
         device_name: device_name,
@@ -137,19 +155,15 @@ function change_port_profile(profile_index, profile_name) {
         success: function( data ) {
             console.log(data)
             $('button').prop('disabled', false);
-            $('#profile-name').html(profile_name)
-            $('#toast_message').html('Профиль был изменен на ' + profile_name)
-            $('#toast_color').attr('fill', 'green')
-            $('#toast_title').html('OK')
-            $('.toast').toast('show')
+            profile_load_div.prop('hidden', true);
+            profile_status_div.prop('hidden', false).addClass('alert-success').html('Профиль был изменен на ' + profile_name)
+
         },
         error: function (data){
             console.log(data)
             $('button').prop('disabled', false);
-            $('#toast_message').html('Ошибка ' + data)
-            $('#toast_color').attr('fill', 'red')
-            $('#toast_title').html('Error')
-            $('.toast').toast('show')
+            profile_load_div.prop('hidden', true);
+            profile_status_div.prop('hidden', false).addClass('alert-danger').html('Ошибка ' + data)
         }
     });
 }
