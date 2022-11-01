@@ -2,6 +2,9 @@
 
 ![Python](https://img.shields.io/badge/python-3.8_%7C_3.9-blue.svg)
 
+![Linux](https://img.shields.io/badge/Linux-blue.svg) ![windows](https://img.shields.io/badge/Windows-red.svg)
+
+
 ### Веб-приложение для взаимодействия с сетевым оборудованием
 
 Позволяет отображать информацию о сетевых устройствах в удобном для чтения формате
