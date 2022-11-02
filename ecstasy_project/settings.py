@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import _locale
 import os
+import json
 from pathlib import Path
 from celery.schedules import crontab
 
@@ -24,13 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o*a619g_)tg()312x^77d2+xyf*tp5*@*+0f*xhldhar*=_=7h'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split()
 
 # Application definition
 INSTALLED_APPS = [
@@ -78,30 +78,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ecstasy_project.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'ecstasy',
-#         'USER': 'ecstasy',
-#         'PASSWORD': 'ecstasy_password',
-#         'HOST': 'localhost',
-#         'PORT': '3306'
-#     }
-# }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
+DATABASES = json.loads(
+    os.getenv('DATABASES').replace(' ', '').replace('\n', '')
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -154,7 +133,12 @@ LOGOUT_REDIRECT_URL = '/'
 
 CELERY_TIMEZONE = TIME_ZONE
 
-CELERY_BROKER_URL = os.getenv('ECSTASY_CELERY_BROKER_URL')
+RABBIT_MQ_HOST = os.getenv('CELERY_RABBIT_MQ_HOST')
+RABBIT_MQ_USER = os.getenv('CELERY_RABBIT_MQ_USER')
+RABBIT_MQ_PASSWORD = os.getenv('CELERY_RABBIT_MQ_PASSWORD')
+RABBIT_MQ_PORT = os.getenv('CELERY_RABBIT_MQ_PORT')
+
+CELERY_BROKER_URL = f'amqp://{RABBIT_MQ_USER}:{RABBIT_MQ_PASSWORD}@{RABBIT_MQ_HOST}:{RABBIT_MQ_PORT}'
 
 # CELERY_RESULT_BACKEND = 'redis://redis'
 
