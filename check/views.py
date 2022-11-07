@@ -852,15 +852,17 @@ def change_adsl_profile(request):
             'error': 'Device down'
         })
 
+    # Подключаемся к оборудованию
     with model_dev.connect() as session:
         if hasattr(session, 'change_profile'):
+            # Если можно поменять профиль
             status = session.change_profile(port, int(profile_index))
 
             return JsonResponse({
                 'status': status
             })
 
-        else:
+        else:  # Нельзя менять профиль для данного устройства
             return JsonResponse({
                 'error': 'Device can\'t change profile'
             }, status=400)

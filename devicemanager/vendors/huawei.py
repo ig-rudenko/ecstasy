@@ -437,12 +437,12 @@ class HuaweiMA5600T(BaseDevice):
 
         lines = info.strip().split('\n')  # Построчно создаем список
 
-        table_dict = {
+        up_down_streams = {
             'Do': [],  # Down Stream info
             'Up': []   # Up   Stream info
         }
 
-        first_col_info = []
+        first_col_info = []  # Информация про порт
 
         for line in lines:  # Построчно смотрим данные
             line = line.strip()
@@ -459,7 +459,22 @@ class HuaweiMA5600T(BaseDevice):
                 else:  # Если нет значения - ошибка
                     line_new = {'color': '#e55d22', 'value': 0}
 
-                table_dict[line[:2]].append(line_new)  # Обновляем ключ "Do" или "Up"
+                up_down_streams[line[:2]].append(line_new)  # Обновляем ключ "Do" или "Up"
+
+        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
+                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)',
+                 'Общая выходная мощность (dBm)']
+
+        # Создаем список из элементов:
+        # {
+        #   'name': 'Фактическая скорость передачи данных (Кбит/с)',
+        #   'down': {'color': 'red', 'value': 34.1},
+        #   'up': {'color': 'red', 'value': 34.1}
+        # }, ...
+        table_dict = [
+            {"name": line[0], "down": line[1], "up": line[2]}
+            for line in zip(names, up_down_streams['Do'], up_down_streams['Up'])
+        ]
 
         return render_to_string(
             'check/adsl-port-info.html',
@@ -589,7 +604,9 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline('quit')
         self.session.sendline('quit')
         self.session.expect(r'\S+#')
-        all_profiles = self.send_command('display adsl line-profile\n', before_catch='display adsl line-profile', expect_command=False)
+        all_profiles = self.send_command(
+            'display adsl line-profile\n', before_catch='display adsl line-profile', expect_command=False
+        )
 
         profile_name = self.find_or_empty(r"Name:\s+(\S+)", profile_output)
 
@@ -602,16 +619,18 @@ class HuaweiMA5600T(BaseDevice):
         profiles = []
         for line in res:
             line = list(line)
-            profiles.append([line[0], line[1] + line[-1].replace(' ', '').replace('\n', ''), line[2], line[3]])
+            profiles.append([line[0], line[1] + line[-1].replace(' ', '').replace('\n', '')])
 
         return self.port_info_parser(output, profile_name, profiles)
 
-    def change_profile(self, port: str, profile_index: int):
+    def change_profile(self, port: str, profile_index: int) -> str:
+        """ Меняем профиль на DSL порту """
+
         port_type, indexes = self.split_port(port)
 
         # Проверяем индекс профиля и порт
         if port_type != 'adsl' or len(indexes) != 3 or profile_index <= 0:  # Неверный порт
-            return []
+            return 'Неверный порт!'
 
         self.session.sendline('config')
         self.session.sendline(f'interface {port_type} {indexes[0]}/{indexes[1]}')

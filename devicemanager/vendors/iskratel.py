@@ -1,5 +1,6 @@
 import re
 from time import sleep
+from django.template.loader import render_to_string
 from .base import BaseDevice
 
 
@@ -10,7 +11,7 @@ class IskratelControl(BaseDevice):
 
     prompt = r'\(\S+\)\s*#'
     space_prompt = r'--More-- or \(q\)uit'
-    mac_format = r'\S\S:'*5+r'\S\S'
+    mac_format = r'\S\S:' * 5 + r'\S\S'
     vendor = 'Iskratel'
 
     def save_config(self):
@@ -60,7 +61,7 @@ class IskratelMBan(BaseDevice):
 
     prompt = r'mBAN>\s'
     space_prompt = r'Press any key to continue or Esc to stop scrolling\.'
-    mac_format = r'\S\S:'*5+r'\S\S'
+    mac_format = r'\S\S:' * 5 + r'\S\S'
     vendor = 'Iskratel'
 
     def save_config(self):
@@ -71,7 +72,7 @@ class IskratelMBan(BaseDevice):
         """ Сервисные порты для DSLAM """
         return ['1_32', '1_33', '1_40']
 
-    def port_info_parser(self, info: str) -> str:
+    def __dsl_port_info_parser(self, info: str) -> str:
         """
         Парсит информацию о порте DSL и создает таблицу html для представления показателей сигнал/шума, затухания,
         мощности и прочей информации
@@ -104,74 +105,92 @@ class IskratelMBan(BaseDevice):
 
             return '#22e536'
 
-        html = '<div class="row"><div class="col-4">'  # Создаем ряд и начало первой колонки
-        table = """
-            <div class="col-8">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th scope="col" style="text-align: center;">Downstream</th>
-                      <th scope="col" style="text-align: center;">Upstream</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                """
-        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
-                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)']
+        # mBAN> show dsl profile
+        # ADSL profiles:
+        #  Id   Name
+        # ------------------------------------
+        #  20   160/160
+        #  10   160/320
+        #  ...
+        all_profiles = sorted(re.findall(
+            r'(\d+)\s+(.+)',
+            self.send_command('show dsl profile', expect_command=False, before_catch=r'ADSL profiles')
+        ), key=lambda pr: int(pr[0]), reverse=True)
 
+        first_col_info = []
         oper_state = self.find_or_empty(r'Operational State\s+(\S+)\/', info)
         if self.find_or_empty(r'Equipment\s+Unequipped', info):
-            html += '<p style="color: red">Порт - ADMIN DOWN</p>'
+            first_col_info.append('Порт - ADMIN DOWN')
         elif oper_state == 'Down':
-            html += '<p>Порт - DOWN</p>'
+            first_col_info.append('Порт - DOWN')
         elif oper_state == 'Up':
-            html += '<p style="color: green">Порт - UP</p>'
+            first_col_info.append('Порт - UP')
 
-        html += '<p>'+self.find_or_empty(r"Type .*", info)+'</p>'
-        html += '<p>'+self.find_or_empty(r"Profile Name\s+\S+", info)+'</p>'
+        first_col_info.append(self.find_or_empty(r"Type .*", info))
 
         # Данные для таблицы
         data_rate = re.findall(r'DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit', info) or [('', '')]
         max_rate = [(self.find_or_empty(r'Maximum DS attainable aggregate rate\s+(\d+) kbit', info),
-                    self.find_or_empty(r'Maximum US attainable aggregate rate\s+(\d+) kbit', info))]
+                     self.find_or_empty(r'Maximum US attainable aggregate rate\s+(\d+) kbit', info))]
 
         snr = re.findall(r'DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)', info) or [('', '')]
         intl = re.findall(r'DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)', info) or [('', '')]
         att = re.findall(r'DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)', info) or [('', '')]
 
-        # Наполняем таблицу
-        for line in zip(names, data_rate + max_rate + snr + intl + att):
-            table += f"""
-            <tr>
-                <td style="text-align: right";>{line[0]}</td>
-                <td style="text-align: center; background-color: {color(line[1][0], line[0])};">{line[1][0]}</td>
-                <td style="text-align: center; background-color: {color(line[1][1], line[0])};">{line[1][1]}</td>
-            </tr>
-            """
+        names = ['Фактическая скорость передачи данных (Кбит/с)', 'Максимальная скорость передачи данных (Кбит/с)',
+                 'Сигнал/Шум (дБ)', 'Interleaved channel delay (ms)', 'Затухание линии (дБ)']
 
-        table += "</tbody></table></div>"  # Закрываем таблицу
+        # Создаем список из элементов:
+        # {
+        #   'name': 'Фактическая скорость передачи данных (Кбит/с)',
+        #   'down': {'color': 'red', 'value': 34.1},
+        #   'up': {'color': 'red', 'value': 34.1}
+        # }, ...
+        table_dict = [
+            {
+                'name': line[0],
+                'down': {'color': color(line[1][0], line[0]), 'value': line[1][0]},
+                'up': {'color': color(line[1][1], line[0]), 'value': line[1][1]}
+            }
+            for line in zip(names, data_rate + max_rate + snr + intl + att)
+        ]
 
-        html += '</div>'  # Закрываем первую колонку
-        html += table     # Добавляем вторую колонку - таблицу
-        html += '</div>'  # Закрываем ряд
-        return html
+        return render_to_string(
+            'check/adsl-port-info.html',
+            {
+                'profile_name': self.find_or_empty(r'Profile Name\s+(\S+)', info),
+                'first_col': first_col_info,
+                'streams': table_dict,
+                'profiles': all_profiles
+            }
+        )
 
-    def get_port_info(self, port: str):
-        port = port.strip()
-        # Верные порты: port1, fasteth3, adsl2:1_40
-        if not re.findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$', port):
-            return ''
+    def get_port_info(self, port: str) -> str:
+        """ Смотрим информацию на порту """
 
-        if 'port' in port:  # Если указан физический adsl порт
-            cmd = f'show dsl port {port[4:]} detail'
-            before_catch = r'Name\s+\S+'
-        else:
-            cmd = f'show interface {port}'
+        port_type, port = self.validate_port(port)
+        if port_type is None:
+            return 'Invalid port'
+
+        if port_type == 'fasteth':
+            cmd = f'show interface fasteth{port}'
             before_catch = r'\[Enabled Connected Bridging\]'
 
+        else:  # Если указан физический adsl порт
+            cmd = f'show dsl port {port} detail'
+            before_catch = None
+
         output = self.send_command(cmd, expect_command=False, before_catch=before_catch)
-        return self.port_info_parser(output)
+
+        if port_type == 'fasteth':  # Возвращаем первые 4 строки
+            # Requested Speed  : Auto
+            # Requested Duplex : Auto
+            # Actual Speed     : 1000 Mbit/s
+            # Actual Duplex    : Full
+            return '<br>'.join(output.split('\n')[1:5])
+
+        # Парсим данные
+        return self.__dsl_port_info_parser(output)
 
     def get_mac(self, port: str) -> list:
         """
@@ -180,26 +199,19 @@ class IskratelMBan(BaseDevice):
         [ ["vlan", "mac"],  ... ]
         """
 
-        port = port.strip()
         macs = []  # Итоговый список маков
 
-        # Верные порты: port1, fasteth3, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
-        if not re.findall(r'^port\d+$|^fasteth\d+$|^dsl\d+:\d+_\d+$|^ISKRATEL.*atm \d+/\d+$', port):
+        port_type, port = self.validate_port(port)
+        if port_type is None:
             return []
 
-        if 'fasteth' in port or 'adsl' in port:
-            output = self.send_command(f'show bridge mactable interface {port}', expect_command=False)
+        # Для fasteth портов
+        if port_type == 'fasteth':
+            output = self.send_command(f'show bridge mactable interface fasteth{port}', expect_command=False)
             macs = re.findall(rf'(\d+)\s+({self.mac_format})', output)
             return macs
 
-        if 'port' in port:  # Если указан физический adsl порт
-            port = port[4:]  # убираем слово port, оставляя только номер
-
-        elif 'ISKRATEL' in port:
-            port = self.find_or_empty(r'\d+$', port)
-            if not port:
-                return []
-
+        # Для dsl портов
         for sp in self.get_service_ports:  # смотрим маки на сервис портах
             output = self.send_command(f'show bridge mactable interface dsl{port}:{sp}', expect_command=False)
             macs.extend(re.findall(rf'(\d*)\s+({self.mac_format})', output))
@@ -207,26 +219,48 @@ class IskratelMBan(BaseDevice):
         return macs
 
     @staticmethod
-    def validate_port(port: str) -> (str, None):
+    def validate_port(port: str) -> tuple:
         """
         Проверяем правильность полученного порта
-        Для Iskratel порт должен быть числом
+        Возвращает тип порта и его номер
 
-        port23 -> 23
+        >>> IskratelMBan.validate_port('dsl2:1_40')
+        ('dsl', 2)
+
+        >>> IskratelMBan.validate_port('port23')
+        ('dsl', 23)
+
+        >>> IskratelMBan.validate_port('ISKRATEL:sv-263-3443 atm 2/1')
+        ('dsl', 1)
+
+        >>> IskratelMBan.validate_port('24')
+        ('dsl', 24)
+
+        >>> IskratelMBan.validate_port('fasteth2')
+        ('fasteth', 2)
+
+        >>> IskratelMBan.validate_port('asd 1')
+        (None, None)
 
         """
         port = port.strip()
 
+        # Для fasteth
+        if re.match(r'^fasteth\d+$', port):
+            return 'fasteth', int(port[7:])
+
         # Для портов типа: 12, port1, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
         port = re.findall(r'^(\d+)$|^port(\d+)$|^ISKRATEL.+/(\d+)$|^dsl(\d+):\S+$', port)
-
         if port and any(port[0]):
-            return ''.join(port[0])  # Возвращаем номер порта
-        return None
+            return 'dsl', int(''.join(port[0]))  # Возвращаем номер порта
+
+        return None, None
 
     def reload_port(self, port: str, save_config=True) -> str:
-        port = self.validate_port(port)
-        if port is None:
+        """ Перезагружаем порт """
+
+        port_type, port = self.validate_port(port)
+        if port_type is None:
             return 'Неверный порт!'
 
         s1 = self.send_command(f'set dsl port {port} port_equp unequipped', expect_command=False)
@@ -235,9 +269,9 @@ class IskratelMBan(BaseDevice):
 
         return s1 + s2
 
-    def set_port(self, port: str, status: str, save_config=True):
-        port = self.validate_port(port)
-        if port is None:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
+        port_type, port = self.validate_port(port)
+        if port_type is None:
             return 'Неверный порт!'
 
         # Меняем состояние порта
@@ -247,15 +281,20 @@ class IskratelMBan(BaseDevice):
         )
 
     def get_interfaces(self) -> list:
+        """
+        Смотрим DSL порты
+        :return: [ ['name', 'status', 'desc'], ... ]
+        """
+
         output = self.send_command('show dsl port', expect_command=False)
         res = []
         for line in output.split('\n'):
             interface = re.findall(r'(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)', line)
             if interface:
                 res.append([
-                    interface[0][0],    # name
+                    interface[0][0],  # name
                     interface[0][3].lower() if interface[0][2] == 'Equipped' else 'admin down',
-                    interface[0][1],    # desc
+                    interface[0][1],  # desc
                 ])
 
         return res
@@ -264,8 +303,10 @@ class IskratelMBan(BaseDevice):
         return self.get_interfaces()
 
     def set_description(self, port: str, desc: str) -> str:
-        port = self.validate_port(port)
-        if port is None:
+        """ Меняем описание на порту (ограничение по макс. кол-ву символов - 32) """
+
+        port_type, port = self.validate_port(port)
+        if port_type is None:
             return 'Неверный порт!'
 
         desc = self.clear_description(desc)
@@ -276,3 +317,12 @@ class IskratelMBan(BaseDevice):
         self.send_command(f'set dsl port {port} name {desc}', expect_command=False)
 
         return f'Description has been {"changed" if desc else "cleared"}.'
+
+    def change_profile(self, port: str, profile_index: int) -> str:
+        """ Меняем профиль на DSL порту """
+
+        port_type, port = self.validate_port(port)
+        if port_type is None or port_type != 'dsl':
+            return 'Неверный порт!'
+
+        return self.send_command(f'set dsl port {port} profile {profile_index}', expect_command=False)

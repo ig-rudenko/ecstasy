@@ -27,52 +27,22 @@
             </tr>
           </thead>
           <tbody>
-
+            {% for line in streams %}
             <tr>
-                <td style="text-align: right">{{ line }}</td>
-                <td style="text-align: center; background-color: {{ streams.Do.0.color }};">{{ streams.Do.0.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.0.color }};">{{ streams.Up.0.value }}</td>
+                <td style="text-align: right">{{ line.name }}</td>
+                <td style="text-align: center; background-color: {{ line.down.color }};">{{ line.down.value }}</td>
+                <td style="text-align: center; background-color: {{ line.up.color }};">{{ line.up.value }}</td>
             </tr>
-
-            <tr>
-                <td style="text-align: right">Максимальная скорость передачи данных (Кбит/с)</td>
-                <td style="text-align: center; background-color: {{ streams.Do.1.color }};">{{ streams.Do.1.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.1.color }};">{{ streams.Up.1.value }}</td>
-            </tr>
-
-            <tr>
-                <td style="text-align: right">Сигнал/Шум (дБ)</td>
-                <td style="text-align: center; background-color: {{ streams.Do.2.color }};">{{ streams.Do.2.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.2.color }};">{{ streams.Up.2.value }}<td>
-            </tr>
-
-            <tr>
-                <td style="text-align: right">Interleaved channel delay (ms)</td>
-                <td style="text-align: center; background-color: {{ streams.Do.3.color }};">{{ streams.Do.3.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.3.color }};">{{ streams.Up.3.value }}</td>
-            </tr>
-
-            <tr>
-                <td style="text-align: right">Затухание линии (дБ)</td>
-                <td style="text-align: center; background-color: {{ streams.Do.4.color }};">{{ streams.Do.4.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.4.color }};">{{ streams.Up.4.value }}</td>
-            </tr>
-
-            <tr>
-                <td style="text-align: right">Общая выходная мощность (dBm)</td>
-                <td style="text-align: center; background-color: {{ streams.Do.5.color }};">{{ streams.Do.5.value }}</td>
-                <td style="text-align: center; background-color: {{ streams.Up.5.color }};">{{ streams.Up.5.value }}</td>
-            </tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-    <hr>
 </div>
 
 <!-- Modal CABLE DIAGNOSTIC -->
 <div class="modal fade" id="modal-change-profile" data-bs-backdrop="static" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
 
       {# HEADER #}
@@ -91,8 +61,6 @@
                 <tr>
                   <th></th>
                   <th scope="col" style="text-align: center;">Profile name</th>
-                  <th scope="col" style="text-align: center;">Min Up Rate</th>
-                  <th scope="col" style="text-align: center;">Max Up Rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,8 +72,6 @@
                             {{ profile.1 }}
                         </button>
                     </td>
-                    <td style="text-align: center;">{{ profile.2 }}</td>
-                    <td style="text-align: center;">{{ profile.3 }}</td>
                 </tr>
                 {% endfor %}
 
