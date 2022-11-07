@@ -56,8 +56,8 @@ class LogsElasticStackSettings(SingletonModel):
     )
 
     QUERY_LANGS = (
-        ('KQL', 'KQL'),
-        ('Lucene', 'Lucene')
+        ('kuery', 'KQL'),
+        ('lucene', 'Lucene')
     )
     query_lang = models.CharField(
         null=True, blank=True,
