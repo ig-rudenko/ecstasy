@@ -23,36 +23,40 @@
 from django.contrib import admin
 from pyzabbix import ZabbixAPI
 from requests import ConnectionError as ZabbixConnectionError
-from app_settings.models import LogsElasticStackSettings, ZabbixConfig, VlanTracerouteConfig
+from app_settings.models import (
+    LogsElasticStackSettings,
+    ZabbixConfig,
+    VlanTracerouteConfig,
+)
 
 
 @admin.register(LogsElasticStackSettings)
 class LogsElasticStackSettingsAdmin(admin.ModelAdmin):
-    """ Админка для настроек ElasticStack  """
+    """Админка для настроек ElasticStack"""
 
-    list_display = ['kibana_url', 'time_range', 'query_str']
+    list_display = ["kibana_url", "time_range", "query_str"]
 
 
 @admin.register(ZabbixConfig)
 class ZabbixConfigAdmin(admin.ModelAdmin):
-    """ Админка для настроек Zabbix API """
+    """Админка для настроек Zabbix API"""
 
-    list_display = ['url', 'login', 'connectable']
+    list_display = ["url", "login", "connectable"]
 
     @admin.display(description="Connectable")
     def connectable(self, obj: ZabbixConfig):
-        """ Отображает, можно ли подключиться к Zabbix по указанным настройкам """
+        """Отображает, можно ли подключиться к Zabbix по указанным настройкам"""
 
         try:
             with ZabbixAPI(server=obj.url) as zabbix_api:
                 zabbix_api.login(user=obj.login, password=obj.password)
-                return '✅' if zabbix_api.api_version() else '❌'
+                return "✅" if zabbix_api.api_version() else "❌"
         except ZabbixConnectionError:
-            return '❌'
+            return "❌"
 
 
 @admin.register(VlanTracerouteConfig)
 class VlanTracerouteConfigAdmin(admin.ModelAdmin):
-    """ Админка для настроек работы VLAN Traceroute """
+    """Админка для настроек работы VLAN Traceroute"""
 
-    list_display = ['vlan_start', 'find_device_pattern']
+    list_display = ["vlan_start", "find_device_pattern"]

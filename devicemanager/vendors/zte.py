@@ -2,7 +2,13 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, COOPER_TYPES, FIBER_TYPES, range_to_numbers
+from .base import (
+    BaseDevice,
+    TEMPLATE_FOLDER,
+    COOPER_TYPES,
+    FIBER_TYPES,
+    range_to_numbers,
+)
 
 
 class ZTE(BaseDevice):
@@ -16,51 +22,66 @@ class ZTE(BaseDevice):
 
     """
 
-    prompt = r'\S+\(cfg\)#|\S+>'
+    prompt = r"\S+\(cfg\)#|\S+>"
     space_prompt = "----- more -----"
     # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
-    mac_format = r'\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S' + '|' + r'[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}'
-    vendor = 'ZTE'
+    mac_format = (
+        r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S"
+        + "|"
+        + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
+    )
+    vendor = "ZTE"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=''):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
         super().__init__(session, ip, auth, model)
-        version = self.send_command('show version')
-        self.mac = self.find_or_empty(r'Mac Address: (\S+)', version)
+        version = self.send_command("show version")
+        self.mac = self.find_or_empty(r"Mac Address: (\S+)", version)
 
         # Turning on privileged mode
-        self.session.sendline('enable')
-        match_ = self.session.expect([self.prompt, r'password', r'[Ss]imultaneous'])  # Если ещё не привилегированный
+        self.session.sendline("enable")
+
+        # Если ещё не привилегированный
+        match_ = self.session.expect([self.prompt, r"password", r"[Ss]imultaneous"])
+
         if match_ == 1:
-            self.session.sendline(self.auth.get('privilege_mode_password'))  # send secret
-            if self.session.expect([r'refused', r'\(cfg\)#']):
+            # send secret
+            self.session.sendline(self.auth.get("privilege_mode_password"))
+            if self.session.expect([r"refused", r"\(cfg\)#"]):
                 self.__privileged = True
             else:
                 self.__privileged = False
+
         elif match_ == 2:
             self.__privileged = False
+
         else:
             self.__privileged = True
 
     def get_interfaces(self) -> list:
-        output = self.send_command('show port')
+        output = self.send_command("show port")
 
-        with open(f'{TEMPLATE_FOLDER}/interfaces/zte.template', encoding='utf-8') as template_file:
+        with open(
+            f"{TEMPLATE_FOLDER}/interfaces/zte.template", encoding="utf-8"
+        ) as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
             [
                 line[0],  # interface
-                line[2] if 'enabled' in line[1] else 'admin down',  # status
-                line[3]  # desc
+                line[2] if "enabled" in line[1] else "admin down",  # status
+                line[3],  # desc
             ]
             for line in result
         ]
 
     def get_vlans(self):
         interfaces = self.get_interfaces()
-        output = self.send_command('show vlan')
+        output = self.send_command("show vlan")
 
-        with open(f'{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template', 'r', encoding='utf-8') as template_file:
+        with open(
+            f"{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template",
+            encoding="utf-8",
+        ) as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
 
@@ -70,7 +91,7 @@ class ZTE(BaseDevice):
             if not vlan[0] or vlan[4] == "disabled":
                 continue
             # Объединяем тегированные вланы и нетегированные в один список
-            vlan_port[int(vlan[0])] = range_to_numbers(','.join([vlan[2], vlan[3]]))
+            vlan_port[int(vlan[0])] = range_to_numbers(",".join([vlan[2], vlan[3]]))
 
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
 
@@ -104,117 +125,129 @@ class ZTE(BaseDevice):
         if port is None:
             return []
 
-        output_macs = self.send_command(f'show fdb port {port} detail', expect_command=False)
-        if 'not found' in output_macs:
-            output_macs = self.send_command(f'show mac dynamic port {port}', expect_command=False)
+        output_macs = self.send_command(
+            f"show fdb port {port} detail", expect_command=False
+        )
+        if "not found" in output_macs:
+            output_macs = self.send_command(
+                f"show mac dynamic port {port}", expect_command=False
+            )
 
         mac_list = []
-        for i in re.findall(rf'({self.mac_format})\s+(\d+)', output_macs):
+        for i in re.findall(rf"({self.mac_format})\s+(\d+)", output_macs):
             mac_list.append(i[::-1])
 
         return mac_list
 
     def save_config(self):
-        self.session.sendline('saveconfig')
-        if self.session.expect([r'please wait a minute', 'Command not found']):
-            self.session.sendline('write')
-            self.session.expect(r'please wait a minute')
+        self.session.sendline("saveconfig")
+        if self.session.expect([r"please wait a minute", "Command not found"]):
+            self.session.sendline("write")
+            self.session.expect(r"please wait a minute")
 
-        if self.session.expect([self.prompt, r'[Dd]one']):
+        if self.session.expect([self.prompt, r"[Dd]one"]):
             return self.SAVED_OK
         return self.SAVED_ERR
 
     def reload_port(self, port: str, save_config=True) -> str:
         if not self.__privileged:
-            return 'Не привилегированный. Операция отклонена!'
+            return "Не привилегированный. Операция отклонена!"
 
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
-        self.session.sendline(f'set port {port} disable')
+        self.session.sendline(f"set port {port} disable")
         sleep(1)
-        self.session.sendline(f'set port {port} enable')
+        self.session.sendline(f"set port {port} enable")
 
-        s = self.save_config() if save_config else 'Without saving'
-        return f'reset port {port} ' + s
+        s = self.save_config() if save_config else "Without saving"
+        return f"reset port {port} " + s
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
         if not self.__privileged:
-            return 'Не привилегированный. Операция отклонена!'
+            return "Не привилегированный. Операция отклонена!"
 
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
-        if status == 'down':
-            self.session.sendline(f'set port {port} disable')
-        elif status == 'up':
-            self.session.sendline(f'set port {port} enable')
+        if status == "down":
+            self.session.sendline(f"set port {port} disable")
+        elif status == "up":
+            self.session.sendline(f"set port {port} enable")
         else:
-            return f'Неверный статус {status}'
+            return f"Неверный статус {status}"
 
-        s = self.save_config() if save_config else 'Without saving'
-        return f'{status} port {port} ' + s
+        s = self.save_config() if save_config else "Without saving"
+        return f"{status} port {port} " + s
 
     def port_config(self, port: str):
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
-        running_config = self.send_command('show running-config').split('\n')
-        port_config = ''
+        running_config = self.send_command("show running-config").split("\n")
+        port_config = ""
         for line in running_config:
-            s = self.find_or_empty(rf'.+port {port} .*', line)
+            s = self.find_or_empty(rf".+port {port} .*", line)
             if s:
-                port_config += s + '\n'
+                port_config += s + "\n"
 
         return port_config
 
     def port_type(self, port: str):
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
-        output = self.send_command(f'show port {port} brief')
-        type_ = self.find_or_empty(r'\d+\s+\d+Base(\S+)\s+', output)
+        output = self.send_command(f"show port {port} brief")
+        type_ = self.find_or_empty(r"\d+\s+\d+Base(\S+)\s+", output)
 
         if type_ in COOPER_TYPES:
-            return 'COPPER'
-        if type_ in FIBER_TYPES or type_ == 'X':
-            return 'SFP'
+            return "COPPER"
+        if type_ in FIBER_TYPES or type_ == "X":
+            return "SFP"
 
-        return '?'
+        return "?"
 
     def get_port_errors(self, port: str):
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
-        return self.send_command(f'show port {port} statistics')
+        return self.send_command(f"show port {port} statistics")
 
     def set_description(self, port: str, desc: str) -> str:
         if not self.__privileged:
-            return 'Не привилегированный. Операция отклонена!'
+            return "Не привилегированный. Операция отклонена!"
 
         port = self.validate_port(port)
         if port is None:
-            return 'Неверный порт!'
+            return "Неверный порт!"
 
         desc = self.clear_description(desc)
 
-        if desc == '':  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            status = self.send_command(f'clear port {port} description', expect_command=False)
+        if desc == "":
+            # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+            status = self.send_command(
+                f"clear port {port} description", expect_command=False
+            )
 
         else:  # В другом случае, меняем описание на оборудовании
-            status = self.send_command(f'set port {port} description {desc}', expect_command=False)
+            status = self.send_command(
+                f"set port {port} description {desc}", expect_command=False
+            )
 
-        if 'Parameter too long' in status:
+        if "Parameter too long" in status:
             # Если длина описания больше чем доступно на оборудовании
-            output = self.send_command(f'set port {port} description ?')
-            return 'Max length:' + self.find_or_empty(r'maxsize:(\d+)', output)
+            output = self.send_command(f"set port {port} description ?")
+            return "Max length:" + self.find_or_empty(r"maxsize:(\d+)", output)
 
-        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+        return (
+            f'Description has been {"changed" if desc else "cleared"}.'
+            + self.save_config()
+        )
 
     def virtual_cable_test(self, port: str):
         """
@@ -228,43 +261,44 @@ class ZTE(BaseDevice):
             return {}
 
         result = {
-            'len': '-',  # Length
-            'status': '',  # Up, Down
+            "len": "-",  # Length
+            "status": "",  # Up, Down
         }
 
-        cable_diag = self.send_command(f'show vct port {port}')
-        if "doesn't support VCT" in cable_diag:  # Порт не поддерживает Virtual Cable Test
-            result['status'] = "Doesn't support VCT"
+        cable_diag = self.send_command(f"show vct port {port}")
+        if "doesn't support VCT" in cable_diag:
+            # Порт не поддерживает Virtual Cable Test
+            result["status"] = "Doesn't support VCT"
             return result
 
-        if 'No problem' in cable_diag:
+        if "No problem" in cable_diag:
             # Нет проблем
-            result['status'] = 'Up'
+            result["status"] = "Up"
             return result
 
         port_cable_diag = re.findall(
-            r'Cable Test Passed[ \.]+(with Impedance Mismatch|Cable is \S+)\.\s*\n\s+Approximately (\d+) meters',
-            cable_diag
+            r"Cable Test Passed[ \.]+(with Impedance Mismatch|Cable is \S+)\.\s*\n\s+Approximately (\d+) meters",
+            cable_diag,
         )
 
-        result['status'] = 'Down'
+        result["status"] = "Down"
 
         # Смотрим пары
         for i, pair in enumerate(port_cable_diag, start=1):
-            if 'open' in pair[0].lower():
-                status = 'open'
-            elif 'short' in pair[0].lower():
-                status = 'short'
+            if "open" in pair[0].lower():
+                status = "open"
+            elif "short" in pair[0].lower():
+                status = "short"
             else:
                 # Разница в сопротивлении (слишком большое затухание в линии).
                 # Плохая скрутка, либо кабель с некорректным сопротивлением. Или, к примеру, очень большая длина.
-                status = 'mismatch'
+                status = "mismatch"
 
-            result[f'pair{i}'] = {}
-            result[f'pair{i}']['status'] = status
-            result[f'pair{i}']['len'] = pair[1]
+            result[f"pair{i}"] = {}
+            result[f"pair{i}"]["status"] = status
+            result[f"pair{i}"]["len"] = pair[1]
 
-        if result['pair1']['status'] == result['pair1']['status']:
-            result['status'] = result[f'pair1']['status'].capitalize()
+        if result["pair1"]["status"] == result["pair1"]["status"]:
+            result["status"] = result[f"pair1"]["status"].capitalize()
 
         return result

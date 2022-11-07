@@ -4,7 +4,7 @@ import json
 
 
 def find_description(finding_string: str, re_string: str) -> tuple:
-    """ Поиск портов на всем оборудовании, описание которых совпадает с finding_string """
+    """Поиск портов на всем оборудовании, описание которых совпадает с finding_string"""
 
     result = []
     count = 0
@@ -18,25 +18,39 @@ def find_description(finding_string: str, re_string: str) -> tuple:
             if not interfaces:
                 continue
             for line in interfaces:
-                if (finding_string and finding_string.lower() in line.get('Description').lower()) or \
-                        (re_string and findall(re_string, line.get('Description'), flags=IGNORECASE)):
+                if (
+                    finding_string
+                    and finding_string.lower() in line.get("Description").lower()
+                    or re_string
+                    and findall(re_string, line.get("Description"), flags=IGNORECASE)
+                ):
                     # Если нашли совпадение в строке
 
                     # Ищем искомый фрагмент
-                    replaced_str = findall(finding_string or re_string, line['Description'], flags=IGNORECASE)[0]
+                    replaced_str = findall(
+                        finding_string or re_string,
+                        line["Description"],
+                        flags=IGNORECASE,
+                    )[0]
 
-                    result.append({
-                        'Device': device.device_name or 'Dev' + ' ' + device.ip,
-                        'Interface': line['Interface'],
-
-                        # Выделяем искомый фрагмент с помощью тега <mark></mark>
-                        'Description': sub(
-                            replaced_str, f'<mark>{replaced_str}</mark>', line['Description'], flags=IGNORECASE
-                        ),
-                        'original_desc': line['Description'],
-                        'SavedTime': device.interfaces_date.strftime('%d.%m.%Y %H:%M:%S'),
-                        'percent': '100%'
-                    })
+                    result.append(
+                        {
+                            "Device": device.device_name or "Dev" + " " + device.ip,
+                            "Interface": line["Interface"],
+                            # Выделяем искомый фрагмент с помощью тега <mark></mark>
+                            "Description": sub(
+                                replaced_str,
+                                f"<mark>{replaced_str}</mark>",
+                                line["Description"],
+                                flags=IGNORECASE,
+                            ),
+                            "original_desc": line["Description"],
+                            "SavedTime": device.interfaces_date.strftime(
+                                "%d.%m.%Y %H:%M:%S"
+                            ),
+                            "percent": "100%",
+                        }
+                    )
                     count += 1
 
         except Exception as e:
@@ -46,13 +60,14 @@ def find_description(finding_string: str, re_string: str) -> tuple:
 
 
 def reformatting(name: str):
-    """ Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat """
+    """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
 
     for reformat in list(DescNameFormat.objects.all()):
-        if reformat.standard == name:  # Если имя совпадает с правильным, то отправляем его
+        if reformat.standard == name:
+            # Если имя совпадает с правильным, то отправляем его
             return name
 
-        for pattern in reformat.replacement.split(', '):
+        for pattern in reformat.replacement.split(", "):
             if pattern in name:  # Если паттерн содержится в исходном имени
 
                 # Заменяем совпадение "pattern" в названии "name" на правильное "n"
@@ -77,8 +92,8 @@ def vlan_range(vlans_ranges: list) -> set:
         if len(v_range.split()) > 1:
             vlans += list(vlan_range(v_range.split()))
         try:
-            if '-' in v_range:
-                parts = v_range.split('-')
+            if "-" in v_range:
+                parts = v_range.split("-")
                 vlans += range(int(parts[0]), int(parts[1]) + 1)
             else:
                 vlans.append(int(v_range))
@@ -88,8 +103,15 @@ def vlan_range(vlans_ranges: list) -> set:
     return set(vlans)
 
 
-def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list, empty_ports: str,
-              only_admin_up: str, find_device_pattern: str):
+def find_vlan(
+    device: str,
+    vlan_to_find: int,
+    passed_devices: set,
+    result: list,
+    empty_ports: str,
+    only_admin_up: str,
+    find_device_pattern: str,
+):
     """
     Осуществляет поиск VLAN'ов по портам оборудования
 
@@ -102,7 +124,7 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
     :param find_device_pattern:  Регулярное выражение, которое позволит найди оборудование в описании порта
     """
 
-    admin_status = ''  # Состояние порта
+    admin_status = ""  # Состояние порта
 
     passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
     try:
@@ -110,7 +132,7 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
     except DevicesInfo.DoesNotExist:
         return
 
-    interfaces = json.loads(dev.vlans or '[]')
+    interfaces = json.loads(dev.vlans or "[]")
     if not interfaces:
         return
 
@@ -121,14 +143,17 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
 
         # Если вланы сохранены в виде строки
         if isinstance(line["VLAN's"], str):
-            if 'all' in line["VLAN's"] or line["VLAN's"].strip() == 'trunk':
+            if "all" in line["VLAN's"] or line["VLAN's"].strip() == "trunk":
                 # Если разрешено пропускать все вланы
                 vlans_list = list(range(1, 4097))  # 1-4096
             else:
-                if 'to' in line["VLAN's"]:
+                if "to" in line["VLAN's"]:
                     # Если имеется формат "711 800 to 804 1959 1961 1994 2005"
                     # Определяем диапазон 800 to 804
-                    vv = [list(range(int(v[0]), int(v[1]) + 1)) for v in findall(r'(\d+)\s*to\s*(\d+)', line["VLAN's"])]
+                    vv = [
+                        list(range(int(v[0]), int(v[1]) + 1))
+                        for v in findall(r"(\d+)\s*to\s*(\d+)", line["VLAN's"])
+                    ]
                     for v in vv:
                         vlans_list += v
                     # Добавляем единичные 711 800 to 801 1959 1961 1994 2005
@@ -138,14 +163,18 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
                     # Формат представления стандартный "trunk,123,33,10-100"
                     vlans_list = vlan_range(
                         [
-                            v for v in line["VLAN's"].split(',')
-                            if v != 'trunk' and v not in ('trunk', 'access', 'hybrid', 'dot1q-tunnel')
+                            v
+                            for v in line["VLAN's"].split(",")
+                            if v != "trunk"
+                            and v not in ("trunk", "access", "hybrid", "dot1q-tunnel")
                         ]
                     )
                     # Если искомый vlan находится в списке vlan'ов на данном интерфейсе
 
         # Если вланы сохранены в виде списка числовых элементов
-        elif isinstance(line["VLAN's"], list) and all(str(v).isdigit() for v in line["VLAN's"]):
+        elif isinstance(line["VLAN's"], list) and all(
+            str(v).isdigit() for v in line["VLAN's"]
+        ):
             vlans_list = line["VLAN's"]
 
         # Если нашли влан в списке вланов
@@ -153,16 +182,21 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
 
             intf_found_count += 1
 
-            next_device = findall(find_device_pattern, line["Description"])  # Ищем в описании порта следующий узел сети
+            # Ищем в описании порта следующий узел сети
+            next_device = findall(find_device_pattern, line["Description"])
             # Приводим к единому формату имя узла сети
-            next_device = reformatting(next_device[0]) if next_device else ''
+            next_device = reformatting(next_device[0]) if next_device else ""
 
             # Пропускаем порты admin down, если включена опция only admin up
-            if only_admin_up == 'true':
-                admin_status = 'down' if \
-                    'down' in str(line.get('Admin Status')).lower() or 'dis' in str(line.get('Admin Status')).lower() \
-                    or 'admin down' in str(line.get('Status')).lower() or 'dis' in str(line.get('Status')).lower() \
-                    else 'up'
+            if only_admin_up == "true":
+                admin_status = (
+                    "down"
+                    if "down" in str(line.get("Admin Status")).lower()
+                    or "dis" in str(line.get("Admin Status")).lower()
+                    or "admin down" in str(line.get("Status")).lower()
+                    or "dis" in str(line.get("Status")).lower()
+                    else "up"
+                )
 
             # Создаем данные для visual map
             if next_device:
@@ -173,7 +207,7 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
                         next_device,  # Сосед (название узла)
                         10,  # Толщина линии соединения
                         f'{device} ({line["Interface"]}) --- {line["Description"]}',  # Описание линии соединения
-                        admin_status
+                        admin_status,
                     )
                 )
             # Порт с описанием
@@ -184,18 +218,18 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
                         f'{device} d:({line["Description"]})',  # Порт (название узла)
                         10,  # Толщина линии соединения
                         line["Interface"],  # Описание линии соединения
-                        admin_status
+                        admin_status,
                     )
                 )
             # Пустые порты
-            elif empty_ports == 'true':
+            elif empty_ports == "true":
                 result.append(
                     (
                         device,  # Устройство (название узла)
                         f'{device} p:({line["Interface"]})',  # Порт (название узла)
                         5,  # Толщина линии соединения
                         line["Interface"],  # Описание линии соединения
-                        admin_status
+                        admin_status,
                     )
                 )
 
@@ -207,5 +241,5 @@ def find_vlan(device: str, vlan_to_find: int, passed_devices: set, result: list,
                     result=result,
                     empty_ports=empty_ports,
                     only_admin_up=only_admin_up,
-                    find_device_pattern=find_device_pattern
+                    find_device_pattern=find_device_pattern,
                 )

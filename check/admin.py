@@ -21,83 +21,97 @@ from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 
 @admin.register(DeviceGroup)
 class DeviceGroupAdmin(admin.ModelAdmin):
-    """ Управление группами оборудования """
+    """Управление группами оборудования"""
 
-    list_display = ['name', 'description']
+    list_display = ["name", "description"]
 
 
 @admin.register(Devices)
 class DevicesAdmin(admin.ModelAdmin):
-    """ Управление оборудованием """
+    """Управление оборудованием"""
 
-    list_display = ['ip', 'name', 'vendor', 'model', 'group', 'auth_group', 'intf_scan', 'intf_last']
-    search_fields = ['ip', 'name']
+    list_display = [
+        "ip",
+        "name",
+        "vendor",
+        "model",
+        "group",
+        "auth_group",
+        "intf_scan",
+        "intf_last",
+    ]
+    search_fields = ["ip", "name"]
     list_per_page = 50
-    list_filter = ['vendor', 'group', 'auth_group', 'model']
+    list_filter = ["vendor", "group", "auth_group", "model"]
     fieldsets = (
-        ('Характеристика', {'fields': ('ip', 'name')}),
-        ('Тип', {'fields': ('vendor', 'model')}),
-        ('Принадлежность', {'fields': ('group', 'auth_group')}),
-        ('Удаленное подключение', {'fields': ('snmp_community', 'port_scan_protocol', 'cmd_protocol')})
+        ("Характеристика", {"fields": ("ip", "name")}),
+        ("Тип", {"fields": ("vendor", "model")}),
+        ("Принадлежность", {"fields": ("group", "auth_group")}),
+        (
+            "Удаленное подключение",
+            {"fields": ("snmp_community", "port_scan_protocol", "cmd_protocol")},
+        ),
     )
-    actions = ['set_telnet', 'set_snmp', 'set_ssh']
+    actions = ["set_telnet", "set_snmp", "set_ssh"]
 
-    @admin.display(description='SCAN')
+    @admin.display(description="SCAN")
     def intf_scan(self, obj: Devices):
-        """ Ссылка на страницу сканирования интерфейсов оборудования """
+        """Ссылка на страницу сканирования интерфейсов оборудования"""
 
-        return mark_safe(f'<a target="_blank" href="{obj.get_absolute_url()}?current_status=1">SCAN</a>')
+        return mark_safe(
+            f'<a target="_blank" href="{obj.get_absolute_url()}?current_status=1">SCAN</a>'
+        )
 
-    @admin.display(description='LAST')
+    @admin.display(description="LAST")
     def intf_last(self, obj: Devices):
-        """ Ссылка на страницу вывода последних результатов сканирования интерфейсов оборудования """
+        """Ссылка на страницу вывода последних результатов сканирования интерфейсов оборудования"""
 
         return mark_safe(f'<a target="_blank" href="{obj.get_absolute_url()}">LAST</a>')
 
-    @admin.action(description='telnet Протокол для поиска интерфейсов')
+    @admin.action(description="telnet Протокол для поиска интерфейсов")
     def set_telnet(self, request, queryset):
-        """ Действие. Меняем протокол поиска интерфейсов на TELNET """
+        """Действие. Меняем протокол поиска интерфейсов на TELNET"""
 
-        queryset.update(port_scan_protocol='telnet')
+        queryset.update(port_scan_protocol="telnet")
 
-    @admin.action(description='snmp Протокол для поиска интерфейсов')
+    @admin.action(description="snmp Протокол для поиска интерфейсов")
     def set_snmp(self, request, queryset):
-        """ Действие. Меняем протокол поиска интерфейсов на SNMP """
+        """Действие. Меняем протокол поиска интерфейсов на SNMP"""
 
-        queryset.update(port_scan_protocol='snmp')
+        queryset.update(port_scan_protocol="snmp")
 
-    @admin.action(description='ssh Протокол для поиска интерфейсов')
+    @admin.action(description="ssh Протокол для поиска интерфейсов")
     def set_ssh(self, request, queryset):
-        """ Действие. Меняем протокол поиска интерфейсов на SSH """
+        """Действие. Меняем протокол поиска интерфейсов на SSH"""
 
-        queryset.update(port_scan_protocol='ssh')
+        queryset.update(port_scan_protocol="ssh")
 
 
 @admin.register(AuthGroup)
 class AuthGroupAdmin(admin.ModelAdmin):
-    """ Взаимодействие с профилями авторизации к оборудованию """
+    """Взаимодействие с профилями авторизации к оборудованию"""
 
-    list_display = ['name', 'login', 'description']
-    search_fields = ['name', 'login']
+    list_display = ["name", "login", "description"]
+    search_fields = ["name", "login"]
 
 
 @admin.register(Bras)
 class BrasAdmin(admin.ModelAdmin):
-    """ Настройка для маршрутизаторов широкополосного удалённого доступа BRAS """
+    """Настройка для маршрутизаторов широкополосного удалённого доступа BRAS"""
 
-    list_display = ['name', 'ip']
-    search_fields = ['name', 'ip']
+    list_display = ["name", "ip"]
+    search_fields = ["name", "ip"]
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    """ Управление уровнем привилегий пользователей """
+    """Управление уровнем привилегий пользователей"""
 
-    list_display = ['user', 'permissions']
+    list_display = ["user", "permissions"]
 
-    @admin.display(description='Пользователь')
+    @admin.display(description="Пользователь")
     def user(self, obj: Profile):
-        """ Отображаем username пользователя """
+        """Отображаем username пользователя"""
 
         return obj.user.username
 
@@ -107,33 +121,42 @@ admin.site.unregister(User)  # Отменяем старую админку дл
 
 @admin.register(User)
 class UserProfileAdmin(UserAdmin):
-    """ Переопределенный класс для пользователя """
+    """Переопределенный класс для пользователя"""
 
-    list_display = ['username', 'first_name', 'last_name', 'email', 'is_active', 'is_superuser', 'last_login',
-                    'permission', 'dev_groups']
+    list_display = [
+        "username",
+        "first_name",
+        "last_name",
+        "email",
+        "is_active",
+        "is_superuser",
+        "last_login",
+        "permission",
+        "dev_groups",
+    ]
 
-    @admin.display(description='Права')
+    @admin.display(description="Права")
     def permission(self, obj: User):
-        """ Отображение привилегий пользователя """
+        """Отображение привилегий пользователя"""
 
         return Profile.objects.get(user_id=obj.pk).permissions
 
-    @admin.display(description='Группы')
+    @admin.display(description="Группы")
     def dev_groups(self, obj: User):
-        """ Отображение доступных групп для пользователя """
+        """Отображение доступных групп для пользователя"""
 
-        groups_string = ''
+        groups_string = ""
         for group in obj.profile.devices_groups.all():
-            groups_string += f'<li>{group}</li>'
+            groups_string += f"<li>{group}</li>"
         return mark_safe(groups_string)
 
 
 @admin.register(UsersActions)
 class UsersActionsAdmin(admin.ModelAdmin):
-    """ Просмотр логов действий пользователя """
+    """Просмотр логов действий пользователя"""
 
-    list_display = ['time', 'user', 'device', 'action']
-    list_filter = ['user']
-    search_fields = ['action']
+    list_display = ["time", "user", "device", "action"]
+    list_filter = ["user"]
+    search_fields = ["action"]
     readonly_fields = list_display
     list_per_page = 50

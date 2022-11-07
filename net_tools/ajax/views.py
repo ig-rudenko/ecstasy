@@ -1,5 +1,4 @@
 import os
-import time
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -20,42 +19,41 @@ from ecstasy_project.settings import BASE_DIR
 
 @login_required
 def get_vendor(request, mac):
-    """ Определяет производителя по MAC адресу """
+    """Определяет производителя по MAC адресу"""
 
-    resp = requests_lib.get('https://macvendors.com/query/'+mac)
+    resp = requests_lib.get("https://macvendors.com/query/" + mac)
     if resp.status_code == 200:
-        return JsonResponse({'vendor': resp.text})
-    return JsonResponse({'vendor': ''})
+        return JsonResponse({"vendor": resp.text})
+    return JsonResponse({"vendor": ""})
 
 
 @login_required
 def find_as_str(request):
-    """ Вывод результата поиска портов по описанию """
+    """Вывод результата поиска портов по описанию"""
 
-    if not request.GET.get('string'):
-        return JsonResponse({
-            'data': []
-        })
+    if not request.GET.get("string"):
+        return JsonResponse({"data": []})
     result, count = find_description(
-        finding_string=request.GET.get('string') if request.GET.get('type') == 'string' else '',
-        re_string=request.GET.get('string') if request.GET.get('type') == 'regex' else ''
+        finding_string=request.GET.get("string")
+        if request.GET.get("type") == "string"
+        else "",
+        re_string=request.GET.get("string")
+        if request.GET.get("type") == "regex"
+        else "",
     )
 
     return render(
-        request, 'tools/descriptions_table.html',
-        {
-            'data': result,
-            'count': count,
-            'pattern': request.GET.get('string')
-        }
+        request,
+        "tools/descriptions_table.html",
+        {"data": result, "count": count, "pattern": request.GET.get("string")},
     )
 
 
 def get_mac_from(model_dev, mac_address: str, result: list):
-    """ Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result """
+    """Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result"""
 
     with model_dev.connect() as session:
-        if hasattr(session, 'search_mac'):
+        if hasattr(session, "search_mac"):
             res = session.search_mac(mac_address)
             if res:
                 res.append(model_dev.name)
@@ -73,7 +71,7 @@ def mac_info(request, mac):
 
     devices_for_search = DevicesForMacSearch.objects.all()
 
-    mac_address = ''.join(findall(r'[a-zA-Z\d]', mac)).lower()
+    mac_address = "".join(findall(r"[a-zA-Z\d]", mac)).lower()
     if not mac_address or len(mac_address) < 6 or len(mac_address) > 12:
         return []
     match = []
@@ -86,41 +84,44 @@ def mac_info(request, mac):
 
     if len(match) > 0:
         # Если получили совпадение
-        ip = findall(r'\d+\.\d+\.\d+\.\d+', str(match))
+        ip = findall(r"\d+\.\d+\.\d+\.\d+", str(match))
 
         zabbix_settings = ZabbixConfig.load()
         try:
             with ZabbixAPI(server=zabbix_settings.url) as zbx:
                 zbx.login(user=zabbix_settings.login, password=zabbix_settings.password)
                 # Ищем хост по IP
-                hosts = zbx.host.get(output=['name', 'status'], filter={'ip': ip}, selectInterfaces=['ip'])
-            names = [[h['name'], h['hostid']] for h in hosts if h['status'] == '0']
+                hosts = zbx.host.get(
+                    output=["name", "status"],
+                    filter={"ip": ip},
+                    selectInterfaces=["ip"],
+                )
+            names = [[h["name"], h["hostid"]] for h in hosts if h["status"] == "0"]
         except ZabbixConnectionError:
             pass
 
-    return render(request, 'tools/mac_result_for_modal.html', {
-        'info': match,
-        'zabbix': names
-    })
+    return render(
+        request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names}
+    )
 
 
 @login_required
 def get_vlan_desc(request):
-    """ Получаем имя VLAN """
+    """Получаем имя VLAN"""
 
     try:
-        vlan = int(request.GET.get('vlan'))
+        vlan = int(request.GET.get("vlan"))
         vlan_name = VlanName.objects.get(vid=vlan).name
 
     except (VlanName.DoesNotExist, ValueError):
         return JsonResponse({})
 
     else:
-        return JsonResponse({'vlan_desc': vlan_name})
+        return JsonResponse({"vlan_desc": vlan_name})
 
 
 def create_nodes(result: list, net: Network, show_admin_down_ports: str):
-    """ Создает элементы и связи между ними """
+    """Создает элементы и связи между ними"""
 
     for e in result:
         src = e[0]
@@ -132,8 +133,8 @@ def create_nodes(result: list, net: Network, show_admin_down_ports: str):
         # По умолчанию зеленый цвет, форма точки
         src_gr = 3
         dst_gr = 3
-        src_shape = 'dot'
-        dst_shape = 'dot'
+        src_shape = "dot"
+        dst_shape = "dot"
         src_label = src
         dst_label = dst
 
@@ -152,52 +153,52 @@ def create_nodes(result: list, net: Network, show_admin_down_ports: str):
         # Порт: зеленый, форма треугольника - △
         if "-->" in str(src).lower():
             src_gr = 3
-            src_shape = 'triangle'
-            src_label = src.split('-->')[1]
+            src_shape = "triangle"
+            src_label = src.split("-->")[1]
         if "-->" in str(dst).lower():
             dst_gr = 3
-            dst_shape = 'triangle'
-            dst_label = src.split('-->')[1]
+            dst_shape = "triangle"
+            dst_label = src.split("-->")[1]
 
         # DSL: оранжевый, форма квадрата - ☐
         if "DSL" in str(src):
             src_gr = 6
-            src_shape = 'square'
+            src_shape = "square"
         if "DSL" in str(dst):
             dst_gr = 6
-            dst_shape = 'square'
+            dst_shape = "square"
 
         # CORE: розовый, форма ромба - ◊
         if "SVSL-99-GP15-SSW" in src or "SVSL-99-GP15-SSW" in dst:
             src_gr = 4
-            src_shape = 'diamond'
+            src_shape = "diamond"
         if "core" in str(src).lower() or "-cr" in str(dst).lower():
             src_gr = 4
-            src_shape = 'diamond'
+            src_shape = "diamond"
         if "core" in str(dst).lower() or "-cr" in str(src).lower():
             dst_gr = 4
-            dst_shape = 'diamond'
+            dst_shape = "diamond"
 
         # Пустой порт: светло-зеленый, форма треугольника - △
         if "p:(" in str(src).lower():
             src_gr = 9
-            src_shape = 'triangle'
-            src_label = src.split('p:(')[1][:-1]
+            src_shape = "triangle"
+            src_label = src.split("p:(")[1][:-1]
         if "p:(" in str(dst).lower():
             dst_gr = 9
-            dst_shape = 'triangle'
-            dst_label = dst.split('p:(')[1][:-1]
+            dst_shape = "triangle"
+            dst_label = dst.split("p:(")[1][:-1]
 
         # Только описание: зеленый
         if "d:(" in str(src).lower():
             src_gr = 3
-            src_label = src.split('d:(')[1][:-1]
+            src_label = src.split("d:(")[1][:-1]
         if "d:(" in str(dst).lower():
             dst_gr = 3
-            dst_label = dst.split('d:(')[1][:-1]
+            dst_label = dst.split("d:(")[1][:-1]
 
         # Если стиль отображения admin down status
-        if show_admin_down_ports == 'true' and admin_status == 'down':
+        if show_admin_down_ports == "true" and admin_status == "down":
             w = 0.5  # ширина линии связи
         # print(src, admin_status)
 
@@ -214,17 +215,15 @@ def create_nodes(result: list, net: Network, show_admin_down_ports: str):
 
 @login_required
 def get_vlan(request):
-    """ Трассировка VLAN """
+    """Трассировка VLAN"""
 
-    if not request.GET.get('vlan'):
-        return JsonResponse({
-            'data': {}
-        })
+    if not request.GET.get("vlan"):
+        return JsonResponse({"data": {}})
 
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
     # Определяем список устройств откуда будет начинаться трассировка vlan
-    vlan_start = vlan_traceroute_settings.vlan_start.split(', ')
+    vlan_start = vlan_traceroute_settings.vlan_start.split(", ")
 
     # Определяем паттерн для поиска интерфейсов
     if not vlan_traceroute_settings.find_device_pattern:
@@ -236,7 +235,7 @@ def get_vlan(request):
         result = []  # Список узлов сети, соседей и линий связи для визуализации
 
         try:
-            vlan = int(request.GET['vlan'])
+            vlan = int(request.GET["vlan"])
         except ValueError:
             break
 
@@ -246,38 +245,35 @@ def get_vlan(request):
             vlan_to_find=vlan,
             passed_devices=passed,
             result=result,
-            empty_ports=request.GET.get('ep'),
-            only_admin_up=request.GET.get('ad'),
-            find_device_pattern=vlan_traceroute_settings.find_device_pattern
+            empty_ports=request.GET.get("ep"),
+            only_admin_up=request.GET.get("ad"),
+            find_device_pattern=vlan_traceroute_settings.find_device_pattern,
         )
         if result:  # Если поиск дал результат, то прекращаем
             break
 
     else:  # Если поиск не дал результатов
-        return HttpResponse('empty')
+        return HttpResponse("empty")
 
     net = Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
 
     # Создаем невидимые элементы, для инициализации групп 0-9
-    # 0 - голубой;  1 - желтый;  2 - красный;  3 - зеленый;  4 - розовый;
-    # 5 - пурпурный;  6 - оранжевый;  7 - синий;  8 - светло-красный;  9 - светло-зеленый
+    # 0 - голубой;      1 - желтый;     2 - красный;    3 - зеленый;            4 - розовый;
+    # 5 - пурпурный;    6 - оранжевый;  7 - синий;      8 - светло-красный;     9 - светло-зеленый
     for i in range(10):
-        net.add_node(i, i, title='', group=i, hidden=True)
+        net.add_node(i, i, title="", group=i, hidden=True)
 
     # Создаем элементы и связи между ними
-    create_nodes(result, net, request.GET.get('ad'))
+    create_nodes(result, net, request.GET.get("ad"))
 
     neighbor_map = net.get_adj_list()
     nodes_count = len(net.nodes)
 
-    print('Всего узлов создано:', nodes_count)
+    print("Всего узлов создано:", nodes_count)
     # add neighbor data to node hover data
 
     # set the physics layout of the network
-    net.repulsion(
-        node_distance=nodes_count if nodes_count > 130 else 130,
-        damping=0.89
-    )
+    net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
 
     for node in net.nodes:
         node["value"] = len(neighbor_map[node["id"]]) * 3
@@ -290,11 +286,10 @@ def get_vlan(request):
             node["value"] = 1
         node["title"] += " Соединено:<br>" + "<br>".join(neighbor_map[node["id"]])
 
-    # net.show_buttons(filter_=True)
-    net.set_edge_smooth('dynamic')
+    net.set_edge_smooth("dynamic")
 
-    if not os.path.exists(BASE_DIR / 'templates' / 'tools' / 'vlans'):
-        os.makedirs(BASE_DIR / 'templates' / 'tools' / 'vlans')
+    if not os.path.exists(BASE_DIR / "templates" / "tools" / "vlans"):
+        os.makedirs(BASE_DIR / "templates" / "tools" / "vlans")
     net.save_graph(f"templates/tools/vlans/vlan{request.GET['vlan']}.html")
 
     return render(request, f"tools/vlans/vlan{request.GET['vlan']}.html")

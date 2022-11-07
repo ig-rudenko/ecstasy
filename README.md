@@ -1,8 +1,10 @@
 # Ecstasy
 
-![Python](https://img.shields.io/badge/python-3.8_%7C_3.9-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+[![Code style: black](https://img.shields.io/badge/code_style-black-black.svg)](https://github.com/psf/black)
 
-![Linux](https://img.shields.io/badge/Linux-blue.svg) ![windows](https://img.shields.io/badge/Windows-red.svg)
+![Linux](https://img.shields.io/badge/Linux-supported-blue.svg)
+![windows](https://img.shields.io/badge/Windows-not_supported-red.svg)
 
 
 ### Веб-приложение для взаимодействия с сетевым оборудованием
@@ -37,6 +39,7 @@
 - Eltex
 - Huawei
 - Huawei DSL
+- Huawei GPON
 - Iskratel DSL
 - D-Link
 - Extreme

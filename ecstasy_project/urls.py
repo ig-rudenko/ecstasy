@@ -20,16 +20,15 @@ from django.contrib.staticfiles.utils import settings
 from django.contrib.staticfiles.urls import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
-    path('', views.home, name='home'),
-    path('devices', views.show_devices, name='devices-list'),
-    path('by-zabbix/<hostid>', views.by_zabbix_hostid, name='by-zabbix-hostid'),
-
-    path('device/', include('check.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('tools/', include('net_tools.urls'))
+    path("admin/", admin.site.urls),
+    path("", views.home, name="home"),
+    path("devices", views.show_devices, name="devices-list"),
+    path("by-zabbix/<hostid>", views.by_zabbix_hostid, name="by-zabbix-hostid"),
+    path("device/", include("check.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("tools/", include("net_tools.urls")),
 ]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

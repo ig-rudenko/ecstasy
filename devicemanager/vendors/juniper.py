@@ -3,21 +3,23 @@ from .base import BaseDevice, TEMPLATE_FOLDER
 
 
 class Juniper(BaseDevice):
-    prompt = r'> $'
-    space_prompt = r'-+\(more.*?\)-+'
-    vendor = 'juniper'
-    mac_format = r'\S\S:'*5 + r'\S\S'
+    prompt = r"> $"
+    space_prompt = r"-+\(more.*?\)-+"
+    vendor = "juniper"
+    mac_format = r"\S\S:" * 5 + r"\S\S"
 
-    def search_mac(self, mac_address: str):
+    def search_mac(self, mac_address: str) -> list:
 
-        formatted_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*mac_address)
+        formatted_mac = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*mac_address)
 
-        match = self.send_command(f'show arp | match {formatted_mac}', expect_command=False)
+        match = self.send_command(
+            f"show arp | match {formatted_mac}", expect_command=False
+        )
 
         # Форматируем вывод
         with open(
-                f'{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template',
-                encoding='utf-8'
+            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
+            encoding="utf-8",
         ) as template_file:
             template = textfsm.TextFSM(template_file)
 
