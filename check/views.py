@@ -221,7 +221,7 @@ def show_devices(request):
         "check/devices_list.html",
         {
             "devs": paginator.page(page),
-            "search": request.GET.get("s", ""),
+            "search": request.GET.get("s", None),
             "total_count": paginator.count,
             "page": page,
             "num_pages": paginator.num_pages,

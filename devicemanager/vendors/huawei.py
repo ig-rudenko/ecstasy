@@ -4,6 +4,7 @@ import pexpect
 import textfsm
 from time import sleep
 from functools import lru_cache
+from typing import Tuple
 from django.template.loader import render_to_string
 from .base import (
     BaseDevice,
@@ -13,6 +14,9 @@ from .base import (
     range_to_numbers,
     _interface_normal_view,
 )
+
+
+SplittedPort = Tuple[str, Tuple[str]]
 
 
 class Huawei(BaseDevice):
@@ -394,7 +398,9 @@ class HuaweiMA5600T(BaseDevice):
     def save_config(self):
         pass
 
-    def port_config(self, port: str):
+    def port_config(self, port: str) -> str:
+        """Конфигурация для определенного порта"""
+
         port_type, indexes = self.split_port(port)
 
         # Для GPON ONT используем отдельный поиск
@@ -415,47 +421,44 @@ class HuaweiMA5600T(BaseDevice):
 
         return ""
 
-    def split_port(self, port: str) -> tuple:
+    def split_port(self, port: str) -> SplittedPort:
         """
         Разделяет строку порта на тип интерфейса и плата, слот, порт
 
         ADSL 0/2/4 -> "adsl", ["0", "2", "4"]
 
         >>> self.split_port('ADSL 0/2/4')
-        ('adsl', ['0', '2', '4'])
+        ('adsl', ('0', '2', '4'))
 
         >>> self.split_port('GPON 0/6/7/1')
-        ('gpon', ['0', '6', '7', '1'])
+        ('gpon', ('0', '6', '7', '1'))
 
 
-        Также смотрит слоты
-
-            # display board
-
-            #-------------------------------------------------------------------------
-            SlotID  BoardName  Status         SubType0 SubType1    Online/Offline
-            #-------------------------------------------------------------------------
-            0
-            1
-            2       H808ADLF   Normal
-            3       H808ADLF   Normal
-            4       H808ADLF   Normal
-            5       H808ADLF   Normal
-            6       H808ADLF   Normal
-            7
-            8       H805ADPD   Normal
-            9       H801SCUB   Active_normal
+        Также смотрит слоты:
+          # display board \n
+          #------------------------------------------------------------------------ \n
+          SlotID  BoardName  Status         SubType0 SubType1    Online/Offline \n
+          #------------------------------------------------------------------------ \n
+          0                         \n
+          1                         \n
+          2       H808ADLF   Normal \n
+          3       H808ADLF   Normal \n
+          4       H808ADLF   Normal \n
+          5       H808ADLF   Normal \n
+          6       H808ADLF   Normal \n
+          7                         \n
+          8       H805ADPD   Normal \n
+          9       H801SCUB   Active_normal \n
 
         Чтобы понять тип
 
         >>> self.split_port('ethernet0/9/2')
-        ('scu', ['0', '9', '2'])
-
+        ('scu', ('0', '9', '2'))
 
         """
 
         port = port.lower().strip()
-        port_type = self.find_or_empty(r"^ethernet|^adsl|^gpon", port)
+        port_type = self.find_or_empty(r"^ethernet|^[av]dsl|^gpon", port)
         indexes = re.sub(r"^[a-z]+", "", port).split("/")
         if port_type == "ethernet":
             board_info = self.send_command(f"display board {indexes[0]}")
@@ -465,17 +468,17 @@ class HuaweiMA5600T(BaseDevice):
             )
             if board_list:
                 if "SCU" in board_list[1]:
-                    return "scu", indexes
+                    return "scu", tuple(indexes)
                 if "GI" in board_list[1]:
-                    return "giu", indexes
+                    return "giu", tuple(indexes)
 
-            return "eth", indexes
+            return "eth", tuple(indexes)
 
         return port_type, tuple(indexes)
 
-    def port_info_parser(self, info: str, profile_name: str, all_profiles: list):
+    def adsl_port_info_parser(self, info: str, profile_name: str, all_profiles: list):
         """
-        Преобразовываем информацию о порте для отображения на странице
+        Преобразовываем информацию о ADSL порте для отображения на странице
         """
 
         def color(val: float, s: str) -> str:
@@ -668,6 +671,175 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
+    def vdsl_port_info_parser(self, info: str, profile_name: str, all_profiles: list):
+        """
+        Преобразовываем информацию о VDSL порте для отображения на странице
+
+        ------------------------------------------------------
+        -  Line attenuation downstream(dB)            : 9.5
+        -  Line attenuation upstream(dB)              : 10.7
+        -  Maximum attainable rate downstream(Kbps)   : 20076
+        -  Maximum attainable rate upstream(Kbps)     : 1315
+        -  Actual line rate downstream(Kbps)          : 17324
+        -  Actual line rate upstream(Kbps)            : 1384
+        -  Line SNR margin downstream(dB)             : 12.9
+        -  Line SNR margin upstream(dB)               : 8.1
+        -  Total output power downstream(dBm)         : -8.7
+        -  Total output power upstream(dBm)           : 11.1
+        """
+
+        def color(val: float, s: str) -> str:
+            """Определяем цвета в зависимости от числовых значений показателя"""
+            if "SNR margin" in s:
+                gradient = [5, 7, 10, 20]
+            elif "attenuation" in s:
+                gradient = [-60, -50, -40, -20]
+                val = -val
+            elif "output power" in s:
+                return "#95e522" if val >= 10 else "#e5a522"
+            else:
+                return ""
+            # проверяем значения по градиенту
+            if val <= gradient[0]:
+                return "#e55d22"
+            if val <= gradient[1]:
+                return "#e5a522"
+            if val <= gradient[2]:
+                return "#dde522"
+            if val <= gradient[3]:
+                return "#95e522"
+
+            return "#22e536"
+
+        up_down_streams = [
+            {
+                "name": "Фактическая скорость передачи данных (Кбит/с)",
+                "down": {},
+                "up": {},
+            },
+            {
+                "name": "Максимальная скорость передачи данных (Кбит/с)",
+                "down": {},
+                "up": {},
+            },
+            {
+                "name": "Сигнал/Шум (дБ)",
+                "down": {},
+                "up": {},
+            },
+            {
+                "name": "Затухание линии (дБ)",
+                "down": {},
+                "up": {},
+            },
+            {
+                "name": "Общая выходная мощность (dBm)",
+                "down": {},
+                "up": {},
+            },
+        ]
+
+        for line in info.split("\n"):  # Построчно смотрим данные
+
+            if "Actual line rate downstream" in line:
+                index = 0
+                stream = "down"
+            elif "Actual line rate upstream" in line:
+                index = 0
+                stream = "up"
+
+            elif "Maximum attainable rate downstream" in line:
+                index = 1
+                stream = "down"
+            elif "Maximum attainable rate upstream" in line:
+                index = 1
+                stream = "up"
+
+            elif "Line SNR margin downstream" in line:
+                index = 2
+                stream = "down"
+            elif "Line SNR margin upstream" in line:
+                index = 2
+                stream = "up"
+
+            elif "Line attenuation downstream" in line:
+                index = 3
+                stream = "down"
+            elif "Line attenuation upstream" in line:
+                index = 3
+                stream = "up"
+
+            elif "Total output power downstream" in line:
+                index = 4
+                stream = "down"
+            elif "Total output power upstream" in line:
+                index = 4
+                stream = "up"
+
+            else:
+                continue
+
+            value = self.find_or_empty(r"-?\d+\.?\d*", line)
+            up_down_streams[index][stream]["value"] = value
+            up_down_streams[index][stream]["color"] = color(float(value), line)
+
+        return render_to_string(
+            "check/adsl-port-info.html",
+            {
+                "profile_name": profile_name,
+                "first_col": [],
+                "streams": up_down_streams,
+                "profiles": all_profiles,
+            },
+        )
+
+    def __get_vdsl_port_info(self, indexes: tuple):
+        """Смотрим информацию на VDSL порту"""
+
+        self.session.sendline("config")
+        self.session.sendline(f"interface vdsl {indexes[0]}/{indexes[1]}")
+        self.session.expect(self.prompt)
+
+        port_stats = self.send_command(f"display line operation {indexes[2]}")
+
+        # Индекс текущего шаблона
+        current_line_template_index = self.find_or_empty(
+            r"\s\d+\s+\S+\s+\S+\s+(\d+)",
+            self.send_command(f"display port state {indexes[2]}", expect_command=False),
+        )
+
+        # Все шаблоны профилей:
+        #   Template  Template
+        #   Index     Name
+        #   ------------------------------
+        #          1  DEFVAL
+        #          2  VDSL LINE TEMPLATE 2
+        #          3  VDSL LINE TEMPLATE 3
+        #          4  NO_CHANGE
+        #          5  VDSL
+        line_templates = sorted(
+            re.findall(
+                r"\s+(\d+)\s+(.+)",
+                self.send_command(
+                    "display vdsl line-template info", expect_command=False
+                ),
+            ),
+            key=lambda x: int(x[0]),  # Сортируем по убыванию индекса
+            reverse=True,
+        )
+
+        template_name = ""
+        # Ищем имя текущего шаблона
+        for line in line_templates:
+            if line[0] == current_line_template_index:
+                template_name = line[1]
+
+        self.session.sendline("quit")
+        self.session.sendline("quit")
+        self.session.expect(self.prompt)
+
+        return self.vdsl_port_info_parser(port_stats, template_name, line_templates)
+
     def get_port_info(self, port: str):
         """Смотрим информацию на порту"""
 
@@ -680,6 +852,10 @@ class HuaweiMA5600T(BaseDevice):
         # Для других
         if not port_type or len(indexes) != 3:
             return f"Неверный порт! ({port})"
+
+        # Для VDSL используем отдельный метод
+        if port_type == "vdsl":
+            return self.__get_vdsl_port_info(indexes=indexes)
 
         self.session.sendline("config")
         self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
@@ -721,7 +897,7 @@ class HuaweiMA5600T(BaseDevice):
                 [line[0], line[1] + line[-1].replace(" ", "").replace("\n", "")]
             )
 
-        return self.port_info_parser(output, profile_name, profiles)
+        return self.adsl_port_info_parser(output, profile_name, profiles)
 
     def change_profile(self, port: str, profile_index: int) -> str:
         """Меняем профиль на DSL порту"""
@@ -729,8 +905,15 @@ class HuaweiMA5600T(BaseDevice):
         port_type, indexes = self.split_port(port)
 
         # Проверяем индекс профиля и порт
-        if port_type != "adsl" or len(indexes) != 3 or profile_index <= 0:
+        if port_type not in ["adsl", "vdsl"] or len(indexes) != 3 or profile_index <= 0:
             return "Неверный порт!"
+
+        if port_type == "adsl":
+            # Если порт ADSL, то команда для смена профиля
+            change_profile_cmd = "profile-index"
+        else:
+            # Если порт VDSL
+            change_profile_cmd = "template-index"
 
         self.session.sendline("config")
         self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
@@ -738,7 +921,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline(f"deactivate {indexes[2]}")
         self.session.expect(self.prompt)
         status = self.send_command(
-            f"activate {indexes[2]} profile-index {profile_index}"
+            f"activate {indexes[2]} {change_profile_cmd} {profile_index}"
         )
         self.session.sendline("quit")
         return status
@@ -801,7 +984,7 @@ class HuaweiMA5600T(BaseDevice):
             if status == "up":
                 return "undo shutdown"
 
-        if port_type in ("adsl", "ont"):
+        if port_type in ("adsl", "ont", "vdsl"):
             if status == "down":
                 return "deactivate"
             if status == "up":
@@ -856,8 +1039,8 @@ class HuaweiMA5600T(BaseDevice):
 
         В зависимости от типа порта команды разнятся
 
-        Для порта adsl 0/1/2:
-            # interface adsl 0/1
+        Для порта *dsl 0/1/2:
+            # interface *dsl 0/1
             # deactivate 2
 
         Для порта gpon 0/3/2/14:
@@ -912,10 +1095,11 @@ class HuaweiMA5600T(BaseDevice):
         if not port_type or len(indexes) != 3:
             return f"Неверный порт! ({port})"
 
+        # Очищаем описание от лишних символов
         desc = self.clear_description(desc)
 
         if len(desc) > 32:
-            # Длина описания не
+            # Длина описания больше допустимого
             return "Max length:32"
 
         self.session.sendline("config")

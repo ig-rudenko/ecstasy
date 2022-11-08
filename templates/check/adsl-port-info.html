@@ -121,6 +121,7 @@ function change_port_profile(profile_index, profile_name) {
         success: function( data ) {
             console.log(data)
             $('button').prop('disabled', false);
+            $('#profile-name').html(profile_name)
             profile_load_div.prop('hidden', true);
             profile_status_div.prop('hidden', false).addClass('alert-success').html('Профиль был изменен на ' + profile_name)
 

@@ -1,16 +1,62 @@
 import subprocess
 from re import findall, IGNORECASE
+from typing import Tuple, List
 from concurrent.futures import ThreadPoolExecutor
 
 
 def physical_interface(name: str) -> bool:
+    """
+    Смотрит, относится ли интерфейс к физическим по указанным именам
+
+    Не учитываются:
+      VLAN, Loop, Null, Meth, System
+
+    Также DSL каналы:
+      dsl_channel
+
+    Телефонные линии:
+      pstn
+
+    """
+
     name = name.lower()
-    if findall(r"802\.1Q|loop|null|meth|vlan|sys", name, IGNORECASE):
+    if findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE):
         return False
     return True
 
 
-def show_interfaces(device_ip, community, snmp_port=161):
+def show_interfaces(
+    device_ip, community, snmp_port=161
+) -> List[Tuple[str, str, str, str]]:
+    """
+
+    С помощью snmpwalk смотрит состояние интерфейсов, имена, описания
+
+    Текущее рабочее состояние интерфейса. (Oper Status)
+
+    Состояние тестирования (testing) указывает на то, что рабочие пакеты не могут
+    быть переданы.
+
+    Если Admin Status (down), то Oper Status должен быть (down).
+
+    Если Admin Status изменен на (up), то Oper Status должен измениться на (up),
+    если интерфейс готов к передаче и приему сетевого трафика;
+
+    Режим ожидания (dormant), если интерфейс ожидает внешних действий
+    (например, последовательная линия, ожидающая входящего соединения);
+
+    Порт будет оставаться в состоянии (down), если и только если есть ошибка,
+    которая мешает ему перейти в состояние (up);
+
+    Состояние (notPresent), если интерфейс имеет отсутствующие компоненты
+    (как правило, аппаратные).
+
+    :param device_ip: IP адрес оборудования
+    :param community: SNMP Community
+    :param snmp_port: SNMP порт (по умолчанию 161)
+    :return: [('name', 'admin status', 'oper status', 'desc'), ...]
+    """
+
     snmp_result = {
         "IF-MIB::ifIndex": {},
         "IF-MIB::ifName": {},
@@ -20,7 +66,7 @@ def show_interfaces(device_ip, community, snmp_port=161):
         "IF-MIB::ifAlias": {},
     }
 
-    def snmpget(community, ip, port, mib) -> dict:
+    def snmpget(community, ip, port, mib) -> None:
         result = subprocess.run(
             ["snmpwalk", "-Oq", "-v2c", "-c", community, f"{ip}:{port}", mib],
             stdout=subprocess.PIPE,
@@ -35,7 +81,6 @@ def show_interfaces(device_ip, community, snmp_port=161):
             if not snmp_result.get(mib):
                 snmp_result[mib] = {}
             snmp_result[mib][res_line[0][0].replace(f"{mib}.", "")] = res_line[0][1]
-        return snmp_result[mib]
 
     with ThreadPoolExecutor() as snmp_executor:
         for key in snmp_result:
@@ -56,22 +101,5 @@ def show_interfaces(device_ip, community, snmp_port=161):
 
 
 snmp_interface_status_help = """
-             Текущее рабочее состояние интерфейса. (Oper Status)
 
-    Состояние тестирования (testing) указывает на то, что рабочие пакеты не могут
-    быть переданы. 
-
-    Если Admin Status (down), то Oper Status должен быть (down). 
-
-    Если Admin Status изменен на (up), то Oper Status должен измениться на (up),
-    если интерфейс готов к передаче и приему сетевого трафика; 
-
-    Режим ожидания (dormant), если интерфейс ожидает внешних действий 
-    (например, последовательная линия, ожидающая входящего соединения); 
-
-    Порт будет оставаться в состоянии (down), если и только если есть ошибка, 
-    которая мешает ему перейти в состояние (up);
-
-    Состояние (notPresent), если интерфейс имеет отсутствующие компоненты
-    (как правило, аппаратные).
 """

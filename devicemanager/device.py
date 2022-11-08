@@ -404,32 +404,18 @@ class DevicesCollection:
     def __getitem__(self, item):
         return self.collection[item]
 
-    @singledispatchmethod
     def __add__(self, other):
-        raise TypeError(f"Нельзя сложить коллекцию с типом {type(other)}")
-
-    @__add__.register
-    def _(self, other: "Device"):
-        self.collection.append(other)
+        if isinstance(other, Device):
+            self.collection += [other]
+        if isinstance(other, DevicesCollection):
+            self.collection += other.collection
         return self.collection
 
-    @__add__.register
-    def _(self, other: "DevicesCollection"):
-        self.collection += other.collection
-        return self.collection
-
-    @singledispatchmethod
     def __radd__(self, other):
-        raise TypeError(f"Нельзя сложить коллекцию с типом {type(other)}")
-
-    @__radd__.register
-    def _(self, other: "Device"):
-        self.collection.insert(0, other)
-        return self.collection
-
-    @__radd__.register
-    def _(self, other: "DevicesCollection"):
-        self.collection = other.collection + self.collection
+        if isinstance(other, Device):
+            self.collection = [other] + self.collection
+        if isinstance(other, DevicesCollection):
+            self.collection = other.collection + self.collection
         return self.collection
 
     def __iadd__(self, other):

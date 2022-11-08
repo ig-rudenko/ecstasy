@@ -10,3 +10,8 @@ lib
 ecstasy_project/settings_prod.py
 .idea
 doppler.yaml
+.run
+*/tests/*
+logs
+Dockerfile
+docker-compose.yaml
