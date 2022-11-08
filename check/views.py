@@ -487,21 +487,21 @@ def get_port_detail(request):
         with model_dev.connect() as session:
 
             data["macs"] = []  # Итоговый список
-            vlan_passed = set()  # Множество уникальных VLAN
+            vlan_passed = {}  # Словарь уникальных VLAN
             for vid, mac in session.get_mac(data["port"]):  # Смотрим VLAN и MAC
 
                 # Если еще не искали такой VLAN
                 if vid not in vlan_passed:
-                    # Добавляем в множество вланов, которые участвовали в поиске имени
-                    vlan_passed.add(vid)
                     # Ищем название VLAN'a
                     try:
                         vlan_name = VlanName.objects.get(vid=int(vid)).name
                     except VlanName.DoesNotExist:
                         vlan_name = ""
+                    # Добавляем в множество вланов, которые участвовали в поиске имени
+                    vlan_passed[vid] = vlan_name
 
                 # Обновляем
-                data["macs"].append([vid, mac, vlan_name])
+                data["macs"].append([vid, mac, vlan_passed[vid]])
 
             # Отправляем JSON, если вызов AJAX = mac
             if request.GET.get("ajax") == "mac":

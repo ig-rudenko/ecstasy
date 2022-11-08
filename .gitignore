@@ -12,6 +12,8 @@ ecstasy_project/settings_prod.py
 doppler.yaml
 .run
 */tests/*
+*/migrations/*
 logs
 Dockerfile
 docker-compose.yaml
+templates/test*

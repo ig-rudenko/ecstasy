@@ -20,7 +20,9 @@ def physical_interface(name: str) -> bool:
     """
 
     name = name.lower()
-    if findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE):
+    if findall(
+        r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE
+    ):
         return False
     return True
 
