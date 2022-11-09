@@ -59,7 +59,7 @@ class EltexMES(BaseDevice):
      - 3324
     """
 
-    prompt = r"\S+#\s*"
+    prompt = r"\S+#\s*$"
     space_prompt = (
         r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |"
         r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
@@ -71,7 +71,7 @@ class EltexMES(BaseDevice):
     def __init__(self, session: pexpect, ip: str, auth: dict, model="", mac=""):
         super().__init__(session, ip, auth, model)
         self.mac = mac
-        inv = self.send_command("show inventory")
+        inv = self.send_command("show inventory", expect_command=False)
         self.serialno = self.find_or_empty(r"SN: (\S+)", inv)
 
     def save_config(self):
@@ -87,8 +87,8 @@ class EltexMES(BaseDevice):
         return self.SAVED_ERR
 
     def get_interfaces(self) -> list:
-        self.session.sendline("show int des")
-        self.session.expect("show int des")
+        self.session.sendline("show interfaces description")
+        self.session.expect("show interfaces description")
         output = ""
         while True:
             match = self.session.expect(
@@ -241,9 +241,8 @@ class EltexMES(BaseDevice):
         self.session.sendline(f"interface {_interface_normal_view(port)}")
         self.session.expect(self.prompt)
 
-        if (
-            desc == ""
-        ):  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+        if desc == "":
+            # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             res = self.send_command("no description", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
@@ -264,7 +263,62 @@ class EltexESR(EltexMES):
     _template_name = "eltex-esr"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model="", mac=""):
-        super().__init__(session, ip, auth, model)
+        self.session: pexpect = session
+        self.ip: str = ip
+        self.auth: dict = auth
+        self.model: str = model
+        self.mac: str = mac
         system = self.send_command("show system")
-        self.mac = mac
-        self.serialno = self.find_or_empty(r"serial number:\s+(\S+)", system)
+        self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
+
+    def save_config(self):
+        """Для ESR необходимо сделать коммит конфигурации, а затем подтвердить её"""
+
+        self.session.sendline("commit")
+        if (
+            self.session.expect(
+                [
+                    self.prompt,  # 0
+                    "Configuration has been successfully applied",  # 1
+                    "Unknown command",  # 2
+                ]
+            )
+            == 2  # Если неверная команда
+        ):
+            # Выходим из режима редактирования конфигурации
+            self.session.sendline("end")
+            self.session.sendline("commit")
+            self.session.expect(
+                [self.prompt, "Configuration has been successfully applied"]
+            )
+
+        # Подтверждаем изменение
+        status = self.send_command("confirm")
+        if "Configuration has been confirmed" in status:
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
+    def port_type(self, port: str) -> str:
+        if "SFP present" in self.send_command(
+            f"show interfaces sfp {_interface_normal_view(port)}"
+        ):
+            return "SFP"
+        return "COPPER"
+
+    def get_port_info(self, port: str):
+        return self.send_command(
+            f"show interfaces status {_interface_normal_view(port)}",
+            expect_command=False,
+            before_catch=r"Description:.+",
+        ).replace("\n", "<br>")
+
+    def get_port_errors(self, port: str) -> str:
+        port_stat = self.send_command(
+            f"show interfaces counters {_interface_normal_view(port)}"
+        ).split("\n")
+
+        errors = ""
+        for line in port_stat:
+            if "errors" in line:
+                errors += line.strip() + "\n"
+        return errors

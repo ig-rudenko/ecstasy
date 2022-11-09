@@ -701,6 +701,9 @@ class Device:
                 if session.vendor:
                     self.zabbix_info.inventory.vendor = session.vendor
 
+                if session.serialno:
+                    self.zabbix_info.inventory.serialno_a = session.serialno
+
                 # Получаем верные логин/пароль
                 self.success_auth = session.auth
 

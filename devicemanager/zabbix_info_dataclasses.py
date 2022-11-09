@@ -76,8 +76,10 @@ class ZabbixInventory:
     poc_2_screen: str = ""
     poc_2_notes: str = ""
 
-    @property
-    def coordinates(self, reverse=False):
+    def coordinates(self, reverse=False) -> tuple:
+        if not self.location_lat or not self.location_lon:
+            return tuple()
+
         if reverse:
             return self.location_lon, self.location_lat
 

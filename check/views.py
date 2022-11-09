@@ -374,6 +374,9 @@ def device_info(request, name):
     if model_update_fields:
         model_dev.save(update_fields=model_update_fields)
 
+    # Обновляем данные в Zabbix
+    dev.push_zabbix_inventory()
+
     # Сохраняем интерфейсы
     if current_status and dev.interfaces:
         try:
@@ -464,6 +467,7 @@ def get_port_detail(request):
             return HttpResponseForbidden()
 
         dev = Device(request.GET["device"])
+        dev.ip = model_dev.ip  # IP адрес
 
         data = {
             "dev": dev,
