@@ -962,7 +962,7 @@ def start_cable_diag(request):
 
 
 @login_required
-@permission(models.Bras)
+@permission(models.Profile.BRAS)
 def change_adsl_profile(request):
     port: str = request.POST.get("port")
     profile_index: str = request.POST.get("index")
