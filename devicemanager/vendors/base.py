@@ -194,18 +194,20 @@ class BaseDevice(ABC):
                     ],
                     timeout=20,
                 )
-                output += self.session.before.decode(
-                    errors="ignore"
-                )  # Убираем лишние символы
-                output = output.replace(
-                    "\x1B[42D                                          \x1B[42D", ""
+
+                # Управляющие последовательности ANSI
+                ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+                # Убираем их
+                output += ansi_escape.sub(
+                    "", self.session.before.decode(errors="ignore")
                 )
+
                 if match == 0:
                     break
                 if match == 1:
-                    self.session.send(
-                        " "
-                    )  # Отправляем символ пробела, для дальнейшего вывода
+                    # Отправляем символ пробела, для дальнейшего вывода
+                    self.session.send(" ")
                     output += "\n"
                 else:
                     print(
@@ -222,7 +224,9 @@ class BaseDevice(ABC):
                 self.session.expect(prompt)
             except pexpect.TIMEOUT:
                 pass
-            output = self.session.before.decode("utf-8")
+            output = re.sub(
+                r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore")
+            )
         return output
 
     @abstractmethod
