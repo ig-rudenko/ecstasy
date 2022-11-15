@@ -949,22 +949,35 @@ class HuaweiMA5600T(BaseDevice):
         if len(indexes) != 3:  # Неверный порт
             return []
 
+        # -> display mac-address port
+        #   SRV-P BUNDLE TYPE MAC            MAC TYPE F /S /P  VPI  VCI   VLAN ID
+        #   INDEX INDEX
+        #   ---------------------------------------------------------------------
+        #     689    -   adl  9afc-8d4c-1525 dynamic  0 /3 /27 1    33    1418
+        #     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
+        #     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
+        #   ---------------------------------------------------------------------
         self.session.sendline(f'display mac-address port {"/".join(indexes)}')
-        com = self.send_command(
-            "\n", expect_command=False, before_catch="display mac-address"
-        )
+        if self.session.expect([self.prompt, r"\}:"]):
+            self.session.sendline("\n")
+            self.session.expect(self.prompt)
         macs1 = re.findall(
-            rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+.+?\s+(\d+)",
-            com,
+            rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
+            self.session.before.decode(errors="ignore"),
         )
 
-        # Попробуем еще одну команду
+        # Попробуем еще одну команду -> display security bind mac
+        #   Index     MAC-Address FlowID  F/ S/ P   VLAN-ID  Vpi  Vci FlowType    FlowPara
+        #   ------------------------------------------------------------------------------
+        #       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
+        #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
         self.session.sendline(f'display security bind mac {"/".join(indexes)}')
-        com = self.send_command(
-            "\n", expect_command=False, before_catch="display security"
-        )
+        if self.session.expect([self.prompt, r"\}:"]):
+            self.session.sendline("\n")
+            self.session.expect(self.prompt)
         macs2 = re.findall(
-            rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)", com
+            rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
+            self.session.before.decode(errors="ignore"),
         )
 
         res = []
