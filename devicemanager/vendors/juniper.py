@@ -1,3 +1,6 @@
+import binascii
+from re import findall, sub
+
 import textfsm
 from .base import BaseDevice, TEMPLATE_FOLDER
 
@@ -20,7 +23,7 @@ class Juniper(BaseDevice):
         formatted_result = self.parse_subscribers(subscribers_output)
         if formatted_result:
             # Нашли среди subscribers
-            return formatted_result[0]
+            return formatted_result
 
         # >> Ищем в таблице ARP <<
         match = self.send_command(
@@ -50,7 +53,7 @@ class Juniper(BaseDevice):
         formatted_result = self.parse_subscribers(subscribers_output)
         if formatted_result:
             # Нашли среди subscribers
-            return formatted_result[0]
+            return formatted_result
 
         # >> Ищем в таблице ARP <<
         match = self.send_command(
@@ -70,15 +73,70 @@ class Juniper(BaseDevice):
 
         return []
 
-    def parse_subscribers(self, string: str) -> list:
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/{self.vendor.lower()}-{self.model.lower()}/subscribers.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
+    @staticmethod
+    def parse_subscribers(string: str) -> list:
+        """
+        Парсим данные:
 
-        return template.ParseText(string)
+          ...
+          IP Address: 10.201.170.140
+          ...
+          MAC Address: c0:25:e9:46:77:0f
+          ...
+          VLAN Id: 604
+          Agent Circuit ID: port1
+          Agent Remote ID: SVSL-122-Kosar27p4-ASW1
+          ...
+
+        :returns: ['ip', 'mac' 'vlan_id', 'device_name', 'port']
+
+        """
+
+        # Форматируем вывод
+
+        info = []
+
+        # IP / MAC / VLAN
+        ip_mac_vlan = findall(
+            r"IP Address:\s+(\d+\.\d+\.\d+\.\d+)[\s\S]+"
+            r"MAC Address:\s+(\S+)[\s\S]+"
+            r"VLAN Id:\s+(\d+)[\s\S]+",
+            string,
+        )
+        if ip_mac_vlan:
+            info += list(*ip_mac_vlan)
+
+        # Agent Remote ID
+        agent_remote = findall(
+            r"Agent Remote ID: len \d+([\s\S]*?(?=Login Time))|"
+            r"Agent Remote ID: (\S+[\s\S]*?(?=Login Time))",
+            string,
+        )
+        if agent_remote:
+            agent_remote = "".join(agent_remote[0])  # "\n00 04 02 5e 00 03\n"
+
+            # Удаляем лишние символы
+            agent_remote_hex = sub(r"\s", "", agent_remote)  # "0004025e0003"
+
+            # Преобразуем из hex в строку с кодировкой ascii
+            info.append(binascii.unhexlify(agent_remote_hex).decode("ascii"))
+
+        # Agent Circuit ID
+        agent_circuit = findall(
+            r"Agent Circuit ID: len \d+([\s\S]*?)(?=Agent Remote ID)|"
+            r"Agent Circuit ID: (\S+[\s\S]*?)(?=Agent Remote ID)",
+            string,
+        )
+        if agent_circuit:
+            agent_circuit = "".join(agent_circuit[0])  # "\n00 04 02 5e 00 03\n"
+
+            # Удаляем лишние символы
+            agent_circuit_hex = sub(r"\s", "", agent_circuit)  # "0004025e0003"
+
+            # Преобразуем из hex в строку с кодировкой ascii
+            info.append(binascii.unhexlify(agent_circuit_hex).decode("ascii"))
+
+        return info
 
     def get_interfaces(self) -> list:
         pass

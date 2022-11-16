@@ -382,18 +382,69 @@ class HuaweiMA5600T(BaseDevice):
         prompt=None,
         pages_limit=None,
     ) -> str:
-        res = super().send_command(
-            command,
-            before_catch,
-            expect_command,
-            num_of_expect,
-            space_prompt,
-            prompt,
-            pages_limit,
-        )
-        return res.replace(
-            "\n\x1B[37D                                     \x1B[37D", ""
-        )
+        if space_prompt is None:
+            space_prompt = self.space_prompt
+        if prompt is None:
+            prompt = self.prompt
+
+        output = ""
+        self.session.sendline(command)  # Отправляем команду
+
+        if expect_command:
+            self.session.expect(
+                command[-num_of_expect:]
+            )  # Считываем введенную команду с поправкой по длине символов
+        if before_catch:
+            self.session.expect(before_catch)
+
+        if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
+            while pages_limit is None or pages_limit > 0:
+                match = self.session.expect(
+                    [
+                        prompt,  # 0 - конец
+                        space_prompt,  # 1 - далее
+                        pexpect.TIMEOUT,  # 2
+                        r"\}:",  # 3 { <cr>|ontid<U><0,255> }:
+                    ],
+                    timeout=20,
+                )
+
+                # Управляющие последовательности ANSI
+                ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+                # Убираем их
+                output += ansi_escape.sub(
+                    "", self.session.before.decode(errors="ignore")
+                )
+
+                if match == 0:
+                    break
+                if match == 1:
+                    # Отправляем символ пробела, для дальнейшего вывода
+                    self.session.send(" ")
+                    output += "\n"
+                elif match == 3:
+                    # { <cr>|ontid<U><0,255> }:
+                    self.session.send("\n")
+                else:
+                    print(
+                        f'{self.ip} - timeout во время выполнения команды "{command}"'
+                    )
+                    break
+
+                # Если задано кол-во страниц
+                if pages_limit:
+                    pages_limit -= 1
+
+        else:  # Если вывод команды выдается полностью, то пропускаем цикл
+            try:
+                self.session.expect(prompt)
+            except pexpect.TIMEOUT:
+                pass
+            output = re.sub(
+                r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore")
+            )
+        return output
 
     def save_config(self):
         pass
@@ -795,12 +846,14 @@ class HuaweiMA5600T(BaseDevice):
 
     def __get_vdsl_port_info(self, indexes: tuple):
         """Смотрим информацию на VDSL порту"""
-
         self.session.sendline("config")
+
         self.session.sendline(f"interface vdsl {indexes[0]}/{indexes[1]}")
         self.session.expect(self.prompt)
 
-        port_stats = self.send_command(f"display line operation {indexes[2]}")
+        port_stats = self.send_command(
+            f"display line operation {indexes[2]}", expect_command=False
+        )
 
         # Индекс текущего шаблона
         current_line_template_index = self.find_or_empty(
@@ -957,13 +1010,11 @@ class HuaweiMA5600T(BaseDevice):
         #     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
         #     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
         #   ---------------------------------------------------------------------
-        self.session.sendline(f'display mac-address port {"/".join(indexes)}')
-        if self.session.expect([self.prompt, r"\}:"]):
-            self.session.sendline("\n")
-            self.session.expect(self.prompt)
         macs1 = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.session.before.decode(errors="ignore"),
+            self.send_command(
+                f"display mac-address port {'/'.join(indexes)}", num_of_expect=6
+            ),
         )
 
         # Попробуем еще одну команду -> display security bind mac
@@ -971,13 +1022,11 @@ class HuaweiMA5600T(BaseDevice):
         #   ------------------------------------------------------------------------------
         #       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
-        self.session.sendline(f'display security bind mac {"/".join(indexes)}')
-        if self.session.expect([self.prompt, r"\}:"]):
-            self.session.sendline("\n")
-            self.session.expect(self.prompt)
         macs2 = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.session.before.decode(errors="ignore"),
+            self.send_command(
+                f"display security bind mac {'/'.join(indexes)}", num_of_expect=6
+            ),
         )
 
         res = []
