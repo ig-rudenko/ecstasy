@@ -19,10 +19,10 @@
             box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 30%);
         }
 
-        #mac-string {
+        .search-string {
             text-align: center;
-            margin-top: 80px;
-            margin-bottom: 80px;;
+            {#margin-top: 80px;#}
+            {#margin-bottom: 80px;;#}
             width: 100%;
             height: 20px;
             font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
@@ -289,13 +289,18 @@
         </div>
       </div>
 
-{#        MAC SEARCH #}
+{#        IP-MAC SEARCH #}
       <div class="col-md-4">
         <div class="text-center h-100 p-4 text-bg-dark border rounded-5 shadow">
-            <h4 class="fw-bold"><a class="text-light" href="{% url 'search-mac' %}">MAC search</a></h4>
-            <input id="mac-string" disabled type="text" required placeholder="00:00:00:00:00:00">
-          <p>Осуществляет поиск по MAC адресу в таблицах arp для вывода IP адреса, VLAN, а также
-          отображает соответствие с базой Zabbix</p>
+            <h4 class="fw-bold"><a class="text-light" href="{% url 'search-wtf' %}">WTF search</a></h4>
+            <div style="margin-top: 40px; margin-bottom: 40px;">
+                <br>
+                <input id="mac-string" class="search-string" disabled type="text" required placeholder="00:00:00:00:00:00">
+                <br>
+                <br>
+                <input id="ip-string" class="search-string" disabled type="text" required placeholder="00:00:00:00:00:00">
+            </div>
+          <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой Zabbix</p>
 
         </div>
       </div>
@@ -327,8 +332,18 @@ function mac_generator() {
     document.getElementById('mac-string').placeholder = random_mac
     timer();
 }
+
+function ip_generator() {
+    let random_ip = [];
+    let x = 0;
+    for (let i = 0; i < 4; i++) {
+        random_ip.push(Math.round(Math.random() * (255 - 1) + 1));
+    }
+    document.getElementById('ip-string').placeholder = random_ip.join('.');
+}
 function timer() {
     setTimeout(mac_generator, 300);
+    setTimeout(ip_generator, 300);
 }
 timer();
 </script>

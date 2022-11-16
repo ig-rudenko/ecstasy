@@ -1141,10 +1141,35 @@ class HuaweiCX600(BaseDevice):
     vendor = "Huawei"
 
     def search_mac(self, mac_address: str) -> list:
+        """Ищем MAC адрес в таблице ARP оборудования"""
+
         formatted_mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_address)
 
         match = self.send_command(
             f"display access-user mac-address {formatted_mac}",
+            prompt=self.prompt + "|Are you sure to display some information",
+            expect_command=False,
+        )
+        self.session.sendline("N")
+
+        # Форматируем вывод
+        with open(
+            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
+            encoding="utf-8",
+        ) as template_file:
+            template = textfsm.TextFSM(template_file)
+
+        formatted_result = template.ParseText(match)
+        if formatted_result:
+            return formatted_result[0]
+
+        return []
+
+    def search_ip(self, ip_address: str) -> list:
+        """Ищем IP адрес в таблице ARP оборудования"""
+
+        match = self.send_command(
+            f"display access-user ip-address {ip_address}",
             prompt=self.prompt + "|Are you sure to display some information",
             expect_command=False,
         )

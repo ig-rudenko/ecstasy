@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 
 @login_required
-def search_mac(request, mac=None):
+def search_wtf_is_it(request, mac=None):
     """Возвращает страницу для поиска MAC адреса"""
     return render(request, "tools/search_mac.html", {"mac": mac})
 

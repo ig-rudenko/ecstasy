@@ -9,5 +9,5 @@ urlpatterns = [
     path("vlantraceroute", views.get_vlan, name="ajax-vlan-traceroute"),
     path("vlan_desc", views.get_vlan_desc, name="ajax-get-vlan-desc"),
     path("mac_vendor/<mac>", views.get_vendor, name="ajax-get-vendor"),
-    path("mac_info/<mac>", views.mac_info, name="ajax-mac-info"),
+    path("ip-mac-info/<ip_or_mac>", views.ip_mac_info, name="ajax-ip-mac-info"),
 ]

@@ -13,10 +13,10 @@ function get_vendor(mac_value) {
     })
 }
 
-function get_mac_info(mac_value) {
+function get_info_wtf(mac_value) {
     $.ajax({
         type: 'get',
-        url: '/tools/ajax/mac_info/' + mac_value,
+        url: '/tools/ajax/ip-mac-info/' + mac_value,
         success: function (response) {
             result_div.innerHTML = response
         },
@@ -34,5 +34,5 @@ function start_search_mac(mac_value) {
     <span class="visually-hidden">Loading...</span>
     </div>`
     get_vendor(mac_value)
-    get_mac_info(mac_value)
+    get_info_wtf(mac_value)
 }

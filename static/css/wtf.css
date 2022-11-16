@@ -1,0 +1,28 @@
+body {
+    background: #222;
+}
+/*.menu-main a.current, .menu-main a:hover{*/
+/*    color: #4ac1f7;*/
+/*}*/
+/*.menu-main a:before,*/
+/*.menu-main a:after {*/
+/*    background: #4ac1f7;*/
+/*}*/
+
+.element {
+    border: 10px;
+    text-align: center;
+    margin: 250px auto 20px;
+}
+
+#what-is-it {
+    width: 450px;
+    height: 50px;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-size: 40px;
+    color: #4ac1f7;
+    border: 0;
+    outline: 0;
+    text-align: center;
+    background: transparent;
+}

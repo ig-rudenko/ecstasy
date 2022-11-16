@@ -1,4 +1,5 @@
 import os
+import re
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -49,19 +50,24 @@ def find_as_str(request):
     )
 
 
-def get_mac_from(model_dev, mac_address: str, result: list):
+def get_ip_or_mac_from(model_dev, find_address: str, result: list, find_type: str):
     """Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result"""
 
     with model_dev.connect() as session:
-        if hasattr(session, "search_mac"):
-            res = session.search_mac(mac_address)
-            if res:
-                res.append(model_dev.name)
-                result.append(res)
+        info = []
+        if find_type == "IP" and hasattr(session, "search_ip"):
+            info: list = session.search_ip(find_address)
+
+        elif find_type == "MAC" and hasattr(session, "search_mac"):
+            info: list = session.search_mac(find_address)
+
+        if info:
+            info.append(model_dev.name)  # Добавляем имя оборудования к результату
+            result.append(info)
 
 
 @login_required
-def mac_info(request, mac):
+def ip_mac_info(request, ip_or_mac):
     """
     Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
 
@@ -71,14 +77,26 @@ def mac_info(request, mac):
 
     devices_for_search = DevicesForMacSearch.objects.all()
 
-    mac_address = "".join(findall(r"[a-zA-Z\d]", mac)).lower()
-    if not mac_address or len(mac_address) < 6 or len(mac_address) > 12:
-        return []
+    find_address = findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip_or_mac)
+    if find_address:
+        # Нашли IP адрес
+        find_type: str = "IP"
+        find_address = find_address[0]
+
+    else:
+        find_address = "".join(findall(r"[a-fA-F\d]", ip_or_mac)).lower()
+        # Нашли MAC адрес
+        find_type: str = "MAC"
+        if not find_address or len(find_address) < 6 or len(find_address) > 12:
+            return []
+
     match = []
     with ThreadPoolExecutor() as execute:
         for dev in devices_for_search:
-            print(dev.device, mac_address)
-            execute.submit(get_mac_from, dev.device, mac_address, match)
+            print(dev.device, find_address)
+            execute.submit(
+                get_ip_or_mac_from, dev.device, find_address, match, find_type
+            )
 
     names = []  # Список имен оборудования и его hostid из Zabbix
 

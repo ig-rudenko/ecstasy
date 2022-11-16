@@ -499,7 +499,7 @@ def get_port_detail(request):
                     # Ищем название VLAN'a
                     try:
                         vlan_name = VlanName.objects.get(vid=int(vid)).name
-                    except VlanName.DoesNotExist:
+                    except (ValueError, VlanName.DoesNotExist):
                         vlan_name = ""
                     # Добавляем в множество вланов, которые участвовали в поиске имени
                     vlan_passed[vid] = vlan_name

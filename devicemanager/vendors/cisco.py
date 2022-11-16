@@ -153,11 +153,27 @@ class Cisco(BaseDevice):
         ).strip()
         return config
 
-    def search_mac(self, mac_address: str):
+    def search_mac(self, mac_address: str) -> list:
+        """Ищем MAC адрес в таблице ARP оборудования"""
 
         formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
 
         match = self.send_command(f"show arp | include {formatted_mac}")
+
+        # Форматируем вывод
+        with open(
+            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template",
+            encoding="utf-8",
+        ) as template_file:
+            template = textfsm.TextFSM(template_file)
+        formatted_result = template.ParseText(match)
+
+        return formatted_result
+
+    def search_ip(self, ip_address: str) -> list:
+        """Ищем IP адрес в таблице ARP оборудования"""
+
+        match = self.send_command(f"show arp | include {ip_address}")
 
         # Форматируем вывод
         with open(

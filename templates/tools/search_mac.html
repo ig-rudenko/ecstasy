@@ -6,13 +6,13 @@ MAC search
 {% endblock %}
 
 {% block links %}
-    <link rel="stylesheet" href="{% static "css/mac_page.css" %}" />
+    <link rel="stylesheet" href="{% static "css/wtf.css" %}" />
 {% endblock %}
 
 {% block content %}
 
-    <div id="mac-element" style="text-align: center; margin-bottom: 20px" class="mac-element">
-        <input id="mac" type="text" required placeholder="00:00:00:00:00:00" maxlength="17"
+    <div id="mac-element" class="element">
+        <input id="what-is-it" type="text" required placeholder="W T F ?" maxlength="17"
                value="{{ mac|default_if_none:'' }}"
         >
     </div>
@@ -45,27 +45,45 @@ MAC search
 <script src="{% static 'js/jquery.min.js' %}"></script>
 <script src="{% static 'js/modal_mac_search.js' %}"></script>
 <script>
-function collect_mac() {
-    let macAddress = $('#mac').val().replace(/[^A-Za-z\d]/g,"").substring(0,12);
+
+function find_wtf_is_it() {
+
+    let user_input = $('#what-is-it').val().trim()
+
+    // Может это IP
+    let ipAddress = user_input.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)
+
+    if (ipAddress) {
+
+        vendor.innerText = ''
+        result_div.innerHTML = `<div class="text-light spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+        </div>`
+        get_info_wtf(user_input)
+
+    }
+
+    // Может это MAC
+    let macAddress = user_input.replace(/[^A-Fa-f\d]/g,"").substring(0,12);
 
     if (macAddress.length === 12) {
 
         vendor.innerText = ''
-
         result_div.innerHTML = `<div class="text-light spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
         </div>`
 
         get_vendor(macAddress)
-        get_mac_info(macAddress)
+        get_info_wtf(macAddress)
 
     }
 }
+
 $(function (){
-    $('#mac').on('input', collect_mac)
+    $('#what-is-it').on('input', find_wtf_is_it)
 })
 {% if mac %}
-collect_mac()
+find_wtf_is_it()
 {% endif %}
 </script>
 {% endblock %}
