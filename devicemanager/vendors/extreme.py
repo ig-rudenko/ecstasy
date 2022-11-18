@@ -31,12 +31,10 @@ class Extreme(BaseDevice):
         ## При инициализации смотрим характеристики устройства:
 
             # show switch
+            # show version
 
           - MAC
           - модель
-
-            # show version
-
           - Серийный номер
 
         :param session: Это объект сеанса pexpect c установленной сессией оборудования
@@ -257,6 +255,7 @@ class Extreme(BaseDevice):
             # {disable|enable} ports {port}
 
         :param port: Порт
+        :param status: "up" или "down"
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 

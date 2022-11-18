@@ -13,15 +13,18 @@ from .base import (
     FIBER_TYPES,
     range_to_numbers,
     _interface_normal_view,
+    InterfaceList,
+    InterfaceVLANList,
+    MACList,
 )
 
 
-SplittedPort = Tuple[str, Tuple[str]]
+SplittedPort: type = Tuple[str, Tuple[str]]
 
 
 class Huawei(BaseDevice):
     """
-    Для оборудования от производителя Huawei
+    # Для оборудования от производителя Huawei
 
     Проверено для:
      - S2403TP
@@ -34,7 +37,25 @@ class Huawei(BaseDevice):
     vendor = "Huawei"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+        """
+        ## При инициализации заходим в привилегированный режим, но остаемся на уровне просмотра
+
+        prompt = ```>```
+
+        Определяем:
+
+         - Модель
+         - MAC
+         - Серийный номер
+
+        :param session: Это объект сеанса pexpect c установленной сессией оборудования
+        :param ip: IP-адрес устройства, к которому вы подключаетесь
+        :param auth: словарь, содержащий имя пользователя и пароль для устройства
+        :param model: Модель коммутатора. Это используется для определения подсказки
+        """
+
         super().__init__(session, ip, auth, model)
+        # Заходим в привилегированный режим
         self.session.sendline("super")
         v = session.expect(
             [
@@ -44,6 +65,7 @@ class Huawei(BaseDevice):
             ]
         )
         if v == 1:
+            # Отправляем пароль от привилегированного режима
             self.session.sendline(self.auth["privilege_mode_password"])
 
         if self.session.expect(
@@ -54,29 +76,47 @@ class Huawei(BaseDevice):
             self.session.expect(r"<\S+>$")
 
         version = self.send_command("display version")
+        # Нахождение модели устройства.
         self.model = self.find_or_empty(
             r"Quidway (\S+) [Routing Switch]*uptime", version
         )
 
         if "S2403" in self.model:
             manuinfo = self.send_command("display device manuinfo")
+            # Нахождение MAC-адреса устройства.
             self.mac = self.find_or_empty(r"MAC ADDRESS\s+:\s+(\S+)", manuinfo)
+            # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(
                 r"DEVICE SERIAL NUMBER\s+:\s+(\S+)", manuinfo
             )
 
         elif "S2326" in self.model:
             mac = self.send_command("display bridge mac-address")
+            # Нахождение mac адреса устройства.
             self.mac = self.find_or_empty(
                 r"System Bridge Mac Address\s+:\s+(\S+)\.", mac
             )
 
             elabel = self.send_command("display elabel")
+            # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
 
     def save_config(self):
+        """
+        ## Сохраняем конфигурацию оборудования командой:
+
+            > save
+              Are you sure [Y/N] Y
+
+        Если конфигурация уже сохраняется, то будет выведено ```System is busy```,
+        в таком случае ожидаем 2 секунды
+
+        Ожидаем ответа от оборудования **successfully**,
+        если нет, то пробуем еще 2 раза, в противном случае ошибка сохранения
+        """
+
         n = 1
-        while n < 4:
+        while n <= 3:
             self.session.sendline("save")
             self.session.expect(r"[Aa]re you sure.*\[Y\/N\]")
             self.session.sendline("Y")
@@ -92,7 +132,21 @@ class Huawei(BaseDevice):
                 continue
             return self.SAVED_ERR
 
-    def get_interfaces(self):
+    def get_interfaces(self) -> InterfaceList:
+        """
+        ## Возвращаем список всех интерфейсов на устройстве
+
+        Команда на оборудовании S2403:
+
+            > display brief interface
+
+        Команда на оборудовании S2326:
+
+            > display interface description
+
+        :return: [ ('name', 'status', 'desc'), ... ]
+        """
+
         output = ""
         if "S2403" in self.model:
             ht = "huawei-2403"
@@ -109,19 +163,39 @@ class Huawei(BaseDevice):
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
-            [
+            (
                 line[0],  # interface
                 line[1]
                 .lower()
                 .replace("adm", "admin")
                 .replace("*", "admin "),  # status
                 line[2],  # desc
-            ]
+            )
             for line in result
             if not line[0].startswith("NULL") and not line[0].startswith("V")
         ]
 
-    def get_vlans(self) -> list:
+    def get_vlans(self) -> InterfaceVLANList:
+        """
+        ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
+
+        Для начала получаем список всех интерфейсов через метод **get_interfaces()**
+
+        Затем для каждого интерфейса смотрим конфигурацию
+
+            > display current-configuration interface {port}
+
+        Выбираем строчки, в которых указаны VLAN:
+
+         - ```vlan {vid}...```
+
+        кроме:
+
+         - ```undo vlan {vid}...```
+
+        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        """
+
         interfaces = self.get_interfaces()
         result = []
         for line in interfaces:
@@ -144,14 +218,28 @@ class Huawei(BaseDevice):
                 port_vlans = []
                 for v in vlans_group:
                     port_vlans = range_to_numbers(v)
-                result.append(line + [port_vlans])
+                result.append((line[0], line[1], line[2], [port_vlans]))
 
         return result
 
-    def get_mac(self, port) -> list:
+    def get_mac(self, port) -> MACList:
         """
-        Поиск маков на порту
-        :param port:
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
+
+        Команда на оборудовании S2403:
+
+            > display mac-address interface {port}
+
+        Команда на оборудовании S2326:
+
+            > display mac-address {port}
+
+        В случае неудачи:
+
+            > display mac-address dynamic {port}
+            > display mac-address secure-dynamic {port}
+
+        :param port: Номер порта коммутатора
         :return: [ ('vid', 'mac'), ... ]
         """
 
@@ -190,18 +278,38 @@ class Huawei(BaseDevice):
 
     @lru_cache
     def __port_info(self, port):
+        """
+        ## Возвращаем полную информацию о порте.
+
+        Через команду:
+
+            > display interface {port}
+
+        :param port: Номер порта, для которого требуется получить информацию
+        """
+
         return self.send_command(f"display interface {_interface_normal_view(port)}")
 
     def port_type(self, port) -> str:
+        """
+        ## Возвращает тип порта
+
+        :param port: Порт для проверки
+        :return: "SFP", "COPPER", "COMBO-FIBER", "COMBO-COPPER" или "?"
+        """
+
         res = self.__port_info(port)
 
+        # Определение аппаратного типа порта.
         type_ = self.find_or_empty(r"Port hardware type is (\S+)|Port Mode: (.*)", res)
 
         if type_:
 
+            # Тип порта
             type_ = type_[0] if type_[0] else type_[1]
 
             if "COMBO" in type_:
+                # Определяем какой режим комбо порта задействован
                 return "COMBO-" + self.find_or_empty(r"Current Work Mode: (\S+)", res)
 
             if "FIBER" in type_ or "SFP" in type_:
@@ -219,24 +327,80 @@ class Huawei(BaseDevice):
         return "?"
 
     def get_port_errors(self, port):
+        """
+        ## Выводим ошибки на порту
+
+        :param port: Порт для проверки на наличие ошибок
+        """
+
         errors = self.__port_info(port).split("\n")
         return "\n".join([line.strip() for line in errors if "errors" in line])
 
     def reload_port(self, port, save_config=True) -> str:
+        """
+        ## Перезагружает порт
+
+        Переходим в режим конфигурирования:
+
+            > system-view
+
+        Переходим к интерфейсу:
+
+            [sys-view] interface {port}
+
+        Перезагружаем порт:
+
+            [sys-view-port] shutdown
+            [sys-view-port] undo shutdown
+
+        Выходим из режима конфигурирования:
+
+            [sys-view-port] quit
+            [sys-view] quit
+
+        :param port: Порт для перезагрузки
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         self.session.sendline("system-view")
         self.session.sendline(f"interface {_interface_normal_view(port)}")
         self.session.sendline("shutdown")
         sleep(1)
         self.session.sendline("undo shutdown")
         self.session.sendline("quit")
-        self.session.expect(r"\[\S+\]")
+        self.session.expect(self.prompt)
         self.session.sendline("quit")
-        self.session.expect(r"\[\S+\]")
+        self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
     def set_port(self, port, status, save_config=True) -> str:
+        """
+        ## Устанавливает статус порта на коммутаторе **up** или **down**
+
+        Переходим в режим конфигурирования:
+
+            > system-view
+
+        Переходим к интерфейсу:
+
+            [sys-view] interface {port}
+
+        Меняем состояние порта:
+
+            [sys-view-port] {shutdown|undo shutdown}
+
+        Выходим из режима конфигурирования:
+
+            [sys-view-port] quit
+            [sys-view] quit
+
+        :param port: Порт
+        :param status: "up" или "down"
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         self.session.sendline("system-view")
         self.session.sendline(f"interface {_interface_normal_view(port)}")
         if status == "up":
@@ -245,14 +409,22 @@ class Huawei(BaseDevice):
             self.session.sendline("shutdown")
         self.session.expect(r"\[\S+\]")
         self.session.sendline("quit")
-        self.session.expect(r"\[\S+\]")
+        self.session.expect(self.prompt)
         self.session.sendline("quit")
-        self.session.expect(r"\[\S+\]")
+        self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
     def port_config(self, port):
+        """
+        ## Выводим конфигурацию порта
+
+        Используем команду:
+
+            > display current-configuration interface {port}
+        """
+
         config = self.send_command(
             f"display current-configuration interface {_interface_normal_view(port)}",
             expect_command=False,
@@ -261,6 +433,37 @@ class Huawei(BaseDevice):
         return config
 
     def set_description(self, port: str, desc: str) -> str:
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Переходим в режим конфигурирования:
+
+            > system-view
+
+        Переходим к интерфейсу:
+
+            [sys-view] interface {port}
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            [sys-view-port] undo description
+
+        Если **desc** содержит описание, то используем команду для изменения:
+
+            [sys-view-port] description {desc}
+
+        Если длина описания больше чем допустимо на оборудовании, то отправляем ```"Max length:{number}"```
+
+        Выходим из режима конфигурирования:
+
+            [sys-view-port] quit
+            [sys-view] quit
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
+
         self.session.sendline("system-view")
         self.session.sendline(f"interface {_interface_normal_view(port)}")
 
@@ -281,7 +484,9 @@ class Huawei(BaseDevice):
             )
 
         self.session.sendline("quit")
+        self.session.expect(self.prompt)
         self.session.sendline("quit")
+        self.session.expect(self.prompt)
 
         return (
             f'Description has been {"changed" if desc else "cleared"}.'
@@ -289,6 +494,11 @@ class Huawei(BaseDevice):
         )
 
     def __parse_virtual_cable_test_data(self, data: str) -> dict:
+        """
+        ## Эта функция анализирует данные виртуального теста кабеля и возвращает словарь проанализированных данных.
+
+        :param data: Данные для разбора
+        """
         parse_data = {
             "len": "-",  # Length
             "status": "",  # Up, Down, Open, Short
@@ -341,6 +551,43 @@ class Huawei(BaseDevice):
         return parse_data
 
     def virtual_cable_test(self, port: str):
+        """
+        Эта функция запускает диагностику состояния линии на порту оборудования
+
+        Переходим в режим конфигурирования:
+
+            > system-view
+
+        Переходим к интерфейсу:
+
+            [sys-view] interface {port}
+
+        Запускаем тест:
+
+            [sys-view-port] virtual-cable-test
+
+        Функция возвращает данные в виде словаря.
+        В зависимости от результата диагностики некоторые ключи могут отсутствовать за ненадобностью.
+
+        ```python
+        {
+            "len": "-",         # Длина кабеля в метрах, либо "-", когда не определено
+            "status": "",       # Состояние на порту (Up, Down, Open, Short)
+            "pair1": {
+                "status": "",   # Статус первой пары (Open, Short)
+                "len": "",      # Длина первой пары в метрах
+            },
+            "pair2": {
+                "status": "",   # Статус второй пары (Open, Short)
+                "len": "",      # Длина второй пары в метрах
+            }
+        }
+        ```
+
+        :param port: Порт для тестирования
+        :return: Словарь с данными тестирования
+        """
+
         self.session.sendline("system-view")
         self.session.sendline(f"interface {_interface_normal_view(port)}")
         self.session.expect(self.prompt)
@@ -350,8 +597,11 @@ class Huawei(BaseDevice):
             self.session.sendline("Y")
             self.session.expect(self.prompt)
         cable_test_data = self.session.before.decode("utf-8")
-        print(type(cable_test_data), cable_test_data)
+
         self.session.sendline("quit")
+        self.session.expect(self.prompt)
+        self.session.sendline("quit")
+        self.session.expect(self.prompt)
         return self.__parse_virtual_cable_test_data(
             cable_test_data
         )  # Парсим полученные данные

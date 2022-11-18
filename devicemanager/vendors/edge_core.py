@@ -214,12 +214,15 @@ class EdgeCore(BaseDevice):
             # configure
 
         Переходим к интерфейсу:
+
             (config)# interface {port}
 
         Меняем состояние порта:
+
             (config-if)# {shutdown|no shutdown}
 
         Выходим из режима конфигурирования:
+
             (config-if)# end
 
         :param port: Порт
@@ -340,6 +343,7 @@ class EdgeCore(BaseDevice):
             (config-if)# description {desc}
 
         Выходим из режима конфигурирования:
+
             (config-if)# end
 
         :param port: Порт, для которого вы хотите установить описание
