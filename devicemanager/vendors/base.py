@@ -81,6 +81,7 @@ def range_to_numbers(ports_string: str) -> list:
     """
 
     ports_split = []
+    # Проверка наличия слова "to" в файле ports_string.
     if "to" in ports_string:
         # Если имеется формат "trunk,1 to 7 12 to 44"
         vv = [
@@ -99,6 +100,7 @@ def range_to_numbers(ports_string: str) -> list:
     for p in ports_split:
         try:
             if "-" in p:
+                # создает список портов из диапазона портов.
                 port_range = list(range(int(p.split("-")[0]), int(p.split("-")[1]) + 1))
                 for pr in port_range:
                     res_ports.append(int(pr))
@@ -112,7 +114,8 @@ def range_to_numbers(ports_string: str) -> list:
 
 class BaseDevice(ABC):
     """
-    Базовый класс для устройств, содержит обязательные методы и начальные параметры для выполнения удаленных команд
+    Абстрактный базовый класс для устройств,
+    содержит обязательные методы и начальные параметры для выполнения удаленных команд
     """
 
     prompt: str  # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
@@ -156,7 +159,12 @@ class BaseDevice(ABC):
 
     @staticmethod
     def find_or_empty(pattern, string, *args, **kwargs):
-        """Используя pattern ищет в строке совпадения, если нет, то возвращает пустую строку"""
+        """
+        Возвращает первое совпадение регулярного выражения в строке или пустую строку, если совпадений нет.
+
+        :param pattern: Шаблон регулярного выражения для поиска
+        :param string: Строка для поиска
+        """
 
         m = re.findall(pattern, string, *args, **kwargs)
         return m[0] if m else ""

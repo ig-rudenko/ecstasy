@@ -395,6 +395,8 @@ class Dlink(BaseDevice):
 
             # config ports {port} description {desc}
 
+        Если длина описания больше чем разрешено на оборудовании, то выводим ```"Max length:{number}"```
+
         :param port: Порт, для которого вы хотите установить описание
         :param desc: Описание, которое вы хотите установить для порта
         :return: Вывод команды смены описания
@@ -423,7 +425,7 @@ class Dlink(BaseDevice):
             )
 
         if "Next possible completions" in status:
-            # Если длина описания больше чем доступно на оборудовании
+            # Если длина описания больше чем разрешено на оборудовании
             return "Max length:" + self.find_or_empty(r"<desc (\d+)>", status)
 
         if "Success" in status:  # Успешно поменяли описание
