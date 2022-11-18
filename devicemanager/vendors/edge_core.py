@@ -180,7 +180,7 @@ class EdgeCore(BaseDevice):
             (config-if)# shutdown
             (config-if)# no shutdown
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
 
             (config-if)# end
 
@@ -219,7 +219,7 @@ class EdgeCore(BaseDevice):
         Меняем состояние порта:
             (config-if)# {shutdown|no shutdown}
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
             (config-if)# end
 
         :param port: Порт
@@ -319,7 +319,7 @@ class EdgeCore(BaseDevice):
 
     def set_description(self, port: str, desc: str) -> str:
         """
-        Устанавливаем описание для порта предварительно очистив его от лишних символов
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
         Максимальная длина описания 64 символа
 
@@ -339,7 +339,7 @@ class EdgeCore(BaseDevice):
 
             (config-if)# description {desc}
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
             (config-if)# end
 
         :param port: Порт, для которого вы хотите установить описание

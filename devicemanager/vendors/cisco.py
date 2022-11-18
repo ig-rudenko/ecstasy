@@ -170,7 +170,7 @@ class Cisco(BaseDevice):
             (config-if)# shutdown
             (config-if)# no shutdown
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
 
             (config-if)# end
 
@@ -204,7 +204,7 @@ class Cisco(BaseDevice):
         Меняем состояние порта:
             (config-if)# {shutdown|no shutdown}
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
             (config-if)# end
 
         :param port: Порт
@@ -245,7 +245,6 @@ class Cisco(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
 
         """
-        """Общая информация о порте"""
 
         port_type = self.send_command(
             f"show interfaces {_interface_normal_view(port)}", expect_command=False
@@ -278,6 +277,7 @@ class Cisco(BaseDevice):
         :param port: Порт для проверки
         :return: "SFP" или "COPPER"
         """
+
         # Получаем информацию о порте.
         port_info = self.get_port_info(port)
         # Ищем тип порта.
@@ -298,6 +298,7 @@ class Cisco(BaseDevice):
 
         :param port: Порт для проверки на наличие ошибок
         """
+
         # Получаем информацию о порте.
         port_info = self.get_port_info(port).split("<br>")
 
@@ -311,7 +312,6 @@ class Cisco(BaseDevice):
         Используем команду:
 
             # show running-config interface {port}
-
         """
 
         config = self.send_command(
@@ -380,7 +380,7 @@ class Cisco(BaseDevice):
 
     def set_description(self, port: str, desc: str) -> str:
         """
-        Устанавливаем описание для порта предварительно очистив его от лишних символов
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
         Переходим в режим конфигурирования:
 
@@ -398,7 +398,7 @@ class Cisco(BaseDevice):
 
             (config-if)# description {desc}
 
-        Выходим из режиме конфигурирования:
+        Выходим из режима конфигурирования:
 
             (config-if)# end
 

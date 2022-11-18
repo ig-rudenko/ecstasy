@@ -67,7 +67,7 @@ def _interface_normal_view(interface) -> str:
     return ""
 
 
-def range_to_numbers(ports_string: str) -> list:
+def range_to_numbers(ports_string: str) -> List[int]:
     """
     Переводит строку с диапазоном чисел в список
 
