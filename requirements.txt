@@ -9,6 +9,7 @@ alive-progress
 Django~=4.1.2
 #mysqlclient>=2.1.1
 pyvis==0.1.9
-celery
-ping3
+celery>=5.2.7
+ping3>=4.0.3
 gunicorn
+pdoc>=12.3.0
