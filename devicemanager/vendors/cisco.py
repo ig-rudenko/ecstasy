@@ -177,6 +177,7 @@ class Cisco(BaseDevice):
         :param port: Порт для перезагрузки
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
+
         self.session.sendline("configure terminal")
         self.session.expect(self.prompt)
         self.session.sendline(f"interface {_interface_normal_view(port)}")

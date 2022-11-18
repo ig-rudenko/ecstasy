@@ -2,12 +2,19 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, range_to_numbers
+from .base import (
+    BaseDevice,
+    TEMPLATE_FOLDER,
+    range_to_numbers,
+    InterfaceVLANList,
+    InterfaceList,
+    MACList,
+)
 
 
 class Extreme(BaseDevice):
     """
-    Для оборудования от производителя Extreme
+    # Для оборудования от производителя Extreme
 
     Проверено для:
      - X460
@@ -20,6 +27,24 @@ class Extreme(BaseDevice):
     vendor = "Extreme"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+        """
+        ## При инициализации смотрим характеристики устройства:
+
+            # show switch
+
+          - MAC
+          - модель
+
+            # show version
+
+          - Серийный номер
+
+        :param session: Это объект сеанса pexpect c установленной сессией оборудования
+        :param ip: IP-адрес устройства, к которому вы подключаетесь
+        :param auth: словарь, содержащий имя пользователя и пароль для устройства
+        :param model: Модель коммутатора
+        """
+
         super().__init__(session, ip, auth, model)
         system = self.send_command("show switch")
         self.mac = self.find_or_empty(r"System MAC:\s+(\S+)", system)
@@ -28,23 +53,47 @@ class Extreme(BaseDevice):
         self.serialno = self.find_or_empty(r"Switch\s+: \S+ (\S+)", version)
 
     def save_config(self):
+        """
+        ## Сохраняем конфигурацию оборудования командой и подтверждаем:
+
+            # save
+            Y
+
+        Ожидаем ответа от оборудования **successfully**,
+        если нет, то ошибка сохранения
+        """
+
         self.session.sendline("save")
         self.session.sendline("y")
         if self.session.expect([self.prompt, r"successfully"]):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    def get_interfaces(self) -> list:
-        # LINKS
+    def get_interfaces(self) -> InterfaceList:
+        """
+        ## Возвращаем список всех интерфейсов на устройстве
+
+        Команда на оборудовании:
+
+            # show ports information
+
+        :return: [ ('name', 'status', 'desc'), ... ]
+        """
+
+        # Смотрим имена интерфейсов, статус порта и его состояние
         output_links = self.send_command("show ports information")
         with open(
             f"{TEMPLATE_FOLDER}/interfaces/extreme_links.template",
             "r",
             encoding="utf-8",
         ) as template_file:
+            # Создание объекта TextFSM из файла шаблона.
             int_des_ = textfsm.TextFSM(template_file)
-            result_port_state = int_des_.ParseText(output_links)  # Ищем интерфейсы
+            # Анализ вывода команды «show ports information» и возврат списка списков.
+            result_port_state = int_des_.ParseText(output_links)
+
         for position, line in enumerate(result_port_state):
+            # Проверяем статус порта и меняем его на более понятный для пользователя
             if result_port_state[position][1].startswith("D"):
                 result_port_state[position][1] = "Disable"
             elif result_port_state[position][1].startswith("E"):
@@ -52,7 +101,7 @@ class Extreme(BaseDevice):
             else:
                 result_port_state[position][1] = "None"
 
-        # DESC
+        # Смотрим имена интерфейсов и описания
         output_des = self.send_command("show ports description")
 
         with open(
@@ -65,24 +114,35 @@ class Extreme(BaseDevice):
             result_port_state[n] + result_des[n] for n in range(len(result_port_state))
         ]
         return [
-            [
+            (
                 line[0],  # interface
                 line[2].replace("ready", "down").replace("active", "up")
                 if "Enable" in line[1]
                 else "admin down",
                 # status
                 line[3],  # desc
-            ]
+            )
             for line in result
         ]
 
-    def get_vlans(self):
-        """Смотрим интерфейсы и VLAN на них"""
+    def get_vlans(self) -> InterfaceVLANList:
+        """
+        ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
+
+        Для начала получаем список всех интерфейсов через метод **get_interfaces()**
+
+        Затем смотрим конфигурации вланов
+
+            # show configuration "vlan"
+
+        и выбираем строчки, в которых указаны вланы на портах с помощью регулярного выражения:
+
+            .*v[lm]an v(\d+) add ports (.+) (tagged|untagged)
+
+        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        """
 
         interfaces = self.get_interfaces()
-
-        for i, line in enumerate(interfaces, start=1):
-            print(i, line)
 
         output_vlans = self.send_command(
             'show configuration "vlan"', before_catch=r"Module vlan configuration\."
@@ -97,38 +157,44 @@ class Extreme(BaseDevice):
         # Создаем словарь, где ключи это порты, а значениями будут вланы на них
         ports_vlan = {num: [] for num in range(1, len(interfaces) + 1)}
 
-        print(ports_vlan)
-
         for vlan in result_vlans:
-            print("--------------", vlan)
             for port in range_to_numbers(vlan[1]):
-                print("++++", port)
                 # Добавляем вланы на порты
                 ports_vlan[port].append(vlan[0])
 
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append(line + [ports_vlan.get(int(line[0]), "")])
+            interfaces_vlan.append(
+                (line[0], line[1], line[2], [ports_vlan.get(int(line[0]), "")])
+            )
 
         return interfaces_vlan
 
     @staticmethod
     def validate_port(port: str) -> (str, None):
         """
-        Проверяем правильность полученного порта
+        ## Проверяем правильность полученного порта
+
         Для Extreme порт должен быть числом
         """
+
         port = port.strip()
         if port.isdigit():
             return port
         return None
 
-    def get_mac(self, port: str) -> list:
+    def get_mac(self, port: str) -> MACList:
         """
-        Смотрим MAC'и на порту и отдаем в виде списка
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
-        [ ["vlan", "mac"],  ... ]
+        Команда на оборудовании:
+
+            # show fdb ports {port}
+
+        :param port: Номер порта коммутатора
+        :return: [ ('vid', 'mac'), ... ]
         """
+
         port = self.validate_port(port)
         if port is None:
             return []
@@ -137,13 +203,21 @@ class Extreme(BaseDevice):
         macs = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
 
         res = []
-        print(macs)
         for m in macs:
             res.append(m[::-1])
         return res
 
     def get_port_errors(self, port: str):
-        """Смотрим ошибки на порту"""
+        """
+        ## Выводим ошибки на порту
+
+        Используются команды
+
+            show ports {port} rxerrors no-refresh
+            show ports {port} txerrors no-refresh
+
+        :param port: Порт для проверки на наличие ошибок
+        """
 
         port = self.validate_port(port)
         if port is None:
@@ -154,7 +228,15 @@ class Extreme(BaseDevice):
         return rx_errors + "\n" + tx_errors
 
     def reload_port(self, port, save_config=True) -> str:
-        """Перезагружаем порт и сохраняем конфигурацию"""
+        """
+        ## Перезагружает порт
+
+            # disable ports {port}
+            # enable ports {port}
+
+        :param port: Порт для перезагрузки
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
 
         if not self.validate_port(port):
             return f"Неверный порт! {port}"
@@ -169,7 +251,14 @@ class Extreme(BaseDevice):
         return r + s
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        """Меням состояние порта и сохраняем конфигурацию"""
+        """
+        ## Устанавливает статус порта на коммутаторе **up** или **down**
+
+            # {disable|enable} ports {port}
+
+        :param port: Порт
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
 
         if not self.validate_port(port):
             return f"Неверный порт! {port}"
@@ -188,7 +277,16 @@ class Extreme(BaseDevice):
         return r + s
 
     def port_type(self, port) -> str:
-        """Определяем тип порта: медь, оптика или комбо"""
+        """
+        ## Возвращает тип порта
+
+        Проверяем с помощью команды:
+
+            show ports {port} transceiver information detail | include Media
+
+        :param port: Порт для проверки
+        :return: "SFP" или "COPPER"
+        """
 
         port = self.validate_port(port)
         if port is None:
@@ -202,6 +300,22 @@ class Extreme(BaseDevice):
         return "COPPER"
 
     def set_description(self, port: str, desc: str) -> str:
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            # unconfigure ports {port} description-string
+
+        Если **desc** содержит описание, то используем команду для изменения:
+
+            # configure ports {port} description-string {desc}
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
+
         port = self.validate_port(port)
         if port is None:
             return "Неверный порт"
@@ -211,7 +325,7 @@ class Extreme(BaseDevice):
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             self.send_command(
-                "unconfigure ports 11 description-string", expect_command=False
+                f"unconfigure ports {port} description-string", expect_command=False
             )
 
         else:  # В другом случае, меняем описание на оборудовании
