@@ -119,7 +119,9 @@ class Juniper(BaseDevice):
             agent_remote_hex = sub(r"\s", "", agent_remote)  # "0004025e0003"
 
             # Преобразуем из hex в строку с кодировкой ascii
-            info.append(binascii.unhexlify(agent_remote_hex).decode("ascii"))
+            info.append(
+                binascii.unhexlify(agent_remote_hex).decode("ascii", errors="replace")
+            )
 
         # Agent Circuit ID
         agent_circuit = findall(
@@ -134,7 +136,9 @@ class Juniper(BaseDevice):
             agent_circuit_hex = sub(r"\s", "", agent_circuit)  # "0004025e0003"
 
             # Преобразуем из hex в строку с кодировкой ascii
-            info.append(binascii.unhexlify(agent_circuit_hex).decode("ascii"))
+            info.append(
+                binascii.unhexlify(agent_circuit_hex).decode("ascii", errors="replace")
+            )
 
         return info
 

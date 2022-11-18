@@ -16,6 +16,7 @@ class Dlink(BaseDevice):
      - DES-3526
      - DGS-1210
      - DGS-3420
+
     """
 
     prompt = r"\S+#"
@@ -24,18 +25,40 @@ class Dlink(BaseDevice):
     vendor = "D-Link"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+        """
+        При инициализации повышаем уровень привилегий до уровня администратора командой:
+
+            # enable admin
+
+        Отключаем постраничный вывод командой:
+
+            # disable clipaging
+
+        Дополнительно смотрим характеристики устройства:
+
+            # show switch
+
+          - MAC
+          - модель
+          - серийный номер
+
+        :param session: Это объект сеанса pexpect c установленной сессией оборудования
+        :param ip: IP-адрес устройства, к которому вы подключаетесь
+        :param auth: словарь, содержащий имя пользователя и пароль для устройства
+        :param model: Модель коммутатора. Это используется для определения подсказки
+        """
         super().__init__(session, ip, auth, model)
 
         status = True
-        self.session.sendline(
-            "enable admin"
-        )  # Повышает уровень привилегий до уровня администратора
-        if not session.expect(
-            ["[Pp]ass", r"You already have"]  # 0 - ввод пароля  # 1 - уже администратор
-        ):
-            self.session.sendline(
-                self.auth["privilege_mode_password"]
-            )  # Вводим пароль администратора
+        # Повышает уровень привилегий до уровня администратора
+        self.session.sendline("enable admin")
+
+        if not session.expect(["[Pp]ass", r"You already have"]):
+            # 0 - ввод пароля  # 1 - уже администратор
+            # Вводим пароль администратора
+            self.session.sendline(self.auth["privilege_mode_password"])
+
+        # Проверка prompt или строки "Fail!"
         while self.session.expect([self.prompt, "Fail!"]):
             self.session.sendline("\n")
             print(self.ip, "privilege_mode_password wrong!")
@@ -59,6 +82,14 @@ class Dlink(BaseDevice):
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
 
     def save_config(self):
+        """
+        Сохраняем конфигурацию оборудования командой:
+
+            # save
+
+        Ожидаем ответа от оборудования **Success** или **Done**,
+        если нет, то ошибка сохранения
+        """
         self.session.sendline("save")
         if self.session.expect([self.prompt, r"[Ss]uccess|[Dd]one"]):
             return self.SAVED_OK
@@ -85,14 +116,26 @@ class Dlink(BaseDevice):
         )
 
     def get_interfaces(self) -> list:
+        """
+        Эта функция возвращает список всех интерфейсов на устройстве
+
+        Команда на оборудовании:
+
+            # show ports description
+
+        :return: [ ['name', 'status', 'desc'], ... ]
+        """
+
         self.session.sendline("show ports des")
         self.session.expect("#")
         output = self.session.before.decode("utf-8")
         with open(
             f"{TEMPLATE_FOLDER}/interfaces/d-link.template", "r", encoding="utf-8"
         ) as template_file:
+            # Используем библиотеку TextFSM для анализа вывода команды show.
             int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
+            # Разбираем вывод команды «show ports description» и ищем интерфейсы.
+            result = int_des_.ParseText(output)
         return [
             [
                 line[0],  # interface
@@ -105,6 +148,24 @@ class Dlink(BaseDevice):
         ]
 
     def get_vlans(self) -> list:
+        """
+        Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
+
+        Смотрим список всех VLAN командой:
+
+            # show vlan
+
+        Вывод каждого VLAN представляет собой следующее
+        Парсим полученные данные и находим соответствие между VLAN и портами
+
+        |                             |                             |
+        |:----------------------------|:----------------------------|
+        | VID             : 21        |  VLAN Name       : 21       |
+        | VLAN Type       : Static    |  Advertisement   : Disabled |
+        | Member Ports    : 21,25-28  |                             |
+        | Static Ports    : 21,25-28  |                             |
+
+        """
 
         interfaces = self.get_interfaces()
 
@@ -123,6 +184,7 @@ class Dlink(BaseDevice):
         ports_vlan = {str(num): [] for num in range(1, len(port_num) + 1)}
 
         for vlan in result_vlan:
+            # Преобразуем диапазон VLAN в список чисел.
             for port in range_to_numbers(vlan[2]):
                 # Добавляем вланы на порты
                 ports_vlan[str(port)].append(vlan[0])
@@ -132,17 +194,40 @@ class Dlink(BaseDevice):
         return interfaces_vlan
 
     def get_mac(self, port) -> list:
+        """
+        Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
+
+        Команда на оборудовании:
+
+            # show fdb port {port}
+
+        :param port: Номер порта коммутатора
+        :return: [ ('vid', 'mac'), ... ]
+        """
+
         port = self.validate_port(port)
 
         if port is None:
             return []
 
         mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
+        # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
         return re.findall(rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str)
 
     @staticmethod
     def validate_port(port: str) -> (str, None):
-        """Проверяем порт на валидность"""
+        """
+        Проверяем порт на валидность
+
+        >>> Dlink.validate_port("1/2")
+        '2'
+        >>> Dlink.validate_port("23")
+        '23'
+        >>> Dlink.validate_port("26(C)")
+        '26'
+        >>> Dlink.validate_port("уфы(C)")
+        None
+        """
 
         port = port.strip()
         if re.findall(r"^\d/\d+$", port):
@@ -158,6 +243,29 @@ class Dlink(BaseDevice):
         return None
 
     def reload_port(self, port, save_config=True) -> str:
+        """
+        Перезагружает порт
+
+        Если порт передается с пометкой **C** или **F**
+        Например ```25(F)```, ```26(C)```, то перезагружаем указанный medium_type
+
+        Для порта с номером больше 23, если не был передан medium_type,
+        то перезагружаем и **copper**, и **fiber**
+
+            # config ports {port} medium_type {copper|fiber} state disable
+            # config ports {port} medium_type {copper|fiber} state enable
+
+        Для других портов не используется medium_type
+
+            # config ports {port} state disable
+            # config ports {port} state enable
+
+
+        :param port: Порт для перезагрузки
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        :return: Результат введенных команд и, если было указано, то статус сохранения конфигурации
+        """
+
         if "F" in port:
             media_type = " medium_type fiber"
         elif "C" in port:
@@ -169,13 +277,36 @@ class Dlink(BaseDevice):
         if port is None:
             return "Неверный порт"
 
+        # Отключение порта.
         r1 = self.send_command(f"config ports {port} {media_type} state disable")
+        # Задержка, позволяющая коммутатору обработать команду.
         sleep(1)
+        # Включение порта.
         r2 = self.send_command(f"config ports {port} {media_type} state enable")
+
+        # Проверка, не установлен ли тип порта и порт больше 23
+        if not media_type and int(port) > 23:
+            r1 += self.send_command(
+                f"config ports {port} medium_type fiber state disable"
+            )
+            sleep(1)
+            r2 += self.send_command(
+                f"config ports {port} medium_type fiber state enable"
+            )
+
+        # Сохранение конфигурации, если для параметра `save_config` установлено значение `True`.
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
 
-    def get_port_errors(self, port):
+    def get_port_errors(self, port: str) -> str:
+        """
+        Получаем ошибки на порту через команду:
+
+            # show error ports {port}
+
+        :param port: Порт для проверки на наличие ошибок
+        """
+
         port = self.validate_port(port)
         if port is None:
             return "Неверный порт"
@@ -188,6 +319,26 @@ class Dlink(BaseDevice):
         return self.session.before.decode()
 
     def set_port(self, port, status, save_config=True) -> str:
+        """
+        Устанавливает статус порта на коммутаторе **up** или **down**
+
+        Если порт передается с пометкой **C** или **F**
+        Например ```25(F)```, ```26(C)```, то используем указанный medium_type
+
+        Для порта с номером больше 23, если не был передан medium_type,
+        то используем и **copper**, и **fiber**
+
+            # config ports {port} medium_type {copper|fiber} state {disable|enable}
+
+        Для других портов не используется medium_type
+
+            # config ports {port} state {disable|enable}
+
+        :param port: Порт
+        :param status: "up" или "down"
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         if "F" in port:
             media_type = "medium_type fiber"
         elif "C" in port:
@@ -195,6 +346,7 @@ class Dlink(BaseDevice):
         else:
             media_type = ""
 
+        # Проверка правильности порта.
         port = self.validate_port(port)
 
         if port is None:
@@ -207,11 +359,38 @@ class Dlink(BaseDevice):
         else:
             state = ""
 
+        # Установка порта в заданное состояние.
         r = self.send_command(f"config ports {port} {media_type} state {state}")
+
+        # Проверка, не установлен ли тип порта и порт больше 24
+        if not media_type and int(port) > 24:
+            # Проверка, является ли порт оптоволоконным портом, и если это так,
+            # он установит порт в состояние, которое было передано.
+            r += self.send_command(
+                f"config ports {port} medium_type fiber state {state}"
+            )
+
         s = self.save_config() if save_config else "Without saving"
+
+        # Возврат результата команды и результата функции save_config().
         return r + s
 
     def set_description(self, port: str, desc: str) -> str:
+        """
+        Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            # config ports {port} clear_description
+
+        Если **desc** содержит описание, то используем команду для изменения
+
+            # config ports {port} description {desc}
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
 
         port = self.validate_port(port)
         if port is None:
@@ -247,6 +426,32 @@ class Dlink(BaseDevice):
         return status
 
     def virtual_cable_test(self, port: str) -> dict:
+        """
+        Эта функция запускает диагностику состояния линии на порту оборудования через команду:
+
+            # cable_diag ports {port}
+
+        Функция возвращает данные в виде словаря.
+        В зависимости от результата диагностики некоторые ключи могут отсутствовать за ненадобностью.
+
+        ```python
+        {
+            "len": "-",         # Длина кабеля в метрах, либо "-", когда не определено
+            "status": "",       # Состояние на порту (Up, Down, Empty)
+            "pair1": {
+                "status": "",   # Статус первой пары (Open, Short)
+                "len": "",      # Длина первой пары в метрах
+            },
+            "pair2": {
+                "status": "",   # Статус второй пары (Open, Short)
+                "len": "",      # Длина второй пары в метрах
+            }
+        }
+        ```
+
+        :param port: Порт для тестирования
+        :return: Словарь с данными тестирования
+        """
         port = self.validate_port(port)
         if port is None:
             return {}
@@ -261,8 +466,14 @@ class Dlink(BaseDevice):
         result = {
             "len": "-",  # Length
             "status": "",  # Up, Down
-            "pair1": {"status": "", "len": ""},  # Open, Short  # Length
-            "pair2": {"status": "", "len": ""},
+            "pair1": {
+                "status": "",
+                "len": "",
+            },  # Open, Short  # Length
+            "pair2": {
+                "status": "",
+                "len": "",
+            },
         }
 
         if "No Cable" in diag_output:

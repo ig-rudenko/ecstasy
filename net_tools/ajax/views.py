@@ -293,6 +293,7 @@ def get_vlan(request):
     # set the physics layout of the network
     net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
 
+    # Итерация по всем узлам в сети.
     for node in net.nodes:
         node["value"] = len(neighbor_map[node["id"]]) * 3
         if "core" in node["title"].lower():
@@ -304,8 +305,10 @@ def get_vlan(request):
             node["value"] = 1
         node["title"] += " Соединено:<br>" + "<br>".join(neighbor_map[node["id"]])
 
+    # Установка сглаживания краев на динамическое.
     net.set_edge_smooth("dynamic")
 
+    # Проверка существования каталога. Если нет, то создает.
     if not os.path.exists(BASE_DIR / "templates" / "tools" / "vlans"):
         os.makedirs(BASE_DIR / "templates" / "tools" / "vlans")
     net.save_graph(f"templates/tools/vlans/vlan{request.GET['vlan']}.html")
