@@ -1,5 +1,7 @@
 import re
 import pathlib
+from typing import List, Tuple
+
 import pexpect
 from abc import ABC, abstractmethod
 
@@ -8,6 +10,11 @@ TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent / "templates"
 
 # Обозначения медных типов по стандарту IEEE 802.3
 COOPER_TYPES = ["T", "TX", "VG", "CX", "CR"]
+
+# Аннотации типов
+InterfaceList: type = List[Tuple[str, str, str]]
+InterfaceVLANList: type = List[Tuple[str, str, str, list]]
+MACList: type = List[Tuple[str, str]]
 
 # Обозначения оптических типов по стандарту IEEE 802.3
 FIBER_TYPES = [
@@ -207,7 +214,7 @@ class BaseDevice(ABC):
                 )
 
                 # Управляющие последовательности ANSI
-                ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+                ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
                 # Убираем их
                 output += ansi_escape.sub(
@@ -241,23 +248,23 @@ class BaseDevice(ABC):
         return output
 
     @abstractmethod
-    def get_interfaces(self) -> list:
+    def get_interfaces(self) -> InterfaceList:
         """
         Интерфейсы на оборудовании
 
-        :return: [ ['name', 'status', 'desc'], ... ]
+        :return: [ ('name', 'status', 'desc'), ... ]
         """
 
     @abstractmethod
-    def get_vlans(self) -> list:
+    def get_vlans(self) -> InterfaceVLANList:
         """
         Интерфейсы и VLAN на оборудовании
 
-        :return: [ ['name', 'status', 'desc', 'vlans'], ... ]
+        :return: [ ('name', 'status', 'desc', ['vlans', ...]), ... ]
         """
 
     @abstractmethod
-    def get_mac(self, port: str) -> list:
+    def get_mac(self, port: str) -> MACList:
         """
         Поиск маков на порту
 

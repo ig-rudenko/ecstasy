@@ -2,7 +2,14 @@ import re
 from time import sleep
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, range_to_numbers
+from .base import (
+    BaseDevice,
+    TEMPLATE_FOLDER,
+    range_to_numbers,
+    InterfaceVLANList,
+    InterfaceList,
+    MACList,
+)
 
 
 class Dlink(BaseDevice):
@@ -115,7 +122,7 @@ class Dlink(BaseDevice):
             pages_limit=pages_limit,
         )
 
-    def get_interfaces(self) -> list:
+    def get_interfaces(self) -> InterfaceList:
         """
         Эта функция возвращает список всех интерфейсов на устройстве
 
@@ -123,7 +130,7 @@ class Dlink(BaseDevice):
 
             # show ports description
 
-        :return: [ ['name', 'status', 'desc'], ... ]
+        :return: [ ('name', 'status', 'desc'), ... ]
         """
 
         self.session.sendline("show ports des")
@@ -137,17 +144,17 @@ class Dlink(BaseDevice):
             # Разбираем вывод команды «show ports description» и ищем интерфейсы.
             result = int_des_.ParseText(output)
         return [
-            [
+            (
                 line[0],  # interface
                 re.sub(r"Link\s*?Down", "down", line[2])
                 if "Enabled" in line[1]
                 else "admin down",  # status
                 line[3],  # desc
-            ]
+            )
             for line in result
         ]
 
-    def get_vlans(self) -> list:
+    def get_vlans(self) -> InterfaceVLANList:
         """
         Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -165,6 +172,7 @@ class Dlink(BaseDevice):
         | Member Ports    : 21,25-28  |                             |
         | Static Ports    : 21,25-28  |                             |
 
+        :return: [ ('name', 'status', 'desc', [vid:int, vid:int, ...]), ... ]
         """
 
         interfaces = self.get_interfaces()
@@ -190,10 +198,10 @@ class Dlink(BaseDevice):
                 ports_vlan[str(port)].append(vlan[0])
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append(line + [ports_vlan.get(line[0], "")])
+            interfaces_vlan.append(line + tuple(ports_vlan.get(line[0], "")))
         return interfaces_vlan
 
-    def get_mac(self, port) -> list:
+    def get_mac(self, port) -> MACList:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
 

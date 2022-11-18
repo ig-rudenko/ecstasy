@@ -88,8 +88,8 @@ class Interfaces:
                         )
                     )
 
-                # Если был передан список
-                elif isinstance(intf, list):
+                # Если был передан список, кортеж
+                elif isinstance(intf, (list, tuple)):
                     if len(intf) == 3:  # Без VLAN
                         self.__interfaces.append(
                             Interface(intf[0], intf[1], intf[2], [])

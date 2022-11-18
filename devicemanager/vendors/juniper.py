@@ -1,5 +1,6 @@
 import binascii
 from re import findall, sub
+from typing import List
 
 import textfsm
 from .base import BaseDevice, TEMPLATE_FOLDER
@@ -78,19 +79,42 @@ class Juniper(BaseDevice):
         """
         Парсим данные:
 
-          ...
-          IP Address: 10.201.170.140
-          ...
-          MAC Address: c0:25:e9:46:77:0f
-          ...
-          VLAN Id: 604
-          Agent Circuit ID: port1
-          Agent Remote ID: SVSL-122-Kosar27p4-ASW1
-          ...
+            ...
+            IP Address: 10.201.170.140
+            ...
+            MAC Address: c0:25:e9:46:77:0f
+            ...
+            VLAN Id: 604
+            Agent Circuit ID: port1
+            Agent Remote ID: SVSL-122-Kosar27p4-ASW1
+            ...
 
         :returns: ['ip', 'mac' 'vlan_id', 'device_name', 'port']
-
         """
+
+        def convert_to_str(list_of_strings: List[list]) -> str:
+            """
+            `convert_to_str` принимает список строк и возвращает строку
+
+            :param list_of_strings: Это список строк, которые вы хотите преобразовать в одну строку
+            :type list_of_strings: List[list]
+            """
+
+            # Объединение списка строк в одну строку.
+            total_string = "".join(list_of_strings[0])  # "\n00 04 02 5e 00 03\n"
+            # Удаление всех пробелов из строки.
+            unknown_format_str = sub(r"\s", "", total_string)  # "0004025e0003"
+
+            try:
+                # Преобразование шестнадцатеричной строки в ascii.
+                return binascii.unhexlify(unknown_format_str).decode(
+                    "ascii", errors="replace"
+                )
+
+            # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
+            # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
+            except binascii.Error:
+                return unknown_format_str
 
         # Форматируем вывод
 
@@ -113,15 +137,7 @@ class Juniper(BaseDevice):
             string,
         )
         if agent_remote:
-            agent_remote = "".join(agent_remote[0])  # "\n00 04 02 5e 00 03\n"
-
-            # Удаляем лишние символы
-            agent_remote_hex = sub(r"\s", "", agent_remote)  # "0004025e0003"
-
-            # Преобразуем из hex в строку с кодировкой ascii
-            info.append(
-                binascii.unhexlify(agent_remote_hex).decode("ascii", errors="replace")
-            )
+            info.append(convert_to_str(agent_remote))
 
         # Agent Circuit ID
         agent_circuit = findall(
@@ -130,15 +146,7 @@ class Juniper(BaseDevice):
             string,
         )
         if agent_circuit:
-            agent_circuit = "".join(agent_circuit[0])  # "\n00 04 02 5e 00 03\n"
-
-            # Удаляем лишние символы
-            agent_circuit_hex = sub(r"\s", "", agent_circuit)  # "0004025e0003"
-
-            # Преобразуем из hex в строку с кодировкой ascii
-            info.append(
-                binascii.unhexlify(agent_circuit_hex).decode("ascii", errors="replace")
-            )
+            info.append(convert_to_str(agent_circuit))
 
         return info
 
