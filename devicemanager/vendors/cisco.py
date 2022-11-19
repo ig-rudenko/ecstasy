@@ -79,7 +79,7 @@ class Cisco(BaseDevice):
 
             # show interfaces description
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         output = self.send_command("show int des")
@@ -114,7 +114,7 @@ class Cisco(BaseDevice):
          - ```allowed vlan {vid},{vid},...{vid}```
          - ```allowed vlan add {vid},{vid},...{vid}```
 
-        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
         result = []
@@ -144,7 +144,7 @@ class Cisco(BaseDevice):
             # show mac address-table interface {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         mac_str = self.send_command(
@@ -336,7 +336,7 @@ class Cisco(BaseDevice):
         Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
 
         :param mac_address: MAC-адрес, который вы хотите найти
-        :return: ["IP", "MAC", "VLAN"]
+        :return: ```['IP', 'MAC', 'VLAN']```
         """
 
         formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
@@ -364,7 +364,7 @@ class Cisco(BaseDevice):
         Возвращаем список всех MAC-адресов, VLAN, связанных с этим IP-адресом.
 
         :param ip_address: IP-адрес, который вы хотите найти
-        :return: ["IP", "MAC", "VLAN"]
+        :return: ```['IP', 'MAC', 'VLAN']```
         """
 
         match = self.send_command(f"show arp | include {ip_address}")

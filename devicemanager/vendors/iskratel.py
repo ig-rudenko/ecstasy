@@ -1,12 +1,14 @@
 import re
 from time import sleep
+from typing import Tuple
+
 from django.template.loader import render_to_string
-from .base import BaseDevice
+from .base import BaseDevice, InterfaceList, InterfaceVLANList, MACList
 
 
 class IskratelControl(BaseDevice):
     """
-    Для плат управления DSLAM от производителя Iskratel
+    # Для плат управления DSLAM от производителя Iskratel
     """
 
     prompt = r"\(\S+\)\s*#"
@@ -17,11 +19,16 @@ class IskratelControl(BaseDevice):
     def save_config(self):
         pass
 
-    def get_mac(self, port) -> list:
+    def get_mac(self, port) -> MACList:
         """
-        Смотрим MAC'и на порту и отдаем в виде списка
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
-        [ ["vlan", "mac"],  ... ]
+        Команда на оборудовании:
+
+            # show mac-addr-table interface {port}
+
+        :param port: Номер порта коммутатора
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         if not re.findall(r"\d+/\d+", port):  # Неверный порт
@@ -53,7 +60,7 @@ class IskratelControl(BaseDevice):
 
 class IskratelMBan(BaseDevice):
     """
-    Для плат DSLAM от производителя Iskratel
+    # Для плат DSLAM от производителя Iskratel
 
     Проверено для:
      - MPC8560
@@ -68,14 +75,23 @@ class IskratelMBan(BaseDevice):
         pass
 
     @property
-    def get_service_ports(self):
-        """Сервисные порты для DSLAM"""
+    def get_service_ports(self) -> list:
+        """
+        ## Возвращает список сервисных портов
+
+        :return: ```['1_32', '1_33', '1_40']```
+        """
         return ["1_32", "1_33", "1_40"]
 
-    def __dsl_port_info_parser(self, info: str) -> str:
+    def render_dsl_port_info(self, info: str) -> str:
         """
-        Парсит информацию о порте DSL и создает таблицу html для представления показателей сигнал/шума, затухания,
+        ## Возвращаем информацию о порте DSL
+
+        Создаем таблицу html для представления показателей сигнал/шума, затухания,
         мощности и прочей информации
+
+        ![img.png](/static/docs/img/adsl_info_table.png)
+
         """
 
         def color(val: str, s: str) -> str:
@@ -136,7 +152,7 @@ class IskratelMBan(BaseDevice):
 
         first_col_info.append(self.find_or_empty(r"Type .*", info))
 
-        # Данные для таблицы
+        # Определение скорости передачи данных для порта DSL.
         data_rate = re.findall(
             r"DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit", info
         ) or [("", "")]
@@ -151,12 +167,15 @@ class IskratelMBan(BaseDevice):
             )
         ]
 
+        # Нахождение сигнал/шума для нисходящего и восходящего каналов.
         snr = re.findall(r"DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)", info) or [
             ("", "")
         ]
+        # Нахождение чередующейся задержки для нисходящего и восходящего каналов.
         intl = re.findall(
             r"DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)", info
         ) or [("", "")]
+        # Нахождение уровня затухания для нисходящего и восходящего каналов.
         att = re.findall(
             r"DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)", info
         ) or [("", "")]
@@ -195,11 +214,39 @@ class IskratelMBan(BaseDevice):
         )
 
     def get_port_info(self, port: str) -> str:
-        """Смотрим информацию на порту"""
+        """
+        ## Смотрим информацию на порту
+
+        Порт будет преобразован в число
+
+        Для Ethernet порта используем команду:
+
+            mBAN> show interface fasteth{port_number}
+
+        И возвращаем:
+
+            # Requested Speed  : Auto
+            # Requested Duplex : Auto
+            # Actual Speed     : 1000 Mbit/s
+            # Actual Duplex    : Full
+
+        Для DLS порта используем команду:
+
+            mBAN> show dsl port {port_number} detail
+
+        И возвращаем:
+
+            HTML
+
+        ![img.png](/static/docs/img/adsl_info.png)
+
+        :param port: Порт
+        :return: Информация о порте либо ```"Неверный порт!"```
+        """
 
         port_type, port = self.validate_port(port)
         if port_type is None:
-            return "Invalid port"
+            return "Неверный порт!"
 
         if port_type == "fasteth":
             cmd = f"show interface fasteth{port}"
@@ -219,13 +266,22 @@ class IskratelMBan(BaseDevice):
             return "<br>".join(output.split("\n")[1:5])
 
         # Парсим данные
-        return self.__dsl_port_info_parser(output)
+        return self.render_dsl_port_info(output)
 
-    def get_mac(self, port: str) -> list:
+    def get_mac(self, port: str) -> MACList:
         """
-        Смотрим MAC'и на порту и отдаем в виде списка
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
-        [ ["vlan", "mac"],  ... ]
+        Для Ethernet порта используем команду:
+
+            mBAN> show bridge mactable interface fasteth{port_number}
+
+        Для DLS порта используем команду:
+
+            mBAN> show bridge mactable interface dsl{port_number}:{service_port}
+
+        :param port: Номер порта коммутатора
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         macs = []  # Итоговый список маков
@@ -252,9 +308,10 @@ class IskratelMBan(BaseDevice):
         return macs
 
     @staticmethod
-    def validate_port(port: str) -> tuple:
+    def validate_port(port: str) -> (Tuple[str, int], Tuple[None, None]):
         """
-        Проверяем правильность полученного порта
+        ## Проверяем правильность полученного порта
+
         Возвращает тип порта и его номер
 
         >>> IskratelMBan.validate_port('dsl2:1_40')
@@ -292,7 +349,15 @@ class IskratelMBan(BaseDevice):
         return None, None
 
     def reload_port(self, port: str, save_config=True) -> str:
-        """Перезагружаем порт"""
+        """
+        ## Перезагружает порт
+
+            mBAN> set dsl port {port_number} port_equp unequipped
+            mBAN> set dsl port {port_number} port_equp equipped
+
+        :param port: Порт для перезагрузки
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
 
         port_type, port = self.validate_port(port)
         if port_type is None:
@@ -309,6 +374,16 @@ class IskratelMBan(BaseDevice):
         return s1 + s2
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
+        """
+        ## Устанавливает статус порта на коммутаторе **up** или **down**
+
+            mBAN> set dsl port {port_number} port_equp {unequipped|equipped}
+
+        :param port: Порт
+        :param status: "up" или "down"
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         port_type, port = self.validate_port(port)
         if port_type is None:
             return "Неверный порт!"
@@ -319,36 +394,61 @@ class IskratelMBan(BaseDevice):
             expect_command=False,
         )
 
-    def get_interfaces(self) -> list:
+    def get_interfaces(self) -> InterfaceList:
         """
-        Смотрим DSL порты
-        :return: [ ['name', 'status', 'desc'], ... ]
+        ## Возвращаем список всех интерфейсов на устройстве
+
+        Команда на оборудовании:
+
+            # show dsl port
+
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         output = self.send_command("show dsl port", expect_command=False)
-        res = []
+        interfaces_list = []
         for line in output.split("\n"):
             interface = re.findall(
                 r"(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)", line
             )
             if interface:
-                res.append(
-                    [
+                interfaces_list.append(
+                    (
                         interface[0][0],  # name
                         interface[0][3].lower()
                         if interface[0][2] == "Equipped"
                         else "admin down",
                         interface[0][1],  # desc
-                    ]
+                    )
                 )
 
-        return res
+        return interfaces_list
 
-    def get_vlans(self) -> list:
-        return self.get_interfaces()
+    def get_vlans(self) -> InterfaceVLANList:
+        """
+        ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
+
+        Обнаружение VLAN не реализовано
+
+        :return: ```[ ('name', 'status', 'desc', [''] ), ... ]```
+        """
+
+        return [(line[0], line[1], line[2], [""]) for line in self.get_interfaces()]
 
     def set_description(self, port: str, desc: str) -> str:
-        """Меняем описание на порту (ограничение по макс. кол-ву символов - 32)"""
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Максимальная длина 32 символа
+
+        Используем команду для изменения:
+
+            mBAN> set dsl port {port_number} name {desc}
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
 
         port_type, port = self.validate_port(port)
         if port_type is None:
@@ -364,7 +464,13 @@ class IskratelMBan(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}.'
 
     def change_profile(self, port: str, profile_index: int) -> str:
-        """Меняем профиль на DSL порту"""
+        """
+        ## Меняем профиль на DSL порту
+
+        :param port: Порт
+        :param profile_index: Индекс нового профиля
+        :return: Статус изменения профиля либо "Неверный порт!"
+        """
 
         port_type, port = self.validate_port(port)
         if port_type is None or port_type != "dsl":

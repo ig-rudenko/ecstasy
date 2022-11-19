@@ -130,7 +130,7 @@ class Dlink(BaseDevice):
 
             # show ports description
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         self.session.sendline("show ports des")
@@ -172,7 +172,7 @@ class Dlink(BaseDevice):
         | Member Ports    : 21,25-28  |                             |
         | Static Ports    : 21,25-28  |                             |
 
-        :return: [ ('name', 'status', 'desc', [vid:int, vid:int, ...]), ... ]
+        :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...]), ... ]```
         """
 
         interfaces = self.get_interfaces()
@@ -210,7 +210,7 @@ class Dlink(BaseDevice):
             # show fdb port {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         port = self.validate_port(port)

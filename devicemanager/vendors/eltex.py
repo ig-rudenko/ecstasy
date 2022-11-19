@@ -158,7 +158,7 @@ class EltexMES(BaseDevice):
 
         Считываем до момента вывода VLAN ```"Ch       Port Mode (VLAN)"```
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         self.session.sendline("show interfaces description")
@@ -217,7 +217,7 @@ class EltexMES(BaseDevice):
          - ```vlan {vid}```
          - ```vlan add {vid},{vid},...{vid}```
 
-        :return: [ ('name', 'status', 'desc', [vid:int, vid:int, ... vid:int] ), ... ]
+        :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ... vid:int] ), ... ]```
         """
 
         result = []
@@ -246,7 +246,7 @@ class EltexMES(BaseDevice):
             # show mac address-table interface {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         mac_str = self.send_command(

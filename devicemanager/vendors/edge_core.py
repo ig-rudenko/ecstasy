@@ -31,7 +31,7 @@ class EdgeCore(BaseDevice):
 
             # show interfaces status
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         output = self.send_command("show interfaces status")
@@ -64,7 +64,7 @@ class EdgeCore(BaseDevice):
          - ```VLAN {vid}```
          - ```VLAN add {vid},{vid},...{vid}```
 
-        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
         # Получение текущей конфигурации устройства.
@@ -152,7 +152,7 @@ class EdgeCore(BaseDevice):
             # show mac address-table interface {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         port = self.validate_port(port)

@@ -350,7 +350,7 @@ class BaseDevice(ABC):
         """
         Интерфейсы на оборудовании
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
     @abstractmethod
@@ -358,7 +358,7 @@ class BaseDevice(ABC):
         """
         Интерфейсы и VLAN на оборудовании
 
-        :return: [ ('name', 'status', 'desc', ['vlans', ...]), ... ]
+        :return: ```[ ('name', 'status', 'desc', ['vlans', ...]), ... ]```
         """
 
     @abstractmethod
@@ -366,7 +366,7 @@ class BaseDevice(ABC):
         """
         Поиск маков на порту
 
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
     @abstractmethod

@@ -144,7 +144,7 @@ class Huawei(BaseDevice):
 
             > display interface description
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         output = ""
@@ -193,7 +193,7 @@ class Huawei(BaseDevice):
 
          - ```undo vlan {vid}...```
 
-        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
         interfaces = self.get_interfaces()
@@ -240,7 +240,7 @@ class Huawei(BaseDevice):
             > display mac-address secure-dynamic {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         mac_list = []
@@ -829,7 +829,7 @@ class HuaweiMA5600T(BaseDevice):
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
 
-        ![img.png](/static/docs/img/adsl_info.png)
+        ``````[ ('name', 'status', 'desc'), ... ]``````
 
         :param info: Информация порта ADSL
         :param profile_name: Название текущего профиля
@@ -1223,6 +1223,11 @@ class HuaweiMA5600T(BaseDevice):
     def get_port_info(self, port: str) -> str:
         """
         ## Смотрим информацию на порту
+
+        В зависимости от порта вывод различается
+
+        :param port: Порт
+        :return: Информация о порте либо ```"Неверный порт!"```
         """
 
         port_type, indexes = self.split_port(port)
@@ -1324,7 +1329,7 @@ class HuaweiMA5600T(BaseDevice):
             # display security bind mac {i0}/{i1}/{i2}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         port_type, indexes = self.split_port(port)
@@ -1606,7 +1611,7 @@ class HuaweiCX600(BaseDevice):
         Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
 
         :param mac_address: MAC-адрес
-        :return: ["IP", "MAC", "VLAN", "Agent-Circuit-Id", "Agent-Remote-Id"]
+        :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
         """
 
         formatted_mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_address)
@@ -1642,7 +1647,7 @@ class HuaweiCX600(BaseDevice):
         Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
 
         :param ip_address: IP-адрес
-        :return: ["IP", "MAC", "VLAN", "Agent-Circuit-Id", "Agent-Remote-Id"]
+        :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
         """
 
         match = self.send_command(

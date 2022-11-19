@@ -75,7 +75,7 @@ class Extreme(BaseDevice):
 
             # show ports information
 
-        :return: [ ('name', 'status', 'desc'), ... ]
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
         # Смотрим имена интерфейсов, статус порта и его состояние
@@ -137,7 +137,7 @@ class Extreme(BaseDevice):
 
             .*v[lm]an v(\d+) add ports (.+) (tagged|untagged)
 
-        :return: [ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]
+        :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
         interfaces = self.get_interfaces()
@@ -190,7 +190,7 @@ class Extreme(BaseDevice):
             # show fdb ports {port}
 
         :param port: Номер порта коммутатора
-        :return: [ ('vid', 'mac'), ... ]
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         port = self.validate_port(port)
