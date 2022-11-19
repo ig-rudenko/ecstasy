@@ -609,15 +609,27 @@ class Huawei(BaseDevice):
 
 class HuaweiMA5600T(BaseDevice):
     """
-    Для оборудования MA5600T от производителя Huawei
+    # Для DSLAM оборудования MA5600T от производителя Huawei
     """
 
     prompt = r"config\S+#|\S+#"
     space_prompt = r"---- More \( Press \'Q\' to break \) ----"
+    # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+        """
+        При инициализации активируем режим пользователя командой:
+
+            # enable
+
+        :param session: Это объект сеанса pexpect c установленной сессией оборудования
+        :param ip: IP-адрес устройства, к которому вы подключаетесь
+        :param auth: словарь, содержащий имя пользователя и пароль для устройства
+        :param model: Модель коммутатора
+        """
+
         super().__init__(session, ip, auth, model)
         self.session.sendline("enable")
         self.session.expect(r"\S+#")
@@ -632,6 +644,26 @@ class HuaweiMA5600T(BaseDevice):
         prompt=None,
         pages_limit=None,
     ) -> str:
+        """
+        ## Отправляет команду на оборудование и считывает её вывод
+
+        Вывод будет содержать в себе строки от момента ввода команды, до (prompt: str), указанного в классе
+
+        При вводе некоторых команд оборудование будет запрашивать продолжение команды после её ввода, например:
+        ```{ <cr>|ontid<U><0,255> }:```, которое не требуется для указанной команды.
+        Если встречается строка ```}:```, будет отправлено пустое значение и продолжится запись результата команды
+
+        :param command: Команда, которую необходимо выполнить на оборудовании
+        :param before_catch: Регулярное выражение, указывающее начало
+        :param expect_command: Не вносить текст команды в вывод
+        :param num_of_expect: Кол-во символов с конца команды, по которым необходимо её находить
+        :param space_prompt: Регулярное выражение, которое указывает на ожидание ввода клавиши,
+                             для последующего отображения информации
+        :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды
+        :param pages_limit: Кол-во страниц, если надо, которые будут выведены при постраничном отображении
+        :return: Строка с результатом команды
+        """
+
         if space_prompt is None:
             space_prompt = self.space_prompt
         if prompt is None:
@@ -700,7 +732,16 @@ class HuaweiMA5600T(BaseDevice):
         pass
 
     def port_config(self, port: str) -> str:
-        """Конфигурация для определенного порта"""
+        """
+        ## Выводим конфигурацию порта
+
+        В данный момент выводит информацию только для ONT
+
+        Используем команду:
+
+            # display current-configuration ont {i0}/{i1}/{i2} {i3}
+
+        """
 
         port_type, indexes = self.split_port(port)
 
@@ -724,46 +765,51 @@ class HuaweiMA5600T(BaseDevice):
 
     def split_port(self, port: str) -> SplittedPort:
         """
-        Разделяет строку порта на тип интерфейса и плата, слот, порт
+        ## Разделяет строку порта на тип интерфейса и плата, слот, порт
 
-        ADSL 0/2/4 -> "adsl", ["0", "2", "4"]
-
-        >>> self.split_port('ADSL 0/2/4')
+        >>> self.split_port("ADSL 0/2/4")
         ('adsl', ('0', '2', '4'))
 
-        >>> self.split_port('GPON 0/6/7/1')
+        >>> self.split_port("GPON 0/6/7/1")
         ('gpon', ('0', '6', '7', '1'))
 
+        >>> self.split_port("ethernet0/9/1")
+        ('eth', ('0', '9', '1'))
 
         Также смотрит слоты:
-          # display board \n
-          #------------------------------------------------------------------------ \n
-          SlotID  BoardName  Status         SubType0 SubType1    Online/Offline \n
-          #------------------------------------------------------------------------ \n
-          0                         \n
-          1                         \n
-          2       H808ADLF   Normal \n
-          3       H808ADLF   Normal \n
-          4       H808ADLF   Normal \n
-          5       H808ADLF   Normal \n
-          6       H808ADLF   Normal \n
-          7                         \n
-          8       H805ADPD   Normal \n
-          9       H801SCUB   Active_normal \n
 
-        Чтобы понять тип
+            # display board {i0}
+
+            #------------------------------------------------------------------------
+            SlotID  BoardName  Status         SubType0 SubType1    Online/Offline
+            #------------------------------------------------------------------------
+            0
+            1
+            2       H808ADLF   Normal
+            3       H808ADLF   Normal
+            4       H808ADLF   Normal
+            5       H808ADLF   Normal
+            6       H808ADLF   Normal
+            7
+            8       H805ADPD   Normal
+            9       H801SCUB   Active_normal
+
+        На 9 слоте плата **H801SCUB**, значит результатом будет:
 
         >>> self.split_port('ethernet0/9/2')
         ('scu', ('0', '9', '2'))
 
         """
 
+        # Преобразование порта в нижний регистр и удаление всех пробелов.
         port = port.lower().strip()
+        # Нахождение типа порта.
         port_type = self.find_or_empty(r"^ethernet|^[av]dsl|^gpon", port)
+        # Удаление букв в имени порта и последующее разделение строки на "/"
         indexes = re.sub(r"^[a-z]+", "", port).split("/")
         if port_type == "ethernet":
             board_info = self.send_command(f"display board {indexes[0]}")
-            # print(board_info)
+
             board_list = self.find_or_empty(
                 rf"\s+({indexes[1]})\s+(\S+)\s+\S+", board_info
             )
@@ -777,9 +823,17 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def adsl_port_info_parser(self, info: str, profile_name: str, all_profiles: list):
+    def render_adsl_port_info(
+        self, info: str, profile_name: str, all_profiles: list
+    ) -> str:
         """
-        Преобразовываем информацию о ADSL порте для отображения на странице
+        ## Преобразовываем информацию о ADSL порте для отображения на странице
+
+        ![img.png](/static/docs/img/adsl_info.png)
+
+        :param info: Информация порта ADSL
+        :param profile_name: Название текущего профиля
+        :param all_profiles: Все существующие ADSL профиля на оборудовании
         """
 
         def color(val: float, s: str) -> str:
@@ -860,8 +914,12 @@ class HuaweiMA5600T(BaseDevice):
             },
         )
 
-    def __get_gpon_port_info(self, indexes: tuple):
-        """Смотрим информацию на порту, который относится к GPON"""
+    def render_gpon_port_info(
+        self, indexes: (Tuple[str, str, str], Tuple[str, str, str, str])
+    ):
+        """
+        ## Преобразовываем информацию о GPON порте для отображения на странице
+        """
 
         from check.models import Devices
 
@@ -873,6 +931,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.expect(self.prompt)
         i: tuple = indexes  # Упрощаем запись переменной
 
+        # GPON
         if len(indexes) == 3:
             # Смотрим порт
             output = self.send_command(
@@ -917,16 +976,31 @@ class HuaweiMA5600T(BaseDevice):
             return render_to_string("check/gpon_port_info.html", data)
 
         # Смотрим ONT
-        data = self.__get_ont_port_info(indexes=i)
+        data = self.ont_port_info(indexes=i)
         self.session.sendline("quit")
         return render_to_string("check/ont_port_info.html", {"ont_info": data})
 
     @lru_cache
-    def __get_ont_port_info(self, indexes: tuple):
+    def ont_port_info(self, indexes: tuple) -> list:
         """
-        Смотрим информацию на конкретном ONT
+        ## Смотрим информацию на конкретном ONT
 
-        display ont wan-info 0/1 1 11
+            # display ont wan-info {i0}/{i1} {i2} {i3}
+
+        Возвращаем список сервисов у абонента:
+
+        ```python
+        {
+            "type": "",
+            "index": "",
+            "ipv4_status": "",
+            "ipv4_access_type": "",
+            "ipv4_address": "",
+            "subnet_mask": "",
+            "manage_vlan": "",
+            "mac": "",
+        }
+        ```
 
         """
         i: tuple = indexes  # Упрощаем запись переменной
@@ -972,9 +1046,9 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
-    def vdsl_port_info_parser(self, info: str, profile_name: str, all_profiles: list):
+    def render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list):
         """
-        Преобразовываем информацию о VDSL порте для отображения на странице
+        ## Преобразовываем информацию о VDSL порте для отображения на странице
 
         ------------------------------------------------------
         -  Line attenuation downstream(dB)            : 9.5
@@ -1094,8 +1168,11 @@ class HuaweiMA5600T(BaseDevice):
             },
         )
 
-    def __get_vdsl_port_info(self, indexes: tuple):
-        """Смотрим информацию на VDSL порту"""
+    def vdsl_port_info(self, indexes: tuple):
+        """
+        ## Смотрим информацию на VDSL порту
+        """
+
         self.session.sendline("config")
 
         self.session.sendline(f"interface vdsl {indexes[0]}/{indexes[1]}")
@@ -1141,16 +1218,18 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("quit")
         self.session.expect(self.prompt)
 
-        return self.vdsl_port_info_parser(port_stats, template_name, line_templates)
+        return self.render_vdsl_port_info(port_stats, template_name, line_templates)
 
-    def get_port_info(self, port: str):
-        """Смотрим информацию на порту"""
+    def get_port_info(self, port: str) -> str:
+        """
+        ## Смотрим информацию на порту
+        """
 
         port_type, indexes = self.split_port(port)
 
         # Для GPON используем отдельный метод
         if port_type == "gpon":
-            return self.__get_gpon_port_info(indexes=indexes)
+            return self.render_gpon_port_info(indexes=indexes)
 
         # Для других
         if not port_type or len(indexes) != 3:
@@ -1158,7 +1237,7 @@ class HuaweiMA5600T(BaseDevice):
 
         # Для VDSL используем отдельный метод
         if port_type == "vdsl":
-            return self.__get_vdsl_port_info(indexes=indexes)
+            return self.vdsl_port_info(indexes=indexes)
 
         self.session.sendline("config")
         self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
@@ -1200,10 +1279,16 @@ class HuaweiMA5600T(BaseDevice):
                 [line[0], line[1] + line[-1].replace(" ", "").replace("\n", "")]
             )
 
-        return self.adsl_port_info_parser(output, profile_name, profiles)
+        return self.render_adsl_port_info(output, profile_name, profiles)
 
     def change_profile(self, port: str, profile_index: int) -> str:
-        """Меняем профиль на DSL порту"""
+        """
+        ## Меняем профиль на xDSL порту
+
+        :param port: Порт
+        :param profile_index: Индекс нового профиля
+        :return: Статус изменения профиля либо "Неверный порт!"
+        """
 
         port_type, indexes = self.split_port(port)
 
@@ -1231,18 +1316,22 @@ class HuaweiMA5600T(BaseDevice):
 
     def get_mac(self, port) -> list:
         """
-        Смотрим MAC'и на порту и отдаем в виде списка
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
-        [ ["vlan", "mac"],  ... ]
+        Команда на оборудовании:
+
+            # display mac-address port {i0}/{i1}/{i2}
+            # display security bind mac {i0}/{i1}/{i2}
+
+        :param port: Номер порта коммутатора
+        :return: [ ('vid', 'mac'), ... ]
         """
 
         port_type, indexes = self.split_port(port)
 
         # Для GPON ONT используем отдельный поиск
         if port_type == "gpon" and len(indexes) == 4:
-            data = self.__get_ont_port_info(
-                indexes
-            )  # Получаем информацию с порта абонента
+            data = self.ont_port_info(indexes)  # Получаем информацию с порта абонента
             macs = []
             for service in data:
                 if service.get("mac"):  # Если есть МАС для сервиса
@@ -1305,7 +1394,36 @@ class HuaweiMA5600T(BaseDevice):
         return ""
 
     def reload_port(self, port, save_config=True) -> str:
-        """Перезагружаем порт"""
+        """
+        ## Перезагружает порт
+
+        Переходим в режим конфигурирования:
+
+            # config
+
+        Переходим к интерфейсу:
+
+            (config)# interface {port_type} {i0}/{i1}
+
+        Для xDSL порта или ONT:
+
+            (config-if)# deactivate {i2}
+            (config-if)# activate {i2}
+
+        Для GPON, Ethernet порта:
+
+            (config-if)# shutdown {i2}
+            (config-if)# undo shutdown {i2}
+
+        Выходим из режима конфигурирования:
+
+            (config-if)# quit
+            (config)# quit
+
+        :param port: Порт
+        :param save_config: Сохранять конфигурацию?
+        :return: Статус выполнения
+        """
 
         port_type, indexes = self.split_port(port)
 
@@ -1343,26 +1461,33 @@ class HuaweiMA5600T(BaseDevice):
             s += self.session.before.decode()
 
         self.session.sendline("quit")
+        self.session.sendline("quit")
         return s
 
     def set_port(self, port, status, save_config=True) -> str:
         """
-        Меняем состояние порта up/down
+        ## Перезагружает порт
 
-        В зависимости от типа порта команды разнятся
+        Переходим в режим конфигурирования:
 
-        Для порта *dsl 0/1/2:
-            # interface *dsl 0/1
-            # deactivate 2
+            # config
 
-        Для порта gpon 0/3/2/14:
-            # interface gpon 0/3
-            # ont port deactivate 2 14
+        Переходим к интерфейсу:
 
-        :param port: строка с портом (например: adsl 0/2/4)
+            (config)# interface {port_type} {i0}/{i1}
+
+        Для xDSL порта или ONT:
+
+            (config-if)# {deactivate|activate} {i2}
+
+        Для GPON, Ethernet порта:
+
+            (config-if)# {shutdown|undo shutdown} {i2}
+
+        :param port: Порт
         :param status: 'up' или 'down'
         :param save_config: Сохранять конфигурацию?
-        :return:
+        :return: Статус выполнения
         """
 
         port_type, indexes = self.split_port(port)
@@ -1401,7 +1526,31 @@ class HuaweiMA5600T(BaseDevice):
         pass
 
     def set_description(self, port: str, desc: str) -> str:
-        """Меняем описание на порту"""
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Максимальная длина 32 символа
+
+        Переходим в режим конфигурирования:
+
+            # config
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            (config)# undo port desc {i0}/{i1}/{i2}
+
+        Если **desc** содержит описание, то используем команду для изменения:
+
+            (config)# port desc {i0}/{i1}/{i2} description {desc}
+
+        Выходим из режима конфигурирования:
+
+            (config)# quit
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
 
         port_type, indexes = self.split_port(port)
         if not port_type or len(indexes) != 3:
@@ -1434,13 +1583,31 @@ class HuaweiMA5600T(BaseDevice):
 
 
 class HuaweiCX600(BaseDevice):
+    """
+    # Для оборудования серии CX600 от производителя Huawei
+    """
+
     prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
     space_prompt = r"  ---- More ----"
+    # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
     def search_mac(self, mac_address: str) -> list:
-        """Ищем MAC адрес в таблице ARP оборудования"""
+        """
+        ## Возвращаем данные абонента по его MAC адресу
+
+        **MAC необходимо передавать без разделительных символов** он сам преобразуется к виду, требуемому для CX600
+
+        Отправляем на оборудование команду:
+
+            # display access-user mac-address {mac_address}
+
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+
+        :param mac_address: MAC-адрес
+        :return: ["IP", "MAC", "VLAN", "Agent-Circuit-Id", "Agent-Remote-Id"]
+        """
 
         formatted_mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_address)
 
@@ -1465,7 +1632,18 @@ class HuaweiCX600(BaseDevice):
         return []
 
     def search_ip(self, ip_address: str) -> list:
-        """Ищем IP адрес в таблице ARP оборудования"""
+        """
+        ## Ищем абонента по его IP адресу
+
+        Отправляем на оборудование команду:
+
+            # display access-user ip-address {ip_address}
+
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+
+        :param ip_address: IP-адрес
+        :return: ["IP", "MAC", "VLAN", "Agent-Circuit-Id", "Agent-Remote-Id"]
+        """
 
         match = self.send_command(
             f"display access-user ip-address {ip_address}",

@@ -1,5 +1,6 @@
 import re
 import pathlib
+import string
 from typing import List, Tuple
 
 import pexpect
@@ -138,35 +139,124 @@ class BaseDevice(ABC):
         self.os_version: str = ""
 
     @staticmethod
-    def clear_description(desc: str):
+    def clear_description(desc: str) -> str:
         """
         Очищаем описание порта от лишних символов
 
-        Заменяем пробелы на "_"
-
-        Удаляем другие пробельные символы "\\\\t\\\\n\\\\r\\\\f\\\\v"
+        Также переводит русские символы в английские. Заменяет пробелы на "_".
+        Удаляет другие пробельные символы "\\\\t\\\\n\\\\r\\\\f\\\\v"
 
         Максимальная длина строки 220
+
+        >>> BaseDevice.clear_description("test desc \\n desc")
+        'test_desc__desc'
+
+        >>> BaseDevice.clear_description("Описание порта")
+        'Opisanie_porta'
 
         :param desc: Описание
         :return: Очищенное описание
         """
 
-        desc = desc.strip().replace(" ", "_")
-        desc = re.sub(r"\s", "", desc)
-        desc = desc.replace("\\", "/")
-        return desc[:220]
+        unicode_ascii = {
+            "а": "a",
+            "б": "b",
+            "в": "v",
+            "г": "g",
+            "д": "d",
+            "е": "e",
+            "ё": "e",
+            "ж": "zh",
+            "з": "z",
+            "и": "i",
+            "й": "i",
+            "к": "k",
+            "л": "l",
+            "м": "m",
+            "н": "n",
+            "о": "o",
+            "п": "p",
+            "р": "r",
+            "с": "s",
+            "т": "t",
+            "у": "u",
+            "ф": "f",
+            "х": "h",
+            "ц": "c",
+            "ч": "cz",
+            "ш": "sh",
+            "щ": "scz",
+            "ъ": "",
+            "ы": "y",
+            "ь": "",
+            "э": "e",
+            "ю": "u",
+            "я": "ja",
+            "А": "A",
+            "Б": "B",
+            "В": "V",
+            "Г": "G",
+            "Д": "D",
+            "Е": "E",
+            "Ё": "E",
+            "Ж": "ZH",
+            "З": "Z",
+            "И": "I",
+            "Й": "I",
+            "К": "K",
+            "Л": "L",
+            "М": "M",
+            "Н": "N",
+            "О": "O",
+            "П": "P",
+            "Р": "R",
+            "С": "S",
+            "Т": "T",
+            "У": "U",
+            "Ф": "F",
+            "Х": "H",
+            "Ц": "C",
+            "Ч": "CZ",
+            "Ш": "SH",
+            "Щ": "SCH",
+            "Ъ": "",
+            "Ы": "y",
+            "Ь": "",
+            "Э": "E",
+            "Ю": "U",
+            "Я": "YA",
+            " ": "_",
+            "-": "_",
+            "'": "/",
+            "\\": "/",
+            "[": "(",
+            "]": ")",
+            "{": "(",
+            "}": ")",
+            "—": "-",
+        }
+
+        ascii_str = ""
+        for i in desc:
+            if i in unicode_ascii:
+                ascii_str += unicode_ascii[i]
+            elif i in string.whitespace:
+                continue
+            elif i.isascii():
+                ascii_str += i
+
+        return ascii_str[:220]
 
     @staticmethod
-    def find_or_empty(pattern, string, *args, **kwargs):
+    def find_or_empty(pattern: str, string_: str, *args, **kwargs):
         """
         Возвращает первое совпадение регулярного выражения в строке или пустую строку, если совпадений нет.
 
         :param pattern: Шаблон регулярного выражения для поиска
-        :param string: Строка для поиска
+        :param string_: Строка для поиска
         """
 
-        m = re.findall(pattern, string, *args, **kwargs)
+        m = re.findall(pattern, string_, *args, **kwargs)
         return m[0] if m else ""
 
     def send_command(
@@ -180,7 +270,7 @@ class BaseDevice(ABC):
         pages_limit=None,
     ) -> str:
         """
-        Отправляет команду на оборудование и считывает её вывод
+        ## Отправляет команду на оборудование и считывает её вывод
 
         Вывод будет содержать в себе строки от момента ввода команды, до (prompt: str), указанного в классе
 

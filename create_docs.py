@@ -18,5 +18,5 @@ if __name__ == "__main__":
         "!devicemanager.tests",
         "net_tools",
         "!net_tools.migration",
-        output_directory=pathlib.Path(__file__).parent / "docs",
+        output_directory=pathlib.Path(__file__).parent / "static" / "docs",
     )
