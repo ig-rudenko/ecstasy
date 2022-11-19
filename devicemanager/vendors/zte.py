@@ -8,12 +8,15 @@ from .base import (
     COOPER_TYPES,
     FIBER_TYPES,
     range_to_numbers,
+    InterfaceList,
+    InterfaceVLANList,
+    MACList,
 )
 
 
 class ZTE(BaseDevice):
     """
-    Для оборудования от производителя ZTE
+    # Для оборудования от производителя ZTE
 
     Проверено для:
      - ZXR10 2928E
@@ -33,6 +36,20 @@ class ZTE(BaseDevice):
     vendor = "ZTE"
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+        """
+        ## При инициализации повышаем уровень привилегий:
+
+            > enable
+
+          - MAC
+          - серийный номер
+
+        :param session: Это объект сеанса pexpect c установленной сессией оборудования
+        :param ip: IP-адрес устройства, к которому вы подключаетесь
+        :param auth: словарь, содержащий имя пользователя и пароль для устройства
+        :param model: Модель коммутатора. Это используется для определения подсказки
+        """
+
         super().__init__(session, ip, auth, model)
         version = self.send_command("show version")
         self.mac = self.find_or_empty(r"Mac Address: (\S+)", version)
@@ -57,7 +74,17 @@ class ZTE(BaseDevice):
         else:
             self.__privileged = True
 
-    def get_interfaces(self) -> list:
+    def get_interfaces(self) -> InterfaceList:
+        """
+        ## Возвращаем список всех интерфейсов на устройстве
+
+        Команда на оборудовании:
+
+            (cfg)# show port
+
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
+        """
+
         output = self.send_command("show port")
 
         with open(
@@ -66,15 +93,29 @@ class ZTE(BaseDevice):
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
-            [
+            (
                 line[0],  # interface
                 line[2] if "enabled" in line[1] else "admin down",  # status
                 line[3],  # desc
-            ]
+            )
             for line in result
         ]
 
-    def get_vlans(self):
+    def get_vlans(self) -> InterfaceVLANList:
+        """
+        ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
+
+        Для начала получаем список всех интерфейсов через метод **get_interfaces()**
+
+        Затем для смотрим вланы командой:
+
+            (cfg)# show vlan
+
+        И сопоставляем их с интерфейсами
+
+        :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...] ), ... ]```
+        """
+
         interfaces = self.get_interfaces()
         output = self.send_command("show vlan")
 
@@ -100,13 +141,14 @@ class ZTE(BaseDevice):
             for vlan_id in vlan_port:
                 if int(line[0]) in vlan_port[vlan_id]:
                     vlans.append(vlan_id)
-            interfaces_vlan.append(line + [vlans])
+            interfaces_vlan.append((line[0], line[1], line[2], vlans))
         return interfaces_vlan
 
     @staticmethod
     def validate_port(port) -> (str, None):
         """
-        Проверяем правильность полученного порта
+        # Проверяем правильность полученного порта
+
         Для ZTE порт должен быть числом
         """
 
@@ -115,10 +157,17 @@ class ZTE(BaseDevice):
             return port
         return None
 
-    def get_mac(self, port: str) -> list:
+    def get_mac(self, port: str) -> MACList:
         """
-        Поиск маков на порту
-        :return: [ ('vid', 'mac'), ... ]
+        ## Возвращаем список из VLAN и MAC-адреса для данного порта.
+
+        Используем команды:
+
+            (cfg)# show fdb port {port} detail
+            (cfg)# show mac dynamic port {port}
+
+        :param port: Номер порта коммутатора
+        :return: ```[ ('vid', 'mac'), ... ]```
         """
 
         port = self.validate_port(port)
@@ -139,7 +188,19 @@ class ZTE(BaseDevice):
 
         return mac_list
 
-    def save_config(self):
+    def save_config(self) -> str:
+        """
+        ## Сохраняем конфигурацию оборудования
+
+        Используется одна из команд:
+
+            (cfg)# saveconfig
+            (cfg)# write
+
+        Ожидаем ответа от оборудования **Done**,
+        если нет, то ошибка сохранения
+        """
+
         self.session.sendline("saveconfig")
         if self.session.expect([r"please wait a minute", "Command not found"]):
             self.session.sendline("write")
@@ -150,6 +211,16 @@ class ZTE(BaseDevice):
         return self.SAVED_ERR
 
     def reload_port(self, port: str, save_config=True) -> str:
+        """
+        ## Перезагружает порт
+
+            (cfg)# set port {port} disable
+            (cfg)# set port {port} disable
+
+        :param port: Порт для перезагрузки
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
 
@@ -165,6 +236,18 @@ class ZTE(BaseDevice):
         return f"reset port {port} " + s
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
+        """
+        ## Устанавливает статус порта на коммутаторе **up** или **down**
+
+        Меняем состояние порта:
+
+            (cfg)# set port {port} {disable|enable}
+
+        :param port: Порт
+        :param status: "up" или "down"
+        :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
+        """
+
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
 
@@ -182,7 +265,17 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
-    def port_config(self, port: str):
+    def port_config(self, port: str) -> str:
+        """
+        ## Выводим конфигурацию порта
+
+        Используем команду:
+
+            # show running-config
+
+        Затем выбираем конфигурацию нужного порта
+        """
+
         port = self.validate_port(port)
         if port is None:
             return "Неверный порт!"
@@ -196,7 +289,32 @@ class ZTE(BaseDevice):
 
         return port_config
 
-    def port_type(self, port: str):
+    def port_type(self, port: str) -> str:
+        """
+        ## Возвращает тип порта
+
+        Тип порта определяется по стандарту IEE 802.3
+
+        ### Обозначения медных типов
+            T, TX, VG, CX, CR
+        ### Обозначения оптоволоконных типов:
+            FOIRL, F, FX, SX, LX, BX, EX, ZX, SR, ER, SW, LW, EW, LRM, PR, LR, ER, FR
+
+        Оптоволокно:
+
+            BaseX
+            BaseLR
+            BaseFX
+
+        Медь:
+
+            BaseT
+            BaseTX
+
+        :param port: Порт для проверки
+        :return: "SFP", "COPPER", "Неверный порт!" или "?"
+        """
+
         port = self.validate_port(port)
         if port is None:
             return "Неверный порт!"
@@ -211,7 +329,17 @@ class ZTE(BaseDevice):
 
         return "?"
 
-    def get_port_errors(self, port: str):
+    def get_port_errors(self, port: str) -> str:
+        """
+        ## Выводим ошибки на порту
+
+        Используем команду:
+
+            (cfg)# show port {port} statistics
+
+        :param port: Порт для проверки на наличие ошибок
+        """
+
         port = self.validate_port(port)
         if port is None:
             return "Неверный порт!"
@@ -219,6 +347,24 @@ class ZTE(BaseDevice):
         return self.send_command(f"show port {port} statistics")
 
     def set_description(self, port: str, desc: str) -> str:
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Если длина описания больше допустимой, то вернется ```"Max length:{max_length}"```
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            (cfg)# clear port {port} description
+
+        Если **desc** содержит описание, то используем команду для изменения:
+
+            (cfg)# set port {port} description {desc}
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
+
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
 
@@ -251,7 +397,35 @@ class ZTE(BaseDevice):
 
     def virtual_cable_test(self, port: str):
         """
-        Реализация виртуального тестирования линий VCT (Virtual Line Detection) благодаря TDR.
+        Эта функция запускает диагностику состояния линии на порту оборудования через команду:
+
+            (cfg)# show vct port {port}
+
+        Реализация виртуального тестирования линий **VCT** (Virtual Line Detection) благодаря TDR.
+        С помощью этого метода модно выполнять диагностику неисправного состояния линии, например обрыв линии
+        (Open), короткое замыкание (Short), рассогласование импеданса (Impedance Mismatch).
+        Разница в сопротивлении (слишком большое затухание в линии).
+        Плохая скрутка, либо кабель с некорректным сопротивлением. Или, к примеру, очень большая длина.
+
+        Функция возвращает данные в виде словаря.
+        В зависимости от результата диагностики некоторые ключи могут отсутствовать за ненадобностью.
+
+        ```python
+        {
+            "len": "-",         # Длина кабеля в метрах, либо "-", когда не определено
+            "status": "",       # Состояние на порту (Up, Down, Mismatch)
+            "pair1": {
+                "status": "",   # Статус первой пары (Open, Short)
+                "len": "",      # Длина первой пары в метрах
+            },
+            "pair2": {
+                "status": "",   # Статус второй пары (Open, Short)
+                "len": "",      # Длина второй пары в метрах
+            }
+        }
+        ```
+
+        Реализация виртуального тестирования линий **VCT** (Virtual Line Detection) благодаря TDR.
         С помощью этого метода модно выполнять диагностику неисправного состояния линии, например обрыв линии
         (Open), короткое замыкание (Short), рассогласование импеданса (Impedance Mismatch).
         """
