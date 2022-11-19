@@ -7,13 +7,32 @@ from .base import BaseDevice, TEMPLATE_FOLDER
 
 
 class Juniper(BaseDevice):
+    """
+    # Для оборудования от производителя Juniper
+    """
+
     prompt = r"> $"
     space_prompt = r"-+\(more.*?\)-+"
     vendor = "juniper"
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
 
     def search_mac(self, mac_address: str) -> list:
-        """Ищем MAC адрес в таблице ARP оборудования"""
+        """
+        ## Ищем MAC адрес среди subscribers и в таблице ARP оборудования
+
+        **MAC необходимо передавать без разделительных символов**
+        он сам преобразуется к виду, требуемому для Juniper
+
+        Отправляем на оборудование команды:
+
+            # show subscribers mac-address {mac_address} detail
+            # show arp | match {mac_address}
+
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+
+        :param mac_address: MAC-адрес, который вы хотите найти
+        :return: ```['ip', 'mac' 'vlan_id', 'device_name', 'port']``` или ```['ip', 'mac' 'vlan_id']```
+        """
 
         formatted_mac = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*mac_address)
 
@@ -21,6 +40,7 @@ class Juniper(BaseDevice):
         subscribers_output = self.send_command(
             f"show subscribers mac-address {formatted_mac} detail", expect_command=False
         )
+        # Разбор вывода команды `show subscribers mac-address`
         formatted_result = self.parse_subscribers(subscribers_output)
         if formatted_result:
             # Нашли среди subscribers
@@ -45,7 +65,19 @@ class Juniper(BaseDevice):
         return []
 
     def search_ip(self, ip_address: str) -> list:
-        """Ищем IP адрес в таблице ARP оборудования"""
+        """
+        ## Ищем IP адрес среди subscribers и в таблице ARP оборудования
+
+        Отправляем на оборудование команды:
+
+            # show subscribers address {ip_address} detail
+            # show arp | match {ip_address}
+
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+
+        :param ip_address: IP-адрес, который вы хотите найти
+        :return: ```['ip', 'mac' 'vlan_id', 'device_name', 'port']``` или ```['ip', 'mac' 'vlan_id']```
+        """
 
         # >> Ищем среди subscribers <<
         subscribers_output = self.send_command(
@@ -77,7 +109,7 @@ class Juniper(BaseDevice):
     @staticmethod
     def parse_subscribers(string: str) -> list:
         """
-        Парсим данные:
+        ## Парсим данные из вывода команды **subscribers**:
 
             ...
             IP Address: 10.201.170.140
@@ -86,7 +118,7 @@ class Juniper(BaseDevice):
             ...
             VLAN Id: 604
             Agent Circuit ID: port1
-            Agent Remote ID: SVSL-122-Kosar27p4-ASW1
+            Agent Remote ID: Device_name
             ...
 
         :returns: ['ip', 'mac' 'vlan_id', 'device_name', 'port']
