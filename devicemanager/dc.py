@@ -1,5 +1,5 @@
 """
-Модуль для подключения к оборудованию через SSH, TELNET
+# Модуль для подключения к оборудованию через SSH, TELNET
 """
 
 import re
@@ -9,7 +9,7 @@ from .vendors import *
 
 class DeviceFactory:
     """
-    Подключение к оборудованию, определение вендора и возврат соответствующего класса
+    # Подключение к оборудованию, определение вендора и возврат соответствующего класса
     """
 
     prompt_expect = r"[#>\]]\s*$"
@@ -53,7 +53,9 @@ class DeviceFactory:
             self.privilege_mode_password = auth_obj.secret or "enable"
 
     def send_command(self, command: str):
-        """Простой метод для отправки команды с постраничной записью вывода результата"""
+        """
+        # Простой метод для отправки команды с постраничной записью вывода результата
+        """
 
         self.session.sendline(command)
         version = ""
@@ -78,7 +80,31 @@ class DeviceFactory:
                 break
         return version
 
-    def __get_device(self):
+    def get_device(self):
+        """
+        # После подключения динамически определяем вендора оборудования и его модель
+
+        Отправляем команду:
+
+            # show version
+
+        Ищем в выводе команды строчки, которые указывают на определенный вендор
+
+        |           Вендор            |     Строка для определения    |
+        |:----------------------------|:------------------------------|
+        |             ZTE             |      " ZTE Corporation:"      |
+        |           Huawei            |     "Unrecognized command"    |
+        |            Cisco            |           "cisco"             |
+        |          D-Link             |  "Next possible completions:" |
+        |          Edge-Core          |      "Hardware version"       |
+        |          Extreme            |          "ExtremeXOS"         |
+        |           Q-Tech            |            "QTECH"            |
+        |          Iskratel           |   "ISKRATEL" или "IskraTEL"   |
+        |           Juniper           |            "JUNOS"            |
+        |          ProCurve           |         "Image stamp:"        |
+
+        """
+
         auth = {
             "login": self.login,
             "password": self.password,
@@ -284,6 +310,10 @@ class DeviceFactory:
             return f"Login Error: Время ожидания превышено! ({self.ip})"
 
     def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30):
+        """
+        ## При входе в контекстный менеджер подключаемся к оборудованию
+        """
+
         connected = False
         if self.protocol == "ssh":
             algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
@@ -384,8 +414,12 @@ class DeviceFactory:
             else:
                 return status
 
-        return self.__get_device()
+        return self.get_device()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        ## При выходе из контекстного менеджера завершаем сессию
+        """
+
         self.session.close()
         del self

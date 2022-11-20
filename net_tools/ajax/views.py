@@ -19,7 +19,7 @@ from ecstasy_project.settings import BASE_DIR
 
 
 @login_required
-def get_vendor(request, mac):
+def get_vendor(request, mac: str) -> JsonResponse:
     """Определяет производителя по MAC адресу"""
 
     resp = requests_lib.get("https://macvendors.com/query/" + mac)
@@ -30,7 +30,9 @@ def get_vendor(request, mac):
 
 @login_required
 def find_as_str(request):
-    """Вывод результата поиска портов по описанию"""
+    """
+    ## Вывод результата поиска портов по описанию
+    """
 
     if not request.GET.get("string"):
         return JsonResponse({"data": []})
@@ -50,14 +52,25 @@ def find_as_str(request):
     )
 
 
-def get_ip_or_mac_from(model_dev, find_address: str, result: list, find_type: str):
-    """Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result"""
+def get_ip_or_mac_from(
+    model_dev, find_address: str, result: list, find_type: str
+) -> None:
+    """
+    ## Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result
+
+    :param model_dev: Оборудование, на котором надо искать
+    :param find_address: Адрес который надо искать (IP или MAC)
+    :param result: Список в который будет добавлен результат
+    :param find_type: Тип поиска ```"IP"``` или ```"MAC"```
+    """
 
     with model_dev.connect() as session:
         info = []
+        # Проверка, является ли find_type IP-адресом и имеет ли сеанс атрибут search_ip.
         if find_type == "IP" and hasattr(session, "search_ip"):
             info: list = session.search_ip(find_address)
 
+        # Проверка того, является ли find_type MAC-адресом и имеет ли сеанс атрибут search_mac.
         elif find_type == "MAC" and hasattr(session, "search_mac"):
             info: list = session.search_mac(find_address)
 
@@ -71,12 +84,14 @@ def ip_mac_info(request, ip_or_mac):
     """
     Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
 
-    В многопоточном режиме собирает данные [ip, mac, vlan] из оборудования и проверяет,
-    есть ли в Zabbix узел сети с таким IP и добавляет имя и hostid
+    В многопоточном режиме собирает данные ip, mac, vlan, agent-remote-id, agent-circuit-id из оборудования
+     и проверяет, есть ли в Zabbix узел сети с таким IP и добавляет имя и hostid
     """
 
+    # Получение устройств из базы данных, которые используются в поиске MAC/IP адресов
     devices_for_search = DevicesForMacSearch.objects.all()
 
+    # Поиск IP-адреса в строке.
     find_address = findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip_or_mac)
     if find_address:
         # Нашли IP адрес
@@ -84,16 +99,20 @@ def ip_mac_info(request, ip_or_mac):
         find_address = find_address[0]
 
     else:
+        # Поиск всех шестнадцатеричных символов из входной строки.
         find_address = "".join(findall(r"[a-fA-F\d]", ip_or_mac)).lower()
         # Нашли MAC адрес
         find_type: str = "MAC"
+        # Проверка правильности MAC-адреса.
         if not find_address or len(find_address) < 6 or len(find_address) > 12:
             return []
 
     match = []
+    # Менеджер контекста, который создает пул потоков и выполняет код внутри блока with.
     with ThreadPoolExecutor() as execute:
+        # Проходит через каждое устройство в списке устройств.
         for dev in devices_for_search:
-            print(dev.device, find_address)
+            # Отправка задачи в пул потоков.
             execute.submit(
                 get_ip_or_mac_from, dev.device, find_address, match, find_type
             )
@@ -102,8 +121,10 @@ def ip_mac_info(request, ip_or_mac):
 
     if len(match) > 0:
         # Если получили совпадение
+        # Поиск всех IP-адресов в списке совпадений.
         ip = findall(r"\d+\.\d+\.\d+\.\d+", str(match))
 
+        # Загрузка настроек Zabbix из базы данных.
         zabbix_settings = ZabbixConfig.load()
         try:
             with ZabbixAPI(server=zabbix_settings.url) as zbx:
@@ -124,22 +145,30 @@ def ip_mac_info(request, ip_or_mac):
 
 
 @login_required
-def get_vlan_desc(request):
-    """Получаем имя VLAN"""
+def get_vlan_desc(request) -> JsonResponse:
+    """
+    ## Возвращаем имя VLAN, который был передан в HTTP запросе
+    """
 
     try:
+        # Получение vlan из запроса.
         vlan = int(request.GET.get("vlan"))
+        # Получение имени vlan из базы данных.
         vlan_name = VlanName.objects.get(vid=vlan).name
 
     except (VlanName.DoesNotExist, ValueError):
+        # Возврат пустого объекта JSON.
         return JsonResponse({})
 
     else:
+        # Возвращает ответ JSON с именем vlan.
         return JsonResponse({"vlan_desc": vlan_name})
 
 
 def create_nodes(result: list, net: Network, show_admin_down_ports: str):
-    """Создает элементы и связи между ними"""
+    """
+    ## Создает элементы и связи между ними для карты VLAN
+    """
 
     for e in result:
         src = e[0]
@@ -228,16 +257,21 @@ def create_nodes(result: list, net: Network, show_admin_down_ports: str):
         if dst not in all_nodes:
             net.add_node(dst, dst_label, title=src_label, group=dst_gr, shape=dst_shape)
 
+        # Добавление ребра между двумя узлами.
         net.add_edge(src, dst, value=w, title=desc)
 
 
 @login_required
 def get_vlan(request):
-    """Трассировка VLAN"""
+    """
+    ## Трассировка VLAN и отправка карты
+    """
 
+    # Если в запросе нет vlan, вернет пустой объект JSON.
     if not request.GET.get("vlan"):
         return JsonResponse({"data": {}})
 
+    # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
     # Определяем список устройств откуда будет начинаться трассировка vlan
@@ -248,16 +282,18 @@ def get_vlan(request):
         # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
         vlan_start = []
 
+    # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
     for start_dev in vlan_start:
         passed = set()  # Имена уже проверенных устройств
         result = []  # Список узлов сети, соседей и линий связи для визуализации
 
         try:
+            # Преобразуем VLAN в число
             vlan = int(request.GET["vlan"])
         except ValueError:
             break
 
-        # трассировка vlan
+        # Трассировка vlan
         find_vlan(
             device=start_dev,
             vlan_to_find=vlan,
@@ -288,21 +324,23 @@ def get_vlan(request):
     nodes_count = len(net.nodes)
 
     print("Всего узлов создано:", nodes_count)
-    # add neighbor data to node hover data
 
-    # set the physics layout of the network
+    # Настройка физики для карты сети.
     net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
 
     # Итерация по всем узлам в сети.
     for node in net.nodes:
+        # Установка размера узла на основе количества соседей.
         node["value"] = len(neighbor_map[node["id"]]) * 3
         if "core" in node["title"].lower():
             node["value"] = 70
         if "-cr" in node["title"].lower():
             node["value"] = 100
         # Пустой порт
+        # Устанавливаем размер узла равным 1, если узел является портом.
         if "p:(" in node["title"]:
             node["value"] = 1
+        # Добавление списка соседей в заголовок узла.
         node["title"] += " Соединено:<br>" + "<br>".join(neighbor_map[node["id"]])
 
     # Установка сглаживания краев на динамическое.
@@ -311,6 +349,8 @@ def get_vlan(request):
     # Проверка существования каталога. Если нет, то создает.
     if not os.path.exists(BASE_DIR / "templates" / "tools" / "vlans"):
         os.makedirs(BASE_DIR / "templates" / "tools" / "vlans")
+    # Сохраняем карту в файл.
     net.save_graph(f"templates/tools/vlans/vlan{request.GET['vlan']}.html")
 
+    # Возврат созданной карты.
     return render(request, f"tools/vlans/vlan{request.GET['vlan']}.html")

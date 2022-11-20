@@ -1,23 +1,50 @@
 from re import findall, sub, IGNORECASE
+from typing import Tuple
+
 from net_tools.models import DevicesInfo, DescNameFormat
 import json
 
 
-def find_description(finding_string: str, re_string: str) -> tuple:
-    """Поиск портов на всем оборудовании, описание которых совпадает с finding_string"""
+def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
+    """
+    # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
+
+    Возвращаем кортеж из списка результатов поиска и количество найденных описаний
+
+    Список результатов содержит следующие элементы:
+
+    ```python
+    {
+        "Device": "Имя оборудования",
+        "Interface": "Порт",
+        # Выделяем искомый фрагмент с помощью тега <mark></mark>
+        "Description": "Описание <mark>искомый фрагмент</mark>",
+        "original_desc": "Описание искомый фрагмент",
+        "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
+    }
+    ```
+
+    :param finding_string: Подстрока, которую необходимо найти на описаниях портов
+    :param re_string: Регулярное выражение, по которому будет осуществляться поиск описания портов
+    :return: Кортеж из списка результатов поиска и количество найденных описаний
+    """
 
     result = []
     count = 0
 
-    all_devices = DevicesInfo.objects.all()
+    # # Получение всех устройств из базы данных.
+    # all_devices = DevicesInfo.objects.all()
 
     # Производим поочередный поиск
-    for device in all_devices:
+    for device in DevicesInfo.objects.all():
         try:
+            # Загрузка данных json из базы данных в словарь python.
             interfaces = json.loads(device.interfaces)
+            # Проверяем, пуста ли переменная interfaces.
             if not interfaces:
                 continue
             for line in interfaces:
+                # Он проверяет, находится ли find_string в описании или re_string в описании.
                 if (
                     finding_string
                     and finding_string.lower() in line.get("Description").lower()
@@ -48,7 +75,6 @@ def find_description(finding_string: str, re_string: str) -> tuple:
                             "SavedTime": device.interfaces_date.strftime(
                                 "%d.%m.%Y %H:%M:%S"
                             ),
-                            "percent": "100%",
                         }
                     )
                     count += 1
@@ -233,6 +259,7 @@ def find_vlan(
                     )
                 )
 
+            # Проверка наличия следующего устройства в списке пройденных устройств.
             if next_device and next_device not in list(passed_devices):
                 find_vlan(
                     next_device,

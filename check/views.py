@@ -1,10 +1,11 @@
 """
-Функции представления для взаимодействия с оборудованием
+# Функции представления для взаимодействия с оборудованием
 """
 
 import json
 import random
 import re
+from functools import wraps
 from datetime import datetime
 import pexpect
 import ping3
@@ -28,6 +29,7 @@ from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
 from app_settings.models import ZabbixConfig
 from devicemanager import *
+from devicemanager.vendors.base import MACList
 from . import models
 
 # Устанавливаем конфигурацию для работы с devicemanager
@@ -38,7 +40,7 @@ def log(
     user: models.User, model_device: (models.Devices, models.Bras), operation: str
 ) -> None:
     """
-    Записываем логи о действиях пользователя "user"
+    ## Записывает логи о действиях пользователя
 
     :param user: Пользователь, который совершил действие
     :param model_device: Оборудование, по отношению к которому было совершено действие
@@ -46,11 +48,15 @@ def log(
     :return: None
     """
 
+    # Проверка того, НЕ является ли пользователь экземпляром класса models.User
+    # или model_device НЕ является экземпляром класса models.Devices или models.Bras,
+    # или операция НЕ является строкой.
     if (
         not isinstance(user, models.User)
         or not isinstance(model_device, (models.Devices, models.Bras))
         or not isinstance(operation, str)
     ):
+        # Открытие файла журнала в режиме добавления и кодировка его в utf-8.
         with open(settings.LOG_FILE, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"{datetime.now():%d.%m.%Y %H:%M:%S} "
@@ -59,21 +65,25 @@ def log(
         return
 
     # В базу
+    # Получение максимальной длины поля «действие» в модели UsersActions.
     operation_max_length = models.UsersActions._meta.get_field("action").max_length
     if len(operation) > operation_max_length:
         operation = operation[:operation_max_length]
 
+    # Проверка того, является ли model_device экземпляром класса models.Devices.
     if isinstance(model_device, models.Devices):
         models.UsersActions.objects.create(
             user=user, device=model_device, action=operation
         )
         # В файл
+        # Открытие файла логов в режиме добавления и с кодировкой utf-8.
         with open(settings.LOG_FILE, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"{datetime.now():%d.%m.%Y %H:%M:%S} "
                 f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n"
             )
     else:
+        # В базу
         models.UsersActions.objects.create(
             user=user, action=f"{model_device} | " + operation
         )
@@ -85,8 +95,10 @@ def log(
             )
 
 
-def has_permission_to_device(device_to_check: models.Devices, user):
-    """Определяет, имеет ли пользователь "user" право взаимодействовать с оборудованием "device_to_check" """
+def has_permission_to_device(device_to_check: models.Devices, user: models.User):
+    """
+    ## Определяет, имеет ли пользователь "user" право взаимодействовать с оборудованием "device_to_check"
+    """
 
     if device_to_check.group_id in [
         g["id"] for g in user.profile.devices_groups.all().values("id")
@@ -95,12 +107,17 @@ def has_permission_to_device(device_to_check: models.Devices, user):
     return False
 
 
-def permission(required_perm=None):
-    """Декоратор для определения прав пользователя"""
+def permission(required_perm=models.Profile.READ):
+    """
+    ## Декоратор для определения прав пользователя
+
+    :param required_perm: "read", "reboot", "up_down", "bras"
+    """
 
     all_permissions = models.Profile.permissions_level
 
     def decorator(func):
+        @wraps(func)
         def _wrapper(request, *args, **kwargs):
             # Проверяем уровень привилегий
             user_permission = models.Profile.objects.get(
@@ -120,8 +137,12 @@ def permission(required_perm=None):
     return decorator
 
 
-def by_zabbix_hostid(request, hostid):
-    """Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy"""
+def by_zabbix_hostid(request, hostid: str):
+    """
+    ## Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy
+
+    :param hostid: Идентификатор узла сети в Zabbix
+    """
 
     dev = Device.from_hostid(hostid)
     try:
@@ -141,14 +162,18 @@ def by_zabbix_hostid(request, hostid):
 
 @login_required
 def home(request):
-    """Домашняя страница"""
+    """
+    ## Домашняя страница
+    """
 
     return render(request, "home.html")
 
 
 @login_required
 def show_devices(request):
-    """Список всех имеющихся устройств"""
+    """
+    ## Список всех имеющихся устройств
+    """
 
     filter_by_group = request.GET.get("group", "")
     group_param = f"group={filter_by_group}" if filter_by_group else ""
@@ -234,8 +259,12 @@ def show_devices(request):
 
 
 @login_required
-def device_info(request, name):
-    """Вывод главной информации об устройстве и его интерфейсов"""
+def device_info(request, name: str):
+    """
+    ## Вывод главной информации об устройстве и его интерфейсов
+
+    :param name: Название оборудования
+    """
 
     model_dev = get_object_or_404(
         models.Devices, name=name
@@ -429,8 +458,11 @@ def device_info(request, name):
     return JsonResponse({"data": render_to_string("check/interfaces_table.html", data)})
 
 
-def add_names_to_vlan(vlan_mac_list: list) -> list:
-    """Добавляет к списку VLAN, MAC еще и название VLAN из таблицы соответствий"""
+def add_names_to_vlan(vlan_mac_list: MACList) -> list:
+    """
+    ## Добавляет к списку VLAN, MAC еще и название VLAN из таблицы соответствий
+    """
+
     result = []
     vlan_passed = {}  # Словарь с VLAN, имена для которых уже найдены
     for vid, mac in vlan_mac_list:  # Смотрим VLAN и MAC
@@ -454,7 +486,9 @@ def add_names_to_vlan(vlan_mac_list: list) -> list:
 @login_required
 @permission(models.Profile.READ)
 def get_port_detail(request):
-    """Смотрим информацию о порте"""
+    """
+    ## Смотрим информацию о порте
+    """
 
     if (
         request.method == "GET"
@@ -540,7 +574,9 @@ def get_port_detail(request):
 @login_required
 @permission(models.Profile.REBOOT)
 def reload_port(request):
-    """Изменяем состояния порта"""
+    """
+    ## Изменяем состояния порта
+    """
 
     color_warning = "#d3ad23"  # Оранжевый
     color_success = "#08b736"  # Зеленый
@@ -677,8 +713,14 @@ def reload_port(request):
 
 
 # BRAS COMMAND
-def send_command(session: pexpect, command):
-    """Отправляем команду на BRAS"""
+def send_command(session: pexpect, command: str) -> str:
+    """
+    ## Отправляем команду на BRAS
+
+    :param session: Активная сессия с BRAS
+    :param command: Команда
+    :return: Результат команды
+    """
 
     session.sendline(command)
     session.expect(command)
@@ -706,7 +748,9 @@ def send_command(session: pexpect, command):
 @login_required
 @permission(models.Profile.BRAS)
 def show_session(request):
-    """Смотрим сессию клиента"""
+    """
+    ## Смотрим сессию клиента
+    """
 
     if (
         request.method == "GET"
@@ -792,7 +836,9 @@ def show_session(request):
 @login_required
 @permission(models.Profile.BRAS)
 def cut_user_session(request):
-    """Сбрасываем сессию по MAC адресу"""
+    """
+    ## Сбрасываем сессию абонента по MAC адресу с помощью BRAS
+    """
 
     status = "miss"
 
@@ -878,7 +924,9 @@ def cut_user_session(request):
 @login_required
 @permission(models.Profile.REBOOT)
 def set_description(request):
-    """Изменяем описание на порту у оборудования"""
+    """
+    ## Изменяем описание на порту у оборудования
+    """
 
     if request.method != "POST":
         return HttpResponseNotAllowed(permitted_methods=["POST"])
@@ -939,8 +987,10 @@ def set_description(request):
 
 @login_required
 @permission(models.Profile.READ)
-def start_cable_diag(request):
-    """Запускаем диагностику кабеля на порту"""
+def start_cable_diag(request) -> (JsonResponse, HttpResponseForbidden):
+    """
+    ## Запускаем диагностику кабеля на порту
+    """
 
     if (
         request.method == "GET"
@@ -967,7 +1017,15 @@ def start_cable_diag(request):
 
 @login_required
 @permission(models.Profile.BRAS)
-def change_adsl_profile(request):
+def change_adsl_profile(request) -> JsonResponse:
+    """
+    ## Изменяем профиль xDSL порта на другой
+
+    Возвращаем {"status": status}
+
+    :return: результат в формате JSON
+    """
+
     port: str = request.POST.get("port")
     profile_index: str = request.POST.get("index")
 
