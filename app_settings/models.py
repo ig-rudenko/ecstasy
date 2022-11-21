@@ -1,8 +1,7 @@
 """
-Модели для сохранения настроек для взаимодействия Ecstasy с Zabbix, Elastic, VLAN Traceroute
+# Модели для сохранения настроек для взаимодействия Ecstasy с Zabbix, Elastic, VLAN Traceroute
 
-Каждая модель представляет из себя singleton
-Так как настройка должна быть только в единственном варианте
+Каждая модель представляет из себя singleton, так как настройка должна быть только в единственном варианте
 
 """
 
@@ -11,15 +10,18 @@ from django.db import models
 
 
 class SingletonModel(models.Model):
-    """Singleton Django Model"""
+    """
+    ## Singleton Django Model
+    """
 
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
         """
-        Save object to the database. Removes all other entries if there
-        are any.
+        ## Сохранение объекта в базе данных.
+
+        Удаляет все остальные записи, если таковые имеются.
         """
         self.__class__.objects.exclude(id=self.id).delete()
         super().save(*args, **kwargs)
@@ -27,9 +29,10 @@ class SingletonModel(models.Model):
     @classmethod
     def load(cls):
         """
-        Load object from the database. Failing that, create a new empty
-        (default) instance of the object and return it (without saving it
-        to the database).
+        ## Загрузка объекта из базы данных.
+
+        В противном случае создадим новый пустой (по умолчанию) экземпляр объекта
+         и вернем его (без сохранения в базе данных).
         """
         try:
             return cls.objects.get()
@@ -39,7 +42,7 @@ class SingletonModel(models.Model):
 
 class LogsElasticStackSettings(SingletonModel):
     """
-    Настройки для отображения логов в Elastic Stack (Singleton)
+    ## Настройки для отображения логов в Elastic Stack (Singleton)
     """
 
     kibana_url = models.CharField(
@@ -111,7 +114,9 @@ class LogsElasticStackSettings(SingletonModel):
 
 
 class ZabbixConfig(SingletonModel):
-    """Настройки для подключения к Zabbix через http"""
+    """
+    ## Настройки для подключения к Zabbix API через http
+    """
 
     url = models.URLField(
         verbose_name="URL", help_text="Например: https://10.0.0.1/zabbix"
@@ -128,7 +133,9 @@ class ZabbixConfig(SingletonModel):
 
 
 class VlanTracerouteConfig(SingletonModel):
-    """Настройки для работы vlan traceroute"""
+    """
+    ## Настройки для работы VLAN traceroute
+    """
 
     vlan_start = models.TextField(
         verbose_name="Имя оборудования для начала трассировки",
