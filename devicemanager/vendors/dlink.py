@@ -1,4 +1,5 @@
 import re
+from functools import wraps
 from time import sleep
 import pexpect
 import textfsm
@@ -10,6 +11,32 @@ from .base import (
     InterfaceList,
     MACList,
 )
+
+
+def valid_port(if_invalid_return=None):
+    """
+    ## Декоратор для проверки правильности порта Cisco
+
+    :param if_invalid_return: что нужно вернуть, если порт неверный
+    """
+
+    if if_invalid_return is None:
+        if_invalid_return = "Неверный порт"
+
+    def validate(func):
+        @wraps(func)
+        def __wrapper(self, port, *args, **kwargs):
+            port = Dlink.validate_port(port)
+            if port is None:
+                # Неверный порт
+                return if_invalid_return
+
+            # Вызываем метод
+            return func(self, port, *args, **kwargs)
+
+        return __wrapper
+
+    return validate
 
 
 class Dlink(BaseDevice):
@@ -87,6 +114,34 @@ class Dlink(BaseDevice):
             r"Device Type\s+:\s+(\S+)\s", version
         )
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
+
+    @staticmethod
+    def validate_port(port: str) -> (str, None):
+        """
+        Проверяем порт на валидность
+
+        >>> Dlink.validate_port("1/2")
+        '2'
+        >>> Dlink.validate_port("23")
+        '23'
+        >>> Dlink.validate_port("26(C)")
+        '26'
+        >>> Dlink.validate_port("уфы(C)")
+        None
+        """
+
+        port = port.strip()
+        if re.findall(r"^\d/\d+$", port):
+            # Если порт представлен в виде "1/2"
+            port = re.sub(r"^\d/", "", port)  # Оставляем только "2"
+        elif re.findall(r"^\d+$|^\d+\s*\([FC]\)$", port):
+            port = re.sub(r"\D", "", port)
+        else:
+            port = ""
+        if port.isdigit():
+            return port
+
+        return None
 
     def save_config(self):
         """
@@ -198,9 +253,17 @@ class Dlink(BaseDevice):
                 ports_vlan[str(port)].append(vlan[0])
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append(line + tuple(ports_vlan.get(line[0], "")))
+            interfaces_vlan.append(
+                (
+                    line[0],
+                    line[1],
+                    line[2],
+                    ports_vlan.get(re.sub(r"\D", "", line[0]), []),
+                )
+            )
         return interfaces_vlan
 
+    @valid_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
@@ -213,42 +276,9 @@ class Dlink(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        port = self.validate_port(port)
-
-        if port is None:
-            return []
-
         mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
         # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
         return re.findall(rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str)
-
-    @staticmethod
-    def validate_port(port: str) -> (str, None):
-        """
-        Проверяем порт на валидность
-
-        >>> Dlink.validate_port("1/2")
-        '2'
-        >>> Dlink.validate_port("23")
-        '23'
-        >>> Dlink.validate_port("26(C)")
-        '26'
-        >>> Dlink.validate_port("уфы(C)")
-        None
-        """
-
-        port = port.strip()
-        if re.findall(r"^\d/\d+$", port):
-            # Если порт представлен в виде "1/2"
-            port = re.sub(r"^\d/", "", port)  # Оставляем только "2"
-        elif re.findall(r"\d+|\d+\s*\([FC]\)", port):
-            port = re.sub(r"\D", "", port)
-        else:
-            port = ""
-        if port.isdigit():
-            return port
-
-        return None
 
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -286,11 +316,11 @@ class Dlink(BaseDevice):
             return "Неверный порт"
 
         # Отключение порта.
-        r1 = self.send_command(f"config ports {port} {media_type} state disable")
+        r1 = self.send_command(f"config ports {port}{media_type} state disable")
         # Задержка, позволяющая коммутатору обработать команду.
         sleep(1)
         # Включение порта.
-        r2 = self.send_command(f"config ports {port} {media_type} state enable")
+        r2 = self.send_command(f"config ports {port}{media_type} state enable")
 
         # Проверка, не установлен ли тип порта и порт больше 23
         if not media_type and int(port) > 23:
@@ -305,26 +335,6 @@ class Dlink(BaseDevice):
         # Сохранение конфигурации, если для параметра `save_config` установлено значение `True`.
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
-
-    def get_port_errors(self, port: str) -> str:
-        """
-        Получаем ошибки на порту через команду:
-
-            # show error ports {port}
-
-        :param port: Порт для проверки на наличие ошибок
-        """
-
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт"
-        self.session.sendline(f"show error ports {port}")
-
-        # Если не удалось отключить clipaging
-        if self.session.expect([self.prompt, "Previous Page"]):
-            self.session.sendline("q")
-
-        return self.session.before.decode()
 
     def set_port(self, port, status, save_config=True) -> str:
         """
@@ -348,9 +358,9 @@ class Dlink(BaseDevice):
         """
 
         if "F" in port:
-            media_type = "medium_type fiber"
+            media_type = " medium_type fiber"
         elif "C" in port:
-            media_type = "medium_type copper"
+            media_type = " medium_type copper"
         else:
             media_type = ""
 
@@ -368,10 +378,10 @@ class Dlink(BaseDevice):
             state = ""
 
         # Установка порта в заданное состояние.
-        r = self.send_command(f"config ports {port} {media_type} state {state}")
+        r = self.send_command(f"config ports {port}{media_type} state {state}")
 
-        # Проверка, не установлен ли тип порта и порт больше 24
-        if not media_type and int(port) > 24:
+        # Проверка, не установлен ли тип порта и порт больше 23
+        if not media_type and int(port) > 23:
             # Проверка, является ли порт оптоволоконным портом, и если это так,
             # он установит порт в состояние, которое было передано.
             r += self.send_command(
@@ -383,6 +393,25 @@ class Dlink(BaseDevice):
         # Возврат результата команды и результата функции save_config().
         return r + s
 
+    @valid_port()
+    def get_port_errors(self, port: str) -> str:
+        """
+        Получаем ошибки на порту через команду:
+
+            # show error ports {port}
+
+        :param port: Порт для проверки на наличие ошибок
+        """
+
+        self.session.sendline(f"show error ports {port}")
+
+        # Если не удалось отключить clipaging
+        if self.session.expect([self.prompt, "Previous Page"]):
+            self.session.sendline("q")
+
+        return self.session.before.decode()
+
+    @valid_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -401,10 +430,6 @@ class Dlink(BaseDevice):
         :param desc: Описание, которое вы хотите установить для порта
         :return: Вывод команды смены описания
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт"
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -435,6 +460,7 @@ class Dlink(BaseDevice):
         # Уникальный случай
         return status
 
+    @valid_port(if_invalid_return={})
     def virtual_cable_test(self, port: str) -> dict:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:
@@ -462,9 +488,6 @@ class Dlink(BaseDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-        port = self.validate_port(port)
-        if port is None:
-            return {}
 
         diag_output = self.send_command(
             f"cable_diag ports {port}", expect_command=False
@@ -476,21 +499,15 @@ class Dlink(BaseDevice):
         result = {
             "len": "-",  # Length
             "status": "",  # Up, Down
-            "pair1": {
-                "status": "",
-                "len": "",
-            },  # Open, Short  # Length
-            "pair2": {
-                "status": "",
-                "len": "",
-            },
         }
+
+        if "can't support" in diag_output or "Unknown" in diag_output:
+            result["status"] = "The PHY can't support Cable Diagnostic"
+            return result
 
         if "No Cable" in diag_output:
             # Нет кабеля
             result["status"] = "Empty"
-            del result["pair1"]
-            del result["pair2"]
             return result
 
         if re.findall(r"Link (Up|Down)\s+OK", diag_output):
@@ -501,27 +518,23 @@ class Dlink(BaseDevice):
             if len(match) == 2:
                 result["len"] = match[1]  # Длина
                 result["status"] = match[0]  # Up или Down
-                del result["pair1"]
-                del result["pair2"]
         else:
             # C ошибкой
-            result["status"] = self.find_or_empty(
-                r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output
+            result["status"] = (
+                self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output)
+                or "None"
             )
-            pair1 = self.find_or_empty(r"Pair1 (\S+)\s+at (\d+)", diag_output)
-            pair2 = self.find_or_empty(r"Pair2 (\S+)\s+at (\d+)", diag_output)
-            # Пара 1
-            if pair1:
-                result["pair1"]["status"] = pair1[0].lower()  # Open, Short
-                result["pair1"]["len"] = pair1[1]  # Длина
-            else:
-                del result["pair1"]
-
-            # Пара 2
-            if pair2:
-                result["pair2"]["status"] = pair2[0].lower()  # Open, Short
-                result["pair2"]["len"] = pair2[1]  # Длина
-            else:
-                del result["pair2"]
+            # Смотрим по очереди 4 пары
+            for i in range(1, 5):
+                # Нахождение пары по номеру `i`.
+                pair_n = self.find_or_empty(
+                    rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output
+                )
+                # Проверка, не является ли пара пустой.
+                if pair_n:
+                    # Создаем пустой словарь для пары
+                    result[f"pair{i}"] = {}
+                    result[f"pair{i}"]["status"] = pair_n[0].lower()  # Open, Short
+                    result[f"pair{i}"]["len"] = pair_n[1]  # Длина
 
         return result
