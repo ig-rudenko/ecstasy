@@ -433,9 +433,8 @@ class Dlink(BaseDevice):
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
-        if (
-            desc == ""
-        ):  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+        if desc == "":
+            # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             status = self.send_command(
                 f"config ports {port} clear_description",
                 expect_command=False,

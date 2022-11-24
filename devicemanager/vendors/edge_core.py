@@ -1,6 +1,6 @@
 import re
 from time import sleep
-from functools import lru_cache
+from functools import lru_cache, wraps
 import pexpect
 import textfsm
 from .base import (
@@ -13,6 +13,34 @@ from .base import (
 )
 
 
+def valid_port(if_invalid_return=None):
+    """
+    ## Декоратор для проверки правильности порта Edge Core
+
+    :param if_invalid_return: что нужно вернуть, если порт неверный
+    """
+
+    if if_invalid_return is None:
+        if_invalid_return = "Неверный порт"
+
+    def validate(func):
+        @wraps(func)
+        def __wrapper(self, port, *args, **kwargs):
+            port = port.strip()
+            port = _interface_normal_view(port)
+            if not port:
+                # Неверный порт
+                return if_invalid_return
+
+            # Вызываем метод
+            return func(self, port, *args, **kwargs)
+
+        return __wrapper
+
+    return validate
+
+
+# noinspection PyArgumentList
 class EdgeCore(BaseDevice):
     """
     # Для оборудования от производителя Edge-Core
@@ -88,7 +116,7 @@ class EdgeCore(BaseDevice):
 
                 # Добавляем в словарь с ключом интерфейса отсортированный список VLANs
                 int_vlan[self.find_or_empty(r"^ethernet \d+/\d+", piece)] = sorted(
-                    list(set(vlans))
+                    set(vlans)
                 )
 
         # Распаковка кортежа `line` и добавление кортежа `vlans` в конец нового кортежа.
@@ -110,6 +138,7 @@ class EdgeCore(BaseDevice):
         ## Сохраняем конфигурацию оборудования командой:
 
             # copy running-config startup-config
+            # \n -- подтверждаем
 
         Ожидаем ответа от оборудования.
         Если **fail** или **error** - ошибка сохранения, иначе сохранено
@@ -121,28 +150,7 @@ class EdgeCore(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @staticmethod
-    def validate_port(port: str):
-        """
-        ## Проверяем порт на валидность
-
-        >>> EdgeCore.validate_port("1/2")
-        None
-        >>> EdgeCore.validate_port("eth 1/1")
-        'Ethernet 1/1'
-        >>> EdgeCore.validate_port("gi 2/1")
-        'GigabitEthernet 2/1'
-        >>> EdgeCore.validate_port("re 1/1")
-        None
-        """
-
-        port = port.strip()
-        # Проверяем, имеет ли порт формат `<type> <number>/<number>`
-        if re.findall(r"^\S+ \d+/\d+$", port):
-            return _interface_normal_view(port) or None
-
-        return None
-
+    @valid_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -155,14 +163,11 @@ class EdgeCore(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return []
-
         output = self.send_command(f"show mac-address-table interface {port}")
         macs = re.findall(rf"({self.mac_format})\s+(\d+)", output)
         return [m[::-1] for m in macs]
 
+    @valid_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -188,10 +193,6 @@ class EdgeCore(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         self.session.sendline("configure")
         self.session.expect(self.prompt)
         self.session.sendline(f"interface {port}")
@@ -206,6 +207,7 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
+    @valid_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -230,10 +232,6 @@ class EdgeCore(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         self.session.sendline("configure")
         self.session.expect(self.prompt)
         self.session.sendline(f"interface {port}")
@@ -249,32 +247,64 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @valid_port()
     @lru_cache
     def __get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте.
 
+            # show interfaces status {port}
+
         Если переданный порт неверный, то вернет ```"Неверный порт!"```
 
         :param port: Номер порта, для которого требуется получить информацию
         """
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
 
         return self.send_command(f"show interfaces status {port}")
 
+    @valid_port()
+    def get_port_info(self, port: str) -> str:
+        """
+        ## Возвращает информацию о порте в виде html разметки
+
+            # show interfaces status {port}
+
+        Если переданный порт неверный, то вернет ```"Неверный порт!"```
+
+        :param port: Номер порта, для которого требуется получить информацию
+        """
+
+        return "<br>".join(self.__get_port_info(port).strip().split("\n"))
+
+    @valid_port()
     def port_type(self, port: str) -> str:
         """
         # Возвращает тип порта
 
         :param port: Порт для проверки
-        :return: "SFP" или "COPPER"
+        :return: "SFP", "COPPER", "COMBO-SFP", "COMBO-COPPER"
         """
-        if self.find_or_empty(r"Port type: (\S+)", self.__get_port_info(port)) == "SFP":
-            return "SFP"
-        return "COPPER"
+        port_type_result = ""
+        # Нахождение режима комбо.
+        combo_mode = self.find_or_empty(
+            "Combo forced mode: (.+)", self.__get_port_info(port)
+        )
 
+        if combo_mode != "None":
+            # Код проверяет, является ли тип порта комбинированным портом.
+            port_type_result += "COMBO-"
+
+        # Получение типа порта.
+        port_type = self.find_or_empty(r"Port type: (\S+)", self.__get_port_info(port))
+
+        if "SFP" in port_type:
+            port_type_result += "SFP"
+        else:
+            port_type_result += "COPPER"
+
+        return port_type_result
+
+    @valid_port()
     def port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -294,10 +324,19 @@ class EdgeCore(BaseDevice):
         # Каждая строка является частью конфигурации порта.
         for piece in split_config:
             # Проверяем, является ли интерфейс тем, который мы ищем.
-            if piece.startswith(_interface_normal_view(port).lower()):
-                return piece
+            if piece.startswith(port.lower()):
+                # Удаление "!" из переменной port_config.
+                port_config = "\n".join(
+                    [
+                        line
+                        for line in piece.split("\n")
+                        if not line.strip().startswith("!") and line
+                    ]
+                )
+                return "interface " + port_config
         return ""
 
+    @valid_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -309,10 +348,6 @@ class EdgeCore(BaseDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         output = self.send_command(f"show interfaces counters {port}").split("\n")
         for line in output:
             if "Error" in line:
@@ -320,6 +355,7 @@ class EdgeCore(BaseDevice):
 
         return ""
 
+    @valid_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -355,7 +391,7 @@ class EdgeCore(BaseDevice):
 
         # Переходим к редактированию порта
         self.session.sendline("configure")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
 
         if (
             desc == ""
