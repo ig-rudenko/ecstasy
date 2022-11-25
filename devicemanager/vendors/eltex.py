@@ -1,6 +1,6 @@
 import re
 from time import sleep
-from functools import lru_cache
+from functools import lru_cache, wraps
 import pexpect
 import textfsm
 from .base import (
@@ -12,6 +12,32 @@ from .base import (
     InterfaceVLANList,
     MACList,
 )
+
+
+def valid_port(if_invalid_return=None):
+    """
+    ## Декоратор для проверки правильности порта Eltex
+
+    :param if_invalid_return: что нужно вернуть, если порт неверный
+    """
+
+    if if_invalid_return is None:
+        if_invalid_return = "Неверный порт"
+
+    def validate(func):
+        @wraps(func)
+        def __wrapper(self, port="", *args, **kwargs):
+            port = _interface_normal_view(port)
+            if not port:
+                # Неверный порт
+                return if_invalid_return
+
+            # Вызываем метод
+            return func(self, port, *args, **kwargs)
+
+        return __wrapper
+
+    return validate
 
 
 class EltexBase(BaseDevice):
@@ -124,12 +150,6 @@ class EltexMES(BaseDevice):
         """
         ## Сохраняем конфигурацию оборудования
 
-        Выходим из режима конфигурирования:
-
-            # end
-
-        Сохраняем конфигурацию и подтверждаем
-
             # write
             Y
 
@@ -137,8 +157,6 @@ class EltexMES(BaseDevice):
         если нет, то пробуем еще 2 раза, в противном случае ошибка сохранения
         """
 
-        self.session.sendline("end")
-        self.session.expect(self.prompt)
         for _ in range(3):  # Пробуем 3 раза, если ошибка
             self.session.sendline("write")
             self.session.expect("write")
@@ -229,7 +247,7 @@ class EltexMES(BaseDevice):
                     expect_command=False,
                 )
                 # Ищем все строки вланов в выводе команды
-                vlans_group = re.findall(r"vlan [ad ]*(\S*\d)", output)
+                vlans_group = re.findall(r" vlan [ad ]*(\S*\d)", output)
                 port_vlans = []
                 if vlans_group:
                     for v in vlans_group:
@@ -237,6 +255,7 @@ class EltexMES(BaseDevice):
                 result.append((line[0], line[1], line[2], port_vlans))
         return result
 
+    @valid_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -249,11 +268,10 @@ class EltexMES(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        mac_str = self.send_command(
-            f"show mac address-table interface {_interface_normal_view(port)}"
-        )
+        mac_str = self.send_command(f"show mac address-table interface {port}")
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
+    @valid_port()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -281,7 +299,7 @@ class EltexMES(BaseDevice):
 
         self.session.sendline("configure terminal")
         self.session.expect(r"#")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
         self.session.sendline("shutdown")
         sleep(1)
         self.session.sendline("no shutdown")
@@ -291,6 +309,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @valid_port()
     def set_port(self, port, status, save_config=True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -315,7 +334,7 @@ class EltexMES(BaseDevice):
         self.session.sendline("configure terminal")
         self.session.expect(r"\(config\)#")
 
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
 
         if status == "up":
             self.session.sendline("no shutdown")
@@ -331,6 +350,7 @@ class EltexMES(BaseDevice):
         return r + s
 
     @lru_cache
+    @valid_port()
     def get_port_info(self, port):
         """
         ## Возвращает частичную информацию о порте.
@@ -349,9 +369,7 @@ class EltexMES(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        info = self.send_command(
-            f"show interfaces advertise {_interface_normal_view(port)}"
-        ).split("\n")
+        info = self.send_command(f"show interfaces advertise {port}").split("\n")
         port_info_html = ""
         for line in info:
             if "Preference" in line:
@@ -361,6 +379,7 @@ class EltexMES(BaseDevice):
         return port_info_html
 
     @lru_cache
+    @valid_port()
     def _get_port_stats(self, port):
         """
         ## Возвращает полную информацию о порте.
@@ -372,10 +391,9 @@ class EltexMES(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        return self.send_command(
-            f"show interfaces {_interface_normal_view(port)}"
-        ).split("\n")
+        return self.send_command(f"show interfaces {port}").split("\n")
 
+    @valid_port()
     def port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -395,6 +413,7 @@ class EltexMES(BaseDevice):
             return "COMBO-COPPER"
         return "?"
 
+    @valid_port()
     def port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -405,10 +424,9 @@ class EltexMES(BaseDevice):
 
         """
 
-        return self.send_command(
-            f"show running-config interface {_interface_normal_view(port)}"
-        ).strip()
+        return self.send_command(f"show running-config interface {port}").strip()
 
+    @valid_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -423,6 +441,7 @@ class EltexMES(BaseDevice):
                 errors.append(line.strip())
         return "\n".join(errors)
 
+    @valid_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -459,7 +478,7 @@ class EltexMES(BaseDevice):
         # Переходим к редактированию порта
         self.session.sendline("configure terminal")
         self.session.expect(self.prompt)
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
         self.session.expect(self.prompt)
 
         if desc == "":
@@ -472,9 +491,16 @@ class EltexMES(BaseDevice):
         if "bad parameter value" in res:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
+
+            self.session.sendline("end")
+            self.session.expect(self.prompt)
+
             return "Max length:" + self.find_or_empty(
                 r" Up to (\d+) characters", output
             )
+
+        self.session.sendline("end")
+        self.session.expect(self.prompt)
 
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
@@ -550,6 +576,7 @@ class EltexESR(EltexMES):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @valid_port()
     def port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -562,12 +589,11 @@ class EltexESR(EltexMES):
         :return: "SFP" или "COPPER"
         """
 
-        if "SFP present" in self.send_command(
-            f"show interfaces sfp {_interface_normal_view(port)}"
-        ):
+        if "SFP present" in self.send_command(f"show interfaces sfp {port}"):
             return "SFP"
         return "COPPER"
 
+    @valid_port()
     def get_port_info(self, port: str) -> str:
         """
         ## Возвращаем информацию о порте.
@@ -580,11 +606,12 @@ class EltexESR(EltexMES):
         """
 
         return self.send_command(
-            f"show interfaces status {_interface_normal_view(port)}",
+            f"show interfaces status {port}",
             expect_command=False,
             before_catch=r"Description:.+",
         ).replace("\n", "<br>")
 
+    @valid_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -596,9 +623,7 @@ class EltexESR(EltexMES):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        port_stat = self.send_command(
-            f"show interfaces counters {_interface_normal_view(port)}"
-        ).split("\n")
+        port_stat = self.send_command(f"show interfaces counters {port}").split("\n")
 
         errors = ""
         for line in port_stat:

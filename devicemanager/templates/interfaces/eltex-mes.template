@@ -4,4 +4,4 @@ Value LINK (Up|Down)
 Value DESCRIPTION (\S*)
 
 Start
-  ^.*${INTF}\s+(\S+|Access\s*\(\d+\))\s+${State}\s+${LINK}+\s*${DESCRIPTION}(\s+) -> Record
+  ^.*${INTF}\s+(\S+|Access\s*\(\d+\))\s+${State}\s+${LINK}+\s*${DESCRIPTION} -> Record
