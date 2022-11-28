@@ -57,7 +57,7 @@ class DeviceFactory:
         # Простой метод для отправки команды с постраничной записью вывода результата
         """
 
-        self.session.sendline(command)
+        self.session.send(command + "\r")
         version = ""
         while True:
             match = self.session.expect(
@@ -153,7 +153,12 @@ class DeviceFactory:
         if "Hardware version" in version:
             return EdgeCore(self.session, self.ip, auth)
 
-        # Eltex
+        # Eltex LTP
+        if "Eltex LTP" in version:
+            model = BaseDevice.find_or_empty(r"Eltex (\S+)", version)
+            return EltexLTP(self.session, self.ip, auth, model=model)
+
+        # Eltex MES, ESR
         if "Active-image:" in version or "Boot version:" in version:
             eltex_device = EltexBase(
                 self.session, self.ip, self.privilege_mode_password
@@ -269,13 +274,13 @@ class DeviceFactory:
                         # Если это вторая попытка ввода логина, то предыдущий был неверный
                         return f"Неверный логин или пароль! ({self.ip})"
 
-                    self.session.sendline(login)  # Вводим логин
+                    self.session.send(login + "\r")  # Вводим логин
                     login_try += 1
                     continue
 
                 # Password
                 if expect_index == 1:
-                    self.session.sendline(password)  # Вводим пароль
+                    self.session.send(password + "\r")  # Вводим пароль
                     continue
 
                 # PROMPT
@@ -291,8 +296,8 @@ class DeviceFactory:
                     expect_index == 4
                 ):  # Если необходимо нажать любую клавишу, чтобы продолжить
                     self.session.send(" ")
-                    self.session.sendline(login)  # Вводим логин
-                    self.session.sendline(password)  # Вводим пароль
+                    self.session.send(login + "\r")  # Вводим логин
+                    self.session.send(password + "\r")  # Вводим пароль
                     self.session.expect(r"[#>\]]\s*")
 
                 # Timeout or some unexpected error happened on server host' - Ошибка радиуса

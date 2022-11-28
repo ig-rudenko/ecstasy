@@ -234,6 +234,7 @@ class EltexMES(BaseDevice):
 
          - ```vlan {vid}```
          - ```vlan add {vid},{vid},...{vid}```
+         - ```vlan auto-all```
 
         :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ... vid:int] ), ... ]```
         """
@@ -247,12 +248,24 @@ class EltexMES(BaseDevice):
                     expect_command=False,
                 )
                 # Ищем все строки вланов в выводе команды
-                vlans_group = re.findall(r" vlan [ad ]*(\S*\d)", output)
+                vlans_group = re.findall(r" vlan [ad ]*(\S*\d|auto-all)", output)
                 port_vlans = []
                 if vlans_group:
-                    for v in vlans_group:
-                        port_vlans += range_to_numbers(v)
+                    # Проверка, равен ли первый элемент в списке vlans_group "auto-all".
+                    if vlans_group[0] == "auto-all":
+                        # Создание списка вланов, которые будут назначены на порт.
+                        port_vlans = ["all"]
+
+                    else:
+                        # Преобразование списка vlans_group в список целых чисел.
+                        for v in vlans_group:
+                            port_vlans += range_to_numbers(v)
+
+                # Создаем список кортежей.
+                # Первые три элемента кортежа — это имя порта, статус и описание.
+                # Четвертый элемент — это список VLAN.
                 result.append((line[0], line[1], line[2], port_vlans))
+
         return result
 
     @valid_port(if_invalid_return=[])
@@ -630,3 +643,108 @@ class EltexESR(EltexMES):
             if "errors" in line:
                 errors += line.strip() + "\n"
         return errors
+
+
+class EltexLTP(BaseDevice):
+    # Регулярное выражение, соответствующее началу для ввода следующей команды.
+    prompt = r"\S+#\s*$"
+    # Строка, которая отображается, когда вывод команды слишком длинный и не помещается на экране.
+    space_prompt = (
+        r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |"
+        r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
+    )
+    # Это переменная, которая используется для поиска файла шаблона для анализа вывода команды.
+    _template_name = "eltex-ltp"
+    # Регулярное выражение, которое будет соответствовать MAC-адресу.
+    mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
+    vendor = "Eltex"
+
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP"):
+        super().__init__(session, ip, auth)
+        self.model = model
+
+        # Проверяем, является ли модель LTP-4X.
+        if "LTP-4X" in self.model:
+            self._gpon_ports_count = 4
+            self._10G_ports_count = 2
+            self._front_ports_count = 4
+
+        # Проверяем, является ли модель LTP-8X.
+        elif "LTP-8X" in self.model:
+            self._gpon_ports_count = 8
+            self._10G_ports_count = 2
+            self._front_ports_count = 8
+        else:
+            self._gpon_ports_count = 0
+            self._10G_ports_count = 0
+            self._front_ports_count = 0
+
+    def send_command(
+        self,
+        command: str,
+        before_catch: str = None,
+        expect_command=True,
+        num_of_expect=10,
+        space_prompt=None,
+        prompt=None,
+        pages_limit=None,
+        command_linesep="\r",
+    ) -> str:
+        return super().send_command(
+            command,
+            before_catch,
+            expect_command,
+            num_of_expect,
+            space_prompt,
+            prompt,
+            pages_limit,
+            command_linesep,
+        )
+
+    def get_interfaces(self) -> InterfaceList:
+        self.session.send("switch\r")
+        self.session.expect(self.prompt)
+        interfaces = []
+
+        interfaces_10gig_output = self.send_command(
+            f"show interfaces status 10G-front-port 0 - {self._10G_ports_count - 1}",
+            expect_command=False,
+        )
+        interfaces += re.findall(r"(10G\S+ \d+)\s+(\S{2,})\s+", interfaces_10gig_output)
+
+        interfaces_front_output = self.send_command(
+            f"show interfaces status front-port 0 - {self._front_ports_count - 1}",
+            expect_command=False,
+        )
+        interfaces += re.findall(
+            r"(front\S+ \d+)\s+(\S{2,})\s+", interfaces_front_output
+        )
+
+        interfaces_pon_output = self.send_command(
+            f"show interfaces status pon-port 0 - {self._gpon_ports_count - 1}",
+            expect_command=False,
+        )
+        interfaces += re.findall(r"(pon\S+ \d+)\s+(\S{2,})\s+", interfaces_pon_output)
+
+        self.session.send("exit\r")
+        self.session.expect(self.prompt)
+
+        return [(line[0], line[1], "") for line in interfaces]
+
+    def get_vlans(self) -> InterfaceVLANList:
+        return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
+
+    def get_mac(self, port: str) -> MACList:
+        pass
+
+    def reload_port(self, port: str, save_config=True) -> str:
+        pass
+
+    def set_port(self, port: str, status: str, save_config=True) -> str:
+        pass
+
+    def save_config(self):
+        pass
+
+    def set_description(self, port: str, desc: str) -> str:
+        pass

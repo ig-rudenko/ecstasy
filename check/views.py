@@ -662,7 +662,7 @@ def reload_port(request):
                 "color": color_warning,
             }
         )
-
+    port_change_status = "Не выполнили действие"
     # Теперь наконец можем подключиться к оборудованию :)
     with model_dev.connect() as session:
         try:

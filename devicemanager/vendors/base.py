@@ -269,6 +269,7 @@ class BaseDevice(ABC):
         space_prompt=None,
         prompt=None,
         pages_limit=None,
+        command_linesep="\n",
     ) -> str:
         """
         ## Отправляет команду на оборудование и считывает её вывод
@@ -283,6 +284,7 @@ class BaseDevice(ABC):
                              для последующего отображения информации
         :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды
         :param pages_limit: Кол-во страниц, если надо, которые будут выведены при постраничном отображении
+        :param command_linesep: Символ отправки команды (по умолчанию ```\\\\n```)
         :return: Строка с результатом команды
         """
 
@@ -292,7 +294,7 @@ class BaseDevice(ABC):
             prompt = self.prompt
 
         output = ""
-        self.session.sendline(command)  # Отправляем команду
+        self.session.send(command + command_linesep)  # Отправляем команду
 
         if expect_command:
             self.session.expect(

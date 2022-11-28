@@ -94,7 +94,6 @@ class Cisco(BaseDevice):
 
         for _ in range(3):  # Пробуем 3 раза, если ошибка
             self.session.sendline("write")
-            print("write")
             # self.session.expect(r'Building configuration')
             if self.session.expect([self.prompt, r"\[OK\]"]):
                 return self.SAVED_OK

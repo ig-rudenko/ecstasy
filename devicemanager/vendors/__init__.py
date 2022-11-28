@@ -3,7 +3,7 @@ from .base import BaseDevice
 from .cisco import Cisco
 from .dlink import Dlink
 from .edge_core import EdgeCore
-from .eltex import EltexESR, EltexMES, EltexBase
+from .eltex import EltexESR, EltexMES, EltexBase, EltexLTP
 from .extreme import Extreme
 from .huawei import Huawei, HuaweiCX600, HuaweiMA5600T
 from .iskratel import IskratelControl, IskratelMBan
