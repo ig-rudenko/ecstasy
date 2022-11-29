@@ -13,33 +13,6 @@ from .base import (
 )
 
 
-def valid_port(if_invalid_return=None):
-    """
-    ## Декоратор для проверки правильности порта Edge Core
-
-    :param if_invalid_return: что нужно вернуть, если порт неверный
-    """
-
-    if if_invalid_return is None:
-        if_invalid_return = "Неверный порт"
-
-    def validate(func):
-        @wraps(func)
-        def __wrapper(self, port, *args, **kwargs):
-            port = port.strip()
-            port = _interface_normal_view(port)
-            if not port:
-                # Неверный порт
-                return if_invalid_return
-
-            # Вызываем метод
-            return func(self, port, *args, **kwargs)
-
-        return __wrapper
-
-    return validate
-
-
 # noinspection PyArgumentList
 class EdgeCore(BaseDevice):
     """
@@ -50,6 +23,32 @@ class EdgeCore(BaseDevice):
     space_prompt = "---More---"
     vendor = "Edge-Core"
     mac_format = r"\S\S-" * 5 + r"\S\S"
+
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Edge Core
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port, *args, **kwargs):
+                port = port.strip()
+                port = _interface_normal_view(port)
+                if not port:
+                    # Неверный порт
+                    return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return __wrapper
+
+        return validate
 
     def get_interfaces(self) -> InterfaceList:
         """
@@ -150,7 +149,7 @@ class EdgeCore(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @valid_port(if_invalid_return=[])
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -167,7 +166,7 @@ class EdgeCore(BaseDevice):
         macs = re.findall(rf"({self.mac_format})\s+(\d+)", output)
         return [m[::-1] for m in macs]
 
-    @valid_port()
+    @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -207,7 +206,7 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
-    @valid_port()
+    @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -247,7 +246,7 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @valid_port()
+    @_validate_port()
     @lru_cache
     def __get_port_info(self, port: str) -> str:
         """
@@ -262,7 +261,7 @@ class EdgeCore(BaseDevice):
 
         return self.send_command(f"show interfaces status {port}")
 
-    @valid_port()
+    @_validate_port()
     def get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте в виде html разметки
@@ -276,7 +275,7 @@ class EdgeCore(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).strip().split("\n"))
 
-    @valid_port()
+    @_validate_port()
     def port_type(self, port: str) -> str:
         """
         # Возвращает тип порта
@@ -304,7 +303,7 @@ class EdgeCore(BaseDevice):
 
         return port_type_result
 
-    @valid_port()
+    @_validate_port()
     def port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -336,7 +335,7 @@ class EdgeCore(BaseDevice):
                 return "interface " + port_config
         return ""
 
-    @valid_port()
+    @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -355,7 +354,7 @@ class EdgeCore(BaseDevice):
 
         return ""
 
-    @valid_port()
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

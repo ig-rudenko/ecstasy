@@ -302,6 +302,7 @@ class DeviceFactory:
 
                 # Timeout or some unexpected error happened on server host' - Ошибка радиуса
                 elif expect_index == 5:
+                    login_try = 1
                     continue  # Вводим те же данные еще раз
 
                 # The password needs to be changed

@@ -1,8 +1,13 @@
 import re
+import select
 from time import sleep
 from functools import lru_cache, wraps
+from typing import List
+
 import pexpect
 import textfsm
+from django.template.loader import render_to_string
+
 from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
@@ -12,32 +17,6 @@ from .base import (
     InterfaceVLANList,
     MACList,
 )
-
-
-def valid_port(if_invalid_return=None):
-    """
-    ## Декоратор для проверки правильности порта Eltex
-
-    :param if_invalid_return: что нужно вернуть, если порт неверный
-    """
-
-    if if_invalid_return is None:
-        if_invalid_return = "Неверный порт"
-
-    def validate(func):
-        @wraps(func)
-        def __wrapper(self, port="", *args, **kwargs):
-            port = _interface_normal_view(port)
-            if not port:
-                # Неверный порт
-                return if_invalid_return
-
-            # Вызываем метод
-            return func(self, port, *args, **kwargs)
-
-        return __wrapper
-
-    return validate
 
 
 class EltexBase(BaseDevice):
@@ -145,6 +124,31 @@ class EltexMES(BaseDevice):
         inv = self.send_command("show inventory", expect_command=False)
         # Нахождение серийного номера устройства.
         self.serialno = self.find_or_empty(r"SN: (\S+)", inv)
+
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Eltex
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port="", *args, **kwargs):
+                port = _interface_normal_view(port)
+                if not port:
+                    # Неверный порт
+                    return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return __wrapper
+
+        return validate
 
     def save_config(self):
         """
@@ -268,7 +272,7 @@ class EltexMES(BaseDevice):
 
         return result
 
-    @valid_port(if_invalid_return=[])
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -284,7 +288,7 @@ class EltexMES(BaseDevice):
         mac_str = self.send_command(f"show mac address-table interface {port}")
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
-    @valid_port()
+    @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -322,7 +326,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @valid_port()
+    @_validate_port()
     def set_port(self, port, status, save_config=True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -363,7 +367,7 @@ class EltexMES(BaseDevice):
         return r + s
 
     @lru_cache
-    @valid_port()
+    @_validate_port()
     def get_port_info(self, port):
         """
         ## Возвращает частичную информацию о порте.
@@ -392,7 +396,7 @@ class EltexMES(BaseDevice):
         return port_info_html
 
     @lru_cache
-    @valid_port()
+    @_validate_port()
     def _get_port_stats(self, port):
         """
         ## Возвращает полную информацию о порте.
@@ -406,7 +410,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show interfaces {port}").split("\n")
 
-    @valid_port()
+    @_validate_port()
     def port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -426,7 +430,7 @@ class EltexMES(BaseDevice):
             return "COMBO-COPPER"
         return "?"
 
-    @valid_port()
+    @_validate_port()
     def port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -439,7 +443,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show running-config interface {port}").strip()
 
-    @valid_port()
+    @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -454,7 +458,7 @@ class EltexMES(BaseDevice):
                 errors.append(line.strip())
         return "\n".join(errors)
 
-    @valid_port()
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -589,7 +593,7 @@ class EltexESR(EltexMES):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @valid_port()
+    @EltexMES._validate_port()
     def port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -606,7 +610,7 @@ class EltexESR(EltexMES):
             return "SFP"
         return "COPPER"
 
-    @valid_port()
+    @EltexMES._validate_port()
     def get_port_info(self, port: str) -> str:
         """
         ## Возвращаем информацию о порте.
@@ -624,7 +628,7 @@ class EltexESR(EltexMES):
             before_catch=r"Description:.+",
         ).replace("\n", "<br>")
 
-    @valid_port()
+    @EltexMES._validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -646,13 +650,11 @@ class EltexESR(EltexMES):
 
 
 class EltexLTP(BaseDevice):
+
     # Регулярное выражение, соответствующее началу для ввода следующей команды.
     prompt = r"\S+#\s*$"
     # Строка, которая отображается, когда вывод команды слишком длинный и не помещается на экране.
-    space_prompt = (
-        r"More: <space>,  Quit: q or CTRL\+Z, One line: <return> |"
-        r"More\? Enter - next line; Space - next page; Q - quit; R - show the rest\."
-    )
+    space_prompt = r"--More--"
     # Это переменная, которая используется для поиска файла шаблона для анализа вывода команды.
     _template_name = "eltex-ltp"
     # Регулярное выражение, которое будет соответствовать MAC-адресу.
@@ -701,6 +703,20 @@ class EltexLTP(BaseDevice):
             command_linesep,
         )
 
+    def save_config(self) -> str:
+        """
+        ## Сохраняем конфигурацию оборудования
+
+            # commit
+
+        Ожидаем ответа от оборудования **successfully**,
+        """
+
+        self.session.send(f"commit\r")
+        if self.session.expect([self.prompt, "successfully"]):
+            return self.SAVED_OK
+        return self.SAVED_ERR
+
     def get_interfaces(self) -> InterfaceList:
         self.session.send("switch\r")
         self.session.expect(self.prompt)
@@ -734,17 +750,265 @@ class EltexLTP(BaseDevice):
     def get_vlans(self) -> InterfaceVLANList:
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
+    # Декоратор
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Eltex LTP
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port="", *args, **kwargs):
+
+                port_types = {
+                    0: {
+                        "name": "front-port",
+                        "max-number": self._front_ports_count - 1,
+                    },
+                    1: {
+                        "name": "10G-front-port",
+                        "max-number": self._10G_ports_count - 1,
+                    },
+                    2: {
+                        "name": "pon-port",
+                        "max-number": self._gpon_ports_count - 1,
+                    },
+                }
+
+                # Регулярное выражения для поиска трёх типов портов на Eltex LTP
+                port_match = self.find_or_empty(
+                    r"^front[-port]*\s*(\d+)$|"  # `0` - front-port
+                    r"^10[Gg]-front[-port]*\s*(\d+)$|"  # `1` - 10G-front-port
+                    r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*){,1})$",  # `2` - ont-port | gpon-port
+                    port,
+                )
+                if not port_match:
+                    # Неверный порт
+                    return if_invalid_return
+
+                for i, port_num in enumerate(port_match):
+                    if not port_num:
+                        # Пропускаем не найденное сравнение в регулярном выражении
+                        continue
+
+                    # Если порт представлен в виде `2/23`, то берем первую цифру `2` как port_num
+                    num: str = (
+                        port_num if port_num.isdigit() else port_num.split("/")[0]
+                    )
+
+                    # Проверка, меньше или равен ли номер порта максимальному количеству портов для этого типа.
+                    if int(num) <= port_types[i]["max-number"]:
+                        # port_type number
+                        port = f"{port_types[i]['name']} {port_num}"
+                        # Вызываем метод
+                        return func(self, port, *args, **kwargs)
+
+                # Неверный порт
+                return if_invalid_return
+
+            return __wrapper
+
+        return validate
+
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
-        pass
+        """
+        Команда:
 
+            # show mac include interface {port_type} {port}
+
+        :param port:
+        :return: ```[ ('vid', 'mac'), ... ]```
+        """
+        port_type, port_number = port.split()
+
+        if port_number.isdigit():
+            self.session.send("switch\r")
+            self.session.expect(self.prompt)
+            macs_output = self.send_command(
+                f"show mac include interface {port_type} {port_number}",
+            )
+            self.session.send("exit\r")
+            self.session.expect(self.prompt)
+            return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+", macs_output)
+
+        # Если указан порт конкретного ONT `0/1`, то используем другую команду
+        # И другое регулярное выражение
+        elif port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+            macs_list = re.findall(
+                rf"(\d+)\s+({self.mac_format})",
+                self.send_command(f"show mac interface ont {port_number}"),
+            )
+            return macs_list
+
+        # Если неверный порт
+        return []
+
+    @lru_cache
+    def get_vlan_name(self, vid: int):
+        from net_tools.models import VlanName
+
+        vlan_name = ""
+        try:
+            vlan_name = VlanName.objects.get(vid=int(vid)).name
+        except (ValueError, VlanName.DoesNotExist):
+            pass
+        finally:
+            return vlan_name
+
+    @_validate_port()
+    def get_port_info(self, port: str):
+        from check.models import Devices
+
+        # Получаем тип порта и его номер
+        port_type, port_number = port.split()
+
+        if port_type == "pon-port":
+            # Данные для шаблона
+            data = {
+                "port": port,  # Текущий порт
+                "perms": 3,  # Делаем уровень доступа 3, чтобы отображать кнопку BRAS
+                "dev": Devices.objects.get(ip=self.ip),  # Данное оборудование
+                # Если порт представлен в виде числа, то для pon порта есть sub port
+                # А для sub port уже не нужно создавать линк следующего порта
+                "link_to_sub_port": port_number.isdigit(),
+            }
+
+            # Смотрим сконфигурированные ONT на данном порту
+            ont_info = self.send_command(f"show interface ont {port_number} configured")
+            # Парсим данные ONT
+            onts_lines = sorted(
+                re.findall(
+                    r"\s+\d+\s+(\S+)\s+(\d+)\s+\d+\s+(\S+)\s+(\S+)\s+(\S*)\s+(\S+)\s*(\S*)[\r\n]",
+                    ont_info,
+                ),
+                key=lambda line: int(line[1]),  # сортируем по возрастанию ONT ID
+            )
+
+            # Добавляем в итоговый словарь список из отсортированных по возрастанию ONT ID записей
+            # сконфигурированных ONT в виде List[List], вместо List[Tuple].
+            # Добавляем для каждой записи пустой список, который далее будет использоваться
+            # для заполнения VLAN/MAC
+            data["onts_lines"]: List[List] = list(
+                map(lambda line: list(line) + [[]], onts_lines)
+            )
+
+            # Общее кол-во сконфигурированных ONT на данном порту
+            data["total_count"] = len(data["onts_lines"])
+
+            data["online_count"] = 0
+            # Считаем кол-во ONT online
+            for line in data["onts_lines"]:
+                if line[2] == "OK":
+                    data["online_count"] += 1
+
+            # Смотрим MAC на pon порту
+            if port_number.isdigit():
+                macs_list = re.findall(
+                    rf"\s+\d+\s+\S+\s+(\d+)\s+\d+\s+\d+\s+.+\s+(\d+)\s+({self.mac_format})",
+                    self.send_command(f"show mac interface gpon-port {port_number}"),
+                )
+            else:
+                macs_list = []
+
+            # Перебираем список macs_list и назначаем каждому ONT ID свой VLAN/MAC
+            for ont_id, vlan_id, mac in macs_list:
+                # Выбираем запись ONT по индексу ONT ID - int(mac_line[0])
+                # Затем обращаемся к 7 элементу, в котором находится список VLAN/MAC
+                # и добавляем VLAN, MAC и описание VLAN
+                data["onts_lines"][int(ont_id)][7].append(
+                    [vlan_id, mac, self.get_vlan_name(vlan_id)]
+                )
+
+            return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
+
+    @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
-        pass
+        """
+        ## Перезагрузка порта
 
+        :param port:
+        :param save_config:
+        :return:
+        """
+        port_type, port_number = port.split()
+        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+            # Для порта ONT вида - `0/1`
+            res = self.send_command(f"send omci reset interface ont {port_number}")
+            return res + "Without saving"
+
+        return "Этот порт нельзя перезагружать"
+
+    @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
-    def save_config(self):
-        pass
-
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        """
+        ## Устанавливаем описание для порта предварительно очистив его от лишних символов
+
+        Переходим в режим конфигурирования:
+
+            # configure terminal
+
+        Переходим к интерфейсу:
+
+            (config)# interface ont {m}/{n}
+
+        Если была передана пустая строка для описания, то очищаем с помощью команды:
+
+            (config-if)# no description
+
+        Если **desc** содержит описание, то используем команду для изменения:
+
+            (config-if)# description {desc}
+
+        Выходим из режима конфигурирования:
+
+            (config-if)# exit
+            (config)# exit
+
+        :param port: Порт, для которого вы хотите установить описание
+        :param desc: Описание, которое вы хотите установить для порта
+        :return: Вывод команды смены описания
+        """
+
+        # Получаем тип порта и его номер
+        port_type, port_number = port.split()
+        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+            # Для порта ONT вида - `0/1`
+            self.session.send("configure terminal\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"interfaces ont {port_number}\r")
+            self.session.expect(self.prompt)
+
+            if desc == "":
+                # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+                res = self.send_command("no description", expect_command=False)
+
+            else:  # В другом случае, меняем описание на оборудовании
+                res = self.send_command(f"description {desc}", expect_command=False)
+
+            self.session.send("exit\r")
+            self.session.expect(self.prompt)
+            self.session.send("exit\r")
+            self.session.expect(self.prompt)
+
+            # Возвращаем строку с результатом работы и сохраняем конфигурацию
+            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+    @_validate_port()
+    def port_config(self, port: str) -> str:
+        # Получаем тип порта и его номер
+        port_type, port_number = port.split()
+        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+            # Для порта ONT вида - `0/1`
+            return self.send_command(f"show interface ont {port_number} configuration")
+
+        return ""

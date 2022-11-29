@@ -16,33 +16,6 @@ from .base import (
 )
 
 
-def valid_port(if_invalid_return=None):
-    """
-    ## Декоратор для проверки правильности порта Cisco
-
-    :param if_invalid_return: что нужно вернуть, если порт неверный
-    """
-
-    if if_invalid_return is None:
-        if_invalid_return = "Неверный порт"
-
-    def validate(func):
-        @wraps(func)
-        def __wrapper(self, port, *args, **kwargs):
-            port = _interface_normal_view(port)
-            if not port:
-                # Неверный порт
-                return if_invalid_return
-
-            # Вызываем метод
-            return func(self, port, *args, **kwargs)
-
-        return __wrapper
-
-    return validate
-
-
-# noinspection PyArgumentList
 class Cisco(BaseDevice):
     """
     # Для оборудования от производителя Cisco
@@ -81,6 +54,31 @@ class Cisco(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
+
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Cisco
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port, *args, **kwargs):
+                port = _interface_normal_view(port)
+                if not port:
+                    # Неверный порт
+                    return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return __wrapper
+
+        return validate
 
     def save_config(self):
         """
@@ -163,7 +161,7 @@ class Cisco(BaseDevice):
 
         return result
 
-    @valid_port(if_invalid_return=[])
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -182,7 +180,7 @@ class Cisco(BaseDevice):
         )
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
-    @valid_port()
+    @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -222,7 +220,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @valid_port()
+    @_validate_port()
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -259,7 +257,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @valid_port()
+    @_validate_port()
     @lru_cache()
     def get_port_info(self, port: str) -> str:
         """
@@ -288,7 +286,7 @@ class Cisco(BaseDevice):
 
         return "<p>" + "<br>".join(port_type[1:]) + "</p>"
 
-    @valid_port()
+    @_validate_port()
     def port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -339,7 +337,7 @@ class Cisco(BaseDevice):
         else:
             return "?"
 
-    @valid_port()
+    @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -353,7 +351,7 @@ class Cisco(BaseDevice):
         media_type = [line.strip() for line in port_info if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
-    @valid_port()
+    @_validate_port()
     def port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -428,7 +426,7 @@ class Cisco(BaseDevice):
 
         return formatted_result
 
-    @valid_port()
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

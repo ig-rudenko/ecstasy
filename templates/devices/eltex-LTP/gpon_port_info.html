@@ -1,0 +1,101 @@
+<div class="container" id="port-info">
+    <style>
+    #ont-id:hover bi {
+        visibility: visible;
+        {#color: #558af1;#}
+    }
+
+    #ont-id:not(:hover) .bi {
+        visibility: hidden;
+    }
+    </style>
+
+    {{ raw }}
+
+    <button type="button" class="btn btn">
+      Всего <span class="badge text-bg-primary">{{ total_count }}</span>
+    </button>
+
+    <button type="button" class="btn btn">
+      Online <span class="badge text-bg-success">{{ online_count }}</span>
+    </button>
+    <br><br>
+<div class="table-responsive-lg">
+    <table class="table table-striped" style="text-align: center">
+      <thead>
+        <tr>
+          <th scope="col">ONT ID</th>
+          <th scope="col">Статус</th>
+          <th scope="col">Equipment ID</th>
+          <th scope="col">RSSI [dBm]</th>
+          <th scope="col">Serial</th>
+          <th scope="col">Описание</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for line in onts_lines %}
+
+        <tr {% if line.2 == "OFFLINE" %}style="background-color:#ffcacf;"{% endif %}
+
+            {% if line.7 %} {# Если есть MAC #}
+                {# Переключание выпадающего элемента для отображения VLAN/MAC #}
+                data-bs-toggle="collapse" href="#mac-for-ont-{{ line.1 }}" role="button"
+                aria-expanded="false" aria-controls="collapseExample"
+            {% endif %}
+        >
+{#            ONT ID  #}
+            <td id="ont-id" style="padding-right: 32px">
+                <a class="text-decoration-none text-dark"
+                    {% if link_to_sub_port %}
+                    {# Ссылка на sub port #}
+                        href="{% url 'show-port-info' %}?device={{ dev.name }}&port={{ port }}/{{ line.1 }}&desc={{ line.6 }}">
+                    {% endif %}
+                    <svg style="vertical-align: bottom" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                         fill="currentColor" class="bi bi-box-arrow-in-right" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"></path>
+                      <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"></path>
+                    </svg>
+                    {{ line.1 }}
+                </a>
+            </td>
+
+{#            Status  #}
+            <td style="background-color: {% if line.2 == 'OK' %}
+                                            #22e58b
+                                         {% else %}
+                                            #ffcacf
+                                         {% endif %};">
+                {{ line.2 }}</td>
+
+{#            Equipment ID  #}
+            <td>{{ line.5 }}</td>
+
+{#            RSSI [dBm]#}
+            <td>{{ line.3 }}</td>
+
+{#            Serial#}
+            <td>{{ line.0 }}</td>
+
+{#            Description#}
+            <td style="text-align: left">{{ line.6 }}</td>
+
+        </tr>
+        {% if line.7 %} {# Если есть MAC #}
+            {% with line.7 as macs %}
+                <tr style="padding: 0; border-bottom-width: 0;"></tr>
+                <tr>
+                    <td colspan="6" style="padding: 0; border-bottom-width: 0;">
+                        <div class="collapse" id="mac-for-ont-{{ line.1 }}">
+                            {# Таблица MAC для данного ONT #}
+                            {% include "check/macs_table.html" %}
+                        </div>
+                    </td>
+                </tr>
+            {% endwith %}
+        {% endif %}
+
+      {% endfor %}
+      </tbody>
+    </table>
+</div>
+</div>

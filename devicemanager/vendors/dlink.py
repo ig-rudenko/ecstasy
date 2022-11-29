@@ -13,32 +13,6 @@ from .base import (
 )
 
 
-def valid_port(if_invalid_return=None):
-    """
-    ## Декоратор для проверки правильности порта Cisco
-
-    :param if_invalid_return: что нужно вернуть, если порт неверный
-    """
-
-    if if_invalid_return is None:
-        if_invalid_return = "Неверный порт"
-
-    def validate(func):
-        @wraps(func)
-        def __wrapper(self, port, *args, **kwargs):
-            port = Dlink.validate_port(port)
-            if port is None:
-                # Неверный порт
-                return if_invalid_return
-
-            # Вызываем метод
-            return func(self, port, *args, **kwargs)
-
-        return __wrapper
-
-    return validate
-
-
 class Dlink(BaseDevice):
     """
     Для оборудования от производителя D-Link
@@ -115,6 +89,31 @@ class Dlink(BaseDevice):
         )
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
 
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Cisco
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port, *args, **kwargs):
+                port = Dlink.validate_port(port)
+                if port is None:
+                    # Неверный порт
+                    return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return __wrapper
+
+        return validate
+
     @staticmethod
     def validate_port(port: str) -> (str, None):
         """
@@ -166,6 +165,7 @@ class Dlink(BaseDevice):
         space_prompt=None,
         prompt=None,
         pages_limit=None,
+        command_linesep="\n",
     ):
         return super().send_command(
             command,
@@ -175,6 +175,7 @@ class Dlink(BaseDevice):
             space_prompt=space_prompt,
             prompt=prompt,
             pages_limit=pages_limit,
+            command_linesep=command_linesep,
         )
 
     def get_interfaces(self) -> InterfaceList:
@@ -263,7 +264,7 @@ class Dlink(BaseDevice):
             )
         return interfaces_vlan
 
-    @valid_port(if_invalid_return=[])
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
@@ -393,7 +394,7 @@ class Dlink(BaseDevice):
         # Возврат результата команды и результата функции save_config().
         return r + s
 
-    @valid_port()
+    @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         Получаем ошибки на порту через команду:
@@ -411,7 +412,7 @@ class Dlink(BaseDevice):
 
         return self.session.before.decode()
 
-    @valid_port()
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -459,7 +460,7 @@ class Dlink(BaseDevice):
         # Уникальный случай
         return status
 
-    @valid_port(if_invalid_return={})
+    @_validate_port(if_invalid_return={})
     def virtual_cable_test(self, port: str) -> dict:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:
