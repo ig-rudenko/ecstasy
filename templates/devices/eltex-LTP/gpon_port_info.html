@@ -81,7 +81,7 @@
 
         </tr>
         {% if line.7 %} {# Если есть MAC #}
-            {% with line.7 as macs %}
+            {% with macs=line.7 port=port|add:"/"|add:line.1 %}
                 <tr style="padding: 0; border-bottom-width: 0;"></tr>
                 <tr>
                     <td colspan="6" style="padding: 0; border-bottom-width: 0;">

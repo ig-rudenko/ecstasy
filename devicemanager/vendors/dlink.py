@@ -318,17 +318,19 @@ class Dlink(BaseDevice):
 
         # Отключение порта.
         r1 = self.send_command(f"config ports {port}{media_type} state disable")
-        # Задержка, позволяющая коммутатору обработать команду.
-        sleep(1)
-        # Включение порта.
-        r2 = self.send_command(f"config ports {port}{media_type} state enable")
-
         # Проверка, не установлен ли тип порта и порт больше 23
         if not media_type and int(port) > 23:
             r1 += self.send_command(
                 f"config ports {port} medium_type fiber state disable"
             )
-            sleep(1)
+
+        # Задержка, позволяющая коммутатору обработать команду.
+        sleep(4)
+
+        # Включение порта.
+        r2 = self.send_command(f"config ports {port}{media_type} state enable")
+        # Проверка, не установлен ли тип порта и порт больше 23
+        if not media_type and int(port) > 23:
             r2 += self.send_command(
                 f"config ports {port} medium_type fiber state enable"
             )
