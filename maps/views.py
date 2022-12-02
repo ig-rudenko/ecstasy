@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from functools import wraps
 
@@ -8,6 +9,14 @@ from pyzabbix import ZabbixAPI
 from maps.models import Maps, Layers
 
 from app_settings.models import ZabbixConfig
+
+
+def map_home(request):
+    return render(
+        request,
+        "maps/home.html",
+        {"maps": Maps.objects.filter(users=request.user)},
+    )
 
 
 def access_to_map(function):
@@ -50,12 +59,12 @@ def show_interactive_map(request, map_obj: Maps):
     :return: Функция рендеринга интерактивной карты или ошибка 404
     """
 
-    # Он проверяет, есть ли какие-либо слои на карте.
-    if map_obj.layers.all():
+    # Проверяет тип карты. Если карта имеет тип "zabbix", то возвращает шаблон интерактивной карты.
+    if map_obj.type == "zabbix":
         return render(request, "maps/interactive_map.html", {"map": map_obj})
 
-    # Если на карте нет слоев, то карта может быть внешней.
-    elif map_obj.map_url:
+    # Проверка, является ли карта внешней картой.
+    if map_obj.type == "external":
         return render(request, "maps/external_map.html", {"map": map_obj})
 
     # 404 если карта пустая
@@ -72,19 +81,21 @@ def send_layers(request, map_obj: Maps):
     :param map_obj: Объект карты полученный от декоратора
     """
 
-    return JsonResponse(
-        {
-            "groups": [
-                gr["zabbix_group_name"]
-                for gr in map_obj.layers.all().values("zabbix_group_name")
-            ]
-        }
-    )
+    print(list(map_obj.layers.all().values("zabbix_group_name", "from_file")))
+
+    layers_name = []
+    for layer in map_obj.layers.all():
+        if layer.type == "zabbix":
+            layers_name.append(layer.zabbix_group_name)
+        elif layer.type == "file":
+            layers_name.append(layer.name)
+
+    return JsonResponse({"groups": layers_name})
 
 
 def zabbix_get(
     group_id: int, group_name: str, zbx_settings: ZabbixConfig, current_layer: Layers
-):
+) -> dict:
     """
     `zabbix_get` возвращает список хостов в группе Zabbix.
 
@@ -93,7 +104,7 @@ def zabbix_get(
     :param current_layer: Слой - объект Layers
     :param zbx_settings: Объект ZabbixConfig, содержащий URL-адрес Zabbix-сервера, имя пользователя и пароль
     """
-    result = []
+    result = {"type": "FeatureCollection", "features": []}
 
     with ZabbixAPI(server=zbx_settings.url) as z:
         z.login(user=zbx_settings.login, password=zbx_settings.password)
@@ -110,7 +121,7 @@ def zabbix_get(
             and host["inventory"]["location_lon"]
             and host["status"] == "0"
         ):
-            result.append(
+            result["features"].append(
                 {
                     "type": "Feature",
                     "id": host["hostid"],
@@ -164,29 +175,57 @@ def render_interactive_map(request, map_obj: Maps):
     # Загрузка объекта ZabbixConfig из базы данных.
     zbx_settings = ZabbixConfig.load()
 
-    geo_json = {"type": "FeatureCollection", "features": []}
+    layers_data = []
+    # json_data = [ {"name": `layer_name`, "type": "zabbix", "features": {...} }, ...]
 
     with ZabbixAPI(server=zbx_settings.url) as z:
         z.login(user=zbx_settings.login, password=zbx_settings.password)
 
         for layer in map_obj.layers.all():  # Проходимся по введенным именам групп
 
-            # Если слой не имеет имени группы Zabbix, то пропускаем.
-            if not layer.zabbix_group_name:
-                continue
+            # Если слой покрывает группу Zabbix
+            if layer.type == "zabbix":
+                layer_data = {
+                    "name": layer.zabbix_group_name,
+                    "type": "zabbix",
+                    "features": {},
+                }
 
-            group = z.hostgroup.get(filter={"name": layer.zabbix_group_name})  # Находим группу в Zabbix
-            if group:  # Если такая группа существует
+                # Находим группу в Zabbix
+                group = z.hostgroup.get(filter={"name": layer.zabbix_group_name})
 
-                # Добавление результата функции `zabbix_get` в список `geo_json["features"]`
-                geo_json["features"] += zabbix_get(
-                    group_id=int(group[0]["groupid"]),
-                    group_name=layer.zabbix_group_name,
-                    zbx_settings=zbx_settings,
-                    current_layer=layer,
-                )
+                if group:  # Если такая группа существует
 
-    return JsonResponse(geo_json)
+                    # Добавление результата функции `zabbix_get` в список `geo_json["features"]`
+                    layer_data["features"] = zabbix_get(
+                        group_id=int(group[0]["groupid"]),
+                        group_name=layer.zabbix_group_name,
+                        zbx_settings=zbx_settings,
+                        current_layer=layer,
+                    )
+                # Сохраняем данные слоя
+                layers_data.append(layer_data)
+
+            # Для внешних карт.
+            elif layer.type == "file":
+                layer_data = {
+                    "name": layer.name,
+                    "type": "geojson",
+                    "features": {},
+                }
+
+                # Читаем содержимое файла
+                with layer.from_file.open("r") as file:
+                    try:
+                        layer_data["features"] = json.load(file)
+                    except json.JSONDecodeError:
+                        # Пропускаем файл который не получилось прочитать
+                        continue
+
+                # Сохраняем данные слоя
+                layers_data.append(layer_data)
+
+    return JsonResponse(layers_data, safe=False)
 
 
 def get_hosts_with_problem(zabbix_session: ZabbixAPI, zabbix_group_id: str) -> list:
@@ -197,8 +236,6 @@ def get_hosts_with_problem(zabbix_session: ZabbixAPI, zabbix_group_id: str) -> l
     :return: словарь из ID тех узлов, которые недоступны в этой группе и подтверждения по этим проблемам
     """
     problems = []
-
-    print(f"get {zabbix_group_id=} from Zabbix")
 
     # Все узлы сети в группе
     hosts_id = [
@@ -288,7 +325,5 @@ def update_interactive_map(request, map_obj: Maps):
                 problem_hosts += get_hosts_with_problem(
                     zabbix_session=z, zabbix_group_id=group[0]["groupid"]
                 )
-
-    print(problem_hosts)
 
     return JsonResponse({"problems": problem_hosts})

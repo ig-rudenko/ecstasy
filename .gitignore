@@ -5,6 +5,7 @@ test.py
 _test*
 celerybeat-schedule*
 *.json
+*.geojson
 .coverage
 lib
 ecstasy_project/settings_prod.py

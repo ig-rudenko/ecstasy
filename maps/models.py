@@ -58,13 +58,14 @@ class Layers(models.Model):
     )
 
     def __str__(self) -> str:
+        return f"[{self.type}] Layer:({self.name})"
+
+    @property
+    def type(self):
+        if self.from_file:
+            return "file"
         if self.zabbix_group_name:
-            from_ = "Zbx"
-        elif self.from_file:
-            from_ = "File"
-        else:
-            from_ = " "
-        return f"[{from_}] Layer:({self.name})"
+            return "zabbix"
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
@@ -118,7 +119,7 @@ class Layers(models.Model):
 
 class Maps(models.Model):
     class Meta:
-        verbose_name = "Карта"
+        verbose_name = "Карту"
         verbose_name_plural = "Карты"
 
     name = models.CharField(
@@ -161,3 +162,13 @@ class Maps(models.Model):
         verbose_name="Выберите пользователей",
         help_text="Пользователи",
     )
+
+    def __str__(self):
+        return f"Map: {self.name}"
+
+    @property
+    def type(self):
+        if self.map_url:
+            return "external"
+        if self.layers:
+            return "zabbix"
