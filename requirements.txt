@@ -13,3 +13,4 @@ celery>=5.2.7
 ping3>=4.0.3
 gunicorn
 pdoc>=12.3.0
+Pillow

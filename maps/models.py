@@ -163,6 +163,14 @@ class Maps(models.Model):
         help_text="Пользователи",
     )
 
+    preview_image = models.ImageField(
+        null=True,
+        blank=True,
+        upload_to="static/map_previews",
+        verbose_name="Изображение карты",
+        help_text="Превью",
+    )
+
     def __str__(self):
         return f"Map: {self.name}"
 
@@ -172,3 +180,52 @@ class Maps(models.Model):
             return "external"
         if self.layers:
             return "zabbix"
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        """
+        При сохранении в БД проверяем,
+        если старый preview_image существует, а новый preview_image отличается, удаляем старый preview_image
+        """
+        try:
+            # Он получает старый файл из базы данных.
+            old_preview_image = Maps.objects.get(id=self.id).preview_image
+            # Он проверяет, существует ли старый файл и отличается ли новый файл.
+            if (
+                old_preview_image
+                and not self.preview_image
+                or old_preview_image
+                and self.preview_image.path != old_preview_image.path
+            ):
+                # Удаляем предыдущий файл
+                if os.path.exists(old_preview_image.path):
+                    os.remove(old_preview_image.path)
+        # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
+        except Maps.DoesNotExist:
+            pass
+
+        # Вызов метода сохранения родительского класса.
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+        )
+
+    def delete(self, using=None, keep_parents=False):
+        """
+        При удалении экземпляра модели также удаляем и preview_image, если он есть
+
+        :param using: База данных для использования. Оставьте пустым, чтобы использовать базу данных по умолчанию
+        :param keep_parents: Если True, не удаляйте родительскую модель, defaults to False (optional)
+        """
+        # Старый файл из базы данных.
+        old_preview_image = Maps.objects.get(id=self.id).preview_image
+
+        if os.path.exists(old_preview_image.path):
+            # Удаление файла.
+            os.remove(old_preview_image.path)
+
+        # Вызов метода удаления родительского класса.
+        return super().delete(using, keep_parents)

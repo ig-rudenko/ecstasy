@@ -23,6 +23,13 @@
     height: 300px;
     {#background-size: cover;#}
 }
+.row-eq-height {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    flex-direction: column;
+}
 </style>
 </head>
 
@@ -47,30 +54,31 @@
   <div class="album py-5 bg-light">
     <div class="container">
 
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3" style="display: flex; justify-content: center;">
 
           {% for map in maps %}
-            <div class="col">
+            <div class="col row-eq-height">
               <div class="card shadow-sm">
 
                 <a href="{% url 'interactive-map-show' map.id %}">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="225"
-                     xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail"
-                     preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title>
-                    <rect width="100%" height="100%" fill="#55595c">
-                    </rect><text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text>
-                </svg>
+                {% if map.preview_image %}
+                    <div style="max-height: 225px; min-height: 225px; background-image: url('{{ map.preview_image.url }}');
+                            background-size: cover">
+                    </div>
+                {% else %}
+                    <svg class="bd-placeholder-img card-img-top" width="100%" height="225"
+                         xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail"
+                         preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title>
+                        <rect width="100%" height="100%" fill="#55595c">
+                        </rect>
+                    </svg>
+                {% endif %}
                 </a>
 
                 <div class="card-body">
                   <h3 class="card-text">{{ map.name }}</h3>
                   <p class="card-text">{{ map.description }}</p>
                   <div class="d-flex justify-content-between align-items-center">
-{#                    <div class="btn-group">#}
-{#                      <button type="button" class="btn btn-sm btn-outline-secondary">View</button>#}
-{#                      <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>#}
-{#                    </div>#}
-{#                    <small class="text-muted">9 mins</small>#}
                   </div>
                 </div>
               </div>

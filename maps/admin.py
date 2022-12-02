@@ -77,7 +77,6 @@ class LayersAdmin(admin.ModelAdmin):
 """
             )
 
-
     @admin.display(description="Тип слоя")
     def layer_type(self, instance: Layers):
         if instance.from_file:
@@ -92,10 +91,11 @@ class LayersAdmin(admin.ModelAdmin):
 
 @admin.register(Maps)
 class MapsAdmin(admin.ModelAdmin):
+    readonly_fields = ("map_image",)
     list_display = ("name", "map_layers", "description")
     filter_horizontal = ("users", "layers")
     fieldsets = (
-        ("Основные", {"fields": ("name", "description")}),
+        ("Основные", {"fields": ("name", "map_image", "preview_image", "description")}),
         (
             "Сторонняя карта по URL",
             {"fields": ("map_url",)},
@@ -109,6 +109,10 @@ class MapsAdmin(admin.ModelAdmin):
             {"fields": ("users",)},
         ),
     )
+
+    @staticmethod
+    def map_image(instance: Maps):
+        return format_html(f"""<img height=300 src="{instance.preview_image.url}" >""")
 
     @admin.display(description="Слои/URL")
     def map_layers(self, instance: Maps):
