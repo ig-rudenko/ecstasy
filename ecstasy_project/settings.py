@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "check",
     "net_tools",
+    "maps",
     "app_settings",
     "django.contrib.humanize",
 ]
