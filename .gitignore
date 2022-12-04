@@ -1,4 +1,5 @@
 templates/tools/vlans
+map_layer_files
 venv
 db.sqlite3*
 test.py
@@ -18,3 +19,5 @@ logs
 Dockerfile
 docker-compose.yaml
 templates/test*
+static/map_previews
+static/docs

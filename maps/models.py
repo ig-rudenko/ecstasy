@@ -26,7 +26,7 @@ class Layers(models.Model):
     from_file = models.FileField(
         null=True,
         blank=True,
-        upload_to="media/map_layer_files",
+        upload_to="map_layer_files",
         verbose_name="Слой будет взят из файла",
         help_text="Файл должен быть GEOJSON",
     )
