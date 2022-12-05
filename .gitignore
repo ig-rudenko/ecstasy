@@ -21,3 +21,4 @@ docker-compose.yaml
 templates/test*
 static/map_previews
 static/docs
+templates/maps/external

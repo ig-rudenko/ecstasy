@@ -97,6 +97,10 @@ class MapsAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Основные", {"fields": ("name", "map_image", "preview_image", "description")}),
         (
+            "Файл карты",
+            {"fields": ("from_file",)},
+        ),
+        (
             "Сторонняя карта по URL",
             {"fields": ("map_url",)},
         ),
@@ -117,12 +121,22 @@ class MapsAdmin(admin.ModelAdmin):
     @admin.display(description="Слои/URL")
     def map_layers(self, instance: Maps):
         text = ""
-        for layer in instance.layers.all():
-            text += f"""
-            <li style="color: {layer.points_color}" >{layer}</li>
-            """
 
-        if not text:
+        if instance.type == "zabbix":
+            for layer in instance.layers.all():
+                text += f"""
+                <li style="color: {layer.points_color}" >{layer}</li>
+                """
+
+        elif instance.type == "external":
             text = f"<a href=\"{instance.map_url}\" target=\"_blank\">{instance.map_url}</a>"
+
+        elif instance.type == "file":
+            text = f"""
+<svg style="vertical-align: sub" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-file-earmark-code" viewBox="0 0 16 16">
+  <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+  <path d="M8.646 6.646a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L10.293 9 8.646 7.354a.5.5 0 0 1 0-.708zm-1.292 0a.5.5 0 0 0-.708 0l-2 2a.5.5 0 0 0 0 .708l2 2a.5.5 0 0 0 .708-.708L5.707 9l1.647-1.646a.5.5 0 0 0 0-.708z"/>
+</svg> {instance.from_file.name.rsplit("/", 1)[-1]}
+"""
 
         return format_html(text)

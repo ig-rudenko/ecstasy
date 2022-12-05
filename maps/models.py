@@ -3,6 +3,8 @@ import os
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.dispatch import receiver
+from django.db.models.signals import post_delete, pre_save
 
 
 class Layers(models.Model):
@@ -67,54 +69,31 @@ class Layers(models.Model):
         if self.zabbix_group_name:
             return "zabbix"
 
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        """
-        При сохранении в БД проверяем,
-        если старый файл существует, а новый файл отличается, удалите старый файл
-        """
-        try:
-            # Он получает старый файл из базы данных.
-            old_file = Layers.objects.get(id=self.id).from_file
-            # Он проверяет, существует ли старый файл и отличается ли новый файл.
-            if (
-                old_file
-                and not self.from_file
-                or old_file
-                and self.from_file.path != old_file.path
-            ):
-                # Удаляем предыдущий файл
-                if os.path.exists(old_file.path):
-                    os.remove(old_file.path)
-        # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
-        except Layers.DoesNotExist:
-            pass
 
-        # Вызов метода сохранения родительского класса.
-        return super().save(
-            force_insert=force_insert,
-            force_update=force_update,
-            using=using,
-            update_fields=update_fields,
-        )
+@receiver(pre_save, sender=Layers)
+def update_file_for_layer(sender, instance: Layers, *args, **kwargs):
+    try:
+        # Он получает старый файл из базы данных.
+        old_file = sender.objects.get(id=instance.id).from_file
+        # Он проверяет, существует ли старый файл и отличается ли новый файл.
+        if (
+            old_file
+            and not instance.from_file
+            or old_file
+            and instance.from_file.path != old_file.path
+        ):
+            # Удаляем предыдущий файл
+            if os.path.exists(old_file.path):
+                os.remove(old_file.path)
+    # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
+    except sender.DoesNotExist:
+        pass
 
-    def delete(self, using=None, keep_parents=False):
-        """
-        При удалении экземпляра модели также удаляем и файл, если он есть
 
-        :param using: База данных для использования. Оставьте пустым, чтобы использовать базу данных по умолчанию
-        :param keep_parents: Если True, не удаляйте родительскую модель, defaults to False (optional)
-        """
-        # Старый файл из базы данных.
-        old_file = Layers.objects.get(id=self.id).from_file
-
-        if os.path.exists(old_file.path):
-            # Удаление файла.
-            os.remove(old_file.path)
-
-        # Вызов метода удаления родительского класса.
-        return super().delete(using, keep_parents)
+@receiver(post_delete, sender=Layers)
+def remove_file_for_layer(sender, instance: Layers, *args, **kwargs):
+    if os.path.exists(instance.from_file.path):
+        os.remove(instance.from_file.path)
 
 
 class Maps(models.Model):
@@ -139,6 +118,13 @@ class Maps(models.Model):
         verbose_name="Карта будет интерактивной?",
         help_text="Автоматическое обновление состояния узлов сети"
         " из тех слоев, что созданы через группу Zabbix",
+    )
+
+    from_file = models.FileField(
+        null=True,
+        blank=True,
+        upload_to="templates/maps/external",
+        verbose_name="HTML файл карты",
     )
 
     map_url = models.URLField(
@@ -176,56 +162,51 @@ class Maps(models.Model):
 
     @property
     def type(self):
+        if self.from_file:
+            return "file"
         if self.map_url:
             return "external"
         if self.layers:
             return "zabbix"
 
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        """
-        При сохранении в БД проверяем,
-        если старый preview_image существует, а новый preview_image отличается, удаляем старый preview_image
-        """
-        try:
-            # Он получает старый файл из базы данных.
-            old_preview_image = Maps.objects.get(id=self.id).preview_image
-            # Он проверяет, существует ли старый файл и отличается ли новый файл.
-            if (
-                old_preview_image
-                and not self.preview_image
-                or old_preview_image
-                and self.preview_image.path != old_preview_image.path
-            ):
-                # Удаляем предыдущий файл
-                if os.path.exists(old_preview_image.path):
-                    os.remove(old_preview_image.path)
-        # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
-        except Maps.DoesNotExist:
-            pass
 
-        # Вызов метода сохранения родительского класса.
-        return super().save(
-            force_insert=force_insert,
-            force_update=force_update,
-            using=using,
-            update_fields=update_fields,
-        )
+@receiver(pre_save, sender=Maps)
+def update_file_for_layer(sender, instance: Maps, *args, **kwargs):
+    try:
+        # Он получает старый файл из базы данных.
+        old_instance: Maps = sender.objects.get(id=instance.id)
+        old_file = old_instance.from_file
+        old_image = old_instance.preview_image
+        # Проверяем, существует ли старый файл и отличается ли от нового.
+        if (
+            old_file
+            and not instance.from_file
+            or old_file
+            and instance.from_file.path != old_file.path
+        ):
+            # Удаляем предыдущий файл
+            if os.path.exists(old_file.path):
+                os.remove(old_file.path)
 
-    def delete(self, using=None, keep_parents=False):
-        """
-        При удалении экземпляра модели также удаляем и preview_image, если он есть
+        # Проверяем, существует ли старое изоб и отличается ли от нового.
+        if (
+            old_image
+            and not instance.preview_image
+            or old_image
+            and instance.preview_image.path != old_image.path
+        ):
+            # Удаляем предыдущий файл
+            if os.path.exists(old_image.path):
+                os.remove(old_image.path)
 
-        :param using: База данных для использования. Оставьте пустым, чтобы использовать базу данных по умолчанию
-        :param keep_parents: Если True, не удаляйте родительскую модель, defaults to False (optional)
-        """
-        # Старый файл из базы данных.
-        old_preview_image = Maps.objects.get(id=self.id).preview_image
+    # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
+    except sender.DoesNotExist:
+        pass
 
-        if os.path.exists(old_preview_image.path):
-            # Удаление файла.
-            os.remove(old_preview_image.path)
 
-        # Вызов метода удаления родительского класса.
-        return super().delete(using, keep_parents)
+@receiver(post_delete, sender=Maps)
+def remove_file_for_layer(sender, instance: Maps, *args, **kwargs):
+    if os.path.exists(instance.preview_image.path):
+        os.remove(instance.preview_image.path)
+    if os.path.exists(instance.from_file.path):
+        os.remove(instance.from_file.path)

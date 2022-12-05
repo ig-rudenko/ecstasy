@@ -50,13 +50,13 @@ def access_to_map(function):
 @access_to_map
 def show_interactive_map(request, map_obj: Maps):
     """
-    ## Возвращаем шаблон HTML интерактивной карты «maps/interactive_map.html».
+    ## Возвращаем карту
 
     :param request: Это объект запроса, который отправляется в представление.
     Он содержит информацию о запросе, такую как метод HTTP, URL-адрес, заголовки и тело
     :param map_obj: Объект карты полученный от декоратора
 
-    :return: Функция рендеринга интерактивной карты или ошибка 404
+    :return: Функция рендеринга карты или ошибка 404
     """
 
     # Проверяет тип карты. Если карта имеет тип "zabbix", то возвращает шаблон интерактивной карты.
@@ -66,6 +66,10 @@ def show_interactive_map(request, map_obj: Maps):
     # Проверка, является ли карта внешней картой.
     if map_obj.type == "external":
         return render(request, "maps/external_map.html", {"map": map_obj})
+
+    # Проверка, является ли карта файлом.
+    if map_obj.type == "file":
+        return render(request, "maps/external/" + map_obj.from_file.name.rsplit("/", 1)[-1])
 
     # 404 если карта пустая
     raise Http404

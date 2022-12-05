@@ -13,6 +13,40 @@
   </head>
   <body>
     <div id="map"></div>
-    <script src="{% static 'js/interactive_map.js' %}"></script>
+    <script src="{% static 'js/maps/render_map.js' %}"></script>
+    {% if map.interactive %}
+    <script src="{% static 'js/maps/update_marker_status.js' %}"></script>
+    {% endif %}
+
+  <script>
+    // При загрузке
+    document.addEventListener('DOMContentLoaded', async function(){
+
+        let groups_list = await get_groups()
+
+        // Добавляем слои на карту
+        for (let i = 0; i < groups_list.groups.length; i++) {
+            layer_control.overlays[groups_list.groups[i]] = L.featureGroup(
+                {name: groups_list.groups[i]}
+            ).addTo(map)
+        }
+
+
+        // Добавляем управление слоями на карту
+        L.control.layers(
+            layer_control.base_layers,
+            layer_control.overlays,
+            {"autoZIndex": true, "collapsed": true, "position": "topright"}
+        ).addTo(map);
+
+        // Рендерим метки
+        await render_markers()
+
+        {% if map.interactive %}
+        update_status()
+        {% endif %}
+    });
+
+  </script>
   </body>
 </html>
