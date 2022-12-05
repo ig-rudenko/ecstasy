@@ -14,10 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from check import views
 from django.contrib.staticfiles.utils import settings
 from django.contrib.staticfiles.urls import static
+from django.views.static import serve
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -30,6 +31,17 @@ urlpatterns = [
     path("maps/", include("maps.urls")),
 ]
 
+handler404 = "app_settings.errors_views.page404"
+handler500 = "app_settings.errors_views.page500"
+
+# Static
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    urlpatterns += (
+        re_path(
+            r"^static/(?P<path>.*)$",
+            serve,
+            {"document_root": settings.STATICFILES_DIRS[0]},
+        ),
+    )

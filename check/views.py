@@ -151,7 +151,7 @@ def by_zabbix_hostid(request, hostid: str):
                 resolve_url("device_info", name=dev.name) + "?current_status=1"
             )
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+        raise Http404
 
     except (ValueError, TypeError, models.Devices.DoesNotExist) as exception:
         if request.META.get("HTTP_REFERER"):
