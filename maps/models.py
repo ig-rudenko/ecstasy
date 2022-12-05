@@ -32,6 +32,29 @@ class Layers(models.Model):
         verbose_name="Слой будет взят из файла",
         help_text="Файл должен быть GEOJSON",
     )
+
+    default_geojson_opacity = models.FloatField(
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        default=0.6,
+        verbose_name="Непрозрачность",
+        help_text="Вещественное число от 0 до 1"
+        "Для элементов из файла geojson, у которых не указана непрозрачность",
+    )
+
+    default_geojson_fill_color = models.CharField(
+        max_length=7,
+        default="#0074CC",
+        verbose_name="Цвет по умолчанию",
+        help_text="Для элементов из файла geojson, у которых не указан цвет в properties",
+    )
+
+    default_geojson_border_color = models.CharField(
+        max_length=7,
+        default="#004c87",
+        verbose_name="Цвет рамок по умолчанию",
+        help_text="Для элементов из файла geojson, у которых не указан цвет рамок в properties",
+    )
+
     zabbix_group_name = models.CharField(
         max_length=100,
         null=True,

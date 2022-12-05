@@ -96,29 +96,35 @@ async function render_markers() {
 
         } else if (render_data[i].type === "geojson") {
 
+            // Цвет и непрозрачность по умолчанию
+            let defaultSettings = render_data[i].properties
+            // Коллекция
             let features = render_data[i].features.features
+            // Слой
             let layer = layer_control.overlays[render_data[i].name]
-            console.log(layer)
 
             for (let j = 0; j < features.length; j++) {
 
                 if (features[j].geometry.type === "Point"){
                     createMarker(
                         features[j],
-                        L.GeoJSON.coordsToLatLng(features[j].geometry.coordinates)
+                        L.GeoJSON.coordsToLatLng(features[j].geometry.coordinates),
+                        defaultSettings
                     ).addTo(layer)
 
                 } else if (features[j].geometry.type === "LineString") {
                     console.log(features[j].geometry.coordinates)
                     createPolyline(
                         features[j],
-                        L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates)
+                        L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates),
+                        defaultSettings
                     ).addTo(layer)
 
                 } else if (features[j].geometry.type === "Polygon") {
                     createPolygon(
                         features[j],
-                        L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates[0])
+                        L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates[0]),
+                        defaultSettings
                     ).addTo(layer)
                 }
             }
@@ -126,32 +132,30 @@ async function render_markers() {
     }
 }
 
-function createPolygon(feature, latlng) {
-    console.log(feature, latlng)
+function createPolygon(feature, latlng, defaults) {
     let styleOptions = {
-        "fillColor": feature.properties["fill"],
-        "color": feature.properties["stroke"],
-        "weight": feature.properties["stroke-width"],
-        "opacity": feature.properties["stroke-opacity"],
-        "fillOpacity": feature.properties["fill-opacity"],
+        "fillColor": feature.properties["fill"] || defaults.defaultFillColor,
+        "color": feature.properties["stroke"] || defaults.defaultColor,
+        "weight": feature.properties["stroke-width"] || 2,
+        "opacity": feature.properties["stroke-opacity"] || defaults.defaultOpacity,
+        "fillOpacity": feature.properties["fill-opacity"] || defaults.defaultOpacity,
     }
 
     return L.polygon(latlng, styleOptions)
 }
 
-function createPolyline(feature, latlng) {
+function createPolyline(feature, latlng, defaults) {
     let styleOptions = {
-        "color": feature.properties.stroke,
-        "weight": feature.properties["stroke-width"],
-        "fillOpacity": feature.properties["stroke-opacity"],
+        "color": feature.properties.stroke || defaults.defaultColor,
+        "weight": feature.properties["stroke-width"] || 2,
+        "fillOpacity": feature.properties["stroke-opacity"] || defaults.defaultOpacity,
     }
 
     return L.polyline(latlng, styleOptions)
 }
 
 
-function createMarker(feature, latlng) {
-    console.log(feature, latlng)
+function createMarker(feature, latlng, defaults) {
     let popup_text = feature.properties.description ||
                      feature.properties.name ||
                      ""
@@ -160,7 +164,7 @@ function createMarker(feature, latlng) {
 
     let fillColor = feature.properties["marker-color"] ||
                     feature.properties.fillColor ||
-                    feature.properties.color
+                    feature.properties.color || defaults.defaultFillColor
 
     let styleOptions = {
         "radius": 7,

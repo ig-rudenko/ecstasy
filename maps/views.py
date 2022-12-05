@@ -69,7 +69,9 @@ def show_interactive_map(request, map_obj: Maps):
 
     # Проверка, является ли карта файлом.
     if map_obj.type == "file":
-        return render(request, "maps/external/" + map_obj.from_file.name.rsplit("/", 1)[-1])
+        return render(
+            request, "maps/external/" + map_obj.from_file.name.rsplit("/", 1)[-1]
+        )
 
     # 404 если карта пустая
     raise Http404
@@ -215,6 +217,11 @@ def render_interactive_map(request, map_obj: Maps):
                 layer_data = {
                     "name": layer.name,
                     "type": "geojson",
+                    "properties": {
+                        "defaultFillColor": layer.default_geojson_fill_color,
+                        "defaultColor": layer.default_geojson_border_color,
+                        "defaultOpacity": layer.default_geojson_opacity
+                    },
                     "features": {},
                 }
 

@@ -37,6 +37,9 @@ class LayerFrom(forms.ModelForm):
         widgets = {
             "points_color": forms.TextInput(attrs={"type": "color"}),
             "points_border_color": forms.TextInput(attrs={"type": "color"}),
+            "default_geojson_opacity": forms.TextInput(),
+            "default_geojson_fill_color": forms.TextInput(attrs={"type": "color"}),
+            "default_geojson_border_color": forms.TextInput(attrs={"type": "color"}),
         }
 
 
@@ -47,7 +50,17 @@ class LayersAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Описание", {"fields": ("name", "description")}),
-        ("Из файла", {"fields": ("from_file",)}),
+        (
+            "Из файла",
+            {
+                "fields": (
+                    "from_file",
+                    "default_geojson_opacity",
+                    "default_geojson_fill_color",
+                    "default_geojson_border_color",
+                ),
+            },
+        ),
         (
             "Из Zabbix",
             {
@@ -129,7 +142,9 @@ class MapsAdmin(admin.ModelAdmin):
                 """
 
         elif instance.type == "external":
-            text = f"<a href=\"{instance.map_url}\" target=\"_blank\">{instance.map_url}</a>"
+            text = (
+                f'<a href="{instance.map_url}" target="_blank">{instance.map_url}</a>'
+            )
 
         elif instance.type == "file":
             text = f"""
