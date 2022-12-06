@@ -334,7 +334,7 @@ class Huawei(BaseDevice):
         """
 
         errors = self.__port_info(port).split("\n")
-        return "\n".join([line.strip() for line in errors if "errors" in line])
+        return "\n".join([line.strip() for line in errors if "error" in line.lower() or "CRC" in line])
 
     def reload_port(self, port, save_config=True) -> str:
         """
