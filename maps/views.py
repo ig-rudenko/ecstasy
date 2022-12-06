@@ -220,7 +220,7 @@ def render_interactive_map(request, map_obj: Maps):
                     "properties": {
                         "defaultFillColor": layer.default_geojson_fill_color,
                         "defaultColor": layer.default_geojson_border_color,
-                        "defaultOpacity": layer.default_geojson_opacity
+                        "defaultOpacity": layer.default_geojson_opacity,
                     },
                     "features": {},
                 }

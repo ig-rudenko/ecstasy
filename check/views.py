@@ -154,9 +154,6 @@ def by_zabbix_hostid(request, hostid: str):
         raise Http404
 
     except (ValueError, TypeError, models.Devices.DoesNotExist) as exception:
-        if request.META.get("HTTP_REFERER"):
-            return HttpResponseRedirect(request.META.get("HTTP_REFERER") + "/zabbix")
-
         raise Http404 from exception
 
 
