@@ -64,6 +64,7 @@
 
 {#            ПЕРЕЗАГРУЗКА ПОРТА #}
           <div class="btn-group" role="group">
+          {% if perms >= 1 %}
               <span data-bs-toggle="modal" data-bs-target="#modal">
               <button type="button" class="btn" style="padding: 6px 6px 2px 6px"
                          onclick="update_modal(`{{ intf.name }}`, `{{ intf.desc }}`, `reload`)"
@@ -76,6 +77,7 @@
                 </svg>
               </button>
               </span>
+          {% endif %}
 
 {#                  Посмотреть МАКИ #}
               <a class="btn" style="padding: 6px 6px 2px 6px"
