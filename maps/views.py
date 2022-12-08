@@ -153,8 +153,9 @@ def zabbix_get(
                         """,
                         "group": group_name,
                         "figure": "circle",
+                        "iconName": current_layer.marker_icon_name,
                         "style": {
-                            "radius": current_layer.points_radius,
+                            "radius": current_layer.points_size,
                             "fillColor": current_layer.points_color,
                             "color": current_layer.points_border_color,
                             "weight": 1,
@@ -182,7 +183,6 @@ def render_interactive_map(request, map_obj: Maps):
     zbx_settings = ZabbixConfig.load()
 
     layers_data = []
-    # json_data = [ {"name": `layer_name`, "type": "zabbix", "features": {...} }, ...]
 
     with ZabbixAPI(server=zbx_settings.url) as z:
         z.login(user=zbx_settings.login, password=zbx_settings.password)
@@ -218,9 +218,17 @@ def render_interactive_map(request, map_obj: Maps):
                     "name": layer.name,
                     "type": "geojson",
                     "properties": {
-                        "defaultFillColor": layer.default_geojson_fill_color,
-                        "defaultColor": layer.default_geojson_border_color,
-                        "defaultOpacity": layer.default_geojson_opacity,
+                        "Polygon": {
+                            "FillColor": layer.polygon_fill_color,
+                            "Color": layer.polygon_border_color,
+                            "Opacity": layer.polygon_opacity,
+                        },
+                        "Marker": {
+                            "FillColor": layer.points_color,
+                            "BorderColor": layer.points_border_color,
+                            "Size": layer.points_size,
+                            "IconName": layer.marker_icon_name
+                        },
                     },
                     "features": {},
                 }

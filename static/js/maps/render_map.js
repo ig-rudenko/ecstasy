@@ -13,10 +13,6 @@ map.locate()
 map.fitWorld();
 
 
-// Скрываем contributors (правый нижний угол)
-// document.getElementsByClassName("leaflet-attribution-flag")[0].innerHTML = ""
-
-
 /* Переменная, используемая для хранения всех слоев, добавляемых на карту. */
 let layer_control = {
     base_layers: {
@@ -32,6 +28,19 @@ let points = new Map();
 let down_devices = new Map();
 
 let origin_devices_point_format = new Map();
+
+
+String.prototype.format = function () {
+  // store arguments in an array
+  var args = arguments;
+  // use replace to iterate over the string
+  // select the match and check if the related argument is present
+  // if yes, replace the match with the argument
+  return this.replace(/{([0-9]+)}/g, function (match, index) {
+    // check if the argument is present
+    return typeof args[index] == 'undefined' ? match : args[index];
+  });
+};
 
 
 /**
@@ -96,7 +105,7 @@ async function render_markers() {
 
         } else if (render_data[i].type === "geojson") {
 
-            // Цвет и непрозрачность по умолчанию
+            // Настройки по умолчанию для слоя
             let defaultSettings = render_data[i].properties
             // Коллекция
             let features = render_data[i].features.features
@@ -109,7 +118,7 @@ async function render_markers() {
                     createMarker(
                         features[j],
                         L.GeoJSON.coordsToLatLng(features[j].geometry.coordinates),
-                        defaultSettings
+                        defaultSettings.Marker
                     ).addTo(layer)
 
                 } else if (features[j].geometry.type === "LineString") {
@@ -117,14 +126,14 @@ async function render_markers() {
                     createPolyline(
                         features[j],
                         L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates),
-                        defaultSettings
+                        defaultSettings.Polygon
                     ).addTo(layer)
 
                 } else if (features[j].geometry.type === "Polygon") {
                     createPolygon(
                         features[j],
                         L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates[0]),
-                        defaultSettings
+                        defaultSettings.Polygon
                     ).addTo(layer)
                 }
             }
@@ -134,11 +143,11 @@ async function render_markers() {
 
 function createPolygon(feature, latlng, defaults) {
     let styleOptions = {
-        "fillColor": feature.properties["fill"] || defaults.defaultFillColor,
-        "color": feature.properties["stroke"] || defaults.defaultColor,
+        "fillColor": feature.properties["fill"] || defaults["FillColor"],
+        "color": feature.properties["stroke"] || defaults["BorderColor"],
         "weight": feature.properties["stroke-width"] || 2,
-        "opacity": feature.properties["stroke-opacity"] || defaults.defaultOpacity,
-        "fillOpacity": feature.properties["fill-opacity"] || defaults.defaultOpacity,
+        "opacity": feature.properties["stroke-opacity"] || defaults.Opacity,
+        "fillOpacity": feature.properties["fill-opacity"] || defaults.Opacity,
     }
 
     return L.polygon(latlng, styleOptions)
@@ -146,9 +155,9 @@ function createPolygon(feature, latlng, defaults) {
 
 function createPolyline(feature, latlng, defaults) {
     let styleOptions = {
-        "color": feature.properties.stroke || defaults.defaultColor,
+        "color": feature.properties.stroke || defaults.BorderColor,
         "weight": feature.properties["stroke-width"] || 2,
-        "fillOpacity": feature.properties["stroke-opacity"] || defaults.defaultOpacity,
+        "fillOpacity": feature.properties["stroke-opacity"] || defaults.Opacity,
     }
 
     return L.polyline(latlng, styleOptions)
@@ -156,26 +165,35 @@ function createPolyline(feature, latlng, defaults) {
 
 
 function createMarker(feature, latlng, defaults) {
-    let popup_text = feature.properties.description ||
-                     feature.properties.name ||
-                     ""
+    console.log(feature, defaults)
+    let popup_text = feature.properties.description
+
     let tooltip_text = feature.properties.iconCaption ||
                      feature.properties.name
 
     let fillColor = feature.properties["marker-color"] ||
                     feature.properties.fillColor ||
-                    feature.properties.color || defaults.defaultFillColor
+                    feature.properties.color || defaults["FillColor"]
 
-    let styleOptions = {
-        "radius": 7,
-        "fillColor": fillColor,
-        "color": fillColor,
-        "weight": 1,
+    let size = feature.properties.radius ||
+                 defaults["Size"]
+
+    let icon_name = feature.properties.iconName ||
+                    defaults["IconName"] || "circle-fill"
+
+    let svgIcon = L.divIcon({
+      html: MAP_ICONS[icon_name].format(size, fillColor, defaults["BorderColor"]),
+      className: "svg-icon",
+      // iconSize: [16, 16],
+      iconAnchor: [size / 2, size / 2],
+    });
+
+    let options = {
         "opacity": 1,
-        "fillOpacity": 1,
+        "icon": svgIcon
     }
 
-    let circle =  L.circleMarker(latlng, styleOptions);
+    let circle =  L.marker(latlng, options);
     if (popup_text) {
         circle.bindPopup(format_to_html(popup_text))
     }

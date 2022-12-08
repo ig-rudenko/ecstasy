@@ -33,26 +33,23 @@ class Layers(models.Model):
         help_text="Файл должен быть GEOJSON",
     )
 
-    default_geojson_opacity = models.FloatField(
+    polygon_opacity = models.FloatField(
         validators=[MinValueValidator(0), MaxValueValidator(1)],
         default=0.6,
-        verbose_name="Непрозрачность",
-        help_text="Вещественное число от 0 до 1"
-        "Для элементов из файла geojson, у которых не указана непрозрачность",
+        verbose_name="Непрозрачность полигона",
+        help_text="Вещественное число от 0 до 1",
     )
 
-    default_geojson_fill_color = models.CharField(
+    polygon_fill_color = models.CharField(
         max_length=7,
         default="#0074CC",
-        verbose_name="Цвет по умолчанию",
-        help_text="Для элементов из файла geojson, у которых не указан цвет в properties",
+        verbose_name="Цвет полигона",
     )
 
-    default_geojson_border_color = models.CharField(
+    polygon_border_color = models.CharField(
         max_length=7,
         default="#004c87",
-        verbose_name="Цвет рамок по умолчанию",
-        help_text="Для элементов из файла geojson, у которых не указан цвет рамок в properties",
+        verbose_name="Цвет рамок полигона",
     )
 
     zabbix_group_name = models.CharField(
@@ -67,19 +64,21 @@ class Layers(models.Model):
         max_length=10,
         default="#00CC00",
         verbose_name="Цвет маркера",
-        help_text="Для узла сети Zabbix",
     )
     points_border_color = models.CharField(
         max_length=10,
         default="#ffffff",
         verbose_name="Цвет рамки маркера",
-        help_text="Для узла сети Zabbix",
     )
-    points_radius = models.PositiveSmallIntegerField(
+    points_size = models.PositiveSmallIntegerField(
         default=7,
-        verbose_name="Радиус маркеров для",
-        help_text="Для узла сети Zabbix",
-        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        verbose_name="Размер маркера (px)",
+        validators=[MinValueValidator(2), MaxValueValidator(64)],
+    )
+    marker_icon_name = models.CharField(
+        max_length=100,
+        default="circle-fill",
+        verbose_name="Выберите иконку",
     )
 
     def __str__(self) -> str:
