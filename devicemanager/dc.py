@@ -155,8 +155,11 @@ class DeviceFactory:
 
         # Eltex LTP
         if "Eltex LTP" in version:
-            model = BaseDevice.find_or_empty(r"Eltex (\S+)", version)
-            return EltexLTP(self.session, self.ip, auth, model=model)
+            model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version)
+            if re.match(r"LTP-[48]X", model):
+                return EltexLTP(self.session, self.ip, auth, model=model)
+            elif "LTP-16N" in model:
+                return EltexLTP16N(self.session, self.ip, auth, model=model)
 
         # Eltex MES, ESR
         if "Active-image:" in version or "Boot version:" in version:
