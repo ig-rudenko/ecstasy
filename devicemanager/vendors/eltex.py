@@ -650,6 +650,21 @@ class EltexESR(EltexMES):
 
 
 class EltexLTP(BaseDevice):
+    """
+    # Для станционных терминалов GPON OLT - LTP-4X, LTP-8X
+
+    Станционные терминалы, предназначенные для связи с вышестоящим оборудованием
+    и организации широкополосного доступа по пассивным оптическим сетям.
+
+    Серия представлена терминалами LTP-4X и LTP-8X с внутренним Ethernet-коммутатором с функцией RSSI,
+    на четыре и восемь портов GPON соответственно.
+
+    Связь с сетями Ethernet реализуется посредством Gigabit uplink и 10G BASE-X интерфейсов,
+    для выхода в оптические сети служат интерфейсы GPON.
+
+    Каждый интерфейс PON позволяет подключить до 128 абонентских оптических терминалов по одному волокну,
+    динамическое распределение полосы DBA (dynamic bandwidth allocation).
+    """
 
     # Регулярное выражение, соответствующее началу для ввода следующей команды.
     prompt = r"\S+#\s*$"
@@ -1019,7 +1034,18 @@ class EltexLTP(BaseDevice):
 
 class EltexLTP16N(BaseDevice):
     """
-    Для станционного терминала LTP-16N(T)
+    # Для станционных терминалов GPON OLT - LTP-16N, LTP-16NT
+
+    OLT серии LTP – станционные терминалы, предназначенные для связи с вышестоящим оборудованием
+     и организации широкополосного доступа по пассивным оптическим сетям.
+
+    Серия представлена терминалами LTP-16N и LTP-16NT.
+
+    Связь с сетями Ethernet реализуется посредством 10G Base-X интерфейсов,
+    для выхода в оптические сети служат интерфейсы GPON.
+
+    Каждый интерфейс PON позволяет подключить до 128 абонентских оптических терминалов по одному волокну,
+     динамическое распределение полосы DBA (dynamic bandwidth allocation).
     """
 
     # Регулярное выражение, соответствующее началу для ввода следующей команды.
@@ -1035,28 +1061,6 @@ class EltexLTP16N(BaseDevice):
     def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP-16N"):
         super().__init__(session, ip, auth)
         self.model = model
-
-    def send_command(
-        self,
-        command: str,
-        before_catch: str = None,
-        expect_command=True,
-        num_of_expect=10,
-        space_prompt=None,
-        prompt=None,
-        pages_limit=None,
-        command_linesep="\r",
-    ) -> str:
-        return super().send_command(
-            command,
-            before_catch,
-            expect_command,
-            num_of_expect,
-            space_prompt,
-            prompt,
-            pages_limit,
-            command_linesep,
-        )
 
     def save_config(self) -> str:
         """
