@@ -193,7 +193,7 @@ class Maps(models.Model):
 
 
 @receiver(pre_save, sender=Maps)
-def update_file_for_layer(sender, instance: Maps, *args, **kwargs):
+def update_files_for_map(sender, instance: Maps, *args, **kwargs):
     try:
         # Он получает старый файл из базы данных.
         old_instance: Maps = sender.objects.get(id=instance.id)
@@ -227,8 +227,8 @@ def update_file_for_layer(sender, instance: Maps, *args, **kwargs):
 
 
 @receiver(post_delete, sender=Maps)
-def remove_file_for_layer(sender, instance: Maps, *args, **kwargs):
-    if os.path.exists(instance.preview_image.path):
+def remove_file_from_map(sender, instance: Maps, *args, **kwargs):
+    if instance.preview_image and os.path.exists(instance.preview_image.path):
         os.remove(instance.preview_image.path)
-    if os.path.exists(instance.from_file.path):
+    if instance.from_file and os.path.exists(instance.from_file.path):
         os.remove(instance.from_file.path)

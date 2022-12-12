@@ -11,6 +11,7 @@ from maps.models import Maps, Layers
 from app_settings.models import ZabbixConfig
 
 
+@login_required
 def map_home(request):
     return render(
         request,
