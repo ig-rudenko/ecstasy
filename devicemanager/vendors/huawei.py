@@ -290,7 +290,7 @@ class Huawei(BaseDevice):
 
         return self.send_command(f"display interface {_interface_normal_view(port)}")
 
-    def port_type(self, port) -> str:
+    def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
 
@@ -334,7 +334,13 @@ class Huawei(BaseDevice):
         """
 
         errors = self.__port_info(port).split("\n")
-        return "\n".join([line.strip() for line in errors if "error" in line.lower() or "CRC" in line])
+        return "\n".join(
+            [
+                line.strip()
+                for line in errors
+                if "error" in line.lower() or "CRC" in line
+            ]
+        )
 
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -416,7 +422,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    def port_config(self, port):
+    def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
 
@@ -606,6 +612,9 @@ class Huawei(BaseDevice):
             cable_test_data
         )  # Парсим полученные данные
 
+    def get_port_info(self, port: str) -> str:
+        return ""
+
 
 class HuaweiMA5600T(BaseDevice):
     """
@@ -733,7 +742,7 @@ class HuaweiMA5600T(BaseDevice):
     def save_config(self):
         pass
 
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 
@@ -1588,6 +1597,12 @@ class HuaweiMA5600T(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
+    def get_port_type(self, port: str) -> str:
+        return ""
+
+    def get_port_errors(self, port: str) -> str:
+        return ""
+
 
 class HuaweiCX600(BaseDevice):
     """
@@ -1691,4 +1706,16 @@ class HuaweiCX600(BaseDevice):
         pass
 
     def set_description(self, port: str, desc: str) -> str:
+        pass
+
+    def get_port_info(self, port: str) -> str:
+        pass
+
+    def get_port_type(self, port: str) -> str:
+        pass
+
+    def get_port_config(self, port: str) -> str:
+        pass
+
+    def get_port_errors(self, port: str) -> str:
         pass

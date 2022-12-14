@@ -265,7 +265,7 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 
@@ -289,7 +289,7 @@ class ZTE(BaseDevice):
 
         return port_config
 
-    def port_type(self, port: str) -> str:
+    def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
 
@@ -476,3 +476,6 @@ class ZTE(BaseDevice):
             result["status"] = result[f"pair1"]["status"].capitalize()
 
         return result
+
+    def get_port_info(self, port: str) -> str:
+        return ""

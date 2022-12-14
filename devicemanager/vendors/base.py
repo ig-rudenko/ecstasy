@@ -387,3 +387,19 @@ class BaseDevice(ABC):
     @abstractmethod
     def set_description(self, port: str, desc: str) -> str:
         """Изменяем описание порта"""
+
+    @abstractmethod
+    def get_port_info(self, port: str) -> str:
+        """Информация о порте"""
+
+    @abstractmethod
+    def get_port_type(self, port: str) -> str:
+        """Тип порта"""
+
+    @abstractmethod
+    def get_port_config(self, port: str) -> str:
+        """Конфигурация порта"""
+
+    @abstractmethod
+    def get_port_errors(self, port: str) -> str:
+        """Ошибки на порту"""

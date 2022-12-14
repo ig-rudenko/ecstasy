@@ -202,3 +202,15 @@ class Juniper(BaseDevice):
 
     def set_description(self, port: str, desc: str) -> str:
         pass
+
+    def get_port_info(self, port: str) -> str:
+        pass
+
+    def get_port_type(self, port: str) -> str:
+        pass
+
+    def get_port_config(self, port: str) -> str:
+        pass
+
+    def get_port_errors(self, port: str) -> str:
+        pass

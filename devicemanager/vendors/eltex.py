@@ -82,6 +82,18 @@ class EltexBase(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         pass
 
+    def get_port_info(self, port: str) -> str:
+        pass
+
+    def get_port_type(self, port: str) -> str:
+        pass
+
+    def get_port_config(self, port: str) -> str:
+        pass
+
+    def get_port_errors(self, port: str) -> str:
+        pass
+
 
 class EltexMES(BaseDevice):
     """
@@ -411,7 +423,7 @@ class EltexMES(BaseDevice):
         return self.send_command(f"show interfaces {port}").split("\n")
 
     @_validate_port()
-    def port_type(self, port) -> str:
+    def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
 
@@ -431,7 +443,7 @@ class EltexMES(BaseDevice):
         return "?"
 
     @_validate_port()
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 
@@ -1022,7 +1034,7 @@ class EltexLTP(BaseDevice):
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     @_validate_port()
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
@@ -1030,6 +1042,33 @@ class EltexLTP(BaseDevice):
             return self.send_command(f"show interface ont {port_number} configuration")
 
         return ""
+
+    @_validate_port(if_invalid_return="?")
+    def get_port_type(self, port: str) -> str:
+        port_type, number = port.split()
+        if port_type in ("10G-front-port", "pon-port"):
+            return "SFP"
+
+        self.session.send("switch\r")
+        self.session.expect(self.prompt)
+
+        media_type = self.find_or_empty(
+            r"Media:\s+(\S+)",
+            self.send_command(
+                f"show interfaces detailed status {port_type} {number}",
+                expect_command=False,
+            ),
+        )
+
+        if media_type == "none":
+            media_type = ""
+
+        if "8X" in self.model and int(number) > 3:
+            return "COMBO-" + media_type.upper()
+        elif "8X" in self.model and int(number) <= 3:
+            return "COPPER"
+        else:
+            return "SFP"
 
 
 class EltexLTP16N(BaseDevice):
@@ -1356,11 +1395,19 @@ class EltexLTP16N(BaseDevice):
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     @_validate_port()
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
             # Для порта ONT вида - `0/1`
             return self.send_command(f"show interface ont {port_number} configuration")
 
+        return ""
+
+    @_validate_port(if_invalid_return="?")
+    def get_port_type(self, port: str) -> str:
+        return "SFP"
+
+    @_validate_port()
+    def get_port_errors(self, port: str) -> str:
         return ""

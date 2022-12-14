@@ -57,6 +57,18 @@ class IskratelControl(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         pass
 
+    def get_port_info(self, port: str) -> str:
+        pass
+
+    def get_port_type(self, port: str) -> str:
+        pass
+
+    def get_port_config(self, port: str) -> str:
+        pass
+
+    def get_port_errors(self, port: str) -> str:
+        pass
+
 
 class IskratelMBan(BaseDevice):
     """
@@ -479,3 +491,12 @@ class IskratelMBan(BaseDevice):
         return self.send_command(
             f"set dsl port {port} profile {profile_index}", expect_command=False
         )
+
+    def get_port_type(self, port: str) -> str:
+        pass
+
+    def get_port_config(self, port: str) -> str:
+        pass
+
+    def get_port_errors(self, port: str) -> str:
+        pass

@@ -276,7 +276,7 @@ class EdgeCore(BaseDevice):
         return "<br>".join(self.__get_port_info(port).strip().split("\n"))
 
     @_validate_port()
-    def port_type(self, port: str) -> str:
+    def get_port_type(self, port: str) -> str:
         """
         # Возвращает тип порта
 
@@ -304,7 +304,7 @@ class EdgeCore(BaseDevice):
         return port_type_result
 
     @_validate_port()
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 

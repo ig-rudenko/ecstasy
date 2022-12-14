@@ -358,21 +358,11 @@ def device_info(request, name: str):
 
         if status is None:  # Если статус сбора интерфейсов успешный
             # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
-            try:
-                # Смотрим объект у которого такие логин и пароль
-                success_auth_obj = models.AuthGroup.objects.get(
-                    login=dev.success_auth["login"],
-                    password=dev.success_auth["password"],
-                )
-
-            except (TypeError, ValueError, models.AuthGroup.DoesNotExist):
-                # Если нет такого объекта, значит нужно создать
-                success_auth_obj = models.AuthGroup.objects.create(
-                    name=dev.success_auth["login"],
-                    login=dev.success_auth["login"],
-                    password=dev.success_auth["password"],
-                    secret=dev.success_auth["privilege_mode_password"],
-                )
+            # Смотрим объект у которого такие логин и пароль
+            success_auth_obj = models.AuthGroup.objects.get(
+                login=dev.success_auth["login"],
+                password=dev.success_auth["password"],
+            )
 
             # Указываем новый логин/пароль для этого устройства
             model_dev.auth_group = success_auth_obj
@@ -543,17 +533,13 @@ def get_port_detail(request):
                 macs_tbody = render_to_string("check/macs_table.html", data)
                 return JsonResponse({"macs": macs_tbody})
 
-            if hasattr(session, "get_port_info"):
-                data["port_info"] = session.get_port_info(data["port"])
+            data["port_info"] = session.get_port_info(data["port"])
 
-            if hasattr(session, "port_type"):
-                data["port_type"] = session.port_type(data["port"])
+            data["port_type"] = session.get_port_type(data["port"])
 
-            if hasattr(session, "port_config"):
-                data["port_config"] = session.port_config(data["port"])
+            data["port_config"] = session.get_port_config(data["port"])
 
-            if hasattr(session, "get_port_errors"):
-                data["port_errors"] = session.get_port_errors(data["port"])
+            data["port_errors"] = session.get_port_errors(data["port"])
 
             if hasattr(session, "virtual_cable_test"):
                 data["cable_test"] = "has"

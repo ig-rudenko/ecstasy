@@ -242,7 +242,7 @@ class Qtech(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).split("\n")[:10])
 
-    def port_type(self, port):
+    def get_port_type(self, port):
         """
         ## Возвращает тип порта
 
@@ -278,7 +278,7 @@ class Qtech(BaseDevice):
 
         return "\n".join(result)
 
-    def port_config(self, port):
+    def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
 

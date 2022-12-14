@@ -287,7 +287,7 @@ class Cisco(BaseDevice):
         return "<p>" + "<br>".join(port_type[1:]) + "</p>"
 
     @_validate_port()
-    def port_type(self, port: str) -> str:
+    def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
 
@@ -352,7 +352,7 @@ class Cisco(BaseDevice):
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @_validate_port()
-    def port_config(self, port: str) -> str:
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 

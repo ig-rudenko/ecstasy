@@ -166,25 +166,34 @@ function createPolyline(feature, latlng, defaults) {
 
 function createMarker(feature, latlng, defaults) {
     console.log(feature, defaults)
-    let popup_text = feature.properties.description
 
-    let tooltip_text = feature.properties.iconCaption ||
-                     feature.properties.name
+    let popup_text = null
+    let tooltip_text = null
+    let fillColor = defaults["FillColor"]
+    let size = defaults["Size"]
+    let icon_name = defaults["IconName"] || "circle-fill"
 
-    let fillColor = feature.properties["marker-color"] ||
-                    feature.properties.fillColor ||
-                    feature.properties.color || defaults["FillColor"]
+    if (feature.properties) {
+        popup_text = feature.properties.description
 
-    let size = feature.properties.radius ||
-                 defaults["Size"]
+        tooltip_text = feature.properties.iconCaption ||
+                         feature.properties.name
 
-    let icon_name = feature.properties.iconName ||
-                    defaults["IconName"] || "circle-fill"
+        fillColor = feature.properties["marker-color"] ||
+                        feature.properties.fillColor ||
+                        feature.properties.color || defaults["FillColor"]
+
+        size = feature.properties.radius ||
+                     defaults["Size"]
+
+        icon_name = feature.properties.iconName ||
+                        defaults["IconName"] || "circle-fill"
+    }
 
     let svgIcon = L.divIcon({
       html: MAP_ICONS[icon_name].format(size, fillColor, defaults["BorderColor"]),
       className: "svg-icon",
-      // iconSize: [16, 16],
+      iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
     });
 

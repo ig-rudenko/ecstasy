@@ -540,3 +540,12 @@ class Dlink(BaseDevice):
                     result[f"pair{i}"]["len"] = pair_n[1]  # Длина
 
         return result
+
+    def get_port_info(self, port: str) -> str:
+        return ""
+
+    def get_port_type(self, port: str) -> str:
+        return ""
+
+    def get_port_config(self, port: str) -> str:
+        return ""

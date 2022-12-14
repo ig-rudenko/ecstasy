@@ -6,7 +6,6 @@
 import re
 import json
 from typing import Any, List
-from functools import singledispatchmethod
 from concurrent.futures import ThreadPoolExecutor
 
 from ping3 import ping as socket_ping
