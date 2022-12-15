@@ -23,3 +23,5 @@ static/map_previews
 static/docs
 templates/maps/external
 static/admin
+appmap.yml
+tmp

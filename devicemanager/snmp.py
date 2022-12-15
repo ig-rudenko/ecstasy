@@ -100,8 +100,3 @@ def show_interfaces(
             )
         )
     return result
-
-
-snmp_interface_status_help = """
-
-"""

@@ -17,8 +17,13 @@ from geopy.geocoders import Nominatim
 
 from . import snmp
 from .dc import DeviceFactory
-from .exceptions import AuthException, TelnetConnectionError, TelnetLoginError
-from .vendors.base import range_to_numbers, BaseDevice
+from .exceptions import (
+    AuthException,
+    TelnetConnectionError,
+    TelnetLoginError,
+    UnknownDeviceError,
+)
+from .vendors.base import range_to_numbers
 from .zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -714,7 +719,7 @@ class Device:
                     else:
                         self.interfaces = Interfaces(session.get_interfaces())
 
-            except (TelnetConnectionError, TelnetLoginError) as e:
+            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
                 return str(e)
 
     def __str__(self):

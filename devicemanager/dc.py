@@ -5,7 +5,7 @@
 import re
 import pexpect
 from .vendors import *
-from .exceptions import TelnetConnectionError, TelnetLoginError
+from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceError
 
 
 class DeviceFactory:
@@ -248,7 +248,7 @@ class DeviceFactory:
         if "unknown keyword show" in version:
             return Juniper(self.session, self.ip, auth)
 
-        return "Не удалось распознать оборудование"
+        raise UnknownDeviceError("Модель оборудования не была распознана")
 
     def __login_to_by_telnet(
         self, login: str, password: str, timeout: int, pre_expect_index=None

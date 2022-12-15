@@ -24,7 +24,13 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
-from devicemanager.exceptions import TelnetConnectionError, TelnetLoginError
+from .paginator import ValidPaginator
+
+from devicemanager.exceptions import (
+    TelnetConnectionError,
+    TelnetLoginError,
+    UnknownDeviceError,
+)
 from net_tools.models import VlanName, DevicesInfo
 from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
@@ -179,12 +185,6 @@ def show_devices(request):
     filter_by_vendor = request.GET.get("vendor", "")
     vendor_param = f"&vendor={filter_by_vendor}" if filter_by_vendor else ""
 
-    page = request.GET.get("page", 1)
-    try:
-        page = int(page)
-    except (ValueError, TypeError):
-        page = 1
-
     # Группы оборудования, доступные текущему пользователю
     user_groups_ids = []
     user_groups_names = []
@@ -232,12 +232,8 @@ def show_devices(request):
 
     devs = models.Devices.objects.filter(query)
 
-    paginator = Paginator(devs, per_page=50)
-
-    if page < 1:
-        page = 1
-    elif page > paginator.num_pages:
-        page = paginator.num_pages
+    paginator = ValidPaginator(devs, per_page=50)
+    page = paginator.validate_number(request.GET.get("page", 1))
 
     return render(
         request,
@@ -338,7 +334,7 @@ def device_info(request, name: str):
         )
 
         if status is None:  # Если статус сбора интерфейсов успешный
-            # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
+            # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной.
             # Смотрим объект у которого такие логин и пароль
             success_auth_obj = models.AuthGroup.objects.get(
                 login=dev.success_auth["login"],
@@ -526,7 +522,7 @@ def get_port_detail(request):
                 if hasattr(session, "virtual_cable_test"):
                     data["cable_test"] = "has"
 
-        except (TelnetConnectionError, TelnetLoginError):
+        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError):
             pass
 
         if request.GET.get("ajax") == "all":
@@ -660,6 +656,9 @@ def reload_port(request):
     except TelnetLoginError:
         message = "Неверный Логин/Пароль "
         color = color_error
+    except UnknownDeviceError:
+        message = "Неизвестный тип оборудования "
+        color = color_error
 
     if "Saved Error" in port_change_status:
         config_status = " Конфигурация НЕ была сохранена"
@@ -735,7 +734,7 @@ def show_session(request):
         and request.GET.get("device")
         and request.GET.get("port")
     ):
-        mac_letters = re.findall(r"[\w\d]", request.GET["mac"])
+        mac_letters = re.findall(r"\w", request.GET["mac"])
         if len(mac_letters) == 12:
 
             mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_letters)
@@ -830,7 +829,7 @@ def cut_user_session(request):
         and request.POST.get("device")
         and request.POST.get("port")
     ):
-        mac_letters = re.findall(r"[\w\d]", request.POST["mac"])
+        mac_letters = re.findall(r"\w", request.POST["mac"])
 
         dev = Device(request.POST["device"])
         model_dev = get_object_or_404(models.Devices, name=dev.name)
@@ -893,7 +892,7 @@ def cut_user_session(request):
                         model_dev,
                         f'reload port {request.POST["port"]} \n{reload_port_status}',
                     )
-            except (TelnetConnectionError, TelnetLoginError) as e:
+            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
                 status = f"Сессия сброшена, но порт не был перезагружен! {e}"
                 status_color = color_error
 
@@ -932,7 +931,8 @@ def set_description(request):
                 else:
                     set_description_status = "Недоступно для данного оборудования"
                     status = "warning"  # Описание цветовой палитры для bootstrap
-        except (TelnetConnectionError, TelnetLoginError) as e:
+
+        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
             return JsonResponse(
                 {
                     "status": "danger",
@@ -945,7 +945,7 @@ def set_description(request):
 
         # Проверяем результат изменения описания
         if "Max length" in set_description_status:
-            # Описание слишком длинное
+            # Описание слишком длинное.
             # Находим в строке "Max length:32" число "32"
             max_length = set_description_status.split(":")[1]
             if max_length.isdigit():
@@ -1001,7 +1001,7 @@ def start_cable_diag(request) -> (JsonResponse, HttpResponseForbidden):
                         cable_test = session.virtual_cable_test(request.GET["port"])
                         if cable_test:  # Если имеются данные
                             data["cable_test"] = cable_test
-            except (TelnetConnectionError, TelnetLoginError):
+            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError):
                 pass
 
         return JsonResponse(data)
@@ -1051,5 +1051,5 @@ def change_adsl_profile(request) -> JsonResponse:
                     {"error": "Device can't change profile"}, status=400
                 )
 
-    except (TelnetLoginError, TelnetConnectionError) as e:
+    except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
         return JsonResponse({"error": str(e)}, status=400)
