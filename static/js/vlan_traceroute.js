@@ -1,3 +1,6 @@
+/**
+ * Он загружает содержимое страницы /tools/ajax/vlantraceroute в div с включенным идентификаторомContent.
+ */
 function show_map() {
     let vlan = document.getElementById('vlan').value;
     let empty_ports = document.getElementById('empty-ports').checked;
@@ -55,7 +58,7 @@ let vlan_map = document.getElementById('includedContent');
 let collapse_screen = document.getElementById('collapseScreen');
 let network_map
 
-// развернуть
+// Кнопка развернуть на весь экран
 document.getElementById("fullScreenButton").onclick = function show_full_screen () {
     vlan_map.classList.add('fullScreen');
     vlan_map.style.height = '100%';
@@ -63,7 +66,7 @@ document.getElementById("fullScreenButton").onclick = function show_full_screen 
     collapse_screen.style.display = 'block';
 }
 
-// свернуть
+// Кнопка свернуть
 document.getElementById("collapseScreenButton").onclick = function show_collapse_screen () {
     vlan_map.classList.remove('fullScreen');
     vlan_map.style.height = '500px';

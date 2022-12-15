@@ -14,6 +14,9 @@ let device_name = $('#id-device_name')[0].value
 let device_port_desc = $('#id-desc')[0].value
 
 
+/**
+ * Отправляет запрос на сервер, а затем обновляет таблицу полученными данными
+ */
 function get_macs() {
 
     if ( document.getElementById('auto-update-macs').checked ) {

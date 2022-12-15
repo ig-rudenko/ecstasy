@@ -1,5 +1,4 @@
 
-
 async function update_status() {
     let response = await fetch(
         window.location.href + "/api/update",
@@ -91,10 +90,10 @@ async function update_status() {
             }
         }
 
-
+        /* Создание списка host_id устройств, которые раньше были отключены, но теперь включены. */
         let restored_devices_hostid_list = Array.from(before_down_devices_points.keys())
 
-        // Восстанавливаем узлы сети
+        /* Восстановление устройств, которые раньше были отключены, а теперь работают. */
         for (let i = 0; i < restored_devices_hostid_list.length; i++) {
             let host_id = restored_devices_hostid_list[i]
 

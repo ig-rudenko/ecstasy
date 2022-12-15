@@ -1,3 +1,4 @@
+/* Словарь иконок SVG. */
 const MAP_ICONS = {
     "circle-fill": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" class="bi bi-circle-fill" viewBox="0 0 16 16">
           <circle cx="8" cy="8" r="7" stroke="{2}" />

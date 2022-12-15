@@ -1,4 +1,7 @@
-
+/**
+ * Он принимает строку и тип поиска, а затем отправляет запрос AJAX на сервер.
+ * @param find_type - Тип выполняемого поиска.
+ */
 function start_find (find_type) {
     let find_str = document.getElementById('find_str').value;
     if (!find_str){return}
@@ -14,6 +17,7 @@ function start_find (find_type) {
     $('#search-menu').prop('disabled', true);
     $('#find_str').prop('disabled', true);
 
+    /* Отправка ajax-запроса на сервер. */
     $.ajax({
         data: {
             'string': find_str,
@@ -29,6 +33,5 @@ function start_find (find_type) {
         error: function (response) {
             descriptions.html(response);
         }
-    }
-    )
+    });
 }

@@ -1,3 +1,6 @@
+/**
+ * Он делает запрос AJAX к текущему URL-адресу и заменяет содержимое элемента `#interfaces-table` ответом.
+ */
 function get_interfaces() {
     let request_url = window.location.href
 

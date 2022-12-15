@@ -1,3 +1,9 @@
+/**
+ * Он делает AJAX-запрос к тому же URL-адресу, что и текущая страница, но с добавленным параметром ajax=1.
+ * Затем ответ используется для замены содержимого элемента `#interfaces-table`
+ * @param [first=false] - Это логическое значение, которое используется для определения того, вызывается ли функция
+ * впервые.
+ */
 function get_interfaces(first=false) {
 
     if ( document.getElementById('auto-update-interfaces').checked || first) {
@@ -27,10 +33,10 @@ function get_interfaces(first=false) {
 
 }
 
-    // Повторный сбор интерфейсов через 20 секунд
-    function interface_timer() {
-        setTimeout(get_interfaces, 20000);
-    }
+// Повторный сбор интерфейсов через 20 секунд
+function interface_timer() {
+    setTimeout(get_interfaces, 20000);
+}
 
 // ЗАПРОС ИНТЕРФЕЙСОВ
 get_interfaces(true);

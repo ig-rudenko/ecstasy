@@ -1,24 +1,22 @@
 let mybutton = document.getElementById("btn-back-to-top");
 
-// When the user scrolls down 20px from the top of the document, show the button
+/**
+ * Если пользователь прокручивает документ на 100 пикселей вниз, показывает кнопку.
+ * В противном случае скрывает
+ */
 window.onscroll = function () {
-  scrollFunction();
-};
-
-function scrollFunction() {
   if (
-    document.body.scrollTop > 50 ||
-    document.documentElement.scrollTop > 50
+    document.body.scrollTop > 100 ||
+    document.documentElement.scrollTop > 100
   ) {
     mybutton.style.display = "block";
   } else {
     mybutton.style.display = "none";
   }
-}
-// When the user clicks on the button, scroll to the top of the document
-mybutton.addEventListener("click", backToTop);
+};
 
-function backToTop() {
+/* При нажатии кнопки вызывается функция страница прокручивается вверх. */
+mybutton.addEventListener("click", function () {
   document.body.scrollTop = 0;
   document.documentElement.scrollTop = 0;
-}
+});

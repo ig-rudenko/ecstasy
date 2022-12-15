@@ -1,5 +1,11 @@
 let session_data = $('#brases-data')
 
+/**
+ * Он делает вызов AJAX на сервер, а затем обновляет HTML div session_data ответом.
+ * @param mac - MAC-адрес устройства
+ * @param device_name - Имя устройства, для которого вы хотите получить данные сеанса.
+ * @param port - Номер порта устройства, для которого вы хотите получить данные сеанса.
+ */
 function get_session(mac, device_name, port){
     let data = {
         mac: mac,
@@ -19,6 +25,13 @@ function get_session(mac, device_name, port){
     });
 }
 
+/**
+ * Отправляет POST-запрос на сервер с данными устройства, порта и MAC адресом абонента, который необходимо сбросить.
+ * @param mac - MAC-адрес абонента
+ * @param device_name - Название оборудования
+ * @param port - Номер порта оборудования
+ * @param desc - Описание порта оборудования
+ */
 function cut_session(mac, device_name, port, desc){
     let data = {
         mac: mac,
@@ -54,6 +67,4 @@ function cut_session(mac, device_name, port, desc){
 
         }
     });
-
-
 }
