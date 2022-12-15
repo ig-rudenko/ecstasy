@@ -10,6 +10,7 @@ from datetime import datetime
 import pexpect
 import ping3
 
+import django.db.utils
 from django.urls import reverse
 from django.http import (
     HttpResponseForbidden,
@@ -20,7 +21,6 @@ from django.http import (
 )
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
 from django.db.models import Q
-from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
@@ -39,13 +39,14 @@ from devicemanager import *
 from devicemanager.vendors.base import MACList
 from . import models
 
-# Устанавливаем конфигурацию для работы с devicemanager
-Config.set(ZabbixConfig.load())
+try:
+    # Устанавливаем конфигурацию для работы с devicemanager
+    Config.set(ZabbixConfig.load())
+except django.db.utils.OperationalError:
+    pass
 
 
-def log(
-    user: models.User, model_device: (models.Devices, models.Bras), operation: str
-) -> None:
+def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
     """
     ## Записывает логи о действиях пользователя
 
