@@ -5,6 +5,7 @@
 import re
 import pexpect
 from .vendors import *
+from .exceptions import TelnetConnectionError, TelnetLoginError
 
 
 class DeviceFactory:
@@ -52,7 +53,7 @@ class DeviceFactory:
             self.password = [auth_obj.password] or ["admin"]
             self.privilege_mode_password = auth_obj.secret or "enable"
 
-    def send_command(self, command: str):
+    def send_command(self, command: str) -> str:
         """
         # Простой метод для отправки команды с постраничной записью вывода результата
         """
@@ -80,7 +81,7 @@ class DeviceFactory:
                 break
         return version
 
-    def get_device(self):
+    def get_device(self) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
 
@@ -255,70 +256,68 @@ class DeviceFactory:
 
         login_try = 1
 
-        try:
-            while True:
-                # Ловим команды
-                if pre_expect_index is not None:
-                    expect_index = pre_expect_index
-                    pre_expect_index = None
+        while True:
+            # Ловим команды
+            if pre_expect_index is not None:
+                expect_index = pre_expect_index
+                pre_expect_index = None
 
-                else:
-                    expect_index = self.session.expect(
-                        self.authentication_expect, timeout=timeout
-                    )
+            else:
+                expect_index = self.session.expect(
+                    self.authentication_expect, timeout=timeout
+                )
 
-                print(expect_index)
+            print(expect_index)
 
-                # Login
-                if expect_index == 0:
+            # Login
+            if expect_index == 0:
 
-                    if login_try > 1:
-                        print("login ", login_try)
-                        # Если это вторая попытка ввода логина, то предыдущий был неверный
-                        return f"Неверный логин или пароль! ({self.ip})"
+                if login_try > 1:
+                    print("login ", login_try)
+                    # Если это вторая попытка ввода логина, то предыдущий был неверный
+                    return f"Неверный логин или пароль! ({self.ip})"
 
-                    self.session.send(login + "\r")  # Вводим логин
-                    login_try += 1
-                    continue
+                self.session.send(login + "\r")  # Вводим логин
+                login_try += 1
+                continue
 
-                # Password
-                if expect_index == 1:
-                    self.session.send(password + "\r")  # Вводим пароль
-                    continue
+            # Password
+            if expect_index == 1:
+                self.session.send(password + "\r")  # Вводим пароль
+                continue
 
-                # PROMPT
-                if expect_index == 2:  # Если был поймал символ начала ввода команды
-                    return "Connected"
+            # PROMPT
+            if expect_index == 2:  # Если был поймал символ начала ввода команды
+                return "Connected"
 
-                # TELNET FAIL
-                if expect_index == 3:
-                    return f"Telnet недоступен! ({self.ip})"
+            # TELNET FAIL
+            if expect_index == 3:
+                raise TelnetConnectionError(f"Telnet недоступен! ({self.ip})")
 
-                # Press any key to continue
-                if (
-                    expect_index == 4
-                ):  # Если необходимо нажать любую клавишу, чтобы продолжить
-                    self.session.send(" ")
-                    self.session.send(login + "\r")  # Вводим логин
-                    self.session.send(password + "\r")  # Вводим пароль
-                    self.session.expect(r"[#>\]]\s*")
+            # Press any key to continue
+            if (
+                expect_index == 4
+            ):  # Если необходимо нажать любую клавишу, чтобы продолжить
+                self.session.send(" ")
+                self.session.send(login + "\r")  # Вводим логин
+                self.session.send(password + "\r")  # Вводим пароль
+                self.session.expect(r"[#>\]]\s*")
 
-                # Timeout or some unexpected error happened on server host' - Ошибка радиуса
-                elif expect_index == 5:
-                    login_try = 1
-                    continue  # Вводим те же данные еще раз
+            # Timeout or some unexpected error happened on server host' - Ошибка радиуса
+            elif expect_index == 5:
+                login_try = 1
+                continue  # Вводим те же данные еще раз
 
-                # The password needs to be changed
-                if expect_index == 6:
-                    self.session.sendline("N")  # Не меняем пароль, когда спрашивает
-                    continue
+            # The password needs to be changed
+            if expect_index == 6:
+                self.session.sendline("N")  # Не меняем пароль, когда спрашивает
+                continue
 
-                break
+            break
 
-        except pexpect.exceptions.TIMEOUT:
-            return f"Login Error: Время ожидания превышено! ({self.ip})"
-
-    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30):
+    def __enter__(
+        self, algorithm: str = "", cipher: str = "", timeout: int = 30
+    ) -> BaseDevice:
         """
         ## При входе в контекстный менеджер подключаемся к оборудованию
         """
@@ -414,14 +413,8 @@ class DeviceFactory:
                     pre_set_index = 0  # Следующий ввод будет логином
                     continue
 
-                if (
-                    "Telnet недоступен" in status
-                    or "Время ожидания превышено" in status
-                ):
-                    return status
-
             else:
-                return status
+                raise TelnetLoginError(status)
 
         return self.get_device()
 

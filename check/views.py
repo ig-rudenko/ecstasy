@@ -24,6 +24,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
+from devicemanager.exceptions import TelnetConnectionError, TelnetLoginError
 from net_tools.models import VlanName, DevicesInfo
 from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
@@ -286,27 +287,6 @@ def device_info(request, name: str):
     # Вместе с VLAN?
     with_vlans = False if dev.protocol == "snmp" else request.GET.get("vlans") == "1"
 
-    # Elastic Stack settings
-    elastic_settings = LogsElasticStackSettings.load()
-    if elastic_settings.is_set():
-        try:
-            # Форматируем строку поиска логов
-            query_str = elastic_settings.query_str.format(device=model_dev)
-        except AttributeError:
-            query_str = ""
-
-        # Формируем ссылку для kibana
-        logs_url = (
-            f"{elastic_settings.kibana_url}?_g=(filters:!(),refreshInterval:(pause:!t,value:0),"
-            f"time:(from:now-{elastic_settings.time_range},to:now))"
-            f"&_a=(columns:!({elastic_settings.output_columns}),interval:auto,"
-            f"query:(language:{elastic_settings.query_lang},"
-            f"query:'{query_str}'),"
-            f"sort:!(!('{elastic_settings.time_field}',desc)))"
-        )
-    else:
-        logs_url = ""
-
     # Время последнего обновления интерфейсов
     last_interface_update = None
     if not current_status:
@@ -325,7 +305,8 @@ def device_info(request, name: str):
     data = {
         "dev": dev,
         "ping": ping,
-        "logs_url": logs_url,
+        # Создание URL-адреса для запроса журналов Kibana.
+        "logs_url": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
         "zabbix_host_id": dev.zabbix_info.hostid,
         "current_status": current_status,
         "last_interface_update": last_interface_update,
@@ -508,48 +489,52 @@ def get_port_detail(request):
             log(request.user, model_dev, f'show mac\'s port {data["port"]}')
             return render(request, "check/port_page.html", data)
 
-        # Подключаемся к оборудованию
-        with model_dev.connect() as session:
+        try:
+            # Подключаемся к оборудованию
+            with model_dev.connect() as session:
 
-            data["macs"] = []  # Итоговый список
-            vlan_passed = {}  # Словарь уникальных VLAN
-            for vid, mac in session.get_mac(data["port"]):  # Смотрим VLAN и MAC
+                data["macs"] = []  # Итоговый список
+                vlan_passed = {}  # Словарь уникальных VLAN
+                for vid, mac in session.get_mac(data["port"]):  # Смотрим VLAN и MAC
 
-                # Если еще не искали такой VLAN
-                if vid not in vlan_passed:
-                    # Ищем название VLAN'a
-                    try:
-                        vlan_name = VlanName.objects.get(vid=int(vid)).name
-                    except (ValueError, VlanName.DoesNotExist):
-                        vlan_name = ""
-                    # Добавляем в множество вланов, которые участвовали в поиске имени
-                    vlan_passed[vid] = vlan_name
+                    # Если еще не искали такой VLAN
+                    if vid not in vlan_passed:
+                        # Ищем название VLAN'a
+                        try:
+                            vlan_name = VlanName.objects.get(vid=int(vid)).name
+                        except (ValueError, VlanName.DoesNotExist):
+                            vlan_name = ""
+                        # Добавляем в множество вланов, которые участвовали в поиске имени
+                        vlan_passed[vid] = vlan_name
 
-                # Обновляем
-                data["macs"].append([vid, mac, vlan_passed[vid]])
+                    # Обновляем
+                    data["macs"].append([vid, mac, vlan_passed[vid]])
 
-            # Отправляем JSON, если вызов AJAX = mac
-            if request.GET.get("ajax") == "mac":
-                macs_tbody = render_to_string("check/macs_table.html", data)
-                return JsonResponse({"macs": macs_tbody})
+                # Отправляем JSON, если вызов AJAX = mac
+                if request.GET.get("ajax") == "mac":
+                    macs_tbody = render_to_string("check/macs_table.html", data)
+                    return JsonResponse({"macs": macs_tbody})
 
-            data["port_info"] = session.get_port_info(data["port"])
+                data["port_info"] = session.get_port_info(data["port"])
 
-            data["port_type"] = session.get_port_type(data["port"])
+                data["port_type"] = session.get_port_type(data["port"])
 
-            data["port_config"] = session.get_port_config(data["port"])
+                data["port_config"] = session.get_port_config(data["port"])
 
-            data["port_errors"] = session.get_port_errors(data["port"])
+                data["port_errors"] = session.get_port_errors(data["port"])
 
-            if hasattr(session, "virtual_cable_test"):
-                data["cable_test"] = "has"
+                if hasattr(session, "virtual_cable_test"):
+                    data["cable_test"] = "has"
 
-            if request.GET.get("ajax") == "all":
-                # Отправляем все собранные данные
-                data["macs"] = render_to_string("check/macs_table.html", data)
-                del data["dev"]
-                del data["perms"]
-                return JsonResponse(data)
+        except (TelnetConnectionError, TelnetLoginError):
+            pass
+
+        if request.GET.get("ajax") == "all":
+            # Отправляем все собранные данные
+            data["macs"] = render_to_string("check/macs_table.html", data)
+            del data["dev"]
+            del data["perms"]
+            return JsonResponse(data)
 
     return HttpResponseNotAllowed(["GET"])
 
@@ -645,27 +630,36 @@ def reload_port(request):
                 "color": color_warning,
             }
         )
+
     port_change_status = "Не выполнили действие"
-    # Теперь наконец можем подключиться к оборудованию :)
-    with model_dev.connect() as session:
-        try:
-            # Перезагрузка порта
-            if status == "reload":
-                port_change_status = session.reload_port(
-                    port=port, save_config=save_config
-                )
-                message = f"Порт {port} был перезагружен!"
+    try:
+        # Теперь наконец можем подключиться к оборудованию :)
+        with model_dev.connect() as session:
+            try:
+                # Перезагрузка порта
+                if status == "reload":
+                    port_change_status = session.reload_port(
+                        port=port, save_config=save_config
+                    )
+                    message = f"Порт {port} был перезагружен!"
 
-            # UP and DOWN
-            else:
-                port_change_status = session.set_port(
-                    port=port, status=status, save_config=save_config
-                )
-                message = f"Порт {port} был переключен в состояние {status}!"
+                # UP and DOWN
+                else:
+                    port_change_status = session.set_port(
+                        port=port, status=status, save_config=save_config
+                    )
+                    message = f"Порт {port} был переключен в состояние {status}!"
 
-        except pexpect.TIMEOUT:
-            message = "Timeout"
-            color = color_error
+            except pexpect.TIMEOUT:
+                message = "Timeout"
+                color = color_error
+
+    except TelnetConnectionError:
+        message = "Telnet недоступен "
+        color = color_error
+    except TelnetLoginError:
+        message = "Неверный Логин/Пароль "
+        color = color_error
 
     if "Saved Error" in port_change_status:
         config_status = " Конфигурация НЕ была сохранена"
@@ -883,21 +877,25 @@ def cut_user_session(request):
                 except pexpect.TIMEOUT:
                     status += bras.name + " timeout\n"  # Кто был недоступен
 
-            with model_dev.connect() as session:
-                # Перезагружаем порт без сохранения конфигурации
-                reload_port_status = session.reload_port(
-                    request.POST["port"], save_config=False
-                )
+            try:
+                with model_dev.connect() as session:
+                    # Перезагружаем порт без сохранения конфигурации
+                    reload_port_status = session.reload_port(
+                        request.POST["port"], save_config=False
+                    )
 
-                status += reload_port_status
-                status_color = color_success  # Успех
+                    status += reload_port_status
+                    status_color = color_success  # Успех
 
-                # Логи
-                log(
-                    request.user,
-                    model_dev,
-                    f'reload port {request.POST["port"]} \n{reload_port_status}',
-                )
+                    # Логи
+                    log(
+                        request.user,
+                        model_dev,
+                        f'reload port {request.POST["port"]} \n{reload_port_status}',
+                    )
+            except (TelnetConnectionError, TelnetLoginError) as e:
+                status = f"Сессия сброшена, но порт не был перезагружен! {e}"
+                status_color = color_error
 
     return JsonResponse(
         {"message": status, "color": status_color, "status": "cut session"}
@@ -923,16 +921,24 @@ def set_description(request):
         max_length = 64  # По умолчанию максимальная длина описания 64 символа
         status = "success"  # По умолчанию успешно
 
-        with dev.connect() as session:
-            if hasattr(session, "set_description"):
-                set_description_status = session.set_description(
-                    port=port, desc=new_description
-                )
-                new_description = session.clear_description(new_description)
+        try:
+            with dev.connect() as session:
+                if hasattr(session, "set_description"):
+                    set_description_status = session.set_description(
+                        port=port, desc=new_description
+                    )
+                    new_description = session.clear_description(new_description)
 
-            else:
-                set_description_status = "Недоступно для данного оборудования"
-                status = "warning"  # Описание цветовой палитры для bootstrap
+                else:
+                    set_description_status = "Недоступно для данного оборудования"
+                    status = "warning"  # Описание цветовой палитры для bootstrap
+        except (TelnetConnectionError, TelnetLoginError) as e:
+            return JsonResponse(
+                {
+                    "status": "danger",
+                    "info": str(e),
+                }
+            )
 
         if "Неверный порт" in set_description_status:
             status = "warning"
@@ -989,11 +995,14 @@ def start_cable_diag(request) -> (JsonResponse, HttpResponseForbidden):
         data = {}
         # Если оборудование доступно
         if dev.ping() > 0:
-            with model_dev.connect() as session:
-                if hasattr(session, "virtual_cable_test"):
-                    cable_test = session.virtual_cable_test(request.GET["port"])
-                    if cable_test:  # Если имеются данные
-                        data["cable_test"] = cable_test
+            try:
+                with model_dev.connect() as session:
+                    if hasattr(session, "virtual_cable_test"):
+                        cable_test = session.virtual_cable_test(request.GET["port"])
+                        if cable_test:  # Если имеются данные
+                            data["cable_test"] = cable_test
+            except (TelnetConnectionError, TelnetLoginError):
+                pass
 
         return JsonResponse(data)
 
@@ -1028,13 +1037,19 @@ def change_adsl_profile(request) -> JsonResponse:
     if not ping3.ping(model_dev.ip, timeout=2):
         return JsonResponse({"error": "Device down"})
 
-    # Подключаемся к оборудованию
-    with model_dev.connect() as session:
-        if hasattr(session, "change_profile"):
-            # Если можно поменять профиль
-            status = session.change_profile(port, int(profile_index))
+    try:
+        # Подключаемся к оборудованию
+        with model_dev.connect() as session:
+            if hasattr(session, "change_profile"):
+                # Если можно поменять профиль
+                status = session.change_profile(port, int(profile_index))
 
-            return JsonResponse({"status": status})
+                return JsonResponse({"status": status})
 
-        else:  # Нельзя менять профиль для данного устройства
-            return JsonResponse({"error": "Device can't change profile"}, status=400)
+            else:  # Нельзя менять профиль для данного устройства
+                return JsonResponse(
+                    {"error": "Device can't change profile"}, status=400
+                )
+
+    except (TelnetLoginError, TelnetConnectionError) as e:
+        return JsonResponse({"error": str(e)}, status=400)

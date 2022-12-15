@@ -17,8 +17,8 @@ from geopy.geocoders import Nominatim
 
 from . import snmp
 from .dc import DeviceFactory
-from .exceptions import AuthException
-from .vendors.base import range_to_numbers
+from .exceptions import AuthException, TelnetConnectionError, TelnetLoginError
+from .vendors.base import range_to_numbers, BaseDevice
 from .zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -688,32 +688,34 @@ class Device:
                 return "Не указан профиль авторизации для данного оборудования"
             if not self.protocol:
                 return "Не указан протокол для подключения к оборудованию"
-            with self.connect(
-                self.protocol, auth_obj=auth_obj or self.auth_obj
-            ) as session:
-                if isinstance(session, str) or session is None:
-                    return session or "None"
 
-                if session.model:
-                    self.zabbix_info.inventory.model = session.model
+            try:
+                with self.connect(
+                    self.protocol, auth_obj=auth_obj or self.auth_obj
+                ) as session:
 
-                if session.vendor:
-                    self.zabbix_info.inventory.vendor = session.vendor
+                    if session.model:
+                        self.zabbix_info.inventory.model = session.model
 
-                if session.serialno:
-                    self.zabbix_info.inventory.serialno_a = session.serialno
+                    if session.vendor:
+                        self.zabbix_info.inventory.vendor = session.vendor
 
-                # Получаем верные логин/пароль
-                self.success_auth = session.auth
+                    if session.serialno:
+                        self.zabbix_info.inventory.serialno_a = session.serialno
 
-                if vlans:
-                    # Если не получилось собрать vlan тогда собираем интерфейсы
-                    self.interfaces = Interfaces(
-                        session.get_vlans() or session.get_interfaces()
-                    )
-                else:
-                    self.interfaces = Interfaces(session.get_interfaces())
-        return ""
+                    # Получаем верные логин/пароль
+                    self.success_auth = session.auth
+
+                    if vlans:
+                        # Если не получилось собрать vlan тогда собираем интерфейсы
+                        self.interfaces = Interfaces(
+                            session.get_vlans() or session.get_interfaces()
+                        )
+                    else:
+                        self.interfaces = Interfaces(session.get_interfaces())
+
+            except (TelnetConnectionError, TelnetLoginError) as e:
+                return str(e)
 
     def __str__(self):
         return f'Device(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
@@ -746,13 +748,13 @@ class Device:
             and not self._location
         ):
             location = Nominatim(user_agent="coordinateconverter").reverse(
-                ", ".join(self._zabbix_info.inventory.coordinates)
+                ", ".join(self._zabbix_info.inventory.coordinates())
             )
             if location:
                 self._location = Location(**location.raw["address"])
         return self._location
 
-    def connect(self, protocol: str = None, auth_obj: (None, object) = None) -> Any:
+    def connect(self, protocol: str = None, auth_obj: Any = None) -> DeviceFactory:
         """
         Устанавливаем подключение к оборудованию
 
@@ -761,9 +763,8 @@ class Device:
         :return: Экземпляр класса в зависимости от типа оборудования с установленным подключением
         """
 
-        session: Any = DeviceFactory(
+        return DeviceFactory(
             self.ip,
             protocol=protocol or self.protocol,
             auth_obj=auth_obj or self.auth_obj,
         )
-        return session

@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from devicemanager.dc import DeviceFactory
+from devicemanager.vendors.base import BaseDevice
 
 
 class DeviceGroup(models.Model):
@@ -140,13 +141,12 @@ class Devices(models.Model):
 
         return f"/device/{self.name}"
 
-    def connect(self):
+    def connect(self) -> DeviceFactory:
         """Удаленное подключение к оборудованию"""
 
-        dev_conn: Any = DeviceFactory(
+        return DeviceFactory(
             self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group
         )
-        return dev_conn
 
     class Meta:
         db_table = "devices"

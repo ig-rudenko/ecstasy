@@ -108,6 +108,28 @@ class LogsElasticStackSettings(SingletonModel):
             self.kibana_url and self.time_range and self.time_field and self.query_str
         )
 
+    def query_kibana_url(self, **kwargs) -> str:
+        """
+        ## Эта функция принимает словарь аргументов для форматирования строки query_str
+         и возвращает URL для входа в Kibana
+        """
+        if self.is_set():
+            try:
+                query_str = self.query_str.format(**kwargs)
+            except AttributeError:
+                query_str = ""
+
+            return (
+                f"{self.kibana_url}?_g=(filters:!(),refreshInterval:(pause:!t,value:0),"
+                f"time:(from:now-{self.time_range},to:now))"
+                f"&_a=(columns:!({self.output_columns}),interval:auto,"
+                f"query:(language:{self.query_lang},"
+                f"query:'{query_str}'),"
+                f"sort:!(!('{self.time_field}',desc)))"
+            )
+
+        return ""
+
     class Meta:
         db_table = "elastic_settings"
         verbose_name = verbose_name_plural = "Elastic Stack settings"
