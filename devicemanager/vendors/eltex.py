@@ -1070,6 +1070,10 @@ class EltexLTP(BaseDevice):
         else:
             return "SFP"
 
+    @_validate_port()
+    def get_port_errors(self, port: str) -> str:
+        pass
+
 
 class EltexLTP16N(BaseDevice):
     """

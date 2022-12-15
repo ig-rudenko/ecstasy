@@ -27,17 +27,15 @@ let points = new Map();
 /* Пустой объект, который будет использоваться для хранения всех Недоступных, добавленных на карту. */
 let down_devices = new Map();
 
+/* Карта исходного формата точек устройств. */
 let origin_devices_point_format = new Map();
 
 
+/* Функция, позволяющая использовать метод форматирования строк. */
 String.prototype.format = function () {
-  // store arguments in an array
   var args = arguments;
-  // use replace to iterate over the string
-  // select the match and check if the related argument is present
-  // if yes, replace the match with the argument
+
   return this.replace(/{([0-9]+)}/g, function (match, index) {
-    // check if the argument is present
     return typeof args[index] == 'undefined' ? match : args[index];
   });
 };
@@ -75,7 +73,7 @@ async function load_markers() {
 }
 
 /**
- * Он загружает маркеры из базы данных, затем создает новый маркер для каждого из них и добавляет его на карту.
+ * Загружает маркеры с сервера, затем перебирает маркеры и добавляет их на карту.
  */
 async function render_markers() {
 
@@ -84,6 +82,7 @@ async function render_markers() {
 
     for (let i = 0; i < render_data.length; i++ ){
 
+        /* Проверяем, является ли тип данных zabbix. */
         if (render_data[i].type === "zabbix"){
 
             // Отображаем данные узлов сети Zabbix на карте
@@ -103,6 +102,7 @@ async function render_markers() {
                     }
                 }).addTo(layer_control.overlays[render_data[i].name]);
 
+        /* Проверка, является ли слой слоем geojson. */
         } else if (render_data[i].type === "geojson") {
 
             // Настройки по умолчанию для слоя
@@ -114,6 +114,7 @@ async function render_markers() {
 
             for (let j = 0; j < features.length; j++) {
 
+                /* Создание маркера из объекта GeoJSON */
                 if (features[j].geometry.type === "Point"){
                     createMarker(
                         features[j],
@@ -121,14 +122,15 @@ async function render_markers() {
                         defaultSettings.Marker
                     ).addTo(layer)
 
+                /* Создание полилинии из объекта GeoJSON */
                 } else if (features[j].geometry.type === "LineString") {
-                    console.log(features[j].geometry.coordinates)
                     createPolyline(
                         features[j],
                         L.GeoJSON.coordsToLatLngs(features[j].geometry.coordinates),
                         defaultSettings.Polygon
                     ).addTo(layer)
 
+                /* Создание многоугольника из объекта GeoJSON */
                 } else if (features[j].geometry.type === "Polygon") {
                     createPolygon(
                         features[j],
@@ -141,8 +143,19 @@ async function render_markers() {
     }
 }
 
+/**
+ * Эта функция создает полилинию из объекта GeoJSON, используя значения по умолчанию для цвета, веса и непрозрачности,
+ * если объект не имеет этих свойств.
+ *  Возвращает полигональный объект Leaflet.
+ *
+ * @param feature - Объект функции GeoJSON
+ * @param latlng - Координаты многоугольника
+ * @param defaults - Это словарь значений по умолчанию для полигона.
+ * @returns Полигональный объект
+ */
 function createPolygon(feature, latlng, defaults) {
-    let styleOptions = {
+    /* Создание словаря вариантов стиля полигона. */
+    let options = {
         "fillColor": feature.properties["fill"] || defaults["FillColor"],
         "color": feature.properties["stroke"] || defaults["BorderColor"],
         "weight": feature.properties["stroke-width"] || 2,
@@ -150,20 +163,64 @@ function createPolygon(feature, latlng, defaults) {
         "fillOpacity": feature.properties["fill-opacity"] || defaults.Opacity,
     }
 
-    return L.polygon(latlng, styleOptions)
+    let popup_text = null
+
+    if (feature.properties) {
+        popup_text = feature.properties.description
+    }
+
+    let polygon = L.polygon(latlng, options)
+
+    if (popup_text) {
+        polygon.bindPopup(format_to_html(popup_text))
+    }
+
+    return polygon
 }
 
+/**
+ * Эта функция создает полилинию из объекта GeoJSON, используя значения по умолчанию для цвета, веса и непрозрачности,
+ * если объект не имеет этих свойств.
+ *  Возвращает полигональный объект Leaflet.
+ *
+ * @param feature - Объект функции GeoJSON
+ * @param latlng - массив координат широты/долготы
+ * @param defaults - Значения по умолчанию для карты.
+ * @returns Полилинейный объект
+ */
 function createPolyline(feature, latlng, defaults) {
-    let styleOptions = {
+    /* Создание словаря опций стиля для полилинии. */
+    let options = {
         "color": feature.properties.stroke || defaults.BorderColor,
         "weight": feature.properties["stroke-width"] || 2,
         "fillOpacity": feature.properties["stroke-opacity"] || defaults.Opacity,
     }
 
-    return L.polyline(latlng, styleOptions)
+    let popup_text = null
+
+    if (feature.properties) {
+        popup_text = feature.properties.description
+    }
+
+    let polyline = L.polyline(latlng, options)
+
+    if (popup_text) {
+        polyline.bindPopup(format_to_html(popup_text))
+    }
+
+    /* Возврат полилинейного объекта. */
+    return polyline
 }
 
 
+/**
+ * Эта функция создает маркер из объекта GeoJSON, используя значения по умолчанию для цвета, имени иконки и размера,
+ * если объект не имеет этих свойств.
+ * @param feature - функция GeoJSON
+ * @param latlng - Широта и долгота маркера
+ * @param defaults - словарь значений по умолчанию для маркера
+ * @returns Маркер
+ */
 function createMarker(feature, latlng, defaults) {
     console.log(feature, defaults)
 
@@ -173,6 +230,8 @@ function createMarker(feature, latlng, defaults) {
     let size = defaults["Size"]
     let icon_name = defaults["IconName"] || "circle-fill"
 
+    /* Приведенный выше код устанавливает значения по умолчанию для текста всплывающего окна, текста всплывающей подсказки,
+    цвета заливки, размера и имени значка. */
     if (feature.properties) {
         popup_text = feature.properties.description
 
@@ -190,6 +249,7 @@ function createMarker(feature, latlng, defaults) {
                         defaults["IconName"] || "circle-fill"
     }
 
+    /* Создание новой иконки для маркера. */
     let svgIcon = L.divIcon({
       html: MAP_ICONS[icon_name].format(size, fillColor, defaults["BorderColor"]),
       className: "svg-icon",
@@ -202,16 +262,24 @@ function createMarker(feature, latlng, defaults) {
         "icon": svgIcon
     }
 
-    let circle =  L.marker(latlng, options);
+    /* Создание маркера по координатам широты с указанными параметрами. */
+    let marker =  L.marker(latlng, options);
+
+    /* Создание всплывающего окна для маркера. */
     if (popup_text) {
-        circle.bindPopup(format_to_html(popup_text))
+        marker.bindPopup(format_to_html(popup_text))
     }
+    /* Создание всплывающей подсказки для маркера. */
     if (tooltip_text) {
-        circle.bindTooltip(tooltip_text)
+        marker.bindTooltip(tooltip_text)
     }
-    return circle
+    return marker
 }
 
+/**
+ * Заменяет символы новой строки разрывами строк HTML.
+ * @param string - Строка для форматирования.
+ */
 function format_to_html(string) {
     // Превращаем строки в html, для корректного отображения
     // Заменяем перенос строки на <br>
