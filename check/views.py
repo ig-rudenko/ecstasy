@@ -32,11 +32,12 @@ from devicemanager.exceptions import (
     UnknownDeviceError,
 )
 from net_tools.models import VlanName, DevicesInfo
-from ecstasy_project import settings
 from app_settings.models import LogsElasticStackSettings
 from app_settings.models import ZabbixConfig
 from devicemanager import *
+from devicemanager.dc import DeviceFactory
 from devicemanager.vendors.base import MACList
+from ecstasy_project.settings import django_actions_logger
 from . import models
 
 try:
@@ -64,12 +65,10 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
         or not isinstance(model_device, (models.Devices, models.Bras))
         or not isinstance(operation, str)
     ):
-        # Открытие файла журнала в режиме добавления и кодировка его в utf-8.
-        with open(settings.LOG_FILE, "a", encoding="utf-8") as log_file:
-            log_file.write(
-                f"{datetime.now():%d.%m.%Y %H:%M:%S} "
-                f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}\n"
-            )
+        django_actions_logger.info(
+            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
+            f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}\n"
+        )
         return
 
     # В базу
@@ -84,23 +83,21 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
             user=user, device=model_device, action=operation
         )
         # В файл
-        # Открытие файла логов в режиме добавления и с кодировкой utf-8.
-        with open(settings.LOG_FILE, "a", encoding="utf-8") as log_file:
-            log_file.write(
-                f"{datetime.now():%d.%m.%Y %H:%M:%S} "
-                f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n"
-            )
+        django_actions_logger.info(
+            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
+            f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n"
+        )
+
     else:
         # В базу
         models.UsersActions.objects.create(
             user=user, action=f"{model_device} | " + operation
         )
         # В файл
-        with open(settings.LOG_FILE, "a", encoding="utf-8") as log_file:
-            log_file.write(
-                f"{datetime.now():%d.%m.%Y %H:%M:%S} "
-                f"| {user.username:<10} |  | {model_device} | {operation}\n"
-            )
+        django_actions_logger.info(
+            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
+            f"| {user.username:<10} |  | {model_device} | {operation}\n"
+        )
 
 
 def has_permission_to_device(device_to_check: models.Devices, user: models.User):
@@ -231,7 +228,7 @@ def show_devices(request):
     if filter_by_vendor:
         query &= Q(vendor=filter_by_vendor)
 
-    devs = models.Devices.objects.filter(query)
+    devs = models.Devices.objects.filter(query).select_related("group")
 
     paginator = ValidPaginator(devs, per_page=50)
     page = paginator.validate_number(request.GET.get("page", 1))
@@ -261,9 +258,8 @@ def device_info(request, name: str):
     :param name: Название оборудования
     """
 
-    model_dev = get_object_or_404(
-        models.Devices, name=name
-    )  # Получаем объект устройства из БД
+    # Получаем объект устройства из БД
+    model_dev = get_object_or_404(models.Devices, name=name)
 
     if not has_permission_to_device(model_dev, request.user):
         return HttpResponseForbidden()
@@ -274,7 +270,7 @@ def device_info(request, name: str):
     dev.protocol = model_dev.port_scan_protocol
     # Устанавливаем community для подключения
     dev.snmp_community = model_dev.snmp_community
-    dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
+    dev.auth_obj = model_dev.auth_group
     dev.ip = model_dev.ip  # IP адрес
     ping = dev.ping()  # Оборудование доступно или нет
 
@@ -561,7 +557,7 @@ def reload_port(request):
             {
                 "message": "Запрещено изменять состояние данного порта!",
                 "status": "WARNING",
-                "color": "#d3ad23",
+                "color": color_warning,
             }
         )
 
@@ -593,7 +589,7 @@ def reload_port(request):
             {
                 "message": "Вы не имеете права управлять этим устройством",
                 "status": "ERROR",
-                "color": "#d53c3c",
+                "color": color_error,
             }
         )
 
@@ -685,41 +681,12 @@ def reload_port(request):
     )
 
     return JsonResponse(
-        {"message": message, "status": f"Порт {status}", "color": color}
+        {
+            "message": message,
+            "status": f"Порт {status}",
+            "color": color,
+        }
     )
-
-
-# BRAS COMMAND
-def send_command(session: pexpect, command: str) -> str:
-    """
-    ## Отправляем команду на BRAS
-
-    :param session: Активная сессия с BRAS
-    :param command: Команда
-    :return: Результат команды
-    """
-
-    session.sendline(command)
-    session.expect(command)
-    result = ""
-    while True:
-        match = session.expect(
-            [
-                r"---- More ----|Are you sure to display some information",
-                r"<BRAS\d>|\[BRAS\S+\]",
-            ]
-        )
-        result += (
-            session.before.decode("utf-8")
-            .replace("\x1b[42D", "")
-            .replace("?(Y/N)[Y]:", "")
-        )
-        if match:
-            break  # Считали все данные, прерываем
-
-        session.sendline(" ")  # Листаем дальше
-
-    return result
 
 
 @login_required
@@ -761,36 +728,27 @@ def show_session(request):
 
             for bras in brases:
                 try:
-                    with pexpect.spawn(f"telnet {bras.ip}") as telnet:
-                        telnet.expect(
-                            ["Username", "Unable to connect", "Connection closed"],
-                            timeout=10,
-                        )
-                        telnet.sendline(bras.login)
+                    with DeviceFactory(ip=bras.ip, protocol="telnet") as session:
 
-                        telnet.expect("[Pp]ass")
-                        telnet.sendline(bras.password)
-
-                        if telnet.expect(
-                            [">", "password needs to be changed. Change now?"]
-                        ):
-                            telnet.sendline("N")
-
-                        bras_output = send_command(
-                            telnet, f"display access-user mac-address {mac}"
+                        bras_output = session.send_command(
+                            f"display access-user mac-address {mac}"
                         )
                         if "No online user!" not in bras_output:
                             user_index = re.findall(
                                 r"User access index\s+:\s+(\d+)", bras_output
                             )
                             if user_index:
-                                bras_output = send_command(
-                                    telnet,
+                                bras_output = session.send_command(
                                     f"display access-user user-id {user_index[0]} verbose",
                                 )
-                            user_info[bras.name] = bras_output
-                except pexpect.TIMEOUT:
+                        user_info[bras.name] = bras_output
+
+                except TelnetConnectionError:
                     errors.append("Не удалось подключиться к " + bras.name)
+                except TelnetLoginError:
+                    errors.append("Неверный Логин/Пароль " + bras.name)
+                except UnknownDeviceError:
+                    errors.append("Неизвестные тип оборудования " + bras.name)
 
                 # Логи
                 log(request.user, bras, f"display access-user mac-address {mac}")
@@ -817,88 +775,88 @@ def cut_user_session(request):
     ## Сбрасываем сессию абонента по MAC адресу с помощью BRAS
     """
 
-    status = "miss"
-
-    # color_warning = '#d3ad23'
+    color_warning = "#d3ad23"
     color_success = "#08b736"
     color_error = "#d53c3c"
-    status_color = color_error  # Значение по умолчанию
 
     if (
-        request.method == "POST"
-        and request.POST.get("mac")
-        and request.POST.get("device")
-        and request.POST.get("port")
+        request.method != "POST"
+        or not request.POST.get("mac")
+        or not request.POST.get("device")
+        or not request.POST.get("port")
     ):
-        mac_letters = re.findall(r"\w", request.POST["mac"])
+        return JsonResponse(
+            {
+                "message": "Invalid data",
+                "color": color_error,
+                "status": "cut session",
+            },
+            status=400,
+        )
 
-        dev = Device(request.POST["device"])
-        model_dev = get_object_or_404(models.Devices, name=dev.name)
+    dev = Device(request.POST["device"])
+    model_dev = get_object_or_404(models.Devices, name=dev.name)
 
-        if not has_permission_to_device(model_dev, request.user):
-            return HttpResponseForbidden()
+    mac_letters = re.findall(r"\w", request.POST["mac"])
+    # Если мак верный и оборудование доступно
+    if len(mac_letters) != 12:
+        return JsonResponse(
+            {
+                "message": "Invalid MAC",
+                "color": color_error,
+                "status": "cut session",
+            },
+            status=400,
+        )
 
-        # Если неверный MAC
-        status = "invalid MAC"
+    if not has_permission_to_device(model_dev, request.user):
+        return HttpResponseForbidden()
 
-        # Если мак верный и оборудование доступно
-        if len(mac_letters) == 12 and dev.ping() > 0:
+    mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_letters)
 
-            mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_letters)
+    brases = models.Bras.objects.all()
 
-            brases = models.Bras.objects.all()
+    status = ""
+    for bras in brases:
+        try:
+            with DeviceFactory(ip=bras.ip, protocol="telnet") as session:
 
-            status = ""  # Обновляем статус
-            for bras in brases:
-                try:
-                    print(bras)
-                    with pexpect.spawn(f"telnet {bras.ip}") as telnet:
-                        telnet.expect(
-                            ["Username", "Unable to connect", "Connection closed"],
-                            timeout=20,
-                        )
-                        telnet.sendline(bras.login)
+                session.send_command("system-view")
+                session.send_command("aaa")
+                session.send_command(f"cut access-user mac-address {mac}")
 
-                        telnet.expect(r"[Pp]ass")
-                        telnet.sendline(bras.password)
+                # Логи
+                log(request.user, bras, f"cut access-user mac-address {mac}")
 
-                        if telnet.expect(
-                            [">", "password needs to be changed. Change now?"]
-                        ):
-                            telnet.sendline("N")
+        except pexpect.TIMEOUT:
+            status += bras.name + " timeout\n"  # Кто был недоступен
 
-                        telnet.sendline("system-view")
-                        telnet.sendline("aaa")
-                        telnet.sendline(f"cut access-user mac-address {mac}")
+    try:
+        with model_dev.connect() as session:
+            # Перезагружаем порт без сохранения конфигурации
+            reload_port_status = session.reload_port(
+                request.POST["port"], save_config=False
+            )
 
-                        # Логи
-                        log(request.user, bras, f"cut access-user mac-address {mac}")
+            status += reload_port_status
+            status_color = color_success  # Успех
 
-                except pexpect.TIMEOUT:
-                    status += bras.name + " timeout\n"  # Кто был недоступен
-
-            try:
-                with model_dev.connect() as session:
-                    # Перезагружаем порт без сохранения конфигурации
-                    reload_port_status = session.reload_port(
-                        request.POST["port"], save_config=False
-                    )
-
-                    status += reload_port_status
-                    status_color = color_success  # Успех
-
-                    # Логи
-                    log(
-                        request.user,
-                        model_dev,
-                        f'reload port {request.POST["port"]} \n{reload_port_status}',
-                    )
-            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
-                status = f"Сессия сброшена, но порт не был перезагружен! {e}"
-                status_color = color_error
+            # Логи
+            log(
+                request.user,
+                model_dev,
+                f'reload port {request.POST["port"]} \n{reload_port_status}',
+            )
+    except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
+        status = f"Сессия сброшена, но порт не был перезагружен! {e}"
+        status_color = color_warning
 
     return JsonResponse(
-        {"message": status, "color": status_color, "status": "cut session"}
+        {
+            "message": status,
+            "color": status_color,
+            "status": "cut session",
+        }
     )
 
 
@@ -983,29 +941,31 @@ def start_cable_diag(request) -> (JsonResponse, HttpResponseForbidden):
     """
 
     if (
-        request.method == "GET"
-        and request.GET.get("device")
-        and request.GET.get("port")
+        request.method != "GET"
+        or not request.GET.get("device")
+        or not request.GET.get("port")
     ):
-        model_dev = get_object_or_404(models.Devices, name=request.GET["device"])
-        dev = Device(request.GET["device"], zabbix_info=False)
+        return JsonResponse({}, status=400)
 
-        if not has_permission_to_device(model_dev, request.user):
-            return HttpResponseForbidden()
+    model_dev = get_object_or_404(models.Devices, name=request.GET["device"])
+    dev = Device(request.GET["device"], zabbix_info=False)
 
-        data = {}
-        # Если оборудование доступно
-        if dev.ping() > 0:
-            try:
-                with model_dev.connect() as session:
-                    if hasattr(session, "virtual_cable_test"):
-                        cable_test = session.virtual_cable_test(request.GET["port"])
-                        if cable_test:  # Если имеются данные
-                            data["cable_test"] = cable_test
-            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError):
-                pass
+    if not has_permission_to_device(model_dev, request.user):
+        return HttpResponseForbidden()
 
-        return JsonResponse(data)
+    data = {}
+    # Если оборудование доступно
+    if dev.ping() > 0:
+        try:
+            with model_dev.connect() as session:
+                if hasattr(session, "virtual_cable_test"):
+                    cable_test = session.virtual_cable_test(request.GET["port"])
+                    if cable_test:  # Если имеются данные
+                        data["cable_test"] = cable_test
+        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
+            return JsonResponse({}, status=400)
+
+    return JsonResponse(data)
 
 
 @login_required

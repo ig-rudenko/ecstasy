@@ -1610,7 +1610,7 @@ class HuaweiCX600(BaseDevice):
     """
 
     prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
-    space_prompt = r"  ---- More ----"
+    space_prompt = r"  ---- More ----|Are you sure to display some information"
     # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"

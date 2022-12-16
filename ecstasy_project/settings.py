@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 
 import _locale
+import logging
 import os
 import json
 from pathlib import Path
@@ -116,6 +117,8 @@ USE_L10N = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# STATIC_ROOT = BASE_DIR / "static"
+
 LOG_FILE = BASE_DIR / "logs"
 
 # Default primary key field type
@@ -145,4 +148,51 @@ CELERY_BEAT_SCHEDULE = {
         "task": "net_tools.tasks.periodically_scan",
         "schedule": crontab(minute="0", hour="0"),
     }
+}
+
+django_actions_logger = logging.getLogger("django.actions")
+
+LOGGING = {
+    "version": 1,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": BASE_DIR / "debug.log",
+            "formatter": "verbose",
+            "when": "midnight",
+            "backupCount": "30",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file"],
+            "propagate": True,
+        },
+        "django.actions": {
+            "handlers": ["file"],
+            # "propagate": True,
+        }
+    },
 }
