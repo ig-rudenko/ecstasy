@@ -5,6 +5,7 @@
 import json
 import random
 import re
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from datetime import datetime
 import pexpect
@@ -35,10 +36,10 @@ from net_tools.models import VlanName, DevicesInfo
 from app_settings.models import LogsElasticStackSettings
 from app_settings.models import ZabbixConfig
 from devicemanager import *
-from devicemanager.dc import DeviceFactory
 from devicemanager.vendors.base import MACList
 from ecstasy_project.settings import django_actions_logger
 from . import models
+from .forms import BrassSessionForm, ADSLProfileForm
 
 try:
     # Устанавливаем конфигурацию для работы с devicemanager
@@ -689,6 +690,37 @@ def reload_port(request):
     )
 
 
+def get_user_session(bras: models.Bras, mac: str, user_info: dict, errors: list):
+    """
+    ## Получает сеанс пользователя для заданного MAC-адреса.
+
+    :param bras: объект Bras, к которому подключается пользователь
+    :param mac: мак адрес пользователя
+    :param user_info: dict, содержащий информацию о сессии
+    :param errors: список ошибок, которые произошли во время сеанса
+    """
+
+    try:
+        with bras.connect() as session:
+            bras_output = session.send_command(f"display access-user mac-address {mac}")
+            if "No online user!" not in bras_output:
+                user_index = re.findall(r"User access index\s+:\s+(\d+)", bras_output)
+
+                if user_index:
+                    bras_output = session.send_command(
+                        f"display access-user user-id {user_index[0]} verbose",
+                    )
+
+            user_info[bras.name] = bras_output
+
+    except TelnetConnectionError:
+        errors.append("Не удалось подключиться к " + bras.name)
+    except TelnetLoginError:
+        errors.append("Неверный Логин/Пароль " + bras.name)
+    except UnknownDeviceError:
+        errors.append("Неизвестные тип оборудования " + bras.name)
+
+
 @login_required
 @permission(models.Profile.BRAS)
 def show_session(request):
@@ -696,76 +728,43 @@ def show_session(request):
     ## Смотрим сессию клиента
     """
 
-    if (
-        request.method == "GET"
-        and request.GET.get("mac")
-        and request.GET.get("device")
-        and request.GET.get("port")
-    ):
-        mac_letters = re.findall(r"\w", request.GET["mac"])
-        if len(mac_letters) == 12:
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
 
-            mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_letters)
+    form = BrassSessionForm(request.GET)
+    # Проверка правильности формы.
+    if not form.is_valid():
+        raise Http404
 
-            brases = models.Bras.objects.all()
-            user_info = {}
-            errors = []
+    # Берем mac-адрес из формы и форматируем его в строку вида `aaaa-bbbb-cccc`.
+    mac = models.Bras.format_mac(form.cleaned_data["mac"])
 
-            if not request.GET.get("ajax"):
-                # Если это асинхронный запрос, то отправляем html
-                return render(
-                    request,
-                    "check/bras_info.html",
-                    {
-                        "mac": mac,
-                        "result": user_info,
-                        "port": request.GET["port"],
-                        "device": request.GET["device"],
-                        "desc": request.GET.get("desc"),
-                        "errors": errors,
-                    },
-                )
+    brases = models.Bras.objects.all()
+    user_info = {}
+    errors = []
 
-            for bras in brases:
-                try:
-                    with DeviceFactory(ip=bras.ip, protocol="telnet") as session:
+    response_dict = {
+        "mac": mac,
+        "result": user_info,
+        "port": form.cleaned_data["port"],
+        "device": form.cleaned_data["device"],
+        "desc": form.cleaned_data.get("desc"),
+        "errors": errors,
+    }
 
-                        bras_output = session.send_command(
-                            f"display access-user mac-address {mac}"
-                        )
-                        if "No online user!" not in bras_output:
-                            user_index = re.findall(
-                                r"User access index\s+:\s+(\d+)", bras_output
-                            )
-                            if user_index:
-                                bras_output = session.send_command(
-                                    f"display access-user user-id {user_index[0]} verbose",
-                                )
-                        user_info[bras.name] = bras_output
+    if not form.cleaned_data["ajax"]:
+        # Если это не ajax запрос, то отправляем html
+        return render(request, "check/bras_info.html", response_dict)
 
-                except TelnetConnectionError:
-                    errors.append("Не удалось подключиться к " + bras.name)
-                except TelnetLoginError:
-                    errors.append("Неверный Логин/Пароль " + bras.name)
-                except UnknownDeviceError:
-                    errors.append("Неизвестные тип оборудования " + bras.name)
+    with ThreadPoolExecutor() as executor:
+        for bras in brases:
+            # Приведенный выше код создает пул потоков,
+            # а затем отправляет функцию get_user_session в пул потоков.
+            executor.submit(get_user_session, bras, mac, user_info, errors)
+            # Логи
+            log(request.user, bras, f"display access-user mac-address {mac}")
 
-                # Логи
-                log(request.user, bras, f"display access-user mac-address {mac}")
-
-            return render(
-                request,
-                "check/bras_table.html",
-                {
-                    "mac": mac,
-                    "result": user_info,
-                    "port": request.GET["port"],
-                    "device": request.GET["device"],
-                    "desc": request.GET.get("desc"),
-                },
-            )
-
-    return redirect("/")
+    return render(request, "check/bras_table.html", response_dict)
 
 
 @login_required
@@ -779,48 +778,37 @@ def cut_user_session(request):
     color_success = "#08b736"
     color_error = "#d53c3c"
 
-    if (
-        request.method != "POST"
-        or not request.POST.get("mac")
-        or not request.POST.get("device")
-        or not request.POST.get("port")
-    ):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    form = BrassSessionForm(request.POST)
+
+    # Проверка правильности формы.
+    if not form.is_valid():
         return JsonResponse(
             {
                 "message": "Invalid data",
                 "color": color_error,
-                "status": "cut session",
+                "status": "Ошибка",
             },
             status=400,
         )
 
-    dev = Device(request.POST["device"])
-    model_dev = get_object_or_404(models.Devices, name=dev.name)
+    # Получение объекта устройства из базы данных.
+    model_dev = get_object_or_404(models.Devices, name=form.cleaned_data["device"])
 
-    mac_letters = re.findall(r"\w", request.POST["mac"])
-    # Если мак верный и оборудование доступно
-    if len(mac_letters) != 12:
-        return JsonResponse(
-            {
-                "message": "Invalid MAC",
-                "color": color_error,
-                "status": "cut session",
-            },
-            status=400,
-        )
-
+    # Проверка наличия у пользователя прав доступа к устройству.
     if not has_permission_to_device(model_dev, request.user):
         return HttpResponseForbidden()
 
-    mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_letters)
-
+    # Берем mac-адрес из формы и форматируем его в строку вида `aaaa-bbbb-cccc`.
+    mac = models.Bras.format_mac(form.cleaned_data["mac"])
     brases = models.Bras.objects.all()
 
     status = ""
     for bras in brases:
         try:
-            with DeviceFactory(ip=bras.ip, protocol="telnet") as session:
-
+            with bras.connect() as session:
                 session.send_command("system-view")
                 session.send_command("aaa")
                 session.send_command(f"cut access-user mac-address {mac}")
@@ -835,7 +823,7 @@ def cut_user_session(request):
         with model_dev.connect() as session:
             # Перезагружаем порт без сохранения конфигурации
             reload_port_status = session.reload_port(
-                request.POST["port"], save_config=False
+                form.cleaned_data["port"], save_config=False
             )
 
             status += reload_port_status
@@ -845,8 +833,9 @@ def cut_user_session(request):
             log(
                 request.user,
                 model_dev,
-                f'reload port {request.POST["port"]} \n{reload_port_status}',
+                f"reload port {form.cleaned_data['port']} \n" f"{reload_port_status}",
             )
+
     except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
         status = f"Сессия сброшена, но порт не был перезагружен! {e}"
         status_color = color_warning
@@ -855,7 +844,7 @@ def cut_user_session(request):
         {
             "message": status,
             "color": status_color,
-            "status": "cut session",
+            "status": "Сессия сброшена",
         }
     )
 
@@ -877,7 +866,6 @@ def set_description(request):
         port = request.POST.get("port")
 
         max_length = 64  # По умолчанию максимальная длина описания 64 символа
-        status = "success"  # По умолчанию успешно
 
         try:
             with dev.connect() as session:
@@ -886,6 +874,7 @@ def set_description(request):
                         port=port, desc=new_description
                     )
                     new_description = session.clear_description(new_description)
+                    status = "success"
 
                 else:
                     set_description_status = "Недоступно для данного оборудования"
@@ -974,26 +963,20 @@ def change_adsl_profile(request) -> JsonResponse:
     """
     ## Изменяем профиль xDSL порта на другой
 
-    Возвращаем {"status": status}
+    Возвращаем {"status": status} или {"error": error}
 
     :return: результат в формате JSON
     """
 
-    port: str = request.POST.get("port")
-    profile_index: str = request.POST.get("index")
-
     if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed!"}, status=403)
+        return JsonResponse({"error": "Method not allowed!"}, status=405)
 
-    if (
-        not port
-        or not profile_index
-        or not profile_index.isdigit()
-        or int(profile_index) <= 0
-    ):
+    form = ADSLProfileForm(request.POST)
+
+    if not form.is_valid():
         return JsonResponse({"error": "Invalid data", "data": request.POST}, status=400)
 
-    model_dev = get_object_or_404(models.Devices, name=request.POST.get("device_name"))
+    model_dev = get_object_or_404(models.Devices, name=form.cleaned_data["device_name"])
 
     if not ping3.ping(model_dev.ip, timeout=2):
         return JsonResponse({"error": "Device down"})
@@ -1003,7 +986,9 @@ def change_adsl_profile(request) -> JsonResponse:
         with model_dev.connect() as session:
             if hasattr(session, "change_profile"):
                 # Если можно поменять профиль
-                status = session.change_profile(port, int(profile_index))
+                status = session.change_profile(
+                    form.cleaned_data["port"], form.cleaned_data["index"]
+                )
 
                 return JsonResponse({"status": status})
 

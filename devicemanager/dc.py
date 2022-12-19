@@ -8,6 +8,13 @@ from .vendors import *
 from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceError
 
 
+class SimpleAuthObject:
+    def __init__(self, login, password, secret=""):
+        self.login = login
+        self.password = password
+        self.secret = secret
+
+
 class DeviceFactory:
     """
     # Подключение к оборудованию, определение вендора и возврат соответствующего класса

@@ -1,5 +1,4 @@
 import re
-import select
 from time import sleep
 from functools import lru_cache, wraps
 from typing import List
@@ -7,6 +6,8 @@ from typing import List
 import pexpect
 import textfsm
 from django.template.loader import render_to_string
+
+from ecstasy_project.settings import django_actions_logger
 
 from .base import (
     BaseDevice,
@@ -1303,7 +1304,7 @@ class EltexLTP16N(BaseDevice):
             # Смотрим MAC на pon порту
             if port_number.isdigit():
                 macs_list = re.findall(
-                    rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d/(\d+)",
+                    rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d+/(\d+)",
                     self.send_command(
                         f"show mac verbose include interface pon-port {port_number}"
                     ),
@@ -1314,11 +1315,11 @@ class EltexLTP16N(BaseDevice):
             # Перебираем список macs_list и назначаем каждому ONT ID свой VLAN/MAC
             for mac, vlan_id, ont_id in macs_list:
                 # Выбираем запись ONT по индексу ONT ID - int(mac_line[0])
-                # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
-                # и добавляем VLAN, MAC и описание VLAN
-                data["onts_lines"][int(ont_id) - 1][6].append(
-                    [vlan_id, mac, self.get_vlan_name(vlan_id)]
-                )
+                for ont in data["onts_lines"]:
+                    if ont[0] == ont_id:
+                        # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
+                        # и добавляем VLAN, MAC и описание VLAN
+                        ont[6].append([vlan_id, mac, self.get_vlan_name(vlan_id)])
 
             return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
 

@@ -4,14 +4,12 @@
 
 """
 
-
-from typing import Any
 from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from devicemanager.dc import DeviceFactory
-from devicemanager.vendors.base import BaseDevice
+from devicemanager.dc import SimpleAuthObject
 
 
 class DeviceGroup(models.Model):
@@ -182,6 +180,17 @@ class Bras(models.Model):
         ordering = ("name",)
         verbose_name = "BRAS"
         verbose_name_plural = "BRASes"
+
+    def connect(self):
+        return DeviceFactory(
+            ip=self.ip,
+            protocol="telnet",
+            auth_obj=SimpleAuthObject(self.login, self.password, self.secret),
+        )
+
+    @staticmethod
+    def format_mac(mac_str: str) -> str:
+        return "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_str)
 
 
 class Profile(models.Model):
