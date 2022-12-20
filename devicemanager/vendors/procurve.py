@@ -20,6 +20,7 @@ class ProCurve(BaseDevice):
         self.serialno = self.find_or_empty(r"Serial Number\s+: (\S+)", sys_info)
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
 
+    @BaseDevice._lock
     def get_interfaces(self) -> list:
         result = []
         raw_intf_status = self.send_command(

@@ -20,7 +20,7 @@ function get_interfaces(first=false) {
             type: 'GET',
             success: function( data ) {
                 $('#interfaces-table').html(data.data)
-                if (first){ document.getElementById('auto-update-interfaces').checked = false; }
+                // if (first){ document.getElementById('auto-update-interfaces').checked = false; }
                 window.last_time = Date.now() / 1000
 
                 window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
@@ -33,9 +33,9 @@ function get_interfaces(first=false) {
 
 }
 
-// Повторный сбор интерфейсов через 20 секунд
+// Повторный сбор интерфейсов через 5 секунд
 function interface_timer() {
-    setTimeout(get_interfaces, 20000);
+    setTimeout(get_interfaces, 5000);
 }
 
 // ЗАПРОС ИНТЕРФЕЙСОВ

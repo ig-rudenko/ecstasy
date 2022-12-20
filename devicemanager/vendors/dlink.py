@@ -142,6 +142,7 @@ class Dlink(BaseDevice):
 
         return None
 
+    @BaseDevice._lock
     def save_config(self):
         """
         Сохраняем конфигурацию оборудования командой:
@@ -178,6 +179,7 @@ class Dlink(BaseDevice):
             command_linesep=command_linesep,
         )
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         Эта функция возвращает список всех интерфейсов на устройстве
@@ -210,6 +212,7 @@ class Dlink(BaseDevice):
             for line in result
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
@@ -264,6 +267,7 @@ class Dlink(BaseDevice):
             )
         return interfaces_vlan
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
@@ -281,6 +285,7 @@ class Dlink(BaseDevice):
         # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
         return re.findall(rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str)
 
+    @BaseDevice._lock
     def reload_port(self, port, save_config=True) -> str:
         """
         Перезагружает порт
@@ -339,6 +344,7 @@ class Dlink(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
 
+    @BaseDevice._lock
     def set_port(self, port, status, save_config=True) -> str:
         """
         Устанавливает статус порта на коммутаторе **up** или **down**
@@ -396,6 +402,7 @@ class Dlink(BaseDevice):
         # Возврат результата команды и результата функции save_config().
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -414,6 +421,7 @@ class Dlink(BaseDevice):
 
         return self.session.before.decode()
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -462,6 +470,7 @@ class Dlink(BaseDevice):
         # Уникальный случай
         return status
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return={})
     def virtual_cable_test(self, port: str) -> dict:
         """

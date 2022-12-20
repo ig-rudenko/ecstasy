@@ -16,6 +16,7 @@ class Juniper(BaseDevice):
     vendor = "juniper"
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
 
+    @BaseDevice._lock
     def search_mac(self, mac_address: str) -> list:
         """
         ## Ищем MAC адрес среди subscribers и в таблице ARP оборудования
@@ -64,6 +65,7 @@ class Juniper(BaseDevice):
 
         return []
 
+    @BaseDevice._lock
     def search_ip(self, ip_address: str) -> list:
         """
         ## Ищем IP адрес среди subscribers и в таблице ARP оборудования

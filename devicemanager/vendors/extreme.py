@@ -51,6 +51,7 @@ class Extreme(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"Switch\s+: \S+ (\S+)", version)
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой и подтверждаем:
@@ -68,6 +69,7 @@ class Extreme(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -124,6 +126,7 @@ class Extreme(BaseDevice):
             for line in result
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -197,6 +200,7 @@ class Extreme(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
@@ -218,6 +222,7 @@ class Extreme(BaseDevice):
             res.append(m[::-1])
         return res
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str):
         """
@@ -236,6 +241,7 @@ class Extreme(BaseDevice):
 
         return rx_errors + "\n" + tx_errors
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -257,6 +263,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
@@ -282,6 +289,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port) -> str:
         """
@@ -302,6 +310,7 @@ class Extreme(BaseDevice):
 
         return "COPPER"
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -337,10 +346,12 @@ class Extreme(BaseDevice):
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str) -> str:
         return ""
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         return ""

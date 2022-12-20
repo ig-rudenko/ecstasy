@@ -14,7 +14,7 @@ function get_interfaces() {
         type: 'GET',
         success: function( data ) {
             $('#interfaces-table').html(data.data)
-            if (first){ document.getElementById('auto-update-interfaces').checked = false; }
+            // if (first){ document.getElementById('auto-update-interfaces').checked = false; }
             window.last_time = Date.now() / 1000
 
             window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')

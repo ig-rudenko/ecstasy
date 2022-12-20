@@ -161,6 +161,7 @@ class EltexMES(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования
@@ -181,6 +182,7 @@ class EltexMES(BaseDevice):
 
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -235,6 +237,7 @@ class EltexMES(BaseDevice):
             if not line[0].startswith("V")  # Пропускаем Vlan интерфейсы
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -283,6 +286,7 @@ class EltexMES(BaseDevice):
 
         return result
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
@@ -299,6 +303,7 @@ class EltexMES(BaseDevice):
         mac_str = self.send_command(f"show mac address-table interface {port}")
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -337,6 +342,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port, status, save_config=True):
         """
@@ -377,6 +383,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @lru_cache
     @_validate_port()
     def get_port_info(self, port):
@@ -421,6 +428,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show interfaces {port}").split("\n")
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port) -> str:
         """
@@ -441,6 +449,7 @@ class EltexMES(BaseDevice):
             return "COMBO-COPPER"
         return "?"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -454,6 +463,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show running-config interface {port}").strip()
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -469,6 +479,7 @@ class EltexMES(BaseDevice):
                 errors.append(line.strip())
         return "\n".join(errors)
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -567,6 +578,7 @@ class EltexESR(EltexMES):
         system = self.send_command("show system")
         self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования
@@ -604,6 +616,7 @@ class EltexESR(EltexMES):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     @EltexMES._validate_port()
     def port_type(self, port: str) -> str:
         """
@@ -621,6 +634,7 @@ class EltexESR(EltexMES):
             return "SFP"
         return "COPPER"
 
+    @BaseDevice._lock
     @EltexMES._validate_port()
     def get_port_info(self, port: str) -> str:
         """
@@ -639,6 +653,7 @@ class EltexESR(EltexMES):
             before_catch=r"Description:.+",
         ).replace("\n", "<br>")
 
+    @BaseDevice._lock
     @EltexMES._validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -729,6 +744,7 @@ class EltexLTP(BaseDevice):
             command_linesep,
         )
 
+    @BaseDevice._lock
     def save_config(self) -> str:
         """
         ## Сохраняем конфигурацию оборудования
@@ -743,6 +759,7 @@ class EltexLTP(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         self.session.send("switch\r")
         self.session.expect(self.prompt)
@@ -773,6 +790,7 @@ class EltexLTP(BaseDevice):
 
         return [(line[0], line[1], "") for line in interfaces]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
@@ -841,6 +859,7 @@ class EltexLTP(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
@@ -875,6 +894,7 @@ class EltexLTP(BaseDevice):
         # Если неверный порт
         return []
 
+    @BaseDevice._lock
     @lru_cache
     def get_vlan_name(self, vid: int):
         from net_tools.models import VlanName
@@ -887,6 +907,7 @@ class EltexLTP(BaseDevice):
         finally:
             return vlan_name
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str):
         from check.models import Devices
@@ -956,6 +977,7 @@ class EltexLTP(BaseDevice):
 
             return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -973,10 +995,12 @@ class EltexLTP(BaseDevice):
 
         return "Этот порт нельзя перезагружать"
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -1032,6 +1056,7 @@ class EltexLTP(BaseDevice):
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         # Получаем тип порта и его номер
@@ -1042,6 +1067,7 @@ class EltexLTP(BaseDevice):
 
         return ""
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         port_type, number = port.split()
@@ -1069,6 +1095,7 @@ class EltexLTP(BaseDevice):
         else:
             return "SFP"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         pass
@@ -1104,6 +1131,7 @@ class EltexLTP16N(BaseDevice):
         super().__init__(session, ip, auth)
         self.model = model
 
+    @BaseDevice._lock
     def save_config(self) -> str:
         """
         ## Сохраняем конфигурацию оборудования
@@ -1118,6 +1146,7 @@ class EltexLTP16N(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         Интерфейсы на оборудовании
@@ -1143,6 +1172,7 @@ class EltexLTP16N(BaseDevice):
 
         return [(line[0], line[1], "") for line in interfaces]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
@@ -1206,6 +1236,7 @@ class EltexLTP16N(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
@@ -1243,6 +1274,7 @@ class EltexLTP16N(BaseDevice):
         finally:
             return vlan_name
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str):
         from check.models import Devices
@@ -1321,6 +1353,7 @@ class EltexLTP16N(BaseDevice):
 
             return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -1338,10 +1371,12 @@ class EltexLTP16N(BaseDevice):
 
         return "Этот порт нельзя перезагружать"
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -1397,6 +1432,7 @@ class EltexLTP16N(BaseDevice):
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         # Получаем тип порта и его номер
@@ -1407,10 +1443,12 @@ class EltexLTP16N(BaseDevice):
 
         return ""
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         return "SFP"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         return ""

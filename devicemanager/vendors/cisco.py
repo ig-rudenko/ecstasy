@@ -80,6 +80,7 @@ class Cisco(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -97,6 +98,7 @@ class Cisco(BaseDevice):
                 return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -127,6 +129,7 @@ class Cisco(BaseDevice):
             if not line[0].startswith("V")
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -161,6 +164,7 @@ class Cisco(BaseDevice):
 
         return result
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
@@ -180,6 +184,7 @@ class Cisco(BaseDevice):
         )
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -220,6 +225,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port, status, save_config=True) -> str:
         """
@@ -257,6 +263,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     @lru_cache()
     def get_port_info(self, port: str) -> str:
@@ -286,6 +293,7 @@ class Cisco(BaseDevice):
 
         return "<p>" + "<br>".join(port_type[1:]) + "</p>"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port: str) -> str:
         """
@@ -337,6 +345,7 @@ class Cisco(BaseDevice):
         else:
             return "?"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -351,6 +360,7 @@ class Cisco(BaseDevice):
         media_type = [line.strip() for line in port_info if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -367,6 +377,7 @@ class Cisco(BaseDevice):
         ).strip()
         return config
 
+    @BaseDevice._lock
     def search_mac(self, mac_address: str) -> list:
         """
         ## Ищем MAC адрес в таблице ARP оборудования
@@ -400,6 +411,7 @@ class Cisco(BaseDevice):
 
         return formatted_result
 
+    @BaseDevice._lock
     def search_ip(self, ip_address: str) -> list:
         """
         ## Ищем IP адрес в таблице ARP оборудования
@@ -426,6 +438,7 @@ class Cisco(BaseDevice):
 
         return formatted_result
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """

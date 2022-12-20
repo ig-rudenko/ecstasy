@@ -126,6 +126,7 @@ class Huawei(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -157,6 +158,7 @@ class Huawei(BaseDevice):
                 continue
             return self.SAVED_ERR
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -200,6 +202,7 @@ class Huawei(BaseDevice):
             if not line[0].startswith("NULL") and not line[0].startswith("V")
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -247,6 +250,7 @@ class Huawei(BaseDevice):
 
         return result
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
@@ -311,6 +315,7 @@ class Huawei(BaseDevice):
 
         return self.send_command(f"display interface {port}")
 
+    @BaseDevice._lock
     def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -347,6 +352,7 @@ class Huawei(BaseDevice):
 
         return "?"
 
+    @BaseDevice._lock
     def get_port_errors(self, port):
         """
         ## Выводим ошибки на порту
@@ -363,6 +369,7 @@ class Huawei(BaseDevice):
             ]
         )
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -403,6 +410,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port, status, save_config=True) -> str:
         """
@@ -445,6 +453,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port):
         """
@@ -462,6 +471,7 @@ class Huawei(BaseDevice):
         )
         return config
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -581,6 +591,7 @@ class Huawei(BaseDevice):
 
         return parse_data
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return={"len": "-", "status": "Неверный порт"})
     def virtual_cable_test(self, port: str):
         """
@@ -638,6 +649,8 @@ class Huawei(BaseDevice):
             cable_test_data
         )  # Парсим полученные данные
 
+    @BaseDevice._lock
+    @_validate_port()
     def get_port_info(self, port: str) -> str:
         return ""
 
@@ -765,9 +778,11 @@ class HuaweiMA5600T(BaseDevice):
             )
         return output
 
+    @BaseDevice._lock
     def save_config(self):
         pass
 
+    @BaseDevice._lock
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -1257,6 +1272,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return self._render_vdsl_port_info(port_stats, template_name, line_templates)
 
+    @BaseDevice._lock
     def get_port_info(self, port: str) -> str:
         """
         ## Смотрим информацию на порту
@@ -1290,9 +1306,9 @@ class HuaweiMA5600T(BaseDevice):
         output = self.send_command(
             "y", expect_command=True, before_catch=r"Failure|------[-]+"
         )
-
-        if "is not activated" in output:  # У данного порта нет таких команд
-            return ""
+        #
+        # if "is not activated" in output:  # У данного порта нет таких команд
+        #     return ""
 
         profile_output = self.send_command(f"display port state {indexes[2]}")
         profile_index = self.find_or_empty(r"\s+\d+\s+\S+\s+(\d+)", profile_output)
@@ -1306,23 +1322,23 @@ class HuaweiMA5600T(BaseDevice):
             expect_command=False,
         )
 
-        profile_name = self.find_or_empty(r"Name:\s+(\S+)", profile_output)
+        profile_name = self.find_or_empty(r"Name:\s+(.+)[\r\n]", profile_output).strip()
 
         # Парсим профиля
         res = re.findall(
-            r"(\d+)\s+(.+?)\s+\S+\s+\S+\s+\d+\s+\d+\s+(\d+)\s+(\d+)([\s\S]*?)(?= \d+ \S+[ ]+\S+)",
+            r"(\d+)\s+(.+?)\s+\S+\s+\S+\s+\d+\s+\d+\s+(\d+)\s+(\d+)([\s\S]*?)(?= \d+ \S+[ ]+\S+| [-])",
             all_profiles,
         )
 
         profiles = []
         for line in res:
-            line = list(line)
             profiles.append(
-                [line[0], line[1] + line[-1].replace(" ", "").replace("\n", "")]
+                [line[0], line[1] + " ".join(line[-1].split())]
             )
 
         return self._render_adsl_port_info(output, profile_name, profiles)
 
+    @BaseDevice._lock
     def change_profile(self, port: str, profile_index: int) -> str:
         """
         ## Меняем профиль на xDSL порту
@@ -1356,6 +1372,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("quit")
         return status
 
+    @BaseDevice._lock
     def get_mac(self, port) -> list:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -1435,6 +1452,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return ""
 
+    @BaseDevice._lock
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -1506,6 +1524,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("quit")
         return s
 
+    @BaseDevice._lock
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -1561,12 +1580,15 @@ class HuaweiMA5600T(BaseDevice):
 
         return s
 
+    @BaseDevice._lock
     def get_interfaces(self) -> list:
         pass
 
+    @BaseDevice._lock
     def get_vlans(self) -> list:
         pass
 
+    @BaseDevice._lock
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -1623,9 +1645,11 @@ class HuaweiMA5600T(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
+    @BaseDevice._lock
     def get_port_type(self, port: str) -> str:
         return ""
 
+    @BaseDevice._lock
     def get_port_errors(self, port: str) -> str:
         return ""
 
@@ -1641,6 +1665,7 @@ class HuaweiCX600(BaseDevice):
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
+    @BaseDevice._lock
     def search_mac(self, mac_address: str) -> list:
         """
         ## Возвращаем данные абонента по его MAC адресу
@@ -1679,6 +1704,7 @@ class HuaweiCX600(BaseDevice):
 
         return []
 
+    @BaseDevice._lock
     def search_ip(self, ip_address: str) -> list:
         """
         ## Ищем абонента по его IP адресу

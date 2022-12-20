@@ -18,6 +18,7 @@ class Qtech(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -43,6 +44,7 @@ class Qtech(BaseDevice):
             for line in result
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -115,6 +117,7 @@ class Qtech(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> list:
         """
@@ -132,6 +135,7 @@ class Qtech(BaseDevice):
         macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
         return macs
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -172,6 +176,7 @@ class Qtech(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port, status, save_config=True):
         """
@@ -209,6 +214,7 @@ class Qtech(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -233,6 +239,7 @@ class Qtech(BaseDevice):
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port):
         """
@@ -248,6 +255,7 @@ class Qtech(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).split("\n")[:10])
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port):
         """
@@ -263,6 +271,7 @@ class Qtech(BaseDevice):
 
         return "COPPER"
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port):
         """
@@ -278,6 +287,7 @@ class Qtech(BaseDevice):
 
         return "\n".join(result)
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port):
         """
@@ -290,6 +300,7 @@ class Qtech(BaseDevice):
 
         return self.send_command(f"show running-config interface ethernet {port}")
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """

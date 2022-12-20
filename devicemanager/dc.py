@@ -1,8 +1,11 @@
 """
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
-
+import time
+from datetime import datetime, timedelta
 import re
+import threading
+
 import pexpect
 from .vendors import *
 from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceError
@@ -13,6 +16,27 @@ class SimpleAuthObject:
         self.login = login
         self.password = password
         self.secret = secret
+
+
+DEVICE_SESSIONS = {}
+
+
+def session_cleaner():
+    while True:
+        for ip, device in DEVICE_SESSIONS.items():
+            if (
+                device["expired"] < datetime.now().timestamp()
+                and device["session"].session
+                and device["session"].session.isalive()
+            ):
+
+                device["session"].session.close()
+                del DEVICE_SESSIONS[ip]
+
+        time.sleep(30)
+
+
+threading.Thread(target=session_cleaner, daemon=True, name="Session Cleaner").start()
 
 
 class DeviceFactory:
@@ -329,6 +353,24 @@ class DeviceFactory:
         ## При входе в контекстный менеджер подключаемся к оборудованию
         """
 
+        # Проверяем, жива ли сессия.
+        if (
+            DEVICE_SESSIONS.get(self.ip)
+            and DEVICE_SESSIONS[self.ip]["session"].session
+            and DEVICE_SESSIONS[self.ip]["session"].session.isalive()
+        ):
+            # Проверка, не истек ли срок действия сеанса устройства.
+            if DEVICE_SESSIONS[self.ip]["expired"] >= datetime.now().timestamp():
+
+                # Продлеваем срок действия сессии еще на 2 минуты.
+                DEVICE_SESSIONS[self.ip]["expired"] = (
+                    datetime.now() + timedelta(minutes=2)
+                ).timestamp()
+
+                return DEVICE_SESSIONS[self.ip]["session"]
+            else:
+                DEVICE_SESSIONS[self.ip]["session"].session.close()
+
         connected = False
         if self.protocol == "ssh":
             algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
@@ -423,12 +465,20 @@ class DeviceFactory:
             else:
                 raise TelnetLoginError(status)
 
-        return self.get_device()
+        device_session = self.get_device()
+
+        DEVICE_SESSIONS[self.ip] = {
+            "session": device_session,
+            # Данная сессия будет доступна в течение 2 минут.
+            "expired": (datetime.now() + timedelta(minutes=2)).timestamp(),
+        }
+
+        return device_session
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         ## При выходе из контекстного менеджера завершаем сессию
         """
-
-        self.session.close()
-        del self
+        pass
+        # self.session.close()
+        # del self

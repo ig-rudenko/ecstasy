@@ -1,6 +1,8 @@
 import re
 import pathlib
 import string
+import time
+from functools import wraps
 from typing import List, Tuple
 
 import pexpect
@@ -138,6 +140,7 @@ class BaseDevice(ABC):
         self.serialno: str = ""
         self.os: str = ""
         self.os_version: str = ""
+        self.lock = False
 
     @staticmethod
     def clear_description(desc: str) -> str:
@@ -259,6 +262,20 @@ class BaseDevice(ABC):
 
         m = re.findall(pattern, string_, *args, **kwargs)
         return m[0] if m else ""
+
+    @staticmethod
+    def _lock(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            while True:
+                if not self.lock:
+                    self.lock = True
+                    res = func(self, *args, **kwargs)
+                    self.lock = False
+                    return res
+                time.sleep(0.02)
+
+        return wrapper
 
     def send_command(
         self,

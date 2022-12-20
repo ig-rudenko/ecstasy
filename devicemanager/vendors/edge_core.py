@@ -49,6 +49,7 @@ class EdgeCore(BaseDevice):
 
         return validate
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -78,6 +79,7 @@ class EdgeCore(BaseDevice):
             if not line[0].startswith("V")
         ]
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -131,6 +133,7 @@ class EdgeCore(BaseDevice):
 
         return interfaces_vlans
 
+    @BaseDevice._lock
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -148,6 +151,7 @@ class EdgeCore(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
@@ -165,6 +169,7 @@ class EdgeCore(BaseDevice):
         macs = re.findall(rf"({self.mac_format})\s+(\d+)", output)
         return [m[::-1] for m in macs]
 
+    @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -205,6 +210,7 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
+    @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
@@ -260,6 +266,7 @@ class EdgeCore(BaseDevice):
 
         return self.send_command(f"show interfaces status {port}")
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str) -> str:
         """
@@ -274,6 +281,7 @@ class EdgeCore(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).strip().split("\n"))
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port: str) -> str:
         """
@@ -302,6 +310,7 @@ class EdgeCore(BaseDevice):
 
         return port_type_result
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -334,6 +343,7 @@ class EdgeCore(BaseDevice):
                 return "interface " + port_config
         return ""
 
+    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -353,6 +363,7 @@ class EdgeCore(BaseDevice):
 
         return ""
 
+    @BaseDevice._lock
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """

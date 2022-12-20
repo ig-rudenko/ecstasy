@@ -19,6 +19,7 @@ class IskratelControl(BaseDevice):
     def save_config(self):
         pass
 
+    @BaseDevice._lock
     def get_mac(self, port) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -225,6 +226,7 @@ class IskratelMBan(BaseDevice):
             },
         )
 
+    @BaseDevice._lock
     def get_port_info(self, port: str) -> str:
         """
         ## Смотрим информацию на порту
@@ -280,6 +282,7 @@ class IskratelMBan(BaseDevice):
         # Парсим данные
         return self._render_dsl_port_info(output)
 
+    @BaseDevice._lock
     def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -360,6 +363,7 @@ class IskratelMBan(BaseDevice):
 
         return None, None
 
+    @BaseDevice._lock
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -385,6 +389,7 @@ class IskratelMBan(BaseDevice):
 
         return s1 + s2
 
+    @BaseDevice._lock
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -406,6 +411,7 @@ class IskratelMBan(BaseDevice):
             expect_command=False,
         )
 
+    @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -436,6 +442,7 @@ class IskratelMBan(BaseDevice):
 
         return interfaces_list
 
+    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -447,6 +454,7 @@ class IskratelMBan(BaseDevice):
 
         return [(line[0], line[1], line[2], [""]) for line in self.get_interfaces()]
 
+    @BaseDevice._lock
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -475,6 +483,7 @@ class IskratelMBan(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
+    @BaseDevice._lock
     def change_profile(self, port: str, profile_index: int) -> str:
         """
         ## Меняем профиль на DSL порту
