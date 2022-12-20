@@ -1,6 +1,6 @@
 import re
 from time import sleep
-from functools import lru_cache
+from functools import lru_cache, wraps
 import textfsm
 from .base import BaseDevice, TEMPLATE_FOLDER, InterfaceList, InterfaceVLANList, MACList
 
@@ -77,26 +77,45 @@ class Qtech(BaseDevice):
 
         return result
 
-    @staticmethod
-    def validate_port(port: str) -> (str, None):
+    def _validate_port(self=None, if_invalid_return=None):
         """
-        Проверяем порт на валидность
+        ## Декоратор для проверки правильности порта Q-Tech
 
-        >>> Qtech.validate_port("1/2/1")
-        '1/2/1'
-        >>> Qtech.validate_port("1/1/21")
-        '1/1/21'
-        >>> Qtech.validate_port("23")
-        None
-        >>> Qtech.validate_port("port12")
-        None
+        valid ports:
+
+            "1/2/1"
+            "1/1/21"
+
+        invalid ports:
+
+            "23"
+            "port12"
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
         """
 
-        port = port.strip()
-        if bool(re.findall(r"^\d+/\d+/\d+$", port)):
-            return port
-        return None
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
 
+        def validate(func):
+            @wraps(func)
+            def wrapper(self, port: str, *args, **kwargs):
+                port = port.strip()
+                if not re.match(r"^\d+/\d+/\d+$", port):
+                    # Неверный порт
+                    if isinstance(if_invalid_return, str):
+                        return f"{if_invalid_return} {port}"
+                    else:
+                        return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return wrapper
+
+        return validate
+
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> list:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -109,14 +128,11 @@ class Qtech(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return []
-
         output = self.send_command(f"show mac-address-table interface ethernet {port}")
         macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
         return macs
 
+    @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -142,10 +158,6 @@ class Qtech(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
-
         self.session.sendline("configure terminal")
         self.session.expect(self.prompt)
         self.session.sendline(f"interface ethernet {port}")
@@ -160,6 +172,7 @@ class Qtech(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @_validate_port()
     def set_port(self, port, status, save_config=True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -180,10 +193,6 @@ class Qtech(BaseDevice):
         :param status: "up" или "down"
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
 
         self.session.sendline("config terminal")
         self.session.expect(self.prompt)
@@ -224,6 +233,7 @@ class Qtech(BaseDevice):
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
+    @_validate_port()
     def get_port_info(self, port):
         """
         ## Возвращаем информацию о порте.
@@ -236,12 +246,9 @@ class Qtech(BaseDevice):
         :return: Информация о порте или ```"Неверный порт {port}"```
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
-
         return "<br>".join(self.__get_port_info(port).split("\n")[:10])
 
+    @_validate_port(if_invalid_return="?")
     def get_port_type(self, port):
         """
         ## Возвращает тип порта
@@ -250,26 +257,19 @@ class Qtech(BaseDevice):
         :return: "SFP", "COPPER" или "Неверный порт {port}"
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
-
         port_type = self.find_or_empty(r"Hardware is (\S+)", self.__get_port_info(port))
         if "SFP" in port_type:
             return "SFP"
 
         return "COPPER"
 
+    @_validate_port()
     def get_port_errors(self, port):
         """
         ## Выводим ошибки на порту
 
         :param port: Порт для проверки на наличие ошибок
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
 
         result = []
         for line in self.__get_port_info(port).split("\n"):
@@ -278,6 +278,7 @@ class Qtech(BaseDevice):
 
         return "\n".join(result)
 
+    @_validate_port()
     def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
@@ -287,12 +288,9 @@ class Qtech(BaseDevice):
             # show running-config interface ethernet {port}
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
-
         return self.send_command(f"show running-config interface ethernet {port}")
 
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -323,10 +321,6 @@ class Qtech(BaseDevice):
         :param desc: Описание, которое вы хотите установить для порта
         :return: Вывод команды смены описания
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return f"Неверный порт {port}"
 
         desc = self.clear_description(desc)  # Очищаем описание
 

@@ -37,8 +37,7 @@ class EdgeCore(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
-                port = port.strip()
-                port = _interface_normal_view(port)
+                port = _interface_normal_view(port.strip())
                 if not port:
                     # Неверный порт
                     return if_invalid_return

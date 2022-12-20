@@ -87,7 +87,7 @@ class IskratelMBan(BaseDevice):
         pass
 
     @property
-    def get_service_ports(self) -> list:
+    def _get_service_ports(self) -> list:
         """
         ## Возвращает список сервисных портов
 
@@ -95,7 +95,7 @@ class IskratelMBan(BaseDevice):
         """
         return ["1_32", "1_33", "1_40"]
 
-    def render_dsl_port_info(self, info: str) -> str:
+    def _render_dsl_port_info(self, info: str) -> str:
         """
         ## Возвращаем информацию о порте DSL
 
@@ -278,7 +278,7 @@ class IskratelMBan(BaseDevice):
             return "<br>".join(output.split("\n")[1:5])
 
         # Парсим данные
-        return self.render_dsl_port_info(output)
+        return self._render_dsl_port_info(output)
 
     def get_mac(self, port: str) -> MACList:
         """
@@ -311,7 +311,7 @@ class IskratelMBan(BaseDevice):
             return macs
 
         # Для dsl портов
-        for sp in self.get_service_ports:  # смотрим маки на сервис портах
+        for sp in self._get_service_ports:  # смотрим маки на сервис портах
             output = self.send_command(
                 f"show bridge mactable interface dsl{port}:{sp}", expect_command=False
             )

@@ -1,4 +1,5 @@
 import re
+from functools import wraps
 from time import sleep
 import pexpect
 import textfsm
@@ -168,19 +169,35 @@ class Extreme(BaseDevice):
 
         return interfaces_vlan
 
-    @staticmethod
-    def validate_port(port: str) -> (str, None):
+    def _validate_port(self=None, if_invalid_return=None):
         """
-        ## Проверяем правильность полученного порта
+        ## Декоратор для проверки правильности порта Extreme
 
-        Для Extreme порт должен быть числом
+        :param if_invalid_return: что нужно вернуть, если порт неверный
         """
 
-        port = port.strip()
-        if port.isdigit():
-            return port
-        return None
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
 
+        def validate(func):
+            @wraps(func)
+            def wrapper(self, port: str, *args, **kwargs):
+                port = port.strip()
+                if not port.isdigit():
+                    # Неверный порт
+                    if isinstance(if_invalid_return, str):
+                        return f"{if_invalid_return} {port}"
+                    else:
+                        return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return wrapper
+
+        return validate
+
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -193,10 +210,6 @@ class Extreme(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return []
-
         output = self.send_command(f"show fdb ports {port}", expect_command=False)
         macs = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
 
@@ -205,6 +218,7 @@ class Extreme(BaseDevice):
             res.append(m[::-1])
         return res
 
+    @_validate_port()
     def get_port_errors(self, port: str):
         """
         ## Выводим ошибки на порту
@@ -217,14 +231,12 @@ class Extreme(BaseDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return ""
         rx_errors = self.send_command(f"show ports {port} rxerrors no-refresh")
         tx_errors = self.send_command(f"show ports {port} txerrors no-refresh")
 
         return rx_errors + "\n" + tx_errors
 
+    @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -236,9 +248,6 @@ class Extreme(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        if not self.validate_port(port):
-            return f"Неверный порт! {port}"
-
         self.session.sendline(f"disable ports {port}")
         self.session.expect(self.prompt)
         sleep(1)
@@ -248,6 +257,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -258,9 +268,6 @@ class Extreme(BaseDevice):
         :param status: "up" или "down"
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
-
-        if not self.validate_port(port):
-            return f"Неверный порт! {port}"
 
         if status == "up":
             cmd = "enable"
@@ -275,6 +282,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @_validate_port()
     def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -287,10 +295,6 @@ class Extreme(BaseDevice):
         :return: "SFP" или "COPPER"
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт"
-
         if "Media Type" in self.send_command(
             f"show ports {port} transceiver information detail | include Media"
         ):
@@ -298,6 +302,7 @@ class Extreme(BaseDevice):
 
         return "COPPER"
 
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -314,10 +319,6 @@ class Extreme(BaseDevice):
         :param desc: Описание, которое вы хотите установить для порта
         :return: Вывод команды смены описания
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт"
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -336,8 +337,10 @@ class Extreme(BaseDevice):
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+    @_validate_port()
     def get_port_info(self, port: str) -> str:
         return ""
 
+    @_validate_port()
     def get_port_config(self, port: str) -> str:
         return ""

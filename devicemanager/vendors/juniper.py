@@ -41,7 +41,7 @@ class Juniper(BaseDevice):
             f"show subscribers mac-address {formatted_mac} detail", expect_command=False
         )
         # Разбор вывода команды `show subscribers mac-address`
-        formatted_result = self.parse_subscribers(subscribers_output)
+        formatted_result = self._parse_subscribers(subscribers_output)
         if formatted_result:
             # Нашли среди subscribers
             return formatted_result
@@ -83,7 +83,7 @@ class Juniper(BaseDevice):
         subscribers_output = self.send_command(
             f"show subscribers address {ip_address} detail", expect_command=False
         )
-        formatted_result = self.parse_subscribers(subscribers_output)
+        formatted_result = self._parse_subscribers(subscribers_output)
         if formatted_result:
             # Нашли среди subscribers
             return formatted_result
@@ -107,7 +107,7 @@ class Juniper(BaseDevice):
         return []
 
     @staticmethod
-    def parse_subscribers(string: str) -> list:
+    def _parse_subscribers(string: str) -> list:
         """
         ## Парсим данные из вывода команды **subscribers**:
 

@@ -1,4 +1,5 @@
 import re
+from functools import wraps
 from time import sleep
 import pexpect
 import textfsm
@@ -144,19 +145,35 @@ class ZTE(BaseDevice):
             interfaces_vlan.append((line[0], line[1], line[2], vlans))
         return interfaces_vlan
 
-    @staticmethod
-    def validate_port(port) -> (str, None):
+    def _validate_port(self=None, if_invalid_return=None):
         """
-        # Проверяем правильность полученного порта
+        ## Декоратор для проверки правильности порта ZTE
 
-        Для ZTE порт должен быть числом
+        :param if_invalid_return: что нужно вернуть, если порт неверный
         """
 
-        port = str(port).strip()
-        if port.isdigit():
-            return port
-        return None
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
 
+        def validate(func):
+            @wraps(func)
+            def wrapper(self, port: str, *args, **kwargs):
+                port = port.strip()
+                if not port.isdigit():
+                    # Неверный порт
+                    if isinstance(if_invalid_return, str):
+                        return f"{if_invalid_return} {port}"
+                    else:
+                        return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return wrapper
+
+        return validate
+
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -169,10 +186,6 @@ class ZTE(BaseDevice):
         :param port: Номер порта коммутатора
         :return: ```[ ('vid', 'mac'), ... ]```
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return []
 
         output_macs = self.send_command(
             f"show fdb port {port} detail", expect_command=False
@@ -210,6 +223,7 @@ class ZTE(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
+    @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -224,10 +238,6 @@ class ZTE(BaseDevice):
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         self.session.sendline(f"set port {port} disable")
         sleep(1)
         self.session.sendline(f"set port {port} enable")
@@ -235,6 +245,7 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"reset port {port} " + s
 
+    @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -251,10 +262,6 @@ class ZTE(BaseDevice):
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         if status == "down":
             self.session.sendline(f"set port {port} disable")
         elif status == "up":
@@ -265,6 +272,7 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
+    @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -276,10 +284,6 @@ class ZTE(BaseDevice):
         Затем выбираем конфигурацию нужного порта
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         running_config = self.send_command("show running-config").split("\n")
         port_config = ""
         for line in running_config:
@@ -289,6 +293,7 @@ class ZTE(BaseDevice):
 
         return port_config
 
+    @_validate_port()
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -315,10 +320,6 @@ class ZTE(BaseDevice):
         :return: "SFP", "COPPER", "Неверный порт!" или "?"
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         output = self.send_command(f"show port {port} brief")
         type_ = self.find_or_empty(r"\d+\s+\d+Base(\S+)\s+", output)
 
@@ -329,6 +330,7 @@ class ZTE(BaseDevice):
 
         return "?"
 
+    @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -340,12 +342,9 @@ class ZTE(BaseDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
-
         return self.send_command(f"show port {port} statistics")
 
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -367,10 +366,6 @@ class ZTE(BaseDevice):
 
         if not self.__privileged:
             return "Не привилегированный. Операция отклонена!"
-
-        port = self.validate_port(port)
-        if port is None:
-            return "Неверный порт!"
 
         desc = self.clear_description(desc)
 
@@ -395,6 +390,7 @@ class ZTE(BaseDevice):
             + self.save_config()
         )
 
+    @_validate_port(if_invalid_return={})
     def virtual_cable_test(self, port: str):
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:
@@ -429,10 +425,6 @@ class ZTE(BaseDevice):
         С помощью этого метода модно выполнять диагностику неисправного состояния линии, например обрыв линии
         (Open), короткое замыкание (Short), рассогласование импеданса (Impedance Mismatch).
         """
-
-        port = self.validate_port(port)
-        if port is None:
-            return {}
 
         result = {
             "len": "-",  # Length

@@ -3,7 +3,7 @@ import re
 import pexpect
 import textfsm
 from time import sleep
-from functools import lru_cache
+from functools import lru_cache, wraps
 from typing import Tuple
 from django.template.loader import render_to_string
 from .base import (
@@ -100,6 +100,31 @@ class Huawei(BaseDevice):
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
+
+    def _validate_port(self=None, if_invalid_return=None):
+        """
+        ## Декоратор для проверки правильности порта Cisco
+
+        :param if_invalid_return: что нужно вернуть, если порт неверный
+        """
+
+        if if_invalid_return is None:
+            if_invalid_return = "Неверный порт"
+
+        def validate(func):
+            @wraps(func)
+            def __wrapper(self, port, *args, **kwargs):
+                port = _interface_normal_view(port)
+                if not port:
+                    # Неверный порт
+                    return if_invalid_return
+
+                # Вызываем метод
+                return func(self, port, *args, **kwargs)
+
+            return __wrapper
+
+        return validate
 
     def save_config(self):
         """
@@ -222,6 +247,7 @@ class Huawei(BaseDevice):
 
         return result
 
+    @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -246,28 +272,22 @@ class Huawei(BaseDevice):
         mac_list = []
 
         if "2403" in self.model:
-            mac_str = self.send_command(
-                f"display mac-address interface {_interface_normal_view(port)}"
-            )
+            mac_str = self.send_command(f"display mac-address interface {port}")
             for i in re.findall(
-                r"(" + self.mac_format + r")\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str
+                rf"({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str
             ):
                 mac_list.append(i[::-1])
 
         elif "2326" in self.model:
-            mac_str = self.send_command(
-                f"display mac-address {_interface_normal_view(port)}"
-            )
+            mac_str = self.send_command(f"display mac-address {port}")
 
             if "Wrong parameter" in mac_str:
                 # Если необходимо ввести тип
                 mac_str1 = self.send_command(
-                    f"display mac-address dynamic {_interface_normal_view(port)}",
-                    expect_command=False,
+                    f"display mac-address dynamic {port}", expect_command=False
                 )
                 mac_str2 = self.send_command(
-                    f"display mac-address secure-dynamic {_interface_normal_view(port)}",
-                    expect_command=False,
+                    f"display mac-address secure-dynamic {port}", expect_command=False
                 )
                 mac_str = mac_str1 + mac_str2
 
@@ -277,6 +297,7 @@ class Huawei(BaseDevice):
         return mac_list
 
     @lru_cache
+    @_validate_port()
     def __port_info(self, port):
         """
         ## Возвращаем полную информацию о порте.
@@ -288,7 +309,7 @@ class Huawei(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        return self.send_command(f"display interface {_interface_normal_view(port)}")
+        return self.send_command(f"display interface {port}")
 
     def get_port_type(self, port) -> str:
         """
@@ -342,6 +363,7 @@ class Huawei(BaseDevice):
             ]
         )
 
+    @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -369,7 +391,7 @@ class Huawei(BaseDevice):
         """
 
         self.session.sendline("system-view")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
         self.session.sendline("shutdown")
         sleep(1)
         self.session.sendline("undo shutdown")
@@ -381,6 +403,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @_validate_port()
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -408,7 +431,7 @@ class Huawei(BaseDevice):
         """
 
         self.session.sendline("system-view")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
         if status == "up":
             self.session.sendline("undo shutdown")
         elif status == "down":
@@ -422,6 +445,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
+    @_validate_port()
     def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
@@ -432,12 +456,13 @@ class Huawei(BaseDevice):
         """
 
         config = self.send_command(
-            f"display current-configuration interface {_interface_normal_view(port)}",
+            f"display current-configuration interface {port}",
             expect_command=False,
             before_catch=r"#",
         )
         return config
 
+    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -471,7 +496,7 @@ class Huawei(BaseDevice):
         """
 
         self.session.sendline("system-view")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -556,6 +581,7 @@ class Huawei(BaseDevice):
 
         return parse_data
 
+    @_validate_port(if_invalid_return={"len": "-", "status": "Неверный порт"})
     def virtual_cable_test(self, port: str):
         """
         Эта функция запускает диагностику состояния линии на порту оборудования
@@ -595,7 +621,7 @@ class Huawei(BaseDevice):
         """
 
         self.session.sendline("system-view")
-        self.session.sendline(f"interface {_interface_normal_view(port)}")
+        self.session.sendline(f"interface {port}")
         self.session.expect(self.prompt)
         self.session.sendline("virtual-cable-test")
         self.session.expect("virtual-cable-test")
@@ -834,7 +860,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def render_adsl_port_info(
+    def _render_adsl_port_info(
         self, info: str, profile_name: str, all_profiles: list
     ) -> str:
         """
@@ -925,7 +951,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         )
 
-    def render_gpon_port_info(
+    def _render_gpon_port_info(
         self, indexes: (Tuple[str, str, str], Tuple[str, str, str, str])
     ):
         """
@@ -987,12 +1013,12 @@ class HuaweiMA5600T(BaseDevice):
             return render_to_string("check/gpon_port_info.html", data)
 
         # Смотрим ONT
-        data = self.ont_port_info(indexes=i)
+        data = self._ont_port_info(indexes=i)
         self.session.sendline("quit")
         return render_to_string("check/ont_port_info.html", {"ont_info": data})
 
     @lru_cache
-    def ont_port_info(self, indexes: tuple) -> list:
+    def _ont_port_info(self, indexes: tuple) -> list:
         """
         ## Смотрим информацию на конкретном ONT
 
@@ -1057,7 +1083,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
-    def render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list):
+    def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list):
         """
         ## Преобразовываем информацию о VDSL порте для отображения на странице
 
@@ -1179,7 +1205,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         )
 
-    def vdsl_port_info(self, indexes: tuple):
+    def _vdsl_port_info(self, indexes: tuple):
         """
         ## Смотрим информацию на VDSL порту
         """
@@ -1229,7 +1255,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("quit")
         self.session.expect(self.prompt)
 
-        return self.render_vdsl_port_info(port_stats, template_name, line_templates)
+        return self._render_vdsl_port_info(port_stats, template_name, line_templates)
 
     def get_port_info(self, port: str) -> str:
         """
@@ -1245,7 +1271,7 @@ class HuaweiMA5600T(BaseDevice):
 
         # Для GPON используем отдельный метод
         if port_type == "gpon":
-            return self.render_gpon_port_info(indexes=indexes)
+            return self._render_gpon_port_info(indexes=indexes)
 
         # Для других
         if not port_type or len(indexes) != 3:
@@ -1253,7 +1279,7 @@ class HuaweiMA5600T(BaseDevice):
 
         # Для VDSL используем отдельный метод
         if port_type == "vdsl":
-            return self.vdsl_port_info(indexes=indexes)
+            return self._vdsl_port_info(indexes=indexes)
 
         self.session.sendline("config")
         self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
@@ -1295,7 +1321,7 @@ class HuaweiMA5600T(BaseDevice):
                 [line[0], line[1] + line[-1].replace(" ", "").replace("\n", "")]
             )
 
-        return self.render_adsl_port_info(output, profile_name, profiles)
+        return self._render_adsl_port_info(output, profile_name, profiles)
 
     def change_profile(self, port: str, profile_index: int) -> str:
         """
@@ -1347,7 +1373,7 @@ class HuaweiMA5600T(BaseDevice):
 
         # Для GPON ONT используем отдельный поиск
         if port_type == "gpon" and len(indexes) == 4:
-            data = self.ont_port_info(indexes)  # Получаем информацию с порта абонента
+            data = self._ont_port_info(indexes)  # Получаем информацию с порта абонента
             macs = []
             for service in data:
                 if service.get("mac"):  # Если есть МАС для сервиса

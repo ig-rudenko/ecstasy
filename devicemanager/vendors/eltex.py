@@ -7,8 +7,6 @@ import pexpect
 import textfsm
 from django.template.loader import render_to_string
 
-from ecstasy_project.settings import django_actions_logger
-
 from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
