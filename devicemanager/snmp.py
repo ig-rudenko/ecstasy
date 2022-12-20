@@ -69,6 +69,7 @@ def show_interfaces(
     }
 
     def snmpget(community, ip, port, mib) -> None:
+        # Выполнение команды `snmpwalk -Oq -v2c -c <community> <ip>:<port> <mib>` и возврат результата.
         result = subprocess.run(
             ["snmpwalk", "-Oq", "-v2c", "-c", community, f"{ip}:{port}", mib],
             stdout=subprocess.PIPE,
@@ -76,6 +77,7 @@ def show_interfaces(
             encoding="utf-8",
             check=False,
         )
+        # Он разбивает вывод команды на строки.
         for line in result.stdout.split("\n"):
             if not line:
                 continue  # Пропускаем пустую строку

@@ -40,7 +40,7 @@
 </div>
 </div>
 
-<!-- Modal CABLE DIAGNOSTIC -->
+<!-- Modal CHANGE PROFILE -->
 <div class="modal fade" id="modal-change-profile" data-bs-backdrop="static" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
@@ -95,43 +95,4 @@
   </div>
 </div>
 
-<script>
-
-let profile_load_div = $('#profile-load')
-let profile_status_div = $('#profile-status')
-
-function change_port_profile(profile_index, profile_name) {
-
-    $('button').prop('disabled', true);
-    profile_load_div.prop('hidden', false);
-    profile_status_div.prop('hidden', true)
-
-    let data = {
-        port: device_port,
-        device_name: device_name,
-        index: profile_index,
-        csrfmiddlewaretoken: csrf_token
-    }
-    console.log(data)
-
-    $.ajax({
-        url: "{% url 'change-port-profile' %}",
-        type: 'POST',
-        data: data,
-        success: function( data ) {
-            console.log(data)
-            $('button').prop('disabled', false);
-            $('#profile-name').html(profile_name)
-            profile_load_div.prop('hidden', true);
-            profile_status_div.prop('hidden', false).addClass('alert-success').html('Профиль был изменен на ' + profile_name)
-
-        },
-        error: function (data){
-            console.log(data)
-            $('button').prop('disabled', false);
-            profile_load_div.prop('hidden', true);
-            profile_status_div.prop('hidden', false).addClass('alert-danger').html('Ошибка ' + data)
-        }
-    });
-}
-</script>
+<script src="{% static 'js/change_xdsl_profile.js' %}"></script>

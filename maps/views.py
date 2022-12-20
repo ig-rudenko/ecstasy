@@ -88,8 +88,6 @@ def send_layers(request, map_obj: Maps):
     :param map_obj: Объект карты полученный от декоратора
     """
 
-    print(list(map_obj.layers.all().values("zabbix_group_name", "from_file")))
-
     layers_name = []
     for layer in map_obj.layers.all():
         if layer.type == "zabbix":
@@ -104,7 +102,7 @@ def zabbix_get(
     group_id: int, group_name: str, zbx_settings: ZabbixConfig, current_layer: Layers
 ) -> dict:
     """
-    `zabbix_get` возвращает список хостов в группе Zabbix.
+    ## Возвращает список хостов в группе Zabbix.
 
     :param group_id: ID группы, из которой вы хотите получить хосты
     :param group_name: Название группы, из которой вы хотите получить хосты
@@ -228,7 +226,7 @@ def render_interactive_map(request, map_obj: Maps):
                             "FillColor": layer.points_color,
                             "BorderColor": layer.points_border_color,
                             "Size": layer.points_size,
-                            "IconName": layer.marker_icon_name
+                            "IconName": layer.marker_icon_name,
                         },
                     },
                     "features": {},
@@ -266,7 +264,6 @@ def get_hosts_with_problem(zabbix_session: ZabbixAPI, zabbix_group_id: str) -> l
         )
     ]
 
-    # for id_ in hosts_id:
     # Получение проблемы узла сети из Zabbix.
     device_problems_list = zabbix_session.problem.get(
         hostids=hosts_id,
