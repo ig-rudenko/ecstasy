@@ -267,11 +267,14 @@ class BaseDevice(ABC):
     def _lock(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
+            print("Try LOCK", func.__name__)
             while True:
                 if not self.lock:
                     self.lock = True
+                    print("LOCK", func.__name__)
                     res = func(self, *args, **kwargs)
                     self.lock = False
+                    print("UNLOCK", func.__name__)
                     return res
                 time.sleep(0.02)
 

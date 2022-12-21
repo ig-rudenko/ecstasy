@@ -223,8 +223,10 @@ class Huawei(BaseDevice):
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
-
+        self.lock = False
         interfaces = self.get_interfaces()
+        self.lock = True
+
         result = []
         for line in interfaces:
             if (
@@ -300,8 +302,9 @@ class Huawei(BaseDevice):
 
         return mac_list
 
-    @lru_cache
     @_validate_port()
+    @lru_cache
+    @BaseDevice._lock
     def __port_info(self, port):
         """
         ## Возвращаем полную информацию о порте.
@@ -315,7 +318,6 @@ class Huawei(BaseDevice):
 
         return self.send_command(f"display interface {port}")
 
-    @BaseDevice._lock
     def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -352,7 +354,6 @@ class Huawei(BaseDevice):
 
         return "?"
 
-    @BaseDevice._lock
     def get_port_errors(self, port):
         """
         ## Выводим ошибки на порту
@@ -407,6 +408,8 @@ class Huawei(BaseDevice):
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
+
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -450,6 +453,8 @@ class Huawei(BaseDevice):
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
+
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -528,7 +533,7 @@ class Huawei(BaseDevice):
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
-
+        self.lock = False
         return (
             f'Description has been {"changed" if desc else "cleared"}.'
             + self.save_config()
@@ -649,8 +654,6 @@ class Huawei(BaseDevice):
             cable_test_data
         )  # Парсим полученные данные
 
-    @BaseDevice._lock
-    @_validate_port()
     def get_port_info(self, port: str) -> str:
         return ""
 
@@ -815,6 +818,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return ""
 
+    @lru_cache()
     def split_port(self, port: str) -> SplittedPort:
         """
         ## Разделяет строку порта на тип интерфейса и плата, слот, порт
@@ -1332,9 +1336,7 @@ class HuaweiMA5600T(BaseDevice):
 
         profiles = []
         for line in res:
-            profiles.append(
-                [line[0], line[1] + " ".join(line[-1].split())]
-            )
+            profiles.append([line[0], line[1] + " ".join(line[-1].split())])
 
         return self._render_adsl_port_info(output, profile_name, profiles)
 

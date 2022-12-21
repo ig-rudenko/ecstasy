@@ -22,8 +22,11 @@ DEVICE_SESSIONS = {}
 
 
 def session_cleaner():
+    """
+    Эта функция удаляет все сеансы старше текущего времени за вычетом переменной session_timeout.
+    """
     while True:
-        for ip, device in DEVICE_SESSIONS.items():
+        for ip, device in tuple(DEVICE_SESSIONS.items()):
             if (
                 device["expired"] < datetime.now().timestamp()
                 and device["session"].session
@@ -41,7 +44,7 @@ threading.Thread(target=session_cleaner, daemon=True, name="Session Cleaner").st
 
 class DeviceFactory:
     """
-    # Подключение к оборудованию, определение вендора и возврат соответствующего класса
+    # Подключение к оборудованию, определение вендора и возврат соответствующего экземпляра класса
     """
 
     prompt_expect = r"[#>\]]\s*$"
@@ -63,13 +66,14 @@ class DeviceFactory:
         r"The password needs to be changed",  # 6
     ]
 
-    def __init__(self, ip: str, protocol: str, auth_obj=None):
+    def __init__(self, ip: str, protocol: str, auth_obj=None, make_session_global=True):
         self.ip = ip
         self.session: pexpect.spawn
         self.protocol = protocol
         self.login = []
         self.password = []
         self.privilege_mode_password = "enable"
+        self._session_global = make_session_global
 
         if isinstance(auth_obj, list):
             # Список объектов
@@ -346,16 +350,16 @@ class DeviceFactory:
 
             break
 
-    def __enter__(
-        self, algorithm: str = "", cipher: str = "", timeout: int = 30
-    ) -> BaseDevice:
+    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30) -> BaseDevice:
         """
         ## При входе в контекстный менеджер подключаемся к оборудованию
         """
-
+        print(DEVICE_SESSIONS)
         # Проверяем, жива ли сессия.
         if (
-            DEVICE_SESSIONS.get(self.ip)
+            self._session_global
+            and DEVICE_SESSIONS.get(self.ip)
+            and DEVICE_SESSIONS[self.ip]["session"]
             and DEVICE_SESSIONS[self.ip]["session"].session
             and DEVICE_SESSIONS[self.ip]["session"].session.isalive()
         ):
@@ -367,9 +371,8 @@ class DeviceFactory:
                     datetime.now() + timedelta(minutes=2)
                 ).timestamp()
 
+                # Возвращаем сеанс, связанный с этим IP-адресом.
                 return DEVICE_SESSIONS[self.ip]["session"]
-            else:
-                DEVICE_SESSIONS[self.ip]["session"].session.close()
 
         connected = False
         if self.protocol == "ssh":
@@ -467,11 +470,12 @@ class DeviceFactory:
 
         device_session = self.get_device()
 
-        DEVICE_SESSIONS[self.ip] = {
-            "session": device_session,
-            # Данная сессия будет доступна в течение 2 минут.
-            "expired": (datetime.now() + timedelta(minutes=2)).timestamp(),
-        }
+        if self._session_global:
+            DEVICE_SESSIONS[self.ip] = {
+                "session": device_session,
+                # Данная сессия будет доступна в течение 2 минут.
+                "expired": (datetime.now() + timedelta(minutes=2)).timestamp(),
+            }
 
         return device_session
 
@@ -479,6 +483,7 @@ class DeviceFactory:
         """
         ## При выходе из контекстного менеджера завершаем сессию
         """
-        pass
-        # self.session.close()
-        # del self
+
+        if not self._session_global:
+            self.session.close()
+            del self

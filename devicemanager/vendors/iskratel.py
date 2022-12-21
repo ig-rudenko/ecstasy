@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from time import sleep
 from typing import Tuple
 
@@ -323,6 +324,7 @@ class IskratelMBan(BaseDevice):
         return macs
 
     @staticmethod
+    @lru_cache()
     def validate_port(port: str) -> (Tuple[str, int], Tuple[None, None]):
         """
         ## Проверяем правильность полученного порта
@@ -442,7 +444,6 @@ class IskratelMBan(BaseDevice):
 
         return interfaces_list
 
-    @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -451,7 +452,6 @@ class IskratelMBan(BaseDevice):
 
         :return: ```[ ('name', 'status', 'desc', [''] ), ... ]```
         """
-
         return [(line[0], line[1], line[2], [""]) for line in self.get_interfaces()]
 
     @BaseDevice._lock

@@ -97,6 +97,7 @@ class EdgeCore(BaseDevice):
 
         # Получение текущей конфигурации устройства.
         running_config = self.send_command("show running-config")
+        self.lock = False
         interfaces = self.get_interfaces()
 
         # Разделение текущей конфигурации на список строк. Каждая строка является частью конфигурации порта.
@@ -207,6 +208,7 @@ class EdgeCore(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return s
 
@@ -248,11 +250,14 @@ class EdgeCore(BaseDevice):
         self.session.expect(self.prompt)
 
         r = self.session.before.decode(errors="ignore")
+
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
     @_validate_port()
     @lru_cache
+    @BaseDevice._lock
     def __get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте.
@@ -266,7 +271,6 @@ class EdgeCore(BaseDevice):
 
         return self.send_command(f"show interfaces status {port}")
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str) -> str:
         """
@@ -414,5 +418,6 @@ class EdgeCore(BaseDevice):
         if "Invalid parameter value/range" in res:
             return "Max length:64"  # По умолчанию у Edge-Core 64
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'

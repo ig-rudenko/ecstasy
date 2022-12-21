@@ -25,17 +25,12 @@ function get_interfaces(first=false) {
 
                 window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
                 window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+                setTimeout(get_interfaces, 4000);
             },
         });
 
     }
-    interface_timer()
 
-}
-
-// Повторный сбор интерфейсов через 5 секунд
-function interface_timer() {
-    setTimeout(get_interfaces, 5000);
 }
 
 // ЗАПРОС ИНТЕРФЕЙСОВ

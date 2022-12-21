@@ -143,8 +143,9 @@ class Extreme(BaseDevice):
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
-
+        self.lock = False
         interfaces = self.get_interfaces()
+        self.lock = True
 
         output_vlans = self.send_command(
             'show configuration "vlan"', before_catch=r"Module vlan configuration\."
@@ -260,6 +261,7 @@ class Extreme(BaseDevice):
         self.session.sendline(f"enable ports {port}")
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -286,6 +288,7 @@ class Extreme(BaseDevice):
         self.session.sendline(f"{cmd} ports {port}")
         self.session.expect(self.prompt)
         r = self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -343,15 +346,12 @@ class Extreme(BaseDevice):
                 expect_command=False,
             )
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
-    @BaseDevice._lock
-    @_validate_port()
     def get_port_info(self, port: str) -> str:
         return ""
 
-    @BaseDevice._lock
-    @_validate_port()
     def get_port_config(self, port: str) -> str:
         return ""

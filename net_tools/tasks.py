@@ -26,7 +26,7 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
     dev.ip = model_dev.ip  # IP адрес
 
     # Собираем интерфейсы
-    status = dev.collect_interfaces(vlans=with_vlans, current_status=True)
+    status = dev.collect_interfaces(vlans=with_vlans, current_status=True, make_session_global=False)
 
     model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 

@@ -646,7 +646,7 @@ class Device:
         return None
 
     def collect_interfaces(
-        self, vlans=True, current_status=False, auth_obj=None
+        self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
     ) -> str:
         """Собираем интерфейсы оборудования"""
 
@@ -696,7 +696,7 @@ class Device:
 
             try:
                 with self.connect(
-                    self.protocol, auth_obj=auth_obj or self.auth_obj
+                    self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
                 ) as session:
 
                     if session.model:
@@ -759,7 +759,9 @@ class Device:
                 self._location = Location(**location.raw["address"])
         return self._location
 
-    def connect(self, protocol: str = None, auth_obj: Any = None) -> DeviceFactory:
+    def connect(
+        self, protocol: str = None, auth_obj: Any = None, *args, **kwargs
+    ) -> DeviceFactory:
         """
         Устанавливаем подключение к оборудованию
 
@@ -772,4 +774,6 @@ class Device:
             self.ip,
             protocol=protocol or self.protocol,
             auth_obj=auth_obj or self.auth_obj,
+            *args,
+            **kwargs,
         )

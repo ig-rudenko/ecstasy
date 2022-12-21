@@ -233,8 +233,9 @@ class Dlink(BaseDevice):
 
         :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...]), ... ]```
         """
-
+        self.lock = False
         interfaces = self.get_interfaces()
+        self.lock = True
 
         self.session.sendline("show vlan")
         self.session.expect(self.prompt, timeout=20)
@@ -340,6 +341,7 @@ class Dlink(BaseDevice):
                 f"config ports {port} medium_type fiber state enable"
             )
 
+        self.lock = False
         # Сохранение конфигурации, если для параметра `save_config` установлено значение `True`.
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
@@ -397,6 +399,7 @@ class Dlink(BaseDevice):
                 f"config ports {port} medium_type fiber state {state}"
             )
 
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
 
         # Возврат результата команды и результата функции save_config().
@@ -458,6 +461,8 @@ class Dlink(BaseDevice):
                 expect_command=False,
                 before_catch="desc",
             )
+
+        self.lock = False
 
         if "Next possible completions" in status:
             # Если длина описания больше чем разрешено на оборудовании

@@ -258,7 +258,10 @@ class EltexMES(BaseDevice):
         """
 
         result = []
+        self.lock = False
         interfaces = self.get_interfaces()
+        self.lock = True
+
         for line in interfaces:
             if not line[0].startswith("V"):
                 output = self.send_command(
@@ -339,6 +342,8 @@ class EltexMES(BaseDevice):
         self.session.sendline("end")
         self.session.expect(r"#")
         r = self.session.before.decode(errors="ignore")
+
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -380,12 +385,14 @@ class EltexMES(BaseDevice):
         self.session.expect(r"#")
 
         r = self.session.before.decode(errors="ignore")
+
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
-    @lru_cache
     @_validate_port()
+    @lru_cache()
+    @BaseDevice._lock
     def get_port_info(self, port):
         """
         ## Возвращает частичную информацию о порте.
@@ -428,7 +435,6 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show interfaces {port}").split("\n")
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port) -> str:
         """
@@ -541,6 +547,7 @@ class EltexMES(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
@@ -792,6 +799,7 @@ class EltexLTP(BaseDevice):
 
     @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
+        self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     # Декоратор
@@ -894,7 +902,6 @@ class EltexLTP(BaseDevice):
         # Если неверный порт
         return []
 
-    @BaseDevice._lock
     @lru_cache
     def get_vlan_name(self, vid: int):
         from net_tools.models import VlanName
@@ -1053,6 +1060,7 @@ class EltexLTP(BaseDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
+            self.lock = False
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
@@ -1174,6 +1182,7 @@ class EltexLTP16N(BaseDevice):
 
     @BaseDevice._lock
     def get_vlans(self) -> InterfaceVLANList:
+        self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     # Декоратор
@@ -1429,6 +1438,8 @@ class EltexLTP16N(BaseDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
+            self.lock = False
+
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
@@ -1443,12 +1454,10 @@ class EltexLTP16N(BaseDevice):
 
         return ""
 
-    @BaseDevice._lock
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         return "SFP"
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         return ""

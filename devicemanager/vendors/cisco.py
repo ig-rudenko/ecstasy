@@ -147,7 +147,12 @@ class Cisco(BaseDevice):
         """
 
         result = []
-        for line in self.get_interfaces():
+
+        self.lock = False
+        interfaces = self.get_interfaces()
+        self.lock = True
+
+        for line in interfaces:
             line: list = list(line)
             # Отфильтровываем интерфейсы VLAN.
             if not line[0].startswith("V"):
@@ -222,6 +227,7 @@ class Cisco(BaseDevice):
         self.session.sendline("end")
 
         r = self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -260,12 +266,13 @@ class Cisco(BaseDevice):
         self.session.expect(self.prompt)
 
         r = self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
     @_validate_port()
     @lru_cache()
+    @BaseDevice._lock
     def get_port_info(self, port: str) -> str:
         """
         ## Возвращаем информацию о порте.
@@ -283,9 +290,6 @@ class Cisco(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
 
         """
-        port = _interface_normal_view(port)
-        if not port:
-            return "Неверный порт"
 
         port_type = self.send_command(
             f"show interfaces {port}", expect_command=False
@@ -372,7 +376,7 @@ class Cisco(BaseDevice):
         """
 
         config = self.send_command(
-            f"show running-config interface {_interface_normal_view(port)}",
+            f"show running-config interface {port}",
             before_catch=r"Current configuration.+?\!",
         ).strip()
         return config
@@ -489,5 +493,6 @@ class Cisco(BaseDevice):
         if "Invalid input detected" in res:
             return "Invalid input detected"
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'

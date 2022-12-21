@@ -119,7 +119,9 @@ class ZTE(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...] ), ... ]```
         """
 
+        self.lock = False
         interfaces = self.get_interfaces()
+        self.lock = True
         output = self.send_command("show vlan")
 
         with open(
@@ -247,6 +249,7 @@ class ZTE(BaseDevice):
         sleep(1)
         self.session.sendline(f"set port {port} enable")
 
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return f"reset port {port} " + s
 
@@ -275,6 +278,7 @@ class ZTE(BaseDevice):
         else:
             return f"Неверный статус {status}"
 
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
@@ -301,7 +305,7 @@ class ZTE(BaseDevice):
         return port_config
 
     @BaseDevice._lock
-    @_validate_port()
+    @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -395,6 +399,7 @@ class ZTE(BaseDevice):
             output = self.send_command(f"set port {port} description ?")
             return "Max length:" + self.find_or_empty(r"maxsize:(\d+)", output)
 
+        self.lock = False
         return (
             f'Description has been {"changed" if desc else "cleared"}.'
             + self.save_config()

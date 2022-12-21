@@ -409,6 +409,7 @@ def device_info(request, name: str):
         "interfaces": dev.interfaces,
         "ping": ping,
         "status": status,
+        "with_vlans": with_vlans,
         "current_status": current_status,
         "zabbix_host_id": dev.zabbix_info.hostid,
         "perms": models.Profile.permissions_level.index(

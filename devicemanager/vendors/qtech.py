@@ -64,7 +64,11 @@ class Qtech(BaseDevice):
         """
 
         result = []
-        for line in self.get_interfaces():
+        self.lock = False
+        interfaces = self.get_interfaces()
+        self.lock = True
+
+        for line in interfaces:
             if not line[0].startswith("V"):
                 output = self.send_command(
                     command=f"show running-config interface ethernet {line[0]}"
@@ -173,6 +177,7 @@ class Qtech(BaseDevice):
         self.session.sendline("end")
 
         r = self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -211,6 +216,7 @@ class Qtech(BaseDevice):
         self.session.expect(self.prompt)
 
         self.session.before.decode(errors="ignore")
+        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return s
 
@@ -233,13 +239,13 @@ class Qtech(BaseDevice):
         return self.SAVED_ERR
 
     @lru_cache
+    @BaseDevice._lock
     def __get_port_info(self, port):
         """Общая информация о порте"""
 
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port):
         """
@@ -255,7 +261,6 @@ class Qtech(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).split("\n")[:10])
 
-    @BaseDevice._lock
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port):
         """
@@ -271,7 +276,6 @@ class Qtech(BaseDevice):
 
         return "COPPER"
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port):
         """
@@ -355,5 +359,6 @@ class Qtech(BaseDevice):
             output = self.send_command("description ?")
             return "Max length:" + self.find_or_empty(r"<1-(\d+)>", output)
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
