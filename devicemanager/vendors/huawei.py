@@ -819,20 +819,9 @@ class HuaweiMA5600T(BaseDevice):
         return ""
 
     @lru_cache()
-    def split_port(self, port: str) -> SplittedPort:
+    def get_boards(self, board_index):
         """
-        ## Разделяет строку порта на тип интерфейса и плата, слот, порт
-
-        >>> self.split_port("ADSL 0/2/4")
-        ('adsl', ('0', '2', '4'))
-
-        >>> self.split_port("GPON 0/6/7/1")
-        ('gpon', ('0', '6', '7', '1'))
-
-        >>> self.split_port("ethernet0/9/1")
-        ('eth', ('0', '9', '1'))
-
-        Также смотрит слоты:
+        ## Смотрим слоты на плате:
 
             # display board {i0}
 
@@ -850,6 +839,24 @@ class HuaweiMA5600T(BaseDevice):
             8       H805ADPD   Normal
             9       H801SCUB   Active_normal
 
+        :param board_index: Индекс доски, которую вы хотите получить
+        """
+        return self.send_command(f"display board {board_index}")
+
+    @lru_cache()
+    def split_port(self, port: str) -> SplittedPort:
+        """
+        ## Разделяет строку порта на тип интерфейса и плата, слот, порт
+
+        >>> self.split_port("ADSL 0/2/4")
+        ('adsl', ('0', '2', '4'))
+
+        >>> self.split_port("GPON 0/6/7/1")
+        ('gpon', ('0', '6', '7', '1'))
+
+        >>> self.split_port("ethernet0/9/1")
+        ('eth', ('0', '9', '1'))
+
         На 9 слоте плата **H801SCUB**, значит результатом будет:
 
         >>> self.split_port('ethernet0/9/2')
@@ -864,7 +871,7 @@ class HuaweiMA5600T(BaseDevice):
         # Удаление букв в имени порта и последующее разделение строки на "/"
         indexes = re.sub(r"^[a-z]+", "", port).split("/")
         if port_type == "ethernet":
-            board_info = self.send_command(f"display board {indexes[0]}")
+            board_info = self.get_boards(indexes[0])
 
             board_list = self.find_or_empty(
                 rf"\s+({indexes[1]})\s+(\S+)\s+\S+", board_info
@@ -885,8 +892,7 @@ class HuaweiMA5600T(BaseDevice):
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
 
-        ``````[ ('name', 'status', 'desc'), ... ]``````
-
+        ```[ ('name', 'status', 'desc'), ... ]```
         :param info: Информация порта ADSL
         :param profile_name: Название текущего профиля
         :param all_profiles: Все существующие ADSL профиля на оборудовании
