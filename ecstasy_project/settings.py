@@ -189,10 +189,6 @@ LOGGING = {
         "django": {
             "handlers": ["file"],
             "propagate": True,
-        },
-        "django.actions": {
-            "handlers": ["file"],
-            # "propagate": True,
         }
     },
 }

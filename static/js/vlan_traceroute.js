@@ -40,8 +40,9 @@ function show_map() {
           function (response, status) {
               if (status === "success" && response !== 'empty') {
                   $("#fullScreen").css('display', 'block');
-                  network_map = document.getElementById('mynetwork')
-                  network_map.style.borderRadius = '20px'
+                  network_map = document.getElementById('mynetwork').parentElement
+                  network_map.style.height = '100%';
+                  vlan_map.style.height = '500px';
               }
           }
       );

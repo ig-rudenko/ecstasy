@@ -67,7 +67,6 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
         or not isinstance(operation, str)
     ):
         django_actions_logger.info(
-            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
             f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}\n"
         )
         return
@@ -85,7 +84,6 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
         )
         # В файл
         django_actions_logger.info(
-            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
             f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}\n"
         )
 
@@ -96,7 +94,6 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
         )
         # В файл
         django_actions_logger.info(
-            f"{datetime.now():%d.%m.%Y %H:%M:%S} "
             f"| {user.username:<10} |  | {model_device} | {operation}\n"
         )
 

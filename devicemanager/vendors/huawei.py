@@ -716,7 +716,6 @@ class HuaweiMA5600T(BaseDevice):
         :param command_linesep: Символ отправки команды (по умолчанию ```\\\\n```)
         :return: Строка с результатом команды
         """
-
         if space_prompt is None:
             space_prompt = self.space_prompt
         if prompt is None:
@@ -1042,7 +1041,7 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("quit")
         return render_to_string("check/ont_port_info.html", {"ont_info": data})
 
-    @lru_cache
+    @lru_cache()
     def _ont_port_info(self, indexes: tuple) -> list:
         """
         ## Смотрим информацию на конкретном ONT
@@ -1235,10 +1234,10 @@ class HuaweiMA5600T(BaseDevice):
         ## Смотрим информацию на VDSL порту
         """
 
-        self.session.sendline("config")
-
-        self.session.sendline(f"interface vdsl {indexes[0]}/{indexes[1]}")
-        self.session.expect(self.prompt)
+        self.send_command("config")
+        self.send_command(
+            f"interface vdsl {indexes[0]}/{indexes[1]}", expect_command=False
+        )
 
         port_stats = self.send_command(
             f"display line operation {indexes[2]}", expect_command=False
@@ -1276,9 +1275,8 @@ class HuaweiMA5600T(BaseDevice):
             if line[0] == current_line_template_index:
                 template_name = line[1]
 
-        self.session.sendline("quit")
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
+        self.send_command("quit")
+        self.send_command("quit")
 
         return self._render_vdsl_port_info(port_stats, template_name, line_templates)
 
@@ -1307,18 +1305,17 @@ class HuaweiMA5600T(BaseDevice):
         if port_type == "vdsl":
             return self._vdsl_port_info(indexes=indexes)
 
-        self.session.sendline("config")
-        self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
-        self.session.expect(r"\S+#")
+        self.send_command("config")
+        self.send_command(
+            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
+        )
+
         self.session.sendline(f"display line operation {indexes[2]}")
         if self.session.expect([r"Are you sure to continue", "Unknown command"]):
             return ""
         output = self.send_command(
             "y", expect_command=True, before_catch=r"Failure|------[-]+"
         )
-        #
-        # if "is not activated" in output:  # У данного порта нет таких команд
-        #     return ""
 
         profile_output = self.send_command(f"display port state {indexes[2]}")
         profile_index = self.find_or_empty(r"\s+\d+\s+\S+\s+(\d+)", profile_output)
@@ -1369,15 +1366,16 @@ class HuaweiMA5600T(BaseDevice):
             # Если порт VDSL
             change_profile_cmd = "template-index"
 
-        self.session.sendline("config")
-        self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
-        self.session.expect(self.prompt)
-        self.session.sendline(f"deactivate {indexes[2]}")
-        self.session.expect(self.prompt)
+        self.send_command("config")
+        self.send_command(
+            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
+        )
+
+        self.send_command(f"deactivate {indexes[2]}")
         status = self.send_command(
             f"activate {indexes[2]} {change_profile_cmd} {profile_index}"
         )
-        self.session.sendline("quit")
+        self.send_command("quit")
         return status
 
     @BaseDevice._lock
@@ -1498,9 +1496,10 @@ class HuaweiMA5600T(BaseDevice):
         if not port_type or len(indexes) not in [3, 4]:
             return f"Неверный порт! ({port})"
 
-        self.session.sendline("config")
-        self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
-        self.session.expect(self.prompt)
+        self.send_command("config")
+        self.send_command(
+            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
+        )
 
         s = ""
         if port_type == "gpon" and len(indexes) == 4:
@@ -1524,12 +1523,12 @@ class HuaweiMA5600T(BaseDevice):
             s = self.session.before.decode()
 
             self.session.sendline("\n")
-            self.session.expect(r"\S+#$")
+            self.session.expect(self.prompt)
 
             s += self.session.before.decode()
 
-        self.session.sendline("quit")
-        self.session.sendline("quit")
+        self.send_command("quit")
+        self.send_command("quit")
         return s
 
     @BaseDevice._lock
@@ -1564,9 +1563,10 @@ class HuaweiMA5600T(BaseDevice):
         if not port_type or len(indexes) not in [3, 4]:
             return f"Неверный порт! ({port})"
 
-        self.session.sendline("config")
-        self.session.sendline(f"interface {port_type} {indexes[0]}/{indexes[1]}")
-        self.session.expect(self.prompt)
+        self.send_command("config")
+        self.send_command(
+            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
+        )
 
         if port_type == "gpon" and len(indexes) == 4:
             # Для ONT
@@ -1635,21 +1635,22 @@ class HuaweiMA5600T(BaseDevice):
             # Длина описания больше допустимого
             return "Max length:32"
 
-        self.session.sendline("config")
+        self.send_command("config")
 
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            self.session.sendline(
-                f"undo port desc {indexes[0]}/{indexes[1]}/{indexes[2]}"
+            self.send_command(
+                f"undo port desc {indexes[0]}/{indexes[1]}/{indexes[2]}",
+                expect_command=False,
             )
 
         else:  # В другом случае, меняем описание на оборудовании
-            self.session.sendline(
-                f"port desc {indexes[0]}/{indexes[1]}/{indexes[2]} description {desc}"
+            self.send_command(
+                f"port desc {indexes[0]}/{indexes[1]}/{indexes[2]} description {desc}",
+                expect_command=False,
             )
 
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
+        self.send_command("quit")
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
@@ -1694,10 +1695,8 @@ class HuaweiCX600(BaseDevice):
 
         match = self.send_command(
             f"display access-user mac-address {formatted_mac}",
-            prompt=self.prompt + "|Are you sure to display some information",
             expect_command=False,
         )
-        self.session.sendline("N")
 
         # Форматируем вывод
         with open(
@@ -1729,10 +1728,8 @@ class HuaweiCX600(BaseDevice):
 
         match = self.send_command(
             f"display access-user ip-address {ip_address}",
-            prompt=self.prompt + "|Are you sure to display some information",
             expect_command=False,
         )
-        self.session.sendline("N")
 
         # Форматируем вывод
         with open(

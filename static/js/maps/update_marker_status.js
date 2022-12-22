@@ -27,6 +27,10 @@ async function update_status() {
             // HostID недоступного узла сети
             let host_id = res.problems[i].id
 
+            if (!points.get(host_id)) {
+                continue
+            }
+
             // Перед тем как изменить точку, сохраняем её предыдущие настройки
             if (!origin_devices_point_format.get(host_id)) {
                 origin_devices_point_format.set(

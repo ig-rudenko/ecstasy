@@ -584,6 +584,7 @@ class EltexESR(EltexMES):
         self.mac: str = mac
         system = self.send_command("show system")
         self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
+        self.lock = False
 
     @BaseDevice._lock
     def save_config(self):
