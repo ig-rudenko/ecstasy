@@ -997,3 +997,23 @@ def change_adsl_profile(request) -> JsonResponse:
 
     except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
         return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+@permission(models.Profile.READ)
+def detail_device_info(request, device_name: str):
+    if request.method != "GET":
+        return JsonResponse({}, status=400)
+
+    device = get_object_or_404(models.Devices, name=device_name)
+
+    if not ping3.ping(device.ip, timeout=2):
+        return JsonResponse({"error": "Device down"})
+
+    try:
+        # Подключаемся к оборудованию
+        with device.connect() as session:
+            return JsonResponse(session.get_device_info())
+
+    except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
+        return JsonResponse({"error": str(e)}, status=400)

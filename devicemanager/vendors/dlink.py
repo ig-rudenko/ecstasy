@@ -555,6 +555,53 @@ class Dlink(BaseDevice):
 
         return result
 
+    @BaseDevice._lock
+    def get_device_info(self) -> dict:
+        data = {"cpu": {}, "dram": {}, "flash": {}}
+
+        for key in data:
+            value = getattr(self, f"get_{key}_utilization")()
+            if value > 0:
+                data[key]["util"] = value
+
+        return data
+
+    def get_cpu_utilization(self) -> int:
+        """
+        ## Возвращает загрузку ЦП хоста
+        """
+
+        cpu_percent = self.find_or_empty(
+            r"one minute -\s+(\d+)\s*%",
+            self.send_command("show utilization cpu"),
+            flags=re.IGNORECASE,
+        )
+        return int(cpu_percent) if cpu_percent else -1
+
+    def get_flash_utilization(self) -> int:
+        """
+        ## Возвращает использование флэш-памяти устройства
+        """
+
+        flash_percent = self.find_or_empty(
+            r"Utilization\s+: (\d+)\s*%",
+            self.send_command("show utilization flash"),
+            flags=re.IGNORECASE,
+        )
+        return int(flash_percent) if flash_percent else -1
+
+    def get_dram_utilization(self) -> int:
+        """
+        ## Возвращает использование DRAM в процентах
+        """
+
+        dram_percent = self.find_or_empty(
+            r"Utilization\s+: (\d+)\s*%",
+            self.send_command("show utilization dram"),
+            flags=re.IGNORECASE,
+        )
+        return int(dram_percent) if dram_percent else -1
+
     def get_port_info(self, port: str) -> str:
         return ""
 
