@@ -557,7 +557,7 @@ class Dlink(BaseDevice):
 
     @BaseDevice._lock
     def get_device_info(self) -> dict:
-        data = {"cpu": {}, "dram": {}, "flash": {}}
+        data = {"cpu": {}, "ram": {}, "flash": {}}
 
         for key in data:
             value = getattr(self, f"get_{key}_utilization")()
@@ -590,7 +590,7 @@ class Dlink(BaseDevice):
         )
         return int(flash_percent) if flash_percent else -1
 
-    def get_dram_utilization(self) -> int:
+    def get_ram_utilization(self) -> int:
         """
         ## Возвращает использование DRAM в процентах
         """

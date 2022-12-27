@@ -2,7 +2,7 @@ const INFO_ICONS = {
     "cpu": `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="{0}" class="bi bi-cpu" viewBox="0 0 16 16">
               <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0zm-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3h-7zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5v-3zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
             </svg>`,
-    "dram": `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="{0}" class="bi bi-memory" viewBox="0 0 16 16">
+    "ram": `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="{0}" class="bi bi-memory" viewBox="0 0 16 16">
               <path d="M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.586a1 1 0 0 0 .707-.293l.353-.353a.5.5 0 0 1 .708 0l.353.353a1 1 0 0 0 .707.293H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H1Zm.5 1h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm5 0h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm4.5.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4ZM2 10v2H1v-2h1Zm2 0v2H3v-2h1Zm2 0v2H5v-2h1Zm3 0v2H8v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Z"/>
             </svg>`,
     "flash": `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="{0}" class="bi bi-sd-card-fill" viewBox="0 0 16 16">
@@ -45,23 +45,35 @@ function get_device_info() {
         type: 'GET',
         success: function( data ) {
 
-            if (data) {
-                utilization_info.innerHTML = "<h4>Загруженность</h4>"
-            }
+            if (!data) {return}
+
+            utilization_info.innerHTML = "<h4>Загруженность</h4>"
             console.log(data)
             for (let key of Object.keys(data)) {
-                console.log(key, data[key])
-                if (data[key] && data[key].util){
+                if (!data[key]){continue}
+
+                if (data[key].util){
+
                     let color
-                    if (data[key].util < 30) {
-                        color = "#198754"
-                    } else if (data[key].util < 80) {
-                        color = "#ff9836"
+                    let string
+
+                    /* Проверка, является ли значение числом. */
+                    if (typeof data[key].util == "number") {
+                        /* Получение цвета значения. */
+                        color = value_color(data[key].util)
+                        string = data[key].util
                     } else {
-                        color = "#dc3545"
+                        color = value_color(Math.max(...data[key].util))
+                        /* Соединение массива значений с помощью вертикальной черты. */
+                        string = data[key].util.join("% | ")
                     }
+
                     utilization_info.innerHTML += `<div class="btn">`+
-                        INFO_ICONS[key].format(color) + ` ${key} ${data[key].util}%</div>`
+                        INFO_ICONS[key].format(color) + ` ${key} ${string}%</div>`
+
+                }
+                if (key === "temp"){
+                    draw_temp_stat(data[key])
                 }
             }
         },
@@ -70,4 +82,22 @@ function get_device_info() {
 }
 
 
-get_device_info()
+function draw_temp_stat(data) {
+    if (!data.status || !data.value) {return}
+
+    utilization_info.innerHTML += `<div class="btn">`+
+        INFO_ICONS["temp-"+data.status] + `${data.value}℃</div>`
+}
+
+/* Функция, которая возвращает цвет на основе значения. */
+function value_color(value) {
+    let color
+    if (value < 30) {
+        color = "#198754"
+    } else if (value < 80) {
+        color = "#ff9836"
+    } else {
+        color = "#dc3545"
+    }
+    return color
+}

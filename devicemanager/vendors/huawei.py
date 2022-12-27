@@ -657,6 +657,10 @@ class Huawei(BaseDevice):
     def get_port_info(self, port: str) -> str:
         return ""
 
+    @BaseDevice._lock
+    def get_device_info(self) -> dict:
+        pass
+
 
 class HuaweiMA5600T(BaseDevice):
     """

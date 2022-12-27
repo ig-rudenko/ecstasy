@@ -93,6 +93,9 @@ class EltexBase(BaseDevice):
     def get_port_errors(self, port: str) -> str:
         pass
 
+    def get_device_info(self) -> dict:
+        return {}
+
 
 class EltexMES(BaseDevice):
     """
@@ -551,6 +554,9 @@ class EltexMES(BaseDevice):
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+    def get_device_info(self) -> dict:
+        return {}
+
 
 class EltexESR(EltexMES):
     """
@@ -681,6 +687,9 @@ class EltexESR(EltexMES):
             if "errors" in line:
                 errors += line.strip() + "\n"
         return errors
+
+    def get_device_info(self) -> dict:
+        return {}
 
 
 class EltexLTP(BaseDevice):
@@ -1109,6 +1118,9 @@ class EltexLTP(BaseDevice):
     def get_port_errors(self, port: str) -> str:
         pass
 
+    def get_device_info(self) -> dict:
+        return {}
+
 
 class EltexLTP16N(BaseDevice):
     """
@@ -1462,3 +1474,6 @@ class EltexLTP16N(BaseDevice):
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         return ""
+
+    def get_device_info(self) -> dict:
+        return {}
