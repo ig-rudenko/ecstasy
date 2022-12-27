@@ -988,8 +988,7 @@ class HuaweiMA5600T(BaseDevice):
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
             return f'Неверный порт! (GPON {"/".join(indexes)})'
 
-        self.session.sendline("config")  # Переходим в режим конфигурации
-        self.session.expect(self.prompt)
+        self.send_command("config")  # Переходим в режим конфигурации
         i: tuple = indexes  # Упрощаем запись переменной
 
         # GPON
@@ -1000,7 +999,7 @@ class HuaweiMA5600T(BaseDevice):
                 before_catch="Please wait",
                 expect_command=False,
             )
-            self.session.sendline("quit")
+            self.send_command("quit")
 
             data = {
                 "device": Devices.objects.get(ip=self.ip).name,
@@ -1038,7 +1037,7 @@ class HuaweiMA5600T(BaseDevice):
 
         # Смотрим ONT
         data = self._ont_port_info(indexes=i)
-        self.session.sendline("quit")
+        self.send_command("quit")
         return render_to_string("check/ont_port_info.html", {"ont_info": data})
 
     @lru_cache()
