@@ -175,77 +175,7 @@ def show_devices(request):
     ## Список всех имеющихся устройств
     """
 
-    filter_by_group = request.GET.get("group", "")
-    group_param = f"group={filter_by_group}" if filter_by_group else ""
-
-    filter_by_vendor = request.GET.get("vendor", "")
-    vendor_param = f"&vendor={filter_by_vendor}" if filter_by_vendor else ""
-
-    # Группы оборудования, доступные текущему пользователю
-    user_groups_ids = []
-    user_groups_names = []
-    for group in request.user.profile.devices_groups.all().values("id", "name"):
-        user_groups_ids.append(group["id"])
-        user_groups_names.append(group["name"])
-
-    user_groups_names = {
-        group: reverse("devices-list") + "?" + f"group={group}" + vendor_param
-        for group in user_groups_names
-    }
-
-    # Вендоры оборудования, что доступны пользователю
-    unique_vendors_list = sorted(
-        list(
-            set(
-                d["vendor"]
-                for d in models.Devices.objects.filter(
-                    group__in=user_groups_ids
-                ).values("vendor")
-                if d["vendor"]
-            )
-        )
-    )
-    vendors = {
-        g: reverse("devices-list") + "?" + group_param + f"&vendor={g}"
-        for g in unique_vendors_list
-    }
-
-    full_url = reverse("devices-list") + "?" + group_param + vendor_param
-
-    # Фильтруем запрос
-    query = Q(group__in=user_groups_ids)
-    if request.GET.get("s"):
-        search_string = request.GET["s"].strip()
-        query &= Q(ip__contains=search_string) | Q(name__icontains=search_string)
-
-    # Фильтруем по группе
-    if filter_by_group in user_groups_names:
-        query &= Q(group__name=filter_by_group)
-
-    # Фильтруем по вендору
-    if filter_by_vendor:
-        query &= Q(vendor=filter_by_vendor)
-
-    devs = models.Devices.objects.filter(query).select_related("group")
-
-    paginator = ValidPaginator(devs, per_page=50)
-    page = paginator.validate_number(request.GET.get("page", 1))
-
-    return render(
-        request,
-        "check/devices_list.html",
-        {
-            "devs": paginator.page(page),
-            "search": request.GET.get("s", None),
-            "total_count": paginator.count,
-            "page": page,
-            "num_pages": paginator.num_pages,
-            "device_icon_number": random.randint(1, 5),
-            "devices_groups": user_groups_names,
-            "vendors": vendors,
-            "full_url": full_url,
-        },
-    )
+    return render(request, "check/devices.html")
 
 
 @login_required
