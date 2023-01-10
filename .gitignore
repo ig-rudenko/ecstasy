@@ -5,7 +5,7 @@ db.sqlite3*
 test.py
 _test*
 celerybeat-schedule*
-*.json
+*/fixtures
 *.geojson
 .coverage
 lib
@@ -25,3 +25,5 @@ templates/maps/external
 static/admin
 appmap.yml
 tmp
+debug*.log
+node_modules

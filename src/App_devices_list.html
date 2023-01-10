@@ -1,0 +1,99 @@
+<div id="devices">
+  <div>
+    <div class="row py-2">
+        <div class="col-6">
+            <h4 class="fw-bold py-4">Выберите оборудование</h4>
+        </div>
+        <div class="col-6" style="text-align: right">
+            <img style="width: 100%" v-bind:src="'/static/img/device-icon-'+imageIndex+'.svg'" alt="search-description-image">
+        </div>
+    </div>
+
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" placeholder="Введите IP или имя" aria-label="Поиск"
+             aria-describedby="button-addon2"
+             v-model.trim="search"
+             autofocus>
+    </div>
+
+    <ul class="nav nav-tabs">
+
+      <li class="nav-link text-dark">
+        Всего найдено: {{ count }}
+      </li>
+
+      <li class="nav-item dropdown noselect">
+        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+            {{ selectedGroup || "Group" }}
+        </a>
+        <ul class="dropdown-menu" style="cursor: pointer">
+              <span class="dropdown-item" @click="changeGroup" value="">Все группы</span>
+
+              <option class="dropdown-item"
+               v-for="group in groups"
+               @click="changeGroup" v-bind:value="group">{{ group }}</option>
+
+        </ul>
+      </li>
+
+      <li class="nav-item dropdown noselect">
+        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+            {{ selectedVendor || "Vendor" }}
+        </a>
+        <ul class="dropdown-menu" style="cursor: pointer">
+              <span class="dropdown-item" @click="changeVendor" >Все вендоры</span>
+
+              <option class="dropdown-item"
+               v-for="vendor in vendors"
+               @click="changeVendor" v-bind:value="vendor">{{ vendor }}</option>
+
+        </ul>
+      </li>
+    </ul>
+
+    <nav aria-label="..." class="py-3 noselect">
+        <ul v-if="num_pages > 1" class="pagination justify-content-center">
+
+        <li v-if="page > 2" class="page-item" style="cursor: pointer">
+            <a v-if="page > 2" @click="goToPage(0)" class="page-link">1 &lt;&lt; </a>
+            <a v-else class="page-link">1 &lt;&lt; </a>
+        </li>
+
+        <li class="page-item" v-bind:class="{disabled: page === 0}" style="cursor: pointer">
+          <a v-if="page === 0" class="page-link">Предыдущая</a>
+          <a v-else @click="goToPage(page)" class="page-link">Предыдущая</a>
+        </li>
+
+        <li v-if="page !== 0" class="page-item" style="cursor: pointer">
+            <a @click="goToPage(page)" class="page-link" >{{ page }}</a>
+        </li>
+
+        <li class="page-item active" aria-current="page" style="cursor: pointer">
+          <a class="page-link">{{ page + 1 }}</a>
+        </li>
+
+        <li v-if="num_pages !== (page + 1)" class="page-item" style="cursor: pointer">
+            <a @click="goToPage(page+2)" class="page-link">{{ page + 2 }}</a>
+        </li>
+
+        <li v-if="(page + 3) <= num_pages" class="page-item" style="cursor: pointer">
+            <a @click="goToPage(page+3)" class="page-link">{{ page + 3 }}</a>
+        </li>
+
+        <li class="page-item" v-bind:class="{disabled: (page + 1) === num_pages}" style="cursor: pointer">
+          <a v-if="(page + 1) === num_pages" class="page-link">Следующая</a>
+          <a v-else @click="goToPage(page+2)" class="page-link">Следующая</a>
+        </li>
+
+        <li v-if="(page + 3) < num_pages" class="page-item" style="cursor: pointer">
+          <span @click="goToPage(num_pages)" class="page-link"> &gt;&gt; {{ num_pages }}</span>
+        </li>
+
+        </ul>
+    </nav>
+    <div class="table-responsive-lg">
+        <devices-table v-bind:devices="filteredDevices"></devices-table>
+    </div>
+
+</div>
+</div>
