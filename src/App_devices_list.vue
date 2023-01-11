@@ -2,6 +2,7 @@
 
 <script>
 import DevicesTable from "./components/DevicesTable.vue";
+import Pagination from "./components/Pagination.vue";
 
 export default {
     name: 'devices',
@@ -118,6 +119,7 @@ export default {
     },
     components: {
         "devices-table": DevicesTable,
+        "pagination": Pagination
     }
 }
 </script>

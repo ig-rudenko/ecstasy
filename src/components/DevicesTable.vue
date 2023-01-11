@@ -49,7 +49,6 @@
 import {defineComponent} from "vue";
 
 export default defineComponent({
-  name: "devices-table",
   props: {
       devices: {
         required: true,
