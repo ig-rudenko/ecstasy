@@ -106,7 +106,7 @@ class DeviceInterfacesAPIView(View):
             last_datetime = _date(last_datetime)
             json_str = (
                 '{"interfaces": '
-                + last_interfaces
+                + f"{last_interfaces or '[]'}"
                 + ', "collected": "'
                 + last_datetime
                 + f"\", \"deviceAvailable\": {'true' if ping > 0 else 'false'}"
@@ -221,8 +221,10 @@ class DeviceInterfacesAPIView(View):
         """
         ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
         """
-
-        device_info = DevicesInfo.objects.get(ip=self.device.ip)
+        try:
+            device_info = DevicesInfo.objects.get(ip=self.device.ip)
+        except DevicesInfo.DoesNotExist:
+            return None, None
         if self.with_vlans:
             return device_info.vlans, device_info.vlans_date
         return device_info.interfaces, device_info.interfaces_date
@@ -280,7 +282,7 @@ class DeviceInfoAPIView(View):
             "deviceIP": model_dev.ip,
             # Создание URL-адреса для запроса журналов Kibana.
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
-            "zabbixHostID": int(dev.zabbix_info.hostid),
+            "zabbixHostID": int(dev.zabbix_info.hostid or 0),
             "permission": models.Profile.permissions_level.index(
                 models.Profile.objects.get(user_id=request.user.id).permissions
             ),

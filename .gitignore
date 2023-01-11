@@ -15,7 +15,6 @@ doppler.yaml
 .run
 */tests/*
 */migrations/*
-logs
 Dockerfile
 docker-compose.yaml
 templates/test*
@@ -25,5 +24,5 @@ templates/maps/external
 static/admin
 appmap.yml
 tmp
-debug*.log
+debug.log*
 node_modules

@@ -1,5 +1,10 @@
 <div id="device">
 
+<!--    Всплывающее уведомление-->
+    <info-toast
+            :toast="toastInfo">
+    </info-toast>
+
 <!--    Имя оборудования и его статус-->
     <device-status-name
             :status="deviceAvailable"
@@ -12,18 +17,18 @@
     <div class="row">
       <div class="col-md-4">
 
-<!--      Кнопка для отображения панели с информацией Zabbix-->
-          <zabbix-info-button></zabbix-info-button>
+<!--    Кнопка для отображения панели с информацией Zabbix-->
+        <zabbix-info-button></zabbix-info-button>
 
-<!--        Ссылка на Zabbix-->
+<!--    Ссылка на Zabbix-->
         <zabbix-link :zabbix_host_id="zabbixHostID"></zabbix-link>
 
         <div style="margin-top: 20px;">
 
-<!--            Ссылка на Elastic Stack-->
+<!--        Ссылка на Elastic Stack-->
             <elastic-link :logs_url="elasticStackLink"></elastic-link>
 
-<!--            Ссылка на карту-->
+<!--        Ссылка на карту-->
             <map-link :coords="deviceCoords"></map-link>
 
         </div>
@@ -79,19 +84,19 @@
                 <div class="btn-group" role="group">
                   <div v-if="permissionLevel >= 2" class="btn-group-vertical" role="group">
 
-    <!--              ВКЛЮЧИТЬ ПОРТ -->
+    <!--     ВКЛЮЧИТЬ ПОРТ -->
                       <button type="button" class="btn text-success" style="height: 16px; font-size: 10px; padding: 0"
-                             onclick="update_modal(`{{ intf.Interface }}`, `{{ intf.Description }}`, `up`)">
-                      <span data-bs-toggle="modal" data-bs-target="#modal" style="padding: 2px 12px 6px 12px">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
-                          <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"></path>
-                        </svg>
-                      </span>
+                             @click="registerAction('up', intf.Interface, intf.Description)">
+                          <span data-bs-toggle="modal" data-bs-target="#modal" style="padding: 2px 12px 6px 12px">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
+                              <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"></path>
+                            </svg>
+                          </span>
                       </button>
 
-    <!--              ВЫКЛЮЧИТЬ ПОРТ -->
+    <!--     ВЫКЛЮЧИТЬ ПОРТ -->
                       <button type="button" class="btn text-danger" style="height: 16px; font-size: 10px; padding: 0"
-                             onclick="update_modal(`{{ intf.Interface }}`, `{{ intf.Description }}`, `down`)">
+                             @click="registerAction('down', intf.Interface, intf.Description)">
                           <span data-bs-toggle="modal" data-bs-target="#modal" style="height: 16px">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down-fill" viewBox="0 0 16 16">
                               <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"></path>
@@ -102,10 +107,10 @@
 
                   <div class="btn-group" role="group">
 
-    <!--              ПЕРЕЗАГРУЗКА ПОРТА -->
+    <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
                       <span v-if="permissionLevel >= 1" data-bs-toggle="modal" data-bs-target="#modal">
                       <button type="button" class="btn" style="padding: 6px 6px 2px 6px"
-                                 onclick="update_modal(`{{ intf.Interface }}`, `{{ intf.Description }}`, `reload`)">
+                              @click="registerAction('reload', intf.Interface, intf.Description)">
 
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
                           <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>
@@ -114,7 +119,7 @@
                       </button>
                       </span>
 
-    <!--              Посмотреть порт -->
+    <!--     Посмотреть порт -->
                       <a class="btn" style="padding: 6px 6px 2px 6px"
                          :href="'/device/port?device='+deviceName+'&port='+intf.Interface+'&desc='+intf.Description">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box" viewBox="0 0 16 16">
@@ -146,7 +151,7 @@
         </table>
         </div>
 
-        <div v-else-if="collected === ''" class="d-flex justify-content-center">
+        <div v-else-if="collected === 'new'" class="d-flex justify-content-center">
             <div class="spinner-grow text-primary" role="status" style="width: 100px; height: 100px;">
               <span class="visually-hidden">Loading...</span>
             </div>
@@ -154,11 +159,17 @@
 
         <h1 v-else class="py-5" style="text-align: center;">
             <span v-if="errorStatus">{{ errorStatus }}</span>
-            <span v-else>Нет сохраненных интерфейсов</span>
+            <span v-else>Нет интерфейсов</span>
         </h1>
     </div>
 
 <!-- Информация с Zabbix -->
-    <zabbix-info v-show="zabbixInfo" :zabbix-info="zabbixInfo"></zabbix-info>
+    <zabbix-info
+            v-show="zabbixInfo"
+            :zabbix-info="zabbixInfo">
+    </zabbix-info>
 
+    <modal-port-control
+            :port_action="portAction">
+    </modal-port-control>
 </div>

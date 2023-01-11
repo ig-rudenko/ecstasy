@@ -8,12 +8,14 @@ import ToZabbixLink from "./components/ToZabbixLink.vue";
 import ZabbixInfoPanel from "./components/ZabbixInfoPanel.vue";
 import ZabbixInfoPanelButton from "./components/ZabbixInfoPanelButton.vue";
 import InterfacesHelpText from "./components/InterfacesHelpText.vue";
+import ModalPortControl from "./components/ModalPortControl.vue";
+import InfoToast from "./components/InfoToast.vue";
 
 export default {
   name: 'device',
   data() {
     return {
-      collected: "", // Дата и время сбора интерфейсов
+      collected: "new", // Дата и время сбора интерфейсов
       errorStatus: "", // Ошибка сбора интерфейсов
       deviceAvailable: -1, // Оборудование доступно?
       permissionLevel: 0, // Уровень привилегий пользователя
@@ -22,10 +24,27 @@ export default {
       deviceIP: "",
       currentStatus: true, // Собирать интерфейсы в реальном времени?
       zabbixHostID: null,
-      interfaces: function () { return [] },
+      interfaces: [],
       elasticStackLink: "", // Ссылка на логи
-      deviceCoords: function () { return [] },
-      zabbixInfo: function () { return {} },
+      deviceCoords: [],
+      zabbixInfo: [],
+
+      csrf_token: null,
+
+      portAction: {
+        name: "",
+        action: "",
+        submit: null,
+        port: "",
+        desc: ""
+      },
+
+      toastObject: null,
+      toastInfo: {
+        title: "",
+        message: "",
+        color: "#ffffff"
+      }
     }
   },
   computed: {
@@ -34,39 +53,14 @@ export default {
     }
   },
 
-  created() {
+  mounted() {
+    this.csrf_token = $('input[name=csrfmiddlewaretoken]')[0].value
     this.getInfo()
     this.getInterfaces()
+    this.toastObject = $('.toast')
   },
 
   methods: {
-    intfStatusDesc: function (status) {
-      if (status === "dormant") {
-        return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
-      }
-      if (status === "notPresent") {
-        return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)"
-      }
-    },
-    statusStyleObj: function (status) {
-      let color = function () {
-        if (status === "admin down") return "#ffb4bb"
-        if (status === "notPresent") return "#c1c1c1"
-        if (status === "dormant") return "#ffe389"
-        if (status !== "down") return "#22e58b"
-      }
-      return {
-        'width': '150px',
-        'text-align': 'center',
-        'background-color': color()
-      }
-    },
-
-    updateCurrentStatus: function () {
-      this.currentStatus = true
-      this.autoUpdateInterfaces = true
-    },
-
     /** Смотрим информацию про оборудование */
     async getInfo() {
       try {
@@ -83,10 +77,9 @@ export default {
         this.deviceCoords = data.coords
 
       } catch (error) {
-          console.log(error)
+        console.log(error)
       }
     },
-
     /** Смотрим интерфейсы оборудования */
     async getInterfaces() {
 
@@ -98,15 +91,21 @@ export default {
 
       try {
         let url = "/device/api/" + this.deviceName + "/interfaces?"
-        if (this.withVlans) { url += "vlans=1" } else { url += "vlans=0" }
-        if (this.currentStatus) { url += "&current_status=1" }
+        if (this.withVlans) {
+          url += "vlans=1"
+        } else {
+          url += "vlans=0"
+        }
+        if (this.currentStatus) {
+          url += "&current_status=1"
+        }
 
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
         let data = await response.json()
 
         this.interfaces = data.interfaces
         this.collected = data.collected
-        this.deviceAvailable = data.deviceAvailable?1:0
+        this.deviceAvailable = data.deviceAvailable ? 1 : 0
 
         // Если оборудование доступно, то смотрим интерфейсы в реальном времени
         this.currentStatus = this.deviceAvailable
@@ -115,11 +114,104 @@ export default {
         this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable)
 
       } catch (error) {
-          console.log(error)
+        console.log(error)
       }
 
       // Через 4 сек запускаем метод снова
       setTimeout(this.getInterfaces, 4000)
+    },
+
+    intfStatusDesc: function (status) {
+      if (status === "dormant") {
+        return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
+      }
+      if (status === "notPresent") {
+        return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)"
+      }
+    },
+
+    registerAction: function (action, port, description) {
+
+      if (["up", "down", "reload"].indexOf(action) < 0) {
+        // Если неверное действие
+        this.portAction = {
+          name: "",
+          action: null,
+          port: "",
+          desc: ""
+        }
+      }
+
+      let actionMethod
+      let actionName
+      if (action === "up") {
+        actionName = "включить"
+      }
+      if (action === "down") {
+        actionName = "выключить"
+      }
+      if (action === "reload") {
+        actionName = "перезагрузить"
+      }
+
+      this.portAction = {
+        name: actionName,
+        port: port,
+        desc: description,
+        action: action,
+        submit: this.submitPortAction
+      }
+    },
+
+    submitPortAction: function (action, save_config, port, desc) {
+      let toastInfo = this.toastInfo
+
+      let data = {
+        port: port,                 // Сам порт
+        device: this.deviceName,    // Имя оборудования
+        desc: desc,                 // Описание порта
+        status: action,             // Что сделать с портом
+        save: save_config,          // Сохранить конфигурацию после действия?
+        csrfmiddlewaretoken: this.csrf_token
+      }
+      $.ajax({
+          url: "/device/port/reload",
+          type: 'POST',
+          data: data,
+          success: function( data ) {
+            toastInfo.title= data.status
+            toastInfo.message = data.message
+            toastInfo.color = data.color
+          },
+          error: function (data) {
+            console.log("error", data)
+            toastInfo.title= "ERROR"
+            toastInfo.message = data
+            toastInfo.color = "#cb0707"
+
+          }
+      });
+      this.toastObject.toast('show')
+    },
+
+    statusStyleObj: function (status) {
+      status = status.toLowerCase()
+      let color = function () {
+        if (status === "admin down") return "#ffb4bb"
+        if (status === "notpresent") return "#c1c1c1"
+        if (status === "dormant") return "#ffe389"
+        if (status !== "down") return "#22e58b"
+      }
+      return {
+        'width': '150px',
+        'text-align': 'center',
+        'background-color': color()
+      }
+    },
+
+    updateCurrentStatus: function () {
+      this.currentStatus = true
+      this.autoUpdateInterfaces = true
     }
   },
   components: {
@@ -129,7 +221,9 @@ export default {
     "map-link": MapCoordLink,
     "zabbix-link": ToZabbixLink,
     "zabbix-info": ZabbixInfoPanel,
-    "zabbix-info-button": ZabbixInfoPanelButton
+    "zabbix-info-button": ZabbixInfoPanelButton,
+    "modal-port-control": ModalPortControl,
+    "info-toast": InfoToast,
   }
 }
 </script>
