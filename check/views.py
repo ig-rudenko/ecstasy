@@ -186,6 +186,8 @@ def device_info(request, name: str):
     :param name: Название оборудования
     """
 
+    return render(request, "check/device_info.html")
+
     # Получаем объект устройства из БД
     model_dev = get_object_or_404(models.Devices, name=name)
 

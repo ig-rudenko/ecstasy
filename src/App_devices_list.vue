@@ -37,8 +37,8 @@ export default {
                 );
                 let data = await response.json()
 
-                this.devices = data
-                this.count = data.length
+                this.devices = data || []
+                this.count = data.length || 0
 
                 let devices_groups = []
                 let devices_vendors = []
