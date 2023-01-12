@@ -129,7 +129,7 @@ export default {
         this.deviceAvailable = data.deviceAvailable ? 1 : 0
 
         // Если оборудование доступно, то смотрим интерфейсы в реальном времени
-        this.currentStatus = this.deviceAvailable
+        // this.currentStatus = this.deviceAvailable
 
         // Если оборудование недоступно, то автообновление тоже недоступно
         this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable)
