@@ -65,12 +65,15 @@ export default {
             } else {
                 this.page = num - 1
             }
+            this.changeImageIndex()
         },
-        changeVendor: function (event) {
-            this.selectedVendor = event.target.value || ""
+        setVendor: function (vendor) {
+            this.selectedVendor = vendor
+            this.changeImageIndex()
         },
-        changeGroup: function (event) {
-            this.selectedGroup = event.target.value || ""
+        setGroup: function (group) {
+            this.selectedGroup = group
+            this.changeImageIndex()
         }
     },
     computed: {
@@ -107,8 +110,6 @@ export default {
                 // Новый срез
                 slice_array = array.slice(this.page*this.rows_per_page, (this.page + 1)*this.rows_per_page)
             }
-
-            this.changeImageIndex()
 
             return slice_array
         }

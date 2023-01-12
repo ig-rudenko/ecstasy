@@ -22,39 +22,20 @@
         Всего найдено: {{ count }}
       </li>
 
-      <li class="nav-item dropdown noselect">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-            {{ selectedGroup || "Group" }}
-        </a>
-        <ul class="dropdown-menu" style="cursor: pointer">
-              <span class="dropdown-item" @click="changeGroup" value="">Все группы</span>
-
-              <option class="dropdown-item"
-               v-for="group in groups"
-               @click="changeGroup" v-bind:value="group">{{ group }}</option>
-
-        </ul>
-      </li>
-
-      <li class="nav-item dropdown noselect">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            {{ selectedVendor || "Vendor" }}
-        </a>
-        <ul class="dropdown-menu" style="cursor: pointer">
-              <span class="dropdown-item" @click="changeVendor" >Все вендоры</span>
-
-              <option class="dropdown-item"
-               v-for="vendor in vendors"
-               @click="changeVendor" v-bind:value="vendor">{{ vendor }}</option>
-
-        </ul>
-      </li>
     </ul>
 
     <pagination v-bind:go-to-page="goToPage" v-bind:num_pages="num_pages" v-bind:page="page"></pagination>
 
     <div class="table-responsive-lg">
-        <devices-table v-bind:devices="filteredDevices"></devices-table>
+        <devices-table
+                v-bind:current-group="selectedGroup"
+                v-bind:current-vendor="selectedVendor"
+                v-bind:groups="groups"
+                v-bind:vendors="vendors"
+                v-bind:devices="filteredDevices"
+                v-bind:set-vendor="setVendor"
+                v-bind:set-group="setGroup">
+        </devices-table>
     </div>
 
     <pagination v-bind:go-to-page="goToPage" v-bind:num_pages="num_pages" v-bind:page="page"></pagination>
