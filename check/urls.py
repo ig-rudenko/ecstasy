@@ -16,8 +16,7 @@ urlpatterns = [
     path("port/change-profile", views.change_adsl_profile, name="change-port-profile"),
     path("session", views.show_session, name="show-session"),
     path("cut-session", views.cut_user_session, name="cut-session"),
-    path("<name>", views.device_info, name="device_info"),
-    path("<device_name>/info", views.detail_device_info, name="detail-device-info"),
+    path("<name>", views.device_info, name="device_info")
 ]
 
 # API

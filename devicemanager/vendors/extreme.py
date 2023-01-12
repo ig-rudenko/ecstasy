@@ -357,4 +357,4 @@ class Extreme(BaseDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        return {}
+        pass

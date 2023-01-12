@@ -487,3 +487,6 @@ class ZTE(BaseDevice):
 
     def get_port_info(self, port: str) -> str:
         return ""
+
+    def get_device_info(self) -> dict:
+        pass

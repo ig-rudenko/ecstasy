@@ -2,17 +2,13 @@
 # Функции представления для взаимодействия с оборудованием
 """
 
-import json
-import random
 import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
-from datetime import datetime
 import pexpect
 import ping3
 
 import django.db.utils
-from django.urls import reverse
 from django.http import (
     HttpResponseForbidden,
     JsonResponse,
@@ -21,19 +17,15 @@ from django.http import (
     Http404,
 )
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
-from django.db.models import Q
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
-
-from .paginator import ValidPaginator
 
 from devicemanager.exceptions import (
     TelnetConnectionError,
     TelnetLoginError,
     UnknownDeviceError,
 )
-from net_tools.models import VlanName, DevicesInfo
-from app_settings.models import LogsElasticStackSettings
+from net_tools.models import VlanName
 from app_settings.models import ZabbixConfig
 from devicemanager import *
 from devicemanager.vendors.base import MACList
@@ -350,7 +342,7 @@ def reload_port(request):
 
     port: str = request.POST["port"]
     status: str = request.POST["status"]
-    save_config: bool = request.POST.get("save") != "no"  # По умолчанию сохранять
+    save_config: bool = request.POST.get("save") != "false"  # По умолчанию сохранять
 
     # У пользователя нет доступа к группе данного оборудования
     if not has_permission_to_device(model_dev, request.user):
@@ -764,26 +756,6 @@ def change_adsl_profile(request) -> JsonResponse:
                 return JsonResponse(
                     {"error": "Device can't change profile"}, status=400
                 )
-
-    except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
-        return JsonResponse({"error": str(e)}, status=400)
-
-
-@login_required
-@permission(models.Profile.READ)
-def detail_device_info(request, device_name: str):
-    if request.method != "GET":
-        return JsonResponse({}, status=400)
-
-    device = get_object_or_404(models.Devices, name=device_name)
-
-    if not ping3.ping(device.ip, timeout=2):
-        return JsonResponse({"error": "Device down"})
-
-    try:
-        # Подключаемся к оборудованию
-        with device.connect() as session:
-            return JsonResponse(session.get_device_info())
 
     except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
         return JsonResponse({"error": str(e)}, status=400)

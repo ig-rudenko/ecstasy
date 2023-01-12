@@ -1,6 +1,9 @@
 <template>
-<a v-if="logs_url" style="text-decoration: none; margin: 0 15px 0 15px;" target="_blank" :href="logs_url"
-    class="text-decoration-none text-dark">
+<div>
+<a
+    v-if="logs_url"
+    :href="logs_url"
+    class="btn" target="_blank">
     <svg data-type="logoElastic" xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none"
          viewBox="0 0 32 32" class="euiIcon chrHeaderLogo__cluster css-7yvbl4-euiIcon-l" focusable="false"
          role="img" data-test-subj="globalLoadingIndicator-hidden" aria-label="Elastic Logo">
@@ -9,6 +12,7 @@
         </path>
     </svg> Elastic Stack LOGS
 </a>
+</div>
 </template>
 
 <script>

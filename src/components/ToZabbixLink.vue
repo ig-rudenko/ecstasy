@@ -1,6 +1,8 @@
 <template>
 <div>
-  <a v-if="zabbix_host_id" :href="'http://10.100.0.50/zabbix/hostinventories.php?hostid=' + zabbix_host_id"
+  <a
+      v-if="zabbix_host_id"
+      :href="'http://10.100.0.50/zabbix/hostinventories.php?hostid=' + zabbix_host_id"
       class="btn" target="_blank">
       <svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg"
            width="30" height="30" fill="currentColor" class="bi bi-signpost" viewBox="0 0 16 16">

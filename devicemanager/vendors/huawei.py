@@ -1666,6 +1666,9 @@ class HuaweiMA5600T(BaseDevice):
     def get_port_errors(self, port: str) -> str:
         return ""
 
+    def get_device_info(self) -> dict:
+        pass
+
 
 class HuaweiCX600(BaseDevice):
     """
@@ -1779,4 +1782,7 @@ class HuaweiCX600(BaseDevice):
         pass
 
     def get_port_errors(self, port: str) -> str:
+        pass
+
+    def get_device_info(self) -> dict:
         pass

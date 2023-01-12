@@ -95,6 +95,7 @@ class Cisco(BaseDevice):
             self.session.sendline("write")
             # self.session.expect(r'Building configuration')
             if self.session.expect([self.prompt, r"\[OK\]"]):
+                self.session.expect(self.prompt)
                 return self.SAVED_OK
         return self.SAVED_ERR
 

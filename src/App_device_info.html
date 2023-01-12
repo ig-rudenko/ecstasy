@@ -14,33 +14,39 @@
 
     <hr>
 
-    <div class="row">
-      <div class="col-md-4">
+    <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <div class="card h-md-100">
+            <div class="card-body">
+    <!--    Кнопка для отображения панели с информацией Zabbix-->
+            <zabbix-info-button></zabbix-info-button>
 
-<!--    Кнопка для отображения панели с информацией Zabbix-->
-        <zabbix-info-button></zabbix-info-button>
+    <!--    Ссылка на Zabbix-->
+            <zabbix-link :zabbix_host_id="zabbixHostID"></zabbix-link>
 
-<!--    Ссылка на Zabbix-->
-        <zabbix-link :zabbix_host_id="zabbixHostID"></zabbix-link>
-
-        <div style="margin-top: 20px;">
-
-<!--        Ссылка на Elastic Stack-->
+    <!--    Ссылка на Elastic Stack-->
             <elastic-link :logs_url="elasticStackLink"></elastic-link>
 
-<!--        Ссылка на карту-->
+    <!--    Ссылка на карту-->
             <map-link :coords="deviceCoords"></map-link>
-
+            </div>
         </div>
       </div>
 
-<!--  Иконки температуры, загрузки ЦП и т.д.-->
-      <div id="utilization-info" class="col-md-6 ms-auto py-3" style="text-align: right"></div>
 
+      <div v-show="Object.keys(deviceStats).length" class="col-md-2">
+        <div class="card h-md-100">
+            <div class="card-body">
+        <!--  Иконки температуры, загрузки ЦП и т.д.-->
+              <device-stats :stats="deviceStats"></device-stats>
+            </div>
+        </div>
+      </div>
     </div>
 
 <!--    Время обновления интерфейсов-->
     <interfaces-help
+            :time_passed="timePassedFromLastUpdate"
             :device_status="deviceAvailable"
             :auto_update="autoUpdateInterfaces"
             :update-current-status="updateCurrentStatus"
@@ -165,7 +171,7 @@
 
 <!-- Информация с Zabbix -->
     <zabbix-info
-            v-show="zabbixInfo"
+            v-show="Object.keys(zabbixInfo).length"
             :zabbix-info="zabbixInfo">
     </zabbix-info>
 

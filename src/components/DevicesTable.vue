@@ -11,14 +11,14 @@
   </thead>
   <tbody>
       <tr v-for="dev in devices">
-        <td>{{ dev.ip }}</td>
         <td>
-          <span class="nowrap">
-            <a class="text-decoration-none" :href="'/device/' + dev.name"
-               style="color: black;">
-              {{ dev.name }}
-            </a>
-          </span>
+          <span class="btn btn-light" style="user-select: all">{{ dev.ip }}</span></td>
+        <td>
+          <a class="text-decoration-none nowrap btn btn-outline-info"
+             :href="'/device/' + dev.name"
+             style="color: black;">
+            {{ dev.name }}
+          </a>
         </td>
         <td>{{ dev.vendor }}</td>
         <td>{{ dev.model }}</td>

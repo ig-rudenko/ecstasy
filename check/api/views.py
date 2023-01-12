@@ -1,4 +1,5 @@
 import json
+import ping3
 from datetime import datetime
 
 from django.views import View
@@ -13,7 +14,12 @@ from rest_framework import generics
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
-from devicemanager.device import Device, Interfaces
+from devicemanager.device import Device
+from devicemanager.exceptions import (
+    TelnetLoginError,
+    TelnetConnectionError,
+    UnknownDeviceError,
+)
 from net_tools.models import DevicesInfo
 from .serializers import DevicesSerializer
 from .. import models
@@ -103,12 +109,12 @@ class DeviceInterfacesAPIView(View):
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
         if not current_status:
             last_interfaces, last_datetime = self.get_last_interfaces()
-            last_datetime = _date(last_datetime)
+            # last_datetime = _date(last_datetime, "H:i l j F Y")
             json_str = (
                 '{"interfaces": '
                 + f"{last_interfaces or '[]'}"
                 + ', "collected": "'
-                + last_datetime
+                + str(last_datetime)
                 + f"\", \"deviceAvailable\": {'true' if ping > 0 else 'false'}"
                 + "}"
             )
@@ -268,7 +274,6 @@ class DeviceInterfacesAPIView(View):
 
 @method_decorator(login_required, name="dispatch")
 class DeviceInfoAPIView(View):
-
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
 
@@ -281,12 +286,39 @@ class DeviceInfoAPIView(View):
             "deviceName": device_name,
             "deviceIP": model_dev.ip,
             # Создание URL-адреса для запроса журналов Kibana.
-            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
+            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(
+                device=model_dev
+            ),
             "zabbixHostID": int(dev.zabbix_info.hostid or 0),
+            "zabbixInfo": {
+                "description": dev.zabbix_info.description,
+                "inventory": dev.zabbix_info.inventory.to_dict
+            },
             "permission": models.Profile.permissions_level.index(
                 models.Profile.objects.get(user_id=request.user.id).permissions
             ),
-            "coords": list(dev.zabbix_info.inventory.coordinates())
+            "coords": list(dev.zabbix_info.inventory.coordinates()),
         }
 
         return JsonResponse(data)
+
+
+@method_decorator(login_required, name="dispatch")
+class DeviceStatsInfoAPIView(View):
+    def get(self, request, device_name: str):
+        device = get_object_or_404(models.Devices, name=device_name)
+
+        if not has_permission_to_device(device, request.user):
+            return JsonResponse({}, status=404)
+
+        if not ping3.ping(device.ip, timeout=2):
+            return JsonResponse({})
+
+        try:
+            # Подключаемся к оборудованию
+            with device.connect() as session:
+                device_stats: dict = session.get_device_info() or {}
+                return JsonResponse(device_stats)
+
+        except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError):
+            return JsonResponse({}, status=400)

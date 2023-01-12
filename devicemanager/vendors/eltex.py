@@ -94,7 +94,7 @@ class EltexBase(BaseDevice):
         pass
 
     def get_device_info(self) -> dict:
-        return {}
+        pass
 
 
 class EltexMES(BaseDevice):
@@ -555,7 +555,7 @@ class EltexMES(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     def get_device_info(self) -> dict:
-        return {}
+        pass
 
 
 class EltexESR(EltexMES):
@@ -689,7 +689,7 @@ class EltexESR(EltexMES):
         return errors
 
     def get_device_info(self) -> dict:
-        return {}
+        pass
 
 
 class EltexLTP(BaseDevice):
@@ -1119,7 +1119,7 @@ class EltexLTP(BaseDevice):
         pass
 
     def get_device_info(self) -> dict:
-        return {}
+        pass
 
 
 class EltexLTP16N(BaseDevice):
@@ -1476,4 +1476,4 @@ class EltexLTP16N(BaseDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        return {}
+        pass

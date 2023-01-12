@@ -123,7 +123,7 @@ class Qtech(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> list:
+    def get_mac(self, port: str) -> MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -362,3 +362,6 @@ class Qtech(BaseDevice):
         self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+    def get_device_info(self) -> dict:
+        pass
