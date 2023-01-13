@@ -172,8 +172,8 @@ class DeviceInterfacesView(View):
             device=self.device
         ).select_related("user")
 
-        for comment in interfaces_comments:
-            for intf in interfaces:
+        for intf in interfaces:
+            for comment in interfaces_comments:
                 if comment.interface == intf["Interface"]:
                     intf.setdefault("Comments", [])
                     intf["Comments"].append(
@@ -258,9 +258,9 @@ class DeviceInterfacesView(View):
             device_info = DevicesInfo.objects.get(ip=self.device.ip)
         except DevicesInfo.DoesNotExist:
             return None, None
-        if self.with_vlans:
+        if self.with_vlans and device_info.vlans:
             return device_info.vlans, device_info.vlans_date
-        return device_info.interfaces, device_info.interfaces_date
+        return device_info.interfaces or '{}', device_info.interfaces_date or ""
 
     def save_interfaces(self) -> list:
         """

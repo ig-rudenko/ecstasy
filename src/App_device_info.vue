@@ -27,7 +27,10 @@ export default {
       permissionLevel: 0, // Уровень привилегий пользователя
       withVlans: false, // Собирать VLAN?
       autoUpdateInterfaces: true, // Автоматически обновлять интерфейсы
+
+      deviceName: window.location.pathname.split('/').slice(-1).join(""),
       deviceIP: "",
+
       currentStatus: true, // Собирать интерфейсы в реальном времени?
       zabbixHostID: null,
       interfaces: [],
@@ -59,11 +62,6 @@ export default {
         message: "",
         color: "#ffffff"
       }
-    }
-  },
-  computed: {
-    deviceName: function () {
-      return window.location.pathname.split('/').slice(-1).join("")
     }
   },
 
@@ -389,4 +387,7 @@ export default {
   padding: 15px;
 }
 
+.shadow {
+    box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 50%);
+}
 </style>

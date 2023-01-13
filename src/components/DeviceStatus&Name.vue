@@ -1,5 +1,5 @@
 <template>
-<h2 style="margin-bottom: 10px;">
+<h2 style="margin-top: 10px;">
 
 <!--  Оборудование Доступно-->
     <span v-if="status === 1" class="text-success">
@@ -17,8 +17,8 @@
     </span>
 
 <!--  Название оборудования-->
-    <span style="margin-left: 10px;" v-if="deviceName">{{ deviceName }} ({{ deviceIp }})</span>
-    <span style="margin-left: 10px;" v-else></span>
+    <span style="padding: 10px; vertical-align: middle;">{{ deviceName }}</span>
+    <span v-show="deviceIp" class="badge bg-primary" style="vertical-align: middle;">{{deviceIp}}</span>
 </h2>
 </template>
 

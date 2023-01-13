@@ -1,5 +1,5 @@
 <template>
-<figure class="text-end">
+<div style="padding: 0 10px">
     <blockquote class="blockquote">
         <p v-if="device_status === 1 && current_status && auto_update">Актуальное состояние интерфейсов</p>
         <p v-else-if="device_status === -1 && auto_update">Опрашиваем интерфейсы</p>
@@ -8,14 +8,14 @@
         <p v-else>Интерфейсы были взяты @{{ last_interface_update || " которого не было" }}</p>
     </blockquote>
 
-    <figcaption v-if="!current_status" class="blockquote-footer">
+    <div v-if="!current_status">
       <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
          @click="updateCurrentStatus">
           Посмотреть текущее состояние портов
       </a>
-    </figcaption>
+    </div>
 
-</figure>
+</div>
 </template>
 
 <script>
