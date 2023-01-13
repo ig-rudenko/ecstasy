@@ -11,6 +11,7 @@ import InterfacesHelpText from "./components/InterfacesHelpText.vue";
 import ModalPortControl from "./components/ModalPortControl.vue";
 import InfoToast from "./components/InfoToast.vue";
 import DeviceStats from "./components/DeviceStats.vue";
+import CommentControl from "./components/CommentControl.vue";
 
 export default {
   name: 'device',
@@ -33,6 +34,14 @@ export default {
       elasticStackLink: "", // Ссылка на логи
       deviceCoords: [],
       zabbixInfo: {},
+
+      commentObject: {
+        id: -1,
+        text: "",
+        user: "",
+        action: "",
+        interface: ""
+      },
 
       csrf_token: null,
 
@@ -144,6 +153,27 @@ export default {
       setTimeout(this.getInterfaces, 4000)
     },
 
+    registerCommentAction: function (action, comment, interface_name) {
+      if (action === "add") {
+        this.commentObject = {
+          text: '',
+          user: '',
+          action: action,
+          interface: interface_name,
+          submit: this.submitCommentAction
+        }
+      } else if (comment && (action === "update" || action === "delete")) {
+        this.commentObject = {
+          id: comment.id,
+          text: comment.text,
+          user: comment.user,
+          action: action,
+          interface: interface_name,
+          submit: this.submitCommentAction
+        }
+      }
+    },
+
     intfStatusDesc: function (status) {
       if (status === "dormant") {
         return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
@@ -217,6 +247,61 @@ export default {
       });
     },
 
+    submitCommentAction: function (new_comment) {
+      console.log(new_comment)
+      if (this.commentObject.action === "add" && new_comment.length) {
+        $.ajax({
+            url: "/device/api/" + this.deviceName + '/add-comment',
+            type: 'POST',
+            data: {
+              csrfmiddlewaretoken: this.csrf_token,
+              device: this.deviceName,
+              comment: new_comment,
+              interface: this.commentObject.interface
+            },
+            success: function( data ) {
+              console.log(data)
+            },
+            error: function (data) {
+              console.log(data)
+            }
+        });
+      }
+      if (this.commentObject.action === "update" && new_comment.length) {
+        // Обновление комментария на порту
+        $.ajax({
+            url: "/device/api/comment/" + this.commentObject.id + "/update",
+            type: 'POST',
+            data: {
+              csrfmiddlewaretoken: this.csrf_token,
+              comment: new_comment
+            },
+            success: function( data ) {
+              console.log(data)
+            },
+            error: function (data) {
+              console.log(data)
+            }
+        });
+      }
+      if (this.commentObject.action === "delete") {
+        // Удаления комментария на порту
+        $.ajax({
+            url: "/device/api/comment/" + this.commentObject.id + "/delete",
+            type: 'POST',
+            data: {
+              csrfmiddlewaretoken: this.csrf_token,
+            },
+            success: function( data ) {
+              console.log(data)
+            },
+            error: function (data) {
+              console.log(data)
+            }
+        });
+      }
+    },
+
     statusStyleObj: function (status) {
       status = status.toLowerCase()
       let color = function () {
@@ -230,6 +315,12 @@ export default {
         'text-align': 'center',
         'background-color': color()
       }
+    },
+
+    toggleShowComments: function (event) {
+      console.log(event)
+      event.target.lastElementChild.classList.toggle("open")
+      // $(this).parent().toggleClass('open');
     },
 
     updateCurrentStatus: function () {
@@ -274,6 +365,7 @@ export default {
     "modal-port-control": ModalPortControl,
     "info-toast": InfoToast,
     "device-stats": DeviceStats,
+    "modal-comment-control": CommentControl,
   }
 }
 </script>

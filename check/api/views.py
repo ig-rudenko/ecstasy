@@ -20,13 +20,13 @@ from devicemanager.exceptions import (
     UnknownDeviceError,
 )
 from net_tools.models import DevicesInfo
-from .serializers import DevicesSerializer
+from .serializers import DevicesSerializer, InterfacesCommentsSerializer
 from .. import models
 from ..views import has_permission_to_device
 
 
 @method_decorator(login_required, name="dispatch")
-class DevicesListAPIView(generics.ListAPIView):
+class DevicesListView(generics.ListAPIView):
     """
     ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
     """
@@ -58,7 +58,7 @@ class DevicesListAPIView(generics.ListAPIView):
 
 
 @method_decorator(login_required, name="dispatch")
-class DeviceInterfacesAPIView(View):
+class DeviceInterfacesView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -108,16 +108,17 @@ class DeviceInterfacesAPIView(View):
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
         if not current_status:
             last_interfaces, last_datetime = self.get_last_interfaces()
-            # last_datetime = _date(last_datetime, "H:i l j F Y")
-            json_str = (
-                '{"interfaces": '
-                + f"{last_interfaces or '[]'}"
-                + ', "collected": "'
-                + str(last_datetime)
-                + f"\", \"deviceAvailable\": {'true' if ping > 0 else 'false'}"
-                + "}"
+            last_interfaces = json.loads(last_interfaces)
+
+            self.add_comments_to_interfaces(last_interfaces)
+
+            return JsonResponse(
+                {
+                    "interfaces": last_interfaces,
+                    "deviceAvailable": ping > 0,
+                    "collected": last_datetime,
+                }
             )
-            return HttpResponse(json_str, content_type="application/json")
 
         # Собираем состояние интерфейсов оборудования в данный момент
         self.get_current_interfaces()
@@ -150,6 +151,8 @@ class DeviceInterfacesAPIView(View):
         # Сохраняем интерфейсы в базу.
         interfaces = self.save_interfaces()
 
+        self.add_comments_to_interfaces(interfaces)
+
         return JsonResponse(
             {
                 "interfaces": interfaces,
@@ -157,6 +160,31 @@ class DeviceInterfacesAPIView(View):
                 "collected": datetime.now(),
             }
         )
+
+    def add_comments_to_interfaces(self, interfaces: list) -> list:
+        """
+        ## Берет список интерфейсов и добавляет к ним существующие комментарии
+
+        :param interfaces: список интерфейсов для добавления комментариев
+        :type interfaces: list
+        """
+        interfaces_comments = models.InterfacesComments.objects.filter(
+            device=self.device
+        ).select_related("user")
+
+        for comment in interfaces_comments:
+            for intf in interfaces:
+                if comment.interface == intf["Interface"]:
+                    intf.setdefault("Comments", [])
+                    intf["Comments"].append(
+                        {
+                            "text": comment.comment,
+                            "user": comment.user.username,
+                            "id": comment.id
+                        }
+                    )
+
+        return interfaces
 
     def update_device_info(self):
         """
@@ -272,7 +300,7 @@ class DeviceInterfacesAPIView(View):
 
 
 @method_decorator(login_required, name="dispatch")
-class DeviceInfoAPIView(View):
+class DeviceInfoView(View):
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
 
@@ -291,7 +319,7 @@ class DeviceInfoAPIView(View):
             "zabbixHostID": int(dev.zabbix_info.hostid or 0),
             "zabbixInfo": {
                 "description": dev.zabbix_info.description,
-                "inventory": dev.zabbix_info.inventory.to_dict
+                "inventory": dev.zabbix_info.inventory.to_dict,
             },
             "permission": models.Profile.permissions_level.index(
                 models.Profile.objects.get(user_id=request.user.id).permissions
@@ -303,7 +331,7 @@ class DeviceInfoAPIView(View):
 
 
 @method_decorator(login_required, name="dispatch")
-class DeviceStatsInfoAPIView(View):
+class DeviceStatsInfoView(View):
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
 
@@ -321,3 +349,37 @@ class DeviceStatsInfoAPIView(View):
 
         except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError):
             return JsonResponse({}, status=400)
+
+
+@method_decorator(login_required, name="dispatch")
+class CreateInterfaceCommentView(generics.CreateAPIView):
+
+    serializer_class = InterfacesCommentsSerializer
+
+    def perform_create(self, serializer):
+        dev = get_object_or_404(models.Devices, name=self.request.POST.get("device"))
+        serializer.save(user=self.request.user, device=dev)
+
+
+@method_decorator(login_required, name="dispatch")
+class UpdateInterfaceCommentView(View):
+
+    def post(self, request, pk: int):
+        comment = request.POST.get("comment")
+        if comment:
+            if models.InterfacesComments.objects.filter(id=pk).update(comment=comment):
+                return JsonResponse({"comment": comment})
+            else:
+                return JsonResponse({"error": "Комментария не существует"}, status=400)
+
+        return JsonResponse({"error": "Укажите комментарий"}, status=400)
+
+
+@method_decorator(login_required, name="dispatch")
+class DeleteInterfaceCommentView(View):
+
+    def post(self, request, pk: int):
+        if models.InterfacesComments.objects.filter(id=pk).delete():
+            return HttpResponse(status=204)
+
+        return JsonResponse({"error": "Комментария не существует"}, status=400)

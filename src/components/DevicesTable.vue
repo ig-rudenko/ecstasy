@@ -41,10 +41,6 @@
         <td>
           <button class="btn position-relative" style="user-select: all">
             {{ dev.ip }}
-<!--            <span-->
-<!--                :style="{'background-color': stringToColour(dev.ip.split('.').slice(0, 2).join('.'))}"-->
-<!--                class="position-absolute top-50 start-0 translate-middle p-2 border border-light rounded-circle">-->
-<!--            </span>-->
           </button>
         </td>
 

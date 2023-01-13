@@ -300,10 +300,10 @@ def reload_port(request):
     ## Изменяем состояния порта
     """
 
-    color_warning = "#d3ad23"  # Оранжевый
-    color_success = "#08b736"  # Зеленый
-    color_info = "#31d2f2"  # Голубой
-    color_error = "#d53c3c"  # Красный
+    color_warning = "#ffc107"  # Оранжевый
+    color_success = "#198754"  # Зеленый
+    color_info = "#0d6efd"  # Голубой
+    color_error = "#dc3545"  # Красный
     color = color_success  # Значение по умолчанию
 
     # Если не суперпользователь, то нельзя изменять состояние определенных портов
