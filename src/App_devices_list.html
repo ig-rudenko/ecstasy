@@ -9,12 +9,7 @@
         </div>
     </div>
 
-    <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Введите IP или имя" aria-label="Поиск"
-             aria-describedby="button-addon2"
-             v-model.trim="search"
-             autofocus>
-    </div>
+    <search-form :update_search="updateSearch"></search-form>
 
     <ul class="nav nav-tabs">
 

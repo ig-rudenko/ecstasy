@@ -8,7 +8,8 @@
 
 <!--      HEADER-->
       <div class="modal-header">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffc107" class="bi bi-chat-right-text" viewBox="0 0 16 16">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"
+             :fill="iconColor" class="bi bi-chat-right-text" viewBox="0 0 16 16">
           <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
           <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
         </svg>
@@ -20,18 +21,19 @@
       </div>
 
 <!--      DESCRIPTION-->
-      <div class="container">
-        <div v-if="comment.action === 'add' || comment.action === 'update'" class="bg-light text-dark">
+      <div style="padding: 10px">
+        <div v-if="comment.action === 'add' || comment.action === 'update'">
           <textarea class="form-control" v-model="new_comment" style="height: 170px;"></textarea>
         </div>
 
-        <div v-else-if="comment.action === 'delete'" class="bg-light text-dark text-center">
-          <h4>Вы уверены, что хотите удалить комментарий?</h4>
+        <div v-else-if="comment.action === 'delete'" class="text-center">
+          <strong>Вы уверены, что хотите удалить комментарий?</strong>
+          <br>
           {{comment.text}}
         </div>
 
-        <div v-else class="bg-light text-dark text-center">
-          <h4>Неверное действие</h4>
+        <div v-else>
+          <h3>Неверное действие</h3>
         </div>
       </div>
 
@@ -82,6 +84,11 @@ export default defineComponent({
       if (this.comment.action === "add") return "Создать комментарий для порта " + this.comment.interface
       if (this.comment.action === "update") return "Обновить комментарий порта " + this.comment.interface
       if (this.comment.action === "delete") return "Удалить комментарий порта " + this.comment.interface
+    },
+    iconColor: function () {
+      if (this.comment.action === "add") return "#198754"
+      if (this.comment.action === "update") return "#0d6efd"
+      if (this.comment.action === "delete") return "#dc3545"
     }
   }
 })

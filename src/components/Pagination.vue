@@ -1,6 +1,6 @@
 <template>
-<nav aria-label="..." class="py-3 noselect">
-    <ul v-if="num_pages > 1" class="pagination justify-content-center">
+<nav v-if="num_pages > 1" aria-label="..." class="py-3 noselect">
+    <ul class="pagination justify-content-center">
 
     <li v-if="page > 2" class="page-item" style="cursor: pointer">
         <a v-if="page > 2" @click="goToPage(0)" class="page-link">1 &lt;&lt; </a>

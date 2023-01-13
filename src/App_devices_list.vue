@@ -3,6 +3,7 @@
 <script>
 import DevicesTable from "./components/DevicesTable.vue";
 import Pagination from "./components/Pagination.vue";
+import DevicesSearch from "./components/DevicesSearch.vue";
 
 export default {
     name: 'devices',
@@ -22,6 +23,10 @@ export default {
         }
     },
     methods: {
+        updateSearch: function (event) {
+          this.search = event.target.value
+        },
+
         changeImageIndex: function () {
               let min = Math.ceil(1);
               let max = Math.floor(5);
@@ -120,7 +125,8 @@ export default {
     },
     components: {
         "devices-table": DevicesTable,
-        "pagination": Pagination
+        "pagination": Pagination,
+        "search-form": DevicesSearch,
     }
 }
 </script>

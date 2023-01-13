@@ -1,16 +1,17 @@
 <template>
-<table class="table">
+<table class="table head-padding">
   <thead>
     <tr>
 
-      <th scope="col">IP</th>
+      <th scope="col" class="text-center">IP</th>
 
-      <th scope="col">Имя</th>
+      <th scope="col" style="padding-left: 2.5rem;">Имя</th>
 
-      <th scope="col" class="nav-item dropdown noselect">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+      <th scope="col" class="noselect" style="padding-left: 0;">
+
+          <span data-bs-toggle="dropdown" role="button">
               {{ "Вендор: " + currentVendor }}
-          </a>
+          </span>
           <ul class="dropdown-menu" style="cursor: pointer">
                 <li class="dropdown-item" @click="setVendor('')">Все вендоры</li>
                 <li class="dropdown-item"
@@ -21,10 +22,10 @@
 
       <th scope="col">Модель</th>
 
-      <th scope="col"  class="nav-item dropdown noselect">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+      <th scope="col"  class="noselect">
+          <span data-bs-toggle="dropdown" role="button">
               {{ "Группа: " + currentGroup }}
-          </a>
+          </span>
           <ul class="dropdown-menu" style="cursor: pointer">
                 <li class="dropdown-item" @click="setGroup('')">Все группы</li>
                 <li class="dropdown-item"
@@ -38,10 +39,8 @@
       <tr v-for="dev in devices">
 
 <!--    IP-->
-        <td>
-          <button class="btn position-relative" style="user-select: all">
+        <td class="text-center table-padding">
             {{ dev.ip }}
-          </button>
         </td>
 
 <!--    NAME-->
@@ -71,16 +70,12 @@
           </button>
         </td>
 
-        <td>
-          <div style="padding: 0.375rem 0.75rem;">
+        <td class="table-padding">
             {{ dev.model }}
-          </div>
         </td>
 
-        <td>
-          <div style="padding: 0.375rem 0.75rem;">
+        <td class="table-padding">
             {{ dev.group }}
-          </div>
         </td>
 
       </tr>
@@ -139,3 +134,9 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.head-padding th {
+  padding: 0.875rem 1.25rem;
+}
+</style>

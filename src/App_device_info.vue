@@ -371,10 +371,22 @@ export default {
 </script>
 
 <style>
-  #control:hover svg {
-      fill: currentColor;
-  }
-  #control:not(:hover) svg {
-      fill: lightgrey;
-  }
+.btn-fog:hover svg {
+    fill: currentColor;
+}
+.btn-fog:not(:hover) svg {
+    fill: lightgrey;
+}
+
+.comment-active:hover {
+    fill: #fd7e14;
+}
+.comment-active:not(:hover) {
+    fill: #ffc107;
+}
+
+.head-padding th {
+  padding: 15px;
+}
+
 </style>
