@@ -22,7 +22,7 @@
 <!--      DESCRIPTION-->
       <div class="container">
         <div v-if="comment.action === 'add' || comment.action === 'update'" class="bg-light text-dark">
-          <textarea class="form-control" v-model="new_comment" style="height: 170px;">{{comment.text}}</textarea>
+          <textarea class="form-control" v-model="new_comment" style="height: 170px;"></textarea>
         </div>
 
         <div v-else-if="comment.action === 'delete'" class="bg-light text-dark text-center">
@@ -34,7 +34,7 @@
           <h4>Неверное действие</h4>
         </div>
       </div>
-        {{new_comment}}
+
 <!--      BUTTONS-->
       <div class="modal-footer">
 
