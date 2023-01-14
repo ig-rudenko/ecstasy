@@ -188,8 +188,11 @@ class DeviceInterfacesView(View):
 
     def update_device_info(self):
         """
-        ## Обновляем информацию об устройстве.
+        ## Обновляем информацию об устройстве (вендор, модель) в БД и Zabbix.
+
+        Также отправляем данные, взятые при подключении к оборудованию на Zabbix сервер
         """
+
         # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
         # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
         if (
@@ -217,6 +220,8 @@ class DeviceInterfacesView(View):
     def get_current_interfaces(self) -> None:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
+
+        Если при подключении логин/пароль неверные, то пробуем другие группы авторизации
         """
 
         # Собираем интерфейсы
@@ -258,8 +263,12 @@ class DeviceInterfacesView(View):
             device_info = DevicesInfo.objects.get(ip=self.device.ip)
         except DevicesInfo.DoesNotExist:
             return None, None
+
+        # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
             return device_info.vlans, device_info.vlans_date
+
+        # Отправляем интерфейсы без VLAN
         return device_info.interfaces or '{}', device_info.interfaces_date or ""
 
     def save_interfaces(self) -> list:
@@ -301,6 +310,10 @@ class DeviceInterfacesView(View):
 
 @method_decorator(login_required, name="dispatch")
 class DeviceInfoView(View):
+    """
+    ## Возвращаем
+    """
+
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
 

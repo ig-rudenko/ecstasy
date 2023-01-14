@@ -9,7 +9,7 @@
 
       <th scope="col" class="noselect" style="padding-left: 0;">
 
-          <span data-bs-toggle="dropdown" role="button">
+          <span class="badge bg-primary" data-bs-toggle="dropdown" role="button" style="font-size: 15px;">
               {{ "Вендор: " + currentVendor }}
           </span>
           <ul class="dropdown-menu" style="cursor: pointer">
@@ -22,8 +22,8 @@
 
       <th scope="col">Модель</th>
 
-      <th scope="col"  class="noselect">
-          <span data-bs-toggle="dropdown" role="button">
+      <th scope="col"  class="noselect" style="padding-left: 0;">
+          <span class="badge bg-primary" data-bs-toggle="dropdown" role="button" style="font-size: 15px;">
               {{ "Группа: " + currentGroup }}
           </span>
           <ul class="dropdown-menu" style="cursor: pointer">
@@ -35,7 +35,10 @@
       </th>
     </tr>
   </thead>
-  <tbody>
+
+
+  <tbody style="vertical-align: middle;">
+
       <tr v-for="dev in devices">
 
 <!--    IP-->
