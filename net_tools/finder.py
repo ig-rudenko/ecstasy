@@ -24,7 +24,7 @@ def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
     }
     ```
 
-    :param finding_string: Подстрока, которую необходимо найти на описаниях портов
+    :param finding_string: Подстрока, которую необходимо найти на описаниях портов.
     :param re_string: Регулярное выражение, по которому будет осуществляться поиск описания портов
     :return: Кортеж из списка результатов поиска и количество найденных описаний
     """
@@ -32,7 +32,7 @@ def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
     result = []
     count = 0
 
-    # # Получение всех устройств из базы данных.
+    # Получение всех устройств из базы данных.
     # all_devices = DevicesInfo.objects.all()
 
     # Производим поочередный поиск
@@ -113,20 +113,15 @@ def vlan_range(vlans_ranges: list) -> set:
     :return: развернутое множество VLAN'ов
     """
 
-    vlans = []
+    vlans = set()
     for v_range in vlans_ranges:
-        if len(v_range.split()) > 1:
-            vlans += list(vlan_range(v_range.split()))
-        try:
-            if "-" in v_range:
-                parts = v_range.split("-")
-                vlans += range(int(parts[0]), int(parts[1]) + 1)
+        for r in v_range.split():
+            if '-' in r:
+                start, end = map(int, findall(r'\d+', r))
+                vlans.update(range(start, end+1))
             else:
-                vlans.append(int(v_range))
-        except ValueError:
-            pass
-
-    return set(vlans)
+                vlans.add(int(r))
+    return vlans
 
 
 def find_vlan(
@@ -139,15 +134,18 @@ def find_vlan(
     find_device_pattern: str,
 ):
     """
-    Осуществляет поиск VLAN'ов по портам оборудования
+    ## Осуществляет поиск VLAN'ов по портам оборудования.
+
+    Функция загружает данные об устройстве из базы данных, парсит информацию о VLAN на портах,
+    и если находит совпадение с искомым VLAN, то добавляет информацию в итоговый список.
 
     :param device: Имя устройства, на котором осуществляется поиск
     :param vlan_to_find: VLAN, который ищем
     :param passed_devices:  Уже пройденные устройства
     :param result:  Итоговый список
-    :param empty_ports:  Включать пустые порты в анализ? 'true', 'false'
-    :param only_admin_up:  Включать порты со статусом admin down в анализ? 'true', 'false'
-    :param find_device_pattern:  Регулярное выражение, которое позволит найди оборудование в описании порта
+    :param empty_ports:  Включать пустые порты в анализ? ('true', 'false')
+    :param only_admin_up:  Включать порты со статусом admin down в анализ? ('true', 'false')
+    :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта
     """
 
     admin_status = ""  # Состояние порта
