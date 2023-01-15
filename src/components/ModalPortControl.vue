@@ -114,12 +114,7 @@ export default defineComponent({
   methods:{
     submit_port_action: function (save) {
       if (this.port_action.submit) {
-        this.port_action.submit(
-            this.port_action.action,  // action
-            save,                     // save_config
-            this.port_action.port,    // port
-            this.port_action.desc     // desc
-        )
+        this.port_action.submit(save)
       }
     }
   }

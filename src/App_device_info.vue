@@ -74,6 +74,7 @@ export default {
   },
 
   methods: {
+    /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
       try {
         let url = "/device/api/" + this.deviceName + "/stats"
@@ -108,6 +109,7 @@ export default {
         console.log(error)
       }
     },
+
     /** Смотрим интерфейсы оборудования */
     async getInterfaces() {
 
@@ -151,6 +153,14 @@ export default {
       setTimeout(this.getInterfaces, 4000)
     },
 
+    /**
+     * Регистрируем новое действие над комментариями.
+     * Обновляем объект `commentObject`
+     *
+     * @param action Действие: ('add', 'update' или 'delete')
+     * @param comment Объект комментария из БД ('id', 'text', 'username')
+     * @param interface_name Название интерфейса
+     */
     registerCommentAction: function (action, comment, interface_name) {
       if (action === "add") {
         this.commentObject = {
@@ -181,6 +191,13 @@ export default {
       }
     },
 
+    /**
+     * Регистрируем действие над состоянием порта.
+     *
+     * @param action Действие: ("up", "down", "reload")
+     * @param port Название порта
+     * @param description Описание порта
+     */
     registerAction: function (action, port, description) {
 
       if (["up", "down", "reload"].indexOf(action) < 0) {
@@ -189,7 +206,8 @@ export default {
           name: "",
           action: null,
           port: "",
-          desc: ""
+          desc: "",
+          submit: null
         }
       }
 
@@ -213,16 +231,21 @@ export default {
       }
     },
 
-    submitPortAction: function (action, save_config, port, desc) {
+    /**
+     * Подтверждаем действие над выбранным портом
+     *
+     * @param save_config Сохранять конфигурацию?
+     */
+    submitPortAction: function (save_config) {
       let toastInfo = this.toastInfo
       let toast = this.toastObject
 
       let data = {
-        port: port,                 // Сам порт
-        device: this.deviceName,    // Имя оборудования
-        desc: desc,                 // Описание порта
-        status: action,             // Что сделать с портом
-        save: save_config,          // Сохранить конфигурацию после действия?
+        port: this.portAction.port,       // Сам порт
+        device: this.deviceName,          // Имя оборудования
+        desc: this.portAction.desc,       // Описание порта
+        status: this.portAction.action,   // Что сделать с портом
+        save: save_config,                // Сохранить конфигурацию после действия?
         csrfmiddlewaretoken: this.csrf_token
       }
       $.ajax({
@@ -245,8 +268,13 @@ export default {
       });
     },
 
-    submitCommentAction: function (new_comment) {
-      console.log(new_comment)
+    /**
+     * Подтверждаем действие над выбранным комментарием
+     */
+    submitCommentAction: function () {
+      let new_comment = this.commentObject.text
+
+      // Добавляем новый комментарий
       if (this.commentObject.action === "add" && new_comment.length) {
         $.ajax({
             url: "/device/api/" + this.deviceName + '/add-comment',
@@ -265,8 +293,9 @@ export default {
             }
         });
       }
+
+      // Обновление комментария на порту
       if (this.commentObject.action === "update" && new_comment.length) {
-        // Обновление комментария на порту
         $.ajax({
             url: "/device/api/comment/" + this.commentObject.id + "/update",
             type: 'POST',
@@ -282,8 +311,9 @@ export default {
             }
         });
       }
+
+      // Удаление комментария на порту
       if (this.commentObject.action === "delete") {
-        // Удаления комментария на порту
         $.ajax({
             url: "/device/api/comment/" + this.commentObject.id + "/delete",
             type: 'POST',
@@ -300,6 +330,12 @@ export default {
       }
     },
 
+    /**
+     * Вычисляем цвет статуса порта
+     *
+     * @param status Статус порта
+     * @returns {{"background-color": string, width: string, "text-align": string}}
+     */
     statusStyleObj: function (status) {
       status = status.toLowerCase()
       let color = function () {
@@ -315,17 +351,18 @@ export default {
       }
     },
 
-    toggleShowComments: function (event) {
-      console.log(event)
-      event.target.lastElementChild.classList.toggle("open")
-      // $(this).parent().toggleClass('open');
-    },
-
+    /**
+     * Переводит режим обновления интерфейсов в обнаружение в реальном времени
+     * и включает автоматическое обновление
+     */
     updateCurrentStatus: function () {
       this.currentStatus = true
       this.autoUpdateInterfaces = true
     },
 
+    /**
+     * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
+     */
     timer: function () {
       let seconds_pass = Math.round((Date.now() - this.collected) / 1000)
 

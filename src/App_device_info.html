@@ -20,7 +20,7 @@
       </div>
     </div>
 
-    <div class="row mb-3">
+    <div class="row mb-3" style="padding-bottom: 5px;">
 
       <div class="col-md-7">
         <div class="card shadow" style="height: 220px">
@@ -78,7 +78,7 @@
 
     <div class="row mb-3">
       <div class="col">
-        <div class="card">
+        <div class="card" style="border: none">
 <!--    Таблица интерфейсов-->
         <div v-if="interfaces.length" class="table-responsive-lg">
         <table class="table head-padding">
@@ -113,7 +113,7 @@
                           {{intf.Comments.length}}
                       </span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffc107"
-                           class="bi bi-chat-right-text comment-active" viewBox="0 0 16 16">
+                           class="comment-active bi bi-chat-right-text" viewBox="0 0 16 16">
                         <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
                       </svg>
                       <ul class="dropdown-menu"
