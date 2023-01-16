@@ -1,11 +1,12 @@
-from re import findall, sub, IGNORECASE
-from typing import Tuple
+from re import findall, sub, IGNORECASE, match
+from django.contrib.auth.models import User
 
-from net_tools.models import DevicesInfo, DescNameFormat
+from .models import DevicesInfo, DescNameFormat
+from check.models import Devices
 import json
 
 
-def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
+def find_description(pattern: str, user: User) -> list:
     """
     # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -17,72 +18,54 @@ def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
     {
         "Device": "Имя оборудования",
         "Interface": "Порт",
-        # Выделяем искомый фрагмент с помощью тега <mark></mark>
-        "Description": "Описание <mark>искомый фрагмент</mark>",
-        "original_desc": "Описание искомый фрагмент",
+        "Description": "Описание",
         "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
     }
     ```
 
-    :param finding_string: Подстрока, которую необходимо найти на описаниях портов.
-    :param re_string: Регулярное выражение, по которому будет осуществляться поиск описания портов
-    :return: Кортеж из списка результатов поиска и количество найденных описаний
+    :param pattern: Регулярное выражение, по которому будет осуществляться поиск описания портов.
+    :param user: Поль
+    :return: Список результатов поиска
     """
 
     result = []
-    count = 0
 
-    # Получение всех устройств из базы данных.
-    # all_devices = DevicesInfo.objects.all()
+    user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
 
     # Производим поочередный поиск
     for device in DevicesInfo.objects.all():
         try:
-            # Загрузка данных json из базы данных в словарь python.
-            interfaces = json.loads(device.interfaces)
-            # Проверяем, пуста ли переменная interfaces.
-            if not interfaces:
+            if Devices.objects.get(ip=device.ip).group_id not in user_groups:
                 continue
-            for line in interfaces:
-                # Он проверяет, находится ли find_string в описании или re_string в описании.
-                if (
-                    finding_string
-                    and finding_string.lower() in line.get("Description").lower()
-                    or re_string
-                    and findall(re_string, line.get("Description"), flags=IGNORECASE)
-                ):
-                    # Если нашли совпадение в строке
+        except Devices.DoesNotExist:
+            continue
 
-                    # Ищем искомый фрагмент
-                    replaced_str = findall(
-                        finding_string or re_string,
-                        line["Description"],
-                        flags=IGNORECASE,
-                    )[0]
+        # Загрузка данных json из базы данных в словарь python.
+        interfaces = json.loads(device.interfaces)
+        # Проверяем, пуста ли переменная interfaces.
+        if not interfaces:
+            continue
+        for line in interfaces:
 
-                    result.append(
-                        {
-                            "Device": device.device_name or "Dev" + " " + device.ip,
-                            "Interface": line["Interface"],
-                            # Выделяем искомый фрагмент с помощью тега <mark></mark>
-                            "Description": sub(
-                                replaced_str,
-                                f"<mark>{replaced_str}</mark>",
-                                line["Description"],
-                                flags=IGNORECASE,
-                            ),
-                            "original_desc": line["Description"],
-                            "SavedTime": device.interfaces_date.strftime(
-                                "%d.%m.%Y %H:%M:%S"
-                            ),
-                        }
-                    )
-                    count += 1
+            if not line.get("Description"):
+                continue
+            # Он проверяет, находится ли pattern в описании.
 
-        except Exception as e:
-            print(e)
+            if match(pattern, line.get("Description"), flags=IGNORECASE):
+                # Если нашли совпадение в строке
 
-    return result, count
+                result.append(
+                    {
+                        "Device": device.device_name or "Dev" + " " + device.ip,
+                        "Interface": line["Interface"],
+                        "Description": line["Description"],
+                        "SavedTime": device.interfaces_date.strftime(
+                            "%d.%m.%Y %H:%M:%S"
+                        ),
+                    }
+                )
+
+    return result
 
 
 def reformatting(name: str):
@@ -116,9 +99,9 @@ def vlan_range(vlans_ranges: list) -> set:
     vlans = set()
     for v_range in vlans_ranges:
         for r in v_range.split():
-            if '-' in r:
-                start, end = map(int, findall(r'\d+', r))
-                vlans.update(range(start, end+1))
+            if "-" in r:
+                start, end = map(int, findall(r"\d+", r))
+                vlans.update(range(start, end + 1))
             else:
                 vlans.add(int(r))
     return vlans

@@ -14,12 +14,12 @@
     <ul class="nav nav-tabs">
 
       <li class="nav-link text-dark">
-        Всего найдено: {{ count }}
+        Всего найдено: {{ pagination.count }}
       </li>
 
     </ul>
 
-    <pagination v-bind:go-to-page="goToPage" v-bind:num_pages="num_pages" v-bind:page="page"></pagination>
+    <pagination v-bind:p-object="pagination"></pagination>
 
     <div class="table-responsive-lg">
         <devices-table
@@ -33,7 +33,7 @@
         </devices-table>
     </div>
 
-    <pagination v-bind:go-to-page="goToPage" v-bind:num_pages="num_pages" v-bind:page="page"></pagination>
+    <pagination v-bind:p-object="pagination"></pagination>
 
 </div>
 </div>

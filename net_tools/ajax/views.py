@@ -33,21 +33,13 @@ def find_as_str(request):
     ## Вывод результата поиска портов по описанию
     """
 
-    if not request.GET.get("string"):
-        return JsonResponse({"data": []})
-    result, count = find_description(
-        finding_string=request.GET.get("string")
-        if request.GET.get("type") == "string"
-        else "",
-        re_string=request.GET.get("string")
-        if request.GET.get("type") == "regex"
-        else "",
-    )
+    if not request.GET.get("pattern"):
+        return JsonResponse({"interfaces": []})
 
-    return render(
-        request,
-        "tools/descriptions_table.html",
-        {"data": result, "count": count, "pattern": request.GET.get("string")},
+    result = find_description(request.GET.get("pattern"), request.user)
+
+    return JsonResponse(
+        {"interfaces": result},
     )
 
 
