@@ -1,8 +1,9 @@
-from re import findall, sub, IGNORECASE, match
+from re import findall, sub, IGNORECASE, match, compile
 from django.contrib.auth.models import User
 
+from check.models import Devices, InterfacesComments
+
 from .models import DevicesInfo, DescNameFormat
-from check.models import Devices
 import json
 
 
@@ -28,6 +29,7 @@ def find_description(pattern: str, user: User) -> list:
     :return: Список результатов поиска
     """
 
+    pattern = compile(pattern, flags=IGNORECASE)
     result = []
 
     user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
@@ -35,30 +37,45 @@ def find_description(pattern: str, user: User) -> list:
     # Производим поочередный поиск
     for device in DevicesInfo.objects.all():
         try:
-            if Devices.objects.get(ip=device.ip).group_id not in user_groups:
+            if device.dev.group_id not in user_groups:
                 continue
         except Devices.DoesNotExist:
             continue
 
+        # Проверяем, пуста ли переменная interfaces.
+        if not device.interfaces:
+            continue
+
         # Загрузка данных json из базы данных в словарь python.
         interfaces = json.loads(device.interfaces)
-        # Проверяем, пуста ли переменная interfaces.
-        if not interfaces:
-            continue
-        for line in interfaces:
 
+        for line in interfaces:
             if not line.get("Description"):
                 continue
-            # Он проверяет, находится ли pattern в описании.
 
-            if match(pattern, line.get("Description"), flags=IGNORECASE):
+            if match(pattern, line["Description"]):
                 # Если нашли совпадение в строке
+
+                comments = device.dev.interfacescomments_set.filter(
+                    interface=line["Interface"]
+                ).select_related("user")
+
+                comments_list = []
+                for comment in comments:
+                    comments_list.append(
+                        {
+                            "user": comment.user.username,
+                            "text": comment.comment,
+                            "id": comment.id,
+                        }
+                    )
 
                 result.append(
                     {
-                        "Device": device.device_name or "Dev" + " " + device.ip,
+                        "Device": device.dev.name,
                         "Interface": line["Interface"],
                         "Description": line["Description"],
+                        "Comments": comments_list,
                         "SavedTime": device.interfaces_date.strftime(
                             "%d.%m.%Y %H:%M:%S"
                         ),
@@ -135,7 +152,7 @@ def find_vlan(
 
     passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
     try:
-        dev = DevicesInfo.objects.get(device_name=device)
+        dev = DevicesInfo.objects.get(dev__name=device)
     except DevicesInfo.DoesNotExist:
         return
 

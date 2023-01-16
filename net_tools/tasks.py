@@ -93,11 +93,9 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
 
     # Сохраняем интерфейсы
     try:
-        current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
+        current_device_info = DevicesInfo.objects.get(dev=model_dev)
     except DevicesInfo.DoesNotExist:
-        current_device_info = DevicesInfo.objects.create(
-            ip=model_dev.ip, device_name=model_dev.name
-        )
+        current_device_info = DevicesInfo.objects.create(dev=model_dev)
     if with_vlans:
         interfaces_to_save = [
             {

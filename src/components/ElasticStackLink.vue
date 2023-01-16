@@ -1,6 +1,6 @@
 <template>
 <div>
-<a
+<a  style="width: 100%; text-align: left"
     v-if="logs_url"
     :href="logs_url"
     class="btn" target="_blank">

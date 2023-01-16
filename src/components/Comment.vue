@@ -91,8 +91,9 @@ import {defineComponent} from "vue";
 export default defineComponent({
   props: {
     registerCommentAction: {
-      required: true,
-      type: Function
+      required: false,
+      type: Function,
+      default: function (...a) { }
     },
     interface: {
       required: true,

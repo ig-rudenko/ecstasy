@@ -140,13 +140,9 @@ class DeviceInterfacesView(View):
         # Проверка наличия устройства в базе данных. Если это так, он получит устройство.
         # Если это не так, будет создано новое устройство.
         try:
-            self.current_device_info = DevicesInfo.objects.get(
-                device_name=self.device.name
-            )
+            self.current_device_info = DevicesInfo.objects.get(dev=self.device)
         except DevicesInfo.DoesNotExist:
-            self.current_device_info = DevicesInfo.objects.create(
-                ip=self.device.ip, device_name=self.device.name
-            )
+            self.current_device_info = DevicesInfo.objects.create(dev=self.device)
 
         # Сохраняем интерфейсы в базу.
         interfaces = self.save_interfaces()
@@ -260,7 +256,7 @@ class DeviceInterfacesView(View):
         ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
         """
         try:
-            device_info = DevicesInfo.objects.get(ip=self.device.ip)
+            device_info = DevicesInfo.objects.get(dev=self.device)
         except DevicesInfo.DoesNotExist:
             return None, None
 

@@ -655,7 +655,7 @@ class Device:
             from net_tools.models import DevicesInfo
 
             try:
-                device_data_history = DevicesInfo.objects.get(device_name=self.name)
+                device_data_history = DevicesInfo.objects.get(dev__name=self.name)
 
                 self.interfaces = Interfaces(
                     json.loads(

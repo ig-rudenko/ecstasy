@@ -5,6 +5,21 @@
 
 {% block content %}
 
+<div class="row py-3">
+    <div class="col-md-8">
+        <h4 class="fw-bold">
+            <a class="text-decoration-none text-dark" href="{% url 'find-descr' %}">
+                Description search
+            </a>
+        </h4>
+        Поиск конкретной строки в описании на всех собранных интерфейсах у каждого оборудования
+    </div>
+
+    <div class="col-md-4" style="text-align: right">
+        <img height="100px" src="/static/img/search-description-2.svg" alt="search-description-image">
+    </div>
+</div>
+
 <div id="description-search"></div>
 
 {#    ПЕРЕМЕСТИТЬСЯ ВВЕРХ    #}

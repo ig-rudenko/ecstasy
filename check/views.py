@@ -337,8 +337,8 @@ def reload_port(request):
             }
         )
 
-    dev = Device(request.POST["device"])
-    model_dev = get_object_or_404(models.Devices, name=dev.name)
+    # dev = Device(request.POST["device"])
+    model_dev = get_object_or_404(models.Devices, name=request.POST["device"])
 
     port: str = request.POST["port"]
     status: str = request.POST["status"]
@@ -376,7 +376,7 @@ def reload_port(request):
         )
 
     # Если оборудование Недоступно
-    if dev.ping() <= 0:
+    if ping3.ping(model_dev.ip) <= 0:
         return JsonResponse(
             {
                 "message": "Оборудование недоступно!",

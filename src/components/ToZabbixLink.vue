@@ -1,6 +1,6 @@
 <template>
 <div>
-  <a
+  <a  style="width: 100%; text-align: left"
       v-if="zabbix_host_id"
       :href="'http://10.100.0.50/zabbix/hostinventories.php?hostid=' + zabbix_host_id"
       class="btn" target="_blank">

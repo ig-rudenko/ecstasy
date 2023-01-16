@@ -3,7 +3,7 @@
 <script>
 import DevicesTable from "./components/DevicesTable.vue";
 import Pagination from "./components/Pagination.vue";
-import DevicesSearch from "./components/DevicesSearch.vue";
+import SearchInput from "./components/SearchInput.vue";
 
 export default {
   name: 'devices',
@@ -130,7 +130,7 @@ export default {
   components: {
     "devices-table": DevicesTable,
     "pagination": Pagination,
-    "search-form": DevicesSearch,
+    "search-form": SearchInput,
   }
 }
 </script>

@@ -4,8 +4,10 @@
          class="bi bi-search" style="margin-right: 10px;">
       <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
     </svg>
-    <input type="text" @input="update_search" class="search-input" autofocus
-        placeholder="Поиск по Имени или IP адресу">
+    <input type="text" class="search-input" autofocus
+           :placeholder="placeholder"
+           @input="update_search"
+           @keyup.enter="$emit('submit_input')">
 </div>
 </template>
 
@@ -15,10 +17,14 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-      update_search: {
-        required: true,
-        type: Function
-      }
+    placeholder: {
+      required: false,
+      type: String
+    },
+    update_search: {
+      required: true,
+      type: Function
+    }
   }
 })
 </script>

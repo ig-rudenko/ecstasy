@@ -1,32 +1,31 @@
 <div id="description-search">
 
-<div class="input-group mb-3">
-    <button id="search-menu" class="btn btn-outline-secondary">
-        Поиск
-    </button>
-    <input class="form-control" id="find_str" type="text" autofocus placeholder="Введите строку для поиска"
-            @keyup.enter="searchDescription"
-            v-model.trim="pattern">
-</div>
+<search-desc
+        :update_search="updateSearch"
+        v-on:submit_input="searchDescription"
+        placeholder="Введите строку для поиска">
+</search-desc>
 
-<div class="border container rounded-5 py-4">
+
+<div v-show="interfaces !== null" class="py-4">
 
 <!--Нашли по паттерну-->
 <div v-if="interfaces !== null && interfaces.length && !waitResult">
     <div>
-        <h4 class="text-center py-2">Поиск по паттерну: "{{ pattern }}"</h4>
-        <h6 class="py-2" style="margin-left: 20px;">Найдено {{ interfaces.length }}</h6>
+        <h4 class="text-center py-2">Поиск по паттерну: "{{ last_pattern }}"</h4>
+        <h6 class="py-2" style="margin-left: 20px;">Найдено: {{ interfaces.length }}</h6>
     </div>
 
     <pagination v-bind:p-object="pagination"></pagination>
 
     <div class="table-responsive-lg">
-    <table class="table table-striped">
+    <table class="table">
       <thead>
         <tr>
           <th scope="col">Оборудование</th>
           <th scope="col" style="padding-left: 40px">Порт</th>
           <th scope="col" style="text-align: left">Описание</th>
+          <th scope="col">Комментарии</th>
           <th scope="col">Время сохранения</th>
         </tr>
       </thead>
@@ -61,7 +60,12 @@
           </td>
 
 <!--      DESCRIPTION-->
-          <td style="text-align: left">{{ intf.Description }}</td>
+          <td style="text-align: left" v-html="markDescription(intf.Description)"></td>
+
+<!--      COMMENT-->
+          <td>
+              <comment :interface="intf"></comment>
+          </td>
 
 <!--      SAVED TIME-->
           <td>{{ intf.SavedTime }}</td>
@@ -76,7 +80,7 @@
 </div>
 
 <!--Не нашли-->
-<div v-else-if="!interfaces && interfaces != null">
+<div v-else-if="!interfaces && interfaces != null" class="py-4">
     <h4 style="text-align: center">
         Поиск по паттерну: "<span style="background: #fff6d5">{{ pattern }}</span>" не дал результатов
     </h4>
@@ -89,12 +93,12 @@
     </div>
 </div>
 
+</div>
 
-<!--Выполняется поиск-->
+    <!--Выполняется поиск-->
 <div v-show="waitResult" class="text-center">
+    <h4 class="text-center py-2">Поиск по паттерну: "{{ pattern }}"</h4>
     <img height="200" src="/static/img/load_desc.gif">
 </div>
 
-
-</div>
 </div>

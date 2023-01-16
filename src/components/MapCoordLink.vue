@@ -1,6 +1,6 @@
 <template>
 <div>
-<a
+<a  style="width: 100%; text-align: left"
     v-if="coords.length"
     class="btn" target="_blank"
     :href="'https://yandex.ru/maps/959/sevastopol/?mode=search&sll='+coords[0]+'%2C'+coords[1]+'&text='+coords[0]+'%2C'+coords[1]+'&z=17'">
