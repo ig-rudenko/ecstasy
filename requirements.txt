@@ -6,7 +6,7 @@ tabulate
 pyzabbix
 alive-progress
 Django
-mysqlclient>=2.1.1
+mysqlclient
 pyvis==0.3.1
 celery
 ping3

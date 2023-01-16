@@ -12,6 +12,8 @@ import ModalPortControl from "./components/ModalPortControl.vue";
 import InfoToast from "./components/InfoToast.vue";
 import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
+import Comment from "./components/Comment.vue";
+import PortControlButtons from "./components/PortControlButtons.vue";
 
 export default {
   name: 'device',
@@ -401,6 +403,8 @@ export default {
     "info-toast": InfoToast,
     "device-stats": DeviceStats,
     "modal-comment-control": CommentControl,
+    "comment": Comment,
+    "port-control-buttons": PortControlButtons,
   }
 }
 </script>
