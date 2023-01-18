@@ -355,3 +355,6 @@ class Extreme(BaseDevice):
 
     def get_port_config(self, port: str) -> str:
         return ""
+
+    def get_device_info(self) -> dict:
+        pass

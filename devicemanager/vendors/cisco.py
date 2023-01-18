@@ -95,6 +95,7 @@ class Cisco(BaseDevice):
             self.session.sendline("write")
             # self.session.expect(r'Building configuration')
             if self.session.expect([self.prompt, r"\[OK\]"]):
+                self.session.expect(self.prompt)
                 return self.SAVED_OK
         return self.SAVED_ERR
 
@@ -496,3 +497,114 @@ class Cisco(BaseDevice):
         self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+    @BaseDevice._lock
+    def get_device_info(self) -> dict:
+        data = {"cpu": {}, "ram": {}, "flash": {}}
+
+        for key in data:
+            print(key)
+            data[key]["util"] = getattr(self, f"get_{key}_utilization")()
+
+        data["temp"] = self.get_temp()
+
+        print("DEVICE INFO", data)
+        return data
+
+    def get_cpu_utilization(self) -> tuple:
+        """
+        ## Возвращает загрузку ЦП хоста
+        """
+
+        cpu_percent = re.findall(
+            r"one minute: (\d+)%",
+            self.send_command(
+                "show processes cpu | include minute", expect_command=False
+            ),
+            flags=re.IGNORECASE,
+        )
+
+        return tuple(map(int, cpu_percent))
+
+    def get_flash_utilization(self) -> int:
+        """
+        ## Возвращает использование флэш-памяти устройства
+        """
+
+        flash = self.find_or_empty(
+            r"(\d+)\s+(\d+)\s+\S+\s+\S+\s+[boot]*flash",
+            self.send_command("show file systems"),
+            flags=re.IGNORECASE,
+        )
+
+        flash_percent = (
+            int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
+        )
+        return flash_percent
+
+    def get_ram_utilization(self) -> int:
+        """
+        ## Возвращает использование DRAM в процентах
+        """
+
+        output = self.send_command("show memory statistics")
+        pattern = r"Processor\s+\S+\s+(\d+)\s+(\d+)"
+
+        if "Invalid input" in output:
+            output = self.send_command("show memory")
+            pattern = r"Process\s+(\d+)\s+(\d+)"
+
+        ram = self.find_or_empty(pattern, output, flags=re.IGNORECASE)
+        dram_percent = int(int(ram[1]) / int(ram[0]) * 100) if ram else -1
+
+        return dram_percent
+
+    def get_temp(self) -> dict:
+
+        output = self.send_command("show env temp status")
+        pattern = r"Temperature Value: ([-]?\d+[.]?\d?) Degree Celsius"
+
+        if "Invalid input" in output:
+            output = self.send_command("show env temp")
+            pattern = r"CPU\s+([-]?\d+)C"
+
+        temp = self.find_or_empty(pattern, output)
+
+        if not temp:
+            return {}
+
+        temp = float(temp)
+
+        high_temp = "".join(
+            self.find_or_empty(
+                r"SYSTEM High Temperature Shutdown Threshold: (\d+[.]?\d?) Degree Celsius|"
+                r"Red Threshold    : (\d+) Degree Celsius",
+                output,
+            )
+            or 80
+        )
+        medium_temp = "".join(
+            self.find_or_empty(
+                r"SYSTEM High Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius|"
+                r"Yellow Threshold : (\d+) Degree Celsius",
+                output,
+            )
+            or 60
+        )
+        low_temp = (
+            self.find_or_empty(
+                r"SYSTEM Low Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius",
+                output,
+            )
+            or 0
+        )
+
+        status = "normal"
+        if temp >= float(medium_temp):
+            status = "medium"
+        elif temp >= float(high_temp) - 6:
+            status = "high"
+        elif temp <= float(low_temp):
+            status = "low"
+
+        return {"value": temp, "status": status}

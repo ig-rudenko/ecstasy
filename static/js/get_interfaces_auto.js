@@ -1,12 +1,11 @@
 /**
  * Он делает AJAX-запрос к тому же URL-адресу, что и текущая страница, но с добавленным параметром ajax=1.
- * Затем ответ используется для замены содержимого элемента `#interfaces-table`
- * @param [first=false] - Это логическое значение, которое используется для определения того, вызывается ли функция
- * впервые.
+ * Затем ответ используется для замены содержимого элемента `#interfaces-table`.
  */
-function get_interfaces(first=false) {
+let FIRST_REQUEST = true
+function get_interfaces() {
 
-    if ( document.getElementById('auto-update-interfaces').checked || first) {
+    if ( document.getElementById('auto-update-interfaces').checked || FIRST_REQUEST) {
         let request_url = window.location.href
 
         if (window.location.href.includes('?')) {
@@ -19,19 +18,21 @@ function get_interfaces(first=false) {
             url: request_url,
             type: 'GET',
             success: function( data ) {
+                if (FIRST_REQUEST){ get_device_info() }
+
                 $('#interfaces-table').html(data.data)
-                // if (first){ document.getElementById('auto-update-interfaces').checked = false; }
                 window.last_time = Date.now() / 1000
 
                 window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
                 window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+                FIRST_REQUEST = false
+
                 setTimeout(get_interfaces, 4000);
             },
         });
-
     }
-
 }
 
 // ЗАПРОС ИНТЕРФЕЙСОВ
-get_interfaces(true);
+get_interfaces();

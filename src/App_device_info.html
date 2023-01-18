@@ -1,0 +1,173 @@
+<div id="device">
+
+<!--    Всплывающее уведомление-->
+    <info-toast
+            :toast="toastInfo">
+    </info-toast>
+
+    <div class="row mb-3">
+      <div class="col" style="padding: 0">
+        <div class="card shadow">
+          <div class="card-body text-center">
+    <!--    Имя оборудования и его статус-->
+            <device-status-name
+                    :status="deviceAvailable"
+                    :device-name="deviceName"
+                    :device-ip="deviceIP">
+            </device-status-name>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3" style="padding-bottom: 5px;">
+
+      <div class="col-md-7">
+        <div class="card shadow" style="min-height: 220px">
+          <div class="card-body">
+      <!--  Время обновления интерфейсов-->
+            <interfaces-help
+                    :time_passed="timePassedFromLastUpdate"
+                    :device_status="deviceAvailable"
+                    :auto_update="autoUpdateInterfaces"
+                    :update-current-status="updateCurrentStatus"
+                    :current_status="currentStatus"
+                    :last_interface_update="collected">
+            </interfaces-help>
+
+      <!--  Обновление интерфейсов-->
+            <div style="padding: 0 10px">
+            <div v-if="currentStatus" class="form-check form-switch py-3">
+              <input v-model="autoUpdateInterfaces"
+                     class="form-check-input" type="checkbox" role="switch" id="auto-update-interfaces">
+              <label class="form-check-label" for="auto-update-interfaces">Обновлять автоматически</label>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow" style="min-height: 220px">
+            <div class="card-body">
+    <!--    Кнопка для отображения панели с информацией Zabbix-->
+            <zabbix-info-button></zabbix-info-button>
+
+    <!--    Ссылка на Zabbix-->
+            <zabbix-link :zabbix_host_id="zabbixHostID"></zabbix-link>
+
+    <!--    Ссылка на Elastic Stack-->
+            <elastic-link :logs_url="elasticStackLink"></elastic-link>
+
+    <!--    Ссылка на карту-->
+            <map-link :coords="deviceCoords"></map-link>
+            </div>
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="card shadow" style="min-height: 220px">
+            <div class="card-body">
+        <!--  Иконки температуры, загрузки ЦП и т.д.-->
+              <device-stats :stats="deviceStats"></device-stats>
+            </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="row mb-3">
+      <div class="col">
+        <div class="card" style="border: none">
+<!--    Таблица интерфейсов-->
+        <div v-if="interfaces.length" class="table-responsive-lg">
+        <table class="table head-padding">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col" style="text-align: center">Порт</th>
+              <th scope="col" style="text-align: center">Статус</th>
+              <th scope="col">Описание</th>
+              <th scope="col">
+                  <a style="cursor: pointer" class="text-decoration-none"
+                     @click="withVlans = !withVlans">
+                      <span v-if="withVlans">NO VLAN's</span>
+                      <span v-else>+ VLAN's</span>
+                  </a>
+              </th>
+            </tr>
+          </thead>
+          <tbody style="vertical-align: middle">
+
+            <tr v-for="intf in interfaces">
+
+<!--       COMMENTS-->
+              <td style="text-align: right">
+
+                  <comment
+                          :interface="intf"
+                          :register-comment-action="registerCommentAction">
+                  </comment>
+
+              </td>
+
+<!--       ПОРТ-->
+              <td class="btn-fog" style="text-align: right">
+                <port-control-buttons
+                        :port-action="registerAction"
+                        :interface="intf"
+                        :device-name="deviceName"
+                        :permission-level="permissionLevel"
+                        :show-port-enter-link="true">
+                </port-control-buttons>
+              </td>
+
+<!--          Статус порта-->
+              <td :style="statusStyleObj(intf.Status)" data-bs-toggle="tooltip" data-bs-placement="top"
+                  :data-bs-title="intfStatusDesc(intf.Status)">
+                  <span v-if="intf.Status === 'dormant'">activating...</span>
+                  <span v-else>{{intf.Status}}</span>
+              </td>
+
+<!--          Описание порта-->
+              <td>{{ intf.Description }}</td>
+
+<!--          VLANS-->
+              <td v-if="withVlans && intf['VLAN\'s']">{{ intf["VLAN's"].join(", ") }}</td>
+              <td v-else></td>
+
+            </tr>
+
+          </tbody>
+        </table>
+        </div>
+
+        <div v-else-if="collected === 'new'" class="py-5 d-flex justify-content-center">
+            <div class="spinner-grow text-primary" role="status" style="width: 100px; height: 100px;">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <h1 v-else class="py-5" style="text-align: center;">
+            <span v-if="errorStatus">{{ errorStatus }}</span>
+            <span v-else>Нет интерфейсов</span>
+        </h1>
+        </div>
+      </div>
+    </div>
+
+<!-- Информация с Zabbix -->
+    <zabbix-info
+            v-show="Object.keys(zabbixInfo).length"
+            :zabbix-info="zabbixInfo">
+    </zabbix-info>
+
+    <modal-port-control
+            :port_action="portAction">
+    </modal-port-control>
+
+    <modal-comment-control
+            :comment="commentObject">
+    </modal-comment-control>
+
+</div>

@@ -37,14 +37,15 @@ tr:hover {
             <td style="font-family: monospace; font-size: x-large;">
                 <span {% if vlan_name %}data-bs-toggle="tooltip" data-bs-placement="right"
                        data-bs-title="{{ vlan_name }}"{% endif %}
-                    style="cursor: help">
+                    style="cursor: help; font-family: monospace;">
                     {{ vid }}
                 </span>
             </td>
 
             {# MAC #}
             <td id="mac-line" style="font-family: monospace; font-size: x-large;">
-                <span class="nowrap" style="cursor: pointer" title="Поиск MAC"
+                <span class="nowrap" style="cursor: pointer; font-family: monospace;"
+                      title="Поиск MAC"
                       onclick="start_search_mac('{{ mac }}')"
                       data-bs-toggle="modal" data-bs-target="#modal-mac">
                     {{ mac }}

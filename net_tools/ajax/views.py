@@ -1,5 +1,4 @@
 import os
-import re
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -34,21 +33,13 @@ def find_as_str(request):
     ## Вывод результата поиска портов по описанию
     """
 
-    if not request.GET.get("string"):
-        return JsonResponse({"data": []})
-    result, count = find_description(
-        finding_string=request.GET.get("string")
-        if request.GET.get("type") == "string"
-        else "",
-        re_string=request.GET.get("string")
-        if request.GET.get("type") == "regex"
-        else "",
-    )
+    if not request.GET.get("pattern"):
+        return JsonResponse({"interfaces": []})
 
-    return render(
-        request,
-        "tools/descriptions_table.html",
-        {"data": result, "count": count, "pattern": request.GET.get("string")},
+    result = find_description(request.GET.get("pattern"), request.user)
+
+    return JsonResponse(
+        {"interfaces": result},
     )
 
 
@@ -265,6 +256,22 @@ def create_nodes(result: list, net: Network, show_admin_down_ports: str):
 def get_vlan(request):
     """
     ## Трассировка VLAN и отправка карты
+
+    Эта функция обрабатывает GET-запрос для трассировки VLAN.
+    Она использует декоратор @login_required для проверки авторизации пользователя.
+    Если в запросе не содержится параметр vlan, функция возвращает пустой JSON объект.
+    Затем, используя метод load() класса VlanTracerouteConfig, загружает настройки трассировки VLAN из базы данных.
+
+    Функция также идентифицирует список устройств, откуда будет начинаться трассировка VLAN,
+    и определяет паттерн для поиска интерфейсов.
+    Далее функция использует цикл for для перебора списка устройств, используемых для запуска трассировки VLAN.
+    Для каждого устройства функция вызывает функцию find_vlan(), которая ищет VLAN с помощью рекурсивного алгоритма
+    и возвращает список узлов сети, соседей и линий связи для визуализации.
+    Если функция find_vlan() вращает результат, то цикл завершается.
+
+    Если же результат не был найден ни для одного устройства из списка, функция возвращает HttpResponse "empty".
+    Если результат был найден, функция создаёт экземпляр класса Network и добавляет к нему узлы сети,
+    соседей и линии связи из результата. Затем функция отправляет карту в виде JSON-объекта как ответ на запрос.
     """
 
     # Если в запросе нет vlan, вернет пустой объект JSON.

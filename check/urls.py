@@ -3,7 +3,7 @@ URL Configuration
 Расширенное от /device/
 """
 
-from django.urls import path
+from django.urls import path, include
 from check import views
 
 # /device/
@@ -16,5 +16,10 @@ urlpatterns = [
     path("port/change-profile", views.change_adsl_profile, name="change-port-profile"),
     path("session", views.show_session, name="show-session"),
     path("cut-session", views.cut_user_session, name="cut-session"),
-    path("<name>", views.device_info, name="device_info"),
+    path("<name>", views.device_info, name="device_info")
+]
+
+# API
+urlpatterns += [
+    path("api/", include("check.api.urls")),
 ]

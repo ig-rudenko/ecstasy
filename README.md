@@ -2,37 +2,44 @@
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code_style-black-black.svg)](https://github.com/psf/black)
-
 ![Linux](https://img.shields.io/badge/Linux-supported-blue.svg)
 ![windows](https://img.shields.io/badge/Windows-not_supported-red.svg)
 
+<div>
+<img src="https://www.vectorlogo.zone/logos/vuejs/vuejs-icon.svg" alt="vue.js" width="30" height="30"/>
+<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
+<img src="https://cdn.worldvectorlogo.com/logos/django.svg" alt="django" width="30" height="30"/>
+<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
+<img src="https://www.vectorlogo.zone/logos/rabbitmq/rabbitmq-icon.svg" alt="rabbitmq" width="30" height="30"/>
+<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
+<img src="https://codeguida.com/media/post_title/celery-logo.png" alt="celery" width="32" height="32"/>
+</div>
 
 ### Веб-приложение для взаимодействия с сетевым оборудованием
 
 Позволяет отображать информацию о сетевых устройствах в удобном для чтения формате
 без ввода консольных команд.
 
-
-
 ![img.png](img/img_3.png)
 
 ### Возможности:
 
-- Отображение интерфейсов оборудования в реальном времени
+- Взаимодействие с сетевым оборудованием
+  - Отображение интерфейсов оборудования в реальном времени
+  - Управление состоянием порта (up/down)
+  - Просмотр MAC адресов на порту
+  - Просмотр текущей конфигурации порта
+  - Перенаправление для просмотра логов в Elastic Stack
+  - Просмотр ошибок на порту
+  - Возможность просматривать и сбрасывать текущую сессию по MAC адресу
 
-- Управление состоянием порта (up/down)
 
-- Просмотр MAC адресов на порту
+- Отображение топологии VLAN
+- Поиск по текстовому описанию интерфейсов
+- Поиск IP/MAC адреса
+- Создание и просмотр интерактивных карт
 
-- Просмотр текущей конфигурации порта
-
-- Перенаправление для просмотра логов в Elastic Stack
-
-- Просмотр ошибок на порту
-
-- Возможность просматривать и сбрасывать текущую сессию по MAC адресу
-
-### Поддержка производителей:
+### Поддержка производителей оборудования:
 
 В данный момент поддерживаются следующие вендоры:
 - Cisco
@@ -51,11 +58,15 @@
 
 ![img.png](img/img_4.png)
 
-При выборе устройства открывается окно с его интерфейсами
+При выборе оборудования показывается его информация:
 
-Подробная информация берется из Zabbix через API, добавляется в конфигурационный файл
-
-Если в Zabbix указаны координаты, то добавляется возможность посмотреть на карте
+- Состояние оборудования
+- Нагрузка CPU, RAM, Flash и температура
+- Подробная информация (берется из Zabbix)
+- Ссылка в Zabbix
+- Ссылка на карту с местоположением оборудования
+- Логи в Elastic Search
+- Интерфейсы
 
 
 ![img.png](img/img.png)
@@ -77,14 +88,14 @@
 
 ## Дополнительные утилиты
 
-### Найти порт по его описанию
+### Поиск по описанию порта
 
 ![img.png](img/img_5.png)
 
-### Посмотреть как проходит VLAN по сети
+### Посмотреть, как проходит VLAN по сети
 
 ![img.png](img/img_6.png)
 
-### Найти по MAC адресу оборудование
+### Поиск IP или MAC адреса
 
 ![img.png](img/img_7.png)

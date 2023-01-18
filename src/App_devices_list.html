@@ -1,0 +1,42 @@
+<div id="devices">
+  <div>
+    <div class="row py-2">
+        <div class="col-6">
+            <h4 class="fw-bold py-4">Выберите оборудование</h4>
+        </div>
+        <div class="col-6" style="text-align: right">
+            <img style="width: 100%" v-bind:src="'/static/img/device-icon-'+imageIndex+'.svg'" alt="search-description-image">
+        </div>
+    </div>
+
+    <search-form
+            :update_search="updateSearch"
+            placeholder="Поиск по Имени или IP адресу">
+    </search-form>
+
+    <ul class="nav nav-tabs">
+
+      <li class="nav-link text-dark">
+        Всего найдено: {{ pagination.count }}
+      </li>
+
+    </ul>
+
+    <pagination v-bind:p-object="pagination"></pagination>
+
+    <div class="table-responsive-lg">
+        <devices-table
+                v-bind:current-group="selectedGroup"
+                v-bind:current-vendor="selectedVendor"
+                v-bind:groups="groups"
+                v-bind:vendors="vendors"
+                v-bind:devices="filteredDevices"
+                v-bind:set-vendor="setVendor"
+                v-bind:set-group="setGroup">
+        </devices-table>
+    </div>
+
+    <pagination v-bind:p-object="pagination"></pagination>
+
+</div>
+</div>

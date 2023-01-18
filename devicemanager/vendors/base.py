@@ -423,3 +423,7 @@ class BaseDevice(ABC):
     @abstractmethod
     def get_port_errors(self, port: str) -> str:
         """Ошибки на порту"""
+
+    @abstractmethod
+    def get_device_info(self) -> dict:
+        """Словарь с информацией о нагрузке CPU, RAM, Flash, температуры и др."""

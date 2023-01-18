@@ -75,3 +75,6 @@ class ProCurve(BaseDevice):
 
     def get_port_errors(self, port: str) -> str:
         pass
+
+    def get_device_info(self) -> dict:
+        pass

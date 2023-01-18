@@ -421,3 +421,6 @@ class EdgeCore(BaseDevice):
         self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+    def get_device_info(self) -> dict:
+        pass

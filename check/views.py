@@ -2,17 +2,13 @@
 # Функции представления для взаимодействия с оборудованием
 """
 
-import json
-import random
 import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
-from datetime import datetime
 import pexpect
 import ping3
 
 import django.db.utils
-from django.urls import reverse
 from django.http import (
     HttpResponseForbidden,
     JsonResponse,
@@ -21,19 +17,15 @@ from django.http import (
     Http404,
 )
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
-from django.db.models import Q
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
-
-from .paginator import ValidPaginator
 
 from devicemanager.exceptions import (
     TelnetConnectionError,
     TelnetLoginError,
     UnknownDeviceError,
 )
-from net_tools.models import VlanName, DevicesInfo
-from app_settings.models import LogsElasticStackSettings
+from net_tools.models import VlanName
 from app_settings.models import ZabbixConfig
 from devicemanager import *
 from devicemanager.vendors.base import MACList
@@ -175,77 +167,7 @@ def show_devices(request):
     ## Список всех имеющихся устройств
     """
 
-    filter_by_group = request.GET.get("group", "")
-    group_param = f"group={filter_by_group}" if filter_by_group else ""
-
-    filter_by_vendor = request.GET.get("vendor", "")
-    vendor_param = f"&vendor={filter_by_vendor}" if filter_by_vendor else ""
-
-    # Группы оборудования, доступные текущему пользователю
-    user_groups_ids = []
-    user_groups_names = []
-    for group in request.user.profile.devices_groups.all().values("id", "name"):
-        user_groups_ids.append(group["id"])
-        user_groups_names.append(group["name"])
-
-    user_groups_names = {
-        group: reverse("devices-list") + "?" + f"group={group}" + vendor_param
-        for group in user_groups_names
-    }
-
-    # Вендоры оборудования, что доступны пользователю
-    unique_vendors_list = sorted(
-        list(
-            set(
-                d["vendor"]
-                for d in models.Devices.objects.filter(
-                    group__in=user_groups_ids
-                ).values("vendor")
-                if d["vendor"]
-            )
-        )
-    )
-    vendors = {
-        g: reverse("devices-list") + "?" + group_param + f"&vendor={g}"
-        for g in unique_vendors_list
-    }
-
-    full_url = reverse("devices-list") + "?" + group_param + vendor_param
-
-    # Фильтруем запрос
-    query = Q(group__in=user_groups_ids)
-    if request.GET.get("s"):
-        search_string = request.GET["s"].strip()
-        query &= Q(ip__contains=search_string) | Q(name__icontains=search_string)
-
-    # Фильтруем по группе
-    if filter_by_group in user_groups_names:
-        query &= Q(group__name=filter_by_group)
-
-    # Фильтруем по вендору
-    if filter_by_vendor:
-        query &= Q(vendor=filter_by_vendor)
-
-    devs = models.Devices.objects.filter(query).select_related("group")
-
-    paginator = ValidPaginator(devs, per_page=50)
-    page = paginator.validate_number(request.GET.get("page", 1))
-
-    return render(
-        request,
-        "check/devices_list.html",
-        {
-            "devs": paginator.page(page),
-            "search": request.GET.get("s", None),
-            "total_count": paginator.count,
-            "page": page,
-            "num_pages": paginator.num_pages,
-            "device_icon_number": random.randint(1, 5),
-            "devices_groups": user_groups_names,
-            "vendors": vendors,
-            "full_url": full_url,
-        },
-    )
+    return render(request, "check/devices.html")
 
 
 @login_required
@@ -256,167 +178,7 @@ def device_info(request, name: str):
     :param name: Название оборудования
     """
 
-    # Получаем объект устройства из БД
-    model_dev = get_object_or_404(models.Devices, name=name)
-
-    if not has_permission_to_device(model_dev, request.user):
-        return HttpResponseForbidden()
-
-    dev = Device(name)
-
-    # Устанавливаем протокол для подключения
-    dev.protocol = model_dev.port_scan_protocol
-    # Устанавливаем community для подключения
-    dev.snmp_community = model_dev.snmp_community
-    dev.auth_obj = model_dev.auth_group
-    dev.ip = model_dev.ip  # IP адрес
-    ping = dev.ping()  # Оборудование доступно или нет
-
-    # Сканируем интерфейсы в реальном времени?
-    current_status = bool(request.GET.get("current_status", False)) and ping > 0
-
-    # Вместе с VLAN?
-    with_vlans = False if dev.protocol == "snmp" else request.GET.get("vlans") == "1"
-
-    # Время последнего обновления интерфейсов
-    last_interface_update = None
-    if not current_status:
-        try:
-            if with_vlans:
-                last_interface_update = DevicesInfo.objects.get(
-                    ip=model_dev.ip
-                ).vlans_date
-            else:
-                last_interface_update = DevicesInfo.objects.get(
-                    ip=model_dev.ip
-                ).interfaces_date
-        except DevicesInfo.DoesNotExist:
-            pass
-
-    data = {
-        "dev": dev,
-        "ping": ping,
-        # Создание URL-адреса для запроса журналов Kibana.
-        "logs_url": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
-        "zabbix_host_id": dev.zabbix_info.hostid,
-        "current_status": current_status,
-        "last_interface_update": last_interface_update,
-        "perms": models.Profile.permissions_level.index(
-            models.Profile.objects.get(user_id=request.user.id).permissions
-        ),
-    }
-
-    if not request.GET.get("ajax", None):  # Если вызов НЕ AJAX
-        return render(request, "check/device_info.html", data)
-
-    # Собираем интерфейсы
-    status = dev.collect_interfaces(vlans=with_vlans, current_status=current_status)
-
-    model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
-
-    # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
-    if "Неверный логин или пароль" in str(status):
-        # Создаем список объектов авторизации
-        all_auth = list(
-            models.AuthGroup.objects.exclude(name=model_dev.auth_group.name)
-            .order_by("id")
-            .all()
-        )
-
-        # Собираем интерфейсы снова
-        status = dev.collect_interfaces(
-            vlans=with_vlans, current_status=current_status, auth_obj=all_auth
-        )
-
-        if status is None:  # Если статус сбора интерфейсов успешный
-            # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной.
-            # Смотрим объект у которого такие логин и пароль
-            success_auth_obj = models.AuthGroup.objects.get(
-                login=dev.success_auth["login"],
-                password=dev.success_auth["password"],
-            )
-
-            # Указываем новый логин/пароль для этого устройства
-            model_dev.auth_group = success_auth_obj
-            # Добавляем это поле в список изменений
-            model_update_fields.append("auth_group")
-
-    # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
-    # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
-    if (
-        dev.zabbix_info.inventory.model
-        and dev.zabbix_info.inventory.model != model_dev.model
-    ):
-        model_dev.model = dev.zabbix_info.inventory.model
-        model_update_fields.append("model")
-
-    # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
-    if (
-        dev.zabbix_info.inventory.vendor
-        and dev.zabbix_info.inventory.vendor != model_dev.vendor
-    ):
-        model_dev.vendor = dev.zabbix_info.inventory.vendor
-        model_update_fields.append("vendor")
-
-    # Сохраняем изменения
-    if model_update_fields:
-        model_dev.save(update_fields=model_update_fields)
-
-    # Обновляем данные в Zabbix
-    dev.push_zabbix_inventory()
-
-    # Сохраняем интерфейсы
-    if current_status and dev.interfaces:
-        try:
-            current_device_info = DevicesInfo.objects.get(device_name=model_dev.name)
-        except DevicesInfo.DoesNotExist:
-            current_device_info = DevicesInfo.objects.create(
-                ip=model_dev.ip, device_name=model_dev.name
-            )
-
-        if with_vlans:
-            interfaces_to_save = [
-                {
-                    "Interface": line.name,
-                    "Status": line.status,
-                    "Description": line.desc,
-                    "VLAN's": line.vlan,
-                }
-                for line in dev.interfaces
-            ]
-            current_device_info.vlans = json.dumps(interfaces_to_save)
-            current_device_info.vlans_date = datetime.now()
-            current_device_info.save(update_fields=["vlans", "vlans_date"])
-
-        else:
-            interfaces_to_save = [
-                {
-                    "Interface": line.name,
-                    "Status": line.status,
-                    "Description": line.desc,
-                }
-                for line in dev.interfaces
-            ]
-            current_device_info.interfaces = json.dumps(interfaces_to_save)
-            current_device_info.interfaces_date = datetime.now()
-            current_device_info.save(update_fields=["interfaces", "interfaces_date"])
-
-    data = {
-        "dev": dev,
-        "interfaces": dev.interfaces,
-        "ping": ping,
-        "status": status,
-        "with_vlans": with_vlans,
-        "current_status": current_status,
-        "zabbix_host_id": dev.zabbix_info.hostid,
-        "perms": models.Profile.permissions_level.index(
-            models.Profile.objects.get(user_id=request.user.id).permissions
-        ),
-    }
-
-    # Отправляем JSON, вызов AJAX
-    return JsonResponse({"data": render_to_string("check/interfaces_table.html", data)})
-
+    return render(request, "check/device_info.html", {"device_name": name})
 
 def add_names_to_vlan(vlan_mac_list: MACList) -> list:
     """
@@ -538,10 +300,10 @@ def reload_port(request):
     ## Изменяем состояния порта
     """
 
-    color_warning = "#d3ad23"  # Оранжевый
-    color_success = "#08b736"  # Зеленый
-    color_info = "#31d2f2"  # Голубой
-    color_error = "#d53c3c"  # Красный
+    color_warning = "#ffc107"  # Оранжевый
+    color_success = "#198754"  # Зеленый
+    color_info = "#0d6efd"  # Голубой
+    color_error = "#dc3545"  # Красный
     color = color_success  # Значение по умолчанию
 
     # Если не суперпользователь, то нельзя изменять состояние определенных портов
@@ -575,12 +337,12 @@ def reload_port(request):
             }
         )
 
-    dev = Device(request.POST["device"])
-    model_dev = get_object_or_404(models.Devices, name=dev.name)
+    # dev = Device(request.POST["device"])
+    model_dev = get_object_or_404(models.Devices, name=request.POST["device"])
 
     port: str = request.POST["port"]
     status: str = request.POST["status"]
-    save_config: bool = request.POST.get("save") != "no"  # По умолчанию сохранять
+    save_config: bool = request.POST.get("save") != "false"  # По умолчанию сохранять
 
     # У пользователя нет доступа к группе данного оборудования
     if not has_permission_to_device(model_dev, request.user):
@@ -614,7 +376,7 @@ def reload_port(request):
         )
 
     # Если оборудование Недоступно
-    if dev.ping() <= 0:
+    if ping3.ping(model_dev.ip) <= 0:
         return JsonResponse(
             {
                 "message": "Оборудование недоступно!",

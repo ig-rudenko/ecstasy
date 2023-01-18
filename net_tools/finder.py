@@ -1,11 +1,13 @@
-from re import findall, sub, IGNORECASE
-from typing import Tuple
+from re import findall, sub, IGNORECASE, match, compile
+from django.contrib.auth.models import User
 
-from net_tools.models import DevicesInfo, DescNameFormat
+from check.models import Devices, InterfacesComments
+
+from .models import DevicesInfo, DescNameFormat
 import json
 
 
-def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
+def find_description(pattern: str, user: User) -> list:
     """
     # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -17,72 +19,79 @@ def find_description(finding_string: str, re_string: str) -> Tuple[list, int]:
     {
         "Device": "Имя оборудования",
         "Interface": "Порт",
-        # Выделяем искомый фрагмент с помощью тега <mark></mark>
-        "Description": "Описание <mark>искомый фрагмент</mark>",
-        "original_desc": "Описание искомый фрагмент",
+        "Description": "Описание",
         "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
     }
     ```
 
-    :param finding_string: Подстрока, которую необходимо найти на описаниях портов
-    :param re_string: Регулярное выражение, по которому будет осуществляться поиск описания портов
-    :return: Кортеж из списка результатов поиска и количество найденных описаний
+    :param pattern: Регулярное выражение, по которому будет осуществляться поиск описания портов.
+    :param user: Поль
+    :return: Список результатов поиска
     """
 
-    result = []
-    count = 0
+    pattern = compile(pattern, flags=IGNORECASE)
 
-    # # Получение всех устройств из базы данных.
-    # all_devices = DevicesInfo.objects.all()
+    result = []
+
+    user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
+
+    all_comments = list(InterfacesComments.objects.all().select_related("user"))
 
     # Производим поочередный поиск
-    for device in DevicesInfo.objects.all():
+    for device in DevicesInfo.objects.all().select_related("dev"):
         try:
-            # Загрузка данных json из базы данных в словарь python.
-            interfaces = json.loads(device.interfaces)
-            # Проверяем, пуста ли переменная interfaces.
-            if not interfaces:
+            if device.dev.group_id not in user_groups:
                 continue
-            for line in interfaces:
-                # Он проверяет, находится ли find_string в описании или re_string в описании.
-                if (
-                    finding_string
-                    and finding_string.lower() in line.get("Description").lower()
-                    or re_string
-                    and findall(re_string, line.get("Description"), flags=IGNORECASE)
-                ):
-                    # Если нашли совпадение в строке
+        except Devices.DoesNotExist:
+            continue
 
-                    # Ищем искомый фрагмент
-                    replaced_str = findall(
-                        finding_string or re_string,
-                        line["Description"],
-                        flags=IGNORECASE,
-                    )[0]
+        # Проверяем, пуста ли переменная interfaces.
+        if not device.interfaces:
+            continue
 
-                    result.append(
-                        {
-                            "Device": device.device_name or "Dev" + " " + device.ip,
-                            "Interface": line["Interface"],
-                            # Выделяем искомый фрагмент с помощью тега <mark></mark>
-                            "Description": sub(
-                                replaced_str,
-                                f"<mark>{replaced_str}</mark>",
-                                line["Description"],
-                                flags=IGNORECASE,
-                            ),
-                            "original_desc": line["Description"],
-                            "SavedTime": device.interfaces_date.strftime(
-                                "%d.%m.%Y %H:%M:%S"
-                            ),
-                        }
-                    )
-                    count += 1
+        # Загрузка данных json из базы данных в словарь python.
+        interfaces = json.loads(device.interfaces)
 
-        except Exception as e:
-            print(e)
+        for line in interfaces:
 
-    return result, count
+            find_on_desc = False
+
+            # Если нашли совпадение в описании порта
+            if findall(pattern, line["Description"]):
+                find_on_desc = True
+
+            # Смотрим в комментариях этого интерфейса
+            comments = [
+                {
+                    "user": comment.user.username,
+                    "text": comment.comment,
+                }
+                for comment in all_comments
+                # Проверяем, что комментарий относится к интерфейсу и устройству,
+                # которые мы проверяем и, если не было найдено совпадение в описании порта,
+                # то в комментарии должно быть совпадение с паттерном.
+                if comment.interface == line["Interface"]
+                and comment.device.id == device.dev.id
+                and (find_on_desc or findall(pattern, comment.comment))
+            ]
+
+            # Формируем список найденных комментариев
+            # Если нашли совпадение в описании или в комментариях, то добавляем в итоговый список
+            if find_on_desc or comments:
+                # print(comments)
+                result.append(
+                    {
+                        "Device": device.dev.name,
+                        "Interface": line["Interface"],
+                        "Description": line["Description"],
+                        "Comments": comments,
+                        "SavedTime": device.interfaces_date.strftime(
+                            "%d.%m.%Y %H:%M:%S"
+                        ),
+                    }
+                )
+
+    return result
 
 
 def reformatting(name: str):
@@ -139,22 +148,25 @@ def find_vlan(
     find_device_pattern: str,
 ):
     """
-    Осуществляет поиск VLAN'ов по портам оборудования
+    ## Осуществляет поиск VLAN'ов по портам оборудования.
+
+    Функция загружает данные об устройстве из базы данных, парсит информацию о VLAN на портах,
+    и если находит совпадение с искомым VLAN, то добавляет информацию в итоговый список.
 
     :param device: Имя устройства, на котором осуществляется поиск
     :param vlan_to_find: VLAN, который ищем
     :param passed_devices:  Уже пройденные устройства
     :param result:  Итоговый список
-    :param empty_ports:  Включать пустые порты в анализ? 'true', 'false'
-    :param only_admin_up:  Включать порты со статусом admin down в анализ? 'true', 'false'
-    :param find_device_pattern:  Регулярное выражение, которое позволит найди оборудование в описании порта
+    :param empty_ports:  Включать пустые порты в анализ? ('true', 'false')
+    :param only_admin_up:  Включать порты со статусом admin down в анализ? ('true', 'false')
+    :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта
     """
 
     admin_status = ""  # Состояние порта
 
     passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
     try:
-        dev = DevicesInfo.objects.get(device_name=device)
+        dev = DevicesInfo.objects.get(dev__name=device)
     except DevicesInfo.DoesNotExist:
         return
 

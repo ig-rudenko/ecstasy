@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "maps",
     "app_settings",
     "django.contrib.humanize",
+    "rest_framework"
 ]
 
 MIDDLEWARE = [

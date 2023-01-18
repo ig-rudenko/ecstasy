@@ -71,6 +71,9 @@ class IskratelControl(BaseDevice):
     def get_port_errors(self, port: str) -> str:
         pass
 
+    def get_device_info(self) -> dict:
+        pass
+
 
 class IskratelMBan(BaseDevice):
     """
@@ -508,4 +511,7 @@ class IskratelMBan(BaseDevice):
         pass
 
     def get_port_errors(self, port: str) -> str:
+        pass
+
+    def get_device_info(self) -> dict:
         pass
