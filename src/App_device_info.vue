@@ -33,7 +33,7 @@ export default {
       deviceName: window.location.pathname.split('/').slice(-1).join(""),
       deviceIP: "",
 
-      currentStatus: true, // Собирать интерфейсы в реальном времени?
+      currentStatus: false, // Собирать интерфейсы в реальном времени?
       zabbixHostID: null,
       interfaces: [],
       elasticStackLink: "", // Ссылка на логи
@@ -67,12 +67,27 @@ export default {
     }
   },
 
-  mounted() {
-    this.csrf_token = $('input[name=csrfmiddlewaretoken]')[0].value
-    this.getInfo()
-    this.getInterfaces()
-    this.getStats()
-    this.toastObject = $('.toast')
+  async mounted() {
+    this.csrf_token = $("input[name=csrfmiddlewaretoken]")[0].value
+    await this.getInfo()
+
+    // Сначала смотрим предыдущие интерфейсы
+    let response = await fetch(
+        "/device/api/" + this.deviceName + "/interfaces?",
+        {method: "GET", credentials: "same-origin"}
+    );
+    let data = await response.json()
+    this.interfaces = data.interfaces
+    this.collected = new Date(data.collected)
+
+    // Далее опрашиваем текущий статус интерфейсов
+    this.currentStatus = true
+
+    this.timer()
+
+    await this.getInterfaces()
+    await this.getStats()
+    this.toastObject = $(".toast")
   },
 
   methods: {
@@ -144,8 +159,6 @@ export default {
 
         // Если оборудование недоступно, то автообновление тоже недоступно
         this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable)
-
-        this.timer()
 
       } catch (error) {
         console.log(error)
