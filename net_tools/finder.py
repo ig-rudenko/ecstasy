@@ -37,9 +37,6 @@ def find_description(pattern: str, user: User) -> list:
 
     all_comments = list(InterfacesComments.objects.all().select_related("user"))
 
-    for c in all_comments:
-        print(c.comment, c.device, c.user)
-
     # Производим поочередный поиск
     for device in DevicesInfo.objects.all().select_related("dev"):
         try:
