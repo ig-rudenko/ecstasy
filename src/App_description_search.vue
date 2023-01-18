@@ -31,6 +31,8 @@ export default {
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
         let data = await response.json()
 
+        console.log(data)
+
         this.interfaces = data.interfaces
         this.last_pattern = current_pattern
 

@@ -1,6 +1,6 @@
 <template>
 <!--Посмотреть комментарии-->
-  <div v-if="interface.Comments" class="dropdown">
+  <div v-if="interface.Comments && interface.Comments.length" class="dropdown">
     <button class="btn" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: white;">
 
         <span style="position: absolute; text-align: center; font-size: 14px;"
@@ -17,28 +17,31 @@
             user-select: text;
             cursor: auto;">
 
-<!--Блок комментариев-->
+      <!--Блок комментариев-->
           <div>
-              <div style="text-align: right">
 
-<!--Добавить новый-->
-              <svg
-                   @click="registerCommentAction('add', null, interface.Interface)"
-                   data-bs-toggle="modal" data-bs-target="#modal-comment"
-                   xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754"
-                   class="bi bi-plus-circle" viewBox="0 0 16 16"
-                   style="margin: 0 15px; cursor: pointer;">
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"></path>
-              </svg>
+          <!--Добавить новый-->
+              <div style="text-align: right">
+                <svg
+                     v-if="registerCommentAction"
+                     @click="registerCommentAction('add', null, interface.Interface)"
+                     data-bs-toggle="modal" data-bs-target="#modal-comment"
+                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754"
+                     class="bi bi-plus-circle" viewBox="0 0 16 16"
+                     style="margin: 0 15px; cursor: pointer;">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"></path>
+                </svg>
               </div>
 
-<!--Комментарии-->
+          <!--Комментарии-->
               <div v-for="comment in interface.Comments"
                    class="d-flex row" style="margin: 10px 15px;">
-                  <div class="col-1">
 
-<!--        Изменить-->
+                  <div class="col-1"
+                       v-if="registerCommentAction">
+
+                  <!--Изменить-->
                       <div @click="registerCommentAction('update', comment, interface.Interface)"
                            data-bs-toggle="modal" data-bs-target="#modal-comment"
                            style="cursor: pointer">
@@ -48,7 +51,7 @@
                       </svg>
                       </div>
 
-<!--        Удалить-->
+                  <!--Удалить-->
                       <div @click="registerCommentAction('delete', comment, interface.Interface)"
                            data-bs-toggle="modal" data-bs-target="#modal-comment"
                            style="cursor: pointer">
@@ -59,10 +62,10 @@
                   </div>
 
                   <div class="col-11">
-<!--        Пользователь комментария-->
+                  <!--Пользователь комментария-->
                       <span>@{{comment.user}}</span>
 
-<!--        ТЕКСТ комментария-->
+                  <!--ТЕКСТ комментария-->
                       <strong style="white-space: break-spaces;" class="d-block text-gray-dark">
                           {{comment.text}}
                       </strong>
@@ -75,9 +78,9 @@
 
 <!--Создание комментария-->
   <button class="btn btn-fog"
+          v-else-if="registerCommentAction"
           @click="registerCommentAction('add', interface.comment, interface.Interface)"
-          data-bs-toggle="modal" data-bs-target="#modal-comment"
-          v-else>
+          data-bs-toggle="modal" data-bs-target="#modal-comment">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#e5e5e5" class="bi bi-chat-right-text" viewBox="0 0 16 16">
         <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
         <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
@@ -93,7 +96,7 @@ export default defineComponent({
     registerCommentAction: {
       required: false,
       type: Function,
-      default: function (...a) { }
+      default: null
     },
     interface: {
       required: true,

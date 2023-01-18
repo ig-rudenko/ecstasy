@@ -64,7 +64,7 @@
 
 <!--      COMMENT-->
           <td>
-              <comment :interface="intf"></comment>
+              <comment v-if="intf.Comments.length" :interface="intf"></comment>
           </td>
 
 <!--      SAVED TIME-->

@@ -261,6 +261,7 @@ class InterfacesComments(models.Model):
     interface = models.CharField(max_length=100, null=False, blank=False)
     comment = models.TextField(null=False, blank=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    datetime = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"InterfaceComment: {self.device.name} ({self.interface})"

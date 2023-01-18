@@ -30,12 +30,18 @@ def find_description(pattern: str, user: User) -> list:
     """
 
     pattern = compile(pattern, flags=IGNORECASE)
+
     result = []
 
     user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
 
+    all_comments = list(InterfacesComments.objects.all().select_related("user"))
+
+    for c in all_comments:
+        print(c.comment, c.device, c.user)
+
     # Производим поочередный поиск
-    for device in DevicesInfo.objects.all():
+    for device in DevicesInfo.objects.all().select_related("dev"):
         try:
             if device.dev.group_id not in user_groups:
                 continue
@@ -50,32 +56,38 @@ def find_description(pattern: str, user: User) -> list:
         interfaces = json.loads(device.interfaces)
 
         for line in interfaces:
-            if not line.get("Description"):
-                continue
 
-            if match(pattern, line["Description"]):
-                # Если нашли совпадение в строке
+            find_on_desc = False
 
-                comments = device.dev.interfacescomments_set.filter(
-                    interface=line["Interface"]
-                ).select_related("user")
+            # Если нашли совпадение в описании порта
+            if findall(pattern, line["Description"]):
+                find_on_desc = True
 
-                comments_list = []
-                for comment in comments:
-                    comments_list.append(
-                        {
-                            "user": comment.user.username,
-                            "text": comment.comment,
-                            "id": comment.id,
-                        }
-                    )
+            # Смотрим в комментариях этого интерфейса
+            comments = [
+                {
+                    "user": comment.user.username,
+                    "text": comment.comment,
+                }
+                for comment in all_comments
+                # Проверяем, что комментарий относится к интерфейсу и устройству,
+                # которые мы проверяем и, если не было найдено совпадение в описании порта,
+                # то в комментарии должно быть совпадение с паттерном.
+                if comment.interface == line["Interface"]
+                and comment.device.id == device.dev.id
+                and (find_on_desc or findall(pattern, comment.comment))
+            ]
 
+            # Формируем список найденных комментариев
+            # Если нашли совпадение в описании или в комментариях, то добавляем в итоговый список
+            if find_on_desc or comments:
+                # print(comments)
                 result.append(
                     {
                         "Device": device.dev.name,
                         "Interface": line["Interface"],
                         "Description": line["Description"],
-                        "Comments": comments_list,
+                        "Comments": comments,
                         "SavedTime": device.interfaces_date.strftime(
                             "%d.%m.%Y %H:%M:%S"
                         ),
@@ -113,15 +125,20 @@ def vlan_range(vlans_ranges: list) -> set:
     :return: развернутое множество VLAN'ов
     """
 
-    vlans = set()
+    vlans = []
     for v_range in vlans_ranges:
-        for r in v_range.split():
-            if "-" in r:
-                start, end = map(int, findall(r"\d+", r))
-                vlans.update(range(start, end + 1))
+        if len(v_range.split()) > 1:
+            vlans += list(vlan_range(v_range.split()))
+        try:
+            if "-" in v_range:
+                parts = v_range.split("-")
+                vlans += range(int(parts[0]), int(parts[1]) + 1)
             else:
-                vlans.add(int(r))
-    return vlans
+                vlans.append(int(v_range))
+        except ValueError:
+            pass
+
+    return set(vlans)
 
 
 def find_vlan(
