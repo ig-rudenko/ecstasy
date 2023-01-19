@@ -1,6 +1,6 @@
 import re
 from time import sleep
-from functools import lru_cache, wraps
+from functools import lru_cache, wraps, reduce
 from typing import List
 
 import pexpect
@@ -278,12 +278,10 @@ class EltexMES(BaseDevice):
                     # Проверка, равен ли первый элемент в списке vlans_group "auto-all".
                     if vlans_group[0] == "auto-all":
                         # Создание списка вланов, которые будут назначены на порт.
-                        port_vlans = ["all"]
+                        port_vlans = ["1 to 4096"]
 
                     else:
-                        # Преобразование списка vlans_group в список целых чисел.
-                        for v in vlans_group:
-                            port_vlans += range_to_numbers(v)
+                        port_vlans = reduce(lambda x, x1: x + x1, vlans_group)
 
                 # Создаем список кортежей.
                 # Первые три элемента кортежа — это имя порта, статус и описание.

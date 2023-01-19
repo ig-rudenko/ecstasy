@@ -289,11 +289,11 @@ def get_vlan(request):
         # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
         vlan_start = []
 
+    result = []  # Список узлов сети, соседей и линий связи для визуализации
+
     # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
     for start_dev in vlan_start:
         passed = set()  # Имена уже проверенных устройств
-        result = []  # Список узлов сети, соседей и линий связи для визуализации
-
         try:
             # Преобразуем VLAN в число
             vlan = int(request.GET["vlan"])
@@ -310,10 +310,8 @@ def get_vlan(request):
             only_admin_up=request.GET.get("ad"),
             find_device_pattern=vlan_traceroute_settings.find_device_pattern,
         )
-        if result:  # Если поиск дал результат, то прекращаем
-            break
 
-    else:  # Если поиск не дал результатов
+    if not result:  # Если поиск не дал результатов
         return HttpResponse("empty")
 
     net = Network(height="100%", width="100%", bgcolor="#222222", font_color="white")

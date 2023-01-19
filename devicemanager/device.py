@@ -72,10 +72,6 @@ class Interfaces:
 
                 # Если был передан словарь
                 if isinstance(intf, dict):
-                    vlans = []
-                    for vlan in intf.get("VLAN's") or []:
-                        vlans += range_to_numbers(vlan)
-
                     if not intf.get("Status"):
                         intf["Status"] = (
                             "admin down"
@@ -88,7 +84,7 @@ class Interfaces:
                             intf["Interface"].strip(),
                             intf["Status"],
                             intf["Description"].strip(),
-                            vlans,
+                            intf.get("VLAN's", []),
                         )
                     )
 

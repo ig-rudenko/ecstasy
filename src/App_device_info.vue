@@ -73,7 +73,7 @@ export default {
 
     // Сначала смотрим предыдущие интерфейсы
     let response = await fetch(
-        "/device/api/" + this.deviceName + "/interfaces?",
+        "/device/api/" + this.deviceName + "/interfaces?vlans=1",
         {method: "GET", credentials: "same-origin"}
     );
     let data = await response.json()

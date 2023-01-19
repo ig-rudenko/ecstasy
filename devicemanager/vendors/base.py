@@ -84,17 +84,24 @@ def range_to_numbers(ports_string: str) -> List[int]:
     [134, 135, 136, 234, 411]
     """
 
-    ports_split = []
+    ports_split = set()
     # Проверка наличия слова "to" в файле ports_string.
     if "to" in ports_string:
-        # Если имеется формат "trunk,1 to 7 12 to 44"
-        vv = [
-            list(range(int(v[0]), int(v[1]) + 1))
-            for v in re.findall(r"(\d+)\s*to\s*(\d+)", ports_string)
-        ]
-        for v in vv:
-            ports_split += v
+        # Если имеется формат "1 to 7 10 12 to 44"
+        ports_split.update(
+            *[
+                set(range(int(v[0]), int(v[1]) + 1))
+                for v in re.findall(r"(\d+)\s*to\s*(\d+)", ports_string)
+            ]
+        )
+
+        # Добавляем к диапазону оставшиеся числа
+        ports_split.update(
+            map(int, filter(lambda x: x.isdigit(), ports_string.split(" ")))
+        )
+
         return sorted(ports_split)
+
     if "," in ports_string:
         ports_split = ports_string.replace(" ", "").split(",")
     else:
@@ -267,29 +274,29 @@ class BaseDevice(ABC):
     def _lock(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            print("Try LOCK", func.__name__)
+            # print("Try LOCK", func.__name__)
             while True:
                 if not self.lock:
                     self.lock = True
-                    print("LOCK", func.__name__)
+                    # print("LOCK", func.__name__)
                     res = func(self, *args, **kwargs)
                     self.lock = False
-                    print("UNLOCK", func.__name__)
+                    # print("UNLOCK", func.__name__)
                     return res
                 time.sleep(0.02)
 
         return wrapper
 
     def send_command(
-        self,
-        command: str,
-        before_catch: str = None,
-        expect_command=True,
-        num_of_expect=10,
-        space_prompt=None,
-        prompt=None,
-        pages_limit=None,
-        command_linesep="\n",
+            self,
+            command: str,
+            before_catch: str = None,
+            expect_command=True,
+            num_of_expect=10,
+            space_prompt=None,
+            prompt=None,
+            pages_limit=None,
+            command_linesep="\n",
     ) -> str:
         """
         ## Отправляет команду на оборудование и считывает её вывод

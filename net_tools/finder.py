@@ -1,8 +1,8 @@
-from re import findall, sub, IGNORECASE, match, compile
+from re import findall, sub, IGNORECASE, compile
 from django.contrib.auth.models import User
 
 from check.models import Devices, InterfacesComments
-
+from devicemanager.vendors.base import range_to_numbers
 from .models import DevicesInfo, DescNameFormat
 import json
 
@@ -112,32 +112,6 @@ def reformatting(name: str):
     return name
 
 
-def vlan_range(vlans_ranges: list) -> set:
-    """
-    Преобразовывает сокращенные диапазоны VLAN'ов в развернутый список
-
-    14, 100-103, 142 -> 14, 100, 101, 102, 103, 142
-
-    :param vlans_ranges: Список диапазонов
-    :return: развернутое множество VLAN'ов
-    """
-
-    vlans = []
-    for v_range in vlans_ranges:
-        if len(v_range.split()) > 1:
-            vlans += list(vlan_range(v_range.split()))
-        try:
-            if "-" in v_range:
-                parts = v_range.split("-")
-                vlans += range(int(parts[0]), int(parts[1]) + 1)
-            else:
-                vlans.append(int(v_range))
-        except ValueError:
-            pass
-
-    return set(vlans)
-
-
 def find_vlan(
     device: str,
     vlan_to_find: int,
@@ -167,56 +141,76 @@ def find_vlan(
     passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
     try:
         dev = DevicesInfo.objects.get(dev__name=device)
+        print(dev.dev.name)
     except DevicesInfo.DoesNotExist:
+        print("NO DEV")
         return
 
     interfaces = json.loads(dev.vlans or "[]")
     if not interfaces:
         return
 
+    vlan_to_find = str(vlan_to_find)
+
     intf_found_count = 0  # Кол-во найденных интерфейсов на этом устройстве
 
     for line in interfaces:
-        vlans_list = []  # Список VLAN'ов на порту
+        vlans_list = set()  # Список VLAN'ов на порту
+
+        for v in line["VLAN's"]:
+            if isinstance(v, int):
+                vlans_list.add(str(v))
+
+            elif isinstance(v, str) and v.isdigit():
+                vlans_list.add(v)
+                continue
+
+            else:
+
+                if v in ("trunk", "access", "hybrid", "dot1q-tunnel"):
+                    continue
+                vlans_list.update(map(str, range_to_numbers(str(v))))
+
+        print(dev.dev.name, line["Description"], vlans_list)
 
         # Если вланы сохранены в виде строки
-        if isinstance(line["VLAN's"], str):
-            if "all" in line["VLAN's"] or line["VLAN's"].strip() == "trunk":
-                # Если разрешено пропускать все вланы
-                vlans_list = list(range(1, 4097))  # 1-4096
-            else:
-                if "to" in line["VLAN's"]:
-                    # Если имеется формат "711 800 to 804 1959 1961 1994 2005"
-                    # Определяем диапазон 800 to 804
-                    vv = [
-                        list(range(int(v[0]), int(v[1]) + 1))
-                        for v in findall(r"(\d+)\s*to\s*(\d+)", line["VLAN's"])
-                    ]
-                    for v in vv:
-                        vlans_list += v
-                    # Добавляем единичные 711 800 to 801 1959 1961 1994 2005
+        # if isinstance(line["VLAN's"], str):
+        #     if "all" in line["VLAN's"] or line["VLAN's"].strip() == "trunk":
+        #         # Если разрешено пропускать все вланы
+        #         vlans_list = list(range(1, 4097))  # 1-4096
+        #     else:
+        #         if "to" in line["VLAN's"]:
+        #             # Если имеется формат "711 800 to 804 1959 1961 1994 2005"
+        #             # Определяем диапазон 800 to 804
+        #             vv = [
+        #                 list(range(int(v[0]), int(v[1]) + 1))
+        #                 for v in findall(r"(\d+)\s*to\s*(\d+)", line["VLAN's"])
+        #             ]
+        #             for v in vv:
+        #                 vlans_list += v
+        #             # Добавляем единичные 711 800 to 801 1959 1961 1994 2005
+        #
+        #             vlans_list += line["VLAN's"].split()
+        #         else:
+        #             # Формат представления стандартный "trunk,123,33,10-100"
+        #             vlans_list = vlan_range(
+        #                 [
+        #                     v
+        #                     for v in line["VLAN's"].split(",")
+        #                     if v != "trunk"
+        #                     and v not in ("trunk", "access", "hybrid", "dot1q-tunnel")
+        #                 ]
+        #             )
+        #             # Если искомый vlan находится в списке vlan'ов на данном интерфейсе
 
-                    vlans_list += line["VLAN's"].split()
-                else:
-                    # Формат представления стандартный "trunk,123,33,10-100"
-                    vlans_list = vlan_range(
-                        [
-                            v
-                            for v in line["VLAN's"].split(",")
-                            if v != "trunk"
-                            and v not in ("trunk", "access", "hybrid", "dot1q-tunnel")
-                        ]
-                    )
-                    # Если искомый vlan находится в списке vlan'ов на данном интерфейсе
-
-        # Если вланы сохранены в виде списка числовых элементов
-        elif isinstance(line["VLAN's"], list) and all(
-            str(v).isdigit() for v in line["VLAN's"]
-        ):
-            vlans_list = line["VLAN's"]
+        # # Если вланы сохранены в виде списка числовых элементов
+        # elif isinstance(line["VLAN's"], list) and all(
+        #     str(v).isdigit() for v in line["VLAN's"]
+        # ):
+        #     vlans_list = map(int, line["VLAN's"])
 
         # Если нашли влан в списке вланов
-        if vlan_to_find in vlans_list or str(vlan_to_find) in vlans_list:
+        if vlan_to_find in vlans_list:
 
             intf_found_count += 1
 
@@ -282,3 +276,5 @@ def find_vlan(
                     only_admin_up=only_admin_up,
                     find_device_pattern=find_device_pattern,
                 )
+
+            print(result)

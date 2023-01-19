@@ -168,7 +168,7 @@ class Extreme(BaseDevice):
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
             interfaces_vlan.append(
-                (line[0], line[1], line[2], [ports_vlan.get(int(line[0]), "")])
+                (line[0], line[1], line[2], ports_vlan.get(int(line[0]), []))
             )
 
         return interfaces_vlan

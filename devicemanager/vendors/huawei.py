@@ -245,10 +245,8 @@ class Huawei(BaseDevice):
                 vlans_group = list(
                     set(re.findall(r"vlan (.+)", vlans_group))
                 )  # Ищем строчки вланов, без повторений
-                port_vlans = []
-                for v in vlans_group:
-                    port_vlans = range_to_numbers(v)
-                result.append((line[0], line[1], line[2], [port_vlans]))
+
+                result.append((line[0], line[1], line[2], vlans_group))
 
         return result
 
