@@ -258,7 +258,7 @@ class DeviceInterfacesView(View):
         try:
             device_info = DevicesInfo.objects.get(dev=self.device)
         except DevicesInfo.DoesNotExist:
-            return None, None
+            return '{}', ""
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:

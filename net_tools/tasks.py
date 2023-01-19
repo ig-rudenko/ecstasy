@@ -10,7 +10,7 @@ from net_tools.models import DevicesInfo
 from app_settings.models import ZabbixConfig
 
 
-def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
+def save_interfaces(model_dev: ModelDevices):
     dev = Device(name=model_dev.name)
     ping = dev.ping()  # Оборудование доступно или нет
 
@@ -26,7 +26,9 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
     dev.ip = model_dev.ip  # IP адрес
 
     # Собираем интерфейсы
-    status = dev.collect_interfaces(vlans=with_vlans, current_status=True, make_session_global=False)
+    status = dev.collect_interfaces(
+        vlans=True, current_status=True, make_session_global=False
+    )
 
     model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 
@@ -42,7 +44,7 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
 
         # Собираем интерфейсы снова
         status = dev.collect_interfaces(
-            vlans=with_vlans, current_status=True, auth_obj=al
+            vlans=True, current_status=True, auth_obj=al
         )
 
         if status is None:  # Если статус сбора интерфейсов успешный
@@ -96,38 +98,39 @@ def save_interfaces(model_dev: ModelDevices, with_vlans: bool):
         current_device_info = DevicesInfo.objects.get(dev=model_dev)
     except DevicesInfo.DoesNotExist:
         current_device_info = DevicesInfo.objects.create(dev=model_dev)
-    if with_vlans:
-        interfaces_to_save = [
-            {
-                "Interface": line.name,
-                "Status": line.status,
-                "Description": line.desc,
-                "VLAN's": line.vlan,
-            }
-            for line in dev.interfaces
-        ]
-        current_device_info.vlans = json.dumps(interfaces_to_save)
-        current_device_info.vlans_date = datetime.now()
-        current_device_info.save(update_fields=["vlans", "vlans_date"])
-        print("Saved VLANS      ---", model_dev)
 
-    else:
-        interfaces_to_save = [
-            {"Interface": line.name, "Status": line.status, "Description": line.desc}
-            for line in dev.interfaces
-        ]
-        current_device_info.interfaces = json.dumps(interfaces_to_save)
-        current_device_info.interfaces_date = datetime.now()
-        current_device_info.save(update_fields=["interfaces", "interfaces_date"])
-        print("Saved Interfaces ---", model_dev)
+    vlans_interfaces_to_save = [
+        {
+            "Interface": line.name,
+            "Status": line.status,
+            "Description": line.desc,
+            "VLAN's": line.vlan,
+        }
+        for line in dev.interfaces
+    ]
+    current_device_info.vlans = json.dumps(vlans_interfaces_to_save)
+    current_device_info.vlans_date = datetime.now()
+    print("Saved VLANS      ---", model_dev)
+
+    interfaces_to_save = [
+        {
+            "Interface": line.name,
+            "Status": line.status,
+            "Description": line.desc,
+        }
+        for line in dev.interfaces
+    ]
+    current_device_info.interfaces = json.dumps(interfaces_to_save)
+    current_device_info.interfaces_date = datetime.now()
+
+    current_device_info.save()
+    print("Saved Interfaces ---", model_dev)
 
 
 @app.task(ignore_result=True)
 def periodically_scan():
     Config.set(ZabbixConfig.load())
 
-    with_vlans = False
-
     with ThreadPoolExecutor() as execute:
         for device in ModelDevices.objects.all():
-            execute.submit(save_interfaces, device, with_vlans)
+            execute.submit(save_interfaces, device)

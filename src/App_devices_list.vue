@@ -26,7 +26,7 @@ export default {
   },
   methods: {
     updateSearch: function (event) {
-      this.search = event.target.value
+      this.search = event.target.value.trim()
     },
 
     changeImageIndex: function () {
