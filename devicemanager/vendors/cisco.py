@@ -335,7 +335,9 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
+        self.lock = False
         port_info = self.get_port_info(port).replace("<br>", "\n")
+        self.lock = True
         # Ищем тип порта.
         port_type = "".join(
             self.find_or_empty(

@@ -285,7 +285,6 @@ class EdgeCore(BaseDevice):
 
         return "<br>".join(self.__get_port_info(port).strip().split("\n"))
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_type(self, port: str) -> str:
         """

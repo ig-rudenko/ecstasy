@@ -279,9 +279,8 @@ class EltexMES(BaseDevice):
                     if vlans_group[0] == "auto-all":
                         # Создание списка вланов, которые будут назначены на порт.
                         port_vlans = ["1 to 4096"]
-
                     else:
-                        port_vlans = reduce(lambda x, x1: x + x1, vlans_group)
+                        port_vlans = vlans_group
 
                 # Создаем список кортежей.
                 # Первые три элемента кортежа — это имя порта, статус и описание.
