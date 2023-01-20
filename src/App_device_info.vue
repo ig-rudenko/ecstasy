@@ -23,6 +23,7 @@ export default {
 
       timePassedFromLastUpdate: null,
       collected: "new", // Дата и время сбора интерфейсов
+      seconds_pass: 0,
 
       errorStatus: "", // Ошибка сбора интерфейсов
       deviceAvailable: -1, // Оборудование доступно?
@@ -69,7 +70,7 @@ export default {
 
   computed: {
     dynamicOpacity: function () {
-      if (this.deviceAvailable === -1 || !this.autoUpdateInterfaces) {
+      if (this.deviceAvailable === -1 || this.seconds_pass >= 60) {
         return {'opacity': 0.6}
       }
     },
@@ -388,10 +389,10 @@ export default {
      * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
      */
     timer: function () {
-      let seconds_pass = Math.round((Date.now() - this.collected) / 1000)
+      this.seconds_pass = Math.round((Date.now() - this.collected) / 1000)
 
-      let min_ = Math.floor(seconds_pass / 60);
-      let sec = (seconds_pass - (min_ * 60)).toString()
+      let min_ = Math.floor(this.seconds_pass / 60);
+      let sec = (this.seconds_pass - (min_ * 60)).toString()
       let min = min_.toString()
 
       let sec_str = ''
