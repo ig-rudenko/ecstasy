@@ -123,14 +123,15 @@
               </td>
 
 <!--          Статус порта-->
-              <td :style="statusStyleObj(intf.Status)" data-bs-toggle="tooltip" data-bs-placement="top"
+              <td data-bs-toggle="tooltip" data-bs-placement="top"
+                  :style="statusStyleObj(intf.Status)"
                   :data-bs-title="intfStatusDesc(intf.Status)">
                   <span v-if="intf.Status === 'dormant'">activating...</span>
                   <span v-else>{{intf.Status}}</span>
               </td>
 
 <!--          Описание порта-->
-              <td>{{ intf.Description }}</td>
+              <td :style="dynamicOpacity">{{ intf.Description }}</td>
 
 <!--          VLANS-->
               <td v-if="withVlans && intf['VLAN\'s']">{{ intf["VLAN's"].join(", ") }}</td>

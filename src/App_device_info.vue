@@ -67,6 +67,14 @@ export default {
     }
   },
 
+  computed: {
+    dynamicOpacity: function () {
+      if (this.deviceAvailable === -1 || !this.autoUpdateInterfaces) {
+        return {'opacity': 0.6}
+      }
+    },
+  },
+
   async mounted() {
     this.csrf_token = $("input[name=csrfmiddlewaretoken]")[0].value
     await this.getInfo()
@@ -349,7 +357,7 @@ export default {
      * Вычисляем цвет статуса порта
      *
      * @param status Статус порта
-     * @returns {{"background-color": string, width: string, "text-align": string}}
+     * @returns {{"background-color": string, width: string, "text-align": string, "opacity": number}}
      */
     statusStyleObj: function (status) {
       status = status.toLowerCase()
@@ -359,11 +367,12 @@ export default {
         if (status === "dormant") return "#ffe389"
         if (status !== "down") return "#22e58b"
       }
-      return {
+      let base_style = {
         'width': '150px',
         'text-align': 'center',
         'background-color': color()
       }
+      return Object.assign({}, this.dynamicOpacity, base_style)
     },
 
     /**
