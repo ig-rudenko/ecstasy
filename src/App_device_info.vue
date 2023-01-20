@@ -411,6 +411,13 @@ export default {
       this.timePassedFromLastUpdate = min+min_str+sec+sec_str
 
       setTimeout(this.timer, 1000)
+    },
+
+    addDeviceLink(interface_) {
+      if (!interface_.Link) return interface_.Description || "";
+      return interface_.Description.replace(
+          new RegExp(interface_.Link.device_name, 'ig'),
+          s => `<mark><a class="text-dark text-decoration-none" href="${interface_.Link.url}">${s}</a></mark>`)
     }
   },
   components: {

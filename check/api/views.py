@@ -2,6 +2,7 @@ import json
 import ping3
 from datetime import datetime
 
+from django.urls import reverse
 from django.views import View
 from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
@@ -110,7 +111,8 @@ class DeviceInterfacesView(View):
             last_interfaces, last_datetime = self.get_last_interfaces()
             last_interfaces = json.loads(last_interfaces)
 
-            self.add_comments_to_interfaces(last_interfaces)
+            self.add_comments(last_interfaces)
+            self.add_devices_links(last_interfaces)
 
             return JsonResponse(
                 {
@@ -144,10 +146,9 @@ class DeviceInterfacesView(View):
         except DevicesInfo.DoesNotExist:
             self.current_device_info = DevicesInfo.objects.create(dev=self.device)
 
-        # Сохраняем интерфейсы в базу.
         interfaces = self.save_interfaces()
-
-        self.add_comments_to_interfaces(interfaces)
+        self.add_devices_links(interfaces)
+        self.add_comments(interfaces)
 
         return JsonResponse(
             {
@@ -157,16 +158,27 @@ class DeviceInterfacesView(View):
             }
         )
 
-    def add_comments_to_interfaces(self, interfaces: list) -> list:
+    @staticmethod
+    def add_devices_links(interfaces: list):
+        devices_names = models.Devices.objects.values("name").all()
+        for intf in interfaces:
+            for dev in devices_names:
+                if dev["name"] in intf["Description"]:
+                    intf["Link"] = {
+                        "device_name": dev["name"],
+                        "url": reverse("device_info", args=[dev["name"]]),
+                    }
+
+        return interfaces
+
+    def add_comments(self, interfaces: list) -> list:
         """
         ## Берет список интерфейсов и добавляет к ним существующие комментарии
 
         :param interfaces: список интерфейсов для добавления комментариев
         :type interfaces: list
         """
-        interfaces_comments = models.InterfacesComments.objects.filter(
-            device=self.device
-        ).select_related("user")
+        interfaces_comments = self.device.interfacescomments_set.select_related("user")
 
         for intf in interfaces:
             for comment in interfaces_comments:
@@ -176,7 +188,7 @@ class DeviceInterfacesView(View):
                         {
                             "text": comment.comment,
                             "user": comment.user.username,
-                            "id": comment.id
+                            "id": comment.id,
                         }
                     )
 
@@ -258,14 +270,14 @@ class DeviceInterfacesView(View):
         try:
             device_info = DevicesInfo.objects.get(dev=self.device)
         except DevicesInfo.DoesNotExist:
-            return '{}', ""
+            return "{}", ""
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
             return device_info.vlans, device_info.vlans_date
 
         # Отправляем интерфейсы без VLAN
-        return device_info.interfaces or '{}', device_info.interfaces_date or ""
+        return device_info.interfaces or "{}", device_info.interfaces_date or ""
 
     def save_interfaces(self) -> list:
         """
@@ -372,7 +384,6 @@ class CreateInterfaceCommentView(generics.CreateAPIView):
 
 @method_decorator(login_required, name="dispatch")
 class UpdateInterfaceCommentView(View):
-
     def post(self, request, pk: int):
         comment = request.POST.get("comment")
         if comment:
@@ -386,7 +397,6 @@ class UpdateInterfaceCommentView(View):
 
 @method_decorator(login_required, name="dispatch")
 class DeleteInterfaceCommentView(View):
-
     def post(self, request, pk: int):
         if models.InterfacesComments.objects.filter(id=pk).delete():
             return HttpResponse(status=204)
