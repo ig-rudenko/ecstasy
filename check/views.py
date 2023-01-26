@@ -180,6 +180,7 @@ def device_info(request, name: str):
 
     return render(request, "check/device_info.html", {"device_name": name})
 
+
 def add_names_to_vlan(vlan_mac_list: MACList) -> list:
     """
     ## Добавляет к списку VLAN, MAC еще и название VLAN из таблицы соответствий
@@ -629,16 +630,11 @@ def set_description(request):
 
         try:
             with dev.connect() as session:
-                if hasattr(session, "set_description"):
-                    set_description_status = session.set_description(
-                        port=port, desc=new_description
-                    )
-                    new_description = session.clear_description(new_description)
-                    status = "success"
-
-                else:
-                    set_description_status = "Недоступно для данного оборудования"
-                    status = "warning"  # Описание цветовой палитры для bootstrap
+                set_description_status = session.set_description(
+                    port=port, desc=new_description
+                )
+                new_description = session.clear_description(new_description)
+                status = "success"
 
         except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
             return JsonResponse(
