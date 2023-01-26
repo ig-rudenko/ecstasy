@@ -60,30 +60,28 @@ def show_interfaces(
     """
 
     snmp_result = {
+        "IF-MIB::ifAlias": {},
         "IF-MIB::ifIndex": {},
         "IF-MIB::ifName": {},
         "IF-MIB::ifAdminStatus": {},
         "IF-MIB::ifOperStatus": {},
         "IF-MIB::ifDescr": {},
-        "IF-MIB::ifAlias": {},
     }
 
     def snmpget(community, ip, port, mib) -> None:
         # Выполнение команды `snmpwalk -Oq -v2c -c <community> <ip>:<port> <mib>` и возврат результата.
-        result = subprocess.run(
+        res = subprocess.run(
             ["snmpwalk", "-Oq", "-v2c", "-c", community, f"{ip}:{port}", mib],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             encoding="utf-8",
-            check=False,
+            errors="ignore",
         )
         # Он разбивает вывод команды на строки.
-        for line in result.stdout.split("\n"):
+        for line in res.stdout.split("\n"):
             if not line:
                 continue  # Пропускаем пустую строку
             res_line = findall(r"(\S+) (.*)", line)
-            if not snmp_result.get(mib):
-                snmp_result[mib] = {}
             snmp_result[mib][res_line[0][0].replace(f"{mib}.", "")] = res_line[0][1]
 
     with ThreadPoolExecutor() as snmp_executor:
