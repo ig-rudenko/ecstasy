@@ -158,7 +158,7 @@ function createPolygon(feature, latlng, defaults) {
     let options = {
         "fillColor": feature.properties["fill"] || defaults["FillColor"],
         "color": feature.properties["stroke"] || defaults["BorderColor"],
-        "weight": feature.properties["stroke-width"] || 2,
+        "weight": Number(feature.properties["stroke-width"]) || 2,
         "opacity": feature.properties["stroke-opacity"] || defaults.Opacity,
         "fillOpacity": feature.properties["fill-opacity"] || defaults.Opacity,
     }

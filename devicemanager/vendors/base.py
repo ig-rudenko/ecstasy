@@ -130,13 +130,16 @@ class BaseDevice(ABC):
     """
 
     prompt: str  # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
-
     # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
     space_prompt: str
+
     mac_format = ""  # Регулярное выражение, которое определяет отображение МАС адреса
     SAVED_OK = "Saved OK"  # Конфигурация была сохранена
     SAVED_ERR = "Saved Error"  # Ошибка при сохранении конфигурации
     vendor: str
+
+    # Паттерн для управляющих последовательностей ANSI
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
     def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
         self.session: pexpect.spawn = session
@@ -274,29 +277,29 @@ class BaseDevice(ABC):
     def _lock(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            # print("Try LOCK", func.__name__)
+            print("Try LOCK", func.__name__)
             while True:
                 if not self.lock:
                     self.lock = True
-                    # print("LOCK", func.__name__)
+                    print("LOCK", func.__name__)
                     res = func(self, *args, **kwargs)
                     self.lock = False
-                    # print("UNLOCK", func.__name__)
+                    print("UNLOCK", func.__name__)
                     return res
                 time.sleep(0.02)
 
         return wrapper
 
     def send_command(
-            self,
-            command: str,
-            before_catch: str = None,
-            expect_command=True,
-            num_of_expect=10,
-            space_prompt=None,
-            prompt=None,
-            pages_limit=None,
-            command_linesep="\n",
+        self,
+        command: str,
+        before_catch: str = None,
+        expect_command=True,
+        num_of_expect=10,
+        space_prompt=None,
+        prompt=None,
+        pages_limit=None,
+        command_linesep="\n",
     ) -> str:
         """
         ## Отправляет команду на оборудование и считывает её вывод
@@ -324,10 +327,11 @@ class BaseDevice(ABC):
         self.session.send(command + command_linesep)  # Отправляем команду
 
         if expect_command:
-            self.session.expect(
-                command[-num_of_expect:]
-            )  # Считываем введенную команду с поправкой по длине символов
+            # Считываем введенную команду с поправкой по длине символов
+            self.session.expect(command[-num_of_expect:], timeout=2)
+
         if before_catch:
+            # После ввода команды можем перехватить еще последовательность
             self.session.expect(before_catch)
 
         if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
@@ -341,11 +345,8 @@ class BaseDevice(ABC):
                     timeout=20,
                 )
 
-                # Управляющие последовательности ANSI
-                ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
-
-                # Убираем их
-                output += ansi_escape.sub(
+                # Убираем управляющие последовательности ANSI
+                output += self.ansi_escape.sub(
                     "", self.session.before.decode(errors="ignore")
                 )
 
@@ -367,11 +368,12 @@ class BaseDevice(ABC):
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             try:
-                self.session.expect(prompt)
+                self.session.expect(prompt, timeout=20)
             except pexpect.TIMEOUT:
                 pass
-            output = re.sub(
-                r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore")
+            # Убираем управляющие последовательности ANSI
+            output += self.ansi_escape.sub(
+                "", self.session.before.decode(errors="ignore")
             )
         return output
 

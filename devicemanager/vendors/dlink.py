@@ -561,47 +561,40 @@ class Dlink(BaseDevice):
         for key in stats:
             value = getattr(self, f"get_{key}_utilization")()
             if isinstance(value, tuple) and all(value) or value > 0:
-                data[key] = {
-                    "util": value
-                }
+                data[key] = {"util": value}
 
         return data
+
+    def _get_utilization(self, type_: str, expect: str):
+        self.session.sendline("show utilization " + type_)
+        self.session.sendcontrol("c")
+        self.session.expect(self.prompt)
+        output = self.session.before.decode("utf-8", errors="ignore")
+
+        cpu_percent = self.find_or_empty(
+            expect,
+            output,
+            flags=re.IGNORECASE,
+        )
+        return int(cpu_percent) if cpu_percent else -1
 
     def get_cpu_utilization(self) -> tuple:
         """
         ## Возвращает загрузку ЦП хоста
         """
-
-        cpu_percent = self.find_or_empty(
-            r"one minute -\s+(\d+)\s*%",
-            self.send_command("show utilization cpu"),
-            flags=re.IGNORECASE,
-        )
-        return int(cpu_percent) if cpu_percent else -1,
+        return self._get_utilization("cpu", r"one minute -\s+(\d+)\s*%"),
 
     def get_flash_utilization(self) -> int:
         """
         ## Возвращает использование флэш-памяти устройства
         """
-
-        flash_percent = self.find_or_empty(
-            r"Utilization\s+: (\d+)\s*%",
-            self.send_command("show utilization flash"),
-            flags=re.IGNORECASE,
-        )
-        return int(flash_percent) if flash_percent else -1
+        return self._get_utilization("flash", r"Utilization\s+: (\d+)\s*%")
 
     def get_ram_utilization(self) -> int:
         """
         ## Возвращает использование DRAM в процентах
         """
-
-        dram_percent = self.find_or_empty(
-            r"Utilization\s+: (\d+)\s*%",
-            self.send_command("show utilization dram"),
-            flags=re.IGNORECASE,
-        )
-        return int(dram_percent) if dram_percent else -1
+        return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
     def get_port_info(self, port: str) -> str:
         return ""
