@@ -1,7 +1,6 @@
 {% load static %}
 <!doctype html>
 
-<!--suppress ALL -->
 <html lang="ru">
   <head>
     <meta charset="UTF-8">
@@ -205,6 +204,7 @@
     </div>
 
 {#      DEVICE CONTROL#}
+{% if request.user.profile.devices_groups.count %}
     <div class="row mb-4 p-4 border rounded-5 shadow">
     <h4 class="fw-bold"><a class="text-dark" href="{% url 'devices-list' %}">Управление оборудованием</a></h4>
         <div class="col-md-7">
@@ -258,7 +258,7 @@
             <img style="margin-top: 40px; width: 100%" src="{% static 'img/home-devices-control.svg' %}">
         </div>
     </div>
-
+{% endif %}
 
 {#      DEVICE CONTROL#}
     <div class="row mb-4 p-4 border rounded-5 shadow"

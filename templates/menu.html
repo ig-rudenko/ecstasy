@@ -37,6 +37,7 @@
             </li>
 
     {#              LIST DEVICES #}
+        {% if request.user.profile.devices_groups.count %}
             <li class="nav-item active">
               <a href="{% url 'devices-list' %}" class="nav-link text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
@@ -45,6 +46,7 @@
                 List Devices
               </a>
             </li>
+        {% endif %}
 
     {#              MAPS   #}
             <li class="nav-item active">
