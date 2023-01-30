@@ -8,6 +8,7 @@ import json
 from typing import Any, List
 from concurrent.futures import ThreadPoolExecutor
 
+from django.db.utils import OperationalError, ProgrammingError
 from ping3 import ping as socket_ping
 import tabulate
 from pyzabbix import ZabbixAPI
@@ -15,6 +16,7 @@ from requests import ConnectionError as ZabbixConnectionError
 from alive_progress import alive_bar
 from geopy.geocoders import Nominatim
 
+from app_settings.models import ZabbixConfig
 from . import snmp
 from .dc import DeviceFactory
 from .exceptions import (
@@ -23,7 +25,6 @@ from .exceptions import (
     TelnetLoginError,
     UnknownDeviceError,
 )
-from .vendors.base import range_to_numbers
 from .zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -47,6 +48,13 @@ class Config:
         Config.ZABBIX_URL = obj.url
         Config.ZABBIX_USER = obj.login
         Config.ZABBIX_PASSWORD = obj.password
+
+
+try:
+    # Устанавливаем конфигурацию для работы с devicemanager
+    Config.set(ZabbixConfig.load())
+except (OperationalError, ProgrammingError):
+    pass
 
 
 class Interfaces:

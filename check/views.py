@@ -8,7 +8,6 @@ from functools import wraps
 import pexpect
 import ping3
 
-import django.db.utils
 from django.http import (
     HttpResponseForbidden,
     JsonResponse,
@@ -26,18 +25,11 @@ from devicemanager.exceptions import (
     UnknownDeviceError,
 )
 from net_tools.models import VlanName
-from app_settings.models import ZabbixConfig
 from devicemanager import *
 from devicemanager.vendors.base import MACList
 from ecstasy_project.settings import django_actions_logger
 from . import models
 from .forms import BrassSessionForm, ADSLProfileForm
-
-try:
-    # Устанавливаем конфигурацию для работы с devicemanager
-    Config.set(ZabbixConfig.load())
-except django.db.utils.OperationalError:
-    pass
 
 
 def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
