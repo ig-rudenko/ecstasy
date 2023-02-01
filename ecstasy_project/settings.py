@@ -153,6 +153,9 @@ CELERY_BEAT_SCHEDULE = {
 
 django_actions_logger = logging.getLogger("django.actions")
 
+LOGGING_DIR = BASE_DIR / "logs"
+LOGGING_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     "version": 1,
     "formatters": {
@@ -180,10 +183,10 @@ LOGGING = {
         "file": {
             "level": "DEBUG",
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": BASE_DIR / "debug.log",
+            "filename": LOGGING_DIR / "debug.log",
             "formatter": "verbose",
             "when": "midnight",
-            "backupCount": "30",
+            "backupCount": 30,
         },
     },
     "loggers": {
