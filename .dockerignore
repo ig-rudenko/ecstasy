@@ -9,3 +9,4 @@
 !templates
 !manage.py
 !requirements.txt
+!create_docs.py

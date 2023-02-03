@@ -2,15 +2,13 @@
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code_style-black-black.svg)](https://github.com/psf/black)
-![Linux](https://img.shields.io/badge/Linux-supported-blue.svg)
-![windows](https://img.shields.io/badge/Windows-not_supported-red.svg)
 
 <div>
 <img src="https://www.vectorlogo.zone/logos/vuejs/vuejs-icon.svg" alt="vue.js" width="30" height="30"/>
 <strong style="padding: 2px; vertical-align: text-bottom">+</strong>
 <img src="https://cdn.worldvectorlogo.com/logos/django.svg" alt="django" width="30" height="30"/>
 <strong style="padding: 2px; vertical-align: text-bottom">+</strong>
-<img src="https://www.vectorlogo.zone/logos/rabbitmq/rabbitmq-icon.svg" alt="rabbitmq" width="30" height="30"/>
+<img src="https://www.vectorlogo.zone/logos/redis/redis-icon.svg" alt="redis" width="32" height="32"/>
 <strong style="padding: 2px; vertical-align: text-bottom">+</strong>
 <img src="https://codeguida.com/media/post_title/celery-logo.png" alt="celery" width="32" height="32"/>
 </div>
@@ -53,6 +51,10 @@
 - ZTE
 - Q-Tech
 - Edge-Core
+
+## Структура docker compose
+
+![img.png](img/img_8.png)
 
 ### Удобный поиск оборудования
 

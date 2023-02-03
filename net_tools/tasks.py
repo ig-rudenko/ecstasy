@@ -143,7 +143,7 @@ def check_scanning_status() -> bool:
     return False
 
 
-@app.task(ignore_result=True)
+@app.task
 def periodically_scan():
     Config.set(ZabbixConfig.load())
 

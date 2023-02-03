@@ -14,7 +14,6 @@ const SCANNING_ERROR = `<svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
                           <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
                         </svg>`
 
-let SCANNING = false
 const scan_block = document.getElementById("vlans-scan")
 
 function show_map() {
@@ -67,23 +66,23 @@ function show_map() {
 
 
 function check_vlans_scan_status() {
-    if (!SCANNING){
-        $.ajax({
-            data: {'csrfmiddlewaretoken': CSRF_TOKEN},
-            type: 'post',
-            url: '/tools/ajax/vlans-scan/check',
-            success: function (response) {
-                if (!response.scanning) {
-                    scan_block.innerHTML = RUN_SCAN_BUTTON
-                } else {
-                    scan_block.innerHTML = LOADING_CIRCLE
-                }
-            },
-            error: function (response) {
-                scan_block.innerHTML = SCANNING_ERROR
+
+    $.ajax({
+        data: {'csrfmiddlewaretoken': CSRF_TOKEN},
+        type: 'post',
+        url: '/tools/ajax/vlans-scan/check',
+        success: function (response) {
+            if (!response.scanning) {
+                scan_block.innerHTML = RUN_SCAN_BUTTON
+            } else {
+                scan_block.innerHTML = LOADING_CIRCLE
             }
-        });
-    }
+        },
+        error: function (response) {
+            scan_block.innerHTML = SCANNING_ERROR
+        }
+    });
+
     setTimeout(check_vlans_scan_status, 5000);
 }
 
@@ -99,14 +98,12 @@ function run_vlans_scan() {
         success: function (response) {
             if(!response.task_id) {
                 scan_block.innerHTML = SCANNING_ERROR
-                SCANNING = false
             } else {
                 scan_block.innerHTML = LOADING_CIRCLE
             }
         },
         error: function (response) {
             scan_block.innerHTML = SCANNING_ERROR
-            SCANNING = false
         }
     })
 }

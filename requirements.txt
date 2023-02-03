@@ -14,5 +14,5 @@ geopy
 gunicorn
 pdoc
 Pillow
-django-debug-toolbar
 djangorestframework
+redis

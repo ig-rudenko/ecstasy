@@ -1,0 +1,66 @@
+version: "3.9"
+
+volumes:
+  redis-data:
+
+services:
+
+  frontend:
+    image: nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./static:/var/www/static
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - redis-data:/data
+
+  celery: &backend
+    build: .
+    image: ecstasy:v.0.9.6
+    restart: always
+    command: celery -A ecstasy_project worker -B -l INFO -c 5 -n worker1
+    environment:
+      ALLOWED_HOSTS: "*"
+      REDIS_CACHE_URL: "redis:6379/0"
+      REDIS_BROKER_URL: "redis:6379/1"
+      DATABASES: |
+        {
+            "default": {
+                "ENGINE": "django.db.backends.mysql",
+                "NAME": "ecstasy",
+                "USER": "ecstasy",
+                "PASSWORD": "ecstasy_password",
+                "HOST": "mysql",
+                "PORT": "3306"
+            }
+        }
+      DJANGO_SECRET_KEY: "django-key"
+
+    depends_on:
+      - redis
+      - mysql
+    volumes:
+    - "./logs:/app/logs"
+
+  backend:
+    <<: *backend
+    command: gunicorn --workers 5 --bind 0.0.0.0:8000 ecstasy_project.wsgi:application
+
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: ecstasy
+      MYSQL_PASSWORD: ecstasy_password
+      MYSQL_DATABASE: ecstasy
+    restart: always
+    volumes:
+      - ./data:/var/lib/mysql

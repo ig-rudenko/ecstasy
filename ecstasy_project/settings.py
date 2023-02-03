@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "maps",
     "app_settings",
     "django.contrib.humanize",
-    "rest_framework"
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -120,7 +120,6 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # STATIC_ROOT = BASE_DIR / "static"
 
-LOG_FILE = BASE_DIR / "logs"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -131,19 +130,25 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 
+# ================= CACHE ===================
+
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_CACHE_URL}",
+    }
+}
+
+
+# ================= CELERY ==================
+
+REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/0")
+
 CELERY_TIMEZONE = TIME_ZONE
-
-RABBIT_MQ_HOST = os.getenv("CELERY_RABBIT_MQ_HOST")
-RABBIT_MQ_USER = os.getenv("CELERY_RABBIT_MQ_USER")
-RABBIT_MQ_PASSWORD = os.getenv("CELERY_RABBIT_MQ_PASSWORD")
-RABBIT_MQ_PORT = os.getenv("CELERY_RABBIT_MQ_PORT")
-
-CELERY_BROKER_URL = (
-    f"amqp://{RABBIT_MQ_USER}:{RABBIT_MQ_PASSWORD}@{RABBIT_MQ_HOST}:{RABBIT_MQ_PORT}"
-)
-
+CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
 CELERY_RESULT_BACKEND = "rpc://"
-
 CELERY_BEAT_SCHEDULE = {
     "midnight-periodically-scan": {
         "task": "net_tools.tasks.periodically_scan",
@@ -151,7 +156,11 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
+
+# ================= LOGGING ==================
+
 django_actions_logger = logging.getLogger("django.actions")
+
 
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
