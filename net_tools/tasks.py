@@ -3,6 +3,9 @@ import json
 
 from concurrent.futures import ThreadPoolExecutor
 
+from celery.result import AsyncResult
+from django.core.cache import cache
+
 from ecstasy_project.celery import app
 from check.models import Devices as ModelDevices, AuthGroup
 from devicemanager.device import Device, Config
@@ -125,6 +128,19 @@ def save_interfaces(model_dev: ModelDevices):
 
     current_device_info.save()
     print("Saved Interfaces ---", model_dev)
+
+
+def check_scanning_status() -> bool:
+    task_id = cache.get("periodically_scan_id")
+    if task_id:
+        result = AsyncResult(task_id)
+        if result.status in ["PENDING"]:
+            return True
+
+        cache.delete("periodically_scan_id")
+        return False
+
+    return False
 
 
 @app.task(ignore_result=True)

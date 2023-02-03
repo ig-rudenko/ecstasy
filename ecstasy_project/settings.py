@@ -142,7 +142,7 @@ CELERY_BROKER_URL = (
     f"amqp://{RABBIT_MQ_USER}:{RABBIT_MQ_PASSWORD}@{RABBIT_MQ_HOST}:{RABBIT_MQ_PORT}"
 )
 
-# CELERY_RESULT_BACKEND = 'redis://redis'
+CELERY_RESULT_BACKEND = "rpc://"
 
 CELERY_BEAT_SCHEDULE = {
     "midnight-periodically-scan": {

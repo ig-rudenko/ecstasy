@@ -7,14 +7,34 @@ from pyzabbix import ZabbixAPI
 from requests import ConnectionError as ZabbixConnectionError
 from pyvis.network import Network
 
+from django.core.cache import cache
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
-from net_tools.finder import find_description, find_vlan
-from net_tools.models import VlanName, DevicesForMacSearch
+from ..finder import find_description, find_vlan
+from ..models import VlanName, DevicesForMacSearch
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
 from ecstasy_project.settings import BASE_DIR
+from ..tasks import periodically_scan, check_scanning_status
+
+
+@login_required
+def run_periodically_scan(request):
+
+    if request.method == "POST":
+        task_id = cache.get("periodically_scan_id")
+        if not task_id:
+            task_id = periodically_scan.delay()
+            cache.set("periodically_scan_id", task_id, timeout=None)
+            return JsonResponse({"task_id": str(task_id)}, status=202)
+
+    return JsonResponse({}, status=400)
+
+
+@login_required
+def check_periodically_scan(request):
+    return JsonResponse({"scanning": check_scanning_status()})
 
 
 @login_required
