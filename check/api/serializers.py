@@ -21,3 +21,9 @@ class InterfacesCommentsSerializer(serializers.ModelSerializer):
         model = InterfacesComments
         fields = ["id", "interface", "comment", "user", "device"]
         read_only_fields = ["id", "user", "device"]
+
+
+class InterfaceSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    status = serializers.CharField()
+    desc = serializers.CharField()

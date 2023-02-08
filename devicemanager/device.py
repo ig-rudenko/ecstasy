@@ -16,6 +16,7 @@ from requests import ConnectionError as ZabbixConnectionError
 from alive_progress import alive_bar
 from geopy.geocoders import Nominatim
 
+from ecstasy_project.settings import NON_ABON_INTERFACES_PATTERN
 from app_settings.models import ZabbixConfig
 from . import snmp
 from .dc import DeviceFactory
@@ -153,7 +154,21 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if "down" not in i.status and "disable" not in i.status.lower():
+            if "down" not in i.status.lower() and "disable" not in i.status.lower():
+                count += 1
+                if not only_count:
+                    intf.append(i)
+        return count if only_count else Interfaces(intf)
+
+    def with_description(self, only_count=False):
+        """
+        Интерфейсы, на которых есть описание
+        :param only_count: bool Только кол-во?
+        """
+        count = 0
+        intf = []
+        for i in self.__interfaces:
+            if i.desc:
                 count += 1
                 if not only_count:
                     intf.append(i)
@@ -204,7 +219,7 @@ class Interfaces:
                     intf.append(i)
         return count if only_count else Interfaces(intf)
 
-    def abons(self, only_count=False):
+    def non_system(self, only_count=False):
         """
         Возвращает список интерфейсов, которые не используются для связи с другими узлами сети
 
@@ -213,18 +228,8 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if re.findall(
-                r"power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras",
-                i.desc.lower(),
-            ):
+            if re.findall(NON_ABON_INTERFACES_PATTERN, i.desc, flags=re.IGNORECASE):
                 continue
-            if not i.desc and "down" in i.status:
-                continue
-            if i.status == "admin down" or "(F)" in i.name or "(C)" in i.name:
-                continue
-            if re.findall("Quidway Series", i.desc) and i.status == "down":
-                continue
-            count += 1
             if not only_count:
                 intf.append(i)
         return count if only_count else Interfaces(intf)

@@ -9,6 +9,8 @@ from . import views
 # /device/api/
 
 urlpatterns = [
+    path("statistic/interfaces", views.InterfacesStatisticAPIView.as_view()),
+
     path("list_all", views.DevicesListAPIView.as_view()),
     path("<device_name>/interfaces", views.DeviceInterfacesAPIView.as_view()),
     path("<device_name>/info", views.DeviceInfoAPIView.as_view()),

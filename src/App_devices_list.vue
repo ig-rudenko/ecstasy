@@ -68,6 +68,39 @@ export default {
         console.log(error)
       }
     },
+    async getDeviceWithStats(){
+      try {
+        let response = await fetch(
+            "/device/api/statistic/interfaces?free=1&up=1&admin_down=1&abons=1",
+            {method: 'GET', credentials: "same-origin"}
+        );
+        let data = await response.json()
+
+        // Список устройств
+        this.devices = data.devices || []
+
+        // Кол-во устройств
+        this.pagination.count = data.devices_count || 0
+
+        let devices_groups = []
+        let devices_vendors = []
+        // Определяем список уникальных имен вендоров и групп
+        for (let dev of this.devices) {
+            if (dev.group && devices_groups.indexOf(dev.group) === -1){
+                devices_groups.push(dev.group || "")
+            }
+            if (dev.vendor && devices_vendors.indexOf(dev.vendor) === -1){
+                devices_vendors.push(dev.vendor)
+            }
+        }
+        this.groups = devices_groups
+        this.vendors = devices_vendors
+
+      } catch (error) {
+        console.log(error)
+      }
+    },
+
     setVendor: function (vendor) {
       this.selectedVendor = vendor
       this.changeImageIndex()

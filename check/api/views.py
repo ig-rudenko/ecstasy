@@ -17,8 +17,14 @@ from devicemanager.exceptions import (
     TelnetConnectionError,
     UnknownDeviceError,
 )
-from net_tools.models import DevicesInfo
-from .serializers import DevicesSerializer, InterfacesCommentsSerializer
+
+from devicemanager.device import Interfaces as InterfacesObject
+from net_tools.models import DevicesInfo as ModelDeviceInfo
+from .serializers import (
+    DevicesSerializer,
+    InterfacesCommentsSerializer,
+    InterfaceSerializer,
+)
 from .. import models
 from ..views import has_permission_to_device
 
@@ -55,6 +61,64 @@ class DevicesListAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
+class InterfacesStatisticAPIView(generics.ListAPIView):
+
+    serializer_class = InterfaceSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        ## Возвращаем queryset всех устройств из доступных для пользователя групп
+        """
+
+        # Фильтруем запрос
+        query = Q(
+            dev__group_id__in=[
+                group["id"]
+                for group in self.request.user.profile.devices_groups.all().values("id")
+            ]
+        )
+        return ModelDeviceInfo.objects.filter(query).select_related("dev").order_by("dev__name")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        result = {
+            "devices_count": 0,
+            "devices": [],
+        }
+
+        for dev_info in queryset:
+            interfaces = InterfacesObject(json.loads(dev_info.interfaces))
+
+            non_system = interfaces.non_system()
+            abons_up = non_system.up()
+            abons_up_with_desc = abons_up.with_description()
+            abons_down = non_system.down()
+            abons_down_with_desc = abons_down.with_description()
+
+            interfaces_dict = {
+                "count": interfaces.count,
+                "abons": non_system.count,
+                "abons_up": abons_up.count,
+                "abons_up_with_desc": abons_up_with_desc.count,
+                "abons_up_no_desc": abons_up.count - abons_up_with_desc.count,
+                "abons_down": abons_down.count,
+                "abons_down_with_desc": abons_down_with_desc.count,
+                "abons_down_no_desc": abons_down.count - abons_down_with_desc.count
+            }
+
+            result["devices"].append(
+                {
+                    "interfaces_count": interfaces_dict,
+                    **DevicesSerializer(dev_info.dev).data,
+                }
+            )
+            result["devices_count"] += 1
+
+        return Response(result)
+
+
 class DeviceInterfacesAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -62,7 +126,7 @@ class DeviceInterfacesAPIView(APIView):
         super().__init__(**kwargs)
 
         self.device: models.Devices
-        self.current_device_info: DevicesInfo
+        self.current_device_info: ModelDeviceInfo
         self.device_collector: Device
 
         # Поля для обновлений, в случае изменения записи в БД
@@ -140,9 +204,9 @@ class DeviceInterfacesAPIView(APIView):
         # Проверка наличия устройства в базе данных. Если это так, он получит устройство.
         # Если это не так, будет создано новое устройство.
         try:
-            self.current_device_info = DevicesInfo.objects.get(dev=self.device)
-        except DevicesInfo.DoesNotExist:
-            self.current_device_info = DevicesInfo.objects.create(dev=self.device)
+            self.current_device_info = ModelDeviceInfo.objects.get(dev=self.device)
+        except ModelDeviceInfo.DoesNotExist:
+            self.current_device_info = ModelDeviceInfo.objects.create(dev=self.device)
 
         interfaces = self.save_interfaces()
         self.add_devices_links(interfaces)
@@ -266,8 +330,8 @@ class DeviceInterfacesAPIView(APIView):
         ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
         """
         try:
-            device_info = DevicesInfo.objects.get(dev=self.device)
-        except DevicesInfo.DoesNotExist:
+            device_info = ModelDeviceInfo.objects.get(dev=self.device)
+        except ModelDeviceInfo.DoesNotExist:
             return "{}", ""
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их

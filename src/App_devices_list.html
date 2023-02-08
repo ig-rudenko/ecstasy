@@ -1,8 +1,14 @@
 <div id="devices">
   <div>
     <div class="row py-2">
-        <div class="col-6">
+        <div class="col-3">
             <h4 class="fw-bold py-4">Выберите оборудование</h4>
+        </div>
+        <div class="col-3 py-2">
+            <button @click="getDeviceWithStats" class="btn">
+                <img src="/static/img/load_balance.svg" height="40">
+                Нагрузка по портам
+            </button>
         </div>
         <div class="col-6" style="text-align: right">
             <img style="width: 100%" v-bind:src="'/static/img/device-icon-'+imageIndex+'.svg'" alt="search-description-image">
