@@ -133,7 +133,7 @@ def save_interfaces(model_dev: ModelDevices):
 def check_scanning_status() -> bool:
     task_id = cache.get("periodically_scan_id")
     if task_id:
-        result = AsyncResult(task_id)
+        result = AsyncResult(str(task_id))
         if result.status in ["PENDING"]:
             return True
 
@@ -150,3 +150,5 @@ def periodically_scan():
     with ThreadPoolExecutor() as execute:
         for device in ModelDevices.objects.all():
             execute.submit(save_interfaces, device)
+
+    return True

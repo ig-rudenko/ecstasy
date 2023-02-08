@@ -3,14 +3,11 @@ import ping3
 from datetime import datetime
 
 from django.urls import reverse
-from django.views import View
 from django.db.models import Q
-from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import login_required
-
-from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
@@ -26,13 +23,13 @@ from .. import models
 from ..views import has_permission_to_device
 
 
-@method_decorator(login_required, name="dispatch")
-class DevicesListView(generics.ListAPIView):
+class DevicesListAPIView(generics.ListAPIView):
     """
     ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
     """
 
     serializer_class = DevicesSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -58,8 +55,9 @@ class DevicesListView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-@method_decorator(login_required, name="dispatch")
-class DeviceInterfacesView(View):
+class DeviceInterfacesAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -114,7 +112,7 @@ class DeviceInterfacesView(View):
             self.add_comments(last_interfaces)
             self.add_devices_links(last_interfaces)
 
-            return JsonResponse(
+            return Response(
                 {
                     "interfaces": last_interfaces,
                     "deviceAvailable": ping > 0,
@@ -131,7 +129,7 @@ class DeviceInterfacesView(View):
         # Если не собрали интерфейсы.
         if not self.device_collector.interfaces:
             # Возвращает пустой список интерфейсов.
-            return JsonResponse(
+            return Response(
                 {
                     "interfaces": [],
                     "deviceAvailable": ping > 0,
@@ -150,7 +148,7 @@ class DeviceInterfacesView(View):
         self.add_devices_links(interfaces)
         self.add_comments(interfaces)
 
-        return JsonResponse(
+        return Response(
             {
                 "interfaces": interfaces,
                 "deviceAvailable": ping > 0,
@@ -316,11 +314,12 @@ class DeviceInterfacesView(View):
         return interfaces_to_save
 
 
-@method_decorator(login_required, name="dispatch")
-class DeviceInfoView(View):
+class DeviceInfoAPIView(APIView):
     """
     ## Возвращаем
     """
+
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
@@ -348,19 +347,20 @@ class DeviceInfoView(View):
             "coords": list(dev.zabbix_info.inventory.coordinates()),
         }
 
-        return JsonResponse(data)
+        return Response(data)
 
 
-@method_decorator(login_required, name="dispatch")
-class DeviceStatsInfoView(View):
+class DeviceStatsInfoAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
 
         if not has_permission_to_device(device, request.user):
-            return JsonResponse({}, status=404)
+            return Response(status=404)
 
         if not ping3.ping(device.ip, timeout=2):
-            return JsonResponse({})
+            return Response()
 
         try:
             # Подключаемся к оборудованию
@@ -369,36 +369,21 @@ class DeviceStatsInfoView(View):
                 return JsonResponse(device_stats)
 
         except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError):
-            return JsonResponse({}, status=400)
+            return Response(status=400)
 
 
-@method_decorator(login_required, name="dispatch")
-class CreateInterfaceCommentView(generics.CreateAPIView):
-
+class CreateInterfaceCommentAPIView(generics.CreateAPIView):
     serializer_class = InterfacesCommentsSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        dev = get_object_or_404(models.Devices, name=self.request.POST.get("device"))
+        dev = get_object_or_404(models.Devices, name=self.request.data.get("device"))
         serializer.save(user=self.request.user, device=dev)
 
 
-@method_decorator(login_required, name="dispatch")
-class UpdateInterfaceCommentView(View):
-    def post(self, request, pk: int):
-        comment = request.POST.get("comment")
-        if comment:
-            if models.InterfacesComments.objects.filter(id=pk).update(comment=comment):
-                return JsonResponse({"comment": comment})
-            else:
-                return JsonResponse({"error": "Комментария не существует"}, status=400)
-
-        return JsonResponse({"error": "Укажите комментарий"}, status=400)
-
-
-@method_decorator(login_required, name="dispatch")
-class DeleteInterfaceCommentView(View):
-    def post(self, request, pk: int):
-        if models.InterfacesComments.objects.filter(id=pk).delete():
-            return HttpResponse(status=204)
-
-        return JsonResponse({"error": "Комментария не существует"}, status=400)
+class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = models.InterfacesComments.objects.all()
+    serializer_class = InterfacesCommentsSerializer
+    lookup_field = "pk"
+    lookup_url_kwarg = "pk"

@@ -148,7 +148,7 @@ REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/0")
 
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
-CELERY_RESULT_BACKEND = "rpc://"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_BEAT_SCHEDULE = {
     "midnight-periodically-scan": {
         "task": "net_tools.tasks.periodically_scan",

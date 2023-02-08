@@ -301,10 +301,10 @@ export default {
       // Добавляем новый комментарий
       if (this.commentObject.action === "add" && new_comment.length) {
         $.ajax({
-            url: "/device/api/" + this.deviceName + '/add-comment',
+            url: "/device/api/comments",
             type: 'POST',
+            headers: {"X-CSRFToken": this.csrf_token},
             data: {
-              csrfmiddlewaretoken: this.csrf_token,
               device: this.deviceName,
               comment: new_comment,
               interface: this.commentObject.interface
@@ -321,10 +321,10 @@ export default {
       // Обновление комментария на порту
       if (this.commentObject.action === "update" && new_comment.length) {
         $.ajax({
-            url: "/device/api/comment/" + this.commentObject.id + "/update",
-            type: 'POST',
+            url: "/device/api/comments/" + this.commentObject.id,
+            type: 'PATCH',
+            headers: {"X-CSRFToken": this.csrf_token},
             data: {
-              csrfmiddlewaretoken: this.csrf_token,
               comment: new_comment
             },
             success: function( data ) {
@@ -339,11 +339,9 @@ export default {
       // Удаление комментария на порту
       if (this.commentObject.action === "delete") {
         $.ajax({
-            url: "/device/api/comment/" + this.commentObject.id + "/delete",
-            type: 'POST',
-            data: {
-              csrfmiddlewaretoken: this.csrf_token,
-            },
+            url: "/device/api/comments/" + this.commentObject.id,
+            type: 'DELETE',
+            headers:{"X-CSRFToken": this.csrf_token},
             success: function( data ) {
               console.log(data)
             },

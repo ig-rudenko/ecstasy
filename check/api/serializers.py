@@ -15,7 +15,9 @@ class DevicesSerializer(serializers.ModelSerializer):
 
 
 class InterfacesCommentsSerializer(serializers.ModelSerializer):
+    device = serializers.CharField(source="device.name", read_only=True)
 
     class Meta:
         model = InterfacesComments
-        fields = ["interface", "comment"]
+        fields = ["id", "interface", "comment", "user", "device"]
+        read_only_fields = ["id", "user", "device"]
