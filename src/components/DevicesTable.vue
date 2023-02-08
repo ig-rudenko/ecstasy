@@ -111,6 +111,14 @@
                   {{ dev.interfaces_count.abons_down_with_desc }}
                 </div>
 
+<!--                Абонентские порты -->
+                <div class="progress-bar text-dark" role="progressbar" style="background-color: #cfcfcf"
+                     v-if="dev.interfaces_count.abons_down_no_desc"
+                     :style="{width: dev.interfaces_count.abons_down_no_desc / dev.interfaces_count.abons * 100 + '%'}"
+                     :aria-valuemax="dev.interfaces_count.abons">
+                  {{ dev.interfaces_count.abons_down_no_desc }}
+                </div>
+
               </div>
             </div>
             </td>
