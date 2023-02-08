@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from rest_framework import generics, permissions
+from rest_framework import generics
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
@@ -35,7 +35,6 @@ class DevicesListAPIView(generics.ListAPIView):
     """
 
     serializer_class = DevicesSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -64,7 +63,6 @@ class DevicesListAPIView(generics.ListAPIView):
 class InterfacesStatisticAPIView(generics.ListAPIView):
 
     serializer_class = InterfaceSerializer
-    # permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -120,7 +118,6 @@ class InterfacesStatisticAPIView(generics.ListAPIView):
 
 
 class DeviceInterfacesAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -383,8 +380,6 @@ class DeviceInfoAPIView(APIView):
     ## Возвращаем
     """
 
-    permission_classes = [permissions.IsAuthenticated]
-
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
 
@@ -415,7 +410,6 @@ class DeviceInfoAPIView(APIView):
 
 
 class DeviceStatsInfoAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
@@ -438,7 +432,6 @@ class DeviceStatsInfoAPIView(APIView):
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):
     serializer_class = InterfacesCommentsSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         dev = get_object_or_404(models.Devices, name=self.request.data.get("device"))
@@ -446,7 +439,6 @@ class CreateInterfaceCommentAPIView(generics.CreateAPIView):
 
 
 class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
     queryset = models.InterfacesComments.objects.all()
     serializer_class = InterfacesCommentsSerializer
     lookup_field = "pk"
