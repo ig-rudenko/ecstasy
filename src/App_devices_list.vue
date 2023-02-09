@@ -22,6 +22,7 @@ export default {
       selectedGroup: "",
       vendors: function () { return [] },
       selectedVendor: "",
+      displayMode: "default"
     }
   },
   methods: {
@@ -50,6 +51,9 @@ export default {
         // Кол-во устройств
         this.pagination.count = data.length || 0
 
+        // Режим по умолчанию
+        this.displayMode = "default"
+
         let devices_groups = []
         let devices_vendors = []
         // Определяем список уникальных имен вендоров и групп
@@ -70,6 +74,10 @@ export default {
     },
     async getDeviceWithStats(){
       try {
+
+        // Включаем режим отображения как "загружается"
+        this.displayMode = "waiting"
+
         let response = await fetch(
             "/device/api/statistic/interfaces?free=1&up=1&admin_down=1&abons=1",
             {method: 'GET', credentials: "same-origin"}
@@ -81,6 +89,9 @@ export default {
 
         // Кол-во устройств
         this.pagination.count = data.devices_count || 0
+
+        // Включаем режим отображения нагрузки по интерфейсам
+        this.displayMode = "interfaces_loading"
 
         let devices_groups = []
         let devices_vendors = []
@@ -128,6 +139,23 @@ export default {
                 }
 
                 if (search_str === "") return true;
+
+                if (search_str.match(/^::load([<>=])(\d+)/i) && elem.interfaces_count) {
+                  let match = search_str.match(/^::load([<>=])(\d+)/i)
+                  let load = match[2]
+                  let operator = match[1]
+
+                  let device_loading = elem.interfaces_count.abons_up / elem.interfaces_count.abons * 100
+                  if (operator === "<") {
+                    return device_loading <= Number(load)
+                  }
+                  if (operator === ">") {
+                    return device_loading >= Number(load)
+                  }
+                  if (operator === "=") {
+                    return device_loading === Number(load)
+                  }
+                }
 
                 let name = elem.name.toLowerCase()
                 let ip = elem.ip.toLowerCase()

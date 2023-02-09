@@ -182,7 +182,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if "down" in i.status.lower():
+            if "down" in i.status.lower() or "disable" in i.status.lower():
                 count += 1
                 if not only_count:
                     intf.append(i)

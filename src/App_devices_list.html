@@ -1,31 +1,62 @@
 <div id="devices">
   <div>
     <div class="row py-2">
-        <div class="col-3">
+        <div class="col-md-3">
             <h4 class="fw-bold py-4">Выберите оборудование</h4>
         </div>
-        <div class="col-3 py-2">
+
+<!--        Переключение режимов работы-->
+<!--        Нагрузка по портам-->
+        <div v-if="displayMode === 'default'" class="col-md-3 py-2">
             <button @click="getDeviceWithStats" class="btn">
-                <img src="/static/img/load_balance.svg" height="40">
+                <img src="/static/img/load_balance.svg" height="40" class="me-2">
                 Нагрузка по портам
             </button>
         </div>
-        <div class="col-6" style="text-align: right">
+<!--        Ожидание-->
+        <div v-if="displayMode === 'waiting'" class="col-md-3 py-2">
+            <button class="btn">
+                <div class="spinner-border me-2" role="status" style="vertical-align: middle; height: 40px; width: 40px;"></div>
+                Нагрузка по портам
+            </button>
+        </div>
+<!--        Обычный режим-->
+        <div v-if="displayMode === 'interfaces_loading'" class="col-md-3 py-2">
+            <button @click="getDevices" class="btn">
+                <img src="/static/img/default_view.svg" height="40" class="me-2">
+                Обычный вид
+            </button>
+        </div>
+
+<!--    Картинка оборудования-->
+        <div class="col-md-6" style="text-align: right">
             <img style="width: 100%" v-bind:src="'/static/img/device-icon-'+imageIndex+'.svg'" alt="search-description-image">
         </div>
     </div>
 
+<!--      Строка поиска-->
     <search-form
             :update_search="updateSearch"
             placeholder="Поиск по Имени или IP адресу">
     </search-form>
 
-    <ul class="nav nav-tabs">
+<!--      Отображение подсказки по нагрузке портов-->
+    <div v-if="displayMode === 'interfaces_loading'" class="row" style="padding: 20px;">
+        <div class="py-2">Расшифровка цвета</div>
+        <div>
+            <div class="progress" style="height: 25px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 25%; height: 25px;">Активные порты с описанием</div>
+                <div class="progress-bar" role="progressbar" style="background-color: rgb(116, 191, 156); width: 25%; height: 25px;">Активные порты без описания</div>
+                <div class="progress-bar text-dark" role="progressbar" style="background-color: rgb(255, 189, 189); width: 25%; height: 25px;">Неактивные порты с описанием</div>
+                <div class="progress-bar text-dark" role="progressbar" style="background-color: rgb(207, 207, 207); width: 25%; height: 25px;">Прочие неактивные порты</div>
+            </div>
+        </div>
+    </div>
 
+    <ul class="nav nav-tabs">
       <li class="nav-link text-dark">
         Всего найдено: {{ pagination.count }}
       </li>
-
     </ul>
 
     <pagination v-bind:p-object="pagination"></pagination>

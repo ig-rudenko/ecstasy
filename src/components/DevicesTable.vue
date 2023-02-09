@@ -40,7 +40,7 @@
   <tbody style="vertical-align: middle;">
 
       <template v-for="dev in devices">
-        <tr>
+        <tr :style="dev.interfaces_count?{'border-bottom': 'hidden'}:{}">
     <!--    IP-->
             <td class="text-center table-padding">
                 {{ dev.ip }}
@@ -83,7 +83,8 @@
           </tr>
 
           <tr v-if="dev.interfaces_count && dev.interfaces_count.abons">
-            <td class="table-padding" colspan="5">
+
+            <td class="table-padding" colspan="5" style="padding-bottom: 1.5rem;">
             <div class="col-5">
               <div class="progress">
 
@@ -104,14 +105,14 @@
                 </div>
 
 <!--                Абонентские порты DOWN С ОПИСАНИЕМ -->
-                <div class="progress-bar" role="progressbar" style="background-color: #ffbdbd"
+                <div class="progress-bar text-dark" role="progressbar" style="background-color: #ffbdbd"
                      v-if="dev.interfaces_count.abons_down_with_desc"
                      :style="{width: dev.interfaces_count.abons_down_with_desc / dev.interfaces_count.abons * 100 + '%'}"
                      :aria-valuemax="dev.interfaces_count.abons">
                   {{ dev.interfaces_count.abons_down_with_desc }}
                 </div>
 
-<!--                Абонентские порты -->
+<!--                Абонентские порты Остальные-->
                 <div class="progress-bar text-dark" role="progressbar" style="background-color: #cfcfcf"
                      v-if="dev.interfaces_count.abons_down_no_desc"
                      :style="{width: dev.interfaces_count.abons_down_no_desc / dev.interfaces_count.abons * 100 + '%'}"
