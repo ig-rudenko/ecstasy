@@ -423,7 +423,6 @@ class Dlink(BaseDevice):
         return self.session.before.decode()
 
     @BaseDevice._lock
-    @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -443,19 +442,30 @@ class Dlink(BaseDevice):
         :return: Вывод команды смены описания
         """
 
+        if "F" in port:
+            media_type = " medium_type fiber"
+        elif "C" in port:
+            media_type = " medium_type copper"
+        else:
+            media_type = ""
+
+        port = self.validate_port(port)
+        if port is None:
+            return "Неверный порт"
+
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             status = self.send_command(
-                f"config ports {port} clear_description",
+                f"config ports {port}{media_type} clear_description",
                 expect_command=False,
                 before_catch="desc",
             )
 
         else:  # В другом случае, меняем описание на оборудовании
             status = self.send_command(
-                f"config ports {port} description {desc}",
+                f"config ports {port}{media_type} description {desc}",
                 expect_command=False,
                 before_catch="desc",
             )
