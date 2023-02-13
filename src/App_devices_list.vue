@@ -4,6 +4,7 @@
 import DevicesTable from "./components/DevicesTable.vue";
 import Pagination from "./components/Pagination.vue";
 import SearchInput from "./components/SearchInput.vue";
+import DoughnutChart from "./components/DoughnutChart.vue";
 
 export default {
   name: 'devices',
@@ -72,6 +73,7 @@ export default {
         console.log(error)
       }
     },
+
     async getDeviceWithStats(){
       try {
 
@@ -182,6 +184,25 @@ export default {
       }
 
       return slice_array
+    },
+    chartData: function () {
+      let devices_array = this.filteredDevices
+
+      if (this.displayMode!=='interfaces_loading' || !devices_array.length) return [0, 0, 0, 0]
+
+      let up_with_desc = 0
+      let up_no_desc = 0
+      let down_with_desc = 0
+      let down_no_desc = 0
+      for (let dev of devices_array) {
+        up_with_desc += dev.interfaces_count.abons_up_with_desc
+        up_no_desc += dev.interfaces_count.abons_up_no_desc
+        down_with_desc += dev.interfaces_count.abons_down_with_desc
+        down_no_desc += dev.interfaces_count.abons_down_no_desc
+      }
+
+      return [up_with_desc, up_no_desc, down_with_desc, down_no_desc]
+
     }
   },
   created(){
@@ -189,6 +210,7 @@ export default {
     this.changeImageIndex()
   },
   components: {
+    DoughnutChart,
     "devices-table": DevicesTable,
     "pagination": Pagination,
     "search-form": SearchInput,
