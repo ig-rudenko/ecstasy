@@ -23,7 +23,9 @@ export default {
       selectedGroup: "",
       vendors: function () { return [] },
       selectedVendor: "",
-      displayMode: "default"
+      displayMode: "default",
+
+      chartData: undefined
     }
   },
   methods: {
@@ -121,6 +123,25 @@ export default {
     setGroup: function (group) {
       this.selectedGroup = group
       this.changeImageIndex()
+    },
+    calculateInterfacesWorkload(devicesArray){
+      if (this.displayMode!=='interfaces_loading' || !devicesArray.length) {
+        this.chartData = undefined
+        return
+      }
+
+      let up_with_desc = 0
+      let up_no_desc = 0
+      let down_with_desc = 0
+      let down_no_desc = 0
+      for (let dev of devicesArray) {
+        up_with_desc += dev.interfaces_count.abons_up_with_desc
+        up_no_desc += dev.interfaces_count.abons_up_no_desc
+        down_with_desc += dev.interfaces_count.abons_down_with_desc
+        down_no_desc += dev.interfaces_count.abons_down_no_desc
+      }
+
+      this.chartData = [up_with_desc, up_no_desc, down_with_desc, down_no_desc]
     }
   },
   computed: {
@@ -165,6 +186,9 @@ export default {
               }
           )
 
+      // Высчитываем нагруженность интерфейсов для данного фильтра оборудования
+      this.calculateInterfacesWorkload(array)
+
       this.pagination.count = array.length
 
       // Обрезаем по размеру страницы
@@ -184,25 +208,6 @@ export default {
       }
 
       return slice_array
-    },
-    chartData: function () {
-      let devices_array = this.filteredDevices
-
-      if (this.displayMode!=='interfaces_loading' || !devices_array.length) return [0, 0, 0, 0]
-
-      let up_with_desc = 0
-      let up_no_desc = 0
-      let down_with_desc = 0
-      let down_no_desc = 0
-      for (let dev of devices_array) {
-        up_with_desc += dev.interfaces_count.abons_up_with_desc
-        up_no_desc += dev.interfaces_count.abons_up_no_desc
-        down_with_desc += dev.interfaces_count.abons_down_with_desc
-        down_no_desc += dev.interfaces_count.abons_down_no_desc
-      }
-
-      return [up_with_desc, up_no_desc, down_with_desc, down_no_desc]
-
     }
   },
   created(){
