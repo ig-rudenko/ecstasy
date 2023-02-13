@@ -14,12 +14,14 @@ import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
 import Comment from "./components/Comment.vue";
 import PortControlButtons from "./components/PortControlButtons.vue";
+import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
 
 export default {
   name: 'device',
   data() {
     return {
       deviceStats: {},
+      interfacesWorkload: {},
 
       timePassedFromLastUpdate: null,
       collected: "new", // Дата и время сбора интерфейсов
@@ -80,6 +82,9 @@ export default {
     this.csrf_token = $("input[name=csrfmiddlewaretoken]")[0].value
     await this.getInfo()
 
+    // Смотрим предыдущую загруженность интерфейсов оборудования
+    await this.getInterfacesWorkload()
+
     // Сначала смотрим предыдущие интерфейсы
     let response = await fetch(
         "/device/api/" + this.deviceName + "/interfaces?vlans=1",
@@ -94,9 +99,16 @@ export default {
 
     this.timer()
 
+    // Смотрим текущее состояние интерфейсов
     await this.getInterfaces()
+    // Смотрим информацию оборудования
     await this.getStats()
+
+    // Всплывающее меню
     this.toastObject = $(".toast")
+
+    // Смотрим текущую загруженность интерфейсов оборудования
+    await this.getInterfacesWorkload()
   },
 
   methods: {
@@ -113,6 +125,18 @@ export default {
       }
 
       setTimeout(this.getStats, 60000)
+    },
+
+    async getInterfacesWorkload() {
+      try {
+        let url = "/device/api/workload/interfaces/" + this.deviceName
+        let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+
+        this.interfacesWorkload = await response.json()
+
+      } catch (error) {
+        console.log(error)
+      }
     },
 
     /** Смотрим информацию про оборудование */
@@ -420,6 +444,7 @@ export default {
     }
   },
   components: {
+    DeviceWorkloadBar,
     "device-status-name": DeviceStatusName,
     "elastic-link": ElasticStackLink,
     "interfaces-help": InterfacesHelpText,

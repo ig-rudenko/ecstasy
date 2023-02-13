@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.urls import reverse
 from django.db.models import Q
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -60,11 +60,8 @@ class DevicesListAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
-class InterfacesStatisticAPIView(generics.ListAPIView):
-
-    serializer_class = InterfaceSerializer
-
-    def get_queryset(self):
+class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
+    def get_queryset(self, *args, **kwargs):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
@@ -76,49 +73,63 @@ class InterfacesStatisticAPIView(generics.ListAPIView):
                 for group in self.request.user.profile.devices_groups.all().values("id")
             ]
         )
-        return ModelDeviceInfo.objects.filter(query).select_related("dev").order_by("dev__name")
+        return (
+            ModelDeviceInfo.objects.filter(query, **kwargs)
+            .select_related("dev")
+            .order_by("dev__name")
+        )
+
+    def get_interfaces_load(self, device: ModelDeviceInfo):
+        interfaces = InterfacesObject(json.loads(device.interfaces)).physical()
+
+        non_system = interfaces.non_system()
+        abons_up = non_system.up()
+        abons_up_with_desc = abons_up.with_description()
+        abons_down = non_system.down()
+        abons_down_with_desc = abons_down.with_description()
+
+        return {
+            "count": interfaces.count,
+            "abons": non_system.count,
+            "abons_up": abons_up.count,
+            "abons_up_with_desc": abons_up_with_desc.count,
+            "abons_up_no_desc": abons_up.count - abons_up_with_desc.count,
+            "abons_down": abons_down.count,
+            "abons_down_with_desc": abons_down_with_desc.count,
+            "abons_down_no_desc": abons_down.count - abons_down_with_desc.count,
+        }
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-
         result = {
             "devices_count": 0,
             "devices": [],
         }
 
         for dev_info in queryset:
-            interfaces = InterfacesObject(json.loads(dev_info.interfaces)).physical()
-
-            non_system = interfaces.non_system()
-            abons_up = non_system.up()
-            abons_up_with_desc = abons_up.with_description()
-            abons_down = non_system.down()
-            abons_down_with_desc = abons_down.with_description()
-
-            interfaces_dict = {
-                "count": interfaces.count,
-                "abons": non_system.count,
-                "abons_up": abons_up.count,
-                "abons_up_with_desc": abons_up_with_desc.count,
-                "abons_up_no_desc": abons_up.count - abons_up_with_desc.count,
-                "abons_down": abons_down.count,
-                "abons_down_with_desc": abons_down_with_desc.count,
-                "abons_down_no_desc": abons_down.count - abons_down_with_desc.count
-            }
-
             result["devices"].append(
                 {
-                    "interfaces_count": interfaces_dict,
+                    "interfaces_count": self.get_interfaces_load(dev_info),
                     **DevicesSerializer(dev_info.dev).data,
                 }
             )
             result["devices_count"] += 1
+        return Response(result)
 
+
+class DeviceInterfacesWorkLoadAPIView(
+    generics.RetrieveAPIView, AllDevicesInterfacesWorkLoadAPIView
+):
+    lookup_url_kwarg = "device_name"
+    lookup_field = "dev__name"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        result = self.get_interfaces_load(instance)
         return Response(result)
 
 
 class DeviceInterfacesAPIView(APIView):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -410,7 +421,6 @@ class DeviceInfoAPIView(APIView):
 
 
 class DeviceStatsInfoAPIView(APIView):
-
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
 

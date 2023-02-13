@@ -81,7 +81,7 @@ export default {
         this.displayMode = "waiting"
 
         let response = await fetch(
-            "/device/api/statistic/interfaces?free=1&up=1&admin_down=1&abons=1",
+            "/device/api/workload/interfaces",
             {method: 'GET', credentials: "same-origin"}
         );
         let data = await response.json()
