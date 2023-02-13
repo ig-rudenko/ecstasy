@@ -145,6 +145,36 @@ class Interfaces:
         """Количество интерфейсов"""
         return len(self.__interfaces)
 
+    def physical(self):
+        res = []
+        i = 0
+        intf = self.__interfaces
+
+        while i < len(intf):
+            # Комбо-порт. Надо выбрать один.
+            if (
+                "(C)" in intf[i].name
+                and "(F)" in intf[i + 1].name
+                and re.findall(r"^\d+", intf[i].name)
+                == re.findall(r"^\d+", intf[i].name)
+            ):
+                # Выбираем, какой комбо порт добавить.
+                # Смотрим состояние и добавляем активный.
+                combo_interface = intf[i] if intf[i].is_up else intf[i + 1]
+                # Выбираем описание комбо порта, если нет на (C), то берем с (F).
+                combo_interface.desc = (
+                    intf[i].desc if intf[i].has_desc else intf[i + 1].desc
+                )
+                res.append(combo_interface)
+                i += 2  # Пропускаем 2 комбо-порта.
+                continue
+
+            # Добавляем обычные порты.
+            res.append(intf[i])
+            i += 1
+
+        return Interfaces(res)
+
     def up(self, only_count=False):
         """
         Интерфейсы, состояние которых UP
@@ -154,7 +184,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if "down" not in i.status.lower() and "disable" not in i.status.lower():
+            if i.is_up:
                 count += 1
                 if not only_count:
                     intf.append(i)
@@ -168,7 +198,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if i.desc:
+            if i.has_desc:
                 count += 1
                 if not only_count:
                     intf.append(i)
@@ -182,7 +212,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if "down" in i.status.lower() or "disable" in i.status.lower():
+            if not i.is_up:
                 count += 1
                 if not only_count:
                     intf.append(i)
@@ -211,9 +241,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if "down" in i.status.lower() and (
-                not i.desc or "HUAWEI, Quidway Series" in i.desc
-            ):
+            if not i.is_up and not i.has_desc:
                 count += 1
                 if not only_count:
                     intf.append(i)

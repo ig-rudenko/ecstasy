@@ -141,6 +141,20 @@ class Interface:
     desc: str = ""
     vlan: list = field(default_factory=list)
 
+    @property
+    def has_desc(self):
+
+        if "HUAWEI, Quidway Series" in self.desc:
+            return False
+
+        return len(self.desc) > 1
+
+    @property
+    def is_up(self) -> bool:
+        if "down" not in self.status and "disable" not in self.status:
+            return True
+        return False
+
 
 @dataclass
 class Location:

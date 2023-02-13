@@ -87,7 +87,7 @@ class InterfacesStatisticAPIView(generics.ListAPIView):
         }
 
         for dev_info in queryset:
-            interfaces = InterfacesObject(json.loads(dev_info.interfaces))
+            interfaces = InterfacesObject(json.loads(dev_info.interfaces)).physical()
 
             non_system = interfaces.non_system()
             abons_up = non_system.up()

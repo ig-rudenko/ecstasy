@@ -1,8 +1,11 @@
 */tests/*
 */migrations/*
+
 static/map_previews
 static/docs
 static/admin
+static/rest_framework
+
 templates/tools/vlans
 templates/test*
 templates/maps/external

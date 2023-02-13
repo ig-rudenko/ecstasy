@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split()
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
 
 # Application definition
 INSTALLED_APPS = [
@@ -80,7 +80,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 
-DATABASES = json.loads(os.getenv("DATABASES").replace(" ", "").replace("\n", ""))
+DATABASES = json.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
 
 AUTH_PASSWORD_VALIDATORS = [
     {
