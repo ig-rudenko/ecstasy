@@ -22,8 +22,7 @@ from devicemanager.device import Interfaces as InterfacesObject
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 from .serializers import (
     DevicesSerializer,
-    InterfacesCommentsSerializer,
-    InterfaceSerializer,
+    InterfacesCommentsSerializer
 )
 from .. import models
 from ..views import has_permission_to_device
