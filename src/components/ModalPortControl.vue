@@ -108,7 +108,13 @@ export default defineComponent({
   props: {
     port_action: {
       required: true,
-      type: Object
+      type: {
+        name: String,
+        action: String,
+        submit: Function,
+        port: String,
+        desc: String
+      }
     }
   },
   methods:{

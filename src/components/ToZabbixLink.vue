@@ -18,11 +18,7 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-      zabbix_host_id: {
-        required: true,
-        type: Number,
-        default: null
-      }
+      zabbix_host_id: { required: true, type: Number, default: null }
   }
 })
 </script>

@@ -70,13 +70,17 @@ export default defineComponent({
   props: {
     comment: {
       required: true,
-      type: Object
+      type: {
+          id: Number,
+          text: String,
+          user: String,
+          action: String,
+          interface: String,
+          submit: Function
+      }
     }
   },
   computed: {
-    // new_comment: function () {
-    //   return this.comment.text || ""
-    // },
     modalTitle: function () {
       if (this.comment.action === "add") return "Создать комментарий для порта " + this.comment.interface
       if (this.comment.action === "update") return "Обновить комментарий порта " + this.comment.interface

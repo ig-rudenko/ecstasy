@@ -31,7 +31,7 @@ export default defineComponent({
   props: {
     toast: {
       required: true,
-      type: Object
+      type: { color: "", title: "", message: "" }
     }
   }
 })

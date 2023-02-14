@@ -16,16 +16,15 @@ export default {
   name: 'DoughnutChart',
   components: { Doughnut },
   props: {
-    data: {
-      required: true,
-      type: Array
-    }
+    data: { required: true, type: Array}
   },
   computed: {
     chartData() {
       return {
-        label: 'Кол-во портов',
-        datasets: [ { data: this.data } ]
+        datasets: [ {
+          data: this.data,
+          label: 'Кол-во интерфейсов',
+        } ]
       }
     },
     chartOptions() {

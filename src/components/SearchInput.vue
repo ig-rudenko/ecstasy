@@ -17,19 +17,9 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    placeholder: {
-      required: false,
-      type: String
-    },
-    update_search: {
-      required: true,
-      type: Function
-    },
-    active_mode: {
-      required: false,
-      type: Boolean,
-      default: false
-    }
+    placeholder: { required: false, type: String },
+    update_search: { required: true, type: Function },
+    active_mode: { required: false, type: Boolean, default: false }
   },
   computed: {
     form_classes: function () {

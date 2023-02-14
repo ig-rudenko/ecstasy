@@ -20,7 +20,7 @@ export default defineComponent({
   props: {
       coords: {
         required: true,
-        type: Array,
+        type: [0, 0],
         default: function () { return [] }
       }
   }

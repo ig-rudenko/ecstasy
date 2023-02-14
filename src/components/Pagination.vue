@@ -48,7 +48,11 @@ export default defineComponent({
   props: {
     pObject: {
       required: true,
-      type: Object,
+      type: {
+          count: Number,
+          page: Number,
+          rows_per_page: Number
+      },
     }
   },
   computed: {

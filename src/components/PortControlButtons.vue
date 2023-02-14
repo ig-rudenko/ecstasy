@@ -57,27 +57,11 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    permissionLevel: {
-      required: true,
-      type: Number
-    },
-    showPortEnterLink: {
-      required: false,
-      type: Boolean,
-      default: false
-    },
-    deviceName: {
-      required: true,
-      type: String
-    },
-    interface: {
-      required: true,
-      type: Object
-    },
-    portAction: {
-      required: true,
-      type: Function
-    }
+    permissionLevel: { required: true, type: Number },
+    showPortEnterLink: { required: false, type: Boolean, default: false },
+    deviceName: { required: true, type: String },
+    interface: { required: true, type: Object },
+    portAction: { required: true, type: Function }
   }
 })
 </script>

@@ -100,7 +100,14 @@ export default defineComponent({
     },
     interface: {
       required: true,
-      type: Object
+      type: {
+          Interface: String,
+          Status: String,
+          Description: String,
+          Comments: [
+              { "text": String, "user": String ,"id": Number }
+          ]
+      }
     }
   }
 })

@@ -15,8 +15,7 @@ export default {
       pagination: {
         count: 0,
         page: 0,
-        rows_per_page: 50,
-        next_page: "",
+        rows_per_page: 50
       },
     }
   },

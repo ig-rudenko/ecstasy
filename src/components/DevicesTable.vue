@@ -138,33 +138,34 @@ export default defineComponent({
   props: {
       devices: {
         required: true,
-        type: Array,
-        default: function () { return [] }
+        type: [
+            {
+              group: "",
+              interfaces_count:
+                  {
+                    abons: 0,
+                    abons_down: 0,
+                    abons_down_no_desc: 0,
+                    abons_down_with_desc: 0,
+                    abons_up: 0,
+                    abons_up_no_desc: 0,
+                    abons_up_with_desc: 0,
+                    count: 0
+                  },
+              ip: "",
+              model: "",
+              name: "",
+              port_scan_protocol: "",
+              vendor: ""
+            }
+          ]
       },
-      setVendor: {
-        required: true,
-        type: Function
-      },
-      setGroup: {
-        required: true,
-        type: Function
-      },
-      currentVendor: {
-        required: true,
-        type: String
-      },
-      currentGroup: {
-        required: true,
-        type: String
-      },
-      vendors: {
-        required: true,
-        type: Array
-      },
-      groups: {
-        required:true,
-        type: Array
-      }
+      setVendor: { required: true, type: Function },
+      setGroup: { required: true, type: Function },
+      currentVendor: { required: true, type: String },
+      currentGroup: { required: true, type: String },
+      vendors: { required: true, type: Array },
+      groups: { required:true, type: Array }
   },
   methods: {
     stringToColour: function(str) {

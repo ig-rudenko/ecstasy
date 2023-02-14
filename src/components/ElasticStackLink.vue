@@ -20,11 +20,7 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-      logs_url: {
-        required: true,
-        type: String,
-        default: ""
-      }
+      logs_url: { required: true, type: String, default: "" }
   }
 })
 </script>

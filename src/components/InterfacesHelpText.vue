@@ -44,29 +44,12 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-      device_status: {
-        required: true,
-        type: Number
-      },
-      auto_update: {
-        required: true,
-        type: Boolean
-      },
-      current_status: {
-        required: true,
-        type: Boolean
-      },
-      time_passed: {
-        required: true,
-        type: String,
-      },
-      last_interface_update: {
-        type: String,
-      },
-      updateCurrentStatus: {
-        required: true,
-        type: Function
-      }
+      device_status: { required: true, type: Number},
+      auto_update: { required: true, type: Boolean },
+      current_status: { required: true, type: Boolean },
+      time_passed: { required: true, type: String, },
+      last_interface_update: { required: false, type: String },
+      updateCurrentStatus: { required: true, type: Function }
   }
 })
 </script>

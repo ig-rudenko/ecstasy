@@ -48,7 +48,8 @@ export default {
         text: "",
         user: "",
         action: "",
-        interface: ""
+        interface: "",
+        submit: null
       },
 
       csrf_token: null,

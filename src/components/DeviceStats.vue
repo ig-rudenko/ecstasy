@@ -88,7 +88,12 @@ export default defineComponent({
   props: {
       stats: {
         required: true,
-        type: Object,
+        type: {
+            cpu: { util: [ Number, ] },
+            ram: { util: Number },
+            flash: { util: Number },
+            temp: { value: Number, status: String }
+        },
         default: {}
       }
   },
@@ -98,10 +103,6 @@ export default defineComponent({
       if (value < 30) return "#198754";
       if (value < 80) return "#ff9836";
       return  "#dc3545";
-    },
-    info: function () {
-      console.log(this.stats)
-      console.log(this.stats.cpu)
     }
   }
 })
