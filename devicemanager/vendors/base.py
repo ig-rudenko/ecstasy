@@ -158,7 +158,7 @@ class BaseDevice(ABC):
         Очищаем описание порта от лишних символов
 
         Также переводит русские символы в английские. Заменяет пробелы на "_".
-        Удаляет другие пробельные символы "\\\\t\\\\n\\\\r\\\\f\\\\v"
+        Удаляет другие пробельные символы "\\t \\n \\r \\f \\v"
 
         Максимальная длина строки 220
 
@@ -240,7 +240,6 @@ class BaseDevice(ABC):
             "Ю": "U",
             "Я": "YA",
             " ": "_",
-            "-": "_",
             "'": "/",
             "\\": "/",
             "[": "(",
@@ -277,14 +276,14 @@ class BaseDevice(ABC):
     def _lock(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            print("Try LOCK", func.__name__)
+            # print("Try LOCK", func.__name__)
             while True:
                 if not self.lock:
                     self.lock = True
-                    print("LOCK", func.__name__)
+                    # print("LOCK", func.__name__)
                     res = func(self, *args, **kwargs)
                     self.lock = False
-                    print("UNLOCK", func.__name__)
+                    # print("UNLOCK", func.__name__)
                     return res
                 time.sleep(0.02)
 

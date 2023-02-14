@@ -294,12 +294,12 @@ export default {
         desc: this.portAction.desc,       // Описание порта
         status: this.portAction.action,   // Что сделать с портом
         save: save_config,                // Сохранить конфигурацию после действия?
-        csrfmiddlewaretoken: this.csrf_token
       }
       $.ajax({
           url: "/device/port/reload",
           type: 'POST',
           data: data,
+          headers: {"X-CSRFToken": this.csrf_token},
           success: function( data ) {
             toastInfo.title= data.status
             toastInfo.message = data.message
