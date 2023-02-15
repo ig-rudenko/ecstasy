@@ -15,6 +15,7 @@ import CommentControl from "./components/CommentControl.vue";
 import Comment from "./components/Comment.vue";
 import PortControlButtons from "./components/PortControlButtons.vue";
 import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
+import ChangeDescription from "./components/ChangeDescription.vue";
 
 export default {
   name: 'device',
@@ -446,6 +447,7 @@ export default {
   },
   components: {
     DeviceWorkloadBar,
+    ChangeDescription,
     "device-status-name": DeviceStatusName,
     "elastic-link": ElasticStackLink,
     "interfaces-help": InterfacesHelpText,

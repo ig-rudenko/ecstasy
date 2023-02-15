@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.urls import reverse
 from django.db.models import Q
-from django.http import HttpResponseForbidden, JsonResponse, Http404
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -20,12 +20,9 @@ from devicemanager.exceptions import (
 
 from devicemanager.device import Interfaces as InterfacesObject
 from net_tools.models import DevicesInfo as ModelDeviceInfo
-from .serializers import (
-    DevicesSerializer,
-    InterfacesCommentsSerializer
-)
-from .. import models
-from ..views import has_permission_to_device
+from ..serializers import DevicesSerializer
+from check import models
+from check.views import has_permission_to_device
 
 
 class DevicesListAPIView(generics.ListAPIView):
@@ -437,18 +434,3 @@ class DeviceStatsInfoAPIView(APIView):
 
         except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError):
             return Response(status=400)
-
-
-class CreateInterfaceCommentAPIView(generics.CreateAPIView):
-    serializer_class = InterfacesCommentsSerializer
-
-    def perform_create(self, serializer):
-        dev = get_object_or_404(models.Devices, name=self.request.data.get("device"))
-        serializer.save(user=self.request.user, device=dev)
-
-
-class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.InterfacesComments.objects.all()
-    serializer_class = InterfacesCommentsSerializer
-    lookup_field = "pk"
-    lookup_url_kwarg = "pk"

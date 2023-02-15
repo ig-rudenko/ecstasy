@@ -134,8 +134,9 @@
               </td>
 
 <!--          Описание порта-->
-              <td v-if="intf.Link" :style="dynamicOpacity" v-html="addDeviceLink(intf)"></td>
-              <td v-else :style="dynamicOpacity">{{ intf.Description }}</td>
+              <td :style="dynamicOpacity">
+                  <ChangeDescription :device_name="deviceName" :interface="intf" :csrf_token="csrf_token" />
+              </td>
 
 <!--          VLANS-->
               <td v-if="withVlans && intf['VLAN\'s']">{{ intf["VLAN's"].join(", ") }}</td>
