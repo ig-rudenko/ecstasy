@@ -1,8 +1,4 @@
 <template>
-<div class="btn-group" role="group">
-  <div class="col-auto blockquote" style="margin: 5px 10px;">
-      {{ interface.Interface }}
-  </div>
   <div v-if="permissionLevel >= 2" class="btn-group-vertical" role="group">
 
 <!--     ВКЛЮЧИТЬ ПОРТ -->
@@ -48,7 +44,6 @@
         </svg>
       </a>
   </div>
-</div>
 </template>
 
 

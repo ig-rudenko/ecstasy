@@ -13,6 +13,7 @@ from devicemanager.exceptions import (
     TelnetConnectionError,
     UnknownDeviceError,
 )
+from net_tools.models import VlanName
 
 from ..serializers import InterfacesCommentsSerializer
 from ..permissions import DevicePermission
@@ -67,6 +68,60 @@ class ChangeDescription(APIView):
             )
 
         return Response({"description": new_description})
+
+
+class MacListAPIView(APIView):
+    permission_classes = [DevicePermission]
+
+    def get(self, request, device_name):
+
+        port = self.request.GET.get("port")
+        if not port:
+            raise ValidationError({"detail": "Укажите порт!"})
+
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(request, device)
+
+        with device.connect() as session:
+            macs = []  # Итоговый список
+            vlan_passed = {}  # Словарь уникальных VLAN
+            for vid, mac in session.get_mac(port):  # Смотрим VLAN и MAC
+                # Если еще не искали такой VLAN
+                if vid not in vlan_passed:
+                    # Ищем название VLAN'a
+                    try:
+                        vlan_name = VlanName.objects.get(vid=int(vid)).name
+                    except (ValueError, VlanName.DoesNotExist):
+                        vlan_name = ""
+                    # Добавляем в множество вланов, которые участвовали в поиске имени
+                    vlan_passed[vid] = vlan_name
+
+                # Обновляем
+                macs.append({"vlanID": vid, "mac": mac, "vlanName": vlan_passed[vid]})
+
+        return Response({"count": len(macs), "result": macs})
+
+
+class InterfaceInfoAPIView(APIView):
+    permission_classes = [DevicePermission]
+
+    def get(self, request, device_name):
+
+        port = self.request.GET.get("port")
+        if not port:
+            raise ValidationError({"detail": "Укажите порт!"})
+
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(request, device)
+
+        result = {}
+        with device.connect() as session:
+            result["portConfig"] = session.get_port_config(port)
+            result["portType"] = session.get_port_type(port)
+            result["portErrors"] = session.get_port_errors(port)
+            result["portDetailInfo"] = session.get_port_info(port)
+
+        return Response(result)
 
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):
