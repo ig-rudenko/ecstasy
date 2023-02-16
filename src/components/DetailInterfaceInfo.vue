@@ -146,6 +146,9 @@
 <!--      МАС-->
     <div v-if="MACs && MACs.count > 0" class="container">
       <span>Всего: {{MACs.count}}</span>
+
+      <Pagination v-bind:p-object="pagination"/>
+
       <div class="table-responsive-lg">
       <table class="table">
         <thead>
@@ -158,7 +161,7 @@
         </thead>
         <tbody id="tbody-macs">
 
-          <tr v-for="mac in MACs.result">
+          <tr v-for="mac in macsPage">
               <td></td>
 
               <td style="font-family: monospace; font-size: x-large;">
@@ -187,6 +190,9 @@
         </tbody>
       </table>
       </div>
+
+      <Pagination v-bind:p-object="pagination"/>
+
     </div>
 
     <div v-else-if="MACs && MACs.count === 0" class="container">
@@ -208,6 +214,7 @@ import {defineComponent} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "./Comment.vue";
+import Pagination from "./Pagination.vue";
 
 export default defineComponent({
   data() {
@@ -220,6 +227,13 @@ export default defineComponent({
       portConfig: null,
       portErrors: null,
       cableDiag: null,
+
+      pagination: {
+        count: 0,
+        page: 0,
+        rows_per_page: 20,
+        next_page: null,
+      },
     }
   },
   props: {
@@ -233,6 +247,7 @@ export default defineComponent({
     csrf_token: {required: true, type: String}
   },
   components: {
+    Pagination,
     ChangeDescription,
     PortControlButtons,
     Comment
@@ -244,7 +259,7 @@ export default defineComponent({
       return {}
     },
     interfaceClasses: function () {
-      if (this.showDetailInfo) return ["shadow"];
+      if (this.showDetailInfo) return ["shadow", "sticky-top"];
       return []
     },
     portTypeStyles: function () {
@@ -260,8 +275,16 @@ export default defineComponent({
         styles["background-color"] = "#8133b8"
       }
       return styles
+    },
 
+    macsPage: function () {
+        // Обрезаем по размеру страницы
+        return this.MACs.result.slice(
+            this.pagination.page * this.pagination.rows_per_page,
+            (this.pagination.page + 1) * this.pagination.rows_per_page
+        )
     }
+
   },
 
   methods: {
@@ -302,6 +325,8 @@ export default defineComponent({
             {method: "get"}
         )
         this.MACs = await response.json()
+
+        this.pagination.count = this.MACs.count
 
         window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
         window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
