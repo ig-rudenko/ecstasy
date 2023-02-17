@@ -106,6 +106,7 @@
           <template v-for="_interface in interfaces">
               <DetailInterfaceInfo
                       @find-mac="findMacEvent"
+                      @session-mac="sessionEvent"
                       :style="dynamicOpacity"
                       :interface="_interface"
                       :permission-level="permissionLevel"
@@ -142,6 +143,8 @@
     <modal-comment-control :comment="commentObject" />
 
     <modal-find-mac :mac="find_mac_address"/>
+
+    <modal-bras-session :mac="session_control.mac" :port="session_control.port" />
 
 
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">

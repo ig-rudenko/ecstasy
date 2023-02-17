@@ -178,7 +178,8 @@
               <td class="mac-line" style="font-family: monospace; font-size: x-large;">
                   <span
                       @click="findMacEvent(mac.mac)"
-                      class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
+                      class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC"
+                      data-bs-toggle="modal" data-bs-target="#modal-find-mac">
                       {{mac.mac}}
                       <svg class="bi me-2" width="24" height="24" role="img">
                           <use xlink:href="#search-icon"></use>
@@ -187,9 +188,10 @@
               </td>
 
               <td>
-                <a class="btn btn-outline-primary" href="/device/session?device=SVSL-012-Balt14p2-ASW1&amp;port=Eth1/0/2&amp;desc=NOMON_4531413_Asso5800&amp;mac=60e3-27d6-bff1">
+                <button @click="sessionEvent(mac.mac, interface.Interface)" type="button" class="btn btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#bras-session-modal">
                   BRAS
-                </a>
+                </button>
               </td>
           </tr>
 
@@ -296,6 +298,10 @@ export default defineComponent({
 
     findMacEvent: function (mac) {
       this.$emit("find-mac", mac)
+    },
+
+    sessionEvent: function (mac, port) {
+      this.$emit("session-mac", mac, port)
     },
 
     /**

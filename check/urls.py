@@ -14,9 +14,7 @@ urlpatterns = [
     path("port/cable-diag", views.start_cable_diag, name="cable-diag"),
     path("port/set-description", views.set_description, name="set-new-description"),
     path("port/change-profile", views.change_adsl_profile, name="change-port-profile"),
-    path("session", views.show_session, name="show-session"),
-    path("cut-session", views.cut_user_session, name="cut-session"),
-    path("<name>", views.device_info, name="device_info")
+    path("<name>", views.device_info, name="device_info"),
 ]
 
 # API

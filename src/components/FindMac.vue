@@ -66,7 +66,6 @@ export default defineComponent({
     // Ищем детальную информацию
     this.detailInfo = await this.macDetail()
 
-    console.log("end")
     // Записываем текущий МАС как уже просмотренный
 
   },

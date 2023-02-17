@@ -15,6 +15,7 @@ import CommentControl from "./components/CommentControl.vue";
 import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
 import DetailInterfaceInfo from "./components/DetailInterfaceInfo.vue";
 import FindMac from "./components/FindMac.vue";
+import BrasSession from "./components/BrasSession.vue";
 
 export default {
   name: 'device',
@@ -53,6 +54,7 @@ export default {
       },
 
       find_mac_address: null,
+      session_control: {},
 
       portAction: {
         name: "",
@@ -118,6 +120,13 @@ export default {
 
     findMacEvent(mac) {
       this.find_mac_address = mac
+    },
+
+    sessionEvent(mac, port) {
+      this.session_control = {
+        "mac": mac,
+        "port": port
+      }
     },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
@@ -413,6 +422,7 @@ export default {
     "device-stats": DeviceStats,
     "modal-comment-control": CommentControl,
     "modal-find-mac": FindMac,
+    "modal-bras-session": BrasSession,
   }
 }
 </script>
