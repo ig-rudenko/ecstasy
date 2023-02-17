@@ -888,7 +888,7 @@ class HuaweiMA5600T(BaseDevice):
         return port_type, tuple(indexes)
 
     def _render_adsl_port_info(
-        self, info: str, profile_name: str, all_profiles: list
+        self, port: str, info: str, profile_name: str, all_profiles: list
     ) -> str:
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
@@ -971,6 +971,7 @@ class HuaweiMA5600T(BaseDevice):
             "check/adsl-port-info.html",
             {
                 "profile_name": profile_name,
+                "port": port,
                 "first_col": first_col_info,
                 "streams": table_dict,
                 "profiles": all_profiles,
@@ -1342,7 +1343,7 @@ class HuaweiMA5600T(BaseDevice):
         for line in res:
             profiles.append([line[0], line[1] + " ".join(line[-1].split())])
 
-        return self._render_adsl_port_info(output, profile_name, profiles)
+        return self._render_adsl_port_info(port, output, profile_name, profiles)
 
     @BaseDevice._lock
     def change_profile(self, port: str, profile_index: int) -> str:

@@ -29,9 +29,15 @@
         <PortControlButtons
               :port-action="registerInterfaceAction"
               :interface="interface"
-              :device-name="deviceName"
-              :permission-level="permissionLevel"
-              :show-port-enter-link="true" />
+              :permission-level="permissionLevel" />
+
+<!--        Посмотреть порт -->
+        <button @click="toggleDetailInfo" class="btn btn-group" style="padding: 6px 6px 2px 6px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box" viewBox="0 0 16 16">
+            <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+          </svg>
+        </button>
+
       </div>
     </td>
 
@@ -44,7 +50,7 @@
 
 <!--          Описание порта-->
     <td>
-        <ChangeDescription :device_name="deviceName" :interface="interface" :csrf_token="csrf_token" />
+        <ChangeDescription :device_name="deviceName" :interface="interface" />
     </td>
 
 <!--          VLANS-->
@@ -67,8 +73,9 @@
 
       <div class="col-auto">
 
+<!--        BUTTON-->
 <!--        Конфигурация порта-->
-        <div>
+        <div v-if="portConfig && portConfig.length">
           <button type="button"
                   @click="portDetailMenu='portConfig'"
                   :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
@@ -77,8 +84,9 @@
           </button>
         </div>
 
+<!--        BUTTON-->
 <!--        Ошибки на порту-->
-        <div>
+        <div v-if="portErrors && portErrors.length">
           <button type="button"
                   @click="portDetailMenu='portErrors'"
                   :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
@@ -87,6 +95,7 @@
           </button>
         </div>
 
+<!--        BUTTON-->
 <!--        Диагностика кабеля-->
         <div>
           <button type="button"
@@ -103,21 +112,19 @@
       <div v-if="portDetailMenu==='portConfig'" class="col-md">
 
         <div v-if="portConfig!==null" class="card shadow" style="padding: 2rem;">
-          <span v-html="format_to_html(portConfig)"></span>
+          <span v-html="format_to_html(portConfig)" style="font-family: monospace"></span>
         </div>
 
         <div v-else class="d-flex justify-content-center">
           <div class="spinner-border" role="status"></div>
         </div>
-
       </div>
-
 
 <!--      Ошибки на порту -->
       <div v-if="portDetailMenu==='portErrors'" class="col-md">
 
         <div v-if="portErrors!==null" class="card shadow" style="padding: 2rem;">
-          <span v-html="format_to_html(portErrors)"></span>
+          <span v-html="format_to_html(portErrors)" style="font-family: monospace"></span>
         </div>
 
         <div v-else class="d-flex justify-content-center">
@@ -125,13 +132,11 @@
         </div>
 
       </div>
-
 
 <!--      Диагностика кабеля -->
       <div v-if="portDetailMenu==='cableDiag'" class="col-md">
 
         <div v-if="cableDiag!==null">
-
         </div>
 
         <div v-else class="d-flex justify-content-center">
@@ -139,7 +144,6 @@
         </div>
 
       </div>
-
     </div>
 
 
@@ -172,7 +176,9 @@
               </td>
 
               <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                  <span class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" onclick="start_search_mac('60e3-27d6-bff1')" data-bs-toggle="modal" data-bs-target="#modal-mac">
+                  <span
+                      @click="findMacEvent(mac.mac)"
+                      class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
                       {{mac.mac}}
                       <svg class="bi me-2" width="24" height="24" role="img">
                           <use xlink:href="#search-icon"></use>
@@ -244,7 +250,6 @@ export default defineComponent({
     registerCommentAction: {required: true, type: Function},
     portAction: {required: true},
     registerInterfaceAction: {required: true, type: Function},
-    csrf_token: {required: true, type: String}
   },
   components: {
     Pagination,
@@ -288,6 +293,10 @@ export default defineComponent({
   },
 
   methods: {
+
+    findMacEvent: function (mac) {
+      this.$emit("find-mac", mac)
+    },
 
     /**
      * Превращаем строку в html, для корректного отображения

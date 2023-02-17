@@ -14,6 +14,7 @@ import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
 import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
 import DetailInterfaceInfo from "./components/DetailInterfaceInfo.vue";
+import FindMac from "./components/FindMac.vue";
 
 export default {
   name: 'device',
@@ -51,7 +52,7 @@ export default {
         submit: null
       },
 
-      csrf_token: null,
+      find_mac_address: null,
 
       portAction: {
         name: "",
@@ -79,7 +80,9 @@ export default {
   },
 
   async mounted() {
-    this.csrf_token = $("input[name=csrfmiddlewaretoken]")[0].value
+    document.deviceName = this.deviceName
+    document.CSRF_TOKEN = $("input[name=csrfmiddlewaretoken]")[0].value
+
     await this.getInfo()
 
     // Смотрим предыдущую загруженность интерфейсов оборудования
@@ -112,6 +115,11 @@ export default {
   },
 
   methods: {
+
+    findMacEvent(mac) {
+      this.find_mac_address = mac
+    },
+
     /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
       try {
@@ -292,7 +300,7 @@ export default {
           url: "/device/port/reload",
           type: 'POST',
           data: data,
-          headers: {"X-CSRFToken": this.csrf_token},
+          headers: {"X-CSRFToken": document.CSRF_TOKEN},
           success: function( data ) {
             toastInfo.title= data.status
             toastInfo.message = data.message
@@ -340,7 +348,7 @@ export default {
           url: "/device/api/comments/" + this.commentObject.id,
           type: method,
           data: data,
-          headers:{"X-CSRFToken": this.csrf_token},
+          headers:{"X-CSRFToken": document.CSRF_TOKEN},
           success: function( data ) {
             console.log(data)
           },
@@ -404,6 +412,7 @@ export default {
     "info-toast": InfoToast,
     "device-stats": DeviceStats,
     "modal-comment-control": CommentControl,
+    "modal-find-mac": FindMac,
   }
 }
 </script>

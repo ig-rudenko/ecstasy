@@ -40,7 +40,6 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    csrf_token: { required: true, type: String },
     interface: { required: true, type: Object },
     device_name: { required: true, type: String },
   },
@@ -84,7 +83,7 @@ export default defineComponent({
           {
             method: "post",
             headers: {
-              "X-CSRFToken": this.csrf_token,
+              "X-CSRFToken": document.CSRF_TOKEN,
               'Accept': 'application/json',
               'Content-Type': 'application/json'
             },

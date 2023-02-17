@@ -105,6 +105,7 @@
 
           <template v-for="_interface in interfaces">
               <DetailInterfaceInfo
+                      @find-mac="findMacEvent"
                       :style="dynamicOpacity"
                       :interface="_interface"
                       :permission-level="permissionLevel"
@@ -113,7 +114,6 @@
                       :port-action="portAction"
                       :register-interface-action="registerAction"
                       :device-name="deviceName"
-                      :csrf_token="csrf_token"
               />
           </template>
 
@@ -137,13 +137,11 @@
             :zabbix-info="zabbixInfo">
     </zabbix-info>
 
-    <modal-port-control
-            :port_action="portAction">
-    </modal-port-control>
+    <modal-port-control :port_action="portAction" />
 
-    <modal-comment-control
-            :comment="commentObject">
-    </modal-comment-control>
+    <modal-comment-control :comment="commentObject" />
+
+    <modal-find-mac :mac="find_mac_address"/>
 
 
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
