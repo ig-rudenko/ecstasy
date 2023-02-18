@@ -1,11 +1,11 @@
 <template>
 
-<div class="modal fade" id="bras-session-modal" tabindex="-1" aria-modal="true" role="dialog">
+<div class="modal fade" id="bras-session-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-modal="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 1000px;">
     <div class="modal-content">
       <div class="modal-header">
         <h1 class="modal-title fs-5" id="exampleModalScrollableTitle">Сессия абонента 60e3-27d6-bff1</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button @click="closed" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-header">
@@ -81,47 +81,56 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    mac: {required: true, type: String},
-    port: {required: true, type: String}
+    mac: {required: true, type: String, default: null},
+    port: {required: true, type: String, default: null}
   },
   data() {
     return {
-      old_mac: "",
+      current_mac: "",
       sessions: null,
       show_bras: "bras1",
       cutSessionResult: null,
       cuttingNow: false
     }
   },
+  async created() {
+    await this.getSessions()
+  },
   async updated() {
     // Если МАС адрес остался прежним, то не обновляем информацию
-    if (this.old_mac === this.mac) return
-    this.old_mac = this.mac
-    this.sessions = null
-    this.show_bras = "bras1"
-    this.cutSessionResult = null
-
-    this.sessions = await this.getSessions()
+    if (this.current_mac === this.mac) return
+    this.current_mac = this.mac
   },
 
   methods: {
+    closed() {
+      this.sessions = null
+      this.show_bras = "bras1"
+      this.cutSessionResult = null
+      this.$emit("closed")
+    },
     async getSessions() {
-      if (!this.mac) return ""
-      try {
+      let result = null
+      if (this.current_mac) {
+          try {
 
-        let url = "/device/api/session?mac="+this.mac
+            let url = "/device/api/session?mac=" + this.current_mac
 
-        let response = await fetch(url);
-        console.log(response)
-        if (response.status === 200) return await response.json()
+            let response = await fetch(url);
+            console.log(response)
+            if (response.status === 200) {
+              result = await response.json()
+            }
 
-      } catch (err) {
-        console.log(err)
+          } catch (err) {
+            console.log(err)
+          }
       }
-      return null
+      setTimeout(this.getSessions, 4000)
+      this.sessions = result
     },
     async cutSession() {
-      if (!this.mac) return
+      if (!this.current_mac) return
 
       this.cuttingNow = true
 
@@ -130,7 +139,7 @@ export default defineComponent({
         let data = {
           "device": document.deviceName,
           "port": this.port,
-          "mac": this.mac
+          "mac": this.current_mac
         }
 
         let result = await fetch(
