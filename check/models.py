@@ -4,6 +4,8 @@
 
 """
 
+from ping3 import ping
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
@@ -138,6 +140,10 @@ class Devices(models.Model):
         """Возвращает ссылку, которая ведет к просмотру оборудования"""
 
         return f"/device/{self.name}"
+
+    @property
+    def available(self) -> bool:
+        return ping(self.ip, timeout=2) > 0
 
     def connect(self) -> DeviceFactory:
         """Удаленное подключение к оборудованию"""

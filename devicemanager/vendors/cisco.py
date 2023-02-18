@@ -503,14 +503,9 @@ class Cisco(BaseDevice):
     @BaseDevice._lock
     def get_device_info(self) -> dict:
         data = {"cpu": {}, "ram": {}, "flash": {}}
-
         for key in data:
-            print(key)
             data[key]["util"] = getattr(self, f"get_{key}_utilization")()
-
         data["temp"] = self.get_temp()
-
-        print("DEVICE INFO", data)
         return data
 
     def get_cpu_utilization(self) -> tuple:

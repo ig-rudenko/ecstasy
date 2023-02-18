@@ -11,7 +11,6 @@ from .base import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    range_to_numbers,
     _interface_normal_view,
     InterfaceList,
     InterfaceVLANList,

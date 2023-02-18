@@ -30,6 +30,7 @@ urlpatterns = [
     path(
         "<device_name>/change-description", device_manager.ChangeDescription.as_view()
     ),
+    path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),
     path("comments", device_manager.CreateInterfaceCommentAPIView.as_view()),
     path("comments/<int:pk>", device_manager.InterfaceCommentAPIView.as_view()),
     # BRAS Manager

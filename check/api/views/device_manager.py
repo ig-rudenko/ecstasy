@@ -102,6 +102,36 @@ class MacListAPIView(APIView):
         return Response({"count": len(macs), "result": macs})
 
 
+class CableDiagAPIView(APIView):
+    permission_classes = [DevicePermission]
+
+    def get(self, request, device_name):
+        """
+        ## Запускаем диагностику кабеля на порту
+        """
+
+        if not request.GET.get("port"):
+            raise ValidationError({"detail": "Неверные данные"})
+
+        # Находим оборудование
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(request, device)
+
+        data = {}
+        # Если оборудование доступно
+        if device.available:
+            try:
+                with device.connect() as session:
+                    if hasattr(session, "virtual_cable_test"):
+                        cable_test = session.virtual_cable_test(request.GET["port"])
+                        if cable_test:  # Если имеются данные
+                            data = cable_test
+            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as error:
+                return Response({"detail": str(error)}, status=500)
+
+        return Response(data)
+
+
 class InterfaceInfoAPIView(APIView):
     permission_classes = [DevicePermission]
 
@@ -120,6 +150,7 @@ class InterfaceInfoAPIView(APIView):
             result["portType"] = session.get_port_type(port)
             result["portErrors"] = session.get_port_errors(port)
             result["portDetailInfo"] = session.get_port_info(port)
+            result["hasCableDiag"] = hasattr(session, "virtual_cable_test")
 
         return Response(result)
 

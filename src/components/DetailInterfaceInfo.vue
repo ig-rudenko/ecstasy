@@ -97,7 +97,7 @@
 
 <!--        BUTTON-->
 <!--        Диагностика кабеля-->
-        <div>
+        <div v-if="hasCableDiag">
           <button type="button"
                   @click="portDetailMenu='cableDiag'"
                   :class="portDetailMenu==='cableDiag'?['btn', 'active']:['btn']">
@@ -109,7 +109,7 @@
 
 
 <!--      Конфигурация порта -->
-      <div v-if="portDetailMenu==='portConfig'" class="col-md">
+      <div v-show="portDetailMenu==='portConfig'" class="col-md">
 
         <div v-if="portConfig!==null" class="card shadow" style="padding: 2rem;">
           <span v-html="format_to_html(portConfig)" style="font-family: monospace"></span>
@@ -121,7 +121,7 @@
       </div>
 
 <!--      Ошибки на порту -->
-      <div v-if="portDetailMenu==='portErrors'" class="col-md">
+      <div v-show="portDetailMenu==='portErrors'" class="col-md">
 
         <div v-if="portErrors!==null" class="card shadow" style="padding: 2rem;">
           <span v-html="format_to_html(portErrors)" style="font-family: monospace"></span>
@@ -134,13 +134,10 @@
       </div>
 
 <!--      Диагностика кабеля -->
-      <div v-if="portDetailMenu==='cableDiag'" class="col-md">
+      <div v-show="portDetailMenu==='cableDiag'" class="col-md">
 
-        <div v-if="cableDiag!==null">
-        </div>
-
-        <div v-else class="d-flex justify-content-center">
-          <div class="spinner-border" role="status"></div>
+        <div v-if="hasCableDiag" class="card shadow" style="padding: 2rem;">
+          <CableDiag :port="interface.Interface"/>
         </div>
 
       </div>
@@ -223,6 +220,7 @@ import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "./Comment.vue";
 import Pagination from "./Pagination.vue";
+import CableDiag from "./CableDiag.vue";
 
 export default defineComponent({
   data() {
@@ -235,6 +233,7 @@ export default defineComponent({
       portConfig: null,
       portErrors: null,
       cableDiag: null,
+      hasCableDiag: false,
 
       pagination: {
         count: 0,
@@ -257,7 +256,8 @@ export default defineComponent({
     Pagination,
     ChangeDescription,
     PortControlButtons,
-    Comment
+    Comment,
+    CableDiag,
   },
 
   computed: {
@@ -307,7 +307,7 @@ export default defineComponent({
     /**
      * Превращаем строку в html, для корректного отображения
      *
-     * @param string Строка, для форматирования
+     * @param string Строка, для форматирования.
      * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
      */
     format_to_html: function (string) {
@@ -364,6 +364,7 @@ export default defineComponent({
         this.portConfig = data.portConfig
         this.portType = data.portType
         this.portDetailInfo = data.portDetailInfo
+        this.hasCableDiag = data.hasCableDiag
 
       } catch (err) {
         console.log(err)
