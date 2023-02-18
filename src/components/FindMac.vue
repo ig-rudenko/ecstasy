@@ -77,7 +77,6 @@ export default defineComponent({
 
         let result = await fetch("/tools/ajax/mac_vendor/" + this.mac);
         let data = await result.json()
-        console.log(data)
         if (result.status === 200) return data.vendor
 
       } catch (err) {
@@ -93,7 +92,6 @@ export default defineComponent({
 
         let result = await fetch("/tools/ajax/ip-mac-info/" + this.mac);
         let data = await result.text()
-        console.log(data)
         if (result.status === 200) return data
 
       } catch (err) {

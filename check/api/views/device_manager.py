@@ -126,6 +126,40 @@ class CableDiagAPIView(APIView):
                         cable_test = session.virtual_cable_test(request.GET["port"])
                         if cable_test:  # Если имеются данные
                             data = cable_test
+                    else:
+                        return Response({"detail": "Unsupported for this device"}, status=400)
+            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as error:
+                return Response({"detail": str(error)}, status=500)
+
+        return Response(data)
+
+
+class SetPoEAPIView(APIView):
+    permission_classes = [DevicePermission]
+
+    def post(self, request, device_name):
+        """
+        ## Устанавливает PoE статус на порту
+        """
+
+        if not request.POST.get("port") or not request.POST.get("status"):
+            raise ValidationError({"detail": "Неверные данные"})
+
+        # Находим оборудование
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(request, device)
+
+        data = {}
+        # Если оборудование доступно
+        if device.available:
+            try:
+                with device.connect() as session:
+                    if hasattr(session, "set_poe_out"):
+                        status = session.set_poe_out(request.GET["port"], request.POST["status"])
+                        data = {"status": status}
+                    else:
+                        return Response({"detail": "Unsupported for this device"}, status=400)
+
             except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as error:
                 return Response({"detail": str(error)}, status=500)
 

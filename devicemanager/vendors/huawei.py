@@ -549,7 +549,7 @@ class Huawei(BaseDevice):
             "pair2": {"status": "", "len": ""},
         }
         if "not support" in data:
-            return parse_data
+            return {"status": "Don't support Cable Diagnostic"}
 
         if "2326" in self.model:
             # Для Huawei 2326

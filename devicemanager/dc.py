@@ -149,6 +149,18 @@ class DeviceFactory:
 
         version = self.send_command("show version")
 
+        if "bad command name show" in version:
+            version = self.send_command("system resource print")
+
+        # Mikrotik
+        if "mikrotik" in version.lower():
+            return MikroTik(
+                self.session,
+                self.ip,
+                auth,
+                model=BaseDevice.find_or_empty(r"board-name: (\S+)", version),
+            )
+
         # ProCurve
         if "Image stamp:" in version:
             return ProCurve(self.session, self.ip, auth)
@@ -302,8 +314,6 @@ class DeviceFactory:
                     self.authentication_expect, timeout=timeout
                 )
 
-            print(expect_index)
-
             # Login
             if expect_index == 0:
 
@@ -345,16 +355,18 @@ class DeviceFactory:
 
             # The password needs to be changed
             if expect_index == 6:
-                self.session.sendline("N")  # Не меняем пароль, когда спрашивает
+                self.session.send("N\r")  # Не меняем пароль, когда спрашивает
                 continue
 
             break
 
-    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30) -> BaseDevice:
+    def __enter__(
+        self, algorithm: str = "", cipher: str = "", timeout: int = 30
+    ) -> BaseDevice:
         """
         ## При входе в контекстный менеджер подключаемся к оборудованию
         """
-        print(DEVICE_SESSIONS)
+        # print(DEVICE_SESSIONS)
         # Проверяем, жива ли сессия.
         if (
             self._session_global
@@ -427,7 +439,7 @@ class DeviceFactory:
                         self.session.sendline("yes")
 
                     elif expect_index == 3:
-                        self.session.sendline(password)
+                        self.session.send(password + "\r")
                         if self.session.expect(["[Pp]assword:", r"[#>\]]\s*$"]):
                             connected = True
 
@@ -437,7 +449,7 @@ class DeviceFactory:
                         connected = True
 
                     elif expect_index == 6:
-                        self.session.sendline("N")
+                        self.session.send("N\r")
 
                 if connected:
                     self.login = login
