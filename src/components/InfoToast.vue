@@ -1,5 +1,5 @@
 <template>
-<div aria-live="polite" aria-atomic="true" class="sticky-top">
+<div aria-live="polite" aria-atomic="true" class="sticky-top" style="z-index: 999999">
   <div class="toast-container position-absolute top-0 end-0 p-3">
 
     <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">

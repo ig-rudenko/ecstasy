@@ -100,7 +100,7 @@ class IskratelMBan(BaseDevice):
         """
         return ["1_32", "1_33", "1_40"]
 
-    def _render_dsl_port_info(self, info: str) -> str:
+    def _render_dsl_port_info(self, info: str) -> dict:
         """
         ## Возвращаем информацию о порте DSL
 
@@ -220,18 +220,18 @@ class IskratelMBan(BaseDevice):
             for line in zip(names, data_rate + max_rate + snr + intl + att)
         ]
 
-        return render_to_string(
-            "check/adsl-port-info.html",
-            {
+        return {
+            "type": "adsl",
+            "data": {
                 "profile_name": self.find_or_empty(r"Profile Name\s+(\S+)", info),
                 "first_col": first_col_info,
                 "streams": table_dict,
                 "profiles": all_profiles,
             },
-        )
+        }
 
     @BaseDevice._lock
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """
         ## Смотрим информацию на порту
 
@@ -264,7 +264,10 @@ class IskratelMBan(BaseDevice):
 
         port_type, port = self.validate_port(port)
         if port_type is None:
-            return "Неверный порт!"
+            return {
+                "type": "error",
+                "detail": "Неверный порт!"
+            }
 
         if port_type == "fasteth":
             cmd = f"show interface fasteth{port}"
@@ -281,7 +284,10 @@ class IskratelMBan(BaseDevice):
             # Requested Duplex : Auto
             # Actual Speed     : 1000 Mbit/s
             # Actual Duplex    : Full
-            return "<br>".join(output.split("\n")[1:5])
+            return {
+                "type": "text",
+                "data": "\n".join(output.split("\n")[1:5])
+            }
 
         # Парсим данные
         return self._render_dsl_port_info(output)

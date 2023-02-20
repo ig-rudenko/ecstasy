@@ -417,7 +417,7 @@ class BaseDevice(ABC):
         """Изменяем описание порта"""
 
     @abstractmethod
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """Информация о порте"""
 
     @abstractmethod

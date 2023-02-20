@@ -9,8 +9,9 @@ from .views import devices_info, device_manager, bras_manager
 # /device/api/
 
 urlpatterns = [
-    # Devices Info
-    # ============
+    # ===========================================
+    #               Devices Info
+    # ===========================================
     path(
         "workload/interfaces",
         devices_info.AllDevicesInterfacesWorkLoadAPIView.as_view(),
@@ -24,18 +25,24 @@ urlpatterns = [
     path("<device_name>/interface-info", device_manager.InterfaceInfoAPIView.as_view()),
     path("<device_name>/info", devices_info.DeviceInfoAPIView.as_view()),
     path("<device_name>/stats", devices_info.DeviceStatsInfoAPIView.as_view()),
-    # Device Manager
-    # ==============
+    # ===========================================
+    #                Device Manager
+    # ===========================================
     path("<device_name>/macs", device_manager.MacListAPIView.as_view()),
     path(
         "<device_name>/change-description", device_manager.ChangeDescription.as_view()
     ),
     path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),
     path("<device_name>/set-poe-out", device_manager.SetPoEAPIView.as_view()),
+    path(
+        "<device_name>/change-dsl-profile",
+        device_manager.ChangeDSLProfileAPIView.as_view(),
+    ),
     path("comments", device_manager.CreateInterfaceCommentAPIView.as_view()),
     path("comments/<int:pk>", device_manager.InterfaceCommentAPIView.as_view()),
-    # BRAS Manager
-    # ============
+    # ===========================================
+    #                 BRAS Manager
+    # ===========================================
     path("session", bras_manager.BrassSessionAPIView.as_view()),
     path("cut-session", bras_manager.CutBrassSessionAPIView.as_view()),
 ]

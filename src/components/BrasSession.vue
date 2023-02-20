@@ -4,8 +4,11 @@
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 1000px;">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalScrollableTitle">Сессия абонента 60e3-27d6-bff1</h1>
+        <h1 class="modal-title fs-5" id="exampleModalScrollableTitle">Сессия абонента {{current_mac}}</h1>
         <button @click="closed" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="text-end">
+          <span class="text-muted text-help">Информация обновляется автоматически</span>
       </div>
 
       <div class="modal-header">
@@ -183,7 +186,7 @@ export default defineComponent({
 })
 </script>
 
-<style>
+<style scoped>
 .icon-44 {
   border: none;
   border-radius: 0;
@@ -196,5 +199,12 @@ export default defineComponent({
   border-radius: 0;
   height: 100px;
   width: 100px;
+}
+.text-help {
+  border-bottom: solid #d1d1d1 1px;
+  border-radius: 0;
+  font-size: 0.75rem;
+  margin: 10px;
+  cursor: default;
 }
 </style>

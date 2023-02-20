@@ -59,3 +59,22 @@ class BrassSessionSerializer(MacSerializer):
     """
     device = serializers.CharField(max_length=255, required=True)
     port = serializers.CharField(max_length=50, required=True)
+
+
+class ADSLProfileSerializer(serializers.Serializer):
+    """
+    ## Проверка правильности ввода данных для смены xDSL профиля на оборудовании
+
+    Требуемые поля:
+     - int:`index` >= 0
+     - str:`port` - max:50
+    """
+
+    index = serializers.IntegerField(min_value=0)
+    port = serializers.CharField(max_length=50, required=True)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass

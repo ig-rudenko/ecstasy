@@ -50,7 +50,7 @@
 
 <!--          Описание порта-->
     <td>
-        <ChangeDescription :device_name="deviceName" :interface="interface" />
+        <ChangeDescription :interface="interface" />
     </td>
 
 <!--          VLANS-->
@@ -65,7 +65,26 @@
 
 <!--      DETAIL PORT INFO  -->
     <div v-if="portDetailInfo" class="container row py-3">
-      <div class="card shadow py-3" v-html="portDetailInfo"></div>
+
+      <div class="text-end">
+          <span class="text-muted text-help">Информация обновляется автоматически</span>
+      </div>
+
+      <div v-if="portDetailInfo.type==='html'" class="card shadow py-3" v-html="portDetailInfo.data"></div>
+      <div v-else-if="portDetailInfo.type==='text'" class="card shadow py-3" v-html="format_to_html(portDetailInfo.data)"></div>
+      <div v-else-if="portDetailInfo.type==='adsl'" class="card shadow py-3">
+        <ADSLInterfaceInfo :data="portDetailInfo.data" :interface="interface"/>
+      </div>
+      <div v-else-if="portDetailInfo.type==='gpon'" class="card shadow py-3">
+        <GPONInterfaceInfo
+            @find-mac="findMacEvent"
+            @session-mac="sessionEvent"
+            :data="portDetailInfo.data"
+            :permission-level="permissionLevel"
+            :register-interface-action="registerInterfaceAction"
+            :interface="interface" />
+      </div>
+
     </div>
 
 <!--      ANOTHER INFO  -->
@@ -151,6 +170,11 @@
       <Pagination v-bind:p-object="pagination"/>
 
       <div class="table-responsive-lg">
+      <div class="text-end">
+          <span v-if="collectingMACs" class="text-muted text-help" style="cursor: default">Обновляю...</span>
+          <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+      </div>
+
       <table class="table">
         <thead>
           <tr>
@@ -201,6 +225,10 @@
     </div>
 
     <div v-else-if="MACs && MACs.count === 0" class="container">
+      <div class="text-end">
+          <span v-if="collectingMACs" class="text-muted text-help">Обновляю...</span>
+          <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+      </div>
       <h3 class="text-center" style="padding-bottom: 40px;">Нет MAC</h3>
     </div>
 
@@ -221,6 +249,8 @@ import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "./Comment.vue";
 import Pagination from "./Pagination.vue";
 import CableDiag from "./CableDiag.vue";
+import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
+import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 
 export default defineComponent({
   data() {
@@ -228,6 +258,7 @@ export default defineComponent({
       showDetailInfo: false,
       portDetailMenu: null,
       MACs: null,
+      collectingMACs: false,
       portDetailInfo: null,
       portType: null,
       portConfig: null,
@@ -245,12 +276,12 @@ export default defineComponent({
   },
   props: {
     interface: {required: true},
-    deviceName: {required: true},
     permissionLevel: {required: true, type: Number},
     commentObject: {required: true},
     registerCommentAction: {required: true, type: Function},
     portAction: {required: true},
     registerInterfaceAction: {required: true, type: Function},
+    dynamicOpacity: {required: true, type: {"opacity": Number}},
   },
   components: {
     Pagination,
@@ -258,12 +289,14 @@ export default defineComponent({
     PortControlButtons,
     Comment,
     CableDiag,
+    ADSLInterfaceInfo,
+    GPONInterfaceInfo,
   },
 
   computed: {
     interfaceStyles: function () {
       if (this.showDetailInfo) return {"background-color": "#e8efff"};
-      return {}
+      return this.dynamicOpacity
     },
     interfaceClasses: function () {
       if (this.showDetailInfo) return ["shadow", "sticky-top"];
@@ -334,9 +367,12 @@ export default defineComponent({
     },
 
     getMacs: async function() {
+      if (!this.showDetailInfo) return
+
       try {
+        this.collectingMACs = true
         const response = await fetch(
-            "/device/api/" + this.deviceName + "/macs?port=" + this.interface.Interface,
+            "/device/api/" + document.deviceName + "/macs?port=" + this.interface.Interface,
             {method: "get"}
         )
         this.MACs = await response.json()
@@ -349,12 +385,15 @@ export default defineComponent({
       } catch (err) {
         console.log(err)
       }
+      this.collectingMACs = false
     },
 
     getDetailInfo: async function() {
+      if (!this.showDetailInfo) return
+
       try {
         const response = await fetch(
-            "/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.Interface,
+            "/device/api/" + document.deviceName + "/interface-info?port=" + this.interface.Interface,
             {method: "get"}
         )
         let data = await response.json()
@@ -369,6 +408,9 @@ export default defineComponent({
       } catch (err) {
         console.log(err)
       }
+
+      // Через 5 сек запускаем метод снова
+      setTimeout(this.getDetailInfo, 5000)
     },
 
 
@@ -421,5 +463,12 @@ tr:hover {
 
 .mac-line:not(:hover) .bi {
     visibility: hidden;
+}
+.text-help {
+  border-bottom: solid #d1d1d1 1px;
+  border-radius: 0;
+  font-size: 0.75rem;
+  margin: 10px;
+  cursor: default;
 }
 </style>

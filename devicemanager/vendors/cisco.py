@@ -274,7 +274,7 @@ class Cisco(BaseDevice):
     @_validate_port()
     @lru_cache()
     @BaseDevice._lock
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.
 
@@ -296,7 +296,7 @@ class Cisco(BaseDevice):
             f"show interfaces {port}", expect_command=False
         ).splitlines()
 
-        return "<p>" + "<br>".join(port_type[1:]) + "</p>"
+        return {"type": "text", "data": "\n".join(port_type[1:])}
 
     @BaseDevice._lock
     @_validate_port()
