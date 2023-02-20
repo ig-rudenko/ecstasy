@@ -84,6 +84,15 @@
             :register-interface-action="registerInterfaceAction"
             :interface="interface" />
       </div>
+      <div v-else-if="portDetailInfo.type==='eltex-gpon'" class="card shadow py-3">
+        <OLTInterfaceInfo
+            @find-mac="findMacEvent"
+            @session-mac="sessionEvent"
+            :data="portDetailInfo.data"
+            :permission-level="permissionLevel"
+            :register-interface-action="registerInterfaceAction"
+            :interface="interface" />
+      </div>
 
     </div>
 
@@ -251,6 +260,7 @@ import Pagination from "./Pagination.vue";
 import CableDiag from "./CableDiag.vue";
 import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
+import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 
 export default defineComponent({
   data() {
@@ -291,6 +301,7 @@ export default defineComponent({
     CableDiag,
     ADSLInterfaceInfo,
     GPONInterfaceInfo,
+    OLTInterfaceInfo,
   },
 
   computed: {

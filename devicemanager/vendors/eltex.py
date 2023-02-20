@@ -923,22 +923,14 @@ class EltexLTP(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def get_port_info(self, port: str):
-        from check.models import Devices
+    def get_port_info(self, port: str) -> dict:
 
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data = {
-                "port": port,  # Текущий порт
-                "perms": 3,  # Делаем уровень доступа 3, чтобы отображать кнопку BRAS
-                "dev": Devices.objects.get(ip=self.ip),  # Данное оборудование
-                # Если порт представлен в виде числа, то для pon порта есть sub port
-                # А для sub port уже не нужно создавать линк следующего порта
-                "link_to_sub_port": port_number.isdigit(),
-            }
+            data = {}
 
             # Смотрим сконфигурированные ONT на данном порту
             ont_info = self.send_command(f"show interface ont {port_number} configured")
@@ -989,7 +981,12 @@ class EltexLTP(BaseDevice):
                     [vlan_id, mac, self.get_vlan_name(vlan_id)]
                 )
 
-            return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
+            return {
+                "type": "eltex-gpon",
+                "data": data,
+            }
+
+        return {}
 
     @BaseDevice._lock
     @_validate_port()
@@ -1012,7 +1009,7 @@ class EltexLTP(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return "Этот порт нельзя установить в " + status
 
     @BaseDevice._lock
     @_validate_port()
@@ -1296,21 +1293,12 @@ class EltexLTP16N(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str):
-        from check.models import Devices
-
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data = {
-                "port": port,  # Текущий порт
-                "perms": 3,  # Делаем уровень доступа 3, чтобы отображать кнопку BRAS
-                "dev": Devices.objects.get(ip=self.ip),  # Данное оборудование
-                # Если порт представлен в виде числа, то для pon порта есть sub port
-                # А для sub port уже не нужно создавать линк следующего порта
-                "link_to_sub_port": port_number.isdigit(),
-            }
+            data = {}
 
             # Смотрим ONLINE ONT
             ont_online_info = self.send_command(
@@ -1370,7 +1358,12 @@ class EltexLTP16N(BaseDevice):
                         # и добавляем VLAN, MAC и описание VLAN
                         ont[6].append([vlan_id, mac, self.get_vlan_name(vlan_id)])
 
-            return render_to_string("devices/eltex-LTP/gpon_port_info.html", data)
+            return {
+                "type": "eltex-gpon",
+                "data": data,
+            }
+
+        return {}
 
     @BaseDevice._lock
     @_validate_port()

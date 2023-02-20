@@ -120,8 +120,6 @@
     <div v-if="MACs && MACs.count > 0" class="container">
       <span>Всего: {{MACs.count}}</span>
 
-      <Pagination v-bind:p-object="pagination"/>
-
       <div class="table-responsive-lg">
       <table class="table">
         <thead>
@@ -134,7 +132,7 @@
         </thead>
         <tbody id="tbody-macs">
 
-          <tr v-for="mac in macsPage">
+          <tr v-for="mac in MACs.result">
               <td></td>
 
               <td style="font-family: monospace; font-size: x-large;">
@@ -168,8 +166,6 @@
       </table>
       </div>
 
-      <Pagination v-bind:p-object="pagination"/>
-
     </div>
 
     <div v-else-if="MACs && MACs.count === 0" class="container">
@@ -187,7 +183,6 @@
 <script>
 import {defineComponent} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
-import Pagination from "./Pagination.vue";
 
 export default defineComponent({
   props: {
@@ -207,18 +202,10 @@ export default defineComponent({
       portType: null,
       portConfig: null,
       portErrors: null,
-
-      pagination: {
-        count: 0,
-        page: 0,
-        rows_per_page: 20,
-        next_page: null,
-      },
     }
   },
   components: {
     PortControlButtons,
-    Pagination,
   },
   computed: {
     ontInterface() {
@@ -227,13 +214,6 @@ export default defineComponent({
         Status: this.line[1],
         Description: "ONT: " + this.ontID + " " + this.interface.Description
       }
-    },
-    macsPage: function () {
-        // Обрезаем по размеру страницы
-        return this.MACs.result.slice(
-            this.pagination.page * this.pagination.rows_per_page,
-            (this.pagination.page + 1) * this.pagination.rows_per_page
-        )
     },
     lineClasses() {
       if (this.showDetailInfo) return ["shadow", "sticky-top"];
@@ -253,7 +233,7 @@ export default defineComponent({
 
     statusStyles(status) {
       if (status === "online") return {"background-color": "#22e58b"}
-      return {"background-color": "#ffcacf"}
+      if (status === "offline") return {"background-color": "#ffcacf"}
     },
     lineStyle(status) {
       if (status === "offline") return {"background-color": "#ffcacf"}
@@ -285,8 +265,6 @@ export default defineComponent({
             {method: "get"}
         )
         this.MACs = await response.json()
-
-        this.pagination.count = this.MACs.count
 
         window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
         window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
