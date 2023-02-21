@@ -350,8 +350,11 @@ class Extreme(BaseDevice):
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
-    def get_port_info(self, port: str) -> str:
-        return ""
+    def get_port_info(self, port: str) -> dict:
+        return {
+            "type": "text",
+            "data": ""
+        }
 
     def get_port_config(self, port: str) -> str:
         return ""

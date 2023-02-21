@@ -651,8 +651,11 @@ class Huawei(BaseDevice):
             cable_test_data
         )  # Парсим полученные данные
 
-    def get_port_info(self, port: str) -> str:
-        return ""
+    def get_port_info(self, port: str) -> dict:
+        return {
+            "type": "text",
+            "data": ""
+        }
 
     @BaseDevice._lock
     def get_device_info(self) -> dict:
@@ -1784,7 +1787,7 @@ class HuaweiCX600(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         pass
 
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         pass
 
     def get_port_type(self, port: str) -> str:

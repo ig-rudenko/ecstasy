@@ -606,8 +606,11 @@ class Dlink(BaseDevice):
         """
         return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
-    def get_port_info(self, port: str) -> str:
-        return ""
+    def get_port_info(self, port: str) -> dict:
+        return {
+            "type": "text",
+            "data": ""
+        }
 
     def get_port_type(self, port: str) -> str:
         return ""

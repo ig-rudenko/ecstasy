@@ -272,9 +272,9 @@ class EdgeCore(BaseDevice):
         return self.send_command(f"show interfaces status {port}")
 
     @_validate_port()
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """
-        ## Возвращает информацию о порте в виде html разметки
+        ## Возвращает информацию о порте
 
             # show interfaces status {port}
 
@@ -283,7 +283,10 @@ class EdgeCore(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        return "<br>".join(self.__get_port_info(port).strip().split("\n"))
+        return {
+            "type": "text",
+            "data": self.__get_port_info(port).strip(),
+        }
 
     @_validate_port()
     def get_port_type(self, port: str) -> str:

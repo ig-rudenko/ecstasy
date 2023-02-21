@@ -195,10 +195,10 @@ class InterfaceInfoAPIView(APIView):
 
         result = {}
         with device.connect() as session:
+            result["portDetailInfo"] = session.get_port_info(port)
             result["portConfig"] = session.get_port_config(port)
             result["portType"] = session.get_port_type(port)
             result["portErrors"] = session.get_port_errors(port)
-            result["portDetailInfo"] = session.get_port_info(port)
             result["hasCableDiag"] = hasattr(session, "virtual_cable_test")
 
         return Response(result)

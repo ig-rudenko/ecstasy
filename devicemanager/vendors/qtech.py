@@ -18,6 +18,10 @@ class Qtech(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
+    def __init__(self, session, ip: str, auth: dict, model):
+        super().__init__(session, ip, auth, model)
+        self.__cache_port_info = {}
+
     @BaseDevice._lock
     def get_interfaces(self) -> InterfaceList:
         """
@@ -238,7 +242,6 @@ class Qtech(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @lru_cache
     @BaseDevice._lock
     def __get_port_info(self, port):
         """Общая информация о порте"""
@@ -247,7 +250,7 @@ class Qtech(BaseDevice):
         return f"<p>{port_type}</p>"
 
     @_validate_port()
-    def get_port_info(self, port):
+    def get_port_info(self, port) -> dict:
         """
         ## Возвращаем информацию о порте.
 
@@ -259,7 +262,12 @@ class Qtech(BaseDevice):
         :return: Информация о порте или ```"Неверный порт {port}"```
         """
 
-        return "<br>".join(self.__get_port_info(port).split("\n")[:10])
+        self.__cache_port_info[port] = self.__get_port_info(port)
+
+        return {
+            "type": "html",
+            "data": "<br>".join(self.__get_port_info(port).split("\n")[:10]),
+        }
 
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port):
@@ -269,8 +277,9 @@ class Qtech(BaseDevice):
         :param port: Порт для проверки
         :return: "SFP", "COPPER" или "Неверный порт {port}"
         """
+        port_info = self.__cache_port_info.get(port) or self.__get_port_info(port)
 
-        port_type = self.find_or_empty(r"Hardware is (\S+)", self.__get_port_info(port))
+        port_type = self.find_or_empty(r"Hardware is (\S+)", port_info)
         if "SFP" in port_type:
             return "SFP"
 
@@ -285,9 +294,11 @@ class Qtech(BaseDevice):
         """
 
         result = []
-        for line in self.__get_port_info(port).split("\n"):
+        port_info = self.__cache_port_info.get(port) or self.__get_port_info(port)
+
+        for line in port_info.split("\n"):
             if "error" in line:
-                result.append(line)
+                result.append(line.strip())
 
         return "\n".join(result)
 
@@ -302,7 +313,9 @@ class Qtech(BaseDevice):
             # show running-config interface ethernet {port}
         """
 
-        return self.send_command(f"show running-config interface ethernet {port}")
+        return self.send_command(
+            f"show running-config interface ethernet {port}"
+        ).strip()
 
     @BaseDevice._lock
     @_validate_port()

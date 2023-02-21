@@ -54,6 +54,7 @@ class Cisco(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
+        self.__cache_port_info = {}
 
     def _validate_port(self=None, if_invalid_return=None):
         """
@@ -272,7 +273,6 @@ class Cisco(BaseDevice):
         return r + s
 
     @_validate_port()
-    @lru_cache()
     @BaseDevice._lock
     def get_port_info(self, port: str) -> dict:
         """
@@ -286,19 +286,22 @@ class Cisco(BaseDevice):
 
         Пример вывода:
 
-        ```<p>Full-duplex, 10Gb/s, link type is auto, media type is 10GBase-LR</p>```
+        ```Full-duplex, 10Gb/s, link type is auto, media type is 10GBase-LR```
 
         :param port: Номер порта, для которого требуется получить информацию
 
         """
 
-        port_type = self.send_command(
-            f"show interfaces {port}", expect_command=False
-        ).splitlines()
+        port_info = self.send_command(f"show interfaces {port}", expect_command=False)
 
-        return {"type": "text", "data": "\n".join(port_type[1:])}
+        # Сохраняем в кэш
+        self.__cache_port_info[port] = port_info
 
-    @BaseDevice._lock
+        return {
+            "type": "text",
+            "data": "\n".join(port_info.splitlines()[1:]),
+        }
+
     @_validate_port()
     def get_port_type(self, port: str) -> str:
         """
@@ -335,9 +338,9 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        self.lock = False
-        port_info = self.get_port_info(port).replace("<br>", "\n")
-        self.lock = True
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
+            "data", ""
+        )
         # Ищем тип порта.
         port_type = "".join(
             self.find_or_empty(
@@ -352,7 +355,6 @@ class Cisco(BaseDevice):
         else:
             return "?"
 
-    @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -362,9 +364,13 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.get_port_info(port).split("<br>")
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
+            "data", ""
+        )
 
-        media_type = [line.strip() for line in port_info if "errors" in line]
+        media_type = [
+            line.strip() for line in port_info.split("\n") if "errors" in line
+        ]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice._lock

@@ -391,7 +391,6 @@ class EltexMES(BaseDevice):
         return r + s
 
     @_validate_port()
-    @lru_cache()
     @BaseDevice._lock
     def get_port_info(self, port):
         """
@@ -418,9 +417,8 @@ class EltexMES(BaseDevice):
                 break
             port_info_html += f"<p>{line}</p>"
 
-        return port_info_html
+        return {"type": "html", "data": port_info_html}
 
-    @lru_cache
     @_validate_port()
     def _get_port_stats(self, port):
         """
@@ -444,7 +442,9 @@ class EltexMES(BaseDevice):
         :return: "SFP", "COPPER", "COMBO-FIBER", "COMBO-COPPER" или "?"
         """
 
-        port_type = self.find_or_empty(r"Type: (\S+)", self.get_port_info(port))
+        port_type = self.find_or_empty(
+            r"Type: (\S+)", self.get_port_info(port).get("data")
+        )
         if "Fiber" in port_type:
             return "SFP"
         if "Copper" in port_type:
@@ -647,7 +647,7 @@ class EltexESR(EltexMES):
 
     @BaseDevice._lock
     @EltexMES._validate_port()
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.
 
@@ -658,11 +658,15 @@ class EltexESR(EltexMES):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        return self.send_command(
+        info = self.send_command(
             f"show interfaces status {port}",
             expect_command=False,
             before_catch=r"Description:.+",
-        ).replace("\n", "<br>")
+        )
+        return {
+            "type": "text",
+            "data": info,
+        }
 
     @BaseDevice._lock
     @EltexMES._validate_port()
