@@ -40,9 +40,7 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    csrf_token: { required: true, type: String },
-    interface: { required: true, type: Object },
-    device_name: { required: true, type: String },
+    interface: { required: true, type: Object }
   },
   data() {
     return {
@@ -80,11 +78,11 @@ export default defineComponent({
 
       try {
         const response = await fetch(
-          "/device/api/" + this.device_name + "/change-description",
+          "/device/api/" + document.deviceName + "/change-description",
           {
             method: "post",
             headers: {
-              "X-CSRFToken": this.csrf_token,
+              "X-CSRFToken": document.CSRF_TOKEN,
               'Accept': 'application/json',
               'Content-Type': 'application/json'
             },

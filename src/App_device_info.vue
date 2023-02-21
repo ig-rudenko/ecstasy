@@ -12,10 +12,10 @@ import ModalPortControl from "./components/ModalPortControl.vue";
 import InfoToast from "./components/InfoToast.vue";
 import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
-import Comment from "./components/Comment.vue";
-import PortControlButtons from "./components/PortControlButtons.vue";
 import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
-import ChangeDescription from "./components/ChangeDescription.vue";
+import DetailInterfaceInfo from "./components/DetailInterfaceInfo.vue";
+import FindMac from "./components/FindMac.vue";
+import BrasSession from "./components/BrasSession.vue";
 
 export default {
   name: 'device',
@@ -53,7 +53,8 @@ export default {
         submit: null
       },
 
-      csrf_token: null,
+      find_mac_address: null,
+      session_control: {},
 
       portAction: {
         name: "",
@@ -81,7 +82,9 @@ export default {
   },
 
   async mounted() {
-    this.csrf_token = $("input[name=csrfmiddlewaretoken]")[0].value
+    document.deviceName = this.deviceName
+    document.CSRF_TOKEN = $("input[name=csrfmiddlewaretoken]")[0].value
+
     await this.getInfo()
 
     // Смотрим предыдущую загруженность интерфейсов оборудования
@@ -114,6 +117,18 @@ export default {
   },
 
   methods: {
+
+    findMacEvent(mac) {
+      this.find_mac_address = mac
+    },
+
+    sessionEvent(mac, port) {
+      this.session_control = {
+        "mac": mac,
+        "port": port
+      }
+    },
+
     /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
       try {
@@ -134,7 +149,9 @@ export default {
         let url = "/device/api/workload/interfaces/" + this.deviceName
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
 
-        this.interfacesWorkload = await response.json()
+        if (response.status === 200) {
+          this.interfacesWorkload = await response.json()
+        }
 
       } catch (error) {
         console.log(error)
@@ -232,15 +249,6 @@ export default {
       }
     },
 
-    intfStatusDesc: function (status) {
-      if (status === "dormant") {
-        return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
-      }
-      if (status === "notPresent") {
-        return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)"
-      }
-    },
-
     /**
      * Регистрируем действие над состоянием порта.
      *
@@ -301,7 +309,7 @@ export default {
           url: "/device/port/reload",
           type: 'POST',
           data: data,
-          headers: {"X-CSRFToken": this.csrf_token},
+          headers: {"X-CSRFToken": document.CSRF_TOKEN},
           success: function( data ) {
             toastInfo.title= data.status
             toastInfo.message = data.message
@@ -323,81 +331,41 @@ export default {
      */
     submitCommentAction: function () {
       let new_comment = this.commentObject.text
-
+      let method
+      let data
       // Добавляем новый комментарий
       if (this.commentObject.action === "add" && new_comment.length) {
-        $.ajax({
-            url: "/device/api/comments",
-            type: 'POST',
-            headers: {"X-CSRFToken": this.csrf_token},
-            data: {
-              device: this.deviceName,
-              comment: new_comment,
-              interface: this.commentObject.interface
-            },
-            success: function( data ) {
-              console.log(data)
-            },
-            error: function (data) {
-              console.log(data)
-            }
-        });
+        method = "POST"
+        data = {
+          device: this.deviceName,
+          comment: new_comment,
+          interface: this.commentObject.interface
+        }
       }
-
       // Обновление комментария на порту
       if (this.commentObject.action === "update" && new_comment.length) {
-        $.ajax({
-            url: "/device/api/comments/" + this.commentObject.id,
-            type: 'PATCH',
-            headers: {"X-CSRFToken": this.csrf_token},
-            data: {
-              comment: new_comment
-            },
-            success: function( data ) {
-              console.log(data)
-            },
-            error: function (data) {
-              console.log(data)
-            }
-        });
+        method = "PATCH"
+        data = { comment: new_comment }
       }
-
       // Удаление комментария на порту
       if (this.commentObject.action === "delete") {
-        $.ajax({
-            url: "/device/api/comments/" + this.commentObject.id,
-            type: 'DELETE',
-            headers:{"X-CSRFToken": this.csrf_token},
-            success: function( data ) {
-              console.log(data)
-            },
-            error: function (data) {
-              console.log(data)
-            }
-        });
+        method = "DELETE"
+        data = {}
       }
-    },
 
-    /**
-     * Вычисляем цвет статуса порта
-     *
-     * @param status Статус порта
-     * @returns {{"background-color": string, width: string, "text-align": string, "opacity": number}}
-     */
-    statusStyleObj: function (status) {
-      status = status.toLowerCase()
-      let color = function () {
-        if (status === "admin down") return "#ffb4bb"
-        if (status === "notpresent") return "#c1c1c1"
-        if (status === "dormant") return "#ffe389"
-        if (status !== "down") return "#22e58b"
-      }
-      let base_style = {
-        'width': '150px',
-        'text-align': 'center',
-        'background-color': color()
-      }
-      return Object.assign({}, this.dynamicOpacity, base_style)
+      $.ajax({
+          url: "/device/api/comments/" + this.commentObject.id,
+          type: method,
+          data: data,
+          headers:{"X-CSRFToken": document.CSRF_TOKEN},
+          success: function( data ) {
+            console.log(data)
+          },
+          error: function (data) {
+            console.log(data)
+          }
+      });
+
     },
 
     /**
@@ -438,16 +406,10 @@ export default {
       setTimeout(this.timer, 1000)
     },
 
-    addDeviceLink(interface_) {
-      if (!interface_.Link) return interface_.Description || "";
-      return interface_.Description.replace(
-          new RegExp(interface_.Link.device_name, 'ig'),
-          s => `<mark><a class="text-dark text-decoration-none" href="${interface_.Link.url}">${s}</a></mark>`)
-    }
   },
   components: {
     DeviceWorkloadBar,
-    ChangeDescription,
+    DetailInterfaceInfo,
     "device-status-name": DeviceStatusName,
     "elastic-link": ElasticStackLink,
     "interfaces-help": InterfacesHelpText,
@@ -459,8 +421,8 @@ export default {
     "info-toast": InfoToast,
     "device-stats": DeviceStats,
     "modal-comment-control": CommentControl,
-    "comment": Comment,
-    "port-control-buttons": PortControlButtons,
+    "modal-find-mac": FindMac,
+    "modal-bras-session": BrasSession,
   }
 }
 </script>

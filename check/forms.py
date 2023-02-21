@@ -1,39 +1,6 @@
-from re import findall
 from django import forms
 from django.core.exceptions import ValidationError
 from ecstasy_project.settings import django_actions_logger
-
-
-class BrassSessionForm(forms.Form):
-    """
-    ## Форма проверки правильности ввода данных для работы с пользовательскими сессиями BRAS
-
-    Требуемые поля:
-     - str:`mac` - max:24
-     - str:`device` - max:255
-     - str:`port` - max:50
-
-    Опциональные поля:
-     - str:`desc` - max:255
-     - bool:`ajax`
-    """
-
-    mac = forms.CharField(max_length=24, required=True)
-    device = forms.CharField(max_length=255, required=True)
-    port = forms.CharField(max_length=50, required=True)
-    desc = forms.CharField(max_length=255, required=False)
-    ajax = forms.BooleanField(required=False)
-
-    def clean_mac(self):
-        """
-        ## Удаляет все нешестнадцатеричные символы из строки MAC адреса
-
-        Возвращает MAC в виде строки - `001122334455`.
-        """
-        mac = findall(r"\w", self.cleaned_data["mac"])
-        if len(mac) == 12:
-            return "".join(mac).lower()
-        raise ValidationError("Неверный MAC")
 
 
 class ADSLProfileForm(forms.Form):

@@ -526,7 +526,7 @@ class Dlink(BaseDevice):
         }
 
         if "can't support" in diag_output or "Unknown" in diag_output:
-            result["status"] = "The PHY can't support Cable Diagnostic"
+            result["status"] = "Don't support Cable Diagnostic"
             return result
 
         if "No Cable" in diag_output:

@@ -1,17 +1,18 @@
-let profile_load_div = $('#profile-load')
-let profile_status_div = $('#profile-status')
+function change_port_profile(port, profile_index, profile_name) {
 
-function change_port_profile(profile_index, profile_name) {
+    let profile_load_div = $('#profile-load')
+    let profile_status_div = $('#profile-status')
+
 
     $('button').prop('disabled', true);
     profile_load_div.prop('hidden', false);
     profile_status_div.prop('hidden', true)
 
     let data = {
-        port: device_port,
-        device_name: device_name,
+        port: port,
+        device_name: document.deviceName,
         index: profile_index,
-        csrfmiddlewaretoken: csrf_token
+        csrfmiddlewaretoken: document.CSRF_TOKEN
     }
     console.log(data)
 

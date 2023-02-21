@@ -11,7 +11,6 @@ from .base import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    range_to_numbers,
     _interface_normal_view,
     InterfaceList,
     InterfaceVLANList,
@@ -550,7 +549,7 @@ class Huawei(BaseDevice):
             "pair2": {"status": "", "len": ""},
         }
         if "not support" in data:
-            return parse_data
+            return {"status": "Don't support Cable Diagnostic"}
 
         if "2326" in self.model:
             # Для Huawei 2326
@@ -888,8 +887,8 @@ class HuaweiMA5600T(BaseDevice):
         return port_type, tuple(indexes)
 
     def _render_adsl_port_info(
-        self, info: str, profile_name: str, all_profiles: list
-    ) -> str:
+        self, port: str, info: str, profile_name: str, all_profiles: list
+    ) -> dict:
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
 
@@ -967,28 +966,30 @@ class HuaweiMA5600T(BaseDevice):
             for line in zip(names, up_down_streams["Do"], up_down_streams["Up"])
         ]
 
-        return render_to_string(
-            "check/adsl-port-info.html",
-            {
+        return {
+            "type": "adsl",
+            "data": {
                 "profile_name": profile_name,
+                "port": port,
                 "first_col": first_col_info,
                 "streams": table_dict,
                 "profiles": all_profiles,
-            },
-        )
+            }
+        }
 
     def _render_gpon_port_info(
         self, indexes: (Tuple[str, str, str], Tuple[str, str, str, str])
-    ):
+    ) -> dict:
         """
         ## Преобразовываем информацию о GPON порте для отображения на странице
         """
 
-        from check.models import Devices
-
         # Проверяем индексы
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
-            return f'Неверный порт! (GPON {"/".join(indexes)})'
+            return {
+                "type": "error",
+                "data": f'Неверный порт! (GPON {"/".join(indexes)})'
+            }
 
         self.send_command("config")  # Переходим в режим конфигурации
         i: tuple = indexes  # Упрощаем запись переменной
@@ -1004,8 +1005,6 @@ class HuaweiMA5600T(BaseDevice):
             self.send_command("quit")
 
             data = {
-                "device": Devices.objects.get(ip=self.ip).name,
-                "port": f'GPON {"/".join(i)}',
                 "total_count": self.find_or_empty(
                     r"the total of ONTs are: (\d+), online: \d+", output
                 ),
@@ -1035,12 +1034,18 @@ class HuaweiMA5600T(BaseDevice):
 
                 data["onts_lines"].append(part1 + part2)
 
-            return render_to_string("check/gpon_port_info.html", data)
+            return {
+                "type": "gpon",
+                "data": data
+            }
 
         # Смотрим ONT
         data = self._ont_port_info(indexes=i)
         self.send_command("quit")
-        return render_to_string("check/ont_port_info.html", {"ont_info": data})
+        return {
+            "type": "html",
+            "data": render_to_string("check/ont_port_info.html", {"ont_info": data})
+        }
 
     @lru_cache()
     def _ont_port_info(self, indexes: tuple) -> list:
@@ -1108,7 +1113,9 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
-    def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list):
+    def _render_vdsl_port_info(
+        self, info: str, profile_name: str, all_profiles: list
+    ) -> dict:
         """
         ## Преобразовываем информацию о VDSL порте для отображения на странице
 
@@ -1220,17 +1227,17 @@ class HuaweiMA5600T(BaseDevice):
             up_down_streams[index][stream]["value"] = value
             up_down_streams[index][stream]["color"] = color(float(value), line)
 
-        return render_to_string(
-            "check/adsl-port-info.html",
-            {
+        return {
+            "type": "adsl",
+            "data": {
                 "profile_name": profile_name,
                 "first_col": [],
                 "streams": up_down_streams,
                 "profiles": all_profiles,
             },
-        )
+        }
 
-    def _vdsl_port_info(self, indexes: tuple):
+    def _vdsl_port_info(self, indexes: tuple) -> dict:
         """
         ## Смотрим информацию на VDSL порту
         """
@@ -1282,7 +1289,7 @@ class HuaweiMA5600T(BaseDevice):
         return self._render_vdsl_port_info(port_stats, template_name, line_templates)
 
     @BaseDevice._lock
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         """
         ## Смотрим информацию на порту
 
@@ -1300,7 +1307,10 @@ class HuaweiMA5600T(BaseDevice):
 
         # Для других
         if not port_type or len(indexes) != 3:
-            return f"Неверный порт! ({port})"
+            return {
+                "type": "error",
+                "text": f"Неверный порт! ({port})",
+            }
 
         # Для VDSL используем отдельный метод
         if port_type == "vdsl":
@@ -1313,7 +1323,11 @@ class HuaweiMA5600T(BaseDevice):
 
         self.session.sendline(f"display line operation {indexes[2]}")
         if self.session.expect([r"Are you sure to continue", "Unknown command"]):
-            return ""
+            return {
+                "type": "error",
+                "text": "Unknown command",
+            }
+
         output = self.send_command(
             "y", expect_command=True, before_catch=r"Failure|------[-]+"
         )
@@ -1342,7 +1356,7 @@ class HuaweiMA5600T(BaseDevice):
         for line in res:
             profiles.append([line[0], line[1] + " ".join(line[-1].split())])
 
-        return self._render_adsl_port_info(output, profile_name, profiles)
+        return self._render_adsl_port_info(port, output, profile_name, profiles)
 
     @BaseDevice._lock
     def change_profile(self, port: str, profile_index: int) -> str:
@@ -1571,19 +1585,20 @@ class HuaweiMA5600T(BaseDevice):
 
         if port_type == "gpon" and len(indexes) == 4:
             # Для ONT
-            s = self.send_command(
+            self.session.sendline(
                 f"ont port {self._up_down_command(port_type, status)} {indexes[2]} {indexes[3]}"
             )
             self.send_command("\n", expect_command=False)
+            s = f"ont port {self._up_down_command(port_type, status)} {indexes[2]} {indexes[3]}"
 
         else:
             # Другие порты
             # Выключаем или включаем порт, в зависимости от типа будут разные команды
-            s = self.send_command(
-                f"{self._up_down_command(port_type, status)} {indexes[2]}",
-                expect_command=False,
+            self.session.sendline(
+                f"{self._up_down_command(port_type, status)} {indexes[2]}"
             )
             self.send_command("\n", expect_command=False)
+            s = f"{self._up_down_command(port_type, status)} {indexes[2]}"
 
         self.session.sendline("quit")
 
