@@ -264,10 +264,7 @@ class IskratelMBan(BaseDevice):
 
         port_type, port = self.validate_port(port)
         if port_type is None:
-            return {
-                "type": "error",
-                "detail": "Неверный порт!"
-            }
+            return {"type": "error", "detail": "Неверный порт!"}
 
         if port_type == "fasteth":
             cmd = f"show interface fasteth{port}"
@@ -284,10 +281,7 @@ class IskratelMBan(BaseDevice):
             # Requested Duplex : Auto
             # Actual Speed     : 1000 Mbit/s
             # Actual Duplex    : Full
-            return {
-                "type": "text",
-                "data": "\n".join(output.split("\n")[1:5])
-            }
+            return {"type": "text", "data": "\n".join(output.split("\n")[1:5])}
 
         # Парсим данные
         return self._render_dsl_port_info(output)
@@ -506,9 +500,24 @@ class IskratelMBan(BaseDevice):
         if port_type is None or port_type != "dsl":
             return "Неверный порт!"
 
-        return self.send_command(
+        output = self.send_command(
             f"set dsl port {port} profile {profile_index}", expect_command=False
         )
+        if "According to the attached ATM QoS" in output:
+            # Если возникает ошибка:
+            #   Profile can't be changed. According to the attached ATM QoS profile
+            #   DSL downstream rate can't be less than 21024 kbits/s!
+            no_policing = self.send_command(
+                f"set atm vc tp dsl{port}:1_33 qos_profile UBR:No-policing",
+                expect_command=False,
+            )
+            if "successfully updated" in no_policing:
+                # Если ограничение снято, снова меняем профиль
+                output = self.send_command(
+                    f"set dsl port {port} profile {profile_index}", expect_command=False
+                )
+
+        return output
 
     def get_port_type(self, port: str) -> str:
         pass
