@@ -72,9 +72,18 @@
 
       <div v-if="portDetailInfo.type==='html'" class="card shadow py-3" v-html="portDetailInfo.data"></div>
       <div v-else-if="portDetailInfo.type==='text'" class="card shadow py-3" v-html="format_to_html(portDetailInfo.data)"></div>
+
+<!--      MIKROTIK -->
+      <div v-else-if="portDetailInfo.type==='mikrotik'" class="card shadow py-3">
+        <MikrotikInterfaceInfo :data="portDetailInfo.data" :interface="interface"/>
+      </div>
+
+<!--      ADSL -->
       <div v-else-if="portDetailInfo.type==='adsl'" class="card shadow py-3">
         <ADSLInterfaceInfo :data="portDetailInfo.data" :interface="interface"/>
       </div>
+
+<!--      GPON -->
       <div v-else-if="portDetailInfo.type==='gpon'" class="card shadow py-3">
         <GPONInterfaceInfo
             @find-mac="findMacEvent"
@@ -84,6 +93,8 @@
             :register-interface-action="registerInterfaceAction"
             :interface="interface" />
       </div>
+
+<!--      ELTEX OLT -->
       <div v-else-if="portDetailInfo.type==='eltex-gpon'" class="card shadow py-3">
         <OLTInterfaceInfo
             @find-mac="findMacEvent"
@@ -199,7 +210,7 @@
               <td></td>
 
               <td style="font-family: monospace; font-size: x-large;">
-                  <span data-bs-toggle="tooltip" data-bs-placement="right" :data-bs-title="mac.vlanName"
+                  <span :id="mac.mac" data-bs-toggle="tooltip" data-bs-placement="right" :data-bs-title="mac.vlanName"
                         style="cursor: help; font-family: monospace;">
                       {{mac.vlanID}}
                   </span>
@@ -261,6 +272,7 @@ import CableDiag from "./CableDiag.vue";
 import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
+import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
 
 export default defineComponent({
   data() {
@@ -302,6 +314,7 @@ export default defineComponent({
     ADSLInterfaceInfo,
     GPONInterfaceInfo,
     OLTInterfaceInfo,
+    MikrotikInterfaceInfo,
   },
 
   computed: {
@@ -330,6 +343,7 @@ export default defineComponent({
 
     macsPage: function () {
         // Обрезаем по размеру страницы
+
         return this.MACs.result.slice(
             this.pagination.page * this.pagination.rows_per_page,
             (this.pagination.page + 1) * this.pagination.rows_per_page
@@ -339,6 +353,14 @@ export default defineComponent({
   },
 
   methods: {
+
+    // registerVlanName(mac_id) {
+    //   window.tooltipTriggerList = document.querySelectorAll(`[id='${mac_id}']`)
+    //   console.log(window.tooltipTriggerList)
+    //   window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    //   console.log(window.tooltipList)
+    //   return ""
+    // },
 
     findMacEvent: function (mac) {
       this.$emit("find-mac", mac)
@@ -389,9 +411,6 @@ export default defineComponent({
         this.MACs = await response.json()
 
         this.pagination.count = this.MACs.count
-
-        window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
       } catch (err) {
         console.log(err)

@@ -149,36 +149,37 @@ class SetPoEAPIView(APIView):
         ## Устанавливает PoE статус на порту
         """
 
-        if not request.POST.get("port") or not request.POST.get("status"):
+        if not request.data.get("port") or not request.data.get("status"):
             raise ValidationError({"detail": "Неверные данные"})
 
         # Находим оборудование
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        data = {}
         # Если оборудование доступно
-        if device.available:
-            try:
-                with device.connect() as session:
-                    if hasattr(session, "set_poe_out"):
-                        status = session.set_poe_out(
-                            request.GET["port"], request.POST["status"]
-                        )
-                        data = {"status": status}
-                    else:
-                        return Response(
-                            {"detail": "Unsupported for this device"}, status=400
-                        )
+        if not device.available:
+            return Response({"detail": "Device unavailable"}, status=400)
 
-            except (
-                TelnetConnectionError,
-                TelnetLoginError,
-                UnknownDeviceError,
-            ) as error:
-                return Response({"detail": str(error)}, status=500)
+        try:
+            with device.connect() as session:
+                if hasattr(session, "set_poe_out"):
+                    # Меняем PoE
+                    status, err = session.set_poe_out(
+                        request.data["port"], request.data["status"]
+                    )
+                    if not err:
+                        return Response({"status": request.data["status"]})
+                    return Response(
+                        {"detail": f"Invalid data ({request.data['status']})"},
+                        status=400,
+                    )
+                else:
+                    return Response(
+                        {"detail": "Unsupported for this device"}, status=400
+                    )
 
-        return Response(data)
+        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as error:
+            return Response({"detail": str(error)}, status=500)
 
 
 class InterfaceInfoAPIView(APIView):

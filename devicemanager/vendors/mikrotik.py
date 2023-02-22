@@ -249,25 +249,37 @@ class MikroTik(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
+        data = {}
+
         raw_poe_info = self.send_command(
             f"interface ethernet poe print terse where name={port}"
         )
         raw_poe_info = re.sub(r"\r\n", "", raw_poe_info)
-        poe_info = self.find_or_empty("poe-out=(auto-on|forced-on|off)", raw_poe_info)
-        return ""
+        data["poeStatus"] = self.find_or_empty(
+            "poe-out=(auto-on|forced-on|off)", raw_poe_info
+        )
+        data["poeChoices"] = ["auto-on", "forced-on", "off"]
+
+        return {
+            "type": "mikrotik",
+            "data": data,
+        }
 
     @BaseDevice._lock
     @_validate_port()
-    def set_poe_out(self, port: str, status: str) -> bool:
+    def set_poe_out(self, port: str, status: str) -> tuple:
         output = self.send_command(
             f"interface ethernet poe set {port} poe-out={status}"
         )
         output = re.sub(r"\r\n", "", output)
-        return "no such item" not in output and "syntax error" not in output
+        return status, "no such item" in output or "syntax error" in output
 
+    @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
-        pass
+        if "ether" in port:
+            return "COPPER"
+        return "SFP"
 
     def get_port_config(self, port: str) -> str:
         pass
