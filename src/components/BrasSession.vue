@@ -32,13 +32,17 @@
 
 <!--        SESSIONS-->
         <div v-if="sessions">
-          <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS1</div></div>
-          <div class="card p-4" v-if="sessions.BRAS1.errors.length">{{sessions.BRAS1.errors}}</div>
-          <div class="card p-4" v-html="format_to_html(sessions.BRAS1.session)" style="font-family: monospace;"></div>
+          <template v-if="sessions.BRAS1">
+            <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS1</div></div>
+            <div class="card p-4" v-if="sessions.BRAS1.errors.length">{{sessions.BRAS1.errors}}</div>
+            <div class="card p-4" v-html="format_to_html(sessions.BRAS1.session)" style="font-family: monospace;"></div>
+          </template>
 
-          <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS2</div></div>
-          <div class="card p-4" v-if="sessions.BRAS2.errors.length">{{sessions.BRAS2.errors}}</div>
-          <div class="card p-4" v-html="format_to_html(sessions.BRAS2.session)" style="font-family: monospace;"></div>
+          <template v-if="sessions.BRAS2">
+            <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS2</div></div>
+            <div class="card p-4" v-if="sessions.BRAS2.errors.length">{{sessions.BRAS2.errors}}</div>
+            <div class="card p-4" v-html="format_to_html(sessions.BRAS2.session)" style="font-family: monospace;"></div>
+          </template>
         </div>
 <!--        LOADING SESSIONS-->
         <div v-else class="d-flex justify-content-center" style="padding: 2.2rem;">
@@ -120,7 +124,7 @@ export default defineComponent({
             console.log(err)
           }
       }
-      setTimeout(this.getSessions, 4000)
+      setTimeout(this.getSessions, 5000)
       this.sessions = result
     },
     async cutSession() {
@@ -165,7 +169,7 @@ export default defineComponent({
      * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
      */
     format_to_html: function (string) {
-
+      if (!string) return "";
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
 

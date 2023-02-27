@@ -31,7 +31,7 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
 
     try:
         with bras.connect() as session:
-            bras_output = session.send_command(f"display access-user mac-address {mac}")
+            bras_output = session.send_command(f"display access-user mac-address {mac}", expect_command=False)
             if "No online user!" not in bras_output:
                 user_index = re.findall(r"User access index\s+:\s+(\d+)", bras_output)
 
