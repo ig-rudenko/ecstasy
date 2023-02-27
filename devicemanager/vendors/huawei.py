@@ -1,5 +1,7 @@
 import datetime
 import re
+import time
+
 import pexpect
 import textfsm
 from time import sleep
@@ -652,10 +654,7 @@ class Huawei(BaseDevice):
         )  # Парсим полученные данные
 
     def get_port_info(self, port: str) -> dict:
-        return {
-            "type": "text",
-            "data": ""
-        }
+        return {"type": "text", "data": ""}
 
     @BaseDevice._lock
     def get_device_info(self) -> dict:
@@ -688,6 +687,32 @@ class HuaweiMA5600T(BaseDevice):
         super().__init__(session, ip, auth, model)
         self.session.sendline("enable")
         self.session.expect(r"\S+#")
+
+        self.adsl_profiles = self.send_command(
+            "display adsl line-profile\n",
+            before_catch="display adsl line-profile",
+            expect_command=False,
+        )
+
+        # Все шаблоны профилей:
+        #   Template  Template
+        #   Index     Name
+        #   ------------------------------
+        #          1  DEFVAL
+        #          2  VDSL LINE TEMPLATE 2
+        #          3  VDSL LINE TEMPLATE 3
+        #          4  NO_CHANGE
+        #          5  VDSL
+        self.vdsl_templates = sorted(
+            re.findall(
+                r"\s+(\d+)\s+(.+)",
+                self.send_command(
+                    "display vdsl line-template info", expect_command=False
+                ),
+            ),
+            key=lambda x: int(x[0]),  # Сортируем по убыванию индекса
+            reverse=True,
+        )
 
     def send_command(
         self,
@@ -977,7 +1002,7 @@ class HuaweiMA5600T(BaseDevice):
                 "first_col": first_col_info,
                 "streams": table_dict,
                 "profiles": all_profiles,
-            }
+            },
         }
 
     def _render_gpon_port_info(
@@ -991,7 +1016,7 @@ class HuaweiMA5600T(BaseDevice):
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
             return {
                 "type": "error",
-                "data": f'Неверный порт! (GPON {"/".join(indexes)})'
+                "data": f'Неверный порт! (GPON {"/".join(indexes)})',
             }
 
         self.send_command("config")  # Переходим в режим конфигурации
@@ -1039,7 +1064,7 @@ class HuaweiMA5600T(BaseDevice):
 
             return {
                 "type": "gpon",
-                "data": data
+                "data": data,
             }
 
         # Смотрим ONT
@@ -1047,7 +1072,7 @@ class HuaweiMA5600T(BaseDevice):
         self.send_command("quit")
         return {
             "type": "html",
-            "data": render_to_string("check/ont_port_info.html", {"ont_info": data})
+            "data": render_to_string("check/ont_port_info.html", {"ont_info": data}),
         }
 
     @lru_cache()
@@ -1260,36 +1285,18 @@ class HuaweiMA5600T(BaseDevice):
             self.send_command(f"display port state {indexes[2]}", expect_command=False),
         )
 
-        # Все шаблоны профилей:
-        #   Template  Template
-        #   Index     Name
-        #   ------------------------------
-        #          1  DEFVAL
-        #          2  VDSL LINE TEMPLATE 2
-        #          3  VDSL LINE TEMPLATE 3
-        #          4  NO_CHANGE
-        #          5  VDSL
-        line_templates = sorted(
-            re.findall(
-                r"\s+(\d+)\s+(.+)",
-                self.send_command(
-                    "display vdsl line-template info", expect_command=False
-                ),
-            ),
-            key=lambda x: int(x[0]),  # Сортируем по убыванию индекса
-            reverse=True,
-        )
-
         template_name = ""
         # Ищем имя текущего шаблона
-        for line in line_templates:
+        for line in self.vdsl_templates:
             if line[0] == current_line_template_index:
                 template_name = line[1]
 
         self.send_command("quit")
         self.send_command("quit")
 
-        return self._render_vdsl_port_info(port_stats, template_name, line_templates)
+        return self._render_vdsl_port_info(
+            port_stats, template_name, self.vdsl_templates
+        )
 
     @BaseDevice._lock
     def get_port_info(self, port: str) -> dict:
@@ -1338,21 +1345,17 @@ class HuaweiMA5600T(BaseDevice):
         profile_output = self.send_command(f"display port state {indexes[2]}")
         profile_index = self.find_or_empty(r"\s+\d+\s+\S+\s+(\d+)", profile_output)
         profile_output = self.send_command(f"display adsl line-profile {profile_index}")
+
         self.session.sendline("quit")
         self.session.sendline("quit")
         self.session.expect(r"\S+#")
-        all_profiles = self.send_command(
-            "display adsl line-profile\n",
-            before_catch="display adsl line-profile",
-            expect_command=False,
-        )
 
         profile_name = self.find_or_empty(r"Name:\s+(.+)[\r\n]", profile_output).strip()
 
         # Парсим профиля
         res = re.findall(
             r"(\d+)\s+(.+?)\s+\S+\s+\S+\s+\d+\s+\d+\s+(\d+)\s+(\d+)([\s\S]*?)(?= \d+ \S+[ ]+\S+| [-])",
-            all_profiles,
+            self.adsl_profiles,
         )
 
         profiles = []

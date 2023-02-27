@@ -88,6 +88,21 @@ class IskratelMBan(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Iskratel"
 
+    def __init__(self, session, ip: str, auth: dict, model):
+        super().__init__(session, ip, auth, model)
+        self.dsl_profiles = sorted(
+            re.findall(
+                r"(\d+)\s+(.+)",
+                self.send_command(
+                    "show dsl profile",
+                    expect_command=False,
+                    before_catch=r"ADSL profiles",
+                ),
+            ),
+            key=lambda pr: int(pr[0]),
+            reverse=True,
+        )
+
     def save_config(self):
         pass
 
@@ -145,18 +160,6 @@ class IskratelMBan(BaseDevice):
         #  20   160/160
         #  10   160/320
         #  ...
-        all_profiles = sorted(
-            re.findall(
-                r"(\d+)\s+(.+)",
-                self.send_command(
-                    "show dsl profile",
-                    expect_command=False,
-                    before_catch=r"ADSL profiles",
-                ),
-            ),
-            key=lambda pr: int(pr[0]),
-            reverse=True,
-        )
 
         first_col_info = []
         oper_state = self.find_or_empty(r"Operational State\s+(\S+)\/", info)
@@ -226,7 +229,7 @@ class IskratelMBan(BaseDevice):
                 "profile_name": self.find_or_empty(r"Profile Name\s+(\S+)", info),
                 "first_col": first_col_info,
                 "streams": table_dict,
-                "profiles": all_profiles,
+                "profiles": self.dsl_profiles,
             },
         }
 

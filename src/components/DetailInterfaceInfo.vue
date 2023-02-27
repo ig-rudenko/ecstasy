@@ -67,7 +67,8 @@
     <div v-if="portDetailInfo" class="container row py-3">
 
       <div class="text-end">
-          <span class="text-muted text-help">Информация обновляется автоматически</span>
+          <span v-if="collectingDetailInfo" class="text-muted text-help" style="cursor: default">Обновляю...</span>
+          <span v-else @click="getDetailInfo" class="text-muted text-help" style="cursor: pointer">Обновить</span>
       </div>
 
       <div v-if="portDetailInfo.type==='html'" class="card shadow py-3" v-html="portDetailInfo.data"></div>
@@ -282,6 +283,7 @@ export default defineComponent({
       MACs: null,
       collectingMACs: false,
       portDetailInfo: null,
+      collectingDetailInfo: false,
       portType: null,
       portConfig: null,
       portErrors: null,
@@ -354,14 +356,6 @@ export default defineComponent({
 
   methods: {
 
-    // registerVlanName(mac_id) {
-    //   window.tooltipTriggerList = document.querySelectorAll(`[id='${mac_id}']`)
-    //   console.log(window.tooltipTriggerList)
-    //   window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-    //   console.log(window.tooltipList)
-    //   return ""
-    // },
-
     findMacEvent: function (mac) {
       this.$emit("find-mac", mac)
     },
@@ -422,6 +416,7 @@ export default defineComponent({
       if (!this.showDetailInfo) return
 
       try {
+        this.collectingDetailInfo = true
         const response = await fetch(
             "/device/api/" + document.deviceName + "/interface-info?port=" + this.interface.Interface,
             {method: "get"}
@@ -438,9 +433,7 @@ export default defineComponent({
       } catch (err) {
         console.log(err)
       }
-
-      // Через 5 сек запускаем метод снова
-      setTimeout(this.getDetailInfo, 5000)
+      this.collectingDetailInfo = false
     },
 
 
