@@ -3,7 +3,6 @@ import time
 
 import pexpect
 from functools import wraps
-from django.template.loader import render_to_string
 from .base import (
     BaseDevice,
     InterfaceList,
@@ -39,7 +38,7 @@ class MikroTik(BaseDevice):
         output = self.send_command("interface vlan print detail terse")
 
         for line in re.split(r"(?<=\S)\s*(?=\d+\s+[RX]*\s+)", output):
-            line = re.sub(r"\r\n", "", line)
+            line = re.sub(r"[\r\n]", "", line)
             match = BaseDevice.find_or_empty(
                 r"\d+\s+R*\s+name=(\S+) .+vlan-id=(\d+) interface=(\S+)", line
             )
@@ -56,7 +55,7 @@ class MikroTik(BaseDevice):
         output = self.send_command("interface bridge port print terse")
 
         for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+interface)", output):
-            line = re.sub(r"\r\n", "", line)
+            line = re.sub(r"[\r\n]", "", line)
 
             match = BaseDevice.find_or_empty(
                 r"\d+\s+[XIDH]*\s+interface=(\S+) bridge=(\S+)", line
@@ -117,7 +116,7 @@ class MikroTik(BaseDevice):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
                 if not BaseDevice.find_or_empty(
-                    r"^ether\d+|sfp\d+|sfp-sfpplus\d+$", port
+                    r"^ether\d+|^sfp\d+|^sfp-sfpplus\d+$", port
                 ):
                     # Неверный порт
                     return if_invalid_return
@@ -137,7 +136,7 @@ class MikroTik(BaseDevice):
 
         for line in re.split(r"(?=\S)\s*(?=\d+\s+[DRSX]*\s+)", interfaces_output):
 
-            line = re.sub(r"\r\n", "", line)
+            line = re.sub(r"[\r\n]", "", line)
             match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=ether", line)
 
             if not match:
@@ -153,7 +152,7 @@ class MikroTik(BaseDevice):
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 
-            interface_name = BaseDevice.find_or_empty(r"default-name=(\S+)\s+", line)
+            interface_name = BaseDevice.find_or_empty(r"name=(\S+)\s+", line)
             interfaces.append((interface_name, status, description))
 
         return interfaces
@@ -165,15 +164,14 @@ class MikroTik(BaseDevice):
         self.lock = False
         interfaces = self.get_interfaces()
         self.lock = True
-
         for line in interfaces:
-            bridge_name = self._ether_interfaces[line[0]]["bridge"]
+            bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge")
             interfaces_with_vlans.append(
                 (
                     line[0],
                     line[1],
                     line[2],
-                    self._bridges[bridge_name]["vlans"],
+                    self._bridges.get(bridge_name, {}).get("vlans", []),
                 )
             )
         return interfaces_with_vlans
@@ -193,20 +191,20 @@ class MikroTik(BaseDevice):
         """
 
         output = self.send_command(
-            f"interface bridge host print terse where interface={port} !local"
+            f"interface bridge host print terse where interface={port} !local",
+            expect_command=False
         )
 
         macs = []
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
-            line = re.sub(r"\r\n", "", line)
+            line = re.sub(r"[\r\n]", "", line)
             mac_line = BaseDevice.find_or_empty(
                 rf"mac-address=({self.mac_format}) .* bridge=(\S+)", line
             )
             if not mac_line:
                 continue
             mac_address, bridge = mac_line
-            macs.append((self._bridges[bridge]["vlans"][0], mac_address))
-
+            macs.append((self._bridges.get(bridge, {}).get("vlans", [""])[0], mac_address))
         return macs
 
     @BaseDevice._lock
@@ -257,7 +255,7 @@ class MikroTik(BaseDevice):
         raw_poe_info = self.send_command(
             f"interface ethernet poe print terse where name={port}"
         )
-        raw_poe_info = re.sub(r"\r\n", "", raw_poe_info)
+        raw_poe_info = re.sub(r"[\r\n]", "", raw_poe_info)
         data["poeStatus"] = self.find_or_empty(
             "poe-out=(auto-on|forced-on|off)", raw_poe_info
         )
@@ -274,7 +272,7 @@ class MikroTik(BaseDevice):
         output = self.send_command(
             f"interface ethernet poe set {port} poe-out={status}"
         )
-        output = re.sub(r"\r\n", "", output)
+        output = re.sub(r"[\r\n]", "", output)
         return status, "no such item" in output or "syntax error" in output
 
     @_validate_port(if_invalid_return="?")
