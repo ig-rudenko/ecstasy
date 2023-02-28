@@ -157,8 +157,7 @@ class DeviceFactory:
             return MikroTik(
                 self.session,
                 self.ip,
-                auth,
-                model=BaseDevice.find_or_empty(r"board-name: (\S+)", version),
+                auth
             )
 
         # ProCurve

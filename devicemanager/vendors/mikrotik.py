@@ -18,8 +18,10 @@ class MikroTik(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
     vendor = "MikroTik"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict):
+        super().__init__(session, ip, auth)
+        routerboard = self.send_command("system routerboard print")
+        self.model = self.find_or_empty(r"model: (\S+)", routerboard)
 
         # {"bridge_name": {"vlans": ['10', '20']}}
         self._bridges = {}
