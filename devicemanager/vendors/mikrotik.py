@@ -116,7 +116,7 @@ class MikroTik(BaseDevice):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
                 if not BaseDevice.find_or_empty(
-                    r"^ether|^sfp\d+|^sfp-sfpplus\d+$", port.lower()
+                    r"^ether|^sfp\d+|^wlan\d+$", port.lower()
                 ):
                     # Неверный порт
                     return if_invalid_return
@@ -137,7 +137,7 @@ class MikroTik(BaseDevice):
         for line in re.split(r"(?=\S)\s*(?=\d+\s+[DRSX]*\s+)", interfaces_output):
 
             line = re.sub(r"[\r\n]", "", line)
-            match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=ether", line)
+            match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=(ether|wlan)", line)
 
             if not match:
                 continue
@@ -277,8 +277,10 @@ class MikroTik(BaseDevice):
 
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
-        if "sfp" in port:
+        if "sfp" in port.lower():
             return "SFP"
+        if "wlan" in port.lower():
+            return "WIRELESS"
         return "COPPER"
 
     def get_port_config(self, port: str) -> str:

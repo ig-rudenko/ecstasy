@@ -339,6 +339,8 @@ export default defineComponent({
         styles["background-color"] = "#3e6cff"
       } else if (this.portType.includes("COMBO")) {
         styles["background-color"] = "#8133b8"
+      } else if (this.portType === "WIRELESS") {
+        styles["background-color"] = "#00c191"
       }
       return styles
     },
