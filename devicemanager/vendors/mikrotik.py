@@ -116,7 +116,7 @@ class MikroTik(BaseDevice):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
                 if not BaseDevice.find_or_empty(
-                    r"^ether\d+|^sfp\d+|^sfp-sfpplus\d+$", port
+                    r"^ether|^sfp\d+|^sfp-sfpplus\d+$", port.lower()
                 ):
                     # Неверный порт
                     return if_invalid_return
@@ -152,7 +152,7 @@ class MikroTik(BaseDevice):
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 
-            interface_name = BaseDevice.find_or_empty(r"name=(\S+)\s+", line)
+            interface_name = BaseDevice.find_or_empty(r"name=(.+) default-name=", line)
             interfaces.append((interface_name, status, description))
 
         return interfaces
@@ -191,7 +191,7 @@ class MikroTik(BaseDevice):
         """
 
         output = self.send_command(
-            f"interface bridge host print terse where interface={port} !local",
+            f"interface bridge host print terse where interface=\"{port}\" !local",
             expect_command=False
         )
 
@@ -210,9 +210,9 @@ class MikroTik(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
-        self.send_command(f"interface disable {port}")
+        self.send_command(f"interface disable \"{port}\"")
         time.sleep(2)
-        self.send_command(f"interface enable {port}")
+        self.send_command(f"interface enable \"{port}\"")
         return self.SAVED_OK
 
     @BaseDevice._lock
@@ -220,9 +220,9 @@ class MikroTik(BaseDevice):
     def set_port(self, port: str, status: str, save_config=True) -> str:
 
         if status == "up":
-            self.send_command(f"interface enable {port}")
+            self.send_command(f"interface enable \"{port}\"")
         elif status == "down":
-            self.send_command(f"interface disable {port}")
+            self.send_command(f"interface disable \"{port}\"")
         return self.SAVED_OK
 
     def save_config(self):
@@ -237,11 +237,11 @@ class MikroTik(BaseDevice):
 
         if desc == "":
             # Очищаем описание
-            self.send_command(f'interface comment {port} comment=""')
+            self.send_command(f'interface comment "{port}" comment=""')
 
         else:
             # Устанавливаем описание
-            self.send_command(f'interface comment {port} comment="{desc}"')
+            self.send_command(f'interface comment "{port}" comment="{desc}"')
 
         return (
             f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
@@ -253,7 +253,7 @@ class MikroTik(BaseDevice):
         data = {}
 
         raw_poe_info = self.send_command(
-            f"interface ethernet poe print terse where name={port}"
+            f"interface ethernet poe print terse where name=\"{port}\""
         )
         raw_poe_info = re.sub(r"[\r\n]", "", raw_poe_info)
         data["poeStatus"] = self.find_or_empty(
@@ -270,16 +270,16 @@ class MikroTik(BaseDevice):
     @_validate_port()
     def set_poe_out(self, port: str, status: str) -> tuple:
         output = self.send_command(
-            f"interface ethernet poe set {port} poe-out={status}"
+            f"interface ethernet poe set \"{port}\" poe-out={status}"
         )
         output = re.sub(r"[\r\n]", "", output)
         return status, "no such item" in output or "syntax error" in output
 
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
-        if "ether" in port:
-            return "COPPER"
-        return "SFP"
+        if "sfp" in port:
+            return "SFP"
+        return "COPPER"
 
     def get_port_config(self, port: str) -> str:
         pass
