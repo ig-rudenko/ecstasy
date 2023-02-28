@@ -12,7 +12,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
-from ..finder import find_description, find_vlan
+from ..finder import Finder
 from ..models import VlanName, DevicesForMacSearch
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
 from ecstasy_project.settings import BASE_DIR
@@ -56,7 +56,7 @@ def find_as_str(request):
     if not request.GET.get("pattern"):
         return JsonResponse({"interfaces": []})
 
-    result = find_description(request.GET.get("pattern"), request.user)
+    result = Finder.find_description(request.GET.get("pattern"), request.user)
 
     return JsonResponse(
         {"interfaces": result},
@@ -310,6 +310,7 @@ def get_vlan(request):
         vlan_start = []
 
     result = []  # Список узлов сети, соседей и линий связи для визуализации
+    finder = Finder()
 
     # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
     for start_dev in vlan_start:
@@ -321,14 +322,13 @@ def get_vlan(request):
             break
 
         # Трассировка vlan
-        find_vlan(
+        finder.find_vlan(
             device=start_dev,
             vlan_to_find=vlan,
             passed_devices=passed,
             result=result,
             empty_ports=request.GET.get("ep"),
             only_admin_up=request.GET.get("ad"),
-            find_device_pattern=vlan_traceroute_settings.find_device_pattern,
         )
 
     if not result:  # Если поиск не дал результатов
