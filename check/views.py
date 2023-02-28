@@ -3,7 +3,6 @@
 """
 
 import re
-from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import pexpect
 import ping3
@@ -132,16 +131,23 @@ def by_zabbix_hostid(request, hostid: str):
     """
 
     dev = Device.from_hostid(hostid)
-    try:
-        if dev and models.Devices.objects.get(name=dev.name):
-            return HttpResponseRedirect(
-                resolve_url("device_info", name=dev.name) + "?current_status=1"
-            )
-
+    if not dev:
         raise Http404
 
-    except (ValueError, TypeError, models.Devices.DoesNotExist) as exception:
-        raise Http404 from exception
+    # Ищем по имени
+    found_dev = models.Devices.objects.filter(name=dev.name)
+    if not found_dev.exists():
+        # Или по IP
+        found_dev = models.Devices.objects.filter(ip=dev.ip)
+
+    if not found_dev.exists():
+        # Не нашли оборудование
+        raise Http404
+
+    model_dev = found_dev.first()
+    return HttpResponseRedirect(
+        resolve_url("device_info", name=model_dev.name)
+    )
 
 
 @login_required
