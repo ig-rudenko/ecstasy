@@ -66,8 +66,6 @@ class BrassSessionAPIView(APIView):
                 # Приведенный выше код создает пул потоков,
                 # а затем отправляет функцию get_user_session в пул потоков.
                 executor.submit(get_user_session, bras, mac, result)
-                # Логи
-                log(request.user, bras, f"display access-user mac-address {mac}")
 
         return Response(result)
 
@@ -98,7 +96,7 @@ class CutBrassSessionAPIView(APIView):
                     # Срезаем сессию по MAC адресу
                     session.send_command(f"cut access-user mac-address {mac}")
                     # Логи
-                    log(request.user, bras, f"cut access-user mac-address {mac}")
+                    log(request.user, device, f"cut access-user mac-address {mac}")
 
             except pexpect.TIMEOUT:
                 result["errors"].append(f"{bras.name} - timeout")  # Был недоступен
