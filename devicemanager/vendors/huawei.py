@@ -688,22 +688,32 @@ class HuaweiMA5600T(BaseDevice):
         self.session.sendline("enable")
         self.session.expect(r"\S+#")
 
-        self.adsl_profiles = self.send_command(
+        self.adsl_profiles: str = self.get_adsl_profiles()
+        self.vdsl_templates: list = self.get_vdsl_templates()
+
+    def get_adsl_profiles(self) -> str:
+        return self.send_command(
             "display adsl line-profile\n",
             before_catch="display adsl line-profile",
             expect_command=False,
         )
 
-        # Все шаблоны профилей:
-        #   Template  Template
-        #   Index     Name
-        #   ------------------------------
-        #          1  DEFVAL
-        #          2  VDSL LINE TEMPLATE 2
-        #          3  VDSL LINE TEMPLATE 3
-        #          4  NO_CHANGE
-        #          5  VDSL
-        self.vdsl_templates = sorted(
+    def get_vdsl_templates(self) -> list:
+        """
+        ## Все шаблоны профилей:
+
+            Template  Template
+            Index     Name
+            ------------------------------
+                   1  DEFVAL
+                   2  VDSL LINE TEMPLATE 2
+                   3  VDSL LINE TEMPLATE 3
+                   4  NO_CHANGE
+                   5  VDSL
+        """
+
+        self.send_command("config")
+        templates = sorted(
             re.findall(
                 r"\s+(\d+)\s+(.+)",
                 self.send_command(
@@ -713,6 +723,8 @@ class HuaweiMA5600T(BaseDevice):
             key=lambda x: int(x[0]),  # Сортируем по убыванию индекса
             reverse=True,
         )
+        self.send_command("quit")
+        return templates
 
     def send_command(
         self,
