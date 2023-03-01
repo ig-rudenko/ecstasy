@@ -143,6 +143,37 @@ class DeviceInterfacesAPIView(APIView):
         """
         ## Вывод интерфейсов оборудования
 
+            {
+                "interfaces": [
+                    {
+                        "Interface": "gi1/0/1",
+                        "Status": "up",
+                        "Description": "To_DEVICE-1",
+                        "Link": {
+                            "device_name": "DEVICE-1",
+                            "url": "/device/DEVICE-1"
+                        },
+                        "Comments": [
+                            {
+                                "text": "Какой-то комментарий",
+                                "user": "irudenko",
+                                "id": 14
+                            }
+                        ]
+                    },
+
+                    ...
+
+                    {
+                        "Interface": "te1/0/4",
+                        "Status": "down",
+                        "Description": ""
+                    }
+                ],
+                "deviceAvailable": true,
+                "collected": "2023-03-01T15:13:11.559175"
+            }
+
         :param device_name: Название оборудования
         """
 
@@ -225,7 +256,24 @@ class DeviceInterfacesAPIView(APIView):
         )
 
     @staticmethod
-    def add_devices_links(interfaces: list):
+    def add_devices_links(interfaces: list) -> list:
+        """
+        ## Добавляет к интерфейсам ссылку на оборудование "Link", которое находится в описании
+
+            {
+                "Interface": "te1/0/2",
+                "Status": "up",
+                "Description": "To_DEVICE-1_pTe0/1|DF|",
+                "Link": {
+                    "device_name": "DEVICE-1",
+                    "url": "/device/DEVICE-1"
+                }
+            },
+
+        :param interfaces: Список интерфейсов
+        :return: Список интерфейсов с добавлением ссылок
+        """
+
         devices_names = models.Devices.objects.values("name").all()
         for intf in interfaces:
             for dev in devices_names:
@@ -241,9 +289,22 @@ class DeviceInterfacesAPIView(APIView):
         """
         ## Берет список интерфейсов и добавляет к ним существующие комментарии
 
+            {
+                "Interface": "Eth0/0/6",
+                "Status": "up",
+                "Description": "Teplostroy",
+                "Comments": [
+                    {
+                        "text": "Стоит медиаконвертор",
+                        "user": "irudenko",
+                        "id": 14
+                    }
+                ]
+            },
+
         :param interfaces: список интерфейсов для добавления комментариев
-        :type interfaces: list
         """
+
         interfaces_comments = self.device.interfacescomments_set.select_related("user")
 
         for intf in interfaces:
@@ -332,7 +393,13 @@ class DeviceInterfacesAPIView(APIView):
     def get_last_interfaces(self) -> (str, datetime):
         """
         ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
+
+            (
+                "[ { "Interface": "GE0/0/2", "Status": "down", "Description": "desc" }, ... ]" ,
+                datetime
+            )
         """
+
         try:
             device_info = ModelDeviceInfo.objects.get(dev=self.device)
         except ModelDeviceInfo.DoesNotExist:
@@ -384,7 +451,35 @@ class DeviceInterfacesAPIView(APIView):
 
 class DeviceInfoAPIView(APIView):
     """
-    ## Возвращаем
+    ## Возвращаем общую информацию оборудования
+
+        {
+            "deviceName": "DEVICE-NAME",
+            "deviceIP": "10.10.10.10",
+            "elasticStackLink": "URL",
+            "zabbixHostID": "45632",
+            "zabbixInfo": {
+                "description": "ОПИСАНИЕ ОБОРУДОВАНИЯ В ZABBIX",
+                "inventory": {
+                    "type": "Eltex",
+                    "type_full": "MES3324F 28-port 1G/10G Managed Switch",
+                    "serialno_a": "",
+                    "macaddress_a": "",
+                    "hardware": "MES3324F 28-port 1G/10G Managed Switch",
+
+                    ...
+
+                    "model": "MES3324F",
+                    "vendor": "Eltex"
+                }
+            },
+            "permission": 3,
+            "coords": [
+                "23.322332",
+                "32.233223"
+            ]
+        }
+
     """
 
     def get(self, request, device_name: str):
@@ -417,6 +512,29 @@ class DeviceInfoAPIView(APIView):
 
 
 class DeviceStatsInfoAPIView(APIView):
+    """
+    ## Возвращаем данные CPU, FLASH, RAM, TEMP
+
+        {
+            "cpu": {
+                "util": [
+                    2
+                ]
+            },
+            "ram": {
+                "util": 15
+            },
+            "flash": {
+                "util": 50
+            },
+            "temp": {
+                "value": 43.5,
+                "status": "normal"
+            }
+        }
+
+    """
+
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
 

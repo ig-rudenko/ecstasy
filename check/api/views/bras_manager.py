@@ -43,16 +43,34 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
             result[bras.name]["session"] = bras_output
 
     except TelnetConnectionError:
-        result[bras.name]["errors"].append("Не удалось подключиться к " + bras.name)
+        result[bras.name]["errors"].append("Не удалось подключиться")
     except TelnetLoginError:
-        result[bras.name]["errors"].append("Неверный Логин/Пароль " + bras.name)
+        result[bras.name]["errors"].append("Неверный Логин/Пароль")
     except UnknownDeviceError:
-        result[bras.name]["errors"].append("Неизвестные тип оборудования " + bras.name)
+        result[bras.name]["errors"].append("Неизвестные тип оборудования")
 
 
 @method_decorator(permission(models.Profile.BRAS), name="get")
 class BrassSessionAPIView(APIView):
+
     def get(self, request):
+        """
+        ## Возвращаем сессию на BRAS для конкретного MAC адреса
+
+            {
+                "BRAS1": {
+                    "session": null,
+                    "errors": [
+                        "Не удалось подключиться"
+                    ]
+                },
+                "BRAS2": {
+                    "session": " ... ",
+                    "errors": []
+                }
+            }
+        """
+
         serializer = MacSerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
 
@@ -72,9 +90,30 @@ class BrassSessionAPIView(APIView):
 
 @method_decorator(permission(models.Profile.BRAS), name="post")
 class CutBrassSessionAPIView(APIView):
+    """
+    ## Сбрасываем сессию по MAC адресу и перезагружаем порт на оборудовании
+    """
+
     permission_classes = [DevicePermission]
 
     def post(self, request):
+        """
+        Принимаем:
+
+             - str:`mac` - max:24
+             - str:`device` - max:255
+             - str:`port` - max:50
+
+        Сбрасываем сессию и перезагружаем порт на оборудовании
+
+        Возвращаем:
+
+            {
+                "portReloadStatus": "RELOAD STATUS",
+                "errors": []
+            }
+        """
+
         serializer = BrassSessionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

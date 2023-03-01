@@ -21,11 +21,19 @@ from ..permissions import DevicePermission
 
 @method_decorator(permission(models.Profile.BRAS), name="dispatch")
 class ChangeDescription(APIView):
+    """
+    ## Изменяем описание на порту у оборудования
+    """
+
     permission_classes = [DevicePermission]
 
     def post(self, request, device_name: str):
         """
-        ## Изменяем описание на порту у оборудования
+
+
+        :param request:
+        :param device_name:
+        :return:
         """
 
         if not self.request.data.get("port"):

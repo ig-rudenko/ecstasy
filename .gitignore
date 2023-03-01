@@ -1,4 +1,4 @@
-*/tests/*
+#*/tests/*
 */migrations/*
 
 static/map_previews
