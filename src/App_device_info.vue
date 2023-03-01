@@ -34,7 +34,7 @@ export default {
       withVlans: false, // Собирать VLAN?
       autoUpdateInterfaces: true, // Автоматически обновлять интерфейсы
 
-      deviceName: window.location.pathname.split('/').slice(-1).join(""),
+      deviceName: decodeURI(window.location.pathname).split('/').slice(-1).join(""),
       deviceIP: "",
 
       currentStatus: false, // Собирать интерфейсы в реальном времени?

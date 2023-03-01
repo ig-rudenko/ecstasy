@@ -54,16 +54,22 @@ class DeviceFactory:
     )
     password_input_expect = r"[Pp]ass.*:\s*$"
 
+    # Совпадения, после которых надо нажать `N` (no)
+    send_N_key = (
+        r"The password needs to be changed|Do you want to see the software license"
+    )
+
+    # Не доступен telnet
     telnet_unavailable = r"Connection closed|Unable to connect"
 
-    authentication_expect = [
+    telnet_authentication_expect = [
         login_input_expect,  # 0
         password_input_expect,  # 1
         prompt_expect,  # 2
         telnet_unavailable,  # 3
         r"Press any key to continue",  # 4
         r"Timeout or some unexpected error happened on server host",  # 5 - Ошибка радиуса
-        r"The password needs to be changed",  # 6
+        r"The password needs to be changed",  # 6 Нажать `N`
     ]
 
     def __init__(self, ip: str, protocol: str, auth_obj=None, make_session_global=True):
@@ -154,11 +160,7 @@ class DeviceFactory:
 
         # Mikrotik
         if "mikrotik" in version.lower():
-            return MikroTik(
-                self.session,
-                self.ip,
-                auth
-            )
+            return MikroTik(self.session, self.ip, auth)
 
         # ProCurve
         if "Image stamp:" in version:
@@ -288,8 +290,6 @@ class DeviceFactory:
                     self.session.sendcontrol("C")
                 else:
                     break
-            if "ZyNOS version" in version:
-                pass  # TODO Для Zyxel
 
         if "unknown keyword show" in version:
             return Juniper(self.session, self.ip, auth)
@@ -310,7 +310,7 @@ class DeviceFactory:
 
             else:
                 expect_index = self.session.expect(
-                    self.authentication_expect, timeout=timeout
+                    self.telnet_authentication_expect, timeout=timeout
                 )
 
             # Login
@@ -404,10 +404,10 @@ class DeviceFactory:
                             r"no matching key exchange method found",  # 0
                             r"no matching cipher found",  # 1
                             r"Are you sure you want to continue connecting",  # 2
-                            r"[Pp]assword:",  # 3
-                            r"[#>\]]\s*$",  # 4
+                            self.password_input_expect,  # 3
+                            self.prompt_expect,  # 4
                             r"Connection closed",  # 5
-                            r"The password needs to be changed",  # 6
+                            self.send_N_key,  # 6
                         ],
                         timeout=timeout,
                     )
