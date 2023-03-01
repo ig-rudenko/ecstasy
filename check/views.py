@@ -105,15 +105,20 @@ def permission(required_perm=models.Profile.READ):
     def decorator(func):
         @wraps(func)
         def _wrapper(request, *args, **kwargs):
-            # Проверяем уровень привилегий
-            user_permission = models.Profile.objects.get(
-                user_id=request.user.id
-            ).permissions
+            # Проверяем авторизацию пользователя
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden()  # Недостаточно прав
+
+            # Уровень привилегий пользователя
+            user_permission_level = all_permissions.index(
+                request.user.profile.permissions
+            )
 
             # Если суперпользователь или его уровень привилегий равен или выше требуемых
-            if request.user.is_superuser or all_permissions.index(
-                required_perm
-            ) <= all_permissions.index(user_permission):
+            if (
+                request.user.is_superuser
+                or all_permissions.index(required_perm) <= user_permission_level
+            ):
                 return func(request, *args, **kwargs)  # Выполняем функцию
 
             return HttpResponseForbidden()  # Недостаточно прав
@@ -145,9 +150,7 @@ def by_zabbix_hostid(request, hostid: str):
         raise Http404
 
     model_dev = found_dev.first()
-    return HttpResponseRedirect(
-        resolve_url("device_info", name=model_dev.name)
-    )
+    return HttpResponseRedirect(resolve_url("device_info", name=model_dev.name))
 
 
 @login_required

@@ -50,7 +50,7 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
         result[bras.name]["errors"].append("Неизвестные тип оборудования " + bras.name)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(permission(models.Profile.BRAS), name="get")
 class BrassSessionAPIView(APIView):
     def get(self, request):
         serializer = MacSerializer(data=request.GET)
@@ -70,7 +70,7 @@ class BrassSessionAPIView(APIView):
         return Response(result)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(permission(models.Profile.BRAS), name="post")
 class CutBrassSessionAPIView(APIView):
     permission_classes = [DevicePermission]
 

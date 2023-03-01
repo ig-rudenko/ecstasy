@@ -43,6 +43,6 @@ urlpatterns = [
     # ===========================================
     #                 BRAS Manager
     # ===========================================
-    path("session", bras_manager.BrassSessionAPIView.as_view()),
-    path("cut-session", bras_manager.CutBrassSessionAPIView.as_view()),
+    path("session", bras_manager.BrassSessionAPIView.as_view(), name="show-session"),
+    path("cut-session", bras_manager.CutBrassSessionAPIView.as_view(), name="cut-session"),
 ]
