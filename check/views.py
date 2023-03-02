@@ -10,12 +10,10 @@ import ping3
 from django.http import (
     HttpResponseForbidden,
     JsonResponse,
-    HttpResponseNotAllowed,
     HttpResponseRedirect,
     Http404,
 )
-from django.shortcuts import render, redirect, get_object_or_404, resolve_url
-from django.template.loader import render_to_string
+from django.shortcuts import render, get_object_or_404, resolve_url
 from django.contrib.auth.decorators import login_required
 
 from devicemanager.exceptions import (
@@ -23,12 +21,9 @@ from devicemanager.exceptions import (
     TelnetLoginError,
     UnknownDeviceError,
 )
-from net_tools.models import VlanName
-from devicemanager import *
-from devicemanager.vendors.base import MACList
+from devicemanager import Device
 from ecstasy_project.settings import django_actions_logger
 from . import models
-from .forms import ADSLProfileForm
 
 
 def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
@@ -180,119 +175,6 @@ def device_info(request, name: str):
     """
 
     return render(request, "check/device_info.html", {"device_name": name})
-
-
-def add_names_to_vlan(vlan_mac_list: MACList) -> list:
-    """
-    ## Добавляет к списку VLAN, MAC еще и название VLAN из таблицы соответствий
-    """
-
-    result = []
-    vlan_passed = {}  # Словарь с VLAN, имена для которых уже найдены
-    for vid, mac in vlan_mac_list:  # Смотрим VLAN и MAC
-
-        # Если еще не искали такой VLAN
-        if not vlan_passed.get(vid):
-            # Ищем название VLAN'a
-            try:
-                vlan_name = VlanName.objects.get(vid=int(vid)).name
-            except VlanName.DoesNotExist:
-                vlan_name = ""
-            # Добавляем в множество вланов, которые участвовали в поиске имени
-            vlan_passed[vid] = vlan_name
-
-        # Обновляем
-        result.append([vid, mac, vlan_passed.get(vid)])
-
-    return result
-
-
-@login_required
-@permission(models.Profile.READ)
-def get_port_detail(request):
-    """
-    ## Смотрим информацию о порте
-    """
-
-    if (
-        request.method == "GET"
-        and request.GET.get("device")
-        and request.GET.get("port")
-    ):
-        model_dev = get_object_or_404(models.Devices, name=request.GET.get("device"))
-
-        if not has_permission_to_device(model_dev, request.user):
-            return HttpResponseForbidden()
-
-        dev = Device(request.GET["device"])
-        dev.ip = model_dev.ip  # IP адрес
-
-        data = {
-            "dev": dev,
-            "port": request.GET["port"],
-            "desc": request.GET.get("desc", ""),
-            "perms": models.Profile.permissions_level.index(
-                request.user.profile.permissions
-            ),
-        }
-
-        # Если оборудование недоступно
-        if dev.ping() <= 0:
-            return redirect("device_info", request.GET["device"])
-
-        if not request.GET.get("ajax"):
-            # ЛОГИ
-            log(request.user, model_dev, f'show mac\'s port {data["port"]}')
-            return render(request, "check/port_page.html", data)
-
-        try:
-            # Подключаемся к оборудованию
-            with model_dev.connect() as session:
-
-                data["macs"] = []  # Итоговый список
-                vlan_passed = {}  # Словарь уникальных VLAN
-                for vid, mac in session.get_mac(data["port"]):  # Смотрим VLAN и MAC
-
-                    # Если еще не искали такой VLAN
-                    if vid not in vlan_passed:
-                        # Ищем название VLAN'a
-                        try:
-                            vlan_name = VlanName.objects.get(vid=int(vid)).name
-                        except (ValueError, VlanName.DoesNotExist):
-                            vlan_name = ""
-                        # Добавляем в множество вланов, которые участвовали в поиске имени
-                        vlan_passed[vid] = vlan_name
-
-                    # Обновляем
-                    data["macs"].append([vid, mac, vlan_passed[vid]])
-
-                # Отправляем JSON, если вызов AJAX = mac
-                if request.GET.get("ajax") == "mac":
-                    macs_tbody = render_to_string("check/macs_table.html", data)
-                    return JsonResponse({"macs": macs_tbody})
-
-                data["port_info"] = session.get_port_info(data["port"])
-
-                data["port_type"] = session.get_port_type(data["port"])
-
-                data["port_config"] = session.get_port_config(data["port"])
-
-                data["port_errors"] = session.get_port_errors(data["port"])
-
-                if hasattr(session, "virtual_cable_test"):
-                    data["cable_test"] = "has"
-
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError):
-            pass
-
-        if request.GET.get("ajax") == "all":
-            # Отправляем все собранные данные
-            data["macs"] = render_to_string("check/macs_table.html", data)
-            del data["dev"]
-            del data["perms"]
-            return JsonResponse(data)
-
-    return HttpResponseNotAllowed(["GET"])
 
 
 @login_required
@@ -450,150 +332,3 @@ def reload_port(request):
             "color": color,
         }
     )
-
-
-@login_required
-@permission(models.Profile.REBOOT)
-def set_description(request):
-    """
-    ## Изменяем описание на порту у оборудования
-    """
-
-    if request.method != "POST":
-        return HttpResponseNotAllowed(permitted_methods=["POST"])
-
-    if request.POST.get("device_name") and request.POST.get("port"):
-        dev = get_object_or_404(models.Devices, name=request.POST.get("device_name"))
-
-        new_description = request.POST.get("description")
-        port = request.POST.get("port")
-
-        max_length = 64  # По умолчанию максимальная длина описания 64 символа
-
-        try:
-            with dev.connect() as session:
-                set_description_status = session.set_description(
-                    port=port, desc=new_description
-                )
-                new_description = session.clear_description(new_description)
-                status = "success"
-
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
-            return JsonResponse(
-                {
-                    "status": "danger",
-                    "info": str(e),
-                }
-            )
-
-        if "Неверный порт" in set_description_status:
-            status = "warning"
-
-        # Проверяем результат изменения описания
-        if "Max length" in set_description_status:
-            # Описание слишком длинное.
-            # Находим в строке "Max length:32" число "32"
-            max_length = set_description_status.split(":")[1]
-            if max_length.isdigit():
-                max_length = int(max_length)
-            else:
-                max_length = 32
-            set_description_status = (
-                f"Слишком длинное описание! Укажите не более {max_length} символов."
-            )
-            status = "warning"
-
-        return JsonResponse(
-            {
-                "status": status,
-                "description": new_description,
-                "info": set_description_status,
-                "max_length": max_length,
-            }
-        )
-
-    return JsonResponse(
-        {
-            "status": "danger",
-            "info": "Invalid data",
-        }
-    )
-
-
-@login_required
-@permission(models.Profile.READ)
-def start_cable_diag(request) -> (JsonResponse, HttpResponseForbidden):
-    """
-    ## Запускаем диагностику кабеля на порту
-    """
-
-    if (
-        request.method != "GET"
-        or not request.GET.get("device")
-        or not request.GET.get("port")
-    ):
-        return JsonResponse({}, status=400)
-
-    model_dev = get_object_or_404(models.Devices, name=request.GET["device"])
-    dev = Device(request.GET["device"], zabbix_info=False)
-
-    if not has_permission_to_device(model_dev, request.user):
-        return HttpResponseForbidden()
-
-    data = {}
-    # Если оборудование доступно
-    if dev.ping() > 0:
-        try:
-            with model_dev.connect() as session:
-                if hasattr(session, "virtual_cable_test"):
-                    cable_test = session.virtual_cable_test(request.GET["port"])
-                    if cable_test:  # Если имеются данные
-                        data["cable_test"] = cable_test
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
-            return JsonResponse({}, status=400)
-
-    return JsonResponse(data)
-
-
-@login_required
-@permission(models.Profile.BRAS)
-def change_adsl_profile(request) -> JsonResponse:
-    """
-    ## Изменяем профиль xDSL порта на другой
-
-    Возвращаем {"status": status} или {"error": error}
-
-    :return: результат в формате JSON
-    """
-
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed!"}, status=405)
-
-    form = ADSLProfileForm(request.POST)
-
-    if not form.is_valid():
-        return JsonResponse({"error": "Invalid data", "data": request.POST}, status=400)
-
-    model_dev = get_object_or_404(models.Devices, name=form.cleaned_data["device_name"])
-
-    if not ping3.ping(model_dev.ip, timeout=2):
-        return JsonResponse({"error": "Device down"})
-
-    try:
-        # Подключаемся к оборудованию
-        with model_dev.connect() as session:
-            if hasattr(session, "change_profile"):
-                # Если можно поменять профиль
-                status = session.change_profile(
-                    form.cleaned_data["port"], form.cleaned_data["index"]
-                )
-
-                return JsonResponse({"status": status})
-
-            else:  # Нельзя менять профиль для данного устройства
-                return JsonResponse(
-                    {"error": "Device can't change profile"}, status=400
-                )
-
-    except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
-        return JsonResponse({"error": str(e)}, status=400)

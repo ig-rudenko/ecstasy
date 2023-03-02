@@ -23,8 +23,8 @@ from django.views.static import serve
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
-    path("devices", views.show_devices, name="devices-list"),
     path("by-zabbix/<hostid>", views.by_zabbix_hostid, name="by-zabbix-hostid"),
+    path("devices", views.show_devices, name="devices-list"),
     path("device/", include("check.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
     path("tools/", include("net_tools.urls")),
