@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
 
@@ -81,6 +81,13 @@ WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 
 DATABASES = json.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
+if not DATABASES:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "db.sqlite3"
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

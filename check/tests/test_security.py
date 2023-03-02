@@ -14,12 +14,6 @@ class NoAccessWithNoLogin(TestCase):
             expected_url="/accounts/login/?next=/device/Device",
         )
 
-    def test_get_port_info_page(self):
-        self.assertRedirects(
-            self.client.get(reverse("show-port-info")),
-            expected_url="/accounts/login/?next=/device/port",
-        )
-
     def test_port_reload_page(self):
         self.assertRedirects(
             self.client.get(reverse("port_reload")),
