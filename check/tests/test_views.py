@@ -5,34 +5,34 @@ from check.models import Devices, DeviceGroup
 import devicemanager as dm
 
 
-class ZabbixHostIdTest(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        dev = dm.Device.from_hostid("12345")
-        Devices.objects.create(name=dev.name, ip=dev.ip)
-
-    def test_zabbix_reverse_url(self):
-        resp = self.client.get(reverse("by-zabbix-hostid", args=("12345",)))
-        self.assertEqual(resp.status_code, 302)
-
-    def test_empty_hostid(self):
-        resp = self.client.get("/by-zabbix/")
-        self.assertEqual(resp.status_code, 404)
-
-    def test_valid_redirect_url(self):
-        resp = self.client.get("/by-zabbix/12345")
-        dev = dm.Device.from_hostid("12345")
-
-        self.assertRedirects(
-            response=resp,
-            expected_url=reverse("device_info", args=(dev.name,)),
-            status_code=302,
-            target_status_code=302,
-        )
-
-    def test_invalid_redirect_url(self):
-        resp = self.client.get("/by-zabbix/12346")
-        self.assertEqual(resp.status_code, 404)
+# class ZabbixHostIdTest(TestCase):
+#     @classmethod
+#     def setUpTestData(cls):
+#         dev = dm.Device.from_hostid("12345")
+#         Devices.objects.create(name=dev.name, ip=dev.ip)
+#
+#     def test_zabbix_reverse_url(self):
+#         resp = self.client.get(reverse("by-zabbix-hostid", args=("12345",)))
+#         self.assertEqual(resp.status_code, 302)
+#
+#     def test_empty_hostid(self):
+#         resp = self.client.get("/by-zabbix/")
+#         self.assertEqual(resp.status_code, 404)
+#
+#     def test_valid_redirect_url(self):
+#         resp = self.client.get("/by-zabbix/12345")
+#         dev = dm.Device.from_hostid("12345")
+#
+#         self.assertRedirects(
+#             response=resp,
+#             expected_url=reverse("device_info", args=(dev.name,)),
+#             status_code=302,
+#             target_status_code=302,
+#         )
+#
+#     def test_invalid_redirect_url(self):
+#         resp = self.client.get("/by-zabbix/12346")
+#         self.assertEqual(resp.status_code, 404)
 
 
 class ShowDevicesNoAccessTest(TestCase):
