@@ -1,6 +1,3 @@
-#*/tests/*
-*/migrations/*
-
 static/map_previews
 static/docs
 static/admin
