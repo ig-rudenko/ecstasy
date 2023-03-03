@@ -4,7 +4,7 @@
 
 const CSRF_TOKEN = $('input[name=csrfmiddlewaretoken]')[0].value
 
-const LOADING_CIRCLE = `<div class="spinner-border" role="status"></div>`
+const LOADING_CIRCLE = `<div class="spinner-border me-2" role="status"></div>`
 const RUN_SCAN_BUTTON = `<svg style="cursor: pointer" onclick="run_vlans_scan()" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
                              <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>
                              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"></path>
@@ -72,10 +72,11 @@ function check_vlans_scan_status() {
         type: 'post',
         url: '/tools/ajax/vlans-scan/check',
         success: function (response) {
-            if (!response.scanning) {
+            if (!response.status) {
                 scan_block.innerHTML = RUN_SCAN_BUTTON
-            } else {
-                scan_block.innerHTML = LOADING_CIRCLE
+            } else if (response.progress){
+                scan_block.innerHTML = LOADING_CIRCLE +
+                    `<div class="" style="display: flex;align-items: center;">Сканирование завершено на ${response.progress}%</div>`
             }
         },
         error: function (response) {

@@ -34,7 +34,7 @@ def run_periodically_scan(request):
 
 @login_required
 def check_periodically_scan(request):
-    return JsonResponse({"scanning": check_scanning_status()})
+    return JsonResponse(check_scanning_status())
 
 
 @login_required

@@ -3,6 +3,7 @@ import json
 
 from concurrent.futures import ThreadPoolExecutor
 
+from celery import Task
 from celery.result import AsyncResult
 from django.core.cache import cache
 
@@ -13,142 +14,165 @@ from net_tools.models import DevicesInfo
 from app_settings.models import ZabbixConfig
 
 
-def save_interfaces(model_dev: ModelDevices):
-    dev = Device(name=model_dev.name)
-    ping = dev.ping()  # Оборудование доступно или нет
+class InterfacesScanTask(Task):
+    name = "interfaces_scan"
+    queryset = ModelDevices.objects.all()
 
-    if not ping:
-        # Если оборудование недоступно, то пропускаем
-        return
+    def __init__(self):
+        self.devices_count = 1
+        self.devices_scanned = 0
+        self.task_id = None
 
-    # Устанавливаем протокол для подключения
-    dev.protocol = model_dev.port_scan_protocol
-    # Устанавливаем community для подключения
-    dev.snmp_community = model_dev.snmp_community
-    dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
-    dev.ip = model_dev.ip  # IP адрес
+    def run(self, *args, **kwargs):
+        self.task_id = self.request.id
+        self.devices_count = self.queryset.count()
+        self.devices_scanned = 0
 
-    # Собираем интерфейсы
-    status = dev.collect_interfaces(
-        vlans=True, current_status=True, make_session_global=False
-    )
+        Config.set(ZabbixConfig.load())
 
-    model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
+        with ThreadPoolExecutor() as execute:
+            for device in self.queryset.all():
+                execute.submit(InterfacesScanTask.save_interfaces, self, device)
+        return self.devices_count
 
-    # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
-    if "Неверный логин или пароль" in str(status):
+    def save_interfaces(self, model_dev: ModelDevices):
+        dev = Device(name=model_dev.name)
+        ping = dev.ping()  # Оборудование доступно или нет
 
-        # Создаем список объектов авторизации
-        al = list(
-            AuthGroup.objects.exclude(name=model_dev.auth_group.name)
-            .order_by("id")
-            .all()
-        )
+        if not ping:
+            # Если оборудование недоступно, то пропускаем
+            return
 
-        # Собираем интерфейсы снова
+        # Устанавливаем протокол для подключения
+        dev.protocol = model_dev.port_scan_protocol
+        # Устанавливаем community для подключения
+        dev.snmp_community = model_dev.snmp_community
+        dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
+        dev.ip = model_dev.ip  # IP адрес
+
+        # Собираем интерфейсы
         status = dev.collect_interfaces(
-            vlans=True, current_status=True, auth_obj=al
+            vlans=True, current_status=True, make_session_global=False
         )
 
-        if status is None:  # Если статус сбора интерфейсов успешный
-            # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
-            try:
-                # Смотрим объект у которого такие логин и пароль
-                a = AuthGroup.objects.get(
-                    login=dev.success_auth["login"],
-                    password=dev.success_auth["password"],
-                )
+        model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 
-            except (TypeError, ValueError, AuthGroup.DoesNotExist):
-                # Если нет такого объекта, значит нужно создать
-                a = AuthGroup.objects.create(
-                    name=dev.success_auth["login"],
-                    login=dev.success_auth["login"],
-                    password=dev.success_auth["password"],
-                    secret=dev.success_auth["privilege_mode_password"],
-                )
+        # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
+        if "Неверный логин или пароль" in str(status):
 
-            # Указываем новый логин/пароль для этого устройства
-            model_dev.auth_group = a
-            # Добавляем это поле в список изменений
-            model_update_fields.append("auth_group")
+            # Создаем список объектов авторизации
+            al = list(
+                AuthGroup.objects.exclude(name=model_dev.auth_group.name)
+                .order_by("id")
+                .all()
+            )
 
-    # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
-    # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
-    if (
-        dev.zabbix_info.inventory.model
-        and dev.zabbix_info.inventory.model != model_dev.model
-    ):
-        model_dev.model = dev.zabbix_info.inventory.model
-        model_update_fields.append("model")
+            # Собираем интерфейсы снова
+            status = dev.collect_interfaces(
+                vlans=True, current_status=True, auth_obj=al
+            )
 
-    # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
-    if (
-        dev.zabbix_info.inventory.vendor
-        and dev.zabbix_info.inventory.vendor != model_dev.vendor
-    ):
-        model_dev.vendor = dev.zabbix_info.inventory.vendor
-        model_update_fields.append("vendor")
+            if status is None:  # Если статус сбора интерфейсов успешный
+                # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
+                try:
+                    # Смотрим объект у которого такие логин и пароль
+                    a = AuthGroup.objects.get(
+                        login=dev.success_auth["login"],
+                        password=dev.success_auth["password"],
+                    )
 
-    # Сохраняем изменения
-    if model_update_fields:
-        model_dev.save(update_fields=model_update_fields)
-    if not dev.interfaces.count:
-        return
+                except (TypeError, ValueError, AuthGroup.DoesNotExist):
+                    # Если нет такого объекта, значит нужно создать
+                    a = AuthGroup.objects.create(
+                        name=dev.success_auth["login"],
+                        login=dev.success_auth["login"],
+                        password=dev.success_auth["password"],
+                        secret=dev.success_auth["privilege_mode_password"],
+                    )
 
-    # Сохраняем интерфейсы
-    try:
-        current_device_info = DevicesInfo.objects.get(dev=model_dev)
-    except DevicesInfo.DoesNotExist:
-        current_device_info = DevicesInfo.objects.create(dev=model_dev)
+                # Указываем новый логин/пароль для этого устройства
+                model_dev.auth_group = a
+                # Добавляем это поле в список изменений
+                model_update_fields.append("auth_group")
 
-    vlans_interfaces_to_save = [
-        {
-            "Interface": line.name,
-            "Status": line.status,
-            "Description": line.desc,
-            "VLAN's": line.vlan,
-        }
-        for line in dev.interfaces
-    ]
-    current_device_info.vlans = json.dumps(vlans_interfaces_to_save)
-    current_device_info.vlans_date = datetime.now()
-    print("Saved VLANS      ---", model_dev)
+        # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
+        # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
+        if (
+            dev.zabbix_info.inventory.model
+            and dev.zabbix_info.inventory.model != model_dev.model
+        ):
+            model_dev.model = dev.zabbix_info.inventory.model
+            model_update_fields.append("model")
 
-    interfaces_to_save = [
-        {
-            "Interface": line.name,
-            "Status": line.status,
-            "Description": line.desc,
-        }
-        for line in dev.interfaces
-    ]
-    current_device_info.interfaces = json.dumps(interfaces_to_save)
-    current_device_info.interfaces_date = datetime.now()
+        # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
+        if (
+            dev.zabbix_info.inventory.vendor
+            and dev.zabbix_info.inventory.vendor != model_dev.vendor
+        ):
+            model_dev.vendor = dev.zabbix_info.inventory.vendor
+            model_update_fields.append("vendor")
 
-    current_device_info.save()
-    print("Saved Interfaces ---", model_dev)
+        # Сохраняем изменения
+        if model_update_fields:
+            model_dev.save(update_fields=model_update_fields)
+        if not dev.interfaces.count:
+            return
+
+        # Сохраняем интерфейсы
+        try:
+            current_device_info = DevicesInfo.objects.get(dev=model_dev)
+        except DevicesInfo.DoesNotExist:
+            current_device_info = DevicesInfo.objects.create(dev=model_dev)
+
+        vlans_interfaces_to_save = [
+            {
+                "Interface": line.name,
+                "Status": line.status,
+                "Description": line.desc,
+                "VLAN's": line.vlan,
+            }
+            for line in dev.interfaces
+        ]
+        current_device_info.vlans = json.dumps(vlans_interfaces_to_save)
+        current_device_info.vlans_date = datetime.now()
+        print("Saved VLANS      ---", model_dev)
+
+        interfaces_to_save = [
+            {
+                "Interface": line.name,
+                "Status": line.status,
+                "Description": line.desc,
+            }
+            for line in dev.interfaces
+        ]
+        current_device_info.interfaces = json.dumps(interfaces_to_save)
+        current_device_info.interfaces_date = datetime.now()
+
+        current_device_info.save()
+        print("Saved Interfaces ---", model_dev)
+
+        self.devices_scanned += 1
+        self.update_state(
+            task_id=self.task_id,
+            state="PROGRESS",
+            meta={"progress": int(self.devices_scanned / self.devices_count * 100)},
+        )
 
 
-def check_scanning_status() -> bool:
+periodically_scan = app.register_task(InterfacesScanTask())
+
+
+def check_scanning_status() -> dict:
     task_id = cache.get("periodically_scan_id")
     if task_id:
-        result = AsyncResult(str(task_id))
-        if result.status in ["PENDING"]:
-            return True
+        task = AsyncResult(str(task_id))
+        if task.status == "PENDING":
+            return {"status": "PENDING"}
+        if task.status == "PROGRESS":
+            return {"status": "PROGRESS", "progress": task.result.get("progress", "~")}
 
         cache.delete("periodically_scan_id")
-        return False
 
-    return False
-
-
-@app.task
-def periodically_scan():
-    Config.set(ZabbixConfig.load())
-
-    with ThreadPoolExecutor() as execute:
-        for device in ModelDevices.objects.all():
-            execute.submit(save_interfaces, device)
-
-    return True
+    return {
+        "status": None,
+    }
