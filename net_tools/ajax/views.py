@@ -27,7 +27,7 @@ def run_periodically_scan(request):
         if not task_id:
             task_id = periodically_scan.delay()
             cache.set("periodically_scan_id", task_id, timeout=None)
-            return JsonResponse({"task_id": str(task_id)}, status=202)
+            return HttpResponse(status=202)
 
     return JsonResponse({}, status=400)
 

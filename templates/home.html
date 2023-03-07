@@ -25,6 +25,13 @@
             box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 30%);
         }
 
+        .logo {
+            border: none;
+            height: 70px;
+            width: 70px;
+            animation: 3.75s linear infinite spinner-border;
+        }
+
         .search-string {
             text-align: center;
             {#margin-top: 80px;#}
@@ -173,9 +180,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
 
       <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
-        <svg class="bi me-2" width="70" height="70" role="img" aria-label="Ecstasy">
-            <use xlink:href="#ecstasy"></use>
-        </svg>
+          <img class="me-3 spinner-border logo" src="{% static 'img/logo-1.png' %}">
           <h4>Ecstasy</h4>
       </a>
 
@@ -206,8 +211,10 @@
 {#      DEVICE CONTROL#}
 {% if request.user.profile.devices_groups.count %}
     <div class="row mb-4 p-4 border rounded-5 shadow">
-    <h4 class="fw-bold"><a class="text-dark" href="{% url 'devices-list' %}">Управление оборудованием</a></h4>
         <div class="col-md-7">
+
+            <h4 class="fw-bold"><a class="text-dark" href="{% url 'devices-list' %}">Управление оборудованием</a></h4>
+
           <div class="container-fluid py-1">
               <br>
             <p>
@@ -254,8 +261,8 @@
 
           </div>
         </div>
-        <div class="col-md-4">
-            <img style="margin-top: 40px; width: 100%" src="{% static 'img/home-devices-control.svg' %}">
+        <div class="col-md-5">
+            <img style="height: 350px" src="{% static 'img/dev-box.png' %}">
         </div>
     </div>
 {% endif %}
