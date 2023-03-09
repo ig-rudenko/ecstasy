@@ -39,6 +39,7 @@ export default {
 
       currentStatus: false, // Собирать интерфейсы в реальном времени?
       zabbixHostID: null,
+      zabbixURL: null,
       interfaces: [],
       elasticStackLink: "", // Ссылка на логи
       deviceCoords: [],
@@ -170,6 +171,7 @@ export default {
         this.deviceIP = data.deviceIP
         this.elasticStackLink = data.elasticStackLink
         this.zabbixHostID = data.zabbixHostID
+        this.zabbixURL = data.zabbixURL
         this.permissionLevel = data.permission
         this.deviceCoords = data.coords
         this.zabbixInfo = data.zabbixInfo

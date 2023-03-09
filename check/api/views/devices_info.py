@@ -18,7 +18,7 @@ from devicemanager.exceptions import (
     UnknownDeviceError,
 )
 
-from devicemanager.device import Interfaces as InterfacesObject
+from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..serializers import DevicesSerializer
 from check import models
@@ -498,6 +498,7 @@ class DeviceInfoAPIView(APIView):
                 device=model_dev
             ),
             "zabbixHostID": int(dev.zabbix_info.hostid or 0),
+            "zabbixURL": ZabbixConfig.ZABBIX_URL,
             "zabbixInfo": {
                 "description": dev.zabbix_info.description,
                 "inventory": dev.zabbix_info.inventory.to_dict,
