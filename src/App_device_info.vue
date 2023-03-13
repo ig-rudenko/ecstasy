@@ -335,9 +335,11 @@ export default {
       let new_comment = this.commentObject.text
       let method
       let data
+      let url
       // Добавляем новый комментарий
       if (this.commentObject.action === "add" && new_comment.length) {
         method = "POST"
+        url = "/device/api/comments"
         data = {
           device: this.deviceName,
           comment: new_comment,
@@ -346,17 +348,19 @@ export default {
       }
       // Обновление комментария на порту
       if (this.commentObject.action === "update" && new_comment.length) {
+        url = "/device/api/comments/" + this.commentObject.id
         method = "PATCH"
         data = { comment: new_comment }
       }
       // Удаление комментария на порту
       if (this.commentObject.action === "delete") {
+        url = "/device/api/comments/" + this.commentObject.id
         method = "DELETE"
         data = {}
       }
 
       $.ajax({
-          url: "/device/api/comments/" + this.commentObject.id,
+          url: url,
           type: method,
           data: data,
           headers:{"X-CSRFToken": document.CSRF_TOKEN},

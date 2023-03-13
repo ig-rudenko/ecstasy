@@ -1,3 +1,6 @@
+import json
+from collections import Counter
+
 from django.contrib import admin
 from django import forms
 from pyzabbix import ZabbixAPI
@@ -71,6 +74,18 @@ def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None):
                 return ico["code"]
 
 
+def get_polygon(fill_color: str):
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="{fill_color}" class="bi bi-heptagon-half" viewBox="0 0 16 16">
+          <path d="M7.779.052a.5.5 0 0 1 .442 0l6.015 2.97a.5.5 0 0 1 .267.34l1.485 6.676a.5.5 0 0 1-.093.415l-4.162 5.354a.5.5 0 0 1-.395.193H4.662a.5.5 0 0 1-.395-.193L.105 10.453a.5.5 0 0 1-.093-.415l1.485-6.676a.5.5 0 0 1 .267-.34L7.779.053zM8 15h3.093l3.868-4.975-1.383-6.212L8 1.058V15z"/>
+        </svg>"""
+
+
+def get_line(fill_color: str):
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="{fill_color}" class="bi bi-share-fill" viewBox="0 0 16 16">
+          <path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5z"/>
+        </svg>"""
+
+
 def get_zabbix_groups():
     """
     Возвращает список кортежей вида (group_name, group_name) для всех групп в Zabbix
@@ -116,7 +131,7 @@ class LayerFrom(forms.ModelForm):
 
 @admin.register(Layers)
 class LayersAdmin(admin.ModelAdmin):
-    list_display = ("layer_name", "icon", "layer_type", "description")
+    list_display = ("layer_name", "icon", "layer_type")
     form = LayerFrom
 
     fieldsets = (
@@ -161,20 +176,95 @@ class LayersAdmin(admin.ModelAdmin):
         if instance.type == "file":
             return format_html(f"{svg_file_icon} {instance.name}")
 
-    @admin.display(description="Иконка")
+    @staticmethod
+    def parse_layer_file(file_path):
+        """
+        ## Определяем содержимое geojson файла
+        Какие типы геометрий присутствуют, их кол-во, цвета
+
+            {
+                'LineString': {
+                    'colours': Counter({'#ed4543': 332, '#595959': 138}),
+                    'count': 470,
+                    'percent': 0.4
+                },
+                'Point': {
+                    'colours': Counter({'#ed4543': 200, '#595959': 67, '#b51eff': 1}),
+                    'count': 268,
+                    'percent': 0.23
+                },
+                'Polygon': {
+                    'colours': Counter({'#56db40': 233, '#ffd21e': 210, '#f371d1': 2, '#ed4543': 1}),
+                    'count': 446,
+                    'percent': 0.38
+                }
+            }
+
+
+        :param file_path: Путь к файлу
+        :return: словарь со значениями
+        """
+
+        with open(file_path, "rb") as file:
+            data = json.loads(file.read())
+
+        feature_types: dict = {}
+        total_count = 0
+        for feature in data["features"]:
+            total_count += 1
+
+            feature_types.setdefault(
+                feature["geometry"]["type"], {"count": 0, "colours": Counter()}
+            )
+
+            feature_types[feature["geometry"]["type"]]["count"] += 1
+
+            colour = (
+                feature.get("properties", {}).get("fill", "")
+                or feature.get("properties", {}).get("marker-color", "")
+                or feature.get("properties", {}).get("stroke", "")
+            )
+            if colour:
+                feature_types[feature["geometry"]["type"]]["colours"][colour] += 1
+
+        for ft, data in feature_types.items():
+            data["percent"] = round(data["count"] / total_count, 2)
+
+        return feature_types
+
+    @admin.display(description="Типы геометрий")
     def icon(self, instance: Layers):
         if instance.type == "zabbix":
-            icon_name = "circle-fill"
-        else:
-            icon_name = instance.marker_icon_name
-
-        return format_html(
-            get_icons_html_code(
+            html = get_icons_html_code(
                 instance.points_color,
                 instance.points_border_color,
-                icon_name=icon_name,
+                icon_name="circle-fill",
             )
-        )
+
+        else:
+            # Слой из файла
+            file_info = self.parse_layer_file(instance.from_file.path)
+            html = ""
+            icon_name = instance.marker_icon_name
+            if file_info.get("Point"):
+                # Если присутствует маркер в файле
+                html += get_icons_html_code(
+                    instance.points_color,
+                    instance.points_border_color,
+                    icon_name=icon_name,
+                )
+            if file_info.get("Polygon"):
+                # Если присутствует полигон в файле
+                colors = file_info["Polygon"]["colours"].most_common(1)
+                main_color = colors[0][0] if colors else instance.polygon_fill_color
+                html += get_polygon(fill_color=main_color)
+            if file_info.get("LineString"):
+                # Если присутствует линия в файле
+                colors = file_info["LineString"]["colours"].most_common(1)
+                main_color = colors[0][0] if colors else instance.polygon_border_color
+                html += get_line(fill_color=main_color)
+
+        return format_html(html)
 
     @admin.display(description="Тип слоя")
     def layer_type(self, instance: Layers):
