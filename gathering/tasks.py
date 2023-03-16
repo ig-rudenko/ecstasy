@@ -9,7 +9,7 @@ from .collectors import GatherMacAddressTable
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all().filter(vendor__iexact='cisco')
+    queryset = Devices.objects.all()
 
     def pre_run(self):
         super().pre_run()

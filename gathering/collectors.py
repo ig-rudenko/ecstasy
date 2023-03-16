@@ -5,6 +5,7 @@ from itertools import islice
 from check.models import Devices
 from .models import MacAddress
 from devicemanager.vendors.base import InterfaceList
+from devicemanager import exceptions
 
 
 class GatherMacAddressTable:
@@ -16,7 +17,9 @@ class GatherMacAddressTable:
         self.device: Devices = from_
         self.normalize_interface = None
         self.table: list = self.get_mac_address_table()
-        self.interfaces: dict = self.format_interfaces(self.get_device_interfaces())
+        self.interfaces: dict = {}
+        if self.table:
+            self.interfaces = self.format_interfaces(self.get_device_interfaces())
 
     def get_mac_address_table(self) -> list:
         """
@@ -26,11 +29,14 @@ class GatherMacAddressTable:
         В противном случае вернуть пустой список.
         :return: Список MAC адресов на оборудовании.
         """
-        with self.device.connect() as session:
-            if hasattr(session, "normalize_interface_name"):
-                self.normalize_interface = session.normalize_interface_name
-            if hasattr(session, "get_mac_table"):
-                return session.get_mac_table()
+        try:
+            with self.device.connect() as session:
+                if hasattr(session, "normalize_interface_name"):
+                    self.normalize_interface = session.normalize_interface_name
+                if hasattr(session, "get_mac_table"):
+                    return session.get_mac_table()
+        except exceptions.DeviceException:
+            pass
         return []
 
     def get_device_interfaces(self) -> InterfaceList:
@@ -38,8 +44,12 @@ class GatherMacAddressTable:
         ## Эта функция возвращает список интерфейсов на устройстве
         :return: Список интерфейсов
         """
-        with self.device.connect() as session:
-            return session.get_interfaces()
+        try:
+            with self.device.connect() as session:
+                return session.get_interfaces()
+        except exceptions.DeviceException:
+            pass
+        return []
 
     def format_interfaces(self, old_interfaces) -> dict:
         """
@@ -49,10 +59,22 @@ class GatherMacAddressTable:
         :return: Словарь интерфейсов и соответствующих им описаний.
         """
         interfaces = {}
+
+        # Перебираем список интерфейсов
         for line in old_interfaces:
-            normal_interface = self.normalize_interface(line[0])
+            # Проверка наличия на устройстве функции normalize_interface.
+            if self.normalize_interface:
+                # Если это так, он будет использовать эту функцию для нормализации имени интерфейса.
+                normal_interface = self.normalize_interface(line[0])
+            else:
+                # Если это не так, он просто будет использовать имя интерфейса как есть.
+                normal_interface = line[0]
+
+            # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
+                # Добавление имени интерфейса в качестве ключа и описания в качестве значения в словарь.
                 interfaces[normal_interface] = line[-1]
+
         return interfaces
 
     def get_desc(self, interface_name: str) -> str:
@@ -64,7 +86,7 @@ class GatherMacAddressTable:
         """
         normal_interface = self.normalize_interface(interface_name)
         if normal_interface:
-            return self.interfaces[normal_interface]
+            return self.interfaces.get(normal_interface, "")
         return ""
 
     @staticmethod

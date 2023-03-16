@@ -23,9 +23,9 @@ class TelnetConnectionError(DeviceException):
     pass
 
 
-class TelnetLoginError(Exception):
+class TelnetLoginError(DeviceException):
     pass
 
 
-class UnknownDeviceError(Exception):
+class UnknownDeviceError(DeviceException):
     pass
