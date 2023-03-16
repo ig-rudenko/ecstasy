@@ -1,3 +1,4 @@
+import datetime
 import re
 
 from django.contrib.auth.decorators import login_required
@@ -5,6 +6,7 @@ from django.core.cache import cache
 from django.views import View
 from django.http.response import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.humanize.templatetags.humanize import naturaltime
 
 from check.models import Devices
 from app_settings.models import VlanTracerouteConfig
@@ -64,6 +66,27 @@ class MacTraceroute(View):
         # Если не требуется замены
         return name
 
+    @staticmethod
+    def create_edge_title(mac_object: MacAddress):
+        if mac_object.type == "D":
+            type_ = '<div class="badge bg-primary" style="vertical-align: middle;">dynamic</div>'
+        elif mac_object.type == "S":
+            type_ = '<div class="badge bg-secondary" style="vertical-align: middle;">static</div>'
+        elif mac_object.type == "E":
+            type_ = '<div class="badge bg-warning" style="vertical-align: middle;>secured</div>'
+        else:
+            type_ = '<div class="badge bg-light text-dark" style="vertical-align: middle;>none</div>'
+
+        return f"""
+        <div class="container py-2 rounded-2" style="font-size: 16px;">
+            <p>From: <b>{mac_object.device.name}</b>; Port: <b>{mac_object.port}</b></p>
+            <p>To: "<i>{mac_object.desc}</i>"</p>
+            VLAN: <div class="badge bg-primary" style="vertical-align: middle;">{mac_object.vlan}</div>
+            <br>Type: {type_}
+            <br>Обнаружен <b>{naturaltime(mac_object.datetime)}</b>
+        </div>
+        """
+
     def get(self, request, mac: str):
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
         traceroute = MacAddress.objects.filter(address=mac).select_related("device")
@@ -115,12 +138,22 @@ class MacTraceroute(View):
                 # Добавление имени устройства в список существующих узлов.
                 exist_nodes_id.append(record.device.name)
 
+            # Он вычисляет разницу во времени между текущим временем и временем создания записи.
+            time_delta = (
+                datetime.datetime.now().timestamp() - record.datetime.timestamp()
+            )
             # Добавление нового ребра в список ребер.
             edges.append(
                 {
                     "from": record.device.name,
                     "to": next_device,
-                    "title": f"From {record.device.name}; Port {record.port}\n",
+                    "title": self.create_edge_title(record),
+                    # Вычисляем вес ребра. Чем запись новее, тем больше вес.
+                    #         `172800` - количество секунд в двух днях.
+                    #         `100` - максимальный вес ребра.
+                    #         `time_delta` - разница во времени между текущим временем и временем создания записи.
+                    "value": int((1 - time_delta / 172800) * 100),
+                    "color": f"#ffffff{int((1 - time_delta / 172800) * 100)}",  # Белый, opacity 40%
                 }
             )
 
