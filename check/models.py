@@ -145,11 +145,11 @@ class Devices(models.Model):
     def available(self) -> bool:
         return ping(self.ip, timeout=2) > 0
 
-    def connect(self) -> DeviceFactory:
+    def connect(self, **kwargs) -> DeviceFactory:
         """Удаленное подключение к оборудованию"""
 
         return DeviceFactory(
-            self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group
+            self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group, **kwargs
         )
 
     class Meta:

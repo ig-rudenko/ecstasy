@@ -78,9 +78,9 @@ class MacTraceroute(View):
         elif mac_object.type == "S":
             type_ = '<div class="badge bg-secondary" style="vertical-align: middle;">static</div>'
         elif mac_object.type == "E":
-            type_ = '<div class="badge bg-warning" style="vertical-align: middle;>secured</div>'
+            type_ = '<div class="badge bg-warning text-dark" style="vertical-align: middle;">security</div>'
         else:
-            type_ = '<div class="badge bg-light text-dark" style="vertical-align: middle;>none</div>'
+            type_ = '<div class="badge bg-light text-dark" style="vertical-align: middle;">none</div>'
 
         return f"""
         <div class="container py-2 rounded-2" style="font-size: 16px;">

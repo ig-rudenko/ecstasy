@@ -202,6 +202,25 @@ class Extreme(BaseDevice):
         return validate
 
     @BaseDevice._lock
+    def get_mac_table(self) -> list:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show fdb
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+        mac_str = self.send_command(f"show fdb", expect_command=False)
+        mac_table = re.findall(
+            rf"({self.mac_format})\s+v\S+\((\d+)\)\s+\d+\s+d m\s+(\d+).*\n",
+            mac_str,
+            flags=re.IGNORECASE,
+        )
+        return [(str(int(vid)), mac, "dynamic", port) for mac, vid, port in mac_table]
+
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACList:
         """

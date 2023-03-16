@@ -9,7 +9,7 @@ from .collectors import GatherMacAddressTable
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all()
+    queryset = Devices.objects.all().filter(vendor__iexact='huawei')
 
     def pre_run(self):
         super().pre_run()
@@ -18,7 +18,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
     def thread_task(self, obj: Devices, **kwargs):
         gather = GatherMacAddressTable(obj)
         gather.clear_old_records()
-        gather.bulk_create()
+        print(f"{obj} {gather.bulk_create()}")
         self.update_state()
 
 

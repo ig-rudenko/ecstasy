@@ -4,7 +4,6 @@ from itertools import islice
 
 from check.models import Devices
 from .models import MacAddress
-from devicemanager.vendors.base import InterfaceList
 from devicemanager import exceptions
 
 
@@ -15,40 +14,37 @@ class GatherMacAddressTable:
 
     def __init__(self, from_: Devices):
         self.device: Devices = from_
-        self.normalize_interface = None
-        self.table: list = self.get_mac_address_table()
+        # Установка атрибута normalize_interface для лямбда-функции, которая возвращает переданное ей значение.
+        self.normalize_interface = lambda x: x
+        self.table: list = []
         self.interfaces: dict = {}
-        if self.table:
-            self.interfaces = self.format_interfaces(self.get_device_interfaces())
 
-    def get_mac_address_table(self) -> list:
-        """
-        Если сеанс оборудования имеет функцию normalize_interface_name,
-        установит атрибут normalize_interface для этой функции.
-        Если в сеансе есть функция get_mac_table, вернуть результат вызова этой функции.
-        В противном случае вернуть пустой список.
-        :return: Список MAC адресов на оборудовании.
-        """
         try:
-            with self.device.connect() as session:
-                if hasattr(session, "normalize_interface_name"):
-                    self.normalize_interface = session.normalize_interface_name
-                if hasattr(session, "get_mac_table"):
-                    return session.get_mac_table()
+            # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
+            with self.device.connect(make_session_global=False) as session:
+                self.table: list = self.get_mac_address_table(session) or []
+                if self.table:
+                    # Получение интерфейсов с устройства.
+                    interfaces = session.get_interfaces() or []
+                    # Создание словаря интерфейсов и их описаний.
+                    self.interfaces = self.format_interfaces(interfaces)
         except exceptions.DeviceException:
             pass
-        return []
 
-    def get_device_interfaces(self) -> InterfaceList:
+    def get_mac_address_table(self, session) -> list:
         """
-        ## Эта функция возвращает список интерфейсов на устройстве
-        :return: Список интерфейсов
+        ## Если в сеансе есть функция с именем normalize_interface_name, установите атрибут normalize_interface для этой
+        функции.
+        Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
+        случае вернуть пустой список
+
+        :param session: Объект сеанса, который используется для подключения к устройству
+        :return: Список MAC-адресов на устройстве.
         """
-        try:
-            with self.device.connect() as session:
-                return session.get_interfaces()
-        except exceptions.DeviceException:
-            pass
+        if hasattr(session, "normalize_interface_name"):
+            self.normalize_interface = session.normalize_interface_name
+        if hasattr(session, "get_mac_table"):
+            return session.get_mac_table()
         return []
 
     def format_interfaces(self, old_interfaces) -> dict:
@@ -62,13 +58,7 @@ class GatherMacAddressTable:
 
         # Перебираем список интерфейсов
         for line in old_interfaces:
-            # Проверка наличия на устройстве функции normalize_interface.
-            if self.normalize_interface:
-                # Если это так, он будет использовать эту функцию для нормализации имени интерфейса.
-                normal_interface = self.normalize_interface(line[0])
-            else:
-                # Если это не так, он просто будет использовать имя интерфейса как есть.
-                normal_interface = line[0]
+            normal_interface = self.normalize_interface(line[0])
 
             # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
@@ -92,7 +82,7 @@ class GatherMacAddressTable:
     @staticmethod
     def format_mac(mac_address: str) -> str:
         """
-        ## Удаляет все небуквенно-цифровые символы в MAC адресе и возвращает результат.
+        ## Удаляет все не шестнадцатеричные символы в MAC адресе и возвращает результат.
 
         :param mac_address: MAC-адрес для форматирования
         :return: очищенный mac_address.
@@ -109,7 +99,7 @@ class GatherMacAddressTable:
             return "D"
         if mac_type.lower() == "static":
             return "S"
-        if mac_type.lower() == "secured":
+        if mac_type.lower() == "security":
             return "E"
         return ""
 
@@ -131,6 +121,7 @@ class GatherMacAddressTable:
         :param batch_size: Количество объектов, которые необходимо создать в каждом пакете, defaults to 999 (optional)
         """
         objects = (
+            # Создание нового объекта MacAddress.
             MacAddress(
                 address=self.format_mac(mac),
                 vlan=vid,
@@ -139,10 +130,12 @@ class GatherMacAddressTable:
                 port=port,
                 desc=self.get_desc(port),
             )
+            # Цикл for, который перебирает список MAC-адресов.
             for vid, mac, type_, port in self.table
             if self.normalize_interface(port)
         )
-        count = 0
+
+        count = 0  # Это счетчик, который подсчитывает количество созданных объектов.
         while objects:
             batch = list(islice(objects, batch_size))
             count += len(batch)

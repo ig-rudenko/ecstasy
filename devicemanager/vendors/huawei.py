@@ -251,6 +251,51 @@ class Huawei(BaseDevice):
 
         return result
 
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        return _interface_normal_view(intf)
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> list:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
+
+        Команда на оборудовании:
+
+            # display mac-address
+
+        С помощью регулярного выражения находим необходимые данные в выводе команды.
+
+        Пример для S2403TP:
+
+            0100-5e00-01bb  711       Learned        Ethernet1/0/8            NOAGED
+            309c-2307-69c3  711       Learned        GigabitEthernet1/1/2     AGING
+
+        Пример для S2326TP:
+
+            88c3-9711-2aff 713/-                             Eth0/0/4            security
+            90f6-52a9-ca13 713/-                             GE0/0/1             dynamic
+
+        :return: ```[ ('{vid}', '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
+        """
+
+        def format_type(type_: str) -> str:
+            if type_.lower() == "noaged":
+                return "static"
+            if type_.lower() == "aging":
+                return "dynamic"
+            return type_
+
+        mac_str = self.send_command(f"display mac-address", expect_command=False)
+        mac_table = re.findall(
+            rf"({self.mac_format})\s+(\d+)\S*\s+\S*\s+([GEF]\S+)\s+([sdAN]\S+).*\n",
+            mac_str,
+            flags=re.IGNORECASE,
+        )
+        return [
+            (vid, mac, format_type(type_), port) for mac, vid, port, type_ in mac_table
+        ]
+
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
