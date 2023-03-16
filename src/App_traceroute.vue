@@ -319,7 +319,7 @@ export default {
       try {
         // Отправка запроса GET на сервер с MAC-адресом, введенным пользователем.
         let resp = await fetch(
-          '/gather/traceroute/mac-address/' + valid_mac,
+          '/gather/traceroute/mac-address/' + valid_mac + "/",
           {
             method: "GET",
             headers: {"X-CSRFToken": this.CSRF_TOKEN}

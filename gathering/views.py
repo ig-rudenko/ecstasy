@@ -67,7 +67,12 @@ class MacTraceroute(View):
         return name
 
     @staticmethod
-    def create_edge_title(mac_object: MacAddress):
+    def create_edge_title(mac_object: MacAddress) -> str:
+        """
+        # Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
+
+        :param mac_object:
+        """
         if mac_object.type == "D":
             type_ = '<div class="badge bg-primary" style="vertical-align: middle;">dynamic</div>'
         elif mac_object.type == "S":
@@ -86,6 +91,21 @@ class MacTraceroute(View):
             <br>Обнаружен <b>{naturaltime(mac_object.datetime)}</b>
         </div>
         """
+
+    @staticmethod
+    def create_edge_color(mac_object: MacAddress) -> str:
+        """
+        # Принимает MAC-адрес и возвращает цвет ребра основываясь на типе MAC.
+
+        :param mac_object: MAC-адрес
+        """
+
+        if mac_object.type == "D":
+            return "#73beff"
+        elif mac_object.type == "E":
+            return "#ffbb56"
+
+        return "#ffffff"
 
     def get(self, request, mac: str):
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
@@ -142,18 +162,30 @@ class MacTraceroute(View):
             time_delta = (
                 datetime.datetime.now().timestamp() - record.datetime.timestamp()
             )
+            # Вычисляем вес. Чем запись новее, тем больше вес.
+            #         `172800` - количество секунд в двух днях.
+            #         `100` - максимальный вес.
+            #         `time_delta` - разница во времени между текущим временем и временем создания записи.
+            k_value = int((1 - time_delta / 172800) * 100)
+
+            # Вычисляем непрозрачность ребра. Чем больше вес, тем меньше прозрачность.
+            # `hex(int(2.55 * k_value))` возвращает шестнадцатеричное строковое представление числа.
+            #         `[2:]` возвращает подстроку строки, начиная с третьего символа.
+            #         Например, `hex(int(2.55 * 100))` возвращает `0x64`, а `hex(int(2.55 * 100))[2:]` возвращает `64`.
+            #         Это делается для того, чтобы получить шестнадцатеричное представление числа без префикса `0x`.
+            opacity = hex(int(2.55 * k_value))[2:]
+
+            # Вычисляем цвет ребра и добавляем уровень непрозрачности в шестнадцатеричном формате
+            edge_color = self.create_edge_color(record) + opacity
+
             # Добавление нового ребра в список ребер.
             edges.append(
                 {
                     "from": record.device.name,
                     "to": next_device,
                     "title": self.create_edge_title(record),
-                    # Вычисляем вес ребра. Чем запись новее, тем больше вес.
-                    #         `172800` - количество секунд в двух днях.
-                    #         `100` - максимальный вес ребра.
-                    #         `time_delta` - разница во времени между текущим временем и временем создания записи.
-                    "value": int((1 - time_delta / 172800) * 100),
-                    "color": f"#ffffff{int((1 - time_delta / 172800) * 100)}",  # Белый, opacity 40%
+                    "value": k_value,
+                    "color": edge_color,
                 }
             )
 

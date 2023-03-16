@@ -13,7 +13,7 @@
             <div class="d-flex py-2 text-light" style="vertical-align: middle">
 
 <!--                RAN WITH PROGRESS-->
-                <div v-if="vlanScanStatus.running && vlanScanStatus.progress">
+                <div class="d-flex" v-if="vlanScanStatus.running && vlanScanStatus.progress">
                     <div class="spinner-border me-2" role="status"></div>
                     <div style="display: flex; align-items: center;">Сканирование завершено на {{vlanScanStatus.progress}}%</div>
                 </div>
