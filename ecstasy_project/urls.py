@@ -29,6 +29,7 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
     path("tools/", include("net_tools.urls")),
     path("maps/", include("maps.urls")),
+    path("gather/", include("gathering.urls"))
 ]
 
 handler404 = "app_settings.errors_views.page404"

@@ -4,7 +4,7 @@ from check.models import Devices
 
 
 class DevicesInfo(models.Model):
-    dev = models.OneToOneField('check.Devices', primary_key=True, on_delete=models.CASCADE)
+    dev = models.OneToOneField(Devices, primary_key=True, on_delete=models.CASCADE)
     interfaces = models.TextField(null=True)
     interfaces_date = models.DateTimeField(null=True)
     vlans = models.TextField(null=True)

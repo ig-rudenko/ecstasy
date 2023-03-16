@@ -5,7 +5,8 @@ module.exports = {
     entry: {
         devices_list: './src/devices_list.js',
         device_info: './src/device_info.js',
-        search_description: './src/search_description.js'
+        search_description: './src/search_description.js',
+        traceroute: './src/traceroute.js'
     },
     mode: "production",
     output: {

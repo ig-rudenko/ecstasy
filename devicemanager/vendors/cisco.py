@@ -81,6 +81,10 @@ class Cisco(BaseDevice):
 
         return validate
 
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        return _interface_normal_view(intf)
+
     @BaseDevice._lock
     def save_config(self):
         """
@@ -190,6 +194,27 @@ class Cisco(BaseDevice):
             expect_command=False,
         )
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+
+    @BaseDevice._lock
+    def get_mac_table(self):
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show mac address-table
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+        mac_str = self.send_command(
+            f"show mac address-table",
+            expect_command=False,
+        )
+        return re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+(dynamic|static)\s+.*?(\S+)\s*\n",
+            mac_str,
+            flags=re.IGNORECASE,
+        )
 
     @BaseDevice._lock
     @_validate_port()

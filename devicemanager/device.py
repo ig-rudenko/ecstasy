@@ -81,7 +81,7 @@ class Interfaces:
 
                 # Если был передан словарь
                 if isinstance(intf, dict):
-                    if not intf.get("Status"):
+                    if intf.get("Status") is None:
                         intf["Status"] = (
                             "admin down"
                             if intf["Admin Status"] == "down"

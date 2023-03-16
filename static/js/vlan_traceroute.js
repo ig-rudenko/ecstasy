@@ -65,29 +65,6 @@ function show_map() {
 }
 
 
-function check_vlans_scan_status() {
-
-    $.ajax({
-        data: {'csrfmiddlewaretoken': CSRF_TOKEN},
-        type: 'post',
-        url: '/tools/ajax/vlans-scan/check',
-        success: function (response) {
-            if (!response.status) {
-                scan_block.innerHTML = RUN_SCAN_BUTTON
-            } else if (response.progress){
-                scan_block.innerHTML = LOADING_CIRCLE +
-                    `<div class="" style="display: flex;align-items: center;">Сканирование завершено на ${response.progress}%</div>`
-            }
-        },
-        error: function (response) {
-            scan_block.innerHTML = SCANNING_ERROR
-        }
-    });
-
-    setTimeout(check_vlans_scan_status, 5000);
-}
-
-
 function run_vlans_scan() {
     scan_block.innerHTML = LOADING_CIRCLE
     SCANNING = true

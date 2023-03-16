@@ -1,3 +1,4 @@
+import json
 import os
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +16,6 @@ from django.contrib.auth.decorators import login_required
 from ..finder import Finder
 from ..models import VlanName, DevicesForMacSearch
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
-from ecstasy_project.settings import BASE_DIR
 from ..tasks import periodically_scan, check_scanning_status
 
 
@@ -27,9 +27,9 @@ def run_periodically_scan(request):
         if not task_id:
             task_id = periodically_scan.delay()
             cache.set("periodically_scan_id", task_id, timeout=None)
-            return HttpResponse(status=202)
+            return HttpResponse(status=200)
 
-    return JsonResponse({}, status=400)
+    return HttpResponse(status=400)
 
 
 @login_required
@@ -372,11 +372,8 @@ def get_vlan(request):
     # Установка сглаживания краев на динамическое.
     net.set_edge_smooth("dynamic")
 
-    # Проверка существования каталога. Если нет, то создает.
-    if not os.path.exists(BASE_DIR / "templates" / "tools" / "vlans"):
-        os.makedirs(BASE_DIR / "templates" / "tools" / "vlans")
-    # Сохраняем карту в файл.
-    net.save_graph(f"templates/tools/vlans/vlan{request.GET['vlan']}.html")
-
-    # Возврат созданной карты.
-    return render(request, f"tools/vlans/vlan{request.GET['vlan']}.html")
+    return JsonResponse({
+        "nodes": net.nodes,
+        "edges": net.edges,
+        "options": json.loads(net.options.to_json())
+    })

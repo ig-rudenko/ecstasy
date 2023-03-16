@@ -5,7 +5,7 @@ from net_tools import views
 
 urlpatterns = [
     path("find_descr/", views.search_description, name="find-descr"),
-    path("vlan-tracerote/", views.vlan_traceroute, name="vlan-traceroute"),
+    path("tracerote/", views.traceroute, name="traceroute"),
     # AJAX
     path("ajax/", include("net_tools.ajax.urls")),
     path("wtf/", views.search_wtf_is_it, name="search-wtf"),

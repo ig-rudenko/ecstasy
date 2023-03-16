@@ -15,6 +15,6 @@ def search_description(request):
 
 
 @login_required
-def vlan_traceroute(request):
-    """Возвращает страницу для vlan traceroute"""
-    return render(request, "tools/vlan_traceroute.html")
+def traceroute(request):
+    """Возвращает страницу для traceroute"""
+    return render(request, "tools/traceroute.html")

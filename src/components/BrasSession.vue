@@ -8,7 +8,8 @@
           Сессия абонента {{current_mac}}
         </h1>
         <div class="text-end">
-            <span class="text-muted text-help">Информация обновляется автоматически</span>
+            <span v-if="updating" class="text-muted text-help" style="cursor: progress">Обновляю...</span>
+            <span v-else @click="getSessions" class="text-muted text-help" style="cursor: pointer">Обновить</span>
         </div>
         <button @click="closed" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -88,7 +89,8 @@ export default defineComponent({
       sessions: null,
       show_bras: "bras1",
       cutSessionResult: null,
-      cuttingNow: false
+      cuttingNow: false,
+      updating: false
     }
   },
   async created() {
@@ -98,6 +100,7 @@ export default defineComponent({
     // Если МАС адрес остался прежним, то не обновляем информацию
     if (this.current_mac === this.mac) return
     this.current_mac = this.mac
+    await this.getSessions()
   },
 
   methods: {
@@ -113,7 +116,7 @@ export default defineComponent({
           try {
 
             let url = "/device/api/session?mac=" + this.current_mac
-
+            this.updating = true
             let response = await fetch(url);
             console.log(response)
             if (response.status === 200) {
@@ -124,7 +127,8 @@ export default defineComponent({
             console.log(err)
           }
       }
-      setTimeout(this.getSessions, 5000)
+      //setTimeout(this.getSessions, 5000)
+      this.updating = false
       this.sessions = result
     },
     async cutSession() {

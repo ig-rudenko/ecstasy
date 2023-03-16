@@ -1,42 +1,26 @@
 from datetime import datetime
 import json
 
-from concurrent.futures import ThreadPoolExecutor
-
-from celery import Task
 from celery.result import AsyncResult
 from django.core.cache import cache
 
 from ecstasy_project.celery import app
+from ecstasy_project.task import ThreadUpdatedStatusTask
 from check.models import Devices as ModelDevices, AuthGroup
-from devicemanager.device import Device, Config
+from devicemanager.device import Device
 from net_tools.models import DevicesInfo
-from app_settings.models import ZabbixConfig
 
 
-class InterfacesScanTask(Task):
+class InterfacesScanTask(ThreadUpdatedStatusTask):
     name = "interfaces_scan"
     queryset = ModelDevices.objects.all()
 
-    def __init__(self):
-        self.devices_count = 1
-        self.devices_scanned = 0
-        self.task_id = None
+    def pre_run(self):
+        super().pre_run()
+        cache.set("periodically_scan_id", self.request.id, timeout=None)
 
-    def run(self, *args, **kwargs):
-        self.task_id = self.request.id
-        self.devices_count = self.queryset.count()
-        self.devices_scanned = 0
-
-        Config.set(ZabbixConfig.load())
-
-        with ThreadPoolExecutor() as execute:
-            for device in self.queryset.all():
-                execute.submit(InterfacesScanTask.save_interfaces, self, device)
-        return self.devices_count
-
-    def save_interfaces(self, model_dev: ModelDevices):
-        dev = Device(name=model_dev.name)
+    def thread_task(self, obj: ModelDevices, **kwargs):
+        dev = Device(name=obj.name)
         ping = dev.ping()  # Оборудование доступно или нет
 
         if not ping:
@@ -44,11 +28,11 @@ class InterfacesScanTask(Task):
             return
 
         # Устанавливаем протокол для подключения
-        dev.protocol = model_dev.port_scan_protocol
+        dev.protocol = obj.port_scan_protocol
         # Устанавливаем community для подключения
-        dev.snmp_community = model_dev.snmp_community
-        dev.auth_obj = model_dev.auth_group  # Устанавливаем подключение
-        dev.ip = model_dev.ip  # IP адрес
+        dev.snmp_community = obj.snmp_community
+        dev.auth_obj = obj.auth_group  # Устанавливаем подключение
+        dev.ip = obj.ip  # IP адрес
 
         # Собираем интерфейсы
         status = dev.collect_interfaces(
@@ -62,7 +46,7 @@ class InterfacesScanTask(Task):
 
             # Создаем список объектов авторизации
             al = list(
-                AuthGroup.objects.exclude(name=model_dev.auth_group.name)
+                AuthGroup.objects.exclude(name=obj.auth_group.name)
                 .order_by("id")
                 .all()
             )
@@ -91,7 +75,7 @@ class InterfacesScanTask(Task):
                     )
 
                 # Указываем новый логин/пароль для этого устройства
-                model_dev.auth_group = a
+                obj.auth_group = a
                 # Добавляем это поле в список изменений
                 model_update_fields.append("auth_group")
 
@@ -99,30 +83,30 @@ class InterfacesScanTask(Task):
         # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
         if (
             dev.zabbix_info.inventory.model
-            and dev.zabbix_info.inventory.model != model_dev.model
+            and dev.zabbix_info.inventory.model != obj.model
         ):
-            model_dev.model = dev.zabbix_info.inventory.model
+            obj.model = dev.zabbix_info.inventory.model
             model_update_fields.append("model")
 
         # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
         if (
             dev.zabbix_info.inventory.vendor
-            and dev.zabbix_info.inventory.vendor != model_dev.vendor
+            and dev.zabbix_info.inventory.vendor != obj.vendor
         ):
-            model_dev.vendor = dev.zabbix_info.inventory.vendor
+            obj.vendor = dev.zabbix_info.inventory.vendor
             model_update_fields.append("vendor")
 
         # Сохраняем изменения
         if model_update_fields:
-            model_dev.save(update_fields=model_update_fields)
+            obj.save(update_fields=model_update_fields)
         if not dev.interfaces.count:
             return
 
         # Сохраняем интерфейсы
         try:
-            current_device_info = DevicesInfo.objects.get(dev=model_dev)
+            current_device_info = DevicesInfo.objects.get(dev=obj)
         except DevicesInfo.DoesNotExist:
-            current_device_info = DevicesInfo.objects.create(dev=model_dev)
+            current_device_info = DevicesInfo.objects.create(dev=obj)
 
         vlans_interfaces_to_save = [
             {
@@ -135,7 +119,7 @@ class InterfacesScanTask(Task):
         ]
         current_device_info.vlans = json.dumps(vlans_interfaces_to_save)
         current_device_info.vlans_date = datetime.now()
-        print("Saved VLANS      ---", model_dev)
+        print("Saved VLANS      ---", obj)
 
         interfaces_to_save = [
             {
@@ -149,14 +133,9 @@ class InterfacesScanTask(Task):
         current_device_info.interfaces_date = datetime.now()
 
         current_device_info.save()
-        print("Saved Interfaces ---", model_dev)
+        print("Saved Interfaces ---", obj)
 
-        self.devices_scanned += 1
-        self.update_state(
-            task_id=self.task_id,
-            state="PROGRESS",
-            meta={"progress": int(self.devices_scanned / self.devices_count * 100)},
-        )
+        self.update_state()
 
 
 periodically_scan = app.register_task(InterfacesScanTask())
