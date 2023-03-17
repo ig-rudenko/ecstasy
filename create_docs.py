@@ -20,5 +20,7 @@ if __name__ == "__main__":
         "!net_tools.migration",
         "maps",
         "!maps.migration",
+        "gathering",
+        "!gathering.migration",
         output_directory=pathlib.Path(__file__).parent / "static" / "docs",
     )

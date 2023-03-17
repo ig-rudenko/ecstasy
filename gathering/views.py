@@ -3,6 +3,7 @@ import re
 
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.http.response import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -17,7 +18,10 @@ from .tasks import mac_table_gather_task, check_scanning_status
 
 
 @login_required
-def run_periodically_scan(request):
+def run_macs_scan(request):
+    """
+    Запускаем задачу на сбор MAC адресов в таблицах оборудований.
+    """
 
     if request.method == "POST":
         task_id = cache.get("mac_table_gather_task_id")
@@ -31,9 +35,13 @@ def run_periodically_scan(request):
 
 @login_required
 def check_periodically_scan(request):
+    """
+    ## Проверяет, выполняется ли сканирование, и если да, то возвращает результаты.
+    """
     return JsonResponse(check_scanning_status())
 
 
+@method_decorator(login_required, name="dispatch")
 class MacAddressView(View):
     def get(self, request, device_name: str):
         device = get_object_or_404(Devices, name=device_name)
@@ -45,12 +53,21 @@ class MacAddressView(View):
 
 
 class MacTraceroute(View):
+    """
+    # Находит все записи в базе данных, которые содержат необходимый MAC-адрес,
+    а затем строит граф связей между этими MAC.
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.desc_name_list = list(DescNameFormat.objects.all())
+        # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
+        self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
 
     def reformatting(self, name: str):
-        """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
+        """
+        ### Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat
+        """
 
         for reformat in self.desc_name_list:
             if reformat.standard == name:
@@ -69,9 +86,7 @@ class MacTraceroute(View):
     @staticmethod
     def create_edge_title(mac_object: MacAddress) -> str:
         """
-        # Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
-
-        :param mac_object:
+        ### Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
         """
         if mac_object.type == "D":
             type_ = '<div class="badge bg-primary" style="vertical-align: middle;">dynamic</div>'
@@ -95,7 +110,7 @@ class MacTraceroute(View):
     @staticmethod
     def create_edge_color(mac_object: MacAddress) -> str:
         """
-        # Принимает MAC-адрес и возвращает цвет ребра основываясь на типе MAC.
+        ### Принимает MAC-адрес и возвращает цвет ребра основываясь на типе MAC.
 
         :param mac_object: MAC-адрес
         """
@@ -107,12 +122,52 @@ class MacTraceroute(View):
 
         return "#ffffff"
 
+    def get_next_device(self, mac_address: MacAddress) -> (str, str):
+        """
+        ### Принимает объект mac_address и возвращает кортеж строк, где первая строка — это имя следующего устройства, а
+        вторая строка — описание следующего устройства.
+
+        :param mac_address: MacAddress — объект, содержащий MAC-адрес и описание порта, на котором он расположен.
+        :return: Кортеж из двух строк.
+        """
+        # Ищем в описании на порту следующее устройство по паттерну
+        next_device_match = re.findall(
+            self.find_device_pattern, self.reformatting(mac_address.desc)
+        )
+        # Если нашли в описании следующее оборудование
+        if next_device_match:
+            next_device_id = next_device_label = next_device_match[0]
+
+        # Если следующее устройство не найдено в описании,
+        # то следующему устройству присваивается имя текущего устройства и номер порта.
+        else:
+            next_device_id = mac_address.device.name + mac_address.port
+            next_device_label = mac_address.desc or "<no desc>"
+
+        return next_device_id, next_device_label
+
     def get(self, request, mac: str):
+        """
+        ## Ищем MAC адрес в таблице всех MAC адресов и выстраиваем граф связей между полученными значениями.
+
+            (D)      (C)---------(B)
+             \\       /
+              \\     /
+               \\   /
+                \\ /
+                (E)---------(A)
+
+        Отправляем список узлов и список ребер в виде ответа JSON.
+
+        :param request: Объект запроса
+        :param mac: str - MAC-адрес, который будет передан в URL
+        :type mac: str
+        :return: Ответ JSON, содержащий список узлов и ребер.
+        """
+
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
         traceroute = MacAddress.objects.filter(address=mac).select_related("device")
 
-        # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
-        find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
         nodes = []
         edges = []
 
@@ -122,28 +177,24 @@ class MacTraceroute(View):
 
         for record in traceroute:
 
-            # Ищем в описании на порту следующее устройство по паттерну
-            next_device = re.findall(
-                find_device_pattern, self.reformatting(record.desc)
-            )
-            next_device = next_device[0] if next_device else record.desc
+            next_device_id, next_device_label = self.get_next_device(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
             if (
-                next_device not in found_devices_names
-                and next_device not in exist_nodes_id
+                next_device_id not in found_devices_names
+                and next_device_id not in exist_nodes_id
             ):
                 # Добавление нового узла в список узлов.
                 nodes.append(
                     {
-                        "id": next_device,
-                        "label": next_device,
+                        "id": next_device_id,
+                        "label": next_device_label,
                         "shape": "dot",
                         "color": "green",
                     }
                 )
                 # Добавление следующего устройства в список существующих узлов.
-                exist_nodes_id.append(next_device)
+                exist_nodes_id.append(next_device_id)
 
             # Проверка наличия имени устройства в списке созданных узлов.
             if record.device.name not in exist_nodes_id:
@@ -182,7 +233,7 @@ class MacTraceroute(View):
             edges.append(
                 {
                     "from": record.device.name,
-                    "to": next_device,
+                    "to": next_device_id,
                     "title": self.create_edge_title(record),
                     "value": k_value,
                     "color": edge_color,

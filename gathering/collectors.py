@@ -9,7 +9,7 @@ from devicemanager import exceptions
 
 class GatherMacAddressTable:
     """
-    Этот класс используется для сбора таблицы MAC-адресов с устройства
+    # Этот класс используется для сбора таблицы MAC-адресов с устройства
     """
 
     def __init__(self, from_: Devices):

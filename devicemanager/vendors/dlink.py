@@ -266,6 +266,40 @@ class Dlink(BaseDevice):
             )
         return interfaces_vlan
 
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        """
+        ## Интерфейс должен быть числом, поэтому удаляем все остальные символы
+        """
+        return re.sub(r"\D", "", intf)
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> list:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show fdb
+
+        :return: ```[ ('{vid}', '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
+        """
+
+        def format_type(type_: str) -> str:
+            if type_ == "DeleteOnTimeout":
+                return "security"
+            return type_.lower()
+
+        mac_str = self.send_command(f"show fdb", expect_command=False)
+        mac_table = re.findall(
+            rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",
+            mac_str,
+            flags=re.IGNORECASE,
+        )
+        return [
+            (vid, mac, format_type(type_), port) for vid, mac, port, type_ in mac_table
+        ]
+
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> MACList:
@@ -592,7 +626,7 @@ class Dlink(BaseDevice):
         """
         ## Возвращает загрузку ЦП хоста
         """
-        return self._get_utilization("cpu", r"one minute -\s+(\d+)\s*%"),
+        return (self._get_utilization("cpu", r"one minute -\s+(\d+)\s*%"),)
 
     def get_flash_utilization(self) -> int:
         """
@@ -607,10 +641,7 @@ class Dlink(BaseDevice):
         return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
     def get_port_info(self, port: str) -> dict:
-        return {
-            "type": "text",
-            "data": ""
-        }
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""

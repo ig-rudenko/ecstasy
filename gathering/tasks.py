@@ -8,10 +8,21 @@ from .collectors import GatherMacAddressTable
 
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
+    """
+    # Celery задача для сбора таблицы MAC адресов оборудования.
+
+    Использует пул потоков, а затем отправляет задачу на сбор MAC для каждого оборудования в queryset.
+
+    Задача обновляет свой статус после каждого завершенного сбора на оборудовании.
+    """
+
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all().filter(vendor__iexact='huawei')
+    queryset = Devices.objects.all().filter(vendor__iexact="d-link")
 
     def pre_run(self):
+        """
+        Он устанавливает ключ кэша с именем «mac_table_gather_task_id» на идентификатор текущей задачи.
+        """
         super().pre_run()
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
 
@@ -22,10 +33,17 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         self.update_state()
 
 
+# Регистрация задачи в приложении Celery.
 mac_table_gather_task = app.register_task(MacTablesGatherTask())
 
 
 def check_scanning_status() -> dict:
+    """
+    Проверяет статус задачи `mac_table_gather_task`.
+
+    :return: Словарь со статусом задачи.
+    """
+
     task_id = cache.get("mac_table_gather_task_id")
     if task_id:
         task = AsyncResult(str(task_id))
