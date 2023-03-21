@@ -1,7 +1,6 @@
 from functools import wraps
 import re
 from time import sleep
-from functools import lru_cache
 import pexpect
 import textfsm
 from .base import (
@@ -9,10 +8,10 @@ from .base import (
     TEMPLATE_FOLDER,
     FIBER_TYPES,
     COOPER_TYPES,
-    _interface_normal_view,
-    InterfaceList,
-    InterfaceVLANList,
-    MACList,
+    interface_normal_view,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
 )
 
 
@@ -69,7 +68,7 @@ class Cisco(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
-                port = _interface_normal_view(port)
+                port = interface_normal_view(port)
                 if not port:
                     # Неверный порт
                     return if_invalid_return
@@ -83,7 +82,7 @@ class Cisco(BaseDevice):
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
-        return _interface_normal_view(intf)
+        return interface_normal_view(intf)
 
     @BaseDevice._lock
     def save_config(self):
@@ -105,7 +104,7 @@ class Cisco(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -136,7 +135,7 @@ class Cisco(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -163,7 +162,7 @@ class Cisco(BaseDevice):
             # Отфильтровываем интерфейсы VLAN.
             if not line[0].startswith("V"):
                 output = self.send_command(
-                    command=f"show running-config interface {_interface_normal_view(line[0])}",
+                    command=f"show running-config interface {interface_normal_view(line[0])}",
                     before_catch="Building configuration",
                     expect_command=False,
                 )
@@ -177,7 +176,7 @@ class Cisco(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port) -> MACList:
+    def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

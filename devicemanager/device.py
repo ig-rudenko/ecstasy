@@ -38,9 +38,9 @@ from .zabbix_info_dataclasses import (
 class Config:
     """Конфигурация для работы с Zabbix API"""
 
-    ZABBIX_URL: str
-    ZABBIX_USER: str
-    ZABBIX_PASSWORD: str
+    ZABBIX_URL: str = ""
+    ZABBIX_USER: str = ""
+    ZABBIX_PASSWORD: str = ""
     TABLE_FORMAT = "simple"
 
     @staticmethod
@@ -626,13 +626,14 @@ class Device:
             )
             self._zabbix_info_collected = True
 
-            self.ip = [
-                i
-                for i in self.zabbix_info.ip
-                if len(self.zabbix_info.ip) > 1
-                and i != "127.0.0.1"
-                or len(self.zabbix_info.ip) == 1
-            ][0]
+            if not self.ip:
+                self.ip = [
+                    i
+                    for i in self.zabbix_info.ip
+                    if len(self.zabbix_info.ip) > 1
+                    and i != "127.0.0.1"
+                    or len(self.zabbix_info.ip) == 1
+                ][0]
 
     def push_zabbix_inventory(self):
         """Обновляем инвентарные данные узла сети в Zabbix"""
@@ -654,6 +655,17 @@ class Device:
     def zabbix_info(self) -> ZabbixHostInfo:
         """Обращаемся к информации из Zabbix"""
         return self._zabbix_info
+
+    @classmethod
+    def from_model(cls, model_dev, zabbix_info=True) -> "Device":
+        dev = cls(model_dev.name, zabbix_info=False)
+        dev.ip = model_dev.ip
+        dev.protocol = model_dev.port_scan_protocol
+        dev.snmp_community = model_dev.snmp_community
+        dev.auth_obj = model_dev.auth_group
+        if zabbix_info:
+            dev.collect_zabbix_info()
+        return dev
 
     @classmethod
     def from_ip(cls, ip: str) -> DevicesCollection:

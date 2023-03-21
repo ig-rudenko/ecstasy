@@ -9,9 +9,9 @@ from .base import (
     COOPER_TYPES,
     FIBER_TYPES,
     range_to_numbers,
-    InterfaceList,
-    InterfaceVLANList,
-    MACList,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
 )
 
 
@@ -76,7 +76,7 @@ class ZTE(BaseDevice):
             self.__privileged = True
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -104,7 +104,7 @@ class ZTE(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -179,7 +179,7 @@ class ZTE(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

@@ -7,9 +7,9 @@ from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
     range_to_numbers,
-    InterfaceVLANList,
-    InterfaceList,
-    MACList,
+    T_InterfaceVLANList,
+    T_InterfaceList,
+    T_MACList,
 )
 
 
@@ -181,7 +181,7 @@ class Dlink(BaseDevice):
         )
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         Эта функция возвращает список всех интерфейсов на устройстве
 
@@ -213,7 +213,7 @@ class Dlink(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -302,7 +302,7 @@ class Dlink(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port) -> MACList:
+    def get_mac(self, port) -> T_MACList:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
 

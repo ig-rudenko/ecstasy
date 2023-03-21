@@ -6,10 +6,10 @@ import textfsm
 from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
-    _interface_normal_view,
-    InterfaceList,
-    InterfaceVLANList,
-    MACList,
+    interface_normal_view,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
 )
 
 
@@ -37,7 +37,7 @@ class EdgeCore(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
-                port = _interface_normal_view(port.strip())
+                port = interface_normal_view(port.strip())
                 if not port:
                     # Неверный порт
                     return if_invalid_return
@@ -50,7 +50,7 @@ class EdgeCore(BaseDevice):
         return validate
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -80,7 +80,7 @@ class EdgeCore(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -127,7 +127,7 @@ class EdgeCore(BaseDevice):
                 line[0],  # Интерфейс
                 line[1],  # Статус
                 line[2],  # Описание
-                int_vlan[_interface_normal_view(line[0]).lower()],  # Добавляем VLANs
+                int_vlan[interface_normal_view(line[0]).lower()],  # Добавляем VLANs
             )
             for line in interfaces
         ]
@@ -154,7 +154,7 @@ class EdgeCore(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

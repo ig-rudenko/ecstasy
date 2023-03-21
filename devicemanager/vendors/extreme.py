@@ -7,9 +7,9 @@ from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
     range_to_numbers,
-    InterfaceVLANList,
-    InterfaceList,
-    MACList,
+    T_InterfaceVLANList,
+    T_InterfaceList,
+    T_MACList,
 )
 
 
@@ -70,7 +70,7 @@ class Extreme(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -127,7 +127,7 @@ class Extreme(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -222,7 +222,7 @@ class Extreme(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

@@ -4,6 +4,12 @@ from itertools import islice
 
 from check.models import Devices
 from .models import MacAddress
+from devicemanager.device import (
+    Device as ZabbixDevice,
+    Config as DeviceZabbixConfig,
+    Interfaces,
+)
+from app_settings.models import ZabbixConfig
 from devicemanager import exceptions
 
 
@@ -13,21 +19,26 @@ class GatherMacAddressTable:
     """
 
     def __init__(self, from_: Devices):
+
+        if not DeviceZabbixConfig.ZABBIX_URL:
+            DeviceZabbixConfig.set(ZabbixConfig.load())
+
         self.device: Devices = from_
+
         # Установка атрибута normalize_interface для лямбда-функции, которая возвращает переданное ей значение.
         self.normalize_interface = lambda x: x
         self.table: list = []
-        self.interfaces: dict = {}
+        self.interfaces: Interfaces = Interfaces()
+        self.interfaces_desc: dict = {}
 
         try:
             # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
             with self.device.connect(make_session_global=False) as session:
-                self.table: list = self.get_mac_address_table(session) or []
-                if self.table:
-                    # Получение интерфейсов с устройства.
-                    interfaces = session.get_interfaces() or []
-                    # Создание словаря интерфейсов и их описаний.
-                    self.interfaces = self.format_interfaces(interfaces)
+                # Создание словаря интерфейсов и их описаний.
+                self.interfaces = self.get_interfaces()
+                self.interfaces_desc = self.format_interfaces(self.interfaces)
+                self.table: list = self.get_mac_address_table(session)
+
         except exceptions.DeviceException:
             pass
 
@@ -41,13 +52,30 @@ class GatherMacAddressTable:
         :param session: Объект сеанса, который используется для подключения к устройству
         :return: Список MAC-адресов на устройстве.
         """
+
+        # Если сессия требует интерфейсов для работы
+        if hasattr(session, "interfaces"):
+            session.interfaces = [
+                (line.name, line.status, line.desc)
+                for line in self.interfaces
+            ]
+
         if hasattr(session, "normalize_interface_name"):
             self.normalize_interface = session.normalize_interface_name
         if hasattr(session, "get_mac_table"):
-            return session.get_mac_table()
+            return session.get_mac_table() or []
         return []
 
-    def format_interfaces(self, old_interfaces) -> dict:
+    def get_interfaces(self) -> Interfaces:
+        device_manager = ZabbixDevice.from_model(self.device)
+        # Получение интерфейсов с устройства.
+        device_manager.collect_interfaces(
+            vlans=False, current_status=True, make_session_global=False
+        )
+        print(device_manager.interfaces)
+        return device_manager.interfaces
+
+    def format_interfaces(self, old_interfaces: Interfaces) -> dict:
         """
         ## Принимает список интерфейсов, и формирует словарь из интерфейсов и их описаний
 
@@ -58,12 +86,12 @@ class GatherMacAddressTable:
 
         # Перебираем список интерфейсов
         for line in old_interfaces:
-            normal_interface = self.normalize_interface(line[0])
+            normal_interface = self.normalize_interface(line.name)
 
             # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
                 # Добавление имени интерфейса в качестве ключа и описания в качестве значения в словарь.
-                interfaces[normal_interface] = line[-1]
+                interfaces[normal_interface] = line.desc
 
         return interfaces
 
@@ -76,7 +104,7 @@ class GatherMacAddressTable:
         """
         normal_interface = self.normalize_interface(interface_name)
         if normal_interface:
-            return self.interfaces.get(normal_interface, "")
+            return self.interfaces_desc.get(normal_interface, "")
         return ""
 
     @staticmethod

@@ -11,10 +11,10 @@ from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
     range_to_numbers,
-    _interface_normal_view,
-    InterfaceList,
-    InterfaceVLANList,
-    MACList,
+    interface_normal_view,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
 )
 
 
@@ -152,7 +152,7 @@ class EltexMES(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port="", *args, **kwargs):
-                port = _interface_normal_view(port)
+                port = interface_normal_view(port)
                 if not port:
                     # Неверный порт
                     return if_invalid_return
@@ -186,7 +186,7 @@ class EltexMES(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -241,7 +241,7 @@ class EltexMES(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -268,7 +268,7 @@ class EltexMES(BaseDevice):
         for line in interfaces:
             if not line[0].startswith("V"):
                 output = self.send_command(
-                    f"show running-config interface {_interface_normal_view(line[0])}",
+                    f"show running-config interface {interface_normal_view(line[0])}",
                     expect_command=False,
                 )
                 # Ищем все строки вланов в выводе команды
@@ -291,7 +291,7 @@ class EltexMES(BaseDevice):
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
-        return _interface_normal_view(intf)
+        return interface_normal_view(intf)
 
     @BaseDevice._lock
     def get_mac_table(self) -> list:
@@ -314,7 +314,7 @@ class EltexMES(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port) -> MACList:
+    def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -801,7 +801,7 @@ class EltexLTP(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         self.session.send("switch\r")
         self.session.expect(self.prompt)
         interfaces = []
@@ -821,7 +821,7 @@ class EltexLTP(BaseDevice):
         )
 
         interfaces_pon_output = self.send_command(
-            f"show interfaces status pon-port 0 - {self._gpon_ports_count - 1}",
+            f"show interfaces_desc status pon-port 0 - {self._gpon_ports_count - 1}",
             expect_command=False,
         )
         interfaces += re.findall(r"(pon\S+ \d+)\s+(\S{2,})\s+", interfaces_pon_output)
@@ -832,7 +832,7 @@ class EltexLTP(BaseDevice):
         return [(line[0], line[1], "") for line in interfaces]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
@@ -903,7 +903,7 @@ class EltexLTP(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         Команда:
 
@@ -1189,7 +1189,7 @@ class EltexLTP16N(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         Интерфейсы на оборудовании
 
@@ -1215,7 +1215,7 @@ class EltexLTP16N(BaseDevice):
         return [(line[0], line[1], "") for line in interfaces]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
@@ -1281,7 +1281,7 @@ class EltexLTP16N(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         Команда:
 

@@ -1,6 +1,5 @@
 import datetime
 import re
-import time
 
 import pexpect
 import textfsm
@@ -13,10 +12,11 @@ from .base import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    _interface_normal_view,
-    InterfaceList,
-    InterfaceVLANList,
-    MACList,
+    interface_normal_view,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    T_MACTable
 )
 
 
@@ -115,7 +115,7 @@ class Huawei(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
-                port = _interface_normal_view(port)
+                port = interface_normal_view(port)
                 if not port:
                     # Неверный порт
                     return if_invalid_return
@@ -160,7 +160,7 @@ class Huawei(BaseDevice):
             return self.SAVED_ERR
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -204,7 +204,7 @@ class Huawei(BaseDevice):
         ]
 
     @BaseDevice._lock
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -236,7 +236,7 @@ class Huawei(BaseDevice):
                 and not line[0].startswith("A")
             ):
                 output = self.send_command(
-                    f"display current-configuration interface {_interface_normal_view(line[0])}",
+                    f"display current-configuration interface {interface_normal_view(line[0])}",
                     expect_command=False,
                 )
 
@@ -253,7 +253,7 @@ class Huawei(BaseDevice):
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
-        return _interface_normal_view(intf)
+        return interface_normal_view(intf)
 
     @BaseDevice._lock
     def get_mac_table(self) -> list:
@@ -298,7 +298,7 @@ class Huawei(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port) -> MACList:
+    def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -735,6 +735,8 @@ class HuaweiMA5600T(BaseDevice):
 
         self.adsl_profiles: str = self.get_adsl_profiles()
         self.vdsl_templates: list = self.get_vdsl_templates()
+        self.interfaces: T_InterfaceList = []
+        self.interfaces_vlans: T_InterfaceVLANList = []
 
     def get_adsl_profiles(self) -> str:
         return self.send_command(
@@ -1456,8 +1458,42 @@ class HuaweiMA5600T(BaseDevice):
         self.send_command("quit")
         return status
 
+    def normalize_interface_name(self, intf: str) -> str:
+        """
+        ## Нормализовать имя интерфейса до стандартного формата.
+
+        >>> self.normalize_interface_name("ADSL 0/2/4")
+        'adsl0/2/4'
+
+        >>> self.normalize_interface_name("ethernet 0/2/4")
+        'eth0/2/4'
+
+        :param intf: Имя интерфейса для нормализации
+        """
+        port = self.split_port(intf)
+        return port[0] + "/".join(port[1])
+
+    def get_mac_table(self) -> T_MACTable:
+        """
+        ## Возвращает таблицу MAC-адресов оборудования.
+
+        Для работы требуются раннее найденные интерфейсы, указанные в атрибуте `interfaces`
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        mac_table: T_MACTable = []
+
+        for interface in self.interfaces:
+            port_macs = self.get_mac(interface[0])
+            mac_table += [
+                (vid, mac, "dynamic", interface[0])
+                for vid, mac in port_macs
+            ]
+        return mac_table
+
     @BaseDevice._lock
-    def get_mac(self, port) -> list:
+    def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -1478,7 +1514,7 @@ class HuaweiMA5600T(BaseDevice):
             macs = []
             for service in data:
                 if service.get("mac"):  # Если есть МАС для сервиса
-                    macs.append([service.get("manage_vlan"), service["mac"]])
+                    macs.append((service.get("manage_vlan"), service["mac"]))
             return macs
 
         if len(indexes) != 3:  # Неверный порт

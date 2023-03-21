@@ -3,8 +3,7 @@ from functools import lru_cache
 from time import sleep
 from typing import Tuple
 
-from django.template.loader import render_to_string
-from .base import BaseDevice, InterfaceList, InterfaceVLANList, MACList
+from .base import BaseDevice, T_InterfaceList, T_InterfaceVLANList, T_MACList
 
 
 class IskratelControl(BaseDevice):
@@ -21,7 +20,7 @@ class IskratelControl(BaseDevice):
         pass
 
     @BaseDevice._lock
-    def get_mac(self, port) -> MACList:
+    def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -290,7 +289,7 @@ class IskratelMBan(BaseDevice):
         return self._render_dsl_port_info(output)
 
     @BaseDevice._lock
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -420,7 +419,7 @@ class IskratelMBan(BaseDevice):
         )
 
     @BaseDevice._lock
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -450,7 +449,7 @@ class IskratelMBan(BaseDevice):
 
         return interfaces_list
 
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 

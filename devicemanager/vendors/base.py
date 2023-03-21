@@ -11,13 +11,14 @@ from abc import ABC, abstractmethod
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent / "templates"
 
+# Аннотации типов
+T_InterfaceList: type = List[Tuple[str, str, str]]
+T_InterfaceVLANList: type = List[Tuple[str, str, str, list]]
+T_MACTable: type = List[Tuple[str, str, str, str]]
+T_MACList: type = List[Tuple[str, str]]
+
 # Обозначения медных типов по стандарту IEEE 802.3
 COOPER_TYPES = ["T", "TX", "VG", "CX", "CR"]
-
-# Аннотации типов
-InterfaceList: type = List[Tuple[str, str, str]]
-InterfaceVLANList: type = List[Tuple[str, str, str, list]]
-MACList: type = List[Tuple[str, str]]
 
 # Обозначения оптических типов по стандарту IEEE 802.3
 FIBER_TYPES = [
@@ -43,16 +44,16 @@ FIBER_TYPES = [
 ]
 
 
-def _interface_normal_view(interface) -> str:
+def interface_normal_view(interface) -> str:
     """
     Приводит имя интерфейса к виду принятому по умолчанию для коммутаторов
 
     Например:
 
-    >>> _interface_normal_view("Eth 0/1")
+    >>> interface_normal_view("Eth 0/1")
     'Ethernet 0/1'
 
-    >>> _interface_normal_view("GE1/0/12")
+    >>> interface_normal_view("GE1/0/12")
     'GigabitEthernet 1/0/12'
     """
 
@@ -377,7 +378,7 @@ class BaseDevice(ABC):
         return output
 
     @abstractmethod
-    def get_interfaces(self) -> InterfaceList:
+    def get_interfaces(self) -> T_InterfaceList:
         """
         Интерфейсы на оборудовании
 
@@ -385,7 +386,7 @@ class BaseDevice(ABC):
         """
 
     @abstractmethod
-    def get_vlans(self) -> InterfaceVLANList:
+    def get_vlans(self) -> T_InterfaceVLANList:
         """
         Интерфейсы и VLAN на оборудовании
 
@@ -393,7 +394,7 @@ class BaseDevice(ABC):
         """
 
     @abstractmethod
-    def get_mac(self, port: str) -> MACList:
+    def get_mac(self, port: str) -> T_MACList:
         """
         Поиск маков на порту
 
