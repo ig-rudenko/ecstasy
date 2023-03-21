@@ -16,6 +16,7 @@ T_InterfaceList: type = List[Tuple[str, str, str]]
 T_InterfaceVLANList: type = List[Tuple[str, str, str, list]]
 T_MACTable: type = List[Tuple[str, str, str, str]]
 T_MACList: type = List[Tuple[str, str]]
+T_SplittedPort: type = Tuple[str, Tuple[str]]
 
 # Обозначения медных типов по стандарту IEEE 802.3
 COOPER_TYPES = ["T", "TX", "VG", "CX", "CR"]
