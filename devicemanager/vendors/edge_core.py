@@ -10,6 +10,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
+    T_MACTable,
 )
 
 
@@ -151,6 +152,31 @@ class EdgeCore(BaseDevice):
         if self.session.expect([r"fail|err", self.prompt, pexpect.TIMEOUT]) == 1:
             return self.SAVED_OK
         return self.SAVED_ERR
+
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        return interface_normal_view(intf)
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> T_MACTable:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show mac-address-table
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        output = self.send_command(f"show mac-address-table", expect_command=False)
+        mac_table = re.findall(
+            rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output
+        )
+        return [
+            (vid, mac, "dynamic", re.sub(r"\s", "", port))
+            for port, mac, vid in mac_table
+        ]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])

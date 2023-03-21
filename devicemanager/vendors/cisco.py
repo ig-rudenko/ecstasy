@@ -11,7 +11,7 @@ from .base import (
     interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
-    T_MACList,
+    T_MACList, T_MACTable,
 )
 
 
@@ -195,7 +195,7 @@ class Cisco(BaseDevice):
         return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
 
     @BaseDevice._lock
-    def get_mac_table(self):
+    def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 

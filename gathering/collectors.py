@@ -34,6 +34,12 @@ class GatherMacAddressTable:
         try:
             # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
             with self.device.connect(make_session_global=False) as session:
+
+                # Если в сеансе есть функция с именем normalize_interface_name,
+                # установите атрибут normalize_interface для этой функции.
+                if hasattr(session, "normalize_interface_name"):
+                    self.normalize_interface = session.normalize_interface_name
+
                 # Создание словаря интерфейсов и их описаний.
                 self.interfaces = self.get_interfaces()
                 self.interfaces_desc = self.format_interfaces(self.interfaces)
@@ -44,9 +50,7 @@ class GatherMacAddressTable:
 
     def get_mac_address_table(self, session) -> list:
         """
-        ## Если в сеансе есть функция с именем normalize_interface_name, установите атрибут normalize_interface для этой
-        функции.
-        Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
+        # Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
         случае вернуть пустой список
 
         :param session: Объект сеанса, который используется для подключения к устройству
@@ -59,9 +63,6 @@ class GatherMacAddressTable:
                 (line.name, line.status, line.desc)
                 for line in self.interfaces
             ]
-
-        if hasattr(session, "normalize_interface_name"):
-            self.normalize_interface = session.normalize_interface_name
         if hasattr(session, "get_mac_table"):
             return session.get_mac_table() or []
         return []
@@ -72,7 +73,6 @@ class GatherMacAddressTable:
         device_manager.collect_interfaces(
             vlans=False, current_status=True, make_session_global=False
         )
-        print(device_manager.interfaces)
         return device_manager.interfaces
 
     def format_interfaces(self, old_interfaces: Interfaces) -> dict:
@@ -87,6 +87,7 @@ class GatherMacAddressTable:
         # Перебираем список интерфейсов
         for line in old_interfaces:
             normal_interface = self.normalize_interface(line.name)
+            print(f"{line.name} {normal_interface=}", line.desc)
 
             # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
@@ -104,6 +105,7 @@ class GatherMacAddressTable:
         """
         normal_interface = self.normalize_interface(interface_name)
         if normal_interface:
+            print(f"{normal_interface=}", self.interfaces_desc.get(normal_interface, ""))
             return self.interfaces_desc.get(normal_interface, "")
         return ""
 

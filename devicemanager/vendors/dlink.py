@@ -10,6 +10,7 @@ from .base import (
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
+    T_MACTable,
 )
 
 
@@ -274,7 +275,7 @@ class Dlink(BaseDevice):
         return re.sub(r"\D", "", intf)
 
     @BaseDevice._lock
-    def get_mac_table(self) -> list:
+    def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
 
