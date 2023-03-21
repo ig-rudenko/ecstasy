@@ -417,7 +417,7 @@ class DeviceInterfacesAPIView(APIView):
         ## Сохраняем интерфейсы в БД
         :return: Список сохраненных интерфейсов
         """
-        if self.with_vlans:
+        if self.device_collector.interfaces and self.with_vlans:
             interfaces_to_save = [
                 {
                     "Interface": line.name,
@@ -431,7 +431,7 @@ class DeviceInterfacesAPIView(APIView):
             self.current_device_info.vlans_date = datetime.now()
             self.current_device_info.save(update_fields=["vlans", "vlans_date"])
 
-        else:
+        elif self.device_collector.interfaces:
             interfaces_to_save = [
                 {
                     "Interface": line.name,
@@ -445,6 +445,9 @@ class DeviceInterfacesAPIView(APIView):
             self.current_device_info.save(
                 update_fields=["interfaces", "interfaces_date"]
             )
+
+        else:
+            return []
 
         return interfaces_to_save
 

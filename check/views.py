@@ -170,8 +170,6 @@ def show_devices(request):
 def device_info(request, name: str):
     """
     ## Вывод главной информации об устройстве и его интерфейсов
-
-    :param name: Название оборудования
     """
 
     return render(request, "check/device_info.html", {"device_name": name})

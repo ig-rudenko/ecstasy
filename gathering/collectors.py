@@ -1,8 +1,10 @@
 import datetime
+import json
 import re
 from itertools import islice
 
 from check.models import Devices
+from net_tools.models import DevicesInfo
 from .models import MacAddress
 from devicemanager.device import (
     Device as ZabbixDevice,
@@ -40,10 +42,17 @@ class GatherMacAddressTable:
                 if hasattr(session, "normalize_interface_name"):
                     self.normalize_interface = session.normalize_interface_name
 
-                # Создание словаря интерфейсов и их описаний.
+                # Получение интерфейсов с устройства.
                 self.interfaces = self.get_interfaces()
+
+                # Создание словаря интерфейсов и их описаний.
                 self.interfaces_desc = self.format_interfaces(self.interfaces)
+
+                # Собираем таблицу MAC адресов с оборудования.
                 self.table: list = self.get_mac_address_table(session)
+
+            # Сохранение интерфейсов в базу данных.
+            self.save_interfaces()
 
         except exceptions.DeviceException:
             pass
@@ -60,8 +69,7 @@ class GatherMacAddressTable:
         # Если сессия требует интерфейсов для работы
         if hasattr(session, "interfaces"):
             session.interfaces = [
-                (line.name, line.status, line.desc)
-                for line in self.interfaces
+                (line.name, line.status, line.desc) for line in self.interfaces
             ]
         if hasattr(session, "get_mac_table"):
             return session.get_mac_table() or []
@@ -96,6 +104,32 @@ class GatherMacAddressTable:
 
         return interfaces
 
+    def save_interfaces(self) -> None:
+        """
+        ## Он берет данные из переменной «interfaces», которая представляет собой список интерфейсов,
+         и сохраняет их в базу данных.
+        """
+        if not self.interfaces:
+            return
+
+        interfaces_to_save = [
+            {
+                "Interface": line.name,
+                "Status": line.status,
+                "Description": line.desc,
+            }
+            for line in self.interfaces
+        ]
+
+        try:
+            device_history = DevicesInfo.objects.get(dev_id=self.device.id)
+        except DevicesInfo.DoesNotExist:
+            device_history = DevicesInfo.objects.create(dev=self.device)
+
+        device_history.interfaces = json.dumps(interfaces_to_save)
+        device_history.interfaces_date = datetime.datetime.now()
+        device_history.save(update_fields=["interfaces", "interfaces_date"])
+
     def get_desc(self, interface_name: str) -> str:
         """
         ## Эта функция возвращает описание интерфейса
@@ -105,7 +139,9 @@ class GatherMacAddressTable:
         """
         normal_interface = self.normalize_interface(interface_name)
         if normal_interface:
-            print(f"{normal_interface=}", self.interfaces_desc.get(normal_interface, ""))
+            print(
+                f"{normal_interface=}", self.interfaces_desc.get(normal_interface, "")
+            )
             return self.interfaces_desc.get(normal_interface, "")
         return ""
 
