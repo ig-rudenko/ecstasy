@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "net_tools",
     "maps",
     "app_settings",
+    "gathering",
     "django.contrib.humanize",
     "rest_framework",
 ]
