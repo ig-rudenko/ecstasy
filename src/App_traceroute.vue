@@ -126,7 +126,7 @@ export default {
         if (!data.status) {
           this.vlanScanStatus = { available: true, running: false, progress: null }
 
-        } else if (data.progress) {
+        } else {
           this.vlanScanStatus = { available: false, running: true, progress: data.progress }
         }
 
@@ -181,7 +181,7 @@ export default {
         if (!data.status) {
           this.macScanStatus = { available: true, running: false, progress: null }
 
-        } else if (data.progress){
+        } else {
           this.macScanStatus = { available: false, running: true, progress: data.progress }
         }
 

@@ -2,6 +2,7 @@ import datetime
 import json
 import re
 from itertools import islice
+from django.conf import settings
 
 from check.models import Devices
 from net_tools.models import DevicesInfo
@@ -177,11 +178,35 @@ class GatherMacAddressTable:
             datetime__lt=datetime.datetime.now() - timedelta,
         ).delete()
 
-    def bulk_create(self, batch_size=999) -> int:
+    @property
+    def bulk_options(self) -> dict:
         """
-        ## Берет список MAC адресов и создает их в базе данных партиями по 999 штук.
+        # Эта функция возвращает словарь опций для bulk_create в зависимости от указанной в settings.py БД.
+        """
 
-        :param batch_size: Количество объектов, которые необходимо создать в каждом пакете, defaults to 999 (optional)
+        options = {
+            # В базах данных (все, кроме Oracle и SQLite < 3.24),
+            # установка параметра update_conflicts в значение `True`
+            # указывает базе данных обновить update_fields, когда вставка строки не удалась из-за конфликтов.
+            "update_conflicts": True,
+            "update_fields": ["vlan", "type", "datetime", "desc"],
+            # Параметр определяет, сколько объектов создается в одном запросе.
+            "batch_size": 999,
+        }
+
+        # Получение имени ядра базы данных из файла settings.py.
+        database_engine = settings.DATABASES["default"]["ENGINE"].rsplit(".", 1)[1]
+
+        if database_engine in ["postgresql", "sqlite3"]:
+            # В PostgreSQL и SQLite, в дополнение к update_fields,
+            # необходимо предоставить список unique_fields, которые могут быть в конфликте.
+            options["unique_fields"] = ["address", "port", "device"]
+
+        return options
+
+    def bulk_create(self) -> int:
+        """
+        ## Список MAC адресов создается или обновляется в базе данных.
         """
         objects = (
             # Создание нового объекта MacAddress.
@@ -198,17 +223,18 @@ class GatherMacAddressTable:
             if self.normalize_interface(port)
         )
 
+        batch_size = self.bulk_options.get("batch_size", 999)
+
         count = 0  # Это счетчик, который подсчитывает количество созданных объектов.
+
+        # Цикл while, который будет выполняться до тех пор, пока список объектов не станет пустым.
         while objects:
+            # Взять первые 999 объектов из списка объектов и присвоить их переменной пакету.
             batch = list(islice(objects, batch_size))
             count += len(batch)
             if not batch:
                 break
-            MacAddress.objects.bulk_create(
-                objs=batch,
-                batch_size=batch_size,
-                update_conflicts=True,
-                update_fields=["vlan", "type", "datetime", "desc"],
-                unique_fields=["address", "port", "device"],
-            )
+            # Создание пакета объектов в базе данных.
+            MacAddress.objects.bulk_create(objs=batch, **self.bulk_options)
+
         return count

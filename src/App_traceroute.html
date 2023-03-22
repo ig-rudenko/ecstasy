@@ -13,7 +13,7 @@
             <div class="d-flex py-2 text-light" style="vertical-align: middle">
 
 <!--                RAN WITH PROGRESS-->
-                <div class="d-flex" v-if="vlanScanStatus.running && vlanScanStatus.progress">
+                <div class="d-flex" v-if="vlanScanStatus.running && vlanScanStatus.progress > 0">
                     <div class="spinner-border me-2" role="status"></div>
                     <div style="display: flex; align-items: center;">Сканирование завершено на {{vlanScanStatus.progress}}%</div>
                 </div>
@@ -77,7 +77,7 @@
             <div class="d-flex py-2 text-light" style="vertical-align: middle">
 
 <!--                RAN WITH PROGRESS-->
-                <div v-if="macScanStatus.running && macScanStatus.progress" class="d-flex">
+                <div v-if="macScanStatus.running && macScanStatus.progress > 0" class="d-flex">
                     <div class="spinner-border me-2" role="status"></div>
                     <div style="display: flex; align-items: center;">Сканирование завершено на {{macScanStatus.progress}}%</div>
                 </div>

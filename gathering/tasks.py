@@ -29,7 +29,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
     def thread_task(self, obj: Devices, **kwargs):
         gather = GatherMacAddressTable(obj)
         gather.clear_old_records()
-        print(f"{obj} {gather.bulk_create()}")
+        print(f"{obj} bulk_create: {gather.bulk_create()}")
         self.update_state()
 
 
