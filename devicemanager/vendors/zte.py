@@ -11,7 +11,7 @@ from .base import (
     range_to_numbers,
     T_InterfaceList,
     T_InterfaceVLANList,
-    T_MACList,
+    T_MACList, T_MACTable,
 )
 
 
@@ -176,6 +176,31 @@ class ZTE(BaseDevice):
             return wrapper
 
         return validate
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> T_MACTable:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            > show fdb detail
+
+            MacAddress        Vlan  PortId   Type
+            ----------------- ----- -------- --------
+            3c.ef.8c.d5.83.11 1945  36       dynamic
+            40.d8.55.1d.37.2a 3779  36       dynamic
+            ...
+
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        output = self.send_command("show fdb detail", expect_command=False)
+        parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
+        return [
+            (int(vid), mac, type_, port)
+            for mac, vid, port, type_ in parsed
+        ]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])

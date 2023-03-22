@@ -2,7 +2,14 @@ import re
 from time import sleep
 from functools import wraps
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, T_InterfaceList, T_InterfaceVLANList, T_MACList
+from .base import (
+    BaseDevice,
+    TEMPLATE_FOLDER,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    T_MACTable,
+)
 
 
 class Qtech(BaseDevice):
@@ -124,6 +131,34 @@ class Qtech(BaseDevice):
             return wrapper
 
         return validate
+
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        return BaseDevice.find_or_empty(r"(\d+/\d+/?\d*)", intf)
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> T_MACTable:
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic MAC-type и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show mac-address-table
+
+            Vlan Mac Address                 Type    Creator   Ports
+            ---- --------------------------- ------- -------------------------------------
+            1    d0-c2-82-cd-6d-99           DYNAMIC Hardware Ethernet1/0/27
+            118  00-04-96-51-ad-3d           DYNAMIC Hardware Ethernet1/0/27
+            ...
+
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        output = self.send_command("show mac-address-table")
+        parsed = re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+DYNAMIC\s+\S+\s+(\S+).*\n", output
+        )
+        return [(int(vid), mac, "dynamic", port) for vid, mac, port in parsed]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])

@@ -204,8 +204,9 @@ class Cisco(BaseDevice):
 
             # show mac address-table
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
+
         mac_str = self.send_command(
             f"show mac address-table",
             expect_command=False,
