@@ -17,7 +17,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
     """
 
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all().filter(vendor__iexact="d-link")
+    queryset = Devices.objects.all()
 
     def pre_run(self):
         """
