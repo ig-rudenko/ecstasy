@@ -9,7 +9,7 @@ from .base import (
     range_to_numbers,
     T_InterfaceVLANList,
     T_InterfaceList,
-    T_MACList,
+    T_MACList, T_MACTable,
 )
 
 
@@ -202,7 +202,7 @@ class Extreme(BaseDevice):
         return validate
 
     @BaseDevice._lock
-    def get_mac_table(self) -> list:
+    def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -210,7 +210,7 @@ class Extreme(BaseDevice):
 
             # show fdb
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
         mac_str = self.send_command(f"show fdb", expect_command=False)
         mac_table = re.findall(
@@ -218,7 +218,7 @@ class Extreme(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(str(int(vid)), mac, "dynamic", port) for mac, vid, port in mac_table]
+        return [(int(vid), mac, "dynamic", port) for mac, vid, port in mac_table]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])

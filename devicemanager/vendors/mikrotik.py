@@ -8,6 +8,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
+    T_MACTable,
 )
 
 
@@ -177,6 +178,59 @@ class MikroTik(BaseDevice):
         return interfaces_with_vlans
 
     @BaseDevice._lock
+    def get_mac_table(self) -> T_MACTable:
+        """
+
+        ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            [@] > interface bridge host print without-paging terse
+
+            339   DL  mac-address=CC:2D:E0:AC:58:DA interface=vlan1051 bridge=bridge1051 on-interface=vlan1051
+            166   D   mac-address=F0:23:B9:30:C0:FE interface=ether1 bridge=T_bridge on-interface=ether1 age=6s
+            167   DL  mac-address=DE:5A:07:A2:68:72 interface=bridge bridge=bridge on-interface=bridge
+            168   D   mac-address=00:04:96:51:E8:CF interface=vlan3738 bridge=bridge3738 on-interface=vlan3738 age=5s
+
+        :return: ```[ ('{vid}', '{mac}', {'dynamic'|'static'}, '{port}'), ... ]```
+        """
+
+        output = self.send_command(
+            "interface bridge host print without-paging terse", expect_command=False
+        )
+
+        mac_table = []
+
+        # Разбиваем вывод на строки, начинающиеся с числа и пробела.
+        for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
+            # Удаление символов новой строки.
+            line = re.sub(r"[\r\n]", "", line)
+
+            # Находим необходимые элементы в строке
+            parsed = re.findall(
+                rf"\d+\s+(DL?)\s+mac-address=(\S+) .* bridge=(\S+) .*on-interface=(\S+).*",
+                line,
+            )
+            # Если не нашли элементы.
+            if not parsed:
+                continue
+
+            # Распаковка кортежа, возвращенного `re.findall`, в переменные `type_`, `mac`, `bridge` и `port`.
+            type_, mac, bridge, port = parsed[0]
+
+            # Получение идентификатора vlan моста.
+            vid = self._bridges.get(bridge, {}).get("vlans", ["0"])[0]
+            if type_ == "D":
+                type_ = "dynamic"
+            if type_ == "DL":
+                type_ = "static"
+
+            # Добавление MAC в таблицу
+            mac_table.append((int(vid), mac, type_, port))
+
+        return mac_table
+
+    @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -191,8 +245,8 @@ class MikroTik(BaseDevice):
         """
 
         output = self.send_command(
-            f"interface bridge host print terse where interface=\"{port}\" !local",
-            expect_command=False
+            f'interface bridge host print terse where interface="{port}" !local',
+            expect_command=False,
         )
 
         macs = []
@@ -204,15 +258,17 @@ class MikroTik(BaseDevice):
             if not mac_line:
                 continue
             mac_address, bridge = mac_line
-            macs.append((self._bridges.get(bridge, {}).get("vlans", [""])[0], mac_address))
+            macs.append(
+                (self._bridges.get(bridge, {}).get("vlans", [""])[0], mac_address)
+            )
         return macs
 
     @BaseDevice._lock
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
-        self.send_command(f"interface disable \"{port}\"")
+        self.send_command(f'interface disable "{port}"')
         time.sleep(2)
-        self.send_command(f"interface enable \"{port}\"")
+        self.send_command(f'interface enable "{port}"')
         return self.SAVED_OK
 
     @BaseDevice._lock
@@ -220,9 +276,9 @@ class MikroTik(BaseDevice):
     def set_port(self, port: str, status: str, save_config=True) -> str:
 
         if status == "up":
-            self.send_command(f"interface enable \"{port}\"")
+            self.send_command(f'interface enable "{port}"')
         elif status == "down":
-            self.send_command(f"interface disable \"{port}\"")
+            self.send_command(f'interface disable "{port}"')
         return self.SAVED_OK
 
     def save_config(self):
@@ -253,7 +309,7 @@ class MikroTik(BaseDevice):
         data = {}
 
         raw_poe_info = self.send_command(
-            f"interface ethernet poe print terse where name=\"{port}\""
+            f'interface ethernet poe print terse where name="{port}"'
         )
         raw_poe_info = re.sub(r"[\r\n]", "", raw_poe_info)
         data["poeStatus"] = self.find_or_empty(
@@ -270,7 +326,7 @@ class MikroTik(BaseDevice):
     @_validate_port()
     def set_poe_out(self, port: str, status: str) -> tuple:
         output = self.send_command(
-            f"interface ethernet poe set \"{port}\" poe-out={status}"
+            f'interface ethernet poe set "{port}" poe-out={status}'
         )
         output = re.sub(r"[\r\n]", "", output)
         return status, "no such item" in output or "syntax error" in output

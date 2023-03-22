@@ -166,7 +166,7 @@ class EdgeCore(BaseDevice):
 
             # show mac-address-table
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
         output = self.send_command(f"show mac-address-table", expect_command=False)
@@ -174,7 +174,7 @@ class EdgeCore(BaseDevice):
             rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output
         )
         return [
-            (vid, mac, "dynamic", re.sub(r"\s", "", port))
+            (int(vid), mac, "dynamic", re.sub(r"\s", "", port))
             for port, mac, vid in mac_table
         ]
 

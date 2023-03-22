@@ -3,7 +3,13 @@ from functools import lru_cache
 from time import sleep
 from typing import Tuple
 
-from .base import BaseDevice, T_InterfaceList, T_InterfaceVLANList, T_MACList
+from .base import (
+    BaseDevice,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    T_MACTable,
+)
 
 
 class IskratelControl(BaseDevice):
@@ -287,6 +293,18 @@ class IskratelMBan(BaseDevice):
 
         # Парсим данные
         return self._render_dsl_port_info(output)
+
+    @BaseDevice._lock
+    def get_mac_table(self) -> T_MACTable:
+        """
+        ## Возвращает таблицу MAC-адресов оборудования.
+
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        output = self.send_command("show bridge mactable")
+        parsed = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
+        return [(int(vid), mac, "dynamic", port) for vid, mac, port in parsed]
 
     @BaseDevice._lock
     def get_mac(self, port: str) -> T_MACList:

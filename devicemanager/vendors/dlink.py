@@ -283,7 +283,7 @@ class Dlink(BaseDevice):
 
             # show fdb
 
-        :return: ```[ ('{vid}', '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', {'static'|'dynamic'|'security'}, '{port}'), ... ]```
         """
 
         def format_type(type_: str) -> str:
@@ -298,7 +298,8 @@ class Dlink(BaseDevice):
             flags=re.IGNORECASE,
         )
         return [
-            (vid, mac, format_type(type_), port) for vid, mac, port, type_ in mac_table
+            (int(vid), mac, format_type(type_), port)
+            for vid, mac, port, type_ in mac_table
         ]
 
     @BaseDevice._lock

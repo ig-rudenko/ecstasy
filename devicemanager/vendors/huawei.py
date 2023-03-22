@@ -270,7 +270,7 @@ class Huawei(BaseDevice):
             88c3-9711-2aff 713/-                             Eth0/0/4            security
             90f6-52a9-ca13 713/-                             GE0/0/1             dynamic
 
-        :return: ```[ ('{vid}', '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
         """
 
         def format_type(type_: str) -> str:
@@ -287,7 +287,7 @@ class Huawei(BaseDevice):
             flags=re.IGNORECASE,
         )
         return [
-            (vid, mac, format_type(type_), port) for mac, vid, port, type_ in mac_table
+            (int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table
         ]
 
     @BaseDevice._lock

@@ -11,7 +11,8 @@ from .base import (
     interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
-    T_MACList, T_MACTable,
+    T_MACList,
+    T_MACTable,
 )
 
 
@@ -209,11 +210,15 @@ class Cisco(BaseDevice):
             f"show mac address-table",
             expect_command=False,
         )
-        return re.findall(
+        mac_table = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(dynamic|static)\s+.*?(\S+)\s*\n",
             mac_str,
             flags=re.IGNORECASE,
         )
+        return [
+            (int(vid), mac, type_, port)
+            for vid, mac, type_, port in mac_table
+        ]
 
     @BaseDevice._lock
     @_validate_port()

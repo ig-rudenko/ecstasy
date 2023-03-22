@@ -15,6 +15,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
+    T_MACTable,
 )
 
 
@@ -302,7 +303,7 @@ class EltexMES(BaseDevice):
 
             # show mac address-table
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
         mac_str = self.send_command(f"show mac address-table", expect_command=False)
         mac_table = re.findall(
@@ -310,7 +311,7 @@ class EltexMES(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(vid, mac, type_, port) for vid, mac, port, type_ in mac_table]
+        return [(int(vid), mac, type_, port) for vid, mac, port, type_ in mac_table]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -832,7 +833,7 @@ class EltexLTP(BaseDevice):
         return [(line[0], line[1], "") for line in interfaces]
 
     @BaseDevice._lock
-    def get_mac_table(self):
+    def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -850,7 +851,7 @@ class EltexLTP(BaseDevice):
 
             # exit
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
         self.session.send("switch\r")
         self.session.expect(self.prompt)
@@ -859,11 +860,10 @@ class EltexLTP(BaseDevice):
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        parsed = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output)
-        return [
-            (vid, mac, type_, port)
-            for vid, mac, port, type_ in parsed
-        ]
+        parsed = re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output
+        )
+        return [(int(vid), mac, type_, port) for vid, mac, port, type_ in parsed]
 
     @BaseDevice._lock
     def get_vlans(self) -> T_InterfaceVLANList:
@@ -1314,15 +1314,15 @@ class EltexLTP16N(BaseDevice):
         return validate
 
     @BaseDevice._lock
-    def get_mac_table(self):
+    def get_mac_table(self) -> T_MACTable:
         """
-        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+        ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
 
         Команда на оборудовании:
 
             # show mac verbose
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
         output = self.send_command("show mac verbose", expect_command=False)
@@ -1337,7 +1337,7 @@ class EltexLTP16N(BaseDevice):
             return port
 
         return [
-            (vid, mac, type_, format_interface(port, index))
+            (int(vid), mac, type_, format_interface(port, index))
             for mac, port, vid, index, _, type_ in parsed
         ]
 

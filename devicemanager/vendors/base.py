@@ -14,7 +14,7 @@ TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent / "templates"
 # Аннотации типов
 T_InterfaceList: type = List[Tuple[str, str, str]]
 T_InterfaceVLANList: type = List[Tuple[str, str, str, list]]
-T_MACTable: type = List[Tuple[str, str, str, str]]
+T_MACTable: type = List[Tuple[int, str, str, str]]
 T_MACList: type = List[Tuple[str, str]]
 T_SplittedPort: type = Tuple[str, Tuple[str]]
 

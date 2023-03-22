@@ -11,6 +11,7 @@ from devicemanager.device import (
     Config as DeviceZabbixConfig,
     Interfaces,
 )
+from devicemanager.vendors.base import T_MACTable
 from app_settings.models import ZabbixConfig
 from devicemanager import exceptions
 
@@ -29,7 +30,7 @@ class GatherMacAddressTable:
 
         # Установка атрибута normalize_interface для лямбда-функции, которая возвращает переданное ей значение.
         self.normalize_interface = lambda x: x
-        self.table: list = []
+        self.table: T_MACTable = []
         self.interfaces: Interfaces = Interfaces()
         self.interfaces_desc: dict = {}
 
@@ -49,7 +50,7 @@ class GatherMacAddressTable:
                 self.interfaces_desc = self.format_interfaces(self.interfaces)
 
                 # Собираем таблицу MAC адресов с оборудования.
-                self.table: list = self.get_mac_address_table(session)
+                self.table = self.get_mac_address_table(session)
 
             # Сохранение интерфейсов в базу данных.
             self.save_interfaces()
@@ -57,7 +58,7 @@ class GatherMacAddressTable:
         except exceptions.DeviceException:
             pass
 
-    def get_mac_address_table(self, session) -> list:
+    def get_mac_address_table(self, session) -> T_MACTable:
         """
         # Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
         случае вернуть пустой список

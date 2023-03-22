@@ -789,14 +789,16 @@ class HuaweiMA5600T(BaseDevice):
 
         Для работы требуются раннее найденные интерфейсы, указанные в атрибуте `interfaces`
 
-        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
         mac_table: T_MACTable = []
 
         for interface in self.interfaces:
             port_macs = self.get_mac(interface[0])
-            mac_table += [(vid, mac, "dynamic", interface[0]) for vid, mac in port_macs]
+            mac_table += [
+                (int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs
+            ]
         return mac_table
 
     @BaseDevice._lock
