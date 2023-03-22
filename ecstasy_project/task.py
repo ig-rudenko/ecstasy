@@ -17,7 +17,7 @@ class ThreadUpdatedStatusTask(Task):
         """
         ## Если набор запросов не определен, возникает ошибка
         """
-        if not self.queryset:
+        if self.queryset is None:
             raise NotImplementedError("Укажите queryset для работы данного класса")
         self.objects_count = 1
         self.objects_scanned = 0

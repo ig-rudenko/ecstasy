@@ -822,11 +822,10 @@ class EltexLTP(BaseDevice):
         )
 
         interfaces_pon_output = self.send_command(
-            f"show interfaces_desc status pon-port 0 - {self._gpon_ports_count - 1}",
+            f"show interfaces status pon-port 0 - {self._gpon_ports_count - 1}",
             expect_command=False,
         )
         interfaces += re.findall(r"(pon\S+ \d+)\s+(\S{2,})\s+", interfaces_pon_output)
-
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
