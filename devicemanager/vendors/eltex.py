@@ -306,7 +306,7 @@ class EltexMES(BaseDevice):
         """
         mac_str = self.send_command(f"show mac address-table", expect_command=False)
         mac_table = re.findall(
-            rf"(\d+)\s+({self.mac_format})\s+(\S+)\s+(dynamic).*\n",
+            rf"(\d+)\s+({self.mac_format})\s+(\S+\s?\d+/\d+/\d+)\s+(dynamic).*\n",
             mac_str,
             flags=re.IGNORECASE,
         )
@@ -832,6 +832,40 @@ class EltexLTP(BaseDevice):
         return [(line[0], line[1], "") for line in interfaces]
 
     @BaseDevice._lock
+    def get_mac_table(self):
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+
+        Команды на оборудовании:
+
+            # switch
+            # show mac
+
+            VID    MAC address         Interface               Type
+            ----   -----------------   ---------------------   --------
+            4094   ea:28:c1:f4:dc:17   pon-port 3              Dynamic
+            688    ea:28:c1:f9:dc:19   10G-front-port 1        Dynamic
+            ...
+            4094   ea:28:c1:f4:dd:1f   pon-port 6              Dynamic
+
+            # exit
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+        self.session.send("switch\r")
+        self.session.expect(self.prompt)
+
+        output = self.send_command("show mac", expect_command=False)
+        self.session.send("exit\r")
+        self.session.expect(self.prompt)
+
+        parsed = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output)
+        return [
+            (vid, mac, type_, port)
+            for vid, mac, port, type_ in parsed
+        ]
+
+    @BaseDevice._lock
     def get_vlans(self) -> T_InterfaceVLANList:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
@@ -1278,6 +1312,34 @@ class EltexLTP16N(BaseDevice):
             return __wrapper
 
         return validate
+
+    @BaseDevice._lock
+    def get_mac_table(self):
+        """
+        ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
+
+        Команда на оборудовании:
+
+            # show mac verbose
+
+        :return: ```[ ('{vid}', '{mac}', 'dynamic', '{port}'), ... ]```
+        """
+
+        output = self.send_command("show mac verbose", expect_command=False)
+        parsed = re.findall(
+            rf"({self.mac_format})\s+(\S+\s\d+)\s+(\d+)\s+(\d*/?\d*)\s+(\d*)\s+(\S+).*\n",
+            output,
+        )
+
+        def format_interface(port, indexes):
+            if indexes:
+                return f"{port}; ont {indexes}"
+            return port
+
+        return [
+            (vid, mac, type_, format_interface(port, index))
+            for mac, port, vid, index, _, type_ in parsed
+        ]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])

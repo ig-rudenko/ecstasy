@@ -81,7 +81,7 @@ class GatherMacAddressTable:
         device_manager.collect_interfaces(
             vlans=False, current_status=True, make_session_global=False
         )
-        return device_manager.interfaces
+        return device_manager.interfaces or Interfaces()
 
     def format_interfaces(self, old_interfaces: Interfaces) -> dict:
         """
@@ -95,7 +95,6 @@ class GatherMacAddressTable:
         # Перебираем список интерфейсов
         for line in old_interfaces:
             normal_interface = self.normalize_interface(line.name)
-            print(f"{line.name} {normal_interface=}", line.desc)
 
             # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
@@ -139,9 +138,6 @@ class GatherMacAddressTable:
         """
         normal_interface = self.normalize_interface(interface_name)
         if normal_interface:
-            print(
-                f"{normal_interface=}", self.interfaces_desc.get(normal_interface, "")
-            )
             return self.interfaces_desc.get(normal_interface, "")
         return ""
 
