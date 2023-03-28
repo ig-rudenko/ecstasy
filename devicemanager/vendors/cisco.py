@@ -216,10 +216,7 @@ class Cisco(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [
-            (int(vid), mac, type_, port)
-            for vid, mac, type_, port in mac_table
-        ]
+        return [(int(vid), mac, type_, port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice._lock
     @_validate_port()
@@ -641,3 +638,11 @@ class Cisco(BaseDevice):
             status = "low"
 
         return {"value": temp, "status": status}
+
+    @BaseDevice._lock
+    def get_current_configuration(self):
+        return self.send_command(
+            "show running-config",
+            expect_command=True,
+            before_catch=r"Building configuration\.\.\.",
+        )

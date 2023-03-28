@@ -25,6 +25,8 @@ urlpatterns = [
     path("<device_name>/interface-info", device_manager.InterfaceInfoAPIView.as_view()),
     path("<device_name>/info", devices_info.DeviceInfoAPIView.as_view()),
     path("<device_name>/stats", devices_info.DeviceStatsInfoAPIView.as_view()),
+    path("<device_name>/collect-config", devices_info.CollectConfigAPIView.as_view()),
+    path("<device_name>/config/<file_name>", devices_info.DownloadDeleteConfigAPIView.as_view()),
     # ===========================================
     #                Device Manager
     # ===========================================

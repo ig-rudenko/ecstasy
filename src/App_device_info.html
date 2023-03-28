@@ -22,7 +22,7 @@
 
     <div class="row" style="padding-bottom: 5px;">
 
-      <div class="col-md-7">
+      <div class="col-md-4">
         <div class="card shadow" style="min-height: 220px">
           <div class="card-body">
       <!--  Время обновления интерфейсов-->
@@ -47,20 +47,33 @@
         </div>
       </div>
 
-      <div class="col-md-3">
+      <div class="col-md-6">
         <div class="card shadow" style="min-height: 220px">
-            <div class="card-body">
+            <div class="card-body button-panel">
     <!--    Кнопка для отображения панели с информацией Zabbix-->
-            <zabbix-info-button></zabbix-info-button>
+            <div class="col-md-6">
+                <zabbix-info-button></zabbix-info-button>
+            </div>
 
     <!--    Ссылка на Zabbix-->
-            <zabbix-link :zabbix_host_id="zabbixHostID" :zabbix_url="zabbixURL"></zabbix-link>
+            <div class="col-md-6">
+                <zabbix-link :zabbix_host_id="zabbixHostID" :zabbix_url="zabbixURL"></zabbix-link>
+            </div>
 
     <!--    Ссылка на Elastic Stack-->
-            <elastic-link :logs_url="elasticStackLink"></elastic-link>
+            <div class="col-md-6">
+                <elastic-link :logs_url="elasticStackLink"></elastic-link>
+            </div>
 
     <!--    Ссылка на карту-->
-            <map-link :coords="deviceCoords"></map-link>
+            <div class="col-md-6">
+                <map-link :coords="deviceCoords"></map-link>
+            </div>
+
+    <!--    Показать/Скрыть список конфигураций-->
+            <div class="col-md-6">
+               <ConfigFilesSwitchButton :config-files="configFiles" />
+            </div>
             </div>
         </div>
       </div>
@@ -74,6 +87,11 @@
         </div>
       </div>
 
+    </div>
+
+<!--    Список конфигураций-->
+    <div v-show="configFiles.display">
+        <ConfigFiles @updateFiles="getInfo" :files="configFiles.array"/>
     </div>
 
 <!--    Загруженность интерфейсов-->

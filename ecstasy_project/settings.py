@@ -15,6 +15,7 @@ import _locale
 import logging
 import os
 import json
+from datetime import timedelta, datetime
 from pathlib import Path
 from celery.schedules import crontab
 
@@ -86,7 +87,7 @@ if not DATABASES:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "db.sqlite3"
+            "NAME": "db.sqlite3",
         }
     }
 
@@ -175,12 +176,31 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_BEAT_SCHEDULE = {
-    "midnight-periodically-scan": {
-        "task": "net_tools.tasks.periodically_scan",
-        "schedule": crontab(minute="0", hour="0"),
-    }
+    # Собираем интерфейсы и VLAN оборудования каждый четный час.
+    "periodically-interfaces": {
+        "task": "interfaces_scan",
+        "schedule": crontab(minute="0", hour="*/2"),
+    },
+    # Собираем все MAC на оборудовании, а также интерфейсы в указанные часы.
+    "periodically-gather": {
+        "task": "mac_table_gather_task",
+        "schedule": crontab(minute="0", hour="1,3,5,7,9,11,13,15,17,19,21,23"),
+    },
+    # Собираем конфигурации оборудования каждый день в 04:00.
+    "configuration-gather": {
+        "task": "configuration_gather_task",
+        "schedule": crontab(minute="0", hour="4"),
+    },
 }
 
+# ========== CONFIGURATION STORAGE ===========
+
+config_dir = os.getenv("CONFIG_STORAGE_DIR")
+
+if config_dir:
+    CONFIG_STORAGE_DIR = Path(config_dir)
+else:
+    CONFIG_STORAGE_DIR = BASE_DIR / "configs"
 
 # ================= LOGGING ==================
 

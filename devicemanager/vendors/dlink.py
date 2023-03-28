@@ -650,3 +650,12 @@ class Dlink(BaseDevice):
 
     def get_port_config(self, port: str) -> str:
         return ""
+
+    @BaseDevice._lock
+    def get_current_configuration(self) -> str:
+        config = self.send_command(
+            "show config current_config",
+            expect_command=False,
+            before_catch="Command: show config current_config",
+        )
+        return re.sub("[\r\n]{3}", "\n", config.strip())

@@ -16,6 +16,8 @@ import DeviceWorkloadBar from "./components/DeviceWorkloadBar.vue";
 import DetailInterfaceInfo from "./components/DetailInterfaceInfo.vue";
 import FindMac from "./components/FindMac.vue";
 import BrasSession from "./components/BrasSession.vue";
+import ConfigFiles from "./components/ConfigFiles.vue";
+import ConfigFilesSwitchButton from "./components/ConfigFilesSwitchButton.vue";
 
 export default {
   name: 'device',
@@ -63,6 +65,11 @@ export default {
         submit: null,
         port: "",
         desc: ""
+      },
+
+      configFiles: {
+        display: false,
+        array: []
       },
 
       toastObject: null,
@@ -175,6 +182,7 @@ export default {
         this.permissionLevel = data.permission
         this.deviceCoords = data.coords
         this.zabbixInfo = data.zabbixInfo
+        this.configFiles.array = data.configFiles
 
       } catch (error) {
         console.log(error)
@@ -416,6 +424,8 @@ export default {
   components: {
     DeviceWorkloadBar,
     DetailInterfaceInfo,
+    ConfigFiles,
+    ConfigFilesSwitchButton,
     "device-status-name": DeviceStatusName,
     "elastic-link": ElasticStackLink,
     "interfaces-help": InterfacesHelpText,
@@ -452,7 +462,10 @@ export default {
   padding: 15px;
 }
 
-.shadow {
-    box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 50%);
+.button-panel {
+  display: flex!important;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
 }
 </style>

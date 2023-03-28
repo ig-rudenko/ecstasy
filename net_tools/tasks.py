@@ -138,7 +138,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         self.update_state()
 
 
-periodically_scan = app.register_task(InterfacesScanTask())
+interfaces_scan = app.register_task(InterfacesScanTask())
 
 
 def check_scanning_status() -> dict:

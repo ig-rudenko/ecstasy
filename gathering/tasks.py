@@ -4,7 +4,7 @@ from django.core.cache import cache
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from ecstasy_project.celery import app
 from check.models import Devices
-from .collectors import GatherMacAddressTable
+from .collectors import MacAddressTableGather, ConfigurationGather
 
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
@@ -27,7 +27,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
 
     def thread_task(self, obj: Devices, **kwargs):
-        gather = GatherMacAddressTable(obj)
+        gather = MacAddressTableGather(obj)
         gather.clear_old_records()
         print(f"{obj} bulk_create: {gather.bulk_create()}")
         self.update_state()
@@ -57,3 +57,26 @@ def check_scanning_status() -> dict:
     return {
         "status": None,
     }
+
+
+class ConfigurationGatherTask(ThreadUpdatedStatusTask):
+    """
+    # Celery задача для сбора таблицы MAC адресов оборудования.
+
+    Использует пул потоков, а затем отправляет задачу на сбор MAC для каждого оборудования в queryset.
+
+    Задача обновляет свой статус после каждого завершенного сбора на оборудовании.
+    """
+
+    name = "configuration_gather_task"
+    queryset = Devices.objects.all()
+
+    def thread_task(self, obj: Devices, **kwargs):
+        gather = ConfigurationGather(obj)
+        gather.delete_outdated_configs()
+        gather.collect_config_file()
+        self.update_state()
+
+
+# Регистрация задачи в приложении Celery.
+configuration_gather_task = app.register_task(ConfigurationGatherTask())

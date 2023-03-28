@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from ..finder import Finder
 from ..models import VlanName, DevicesForMacSearch
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
-from ..tasks import periodically_scan, check_scanning_status
+from ..tasks import interfaces_scan, check_scanning_status
 
 
 @login_required
@@ -25,7 +25,7 @@ def run_periodically_scan(request):
     if request.method == "POST":
         task_id = cache.get("periodically_scan_id")
         if not task_id:
-            task_id = periodically_scan.delay()
+            task_id = interfaces_scan.delay()
             cache.set("periodically_scan_id", task_id, timeout=None)
             return HttpResponse(status=200)
 

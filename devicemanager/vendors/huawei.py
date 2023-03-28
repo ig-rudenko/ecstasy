@@ -287,7 +287,8 @@ class Huawei(BaseDevice):
             flags=re.IGNORECASE,
         )
         return [
-            (int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table
+            (int(vid), mac, format_type(type_), port)
+            for mac, vid, port, type_ in mac_table
         ]
 
     @BaseDevice._lock
@@ -698,6 +699,11 @@ class Huawei(BaseDevice):
     @BaseDevice._lock
     def get_device_info(self) -> dict:
         pass
+
+    @BaseDevice._lock
+    def get_current_configuration(self) -> str:
+        config = self.send_command("display current-configuration", expect_command=True)
+        return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
 
 
 class HuaweiCX600(BaseDevice):

@@ -12,7 +12,7 @@ from django.contrib.humanize.templatetags.humanize import naturaltime
 from check.models import Devices
 from app_settings.models import VlanTracerouteConfig
 from net_tools.models import DescNameFormat
-from .collectors import GatherMacAddressTable
+from .collectors import MacAddressTableGather
 from .models import MacAddress
 from .tasks import mac_table_gather_task, check_scanning_status
 
@@ -46,7 +46,7 @@ class MacAddressView(View):
     def get(self, request, device_name: str):
         device = get_object_or_404(Devices, name=device_name)
 
-        mac_gather = GatherMacAddressTable(from_=device)
+        mac_gather = MacAddressTableGather(from_=device)
         mac_gather.clear_old_records()
         count = mac_gather.bulk_create()
         return JsonResponse({"mac_addresses": count})

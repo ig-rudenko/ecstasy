@@ -1,6 +1,9 @@
+import hashlib
+import re
 import datetime
 import json
-import re
+import pathlib
+
 from itertools import islice
 from django.conf import settings
 
@@ -17,7 +20,7 @@ from app_settings.models import ZabbixConfig
 from devicemanager import exceptions
 
 
-class GatherMacAddressTable:
+class MacAddressTableGather:
     """
     # Этот класс используется для сбора таблицы MAC-адресов с устройства
     """
@@ -238,3 +241,71 @@ class GatherMacAddressTable:
             MacAddress.objects.bulk_create(objs=batch, **self.bulk_options)
 
         return count
+
+
+class ConfigurationGather:
+    def __init__(self, dev: Devices):
+        self.device = dev
+        # Создание пути к каталогу, в котором хранятся файлы конфигурации.
+        self.storage: pathlib.Path = settings.CONFIG_STORAGE_DIR / self.device.name
+        # Проверяет, существует ли каталог, и если нет, то создает его.
+        self.check_config_storage()
+        # Создание списка файлов в каталоге.
+        self.files = list(self.storage.iterdir())
+        # Сортируем файлы в каталоге по времени их последней модификации.
+        self.files.sort(key=lambda file: file.stat().st_mtime, reverse=True)
+
+        self.last_config_file = self.files[0]
+
+    def check_config_storage(self):
+        """
+        ## Эта функция проверяет, существует ли файл конфигурации, если нет, то создает его
+        """
+        if not self.storage.exists():
+            self.storage.mkdir(parents=True)
+
+    def delete_outdated_configs(self):
+        """
+        ##  Удаляет файлы, если их больше 10
+        """
+        if len(self.files) > 10:
+            # Удаление файлов в каталоге, кроме 10 самых последних.
+            for file in self.files[10:]:
+                file.unlink()
+
+    def collect_config_file(self) -> None:
+        with self.device.connect(make_session_global=False) as session:
+            if hasattr(session, "get_current_configuration"):
+                current_config = session.get_current_configuration()
+            else:
+                return
+
+        try:
+            # Открытие файла в режиме чтения.
+            with self.last_config_file.open("r") as file:
+                # Чтение последнего файла конфигурации.
+                last_config = file.read()
+        # Резервный вариант, когда файл не в формате ascii.
+        except UnicodeError:
+            last_config = ""
+
+        # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
+        current_config_hash = hashlib.sha3_224(
+            re.sub(r"\s", "", current_config).encode()
+        ).hexdigest()
+
+        # Берем прошлую конфигурацию и удаляем все пробелы, а затем хешируем ее.
+        last_config_hash = hashlib.sha3_224(
+            re.sub(r"\s", "", last_config).encode()
+        ).hexdigest()
+
+        # Проверяем, совпадает ли last_config с current_config.
+        if last_config_hash == current_config_hash:
+            return
+
+        # Создание нового имени файла для нового файла конфигурации.
+        new_file_name = "config_file_" + current_config_hash[:15] + ".txt"
+
+        # Создание нового файла с именем `new_file_name` в каталоге `self.storage`.
+        with (self.storage / new_file_name).open("w", encoding="ascii") as file:
+            file.write(current_config)
