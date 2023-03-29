@@ -136,8 +136,9 @@ import {defineComponent} from "vue";
 export default defineComponent({
   data() {
     return {
-      files: {required: true, type: [{name: String, size: Number, modTime: String, content: String}]},
+      files: [{name: String, size: Number, modTime: String, content: String}],
       selectedFile: null,
+      deviceName: decodeURI(window.location.pathname).split('/').slice(-1).join(""),
       collectNew: {
         active: false,
         status: "",
@@ -187,18 +188,15 @@ export default defineComponent({
 
     async getFiles(){
       try {
-        this.collectNew.active = true
         const response = await fetch(
-            "/device/api/" + document.deviceName + "/configs",
+            "/device/api/" + this.deviceName + "/configs",
             {
               method: "GET",
               credentials: "same-origin",
-              headers: {
-                "X-CSRFToken": document.CSRF_TOKEN
-              },
             }
         )
-        this.files = response.files
+        const data = await response.json()
+        this.files = data.files
 
       } catch (error) {
         console.log(error)
@@ -212,7 +210,7 @@ export default defineComponent({
       try {
         this.collectNew.active = true
         const response = await fetch(
-            "/device/api/" + document.deviceName + "/collect-config",
+            "/device/api/" + this.deviceName + "/collect-config",
             {
               method: "POST",
               credentials: "same-origin",
@@ -223,7 +221,7 @@ export default defineComponent({
         )
 
         if (response.status === 201) {
-          this.$emit("updateFiles")
+          await this.getFiles()
           this.collectNew.display = true
           this.collectNew.status = "success"
           this.collectNew.text = "Была получена новая конфигурация"
@@ -249,7 +247,7 @@ export default defineComponent({
     async deleteFile(file){
       try {
         const response = await fetch(
-            "/device/api/" + document.deviceName + "/config/" + file.name,
+            "/device/api/" + this.deviceName + "/config/" + file.name,
             {
               method: "DELETE",
               credentials: "same-origin",
@@ -271,7 +269,7 @@ export default defineComponent({
     async getFile(file) {
       try {
         const response = await fetch(
-            "/device/api/" + document.deviceName + "/config/" + file.name,
+            "/device/api/" + this.deviceName + "/config/" + file.name,
             {method: "GET", credentials: "same-origin"}
         )
         // получаем blob из ответа
