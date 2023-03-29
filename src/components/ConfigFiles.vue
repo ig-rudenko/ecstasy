@@ -134,11 +134,9 @@
 import {defineComponent} from "vue";
 
 export default defineComponent({
-  props: {
-    files: {required: true, type: [{name: String, size: Number, modTime: String, content: String}]}
-  },
   data() {
     return {
+      files: {required: true, type: [{name: String, size: Number, modTime: String, content: String}]},
       selectedFile: null,
       collectNew: {
         active: false,
@@ -147,6 +145,9 @@ export default defineComponent({
         text: ""
       }
     }
+  },
+  async mounted() {
+    await this.getFiles()
   },
   computed: {
     alertClasses(){
@@ -184,6 +185,26 @@ export default defineComponent({
       return string
     },
 
+    async getFiles(){
+      try {
+        this.collectNew.active = true
+        const response = await fetch(
+            "/device/api/" + document.deviceName + "/configs",
+            {
+              method: "GET",
+              credentials: "same-origin",
+              headers: {
+                "X-CSRFToken": document.CSRF_TOKEN
+              },
+            }
+        )
+        this.files = response.files
+
+      } catch (error) {
+        console.log(error)
+      }
+    },
+
     async collectConfig(){
       // Это проверка для предотвращения множественных запросов к серверу.
       if (this.collectNew.active) return
@@ -215,10 +236,10 @@ export default defineComponent({
 
       } catch (error) {
         console.log(error)
-        this.$emit("updateFiles")
         this.collectNew.display = true
         this.collectNew.status = "error"
         this.collectNew.text = "Ошибка во время сбора новой конфигурации"
+        await this.getFiles()
       }
 
       this.collectNew.active = false
@@ -239,7 +260,7 @@ export default defineComponent({
         )
 
         if (response.status === 204) {
-          this.$emit("updateFiles")
+          await this.getFiles()
         }
 
       } catch (error) {

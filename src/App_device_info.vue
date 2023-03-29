@@ -68,8 +68,7 @@ export default {
       },
 
       configFiles: {
-        display: false,
-        array: []
+        display: false
       },
 
       toastObject: null,
@@ -182,7 +181,6 @@ export default {
         this.permissionLevel = data.permission
         this.deviceCoords = data.coords
         this.zabbixInfo = data.zabbixInfo
-        this.configFiles.array = data.configFiles
 
       } catch (error) {
         console.log(error)

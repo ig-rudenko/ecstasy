@@ -74,7 +74,8 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     def thread_task(self, obj: Devices, **kwargs):
         gather = ConfigurationGather(obj)
         gather.delete_outdated_configs()
-        gather.collect_config_file()
+        status = gather.collect_config_file()
+        print(f"configuration_gather_task {status} {obj}")
         self.update_state()
 
 

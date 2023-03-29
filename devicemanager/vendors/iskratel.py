@@ -549,4 +549,10 @@ class IskratelMBan(BaseDevice):
         pass
 
     def get_device_info(self) -> dict:
+        # > show system info
         pass
+
+    def get_current_configuration(self):
+        config = self.send_command("show system config", expect_command=False)
+        return config.strip()
+

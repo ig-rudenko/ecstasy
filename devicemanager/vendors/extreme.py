@@ -22,7 +22,7 @@ class Extreme(BaseDevice):
      - X670
     """
 
-    prompt = r"\S+\s*#\s*$"
+    prompt = r"\S+ ?#\s*$"
     space_prompt = "Press <SPACE> to continue or <Q> to quit:"
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Extreme"
@@ -380,3 +380,7 @@ class Extreme(BaseDevice):
 
     def get_device_info(self) -> dict:
         pass
+
+    def get_current_configuration(self) -> str:
+        config = self.send_command("show configuration")
+        return config.strip()

@@ -12,6 +12,7 @@ ecstasy_project/settings_prod.py
 .idea
 .coverage
 
+configs
 lib
 logs
 data

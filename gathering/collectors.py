@@ -255,7 +255,7 @@ class ConfigurationGather:
         # Сортируем файлы в каталоге по времени их последней модификации.
         self.files.sort(key=lambda file: file.stat().st_mtime, reverse=True)
 
-        self.last_config_file = self.files[0]
+        self.last_config_file = self.files[0] if self.files else None
 
     def check_config_storage(self):
         """
@@ -273,21 +273,23 @@ class ConfigurationGather:
             for file in self.files[10:]:
                 file.unlink()
 
-    def collect_config_file(self) -> None:
+    def collect_config_file(self) -> bool:
         with self.device.connect(make_session_global=False) as session:
             if hasattr(session, "get_current_configuration"):
                 current_config = session.get_current_configuration()
             else:
-                return
+                return False
 
-        try:
-            # Открытие файла в режиме чтения.
-            with self.last_config_file.open("r") as file:
-                # Чтение последнего файла конфигурации.
-                last_config = file.read()
-        # Резервный вариант, когда файл не в формате ascii.
-        except UnicodeError:
-            last_config = ""
+        last_config = ""
+        if self.last_config_file:
+            try:
+                # Открытие файла в режиме чтения.
+                with self.last_config_file.open("r") as file:
+                    # Чтение последнего файла конфигурации.
+                    last_config = file.read()
+            # Резервный вариант, когда файл не в формате ascii.
+            except UnicodeError:
+                last_config = ""
 
         # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
         current_config_hash = hashlib.sha3_224(
@@ -301,7 +303,7 @@ class ConfigurationGather:
 
         # Проверяем, совпадает ли last_config с current_config.
         if last_config_hash == current_config_hash:
-            return
+            return False
 
         # Создание нового имени файла для нового файла конфигурации.
         new_file_name = "config_file_" + current_config_hash[:15] + ".txt"
@@ -309,3 +311,4 @@ class ConfigurationGather:
         # Создание нового файла с именем `new_file_name` в каталоге `self.storage`.
         with (self.storage / new_file_name).open("w", encoding="ascii") as file:
             file.write(current_config)
+        return True

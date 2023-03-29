@@ -4,7 +4,7 @@ URL Configuration для API
 """
 
 from django.urls import path
-from .views import devices_info, device_manager, bras_manager
+from .views import devices_info, device_manager, bras_manager, config_files
 
 # /device/api/
 
@@ -25,8 +25,15 @@ urlpatterns = [
     path("<device_name>/interface-info", device_manager.InterfaceInfoAPIView.as_view()),
     path("<device_name>/info", devices_info.DeviceInfoAPIView.as_view()),
     path("<device_name>/stats", devices_info.DeviceStatsInfoAPIView.as_view()),
-    path("<device_name>/collect-config", devices_info.CollectConfigAPIView.as_view()),
-    path("<device_name>/config/<file_name>", devices_info.DownloadDeleteConfigAPIView.as_view()),
+    # ===========================================
+    #                Config files
+    # ===========================================
+    path("<device_name>/collect-config", config_files.CollectConfigAPIView.as_view()),
+    path("<device_name>/configs", config_files.ListDeviceConfigFilesAPIView.as_view()),
+    path(
+        "<device_name>/config/<file_name>",
+        config_files.DownloadDeleteConfigAPIView.as_view(),
+    ),
     # ===========================================
     #                Device Manager
     # ===========================================
@@ -46,5 +53,7 @@ urlpatterns = [
     #                 BRAS Manager
     # ===========================================
     path("session", bras_manager.BrassSessionAPIView.as_view(), name="show-session"),
-    path("cut-session", bras_manager.CutBrassSessionAPIView.as_view(), name="cut-session"),
+    path(
+        "cut-session", bras_manager.CutBrassSessionAPIView.as_view(), name="cut-session"
+    ),
 ]
