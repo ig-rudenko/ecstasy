@@ -44,8 +44,13 @@ class ConfigStorageMixin:
             return Response({"error": "File does not exist"}, status=400)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(permission(models.Profile.BRAS), name="get")
+@method_decorator(permission(models.Profile.BRAS), name="delete")
 class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
+    """
+    # Для загрузки и удаления файла конфигурации конкретного оборудования
+    """
+
     permission_classes = [DevicePermission]
 
     def validate_device(self, device_name: str) -> None:
@@ -60,12 +65,7 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
 
     def get(self, request, device_name: str, file_name: str):
         """
-        ## Открывает файл в двоичном режиме и возвращает объект FileResponse.
-
-        :param request: Объект запроса
-        :param device_name: str — это имя устройства, для которого предназначен файл конфигурации
-        :param file_name: str — имя загружаемого файла
-        :return: Объект ответа файла.
+        ## Отправляет содержимое файла конфигурации
         """
         self.validate_device(device_name)
 
@@ -78,7 +78,7 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
 
     def delete(self, request, device_name: str, file_name: str):
         """
-        ## Удаляет файл из файловой системы
+        ## Удаляет файл конфигурации
         """
 
         self.validate_device(device_name)
@@ -92,9 +92,32 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
         return Response(status=204)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
+    permission_classes = [DevicePermission]
+
     def get(self, requests, device_name: str):
+        """
+        ## Перечень файлов конфигураций указанного оборудования
+
+        Пример ответа:
+
+            {
+                "files": [
+                    {
+                        "name": "config_file_96f7d499c739875.txt",
+                        "size": 19346,
+                        "modTime": "11:53 28.03.2023",
+                        "isDir": false
+                    }
+                ],
+
+                ...
+
+            }
+
+        """
+
         # Получение ошибок для пути конфигурации.
         config_path_errors = self.get_errors_for_config_path(device_name)
         # Проверка, является ли config_path_errors пустым или нет.
@@ -151,8 +174,12 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
         return res
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(permission(models.Profile.BRAS), name="get")
 class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
+    """
+    # Смотрим список оборудования и файлы конфигураций
+    """
+
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceFilter
 
@@ -171,6 +198,39 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
         return models.Devices.objects.filter(query)
 
     def get(self, request, **kwargs):
+        """
+
+        ## Перечень оборудования и файлы конфигураций
+
+        Пример ответа:
+
+            {
+                "count": 948,
+                "devices": [
+                    {
+                        "ip": "172.30.0.58",
+                        "name": "FTTB_Aktybinsk42_p1_TKD_116",
+                        "vendor": "D-Link",
+                        "group": "ASW",
+                        "model": "DES-3200-28",
+                        "port_scan_protocol": "telnet",
+                        "files": [
+                            {
+                                "name": "config_file_96f7d499c739875.txt",
+                                "size": 19346,
+                                "modTime": "11:53 28.03.2023",
+                                "isDir": false,
+                            }
+                        ],
+                    },
+
+                    ...
+
+                ],
+            }
+
+        """
+
         result = {
             "count": 0,
             "devices": [],
@@ -217,6 +277,13 @@ class CollectConfigAPIView(APIView):
         return content
 
     def post(self, request, device_name: str):
+        """
+        ## В реальном времени смотрим и сохраняем конфигурацию оборудования
+
+        Если такая конфигурация уже имеется, то файл не будет создан (чтобы не было лишних копий)
+
+        """
+
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(self.request, device)
 

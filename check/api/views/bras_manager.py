@@ -57,6 +57,8 @@ class BrassSessionAPIView(APIView):
         """
         ## Возвращаем сессию на BRAS для конкретного MAC адреса
 
+        Пример ответа:
+
             {
                 "BRAS1": {
                     "session": null,
@@ -98,11 +100,13 @@ class CutBrassSessionAPIView(APIView):
 
     def post(self, request):
         """
-        Принимаем:
+        ## Сбрасываем сессию абонента и перезагружаем порт на оборудовании
 
-             - str:`mac` - max:24
-             - str:`device` - max:255
-             - str:`port` - max:50
+        Данные формы:
+
+        - str:`mac` - max:24
+        - str:`device` - max:255
+        - str:`port` - max:50
 
         Сбрасываем сессию и перезагружаем порт на оборудовании
 

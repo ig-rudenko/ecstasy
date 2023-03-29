@@ -15,6 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.views.generic import TemplateView
+from rest_framework import permissions
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from check import views
 from django.contrib.staticfiles.utils import settings
 from django.contrib.staticfiles.urls import static
@@ -23,6 +28,31 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenObtainPairView,
     TokenVerifyView,
+)
+
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Ecstasy API",
+        default_version="v1",
+        description="Здесь вы можете посмотреть API для работы с Ecstasy",
+        contact=openapi.Contact(email="irudenko@sevtelecom.ru"),
+        license=openapi.License(name="Apache-2.0"),
+    ),
+    patterns=[
+        path("device/api/", include("check.api.urls")),
+        path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+        path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
+        path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
+    ],
+    authentication_classes=[
+        SessionAuthentication,
+        JWTAuthentication,
+    ],
+    public=False,
+    permission_classes=[permissions.IsAdminUser],
 )
 
 urlpatterns = [
@@ -38,6 +68,22 @@ urlpatterns = [
     path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
+    # Документация API
+    path(
+        "swagger-ui/",
+        TemplateView.as_view(
+            template_name="swagger-ui.html",
+        ),
+        name="swagger-ui",
+    ),
+    re_path(
+        r"^swagger(?P<format>\.json|\.yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    re_path(
+        r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"
+    ),
 ]
 
 handler404 = "app_settings.errors_views.page404"

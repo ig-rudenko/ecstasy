@@ -46,9 +46,25 @@ class DevicesListAPIView(generics.ListAPIView):
         )
         return models.Devices.objects.filter(query).select_related("group")
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         """
-        ## Возвращаем JSON список всех устройств, без пагинации
+        ## Возвращаем список всех устройств, без пагинации
+
+        Пример ответа:
+
+            [
+                {
+                    "ip": "172.30.0.58",
+                    "name": "FTTB_Aktybinsk42_p1_TKD_116",
+                    "vendor": "D-Link",
+                    "group": "ASW",
+                    "model": "DES-3200-28",
+                    "port_scan_protocol": "telnet"
+                },
+
+                ...
+
+            ]
         """
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
@@ -150,6 +166,8 @@ class DeviceInterfacesAPIView(APIView):
         """
         ## Вывод интерфейсов оборудования
 
+        Пример вывода:
+
             {
                 "interfaces": [
                     {
@@ -180,8 +198,6 @@ class DeviceInterfacesAPIView(APIView):
                 "deviceAvailable": true,
                 "collected": "2023-03-01T15:13:11.559175"
             }
-
-        :param device_name: Название оборудования
         """
 
         # Получаем объект устройства из БД
@@ -462,6 +478,8 @@ class DeviceInfoAPIView(APIView):
     """
     ## Возвращаем общую информацию оборудования
 
+    Пример вывода:
+
         {
             "deviceName": "DEVICE-NAME",
             "deviceIP": "10.10.10.10",
@@ -524,6 +542,8 @@ class DeviceInfoAPIView(APIView):
 class DeviceStatsInfoAPIView(APIView):
     """
     ## Возвращаем данные CPU, FLASH, RAM, TEMP
+
+    Пример вывода:
 
         {
             "cpu": {

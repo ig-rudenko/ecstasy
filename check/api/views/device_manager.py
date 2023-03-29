@@ -29,11 +29,27 @@ class ChangeDescription(APIView):
 
     def post(self, request, device_name: str):
         """
+        ## Меняем описание на порту оборудования
 
+        Требуется передать JSON:
 
-        :param request:
-        :param device_name:
-        :return:
+            {
+                "port": "порт оборудования",
+                "description": "новое описание порта"
+            }
+
+        Если указанного порта не существует на оборудовании, то будет отправлен ответ со статусом `400`
+
+            {
+                "detail": "Неверный порт {port}"
+            }
+
+        Если описание слишком длинное, то будет отправлен ответ со статусом `400`
+
+            {
+                "detail": "Слишком длинное описание! Укажите не более {max_length} символов."
+            }
+
         """
 
         if not self.request.data.get("port"):
@@ -82,6 +98,31 @@ class MacListAPIView(APIView):
     permission_classes = [DevicePermission]
 
     def get(self, request, device_name):
+        """
+        ## Смотрим MAC-адреса на порту оборудования
+
+        Для этого необходимо передать порт в параметре URL `?port=eth1`
+
+        Если порт верный и там есть MAC-адреса, то будет вот такой ответ:
+
+            {
+                "count": 47,
+                "result": [
+                    {
+                        "vlanID": "1051",
+                        "mac": "00-04-96-51-AD-3D",
+                        "vlanName": ""
+                    },
+                    {
+                        "vlanID": "1051",
+                        "mac": "00-04-96-52-A5-FB",
+                        "vlanName": ""
+                    },
+                    ...
+                ]
+            }
+
+        """
 
         port = self.request.GET.get("port")
         if not port:
@@ -116,6 +157,25 @@ class CableDiagAPIView(APIView):
     def get(self, request, device_name):
         """
         ## Запускаем диагностику кабеля на порту
+
+        Для этого необходимо передать порт в параметре URL `?port=eth1`
+
+        Функция возвращает данные в виде словаря.
+        В зависимости от результата диагностики некоторые ключи могут отсутствовать за ненадобностью.
+
+            {
+                "len": "-",         # Длина кабеля в метрах, либо "-", когда не определено
+                "status": "",       # Состояние на порту (Up, Down, Empty)
+                "pair1": {
+                    "status": "",   # Статус первой пары (Open, Short)
+                    "len": "",      # Длина первой пары в метрах
+                },
+                "pair2": {
+                    "status": "",   # Статус второй пары (Open, Short)
+                    "len": "",      # Длина второй пары в метрах
+                }
+            }
+
         """
 
         if not request.GET.get("port"):
@@ -194,6 +254,26 @@ class InterfaceInfoAPIView(APIView):
     permission_classes = [DevicePermission]
 
     def get(self, request, device_name):
+        """
+        ## Общая информация об определенном порте оборудования
+
+        В зависимости от типа оборудования информация будет совершенно разной
+
+        Поле `portDetailInfo.type` указывает тип данных, которые могут быть строкой, JSON, или HTML кодом.
+
+            {
+                "portDetailInfo": {
+                    "type": "text",  - Тип данных для детальной информации о порте
+                    "data": ""       - Сами данные
+                },
+                "portConfig":   "Конфигурация порта (из файла конфигурации)",
+                "portType":     "COPPER"    - (SFP, COMBO),
+                "portErrors":   "Ошибки на порту",
+                "hasCableDiag": true        - Имеется ли на данном типе оборудования возможность диагностики порта
+            }
+
+
+        """
 
         port = self.request.GET.get("port")
         if not port:
@@ -221,9 +301,8 @@ class ChangeDSLProfileAPIView(APIView):
         """
         ## Изменяем профиль xDSL порта на другой
 
-        Возвращаем {"status": status} или {"error": error}
+        Возвращаем `{ "status": status }` или `{ "error": error }`
 
-        :return: результат в формате JSON
         """
 
         serializer = ADSLProfileSerializer(data=request.data)
