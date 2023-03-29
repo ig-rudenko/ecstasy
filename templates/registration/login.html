@@ -17,7 +17,7 @@
 
 <main class="form-signin">
   <form method="post" action="{% url 'login' %}">
-      {% csrf_token %}
+    {% csrf_token %}
     <div id="logo_nedema">
         <img class="spinner-border"
              style="border: none; height: 300px; width: 300px; padding: 20px; animation: 3.25s linear infinite spinner-border;"
@@ -33,6 +33,8 @@
       <input type="password" class="form-control" id="floatingPassword" name="password">
       <label for="floatingPassword">Пароль</label>
     </div>
+
+      <input hidden name="next" value="{{ request.GET.next }}">
 
     <div class="checkbox mb-3">
       <a href="{% url 'password_reset' %}">Забыл</a>
