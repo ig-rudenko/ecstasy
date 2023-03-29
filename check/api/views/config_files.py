@@ -10,17 +10,23 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-from ..permissions import DevicePermission
+from django_filters.rest_framework import DjangoFilterBackend
+
 from check import models
 from check.views import permission
+
+from ..permissions import DevicePermission
+from ..filters import DeviceFilter
+from ..serializers import DevicesSerializer
 
 
 class ConfigStorageMixin:
     @staticmethod
     def get_errors_for_config_path(
-            device_folder: str, file_name: str = ""
+        device_folder: str, file_name: str = ""
     ) -> Union[Response, None]:
 
         storage = settings.CONFIG_STORAGE_DIR
@@ -87,8 +93,7 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
 
 
 @method_decorator(permission(models.Profile.BRAS), name="dispatch")
-class ListDeviceConfigFilesAPIView(APIView, ConfigStorageMixin):
-
+class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
     def get(self, requests, device_name: str):
         # Получение ошибок для пути конфигурации.
         config_path_errors = self.get_errors_for_config_path(device_name)
@@ -147,8 +152,45 @@ class ListDeviceConfigFilesAPIView(APIView, ConfigStorageMixin):
 
 
 @method_decorator(permission(models.Profile.BRAS), name="dispatch")
-class CollectConfigAPIView(APIView):
+class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DeviceFilter
 
+    def get_queryset(self):
+        """
+        ## Возвращаем queryset всех устройств из доступных для пользователя групп
+        """
+
+        # Фильтруем запрос
+        query = Q(
+            group_id__in=[
+                group["id"]
+                for group in self.request.user.profile.devices_groups.all().values("id")
+            ]
+        )
+        return models.Devices.objects.filter(query)
+
+    def get(self, request, **kwargs):
+        result = {
+            "count": 0,
+            "devices": [],
+        }
+        devices = self.filter_queryset(self.get_queryset())
+        for dev in devices:
+            result["count"] += 1
+            serializer = DevicesSerializer(dev)
+            result["devices"].append(
+                {
+                    **serializer.data,
+                    "files": self.get_config_files(dev.name),
+                }
+            )
+
+        return Response(result)
+
+
+@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+class CollectConfigAPIView(APIView):
     @staticmethod
     def get_last_config(device_name: str) -> str:
         """

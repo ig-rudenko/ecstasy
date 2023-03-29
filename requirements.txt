@@ -16,3 +16,5 @@ pdoc
 Pillow
 djangorestframework
 redis
+django-filter
+djangorestframework-simplejwt

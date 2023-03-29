@@ -9,16 +9,18 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
+from check import models
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Device
 from devicemanager.exceptions import DeviceException
-
 from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
 from net_tools.models import DevicesInfo as ModelDeviceInfo
+
 from ..permissions import DevicePermission
+from ..filters import DeviceFilter, DeviceInfoFilter
 from ..serializers import DevicesSerializer
-from check import models
 
 
 class DevicesListAPIView(generics.ListAPIView):
@@ -27,6 +29,8 @@ class DevicesListAPIView(generics.ListAPIView):
     """
 
     serializer_class = DevicesSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DeviceFilter
 
     def get_queryset(self):
         """
@@ -46,13 +50,17 @@ class DevicesListAPIView(generics.ListAPIView):
         """
         ## Возвращаем JSON список всех устройств, без пагинации
         """
-
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
 class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
+
+    serializer_class = DevicesSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DeviceInfoFilter
+
     def get_queryset(self, *args, **kwargs):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп

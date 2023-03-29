@@ -28,6 +28,7 @@ urlpatterns = [
     # ===========================================
     #                Config files
     # ===========================================
+    path("config-files", config_files.ListAllConfigFilesAPIView.as_view()),
     path("<device_name>/collect-config", config_files.CollectConfigAPIView.as_view()),
     path("<device_name>/configs", config_files.ListDeviceConfigFilesAPIView.as_view()),
     path(

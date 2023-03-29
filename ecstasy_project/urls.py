@@ -19,6 +19,11 @@ from check import views
 from django.contrib.staticfiles.utils import settings
 from django.contrib.staticfiles.urls import static
 from django.views.static import serve
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+    TokenObtainPairView,
+    TokenVerifyView,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -29,7 +34,10 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
     path("tools/", include("net_tools.urls")),
     path("maps/", include("maps.urls")),
-    path("gather/", include("gathering.urls"))
+    path("gather/", include("gathering.urls")),
+    path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
 ]
 
 handler404 = "app_settings.errors_views.page404"
