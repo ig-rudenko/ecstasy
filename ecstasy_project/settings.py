@@ -190,10 +190,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "mac_table_gather_task",
         "schedule": crontab(minute="0", hour="1,3,5,7,9,11,13,15,17,19,21,23"),
     },
-    # Собираем конфигурации оборудования каждый день в 04:00.
+    # Собираем конфигурации оборудования каждый день в 04:30.
     "configuration-gather": {
         "task": "configuration_gather_task",
-        "schedule": crontab(minute="0", hour="4"),
+        "schedule": crontab(minute="30", hour="4"),
     },
 }
 
@@ -233,10 +233,10 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "INFO",
+            "level": "DEBUG",
             "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
         "file": {
             "level": "DEBUG",
@@ -259,7 +259,7 @@ LOGGING = {
 # ================= JWT ===================
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
