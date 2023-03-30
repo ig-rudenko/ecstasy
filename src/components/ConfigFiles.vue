@@ -88,7 +88,7 @@
           </tr>
 
           <tr v-if="file.display && file.content">
-            <td colspan="4">
+            <td colspan="4" style="max-width: 1rem;">
 
               <div style="font-family: monospace; padding: 1rem" v-html="format_to_html(file.content)"></div>
 
