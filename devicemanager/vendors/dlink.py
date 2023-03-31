@@ -652,7 +652,7 @@ class Dlink(BaseDevice):
         return ""
 
     @BaseDevice._lock
-    def get_current_configuration(self) -> str:
+    def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command(
             "show config current_config",
             expect_command=False,

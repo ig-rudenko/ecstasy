@@ -640,7 +640,7 @@ class Cisco(BaseDevice):
         return {"value": temp, "status": status}
 
     @BaseDevice._lock
-    def get_current_configuration(self):
+    def get_current_configuration(self, *args, **kwargs) -> str:
         return self.send_command(
             "show running-config",
             expect_command=True,

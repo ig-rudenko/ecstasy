@@ -381,6 +381,6 @@ class Extreme(BaseDevice):
     def get_device_info(self) -> dict:
         pass
 
-    def get_current_configuration(self) -> str:
+    def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("show configuration")
         return config.strip()

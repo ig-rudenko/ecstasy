@@ -1,6 +1,9 @@
+from datetime import datetime
+import pathlib
 import re
 import time
 
+import pysftp
 import pexpect
 from functools import wraps
 from .base import (
@@ -347,3 +350,31 @@ class MikroTik(BaseDevice):
 
     def get_device_info(self) -> dict:
         pass
+
+    def get_current_configuration(self, folder_path: pathlib.Path) -> pathlib.Path:
+
+        config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
+
+        self.send_command(
+            f"system backup save dont-encrypt=yes name={config_file_name}"
+        )
+
+        config_file_name += ".backup"
+
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None
+
+        with pysftp.Connection(
+            host=self.ip,
+            username=self.auth["login"],
+            password=self.auth["password"],
+            cnopts=cnopts,
+        ) as session:
+            path = str((folder_path / config_file_name).absolute())
+            print(path)
+            # Приведенный выше код создает резервную копию файла конфигурации.
+            session.get(config_file_name, path)
+
+        self.send_command(f"file remove {config_file_name}")
+
+        return folder_path / config_file_name

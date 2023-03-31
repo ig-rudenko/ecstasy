@@ -12,7 +12,9 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+# Это представление для пользовательского интерфейса Swagger.
 schema_view = get_schema_view(
+    # Это описание API.
     openapi.Info(
         title="Ecstasy API",
         default_version="v1",
@@ -27,6 +29,7 @@ schema_view = get_schema_view(
         contact=openapi.Contact(name="Rudenko Igor", email="irudenko@sevtelecom.ru"),
         license=openapi.License(name="Apache-2.0"),
     ),
+    # Это список всех конечных точек, которые будут отображаться в Swagger.
     patterns=[
         path("device/api/", include("check.api.urls")),
         path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -37,6 +40,8 @@ schema_view = get_schema_view(
         SessionAuthentication,
         JWTAuthentication,
     ],
+    # Это означает, что пользовательский интерфейс Swagger недоступен для общего доступа.
     public=False,
-    permission_classes=[permissions.IsAdminUser],
+    # Это означает, что пользовательский интерфейс Swagger не является общедоступным.
+    permission_classes=[permissions.IsAuthenticated],
 )

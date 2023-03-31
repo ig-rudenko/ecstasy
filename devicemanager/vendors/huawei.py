@@ -701,7 +701,7 @@ class Huawei(BaseDevice):
         pass
 
     @BaseDevice._lock
-    def get_current_configuration(self) -> str:
+    def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("display current-configuration", expect_command=True)
         return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
 

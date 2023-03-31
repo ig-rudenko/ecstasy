@@ -19,3 +19,4 @@ redis
 django-filter
 djangorestframework-simplejwt
 drf-yasg
+pysftp

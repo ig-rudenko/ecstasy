@@ -1,6 +1,3 @@
-import hashlib
-import re
-
 from typing import Union
 from datetime import datetime
 
@@ -17,7 +14,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from check import models
 from check.views import permission
+from devicemanager.vendors import BaseDevice
 
+from gathering.collectors import ConfigurationGather
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter
 from ..serializers import DevicesSerializer
@@ -69,11 +68,14 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
         """
         self.validate_device(device_name)
 
-        config_path_errors = self.get_errors_for_config_path(device_name, file_name)
+        # Метод, переводящий русские символы в транслитерацию в имени устройства.
+        folder_name = BaseDevice.clear_description(device_name)
+
+        config_path_errors = self.get_errors_for_config_path(folder_name, file_name)
         if config_path_errors:
             return config_path_errors
 
-        config_file = (settings.CONFIG_STORAGE_DIR / device_name / file_name).open("rb")
+        config_file = (settings.CONFIG_STORAGE_DIR / folder_name / file_name).open("rb")
         return FileResponse(config_file, filename=file_name)
 
     def delete(self, request, device_name: str, file_name: str):
@@ -83,11 +85,14 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
 
         self.validate_device(device_name)
 
-        config_path_errors = self.get_errors_for_config_path(device_name, file_name)
+        # Метод, переводящий русские символы в транслитерацию в имени устройства.
+        folder_name = BaseDevice.clear_description(device_name)
+
+        config_path_errors = self.get_errors_for_config_path(folder_name, file_name)
         if config_path_errors:
             return config_path_errors
 
-        (settings.CONFIG_STORAGE_DIR / device_name / file_name).unlink(missing_ok=True)
+        (settings.CONFIG_STORAGE_DIR / folder_name / file_name).unlink(missing_ok=True)
 
         return Response(status=204)
 
@@ -140,8 +145,11 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
         :return: Список словарей.
         """
 
+        # Метод, который переводит русские символы в транслит в имени устройства.
+        folder_name = BaseDevice.clear_description(device_name)
+
         # Создание пути к папке конфигурации для устройства.
-        config_folder = settings.CONFIG_STORAGE_DIR / device_name
+        config_folder = settings.CONFIG_STORAGE_DIR / folder_name
 
         # Проверка, является ли config_folder файлом.
         if config_folder.is_file():
@@ -251,31 +259,6 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
 
 @method_decorator(permission(models.Profile.BRAS), name="dispatch")
 class CollectConfigAPIView(APIView):
-    @staticmethod
-    def get_last_config(device_name: str) -> str:
-        """
-        ## Возвращает последнюю конфигурацию устройства
-
-        :param device_name: Имя устройства, с которого вы хотите получить последнюю конфигурацию
-        """
-
-        config_folder = settings.CONFIG_STORAGE_DIR / device_name
-        if not config_folder.exists():
-            config_folder.mkdir(parents=True)
-
-        files = list(config_folder.iterdir())
-        if not files:
-            return ""
-
-        # Поиск самого последнего измененного файла в каталоге.
-        last_file = max(files, key=lambda file: file.stat().st_mtime)
-        try:
-            with last_file.open("r") as f:
-                content = f.read()
-        except UnicodeError:
-            return ""
-        return content
-
     def post(self, request, device_name: str):
         """
         ## В реальном времени смотрим и сохраняем конфигурацию оборудования
@@ -287,34 +270,9 @@ class CollectConfigAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(self.request, device)
 
-        last_config = self.get_last_config(device_name)
-
-        with device.connect() as session:
-            if hasattr(session, "get_current_configuration"):
-                current_config: str = session.get_current_configuration()
-            else:
-                return Response(
-                    {"error": "This device can't collect configuration"}, status=400
-                )
-
-        # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        current_config_hash = hashlib.sha3_224(
-            re.sub(r"\s", "", current_config).encode()
-        ).hexdigest()
-
-        # Берем прошлую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        last_config_hash = hashlib.sha3_224(
-            re.sub(r"\s", "", last_config).encode()
-        ).hexdigest()
-
-        # Проверяем, совпадает ли last_config с current_config.
-        if last_config_hash == current_config_hash:
-            return Response(status=200)
-
-        new_file_name = "config_file_" + current_config_hash[:15] + ".txt"
-        file_path = settings.CONFIG_STORAGE_DIR / device_name / new_file_name
-
-        with file_path.open("w", encoding="ascii") as file:
-            file.write(current_config)
-
-        return Response(status=201)
+        gather = ConfigurationGather(device)
+        if gather.collect_config_file():
+            status = 201
+        else:
+            status = 200
+        return Response(status=status)
