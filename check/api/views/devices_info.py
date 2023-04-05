@@ -4,7 +4,6 @@ import ping3
 from datetime import datetime
 
 from django.urls import reverse
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -16,6 +15,7 @@ from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Device
 from devicemanager.exceptions import DeviceException
 from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
+from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 
 from ..permissions import DevicePermission
@@ -38,13 +38,12 @@ class DevicesListAPIView(generics.ListAPIView):
         """
 
         # Фильтруем запрос
-        query = Q(
-            group_id__in=[
-                group["id"]
-                for group in self.request.user.profile.devices_groups.all().values("id")
-            ]
+        group_ids = self.request.user.profile.devices_groups.all().values_list(
+            "id", flat=True
         )
-        return models.Devices.objects.filter(query).select_related("group")
+        return models.Devices.objects.filter(group_id__in=group_ids).select_related(
+            "group"
+        )
 
     def get(self, request, *args, **kwargs):
         """
@@ -77,20 +76,17 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceInfoFilter
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
 
         # Фильтруем запрос
-        query = Q(
-            dev__group_id__in=[
-                group["id"]
-                for group in self.request.user.profile.devices_groups.all().values("id")
-            ]
+        group_ids = self.request.user.profile.devices_groups.all().values_list(
+            "id", flat=True
         )
         return (
-            ModelDeviceInfo.objects.filter(query, **kwargs)
+            ModelDeviceInfo.objects.filter(dev__group_id__in=group_ids)
             .select_related("dev")
             .order_by("dev__name")
         )
@@ -118,20 +114,18 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        result = {
-            "devices_count": 0,
-            "devices": [],
-        }
-
-        for dev_info in queryset:
-            result["devices"].append(
+        response_data = {
+            "devices_count": queryset.count(),
+            "devices": [
                 {
                     "interfaces_count": self.get_interfaces_load(dev_info),
                     **DevicesSerializer(dev_info.dev).data,
                 }
-            )
-            result["devices_count"] += 1
-        return Response(result)
+                for dev_info in queryset
+            ],
+        }
+
+        return Response(response_data)
 
 
 class DeviceInterfacesWorkLoadAPIView(
@@ -245,7 +239,7 @@ class DeviceInterfacesAPIView(APIView):
         self.get_current_interfaces()
 
         # Обновляем данные по оборудованию на основе предыдущего подключения
-        self.update_device_info()
+        self.update_device_model_and_vendor()
 
         # Если не собрали интерфейсы.
         if not self.device_collector.interfaces:
@@ -330,41 +324,36 @@ class DeviceInterfacesAPIView(APIView):
         interfaces_comments = self.device.interfacescomments_set.select_related("user")
 
         for intf in interfaces:
-            for comment in interfaces_comments:
-                if comment.interface == intf["Interface"]:
-                    intf.setdefault("Comments", [])
-                    intf["Comments"].append(
-                        {
-                            "text": comment.comment,
-                            "user": comment.user.username,
-                            "id": comment.id,
-                        }
-                    )
+            intf["Comments"] = [
+                {
+                    "text": comment.comment,
+                    "user": comment.user.username,
+                    "id": comment.id,
+                }
+                for comment in interfaces_comments
+                if comment.interface == intf["Interface"]
+            ]
 
         return interfaces
 
-    def update_device_info(self):
+    def update_device_model_and_vendor(self):
         """
         ## Обновляем информацию об устройстве (вендор, модель) в БД и Zabbix.
 
         Также отправляем данные, взятые при подключении к оборудованию на Zabbix сервер
         """
 
+        inventory: ZabbixInventory = self.device_collector.zabbix_info.inventory
+
         # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
         # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
-        if (
-            self.device_collector.zabbix_info.inventory.model
-            and self.device_collector.zabbix_info.inventory.model != self.device.model
-        ):
-            self.device.model = self.device_collector.zabbix_info.inventory.model
+        if inventory.model and inventory.model != self.device.model:
+            self.device.model = inventory.model
             self.model_update_fields.append("model")
 
         # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
-        if (
-            self.device_collector.zabbix_info.inventory.vendor
-            and self.device_collector.zabbix_info.inventory.vendor != self.device.vendor
-        ):
-            self.device.vendor = self.device_collector.zabbix_info.inventory.vendor
+        if inventory.vendor and inventory.vendor != self.device.vendor:
+            self.device.vendor = inventory.vendor
             self.model_update_fields.append("vendor")
 
         # Сохраняем изменения
@@ -389,14 +378,14 @@ class DeviceInterfacesAPIView(APIView):
         # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
         if "Неверный логин или пароль" in str(status):
             # Создаем список объектов авторизации
-            all_auth = list(
+            auth_list = list(
                 models.AuthGroup.objects.exclude(name=self.device.auth_group.name)
                 .order_by("id")
                 .all()
             )
             # Собираем интерфейсы снова
             status = self.device_collector.collect_interfaces(
-                vlans=self.with_vlans, current_status=True, auth_obj=all_auth
+                vlans=self.with_vlans, current_status=True, auth_obj=auth_list
             )
 
             if status is None:  # Если статус сбора интерфейсов успешный
@@ -582,4 +571,3 @@ class DeviceStatsInfoAPIView(APIView):
 
         except DeviceException:
             return Response(status=400)
-

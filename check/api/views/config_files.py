@@ -24,14 +24,11 @@ from ..serializers import DevicesSerializer
 
 class ConfigStorageMixin:
     @staticmethod
-    def get_errors_for_config_path(
-        device_folder: str, file_name: str = ""
-    ) -> Union[Response, None]:
+    def get_errors_for_config_path(device_folder: str, file_name: str = ""):
 
-        storage = settings.CONFIG_STORAGE_DIR
+        storage = settings.CONFIG_STORAGE_DIR / device_folder
 
-        if not (storage / device_folder).exists():
-            (storage / device_folder).mkdir(parents=True)
+        storage.mkdir(parents=True, exist_ok=True)
 
         if not file_name:
             return
@@ -39,7 +36,7 @@ class ConfigStorageMixin:
         if ".." in file_name:
             return Response({"error": "Invalid file name"}, status=400)
 
-        if not (storage / device_folder / file_name).exists():
+        if not (storage / file_name).exists():
             return Response({"error": "File does not exist"}, status=400)
 
 
@@ -169,11 +166,13 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
 
         # Итерируемся по всем файлам и поддиректориям в директории
         for file in files:
+            # Получение статистики файла.
+            stats = file.stat()
             res.append(
                 {
                     "name": file.name,
-                    "size": file.stat().st_size,  # Размер в байтах
-                    "modTime": datetime.fromtimestamp(file.stat().st_mtime).strftime(
+                    "size": stats.st_size,  # Размер в байтах
+                    "modTime": datetime.fromtimestamp(stats.st_mtime).strftime(
                         "%H:%M %d.%m.%Y"  # Время последней модификации
                     ),
                     "isDir": file.is_dir(),
@@ -197,13 +196,12 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
         """
 
         # Фильтруем запрос
-        query = Q(
-            group_id__in=[
-                group["id"]
-                for group in self.request.user.profile.devices_groups.all().values("id")
-            ]
+        group_ids = self.request.user.profile.devices_groups.all().values_list(
+            "id", flat=True
         )
-        return models.Devices.objects.filter(query)
+        return models.Devices.objects.filter(group_id__in=group_ids).select_related(
+            "group"
+        )
 
     def get(self, request, **kwargs):
         """

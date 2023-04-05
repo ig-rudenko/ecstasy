@@ -2,6 +2,7 @@ import hashlib
 import re
 import datetime
 import json
+import filecmp
 import pathlib
 
 from itertools import islice
@@ -93,7 +94,6 @@ class MacAddressTableGather:
         """
         ## Принимает список интерфейсов, и формирует словарь из интерфейсов и их описаний
 
-        :param old_interfaces: Это список интерфейсов, которые вы хотите отформатировать
         :return: Словарь интерфейсов и соответствующих им описаний.
         """
         interfaces = {}
@@ -171,7 +171,7 @@ class MacAddressTableGather:
             return "E"
         return ""
 
-    def clear_old_records(self, timedelta=datetime.timedelta(hours=48)):
+    def clear_old_records(self, timedelta=datetime.timedelta(hours=48)) -> None:
         """
         ## Удаляет из базы данных все записи MAC адресов для оборудования старше 48 часов.
 
@@ -259,6 +259,7 @@ class ConfigurationGather:
         self.files.sort(key=lambda file: file.stat().st_mtime, reverse=True)
 
         self.last_config_file = self.files[0] if self.files else None
+        self.re_pattern_space = re.compile(r"\s")
 
     def check_config_storage(self):
         """
@@ -271,10 +272,9 @@ class ConfigurationGather:
         """
         ##  Удаляет файлы, если их больше 10
         """
-        if len(self.files) > 10:
-            # Удаление файлов в каталоге, кроме 10 самых последних.
-            for file in self.files[10:]:
-                file.unlink()
+        # Удаление файлов в каталоге, кроме 10 самых последних.
+        for file in self.files[:-10]:
+            file.unlink()
 
     def _compare_as_str(self, current_config: str) -> bool:
         """
@@ -300,12 +300,12 @@ class ConfigurationGather:
 
         # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
         current_config_hash = hashlib.sha3_224(
-            re.sub(r"\s", "", current_config).encode()
+            self.re_pattern_space.sub("", current_config).encode()
         ).hexdigest()
 
         # Берем прошлую конфигурацию и удаляем все пробелы, а затем хешируем ее.
         last_config_hash = hashlib.sha3_224(
-            re.sub(r"\s", "", last_config).encode()
+            self.re_pattern_space.sub("", last_config).encode()
         ).hexdigest()
 
         # Проверяем, совпадает ли last_config с current_config.
@@ -329,27 +329,9 @@ class ConfigurationGather:
         :type file_path: pathlib.Path
         :return: Правда или ложь
         """
-
-        last_config = b""
-        if self.last_config_file:
-            with self.last_config_file.open("rb") as file:
-                # Чтение последнего файла конфигурации.
-                last_config: bytes = file.read()
-
-        with file_path.open("rb") as file:
-            current_config: bytes = file.read()
-
-        # Берем текущую конфигурацию и хешируем ее.
-        current_config_hash = hashlib.sha3_224(current_config).hexdigest()
-
-        # Берем прошлую конфигурацию и хешируем ее.
-        last_config_hash = hashlib.sha3_224(last_config).hexdigest()
-
-        # Проверяем, совпадает ли last_config с current_config.
-        if last_config_hash == current_config_hash:
+        if self.last_config_file and filecmp.cmp(self.last_config_file, file_path):
             file_path.unlink()
             return False
-
         return True
 
     def validate_config(self, new_config) -> bool:

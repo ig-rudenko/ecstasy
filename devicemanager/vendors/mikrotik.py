@@ -42,7 +42,7 @@ class MikroTik(BaseDevice):
         output = self.send_command("interface vlan print detail terse")
 
         for line in re.split(r"(?<=\S)\s*(?=\d+\s+[RX]*\s+)", output):
-            line = re.sub(r"[\r\n]", "", line)
+            line = line.replace("\r\n", "")
             match = BaseDevice.find_or_empty(
                 r"\d+\s+R*\s+name=(\S+) .+vlan-id=(\d+) interface=(\S+)", line
             )
@@ -59,7 +59,7 @@ class MikroTik(BaseDevice):
         output = self.send_command("interface bridge port print terse")
 
         for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+interface)", output):
-            line = re.sub(r"[\r\n]", "", line)
+            line = line.replace("\r\n", "")
 
             match = BaseDevice.find_or_empty(
                 r"\d+\s+[XIDH]*\s+interface=(\S+) bridge=(\S+)", line
@@ -140,7 +140,7 @@ class MikroTik(BaseDevice):
 
         for line in re.split(r"(?=\S)\s*(?=\d+\s+[DRSX]*\s+)", interfaces_output):
 
-            line = re.sub(r"[\r\n]", "", line)
+            line = line.replace("\r\n", "")
             match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=(ether|wlan)", line)
 
             if not match:
@@ -207,7 +207,7 @@ class MikroTik(BaseDevice):
         # Разбиваем вывод на строки, начинающиеся с числа и пробела.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
             # Удаление символов новой строки.
-            line = re.sub(r"[\r\n]", "", line)
+            line = line.replace("\r\n", "")
 
             # Находим необходимые элементы в строке
             parsed = re.findall(
@@ -254,7 +254,7 @@ class MikroTik(BaseDevice):
 
         macs = []
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
-            line = re.sub(r"[\r\n]", "", line)
+            line = line.replace("\r\n", "")
             mac_line = BaseDevice.find_or_empty(
                 rf"mac-address=({self.mac_format}) .* bridge=(\S+)", line
             )
@@ -314,7 +314,7 @@ class MikroTik(BaseDevice):
         raw_poe_info = self.send_command(
             f'interface ethernet poe print terse where name="{port}"'
         )
-        raw_poe_info = re.sub(r"[\r\n]", "", raw_poe_info)
+        raw_poe_info = raw_poe_info.replace("\r\n", "")
         data["poeStatus"] = self.find_or_empty(
             "poe-out=(auto-on|forced-on|off)", raw_poe_info
         )
@@ -331,7 +331,7 @@ class MikroTik(BaseDevice):
         output = self.send_command(
             f'interface ethernet poe set "{port}" poe-out={status}'
         )
-        output = re.sub(r"[\r\n]", "", output)
+        output = output.replace("\r\n", "")
         return status, "no such item" in output or "syntax error" in output
 
     @_validate_port(if_invalid_return="?")
@@ -371,7 +371,6 @@ class MikroTik(BaseDevice):
             cnopts=cnopts,
         ) as session:
             path = str((folder_path / config_file_name).absolute())
-            print(path)
             # Приведенный выше код создает резервную копию файла конфигурации.
             session.get(config_file_name, path)
 

@@ -167,11 +167,11 @@ class Interfaces:
                 )
                 res.append(combo_interface)
                 i += 2  # Пропускаем 2 комбо-порта.
-                continue
 
-            # Добавляем обычные порты.
-            res.append(intf[i])
-            i += 1
+            else:
+                # Добавляем обычные порты.
+                res.append(intf[i])
+                i += 1
 
         return Interfaces(res)
 
