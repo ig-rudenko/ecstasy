@@ -213,6 +213,8 @@ def render_interactive_map(request, map_obj: Maps):
 
             # Для внешних карт.
             elif layer.type == "file":
+
+                # Создаем стиль для слоя
                 layer_data = {
                     "name": layer.name,
                     "type": "geojson",

@@ -57,6 +57,7 @@ class BrassSessionSerializer(MacSerializer):
      - str:`device` - max:255
      - str:`port` - max:50
     """
+
     device = serializers.CharField(max_length=255, required=True)
     port = serializers.CharField(max_length=50, required=True)
 
@@ -72,6 +73,22 @@ class ADSLProfileSerializer(serializers.Serializer):
 
     index = serializers.IntegerField(min_value=0)
     port = serializers.CharField(max_length=50, required=True)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+
+class PortControlSerializer(serializers.Serializer):
+    """
+    ## Cериализатор для изменения статуса порта
+    """
+
+    port = serializers.CharField(max_length=50, required=True)
+    status = serializers.ChoiceField(choices=["up", "down", "reload"], required=True)
+    save = serializers.BooleanField(required=True)
 
     def update(self, instance, validated_data):
         pass

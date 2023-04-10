@@ -40,7 +40,7 @@ class TestInterfacesClass(SimpleTestCase):
         # Для не существующего результата по фильтру описания
         self.assertEqual(str(intf.filter_by_desc("invalid")), str(Interfaces()))
 
-        interfaces_dict = [
+        interfaces_as_dict_list = [
             {"Interface": "eth1", "Status": "up", "Description": "description1"},
             {"Interface": "eth2", "Status": "down", "Description": "description2"},
             {
@@ -52,7 +52,7 @@ class TestInterfacesClass(SimpleTestCase):
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на основе словарей дают одинаковые данные.
         self.assertEqual(
-            str(Interfaces(interfaces_dict)), str(Interfaces(interfaces_list))
+            str(Interfaces(interfaces_as_dict_list)), str(Interfaces(interfaces_list))
         )
 
     def test_interface_init_vlans(self):

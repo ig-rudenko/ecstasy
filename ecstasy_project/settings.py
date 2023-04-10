@@ -15,6 +15,7 @@ import _locale
 import logging
 import os
 import json
+import re
 from datetime import timedelta, datetime
 from pathlib import Path
 from celery.schedules import crontab
@@ -30,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv("DJANGO_DEBUG") == "1"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
 
@@ -143,6 +144,10 @@ LOGOUT_REDIRECT_URL = "/"
 
 NON_ABON_INTERFACES_PATTERN = (
     r"power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras|voip|fttb"
+)
+
+PORT_GUARD_PATTERN = re.compile(
+    r"svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras"
 )
 
 # ================= CACHE ===================

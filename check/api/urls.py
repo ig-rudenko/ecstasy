@@ -38,6 +38,7 @@ urlpatterns = [
     # ===========================================
     #                Device Manager
     # ===========================================
+    path("<device_name>/port-status", device_manager.PortControlAPIView.as_view()),
     path("<device_name>/macs", device_manager.MacListAPIView.as_view()),
     path(
         "<device_name>/change-description", device_manager.ChangeDescription.as_view()

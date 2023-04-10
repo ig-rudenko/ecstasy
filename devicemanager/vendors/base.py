@@ -87,6 +87,7 @@ def range_to_numbers(ports_string: str) -> List[int]:
     """
 
     ports_split = set()
+
     # Проверка наличия слова "to" в файле ports_string.
     if "to" in ports_string:
         # Если имеется формат "1 to 7 10 12 to 44"
@@ -99,7 +100,7 @@ def range_to_numbers(ports_string: str) -> List[int]:
 
         # Добавляем к диапазону оставшиеся числа
         ports_split.update(
-            map(int, filter(lambda x: x.isdigit(), ports_string.split(" ")))
+            map(int, filter(str.isdigit, ports_string.split()))
         )
 
         return sorted(ports_split)
@@ -113,13 +114,16 @@ def range_to_numbers(ports_string: str) -> List[int]:
     for p in ports_split:
         try:
             if "-" in p:
-                # создает список портов из диапазона портов.
+                # Создаем список целых чисел, представляющих диапазон портов. ( 134-136 )
+                # Строка `p`, содержит диапазон портов, разделенных дефисом, разбиваем ее на два целых числа,
+                # используя дефис в качестве разделителя, а затем создаем список целых чисел,
+                # используя функцию `range()`, которая затем преобразуется в список с помощью функции `list()`.
                 port_range = list(range(int(p.split("-")[0]), int(p.split("-")[1]) + 1))
                 for pr in port_range:
                     res_ports.append(int(pr))
             else:
                 res_ports.append(int(p))
-        except:
+        except (ValueError, IndexError):
             pass
 
     return sorted(res_ports)

@@ -7,13 +7,15 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from check.views import log, permission
+from check.logging import log
+from check.permissions import profile_permission
 from ..permissions import DevicePermission
 from check import models
 from devicemanager.exceptions import (
     TelnetConnectionError,
     TelnetLoginError,
     UnknownDeviceError,
+    DeviceException,
 )
 from ..serializers import BrassSessionSerializer, MacSerializer
 
@@ -31,7 +33,9 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
 
     try:
         with bras.connect() as session:
-            bras_output = session.send_command(f"display access-user mac-address {mac}", expect_command=False)
+            bras_output = session.send_command(
+                f"display access-user mac-address {mac}", expect_command=False
+            )
             if "No online user!" not in bras_output:
                 user_index = re.findall(r"User access index\s+:\s+(\d+)", bras_output)
 
@@ -50,9 +54,8 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
         result[bras.name]["errors"].append("Неизвестные тип оборудования")
 
 
-@method_decorator(permission(models.Profile.BRAS), name="get")
+@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class BrassSessionAPIView(APIView):
-
     def get(self, request):
         """
         ## Возвращаем сессию на BRAS для конкретного MAC адреса
@@ -90,7 +93,7 @@ class BrassSessionAPIView(APIView):
         return Response(result)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="post")
+@method_decorator(profile_permission(models.Profile.BRAS), name="post")
 class CutBrassSessionAPIView(APIView):
     """
     ## Сбрасываем сессию по MAC адресу и перезагружаем порт на оборудовании
@@ -161,7 +164,7 @@ class CutBrassSessionAPIView(APIView):
                     f"{reload_port_status}",
                 )
 
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
+        except DeviceException as e:
             result["errors"].append(
                 f"Сессия сброшена, но порт не был перезагружен! {e}"
             )

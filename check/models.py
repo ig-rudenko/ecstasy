@@ -225,6 +225,10 @@ class Profile(models.Model):
         DeviceGroup, verbose_name="Доступные группы оборудования"
     )
 
+    @property
+    def perm_level(self) -> int:
+        return self.permissions_level.index(self.permissions)
+
     def __str__(self):
         return f"Profile: {self.user.username}"
 

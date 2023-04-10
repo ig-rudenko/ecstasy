@@ -308,26 +308,31 @@ export default {
 
       let data = {
         port: this.portAction.port,       // Сам порт
-        device: this.deviceName,          // Имя оборудования
         desc: this.portAction.desc,       // Описание порта
         status: this.portAction.action,   // Что сделать с портом
         save: save_config,                // Сохранить конфигурацию после действия?
       }
       $.ajax({
-          url: "/device/port/reload",
+          url: "/device/api/" + this.deviceName + "/port-status",
           type: 'POST',
           data: data,
           headers: {"X-CSRFToken": document.CSRF_TOKEN},
-          success: function( data ) {
-            toastInfo.title= data.status
-            toastInfo.message = data.message
-            toastInfo.color = data.color
+          success: function( resp ) {
+            toastInfo.title= `Порт: ${resp.port}`
+
+            if (resp.save) {
+              toastInfo.message = `Состояние: ${resp.status.toUpperCase()}<br> Конфигурация была сохранена!`
+            } else {
+              toastInfo.message = `Состояние: ${resp.status.toUpperCase()}<br> Конфигурация НЕ была сохранена!`
+            }
+
+            toastInfo.color = data.save?"#198754":"#0d6efd"
             toast.toast('show')
           },
           error: function (data) {
             console.log("error", data)
             toastInfo.title= "ERROR"
-            toastInfo.message = data
+            toastInfo.message = data.error
             toastInfo.color = "#cb0707"
             toast.toast('show')
           }

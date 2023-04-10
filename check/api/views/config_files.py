@@ -1,7 +1,5 @@
-from typing import Union
 from datetime import datetime
 
-from django.db.models import Q
 from django.http import FileResponse
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -13,7 +11,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from check import models
-from check.views import permission
+from check.permissions import profile_permission
 from devicemanager.vendors import BaseDevice
 
 from gathering.collectors import ConfigurationGather
@@ -40,8 +38,8 @@ class ConfigStorageMixin:
             return Response({"error": "File does not exist"}, status=400)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="get")
-@method_decorator(permission(models.Profile.BRAS), name="delete")
+@method_decorator(profile_permission(models.Profile.BRAS), name="get")
+@method_decorator(profile_permission(models.Profile.BRAS), name="delete")
 class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
     """
     # Для загрузки и удаления файла конфигурации конкретного оборудования
@@ -94,7 +92,7 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
         return Response(status=204)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="get")
+@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
     permission_classes = [DevicePermission]
 
@@ -181,7 +179,7 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
         return res
 
 
-@method_decorator(permission(models.Profile.BRAS), name="get")
+@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
     """
     # Смотрим список оборудования и файлы конфигураций
@@ -255,7 +253,7 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
         return Response(result)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class CollectConfigAPIView(APIView):
     def post(self, request, device_name: str):
         """

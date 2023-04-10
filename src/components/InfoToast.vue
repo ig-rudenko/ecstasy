@@ -15,9 +15,7 @@
         <small id="toast_extra" class="text-muted">только что</small>
         <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
       </div>
-      <div id="toast_message" class="toast-body">
-        {{ toast.message }}
-      </div>
+      <div id="toast_message" class="toast-body" v-html="toast.message"></div>
     </div>
 
   </div>

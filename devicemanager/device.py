@@ -135,7 +135,13 @@ class Interfaces:
         if not self.__interfaces:
             # Если не существует интерфейсов, то возвращаем пустой, чтобы не было ошибки
             return Interface()
-        return self.__interfaces[item]
+        if isinstance(item, int):
+            return self.__interfaces[item]
+        if isinstance(item, str):
+            for i in self.__interfaces:
+                if i.name == item:
+                    return i
+        return Interface()
 
     def __bool__(self):
         return bool(self.__interfaces)

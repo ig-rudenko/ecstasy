@@ -1,3 +1,7 @@
+import json
+
+import pexpect
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
@@ -7,19 +11,121 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from check import models
-from check.views import permission
+from check.permissions import profile_permission
+from devicemanager.device import Interfaces
 from devicemanager.exceptions import (
     TelnetLoginError,
     TelnetConnectionError,
     UnknownDeviceError,
+    DeviceException,
 )
-from net_tools.models import VlanName
+from net_tools.models import VlanName, DevicesInfo
 
-from ..serializers import InterfacesCommentsSerializer, ADSLProfileSerializer
+from ..serializers import (
+    InterfacesCommentsSerializer,
+    ADSLProfileSerializer,
+    PortControlSerializer,
+)
 from ..permissions import DevicePermission
+from ...logging import log
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
+class PortControlAPIView(generics.GenericAPIView):
+    permission_classes = [DevicePermission]
+    serializer_class = PortControlSerializer
+
+    def post(self, request, device_name: str):
+        """
+        ## Изменяем состояние порта оборудования
+        @code=200
+        """
+
+        # Проверяем данные, полученные в запросе, с помощью сериализатора.
+        serializer: PortControlSerializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        port_status: str = serializer.validated_data["status"]
+        port_name: str = serializer.validated_data["port"]
+        save_config: bool = serializer.validated_data["save"]
+
+        # Смотрим интерфейсы, которые сохранены в БД
+        interfaces_storage = get_object_or_404(DevicesInfo, dev__name=device_name)
+        # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
+        interfaces = Interfaces(json.loads(interfaces_storage.interfaces))
+
+        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
+        port_desc: str = interfaces[port_name].desc
+
+        # Если не суперпользователь, то нельзя изменять состояние определенных портов
+        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(
+            port_desc
+        ):
+            return Response(
+                {"error": "Запрещено изменять состояние данного порта!"},
+                status=403,
+            )
+
+        model_dev = get_object_or_404(models.Devices, name=device_name)
+
+        # Есть ли у пользователя доступ к группе данного оборудования
+        self.check_object_permissions(request, model_dev)
+
+        # Если недостаточно привилегий для изменения статуса порта
+        if request.user.profile.perm_level < 2 and port_status in ["up", "down"]:
+            # Логи
+            log(
+                request.user,
+                model_dev,
+                f'Tried to set port {port_name} ({serializer.validated_data["desc"]}) '
+                f"to the {port_status} state, but was refused \n",
+            )
+            return Response(
+                {"error": "У вас недостаточно прав, для изменения состояния порта!"},
+                status=403,
+            )
+
+        # Если оборудование Недоступно
+        if not model_dev.available:
+            return Response({"error": "Оборудование недоступно!"})
+
+        try:
+            # Теперь наконец можем подключиться к оборудованию :)
+            with model_dev.connect() as session:
+                try:
+                    # Перезагрузка порта
+                    if port_status == "reload":
+                        port_change_status = session.reload_port(
+                            port=port_name, save_config=save_config
+                        )
+
+                    # UP and DOWN
+                    else:
+                        port_change_status = session.set_port(
+                            port=port_name, status=port_status, save_config=save_config
+                        )
+
+                except pexpect.TIMEOUT:
+                    return Response({"error": "device timeout"}, status=500)
+
+        except TelnetConnectionError:
+            return Response({"error": "Telnet недоступен"}, status=500)
+        except TelnetLoginError:
+            return Response({"error": "Неверный Логин/Пароль"}, status=500)
+        except UnknownDeviceError:
+            return Response({"error": "Неизвестный тип оборудования"}, status=500)
+
+        # Логи
+        log(
+            request.user,
+            model_dev,
+            f"{port_status} port {port_name} ({port_desc}) \n{port_change_status}",
+        )
+
+        return Response(serializer.validated_data, status=200)
+
+
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class ChangeDescription(APIView):
     """
     ## Изменяем описание на порту у оборудования
@@ -70,7 +176,7 @@ class ChangeDescription(APIView):
                 )
                 new_description = session.clear_description(new_description)
 
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
+        except DeviceException as e:
             return Response({"detail": str(e)}, status=500)
 
         if "Неверный порт" in set_description_status:
@@ -198,17 +304,13 @@ class CableDiagAPIView(APIView):
                         return Response(
                             {"detail": "Unsupported for this device"}, status=400
                         )
-            except (
-                TelnetConnectionError,
-                TelnetLoginError,
-                UnknownDeviceError,
-            ) as error:
+            except DeviceException as error:
                 return Response({"detail": str(error)}, status=500)
 
         return Response(data)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class SetPoEAPIView(APIView):
     permission_classes = [DevicePermission]
 
@@ -246,7 +348,7 @@ class SetPoEAPIView(APIView):
                         {"detail": "Unsupported for this device"}, status=400
                     )
 
-        except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as error:
+        except DeviceException as error:
             return Response({"detail": str(error)}, status=500)
 
 
@@ -293,7 +395,7 @@ class InterfaceInfoAPIView(APIView):
         return Response(result)
 
 
-@method_decorator(permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class ChangeDSLProfileAPIView(APIView):
     permission_classes = [DevicePermission]
 

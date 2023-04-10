@@ -14,12 +14,6 @@ class NoAccessWithNoLogin(TestCase):
             expected_url="/accounts/login/?next=/device/Device",
         )
 
-    def test_port_reload_page(self):
-        self.assertRedirects(
-            self.client.get(reverse("port_reload")),
-            expected_url="/accounts/login/?next=/device/port/reload",
-        )
-
     def test_show_bras_session_page(self):
         resp = self.client.get(reverse("show-session"))
         self.assertEqual(resp.status_code, 403)

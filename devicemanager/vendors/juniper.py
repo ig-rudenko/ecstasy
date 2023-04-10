@@ -1,6 +1,5 @@
 import binascii
 from re import findall, sub
-from typing import List
 
 import textfsm
 from .base import BaseDevice, TEMPLATE_FOLDER
@@ -109,7 +108,30 @@ class Juniper(BaseDevice):
         return []
 
     @staticmethod
-    def _parse_subscribers(string: str) -> list:
+    def convert_hex_to_ascii(hex_string: str) -> str:
+        """
+        ## Принимает строку состоящую из шестнадцатеричных символов и преобразовывает её в строку из ASCII символов
+        """
+
+        # Удаление всех пробелов из строки. "\n00 04 02 5e 00 03\n"
+        unknown_format_str = sub(r"\s", "", hex_string)  # "0004025e0003"
+
+        try:
+            # Преобразование шестнадцатеричной строки в ascii.
+            # Используем `binascii.unhexlify()` для преобразования результирующей строки шестнадцатеричных цифр
+            # в байтовый объект, затем используем метод `decode()` для преобразования bytes в строку
+            # с использованием кодировки ASCII. Аргумент `errors="replace"` указывает, что любые символы,
+            # отличные от ASCII, во входной строке должны быть заменены символом замены Unicode (U+FFFD) в строке.
+            return binascii.unhexlify(unknown_format_str).decode(
+                "ascii", errors="replace"
+            )
+
+        # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
+        # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
+        except binascii.Error:
+            return unknown_format_str
+
+    def _parse_subscribers(self, string: str) -> list:
         """
         ## Парсим данные из вывода команды **subscribers**:
 
@@ -125,30 +147,6 @@ class Juniper(BaseDevice):
 
         :returns: ['ip', 'mac' 'vlan_id', 'device_name', 'port']
         """
-
-        def convert_to_str(list_of_strings: List[list]) -> str:
-            """
-            `convert_to_str` принимает список строк и возвращает строку
-
-            :param list_of_strings: Это список строк, которые вы хотите преобразовать в одну строку
-            :type list_of_strings: List[list]
-            """
-
-            # Объединение списка строк в одну строку.
-            total_string = "".join(list_of_strings[0])  # "\n00 04 02 5e 00 03\n"
-            # Удаление всех пробелов из строки.
-            unknown_format_str = sub(r"\s", "", total_string)  # "0004025e0003"
-
-            try:
-                # Преобразование шестнадцатеричной строки в ascii.
-                return binascii.unhexlify(unknown_format_str).decode(
-                    "ascii", errors="replace"
-                )
-
-            # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
-            # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
-            except binascii.Error:
-                return unknown_format_str
 
         # Форматируем вывод
 
@@ -171,7 +169,12 @@ class Juniper(BaseDevice):
             string,
         )
         if agent_remote:
-            info.append(convert_to_str(agent_remote))
+            # Шестнадцатеричная строка получается из переменной `agent_remote`, которая представляет собой список
+            # строк, полученных с помощью поиска по регулярному выражению.
+            # Часть кода `"".join(agent_remote[0])` объединяет строки в списке `agent_remote`, чтобы
+            # сформировать единую строку, которая затем передается в качестве аргумента методу `convert_hex_to_ascii`.
+            # Результирующая строка ASCII затем добавляется к списку `info`.
+            info.append(self.convert_hex_to_ascii("".join(agent_remote[0])))
 
         # Agent Circuit ID
         agent_circuit = findall(
@@ -180,7 +183,12 @@ class Juniper(BaseDevice):
             string,
         )
         if agent_circuit:
-            info.append(convert_to_str(agent_circuit))
+            # Шестнадцатеричная строка получается из переменной `agent_circuit`, которая представляет собой список
+            # строк, полученных с помощью поиска по регулярному выражению.
+            # Часть кода `"".join(agent_circuit[0])` объединяет элементы списка `agent_circuit` в единую строку, которая
+            # затем передается в качестве аргумента методу `convert_hex_to_ascii`.
+            # Результирующая строка ASCII затем добавляется к списку `info`.
+            info.append(self.convert_hex_to_ascii("".join(agent_circuit[0])))
 
         return info
 
