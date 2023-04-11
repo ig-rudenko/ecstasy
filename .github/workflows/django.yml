@@ -30,6 +30,6 @@ jobs:
         pip install coverage
     - name: Run Tests
       run: |
-        coverage run python manage.py test
+        coverage run manage.py test
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
