@@ -117,7 +117,7 @@ class MacTraceroute(View):
 
         if mac_object.type == "D":
             return "#73beff"
-        elif mac_object.type == "E":
+        if mac_object.type == "E":
             return "#ffbb56"
 
         return "#ffffff"

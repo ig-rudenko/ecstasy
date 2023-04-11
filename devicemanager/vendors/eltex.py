@@ -1,16 +1,14 @@
 import re
 from time import sleep
-from functools import lru_cache, wraps, reduce
+from functools import lru_cache, wraps
 from typing import List
 
 import pexpect
 import textfsm
-from django.template.loader import render_to_string
 
 from .base import (
     BaseDevice,
     TEMPLATE_FOLDER,
-    range_to_numbers,
     interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
@@ -305,7 +303,7 @@ class EltexMES(BaseDevice):
 
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
-        mac_str = self.send_command(f"show mac address-table", expect_command=False)
+        mac_str = self.send_command("show mac address-table", expect_command=False)
         mac_table = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(\S+\s?\d+/\d+/\d+)\s+(dynamic).*\n",
             mac_str,
@@ -796,7 +794,7 @@ class EltexLTP(BaseDevice):
         Ожидаем ответа от оборудования **successfully**,
         """
 
-        self.session.send(f"commit\r")
+        self.session.send("commit\r")
         if self.session.expect([self.prompt, r"successfully|Nothing to commit"]):
             return self.SAVED_OK
         return self.SAVED_ERR
@@ -959,7 +957,7 @@ class EltexLTP(BaseDevice):
 
         # Если указан порт конкретного ONT `0/1`, то используем другую команду
         # И другое регулярное выражение
-        elif port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
             macs_list = re.findall(
                 rf"(\d+)\s+({self.mac_format})",
                 self.send_command(f"show mac interface ont {port_number}"),
@@ -1114,10 +1112,10 @@ class EltexLTP(BaseDevice):
 
             if desc == "":
                 # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-                res = self.send_command("no description", expect_command=False)
+                self.send_command("no description", expect_command=False)
 
             else:  # В другом случае, меняем описание на оборудовании
-                res = self.send_command(f"description {desc}", expect_command=False)
+                self.send_command(f"description {desc}", expect_command=False)
 
             self.session.send("exit\r")
             self.session.expect(self.prompt)
@@ -1162,10 +1160,10 @@ class EltexLTP(BaseDevice):
 
         if "8X" in self.model and int(number) > 3:
             return "COMBO-" + media_type.upper()
-        elif "8X" in self.model and int(number) <= 3:
+        if "8X" in self.model and int(number) <= 3:
             return "COPPER"
-        else:
-            return "SFP"
+
+        return "SFP"
 
     @BaseDevice._lock
     @_validate_port()
@@ -1216,7 +1214,7 @@ class EltexLTP16N(BaseDevice):
         Ожидаем ответа от оборудования **successfully**,
         """
 
-        self.session.send(f"commit\r")
+        self.session.send("commit\r")
         if self.session.expect([self.prompt, r"successfully|Nothing to commit"]):
             return self.SAVED_OK
         return self.SAVED_ERR
@@ -1232,14 +1230,14 @@ class EltexLTP16N(BaseDevice):
         interfaces = []
 
         interfaces_front_output = self.send_command(
-            f"show interface front-port 1-8 state"
+            "show interface front-port 1-8 state"
         )
         interfaces += [
             (f"front-port {line[0]}", line[1])
             for line in re.findall(r"(\d)\s+(\S+)", interfaces_front_output)
         ]
 
-        interfaces_pon_output = self.send_command(f"show interface pon-port 1-16 state")
+        interfaces_pon_output = self.send_command("show interface pon-port 1-16 state")
         interfaces += [
             (f"pon-port {line[0]}", line[1])
             for line in re.findall(r"(\d+)\s+(\S+).+[\r\n]", interfaces_pon_output)
@@ -1519,10 +1517,10 @@ class EltexLTP16N(BaseDevice):
 
             if desc == "":
                 # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-                res = self.send_command("no description", expect_command=False)
+                self.send_command("no description", expect_command=False)
 
             else:  # В другом случае, меняем описание на оборудовании
-                res = self.send_command(f"description {desc}", expect_command=False)
+                self.send_command(f"description {desc}", expect_command=False)
 
             self.session.send("exit\r")
             self.session.expect(self.prompt)

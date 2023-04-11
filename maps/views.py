@@ -119,7 +119,7 @@ def zabbix_get(
             selectInventory=["location_lat", "location_lon"],
         )
 
-    for num, host in enumerate(hosts, start=1):
+    for host in hosts:
         if (
             host["inventory"]
             and host["inventory"]["location_lat"]

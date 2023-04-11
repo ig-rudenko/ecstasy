@@ -16,7 +16,7 @@ svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/
 </svg>"""
 
 
-def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None):
+def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> (str, tuple):
     icons = [
         # Circle fill
         {
@@ -68,10 +68,9 @@ def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None):
     if icon_name is None:
         return ((ico["name"], mark_safe(ico["code"])) for ico in icons)
 
-    else:
-        for ico in icons:
-            if icon_name == ico["name"]:
-                return ico["code"]
+    for ico in icons:
+        if icon_name == ico["name"]:
+            return ico["code"]
 
 
 def get_polygon(fill_color: str):
@@ -170,11 +169,13 @@ class LayersAdmin(admin.ModelAdmin):
     )
 
     @admin.display(description="Название слоя")
-    def layer_name(self, instance: Layers):
+    def layer_name(self, instance: Layers) -> str:
         if instance.type == "zabbix":
             return instance.name
         if instance.type == "file":
             return format_html(f"{svg_file_icon} {instance.name}")
+
+        return ""
 
     @staticmethod
     def parse_layer_file(file_path):
@@ -227,7 +228,7 @@ class LayersAdmin(admin.ModelAdmin):
             if colour:
                 feature_types[feature["geometry"]["type"]]["colours"][colour] += 1
 
-        for ft, data in feature_types.items():
+        for _, data in feature_types.items():
             data["percent"] = round(data["count"] / total_count, 2)
 
         return feature_types
@@ -276,6 +277,8 @@ class LayersAdmin(admin.ModelAdmin):
             return mark_safe(
                 f'На основе группы Zabbix - <strong>"{instance.zabbix_group_name}"</strong>'
             )
+
+        return "Неизвестный тип слоя"
 
 
 @admin.register(Maps)

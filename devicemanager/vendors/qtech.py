@@ -122,8 +122,8 @@ class Qtech(BaseDevice):
                     # Неверный порт
                     if isinstance(if_invalid_return, str):
                         return f"{if_invalid_return} {port}"
-                    else:
-                        return if_invalid_return
+
+                    return if_invalid_return
 
                 # Вызываем метод
                 return func(self, port, *args, **kwargs)

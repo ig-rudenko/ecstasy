@@ -18,6 +18,7 @@ from gathering.collectors import ConfigurationGather
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter
 from ..serializers import DevicesSerializer
+from ..swagger import schemas
 
 
 class ConfigStorageMixin:
@@ -92,6 +93,7 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
         return Response(status=204)
 
 
+@method_decorator(schemas.config_files_list_api_doc, name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
     permission_classes = [DevicePermission]
@@ -102,34 +104,25 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
 
         Пример ответа:
 
-            {
-                "files": [
-                    {
-                        "name": "config_file_96f7d499c739875.txt",
-                        "size": 19346,
-                        "modTime": "11:53 28.03.2023",
-                        "isDir": false
-                    }
-                ],
-
-                ...
-
-            }
-
+            [
+                {
+                    "name": "config_file_96f7d499c739875.txt",
+                    "size": 19346,
+                    "modTime": "11:53 28.03.2023",
+                    "isDir": false
+                }
+            ]
         """
 
-        # Получение ошибок для пути конфигурации.
-        config_path_errors = self.get_errors_for_config_path(device_name)
-        # Проверка, является ли config_path_errors пустым или нет.
-        if config_path_errors:
-            return config_path_errors
+        storage = settings.CONFIG_STORAGE_DIR / device_name
+        storage.mkdir(parents=True, exist_ok=True)
 
         # Получение объекта устройства из базы данных.
         device = get_object_or_404(models.Devices, name=device_name)
         # Проверка наличия у пользователя прав на устройство.
         self.check_object_permissions(self.request, device)
 
-        return Response({"files": self.get_config_files(device_name)}, status=200)
+        return Response(self.get_config_files(device_name), status=200)
 
     @staticmethod
     def get_config_files(device_name: str) -> list:
@@ -179,6 +172,7 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
         return res
 
 
+@method_decorator(schemas.devices_config_files_list_api_doc, name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
     """

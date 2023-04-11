@@ -1,5 +1,4 @@
 import json
-import os
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -41,7 +40,7 @@ def check_periodically_scan(request):
 def get_vendor(request, mac: str) -> JsonResponse:
     """Определяет производителя по MAC адресу"""
 
-    resp = requests_lib.get("https://macvendors.com/query/" + mac)
+    resp = requests_lib.get("https://macvendors.com/query/" + mac, timeout=2)
     if resp.status_code == 200:
         return JsonResponse({"vendor": resp.text})
     return JsonResponse({"vendor": ""})
@@ -166,14 +165,12 @@ def get_vlan_desc(request) -> JsonResponse:
         vlan = int(request.GET.get("vlan"))
         # Получение имени vlan из базы данных.
         vlan_name = VlanName.objects.get(vid=vlan).name
+        # Возвращает ответ JSON с именем vlan.
+        return JsonResponse({"vlan_desc": vlan_name})
 
     except (VlanName.DoesNotExist, ValueError):
         # Возврат пустого объекта JSON.
         return JsonResponse({})
-
-    else:
-        # Возвращает ответ JSON с именем vlan.
-        return JsonResponse({"vlan_desc": vlan_name})
 
 
 def create_nodes(result: list, net: Network, show_admin_down_ports: str):

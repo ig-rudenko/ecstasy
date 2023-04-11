@@ -208,7 +208,7 @@ class Cisco(BaseDevice):
         """
 
         mac_str = self.send_command(
-            f"show mac address-table",
+            "show mac address-table",
             expect_command=False,
         )
         mac_table = re.findall(
@@ -377,10 +377,10 @@ class Cisco(BaseDevice):
         # Проверка, является ли порт оптоволоконным.
         if "No XCVR" in port_type or "SFP" in port_info or port_type in FIBER_TYPES:
             return "SFP"
-        elif "RJ45" in port_type or port_type in COOPER_TYPES:
+        if "RJ45" in port_type or port_type in COOPER_TYPES:
             return "COPPER"
-        else:
-            return "?"
+
+        return "?"
 
     @_validate_port()
     def get_port_errors(self, port: str) -> str:

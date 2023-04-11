@@ -114,7 +114,7 @@ def update_file_for_layer(sender, instance: Layers, *args, **kwargs):
 
 @receiver(post_delete, sender=Layers)
 def remove_file_for_layer(sender, instance: Layers, *args, **kwargs):
-    if os.path.exists(instance.from_file.path):
+    if instance.from_file and os.path.exists(instance.from_file.path):
         os.remove(instance.from_file.path)
 
 
@@ -183,13 +183,14 @@ class Maps(models.Model):
         return f"Map: {self.name}"
 
     @property
-    def type(self):
+    def type(self) -> str:
         if self.from_file:
             return "file"
         if self.map_url:
             return "external"
         if self.layers:
             return "zabbix"
+        return "none"
 
 
 @receiver(pre_save, sender=Maps)

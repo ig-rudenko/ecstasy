@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 
-def page404(request, exception):
+def page404(request, *args, **kwargs):
     """
     ## Отображает шаблон ```errors/404.html``` для любой ошибки 404
     """

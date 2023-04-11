@@ -128,7 +128,7 @@ class Extreme(BaseDevice):
 
     @BaseDevice._lock
     def get_vlans(self) -> T_InterfaceVLANList:
-        """
+        r"""
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
         Для начала получаем список всех интерфейсов через метод **get_interfaces()**
@@ -191,8 +191,8 @@ class Extreme(BaseDevice):
                     # Неверный порт
                     if isinstance(if_invalid_return, str):
                         return f"{if_invalid_return} {port}"
-                    else:
-                        return if_invalid_return
+
+                    return if_invalid_return
 
                 # Вызываем метод
                 return func(self, port, *args, **kwargs)
@@ -212,7 +212,7 @@ class Extreme(BaseDevice):
 
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
-        mac_str = self.send_command(f"show fdb", expect_command=False)
+        mac_str = self.send_command("show fdb", expect_command=False)
         mac_table = re.findall(
             rf"({self.mac_format})\s+v\S+\((\d+)\)\s+\d+\s+d m\s+(\d+).*\n",
             mac_str,

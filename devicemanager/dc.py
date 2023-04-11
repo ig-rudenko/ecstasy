@@ -207,7 +207,7 @@ class DeviceFactory:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version)
             if re.match(r"LTP-[48]X", model):
                 return EltexLTP(self.session, self.ip, auth, model=model)
-            elif "LTP-16N" in model:
+            if "LTP-16N" in model:
                 return EltexLTP16N(self.session, self.ip, auth, model=model)
 
         # Eltex MES, ESR

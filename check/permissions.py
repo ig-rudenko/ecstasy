@@ -1,6 +1,6 @@
 from functools import wraps
 
-from django.http import HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden
 
 from . import models
 

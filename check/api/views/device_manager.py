@@ -28,8 +28,10 @@ from ..serializers import (
 )
 from ..permissions import DevicePermission
 from ...logging import log
+from ..swagger import schemas
 
 
+@method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
 @method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
 class PortControlAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
@@ -38,7 +40,6 @@ class PortControlAPIView(generics.GenericAPIView):
     def post(self, request, device_name: str):
         """
         ## Изменяем состояние порта оборудования
-        @code=200
         """
 
         # Проверяем данные, полученные в запросе, с помощью сериализатора.
@@ -87,7 +88,7 @@ class PortControlAPIView(generics.GenericAPIView):
 
         # Если оборудование Недоступно
         if not model_dev.available:
-            return Response({"error": "Оборудование недоступно!"})
+            return Response({"error": "Оборудование недоступно!"}, status=500)
 
         try:
             # Теперь наконец можем подключиться к оборудованию :)
@@ -334,7 +335,7 @@ class SetPoEAPIView(APIView):
             with device.connect() as session:
                 if hasattr(session, "set_poe_out"):
                     # Меняем PoE
-                    status, err = session.set_poe_out(
+                    _, err = session.set_poe_out(
                         request.data["port"], request.data["status"]
                     )
                     if not err:
@@ -343,10 +344,10 @@ class SetPoEAPIView(APIView):
                         {"detail": f"Invalid data ({request.data['status']})"},
                         status=400,
                     )
-                else:
-                    return Response(
-                        {"detail": "Unsupported for this device"}, status=400
-                    )
+
+                return Response(
+                    {"detail": "Unsupported for this device"}, status=400
+                )
 
         except DeviceException as error:
             return Response({"detail": str(error)}, status=500)
@@ -428,10 +429,10 @@ class ChangeDSLProfileAPIView(APIView):
 
                     return Response({"status": status})
 
-                else:  # Нельзя менять профиль для данного устройства
-                    return Response(
-                        {"error": "Device can't change profile"}, status=400
-                    )
+                # Нельзя менять профиль для данного устройства
+                return Response(
+                    {"error": "Device can't change profile"}, status=400
+                )
 
         except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
             return Response({"error": str(e)}, status=500)

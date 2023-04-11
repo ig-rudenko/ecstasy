@@ -280,7 +280,7 @@ class Huawei(BaseDevice):
                 return "dynamic"
             return type_
 
-        mac_str = self.send_command(f"display mac-address", expect_command=False)
+        mac_str = self.send_command("display mac-address", expect_command=False)
         mac_table = re.findall(
             rf"({self.mac_format})\s+(\d+)\S*\s+\S*\s+([GEF]\S+)\s+([sdAN]\S+).*\n",
             mac_str,

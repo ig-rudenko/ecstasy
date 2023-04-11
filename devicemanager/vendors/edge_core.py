@@ -169,7 +169,7 @@ class EdgeCore(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        output = self.send_command(f"show mac-address-table", expect_command=False)
+        output = self.send_command("show mac-address-table", expect_command=False)
         mac_table = re.findall(
             rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output
         )

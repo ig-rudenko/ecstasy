@@ -167,8 +167,8 @@ class ZTE(BaseDevice):
                     # Неверный порт
                     if isinstance(if_invalid_return, str):
                         return f"{if_invalid_return} {port}"
-                    else:
-                        return if_invalid_return
+
+                    return if_invalid_return
 
                 # Вызываем метод
                 return func(self, port, *args, **kwargs)
@@ -506,7 +506,7 @@ class ZTE(BaseDevice):
             result[f"pair{i}"]["len"] = pair[1]
 
         if result["pair1"]["status"] == result["pair1"]["status"]:
-            result["status"] = result[f"pair1"]["status"].capitalize()
+            result["status"] = result["pair1"]["status"].capitalize()
 
         return result
 

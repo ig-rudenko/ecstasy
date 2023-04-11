@@ -530,6 +530,7 @@ class HuaweiMA5600T(BaseDevice):
         """
 
         def color(val: float, s: str) -> str:
+            color_code = ""
             """Определяем цвета в зависимости от числовых значений показателя"""
             if "SNR margin" in s:
                 gradient = [5, 7, 10, 20]
@@ -539,18 +540,20 @@ class HuaweiMA5600T(BaseDevice):
             elif "output power" in s:
                 return "#95e522" if val >= 10 else "#e5a522"
             else:
-                return ""
+                return color_code
             # проверяем значения по градиенту
             if val <= gradient[0]:
-                return "#e55d22"
-            if val <= gradient[1]:
-                return "#e5a522"
-            if val <= gradient[2]:
-                return "#dde522"
-            if val <= gradient[3]:
-                return "#95e522"
+                color_code = "#e55d22"
+            elif val <= gradient[1]:
+                color_code = "#e5a522"
+            elif val <= gradient[2]:
+                color_code = "#dde522"
+            elif val <= gradient[3]:
+                color_code = "#95e522"
+            else:
+                color_code = "#22e536"
 
-            return "#22e536"
+            return color_code
 
         up_down_streams = [
             {

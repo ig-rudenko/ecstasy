@@ -211,7 +211,7 @@ class MikroTik(BaseDevice):
 
             # Находим необходимые элементы в строке
             parsed = re.findall(
-                rf"\d+\s+(DL?)\s+mac-address=(\S+) .* bridge=(\S+) .*on-interface=(\S+).*",
+                r"\d+\s+(DL?)\s+mac-address=(\S+) .* bridge=(\S+) .*on-interface=(\S+).*",
                 line,
             )
             # Если не нашли элементы.

@@ -27,7 +27,7 @@ schema_view = get_schema_view(
 Время жизни refresh токена - `{settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
         """,
         contact=openapi.Contact(name="Rudenko Igor", email="irudenko@sevtelecom.ru"),
-        license=openapi.License(name="Apache-2.0"),
+        license=openapi.License(name="License: Apache-2.0"),
     ),
     # Это список всех конечных точек, которые будут отображаться в Swagger.
     patterns=[

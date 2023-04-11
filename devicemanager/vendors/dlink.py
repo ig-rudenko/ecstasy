@@ -291,7 +291,7 @@ class Dlink(BaseDevice):
                 return "security"
             return type_.lower()
 
-        mac_str = self.send_command(f"show fdb", expect_command=False)
+        mac_str = self.send_command("show fdb", expect_command=False)
         mac_table = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",
             mac_str,

@@ -338,7 +338,7 @@ class ConfigurationGather:
 
         if isinstance(new_config, str):
             return self._compare_as_str(new_config)
-        elif isinstance(new_config, pathlib.Path) and new_config.is_file():
+        if isinstance(new_config, pathlib.Path) and new_config.is_file():
             return self._compare_as_file(new_config)
 
         return False
