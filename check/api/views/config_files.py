@@ -93,11 +93,11 @@ class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
         return Response(status=204)
 
 
-@method_decorator(schemas.config_files_list_api_doc, name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
     permission_classes = [DevicePermission]
 
+    @schemas.config_files_list_api_doc
     def get(self, requests, device_name: str):
         """
         ## Перечень файлов конфигураций указанного оборудования

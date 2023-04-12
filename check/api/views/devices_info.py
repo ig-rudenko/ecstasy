@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -21,6 +22,11 @@ from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter, DeviceInfoFilter
 from ..serializers import DevicesSerializer
+from ..swagger.schemas import (
+    devices_interfaces_workload_list_api_doc,
+    interfaces_workload_api_doc,
+    interfaces_list_api_doc,
+)
 
 
 class DevicesListAPIView(generics.ListAPIView):
@@ -70,6 +76,7 @@ class DevicesListAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
+@method_decorator(devices_interfaces_workload_list_api_doc, name="get")
 class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
 
     serializer_class = DevicesSerializer
@@ -128,6 +135,7 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
         return Response(response_data)
 
 
+@method_decorator(interfaces_workload_api_doc, name="get")
 class DeviceInterfacesWorkLoadAPIView(
     generics.RetrieveAPIView, AllDevicesInterfacesWorkLoadAPIView
 ):
@@ -156,6 +164,7 @@ class DeviceInterfacesAPIView(APIView):
         # Собирать вместе с VLAN
         self.with_vlans = False
 
+    @interfaces_list_api_doc
     def get(self, request, device_name: str):
         """
         ## Вывод интерфейсов оборудования
