@@ -203,10 +203,10 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute="0", hour="*/2"),
     },
     # Собираем все MAC на оборудовании, а также интерфейсы в указанные часы.
-    "periodically-gather": {
-        "task": "mac_table_gather_task",
-        "schedule": crontab(minute="0", hour="1,3,5,7,9,11,13,15,17,19,21,23"),
-    },
+    # "periodically-gather": {
+    #     "task": "mac_table_gather_task",
+    #     "schedule": crontab(minute="0", hour="1,3,5,7,9,11,13,15,17,19,21,23"),
+    # },
     # Собираем конфигурации оборудования каждый день в 04:30.
     "configuration-gather": {
         "task": "configuration_gather_task",

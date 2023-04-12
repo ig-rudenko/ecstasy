@@ -99,9 +99,7 @@ def range_to_numbers(ports_string: str) -> List[int]:
         )
 
         # Добавляем к диапазону оставшиеся числа
-        ports_split.update(
-            map(int, filter(str.isdigit, ports_string.split()))
-        )
+        ports_split.update(map(int, filter(str.isdigit, ports_string.split())))
 
         return sorted(ports_split)
 
@@ -135,7 +133,9 @@ class BaseDevice(ABC):
     содержит обязательные методы и начальные параметры для выполнения удаленных команд
     """
 
-    prompt: str  # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
+    # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
+    prompt: str
+
     # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
     space_prompt: str
 

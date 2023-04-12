@@ -395,7 +395,7 @@ class DeviceFactory:
             ):
 
                 self.session = pexpect.spawn(
-                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
+                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=10
                 )
 
                 while not connected:
@@ -456,7 +456,7 @@ class DeviceFactory:
                     break
 
         if self.protocol == "telnet":
-            self.session = pexpect.spawn(f"telnet {self.ip}")
+            self.session = pexpect.spawn(f"telnet {self.ip}", timeout=10)
 
             pre_set_index = None  # По умолчанию стартуем без начального индекса
             status = "Не был передал логин/пароль"

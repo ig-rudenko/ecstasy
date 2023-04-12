@@ -326,7 +326,7 @@ def get_vlan(request):
             result=result,
             empty_ports=request.GET.get("ep"),
             only_admin_up=request.GET.get("ad"),
-            find_device_pattern=vlan_traceroute_settings.find_device_pattern
+            find_device_pattern=vlan_traceroute_settings.find_device_pattern,
         )
 
     if not result:  # Если поиск не дал результатов
@@ -369,8 +369,10 @@ def get_vlan(request):
     # Установка сглаживания краев на динамическое.
     net.set_edge_smooth("dynamic")
 
-    return JsonResponse({
-        "nodes": net.nodes,
-        "edges": net.edges,
-        "options": json.loads(net.options.to_json())
-    })
+    return JsonResponse(
+        {
+            "nodes": net.nodes,
+            "edges": net.edges,
+            "options": json.loads(net.options.to_json()),
+        }
+    )
