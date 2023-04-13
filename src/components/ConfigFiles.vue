@@ -195,8 +195,7 @@ export default defineComponent({
               credentials: "same-origin",
             }
         )
-        const data = await response.json()
-        this.files = data.files
+        this.files = await response.json()
 
       } catch (error) {
         console.log(error)
