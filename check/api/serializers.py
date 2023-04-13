@@ -95,3 +95,16 @@ class PortControlSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         pass
+
+
+class ConfigFileSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    size = serializers.IntegerField()
+    modTime = serializers.CharField()
+    isDir = serializers.BooleanField()
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass

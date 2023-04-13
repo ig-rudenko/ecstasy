@@ -395,7 +395,7 @@ class DeviceFactory:
             ):
 
                 self.session = pexpect.spawn(
-                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=10
+                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=15
                 )
 
                 while not connected:

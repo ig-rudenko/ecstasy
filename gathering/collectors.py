@@ -6,10 +6,13 @@ import filecmp
 import pathlib
 
 from itertools import islice
+from typing import Union
+
 from django.conf import settings
 
 from check.models import Devices
 from net_tools.models import DevicesInfo
+from .config_storage import ConfigStorage
 from .models import MacAddress
 from devicemanager.device import (
     Device as ZabbixDevice,
@@ -19,7 +22,6 @@ from devicemanager.device import (
 from devicemanager.vendors.base import T_MACTable
 from app_settings.models import ZabbixConfig
 from devicemanager import exceptions
-from devicemanager.vendors import BaseDevice
 
 
 class MacAddressTableGather:
@@ -245,28 +247,13 @@ class MacAddressTableGather:
 
 
 class ConfigurationGather:
-    def __init__(self, dev: Devices):
-        self.device = dev
-        # Создание пути к каталогу, в котором хранятся файлы конфигурации.
-        self.storage: pathlib.Path = (
-            settings.CONFIG_STORAGE_DIR / BaseDevice.clear_description(self.device.name)
-        )
-        # Проверяет, существует ли каталог, и если нет, то создает его.
-        self.check_config_storage()
-        # Создание списка файлов в каталоге.
-        self.files = list(self.storage.iterdir())
-        # Сортируем файлы в каталоге по времени их последней модификации.
-        self.files.sort(key=lambda file: file.stat().st_mtime, reverse=True)
+    def __init__(self, storage: ConfigStorage):
+
+        self.storage = storage
+        self.files = self.storage.files_list()
 
         self.last_config_file = self.files[0] if self.files else None
         self.re_pattern_space = re.compile(r"\s")
-
-    def check_config_storage(self):
-        """
-        ## Эта функция проверяет, существует ли файл конфигурации, если нет, то создает его
-        """
-        if not self.storage.exists():
-            self.storage.mkdir(parents=True)
 
     def delete_outdated_configs(self):
         """
@@ -274,39 +261,50 @@ class ConfigurationGather:
         """
         # Удаление файлов в каталоге, кроме 10 самых последних.
         for file in self.files[:-10]:
-            file.unlink()
+            self.storage.delete(file.name)
 
-    def _compare_as_str(self, current_config: str) -> bool:
+    def save_by_content(self, current_config: Union[str, bytes]) -> bool:
         """
-        ## Мы берем текущую конфигурацию, удаляем все пробелы, хешируем ее и сравниваем с последней конфигурацией.
-        Если они совпадают, мы возвращаем False.
-        Если они разные, мы записываем текущую конфигурацию в новый файл и возвращаем True.
+        ## Берет текущую конфигурацию, удаляет все пробелы, хеширует ее и сравниваем с последней конфигурацией.
+        Если они совпадают, то возвращает False.
+        Если они разные, то сохраняет текущую конфигурацию в хранилище и возвращает True.
 
-        :param current_config: str - текущая конфигурация устройства
-        :type current_config: str
+        :param current_config: [str, bytes] - текущая конфигурация устройства
         :return: Правда или ложь.
         """
 
-        last_config = ""
+        # Сохраняем в исходном виде конфигурацию
+        unformatted_config = current_config
+
+        read_mode = "rb"
+        last_config: bytes = b""
+
+        if isinstance(current_config, str):
+            read_mode = "r"
+            current_config: bytes = self.re_pattern_space.sub(
+                "", current_config
+            ).encode()
+
         if self.last_config_file:
             try:
                 # Открытие файла в режиме чтения.
-                with self.last_config_file.open("r") as file:
+                with self.storage.open(
+                    self.last_config_file.name, mode=read_mode
+                ) as file:
                     # Чтение последнего файла конфигурации.
                     last_config = file.read()
             # Резервный вариант, когда файл не в формате ascii.
             except UnicodeError:
-                last_config = ""
+                last_config: str = ""
+
+        if isinstance(last_config, str):
+            last_config: bytes = self.re_pattern_space.sub("", last_config).encode()
 
         # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        current_config_hash = hashlib.sha3_224(
-            self.re_pattern_space.sub("", current_config).encode()
-        ).hexdigest()
+        current_config_hash = hashlib.sha3_224(current_config).hexdigest()
 
         # Берем прошлую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        last_config_hash = hashlib.sha3_224(
-            self.re_pattern_space.sub("", last_config).encode()
-        ).hexdigest()
+        last_config_hash = hashlib.sha3_224(last_config).hexdigest()
 
         # Проверяем, совпадает ли last_config с current_config.
         if last_config_hash == current_config_hash:
@@ -315,41 +313,41 @@ class ConfigurationGather:
         # Создание нового имени файла для нового файла конфигурации.
         new_file_name = "config_file_" + current_config_hash[:15] + ".txt"
 
-        # Создание нового файла с именем `new_file_name` в каталоге `self.storage`.
-        with (self.storage / new_file_name).open("w", encoding="ascii") as file:
-            file.write(current_config)
+        self.storage.add(new_file_name, file_content=unformatted_config)
 
         return True
 
-    def _compare_as_file(self, file_path: pathlib.Path):
-        """
-        ## Если последний файл конфигурации совпадает с текущим файлом конфигурации, удалите текущий файл конфигурации
+    def save_config(self, new_config) -> bool:
 
-        :param file_path: Путь к файлу для сравнения
-        :type file_path: pathlib.Path
-        :return: Правда или ложь
-        """
-        if self.last_config_file and filecmp.cmp(self.last_config_file, file_path):
-            file_path.unlink()
-            return False
-        return True
-
-    def validate_config(self, new_config) -> bool:
-
+        # Если файл представлен в виде строки
         if isinstance(new_config, str):
-            return self._compare_as_str(new_config)
+            return self.save_by_content(new_config)
+
+        # Если файл был скачан, то используем его путь
         if isinstance(new_config, pathlib.Path) and new_config.is_file():
-            return self._compare_as_file(new_config)
+
+            # Записываем содержимое скачанного файла
+            with new_config.open("rb") as f:
+                file_data = f.read()
+            # Удаляем его, так как далее будет сохранен новый файл в хранилище
+            new_config.unlink()
+
+            # Обрабатываем содержимое файла
+            return self.save_by_content(file_data)
 
         return False
 
     def collect_config_file(self) -> bool:
-        with self.device.connect(make_session_global=False) as session:
+        """
+        Подключаемся к оборудованию и вызываем метод для получения текущей конфигурации
+        """
+
+        with self.storage.device.connect(make_session_global=False) as session:
             if hasattr(session, "get_current_configuration"):
                 current_config = session.get_current_configuration(
-                    folder_path=self.storage
+                    folder_path=self.storage._storage
                 )
             else:
                 return False
 
-        return self.validate_config(current_config)
+        return self.save_config(current_config)

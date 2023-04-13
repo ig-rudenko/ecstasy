@@ -1,101 +1,91 @@
-from datetime import datetime
-
 from django.http import FileResponse
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from rest_framework import exceptions
 
 from django_filters.rest_framework import DjangoFilterBackend
 
 from check import models
 from check.permissions import profile_permission
-from devicemanager.vendors import BaseDevice
 
 from gathering.collectors import ConfigurationGather
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter
-from ..serializers import DevicesSerializer
+from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
+from gathering.config_storage import LocalConfigStorage, ConfigStorage
 
 
-class ConfigStorageMixin:
-    @staticmethod
-    def get_errors_for_config_path(device_folder: str, file_name: str = ""):
+class BaseConfigStorageAPIView(APIView):
+    config_storage = None
 
-        storage = settings.CONFIG_STORAGE_DIR / device_folder
+    def get_storage(self, device_name: str, file_name: str = None) -> ConfigStorage:
+        """
+        ## Эта функция проверяет, что имя устройства является допустимым
+        А также файл конфигурации верный
 
-        storage.mkdir(parents=True, exist_ok=True)
+        :param device_name: Имя устройства для проверки
+        :param file_name: Имя файла конфигурации (optional)
+        :return: Хранилище для конфигураций
+        """
 
-        if not file_name:
-            return
+        if not issubclass(self.config_storage, ConfigStorage):
+            raise NotImplementedError(
+                "Хранилище конфигурация должно наследоваться от ConfigStorage"
+            )
 
-        if ".." in file_name:
-            return Response({"error": "Invalid file name"}, status=400)
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(self.request, device)
 
-        if not (storage / file_name).exists():
-            return Response({"error": "File does not exist"}, status=400)
+        storage = self.config_storage(device)
+
+        if file_name is None:
+            return storage
+
+        # Дополнительные проверки, если файл конфигурации был передан
+        if not storage.validate_config_name(file_name):
+            raise exceptions.ParseError("invalid file name")
+
+        if not storage.is_exist(file_name):
+            raise exceptions.NotFound("file not found")
+
+        return storage
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="delete")
-class DownloadDeleteConfigAPIView(APIView, ConfigStorageMixin):
+class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     """
     # Для загрузки и удаления файла конфигурации конкретного оборудования
     """
 
     permission_classes = [DevicePermission]
-
-    def validate_device(self, device_name: str) -> None:
-        """
-        ## Эта функция проверяет, что имя устройства является допустимым
-
-        :param device_name: Имя устройства для проверки
-        :type device_name: str
-        """
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(self.request, device)
+    config_storage = LocalConfigStorage
 
     def get(self, request, device_name: str, file_name: str):
         """
         ## Отправляет содержимое файла конфигурации
         """
-        self.validate_device(device_name)
+        storage = self.get_storage(device_name, file_name)
 
-        # Метод, переводящий русские символы в транслитерацию в имени устройства.
-        folder_name = BaseDevice.clear_description(device_name)
-
-        config_path_errors = self.get_errors_for_config_path(folder_name, file_name)
-        if config_path_errors:
-            return config_path_errors
-
-        config_file = (settings.CONFIG_STORAGE_DIR / folder_name / file_name).open("rb")
-        return FileResponse(config_file, filename=file_name)
+        return FileResponse(storage.open(file_name), filename=file_name)
 
     def delete(self, request, device_name: str, file_name: str):
         """
         ## Удаляет файл конфигурации
         """
-
-        self.validate_device(device_name)
-
-        # Метод, переводящий русские символы в транслитерацию в имени устройства.
-        folder_name = BaseDevice.clear_description(device_name)
-
-        config_path_errors = self.get_errors_for_config_path(folder_name, file_name)
-        if config_path_errors:
-            return config_path_errors
-
-        (settings.CONFIG_STORAGE_DIR / folder_name / file_name).unlink(missing_ok=True)
+        self.get_storage(device_name, file_name).delete(file_name)
 
         return Response(status=204)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
-class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
+class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
     permission_classes = [DevicePermission]
+    config_storage = LocalConfigStorage
+    serializer_class = ConfigFileSerializer
 
     @schemas.config_files_list_api_doc
     def get(self, requests, device_name: str):
@@ -114,73 +104,25 @@ class ListDeviceConfigFilesAPIView(GenericAPIView, ConfigStorageMixin):
             ]
         """
 
-        storage = settings.CONFIG_STORAGE_DIR / device_name
-        storage.mkdir(parents=True, exist_ok=True)
+        storage = self.get_storage(device_name)
 
-        # Получение объекта устройства из базы данных.
-        device = get_object_or_404(models.Devices, name=device_name)
-        # Проверка наличия у пользователя прав на устройство.
-        self.check_object_permissions(self.request, device)
+        config_files = storage.files_list()
+        serializer = self.serializer_class(config_files, many=True)
 
-        return Response(self.get_config_files(device_name), status=200)
-
-    @staticmethod
-    def get_config_files(device_name: str) -> list:
-        """
-        ## Возвращает список словарей, каждый из которых содержит информацию о файле в каталоге
-
-        :param device_name: имя устройства, для которого мы хотим получить файлы конфигурации
-        :return: Список словарей.
-        """
-
-        # Метод, который переводит русские символы в транслит в имени устройства.
-        folder_name = BaseDevice.clear_description(device_name)
-
-        # Создание пути к папке конфигурации для устройства.
-        config_folder = settings.CONFIG_STORAGE_DIR / folder_name
-
-        # Проверка, является ли config_folder файлом.
-        if config_folder.is_file():
-            config_folder.unlink()
-
-        # Проверяем, существует ли папка config_folder. Если он не существует, он его создаст.
-        if not config_folder.exists():
-            config_folder.mkdir(parents=True)
-
-        res = []
-
-        files = sorted(
-            config_folder.iterdir(),
-            key=lambda x: x.stat().st_mtime,
-            reverse=True,
-        )
-
-        # Итерируемся по всем файлам и поддиректориям в директории
-        for file in files:
-            # Получение статистики файла.
-            stats = file.stat()
-            res.append(
-                {
-                    "name": file.name,
-                    "size": stats.st_size,  # Размер в байтах
-                    "modTime": datetime.fromtimestamp(stats.st_mtime).strftime(
-                        "%H:%M %d.%m.%Y"  # Время последней модификации
-                    ),
-                    "isDir": file.is_dir(),
-                }
-            )
-        return res
+        return Response(serializer.data, status=200)
 
 
 @method_decorator(schemas.devices_config_files_list_api_doc, name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
-class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
+class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
     """
     # Смотрим список оборудования и файлы конфигураций
     """
 
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceFilter
+    config_storage = LocalConfigStorage
+    serializer_class = ConfigFileSerializer
 
     def get_queryset(self):
         """
@@ -236,11 +178,20 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
         devices = self.filter_queryset(self.get_queryset())
         for dev in devices:
             result["count"] += 1
-            serializer = DevicesSerializer(dev)
+
+            # Файлы конфигураций
+            files = self.get_storage(dev).files_list()
+
+            # Сериализуем файлы
+            files_serializer = self.serializer_class(files, many=True)
+
+            # Сериализуем оборудование
+            device_serializer = DevicesSerializer(dev)
+
             result["devices"].append(
                 {
-                    **serializer.data,
-                    "files": self.get_config_files(dev.name),
+                    **device_serializer.data,
+                    "files": files_serializer.data,
                 }
             )
 
@@ -248,7 +199,9 @@ class ListAllConfigFilesAPIView(ListDeviceConfigFilesAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class CollectConfigAPIView(APIView):
+class CollectConfigAPIView(BaseConfigStorageAPIView):
+    config_storage = LocalConfigStorage
+
     def post(self, request, device_name: str):
         """
         ## В реальном времени смотрим и сохраняем конфигурацию оборудования
@@ -257,12 +210,13 @@ class CollectConfigAPIView(APIView):
 
         """
 
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(self.request, device)
+        storage = self.get_storage(device_name)
 
-        gather = ConfigurationGather(device)
+        gather = ConfigurationGather(storage)
         if gather.collect_config_file():
+            # Файл конфигурации был добавлен
             status = 201
         else:
+            # Файл конфигурации не потребовалось добавлять
             status = 200
         return Response(status=status)

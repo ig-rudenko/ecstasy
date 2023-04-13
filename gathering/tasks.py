@@ -5,6 +5,7 @@ from ecstasy_project.task import ThreadUpdatedStatusTask
 from ecstasy_project.celery import app
 from check.models import Devices
 from .collectors import MacAddressTableGather, ConfigurationGather
+from .config_storage import LocalConfigStorage
 
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
@@ -72,7 +73,8 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     queryset = Devices.objects.all()
 
     def thread_task(self, obj: Devices, **kwargs):
-        gather = ConfigurationGather(obj)
+        storage = LocalConfigStorage(obj)
+        gather = ConfigurationGather(storage=storage)
         gather.delete_outdated_configs()
         status = gather.collect_config_file()
         print(f"configuration_gather_task {status} {obj}")
