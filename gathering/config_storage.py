@@ -24,6 +24,19 @@ class ConfigFile:
     def __bool__(self):
         return bool(self.name)
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"Проверять на равенство можно "
+                f"только такой же тип класса: {self.__class__}, а не {other.__class__}"
+            )
+        return (
+            self.name == other.name
+            and self.size == other.size
+            and self.modTime == other.modTime
+            and self.isDir == other.isDir
+        )
+
 
 class ConfigStorage(ABC):
     """
@@ -235,7 +248,7 @@ class LocalConfigStorage(ConfigStorage):
         if not settings.CONFIG_STORAGE_DIR or not isinstance(
             settings.CONFIG_STORAGE_DIR, pathlib.Path
         ):
-            ValueError(
+            raise ValueError(
                 "Укажите CONFIG_STORAGE_DIR в settings.py как объект `pathlib.Path`"
                 " для использования локального хранилища конфигураций"
             )
