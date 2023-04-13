@@ -318,6 +318,9 @@ class ConfigurationGather:
         return True
 
     def save_config(self, new_config) -> bool:
+        """
+        Сохраняем конфигурацию в зависимости от типа (str или pathlib.Path)
+        """
 
         # Если файл представлен в виде строки
         if isinstance(new_config, str):
