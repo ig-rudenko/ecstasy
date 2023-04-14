@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 import string
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -27,8 +28,7 @@ class ConfigFile:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             raise TypeError(
-                f"Проверять на равенство можно "
-                f"только такой же тип класса: {self.__class__}, а не {other.__class__}"
+                f"Проверять на равенство можно только такой же тип класса: {self.__class__}, а не {other.__class__}"
             )
         return (
             self.name == other.name
@@ -108,9 +108,7 @@ class ConfigStorage(ABC):
         pass
 
     @abstractmethod
-    def add(
-        self, new_file_name: str, file_content=None, file_path: pathlib.Path = None
-    ):
+    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path = None):
         """
         ## Добавляет новый файл конфигурации
 
@@ -245,9 +243,7 @@ class LocalConfigStorage(ConfigStorage):
 
     def check_storage(self) -> bool:
         # Проверяем наличие переменной
-        if not settings.CONFIG_STORAGE_DIR or not isinstance(
-            settings.CONFIG_STORAGE_DIR, pathlib.Path
-        ):
+        if not settings.CONFIG_STORAGE_DIR or not isinstance(settings.CONFIG_STORAGE_DIR, pathlib.Path):
             raise ValueError(
                 "Укажите CONFIG_STORAGE_DIR в settings.py как объект `pathlib.Path`"
                 " для использования локального хранилища конфигураций"
@@ -276,19 +272,20 @@ class LocalConfigStorage(ConfigStorage):
         (self._storage / file_name).unlink(missing_ok=True)
         return True
 
-    def add(
-        self, new_file_name: str, file_content=None, file_path: pathlib.Path = None
-    ):
+    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path = None) -> bool:
 
         # Если ничего не передали
         if not file_content and not file_path:
-            return
+            return False
 
         # Если передали только путь к файлу
         elif not file_content and file_path:
-            with file_path.open("rb") as file:
-                # Записываем содержимое файла
-                file_content = file.read()
+            new_file_path = self._storage / new_file_name
+            # Открываем переданный файл (чтение) и новый (запись)
+            with file_path.open("rb") as source_file, new_file_path.open("wb") as dest_file:
+                # Копируем содержимое файла
+                shutil.copyfileobj(source_file, dest_file)
+            return True
 
         # Выбираем флаги для записи
         if isinstance(file_content, str):
@@ -299,6 +296,7 @@ class LocalConfigStorage(ConfigStorage):
         # Сохраняем файл
         with (self._storage / new_file_name).open(mode) as file:
             file.write(file_content)
+        return True
 
     def files_list(self) -> List[ConfigFile]:
         config_files = sorted(
