@@ -9,8 +9,6 @@ async function update_status() {
     );
     let res = await response.json();
 
-    console.log(res)
-
     // Список из точек текущих недоступных узлов сети на карте
     let before_down_devices_points = down_devices
 
@@ -36,14 +34,16 @@ async function update_status() {
                 origin_devices_point_format.set(
                     host_id,
                     {
-                        "fillColor": points.get(host_id).options.fillColor,
-                        "popupContent": points.get(host_id)._popup._content
+                        "fillColor": points.get(host_id).point.options.fillColor,
+                        "popupContent": points.get(host_id).point._popup._content,
+                        "layer": points.get(host_id).layer
                     }
                 )
             }
 
             // Добавляем текущий недоступный узел сети в набор всех недоступных
-            down_devices.set(host_id, points.get(host_id))
+            let unavailable_point = points.get(host_id).point
+            down_devices.set(host_id, unavailable_point)
 
             // Текст проблем
             let problems_text = ""
@@ -74,22 +74,25 @@ async function update_status() {
                 before_down_devices_points.delete(host_id)
 
                 // Описание поменялось, обновляем
-                down_devices.get(host_id).bindPopup(
+                unavailable_point.bindPopup(
                     origin_devices_point_format.get(host_id).popupContent + problems_text,
                     {"maxWidth": 500}
                 )
 
             } else {
                 // Новое недоступное оборудование
+                let origin_layer = origin_devices_point_format.get(host_id).layer
 
-                let device = down_devices.get(host_id)
-                device.removeFrom(map)
-                device.options.fillColor = "red"
-                device.bindPopup(
+                // Удаляем из карты
+                unavailable_point.removeFrom(map)
+                unavailable_point.options.fillColor = "red" // Меняем цвет
+                unavailable_point.bindPopup(  // Меняем описание
                     origin_devices_point_format.get(host_id).popupContent + problems_text,
                     {"maxWidth": 500}
                 )
-                device.addTo(map)
+
+                // Добавляем метку на её слой
+                unavailable_point.addTo(origin_layer)
 
             }
         }
@@ -98,24 +101,19 @@ async function update_status() {
         let restored_devices_hostid_list = Array.from(before_down_devices_points.keys())
 
         /* Восстановление устройств, которые раньше были отключены, а теперь работают. */
-        for (let i = 0; i < restored_devices_hostid_list.length; i++) {
-            let host_id = restored_devices_hostid_list[i]
-
+        for (let host_id of restored_devices_hostid_list) {
+            let origin = origin_devices_point_format.get(host_id)  //
             let device = before_down_devices_points.get(host_id)
-            device.removeFrom(map)
 
-            // Восстанавливаем цвет
-            device.options.fillColor = origin_devices_point_format.get(host_id).fillColor
-            // Восстанавливаем описание
-            device.bindPopup(
-                origin_devices_point_format.get(host_id).popupContent,
-                {"maxWidth": 500}
-            )
-            device.addTo(map)
+            device.removeFrom(map)
+            device.options.fillColor = origin.fillColor  // Восстанавливаем цвет
+            device.bindPopup(origin.popupContent, {"maxWidth": 500})  // Восстанавливаем описание
+            device.addTo(origin.layer)  // Добавляем метку на её слой
+
         }
     }
 
-    timer();
+    await timer();
 }
 
 async function timer() {

@@ -15,6 +15,7 @@
     <div id="map"></div>
     <script src="{% static 'js/maps/render_map.js' %}"></script>
     <script src="{% static 'js/maps/map_icons.js' %}"></script>
+    <script src="{% static 'js/maps/update_layers.js' %}"></script>
     {% if map.interactive %}
     <script src="{% static 'js/maps/update_marker_status.js' %}"></script>
     {% endif %}
@@ -32,7 +33,6 @@
             ).addTo(map)
         }
 
-
         // Добавляем управление слоями на карту
         L.control.layers(
             layer_control.base_layers,
@@ -44,7 +44,7 @@
         await render_markers()
 
         {% if map.interactive %}
-        update_status()
+        await update_status()
         {% endif %}
     });
 

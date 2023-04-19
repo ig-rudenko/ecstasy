@@ -78,7 +78,7 @@ async function load_markers() {
 async function render_markers() {
 
     const render_data = await load_markers();
-    console.log(render_data)
+    // console.log(render_data)
 
     for (let i = 0; i < render_data.length; i++ ){
 
@@ -92,12 +92,15 @@ async function render_markers() {
                         /* Он проверяет, является ли маркер кругом. */
                         if (feature.properties.figure === "circle"){
                             /* Он создает новый маркер круга и добавляет его к объекту точек. */
-                            points.set(feature.id, L.circleMarker(latlng, feature.properties.style)
-                                                    .bindTooltip(feature.properties.name)
-                                                    .bindPopup(feature.properties.description)
+                            points.set(feature.id, {
+                                    point: L.circleMarker(latlng, feature.properties.style)
+                                                        .bindTooltip(feature.properties.name)
+                                                        .bindPopup(feature.properties.description),
+                                    layer: layer_control.overlays[render_data[i].name],
+                                }
                             )
                             /* Возвращение маркера на карту. */
-                            return points.get(feature.id);
+                            return points.get(feature.id).point;
                         }
                     }
                 }).addTo(layer_control.overlays[render_data[i].name]);
@@ -141,6 +144,10 @@ async function render_markers() {
             }
         }
     }
+
+    // Вызываем функцию для восстановления состояния активных слоев при загрузке страницы
+    loadLayers();
+
 }
 
 /**
@@ -222,7 +229,7 @@ function createPolyline(feature, latlng, defaults) {
  * @returns Маркер
  */
 function createMarker(feature, latlng, defaults) {
-    console.log(feature, defaults)
+    // console.log(feature, defaults)
 
     let popup_text = null
     let tooltip_text = null
