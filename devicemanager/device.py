@@ -26,6 +26,7 @@ from .exceptions import (
     TelnetLoginError,
     UnknownDeviceError,
 )
+from .vendors.base import range_to_numbers
 from .zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -72,11 +73,39 @@ class Interfaces:
 
     """
 
+    @staticmethod
+    def _parse_vlans_line(vlans: list) -> List[int]:
+        """
+        Эта функция принимает список VLAN, преобразует любые диапазоны VLAN, указанные в виде строк, в список
+        целых чисел и возвращает список всех VLAN в виде целых чисел.
+
+        Сначала функция проверяет, является ли каждый элемент во входном списке строкой или целым числом.
+        Если это строка, она использует функцию `range_to_numbers()`, чтобы преобразовать ее в список целых чисел
+        и добавить ее в `vlans_list`.
+
+        :param vlans: Ожидается, что параметр "vlans" будет списком VLAN, который может быть либо целым числом, либо
+        строкой, представляющей диапазон VLAN.
+
+        :return: Список целых чисел, представляющих VLAN. Если ввод не является списком, возвращается пустой список.
+        """
+
+        if not isinstance(vlans, list):
+            return []
+
+        vlans_list = []
+        for vlan in vlans:
+            if isinstance(vlan, str):
+                vlans_list += range_to_numbers(vlan)
+            if isinstance(vlan, int):
+                vlans_list.append(vlan)
+        return vlans_list
+
     def __init__(self, data=None):
         if not data:  # Если не были переданы интерфейсы, то создаем пустой список
             self.__interfaces = []
         else:
             self.__interfaces: List[Interface, None] = []
+
             for intf in data:
 
                 # Если был передан словарь
@@ -93,7 +122,7 @@ class Interfaces:
                             intf["Interface"].strip(),
                             intf["Status"],
                             intf["Description"].strip(),
-                            intf.get("VLAN's", []),
+                            self._parse_vlans_line(intf.get("VLAN's", [])),
                         )
                     )
 
@@ -105,7 +134,9 @@ class Interfaces:
                         )
                     elif len(intf) == 4:  # + VLAN
                         self.__interfaces.append(
-                            Interface(intf[0], intf[1], intf[2], intf[3])
+                            Interface(
+                                intf[0], intf[1], intf[2], self._parse_vlans_line(intf[3])
+                            )
                         )
 
                 # Если был передан объект Interface
@@ -142,6 +173,9 @@ class Interfaces:
                 if i.name == item:
                     return i
         return Interface()
+
+    def __enter__(self):
+        return self.__interfaces
 
     def __bool__(self):
         return bool(self.__interfaces)

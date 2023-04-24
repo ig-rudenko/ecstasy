@@ -143,7 +143,8 @@ class Devices(models.Model):
 
     @property
     def available(self) -> bool:
-        return ping(self.ip, timeout=2) > 0
+        p = ping(self.ip, timeout=2)
+        return isinstance(p, float)
 
     def connect(self, **kwargs) -> DeviceFactory:
         """Удаленное подключение к оборудованию"""
