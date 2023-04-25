@@ -151,9 +151,17 @@ class Interface:
 
     @property
     def is_up(self) -> bool:
-        if "down" not in self.status and "disable" not in self.status:
-            return True
-        return False
+        status = self.status.lower()
+        return "down" not in status and "disable" not in status
+
+    @property
+    def is_admin_down(self) -> bool:
+        status = self.status.lower()
+        return "admin" in status or "disable" in status
+
+    @property
+    def is_down(self) -> bool:
+        return not self.is_up and not self.is_admin_down
 
 
 @dataclass

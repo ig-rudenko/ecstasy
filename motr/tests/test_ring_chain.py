@@ -7,7 +7,7 @@ from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo
 from devicemanager import Device as DeviceManager
 from ..models import TransportRing, RingDevs
-from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructure
+from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError
 
 #    DEV1 (gi4) --> (gi3) DEV2
 #    (gi3)               (gi4)
@@ -171,11 +171,11 @@ class TestRingChain(test.TransactionTestCase):
 
         # Кольцо, которое не указывает на начальное оборудование `model.RingDev`
         # Т.е. поле `head` == `null`
-        with self.assertRaises(InvalidRingStructure):
+        with self.assertRaises(InvalidRingStructureError):
             TransportRingManager(TransportRing.objects.create(name="invalid", vlans=[1]))
 
         # Не указаны VLAN для транспортного кольца
-        with self.assertRaises(InvalidRingStructure):
+        with self.assertRaises(InvalidRingStructureError):
             TransportRingManager(
                 TransportRing.objects.create(
                     name="without_vlans", head=RingDevs.objects.first(), vlans=[1]
@@ -234,7 +234,7 @@ class TestRingChain(test.TransactionTestCase):
         )
 
         # ========= Выполняем нормализацию ===========
-        TransportRingNormalizer(ring=ring).normalize()
+        n = TransportRingNormalizer(ring=ring).normalize()
 
         point1 = RingDevs.objects.get(device__name="dev1")
         point2 = RingDevs.objects.get(device__name="dev2")
@@ -246,9 +246,8 @@ class TestRingChain(test.TransactionTestCase):
         self.assertEqual(point3.prev_dev, point2)
 
         # Проверяем, что кольцо исправно
-        r = TransportRingManager(ring=ring)
         self.assertEqual(
-            r.ring_devs,
+            n.ring_devs,
             [
                 RingPoint(point=point1, device=point1.device, collect_vlans=True),
                 RingPoint(point=point2, device=point2.device, collect_vlans=False),
