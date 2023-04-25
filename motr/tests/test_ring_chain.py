@@ -6,8 +6,8 @@ from check.models import Devices
 from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo
 from devicemanager import Device as DeviceManager
-from ..models import Ring, RingDevs
-from ..agg import TransportRingManager, RingPoint, InvalidRingStructure
+from ..models import TransportRing, RingDevs
+from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructure
 
 #    DEV1 (gi4) --> (gi3) DEV2
 #    (gi3)               (gi4)
@@ -15,6 +15,7 @@ from ..agg import TransportRingManager, RingPoint, InvalidRingStructure
 #       \                /
 #        \              /
 #        (gi4) DEV3 (gi3)
+from ..ring_manager import TransportRingNormalizer
 
 TEST_DEVICES = [
     {
@@ -153,11 +154,11 @@ class TestRingChain(test.TransactionTestCase):
                 last_ring_dev = first_ring_dev
 
         # Создаем кольцо
-        Ring.objects.create(
+        TransportRing.objects.create(
             name="ring1",
             head=first_ring_dev,
             tail=last_ring_dev,
-            vlans="1,2,3",
+            vlans=[1, 2, 3],
         )
 
     def test_invalid_init_ring(self):
@@ -166,17 +167,19 @@ class TestRingChain(test.TransactionTestCase):
         """
         # Неверный тип переменной передается в кольцо
         with self.assertRaises(TypeError):
-            TransportRingManager("Ring")
+            TransportRingManager("TransportRing")
 
         # Кольцо, которое не указывает на начальное оборудование `model.RingDev`
         # Т.е. поле `head` == `null`
         with self.assertRaises(InvalidRingStructure):
-            TransportRingManager(Ring.objects.create(name="invalid"))
+            TransportRingManager(TransportRing.objects.create(name="invalid", vlans=[1]))
 
         # Не указаны VLAN для транспортного кольца
         with self.assertRaises(InvalidRingStructure):
             TransportRingManager(
-                Ring.objects.create(name="without_vlans", head=RingDevs.objects.first())
+                TransportRing.objects.create(
+                    name="without_vlans", head=RingDevs.objects.first(), vlans=[1]
+                )
             )
 
     def test_init_ring(self):
@@ -187,8 +190,63 @@ class TestRingChain(test.TransactionTestCase):
         point2 = RingDevs.objects.get(device__name="dev2")
         point3 = RingDevs.objects.get(device__name="dev3")
 
-        r = TransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
+        self.assertEqual(
+            r.ring_devs,
+            [
+                RingPoint(point=point1, device=point1.device, collect_vlans=True),
+                RingPoint(point=point2, device=point2.device, collect_vlans=False),
+                RingPoint(point=point3, device=point3.device, collect_vlans=True),
+            ],
+        )
+
+        # Проверяем преобразование из JSON строки в список
+        self.assertEqual(
+            TransportRing.objects.get(name="ring1").vlans,
+            [1, 2, 3],
+        )
+
+    def test_ring_normalizer(self):
+        """
+        Проверяем нормализацию менеджера кольца
+        """
+        ring = TransportRing.objects.get(name="ring1")
+
+        point1 = RingDevs.objects.get(device__name="dev1")
+        point2 = RingDevs.objects.get(device__name="dev2")
+        point3 = RingDevs.objects.get(device__name="dev3")
+
+        # Проверяем отсутствие обратной связи
+        self.assertEqual(point1.prev_dev, None)
+        self.assertEqual(point2.prev_dev, None)
+        self.assertEqual(point3.prev_dev, None)
+
+        # Проверяем, что кольцо исправно
+        r = TransportRingManager(ring=ring)
+        self.assertEqual(
+            r.ring_devs,
+            [
+                RingPoint(point=point1, device=point1.device, collect_vlans=True),
+                RingPoint(point=point2, device=point2.device, collect_vlans=False),
+                RingPoint(point=point3, device=point3.device, collect_vlans=True),
+            ],
+        )
+
+        # ========= Выполняем нормализацию ===========
+        TransportRingNormalizer(ring=ring).normalize()
+
+        point1 = RingDevs.objects.get(device__name="dev1")
+        point2 = RingDevs.objects.get(device__name="dev2")
+        point3 = RingDevs.objects.get(device__name="dev3")
+
+        # Проверяем обратную связь
+        self.assertEqual(point1.prev_dev, None)
+        self.assertEqual(point2.prev_dev, point1)
+        self.assertEqual(point3.prev_dev, point2)
+
+        # Проверяем, что кольцо исправно
+        r = TransportRingManager(ring=ring)
         self.assertEqual(
             r.ring_devs,
             [
@@ -206,7 +264,7 @@ class TestRingChain(test.TransactionTestCase):
         point2 = RingDevs.objects.get(device__name="dev2")
         point3 = RingDevs.objects.get(device__name="dev3")
 
-        r = TransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
         r.check_devices_availability()
 
@@ -223,7 +281,7 @@ class TestRingChain(test.TransactionTestCase):
 
         Devices.objects.filter(name="dev1").update(ip="127.0.0.1")
 
-        r = TransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
         r.check_devices_availability()
 
@@ -241,7 +299,7 @@ class TestRingChain(test.TransactionTestCase):
         Проверяем сбор интерфейсов для менеджера кольца
         """
 
-        r = TransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
         r.check_devices_availability()
 
         with self.assertRaises(NotImplementedError):
@@ -250,7 +308,7 @@ class TestRingChain(test.TransactionTestCase):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
         # No ping, так что интерфейсы будут собраны из истории
         for p in r.ring_devs:
@@ -270,10 +328,11 @@ class TestRingChain(test.TransactionTestCase):
         """
         Функция представляет собой тестовый пример для поиска связи между устройствами.
         """
+
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=Ring.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
         # No ping, так что интерфейсы будут собраны из истории
         for p in r.ring_devs:
@@ -287,28 +346,27 @@ class TestRingChain(test.TransactionTestCase):
         #      \                       /
         #       \                     /
         #        \                   /
-        #       (gi3/4)   DEV3  (gi3/3)
+        #       (gi3/4)  DEV3  (gi3/3)
 
         # DEV1
-        self.assertEqual(
-            r.ring_devs[0].port_to_prev_dev.name, "GE0/1/3"
-        )
-        self.assertEqual(
-            r.ring_devs[0].port_to_next_dev.name, "GE0/1/4"
-        )
+        self.assertEqual(r.ring_devs[0].port_to_prev_dev.name, "GE0/1/3")
+        self.assertEqual(r.ring_devs[0].port_to_next_dev.name, "GE0/1/4")
 
         # DEV2
-        self.assertEqual(
-            r.ring_devs[1].port_to_prev_dev.name, "GE0/2/3"
-        )
-        self.assertEqual(
-            r.ring_devs[1].port_to_next_dev.name, "GE0/2/4"
-        )
+        self.assertEqual(r.ring_devs[1].port_to_prev_dev.name, "GE0/2/3")
+        self.assertEqual(r.ring_devs[1].port_to_next_dev.name, "GE0/2/4")
 
         # DEV3
-        self.assertEqual(
-            r.ring_devs[2].port_to_prev_dev.name, "GE0/3/3"
-        )
-        self.assertEqual(
-            r.ring_devs[2].port_to_next_dev.name, "GE0/3/4"
-        )
+        self.assertEqual(r.ring_devs[2].port_to_prev_dev.name, "GE0/3/3")
+        self.assertEqual(r.ring_devs[2].port_to_next_dev.name, "GE0/3/4")
+
+    def test_ring_status_all_unavailable(self):
+        class TestTransportRingManager(TransportRingManager):
+            device_manager = DeviceManager
+
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        # No ping
+        for p in r.ring_devs:
+            p.ping = False
+
+        r.ring_devs[0].point.delete()

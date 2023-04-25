@@ -4,7 +4,7 @@ from typing import List
 
 from devicemanager.device import Interfaces, Interface
 from check import models
-from .models import RingDevs, Ring
+from .models import RingDevs, TransportRing
 
 
 class InvalidRingStructure(Exception):
@@ -22,13 +22,12 @@ class RingPoint:
     interfaces: Interfaces = Interfaces()
 
 
-class TransportRingManager:
-    device_manager = None
+class TransportRingBase:
 
     @staticmethod
-    def _validate_ring(ring):
-        if not isinstance(ring, Ring):
-            raise TypeError(f"Менеджер колец не принимает тип {type(ring)}, только `model.Ring`")
+    def validate_ring(ring):
+        if not isinstance(ring, TransportRing):
+            raise TypeError(f"Менеджер колец не принимает тип {type(ring)}, только `model.TransportRing`")
 
         if ring.head is None:
             raise InvalidRingStructure("В кольце не указано головное устройство")
@@ -39,9 +38,8 @@ class TransportRingManager:
         if not ring.vlans:
             raise InvalidRingStructure("Для разворота требуется указать VLAN")
 
-    def __init__(self, ring: Ring):
-
-        self._validate_ring(ring)
+    def __init__(self, ring: TransportRing):
+        self.validate_ring(ring)
 
         self.ring = ring
         self.vlans = ring.vlans
@@ -79,6 +77,32 @@ class TransportRingManager:
             devs[-1].collect_vlans = True
 
         return devs
+
+
+class TransportRingNormalizer(TransportRingBase):
+    """
+    Класс TransportRingNormalizer нормализует список кольцевых устройств, устанавливая предыдущее устройство для каждого
+    устройства в списке, кроме головного.
+    """
+
+    def normalize(self):
+        """
+        Эта функция нормализует список кольцевых устройств, устанавливая предыдущее устройство
+        каждого для устройства в списке, кроме головного.
+        """
+        for i in range(len(self.ring_devs)):
+            if i == 0:
+                self.ring_devs[i].point.prev_dev = None
+                self.ring_devs[i].point.save(update_fields=["prev_dev"])
+            else:
+                self.ring_devs[i].point.prev_dev = self.ring_devs[i - 1].point
+                self.ring_devs[i].point.save(update_fields=["prev_dev"])
+
+        return self
+
+
+class TransportRingManager(TransportRingBase):
+    device_manager = None
 
     def check_devices_availability(self):
         """
@@ -163,12 +187,12 @@ class TransportRingManager:
                 # Если имя следующего устройства находится в описании на порту текущего
                 if next_node.device.name in interface.desc:
                     current_node.port_to_next_dev = interface
-                    link_with_next -= 1
+                    link_with_next -= 1  # Нашли связь
 
                 # Если имя предыдущего устройства находится в описании на порту текущего
                 if prev_node.device.name in interface.desc:
                     current_node.port_to_prev_dev = interface
-                    link_with_prev -= 1
+                    link_with_prev -= 1  # Нашли связь
 
             # Проверка связи между текущим и следующим оборудованием
             if link_with_next > 0:
@@ -189,3 +213,8 @@ class TransportRingManager:
                 InvalidRingStructure(
                     f"Найдено {link_with_prev} связи между {current_node.device} и {prev_node.device}, неоднозначность"
                 )
+
+    def check_ring_status(self):
+        if not all(point.ping for point in self.ring_devs):
+            # Всё оборудование недоступно, проблемы на сети
+            return
