@@ -220,10 +220,14 @@ class TransportRingManager(TransportRingBase):
                     f"Найдено {link_with_prev} связи между {current_node.device} и {prev_node.device}, неоднозначность"
                 )
 
-    def check_ring_status(self):
-        if not all(not point.ping for point in self.ring_devs):
+    def _check_ring_status(self):
+        if all(not point.ping for point in self.ring_devs):
             # Всё оборудование недоступно, проблемы на сети
             raise RingStatusError("Все устройства в кольце недоступны")
+
+        # Если недоступно `head` устройство
+        if not self.head.ping:
+            raise RingStatusError(f"Головное устройство {self.head.device} в кольце недоступно")
 
         # Если недоступно `tail` устройство
         if not self.tail.ping:
@@ -239,15 +243,19 @@ class TransportRingManager(TransportRingBase):
                 f" головного устройства {self.head.device}"
             )
 
-    def create_solutions(self) -> Tuple[Dict[str, ...], ...]:
+    def create_solutions(self):
         """
         Создает решения, которые необходимо сделать с кольцом, чтобы достичь оптимального состояния
 
         :return: Список решений
         """
 
+        self._check_ring_status()
+
         SOLUTIONS = []
 
+        # Последний доступный, перед недоступным сос стороны `head`
+        last_available = None
         # Первый недоступный узел в кольце
         first_unavailable = None
         # Первый доступный узел, после недоступных
@@ -263,10 +271,13 @@ class TransportRingManager(TransportRingBase):
             # Используется для поиска первого недоступного устройства в кольце.
             if first_unavailable is None and not dev.ping:
                 first_unavailable = dev
+                # Также теперь можно определить последний доступный со стороны `head`
+                if i:  # Если это не сам `head`
+                    last_available = self.ring_devs[i - 1]
 
             # Используется для поиска первого доступного устройства
             # после цепочки недоступных устройств в кольце.
-            if first_unavailable is not None and dev.ping:
+            if first_unavailable is not None and first_available_after is None and dev.ping:
                 first_available_after = dev
 
             # Если после цепочки недоступных появляется еще одно недоступное устройство, то видимо проблемы на сети
@@ -417,18 +428,54 @@ class TransportRingManager(TransportRingBase):
                                     "vlans": tuple(required_vlans),
                                     "device": self.tail.device,
                                     "port": self.tail.port_to_prev_dev.name,
+                                    "message": f"Будут удалены VLAN - {required_vlans} на {self.tail.device} "
+                                    f"на порту {self.tail.port_to_prev_dev.name}",
                                 }
                             }
                         )
 
-                    # Создаем решение - включить порт, который ДАЛЬШЕ всего находится от `head`
+                    # Создаем решение - включить порт
                     SOLUTIONS.append(
                         {
                             "set_port_status": {
                                 "status": "up",
-                                "device": closed_ports[-1]["point"].device,
-                                "port": closed_ports[-1]["port"].name,
-                                "message": "Было обнаружено несколько выключенных портов, открываем один из них",
+                                "device": closed_ports[0]["point"].device,
+                                "port": closed_ports[0]["port"].name,
+                                "message": "Переводим кольцо в штатное состояние",
+                            }
+                        }
+                    )
+
+            # Если имеется некоторое недоступное оборудование и есть VLANS, которые необходимо прописать на `tail`.
+            else:
+
+                # Если имеется закрытый порт
+                if len(closed_ports):
+                    pass
+
+                # Если нет закрытых портов, то надо закрыть
+                else:
+                    # Со стороны первого доступного, ПЕРЕД недоступными в сторону `tail`
+                    SOLUTIONS.append(
+                        {
+                            "set_port_status": {
+                                "status": "down",
+                                "device": last_available.device,
+                                "port": last_available.port_to_next_dev.name,
+                                "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
+                            }
+                        }
+                    )
+                    # Разворачиваем кольцо - прописываем VLANS на `tail`
+                    SOLUTIONS.append(
+                        {
+                            "set_port_vlans": {
+                                "status": "add",
+                                "vlans": tuple(tail_required_vlans),
+                                "device": self.tail.device,
+                                "port": self.tail.port_to_prev_dev.name,
+                                "message": f"Прописываем VLANS {tail_required_vlans} на {self.tail.device} "
+                                f"на порту {self.tail.port_to_prev_dev.name}",
                             }
                         }
                     )
@@ -447,6 +494,8 @@ class TransportRingManager(TransportRingBase):
                             "vlans": tuple(required_vlans),
                             "device": self.tail.device,
                             "port": self.tail.port_to_prev_dev.name,
+                            "message": f"Если в кольце все исправно, то надо убрать VLANS {required_vlans} "
+                            f"на {self.tail.device} на порту {self.tail.port_to_prev_dev.name}",
                         }
                     }
                 )
