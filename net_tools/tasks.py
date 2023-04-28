@@ -1,5 +1,5 @@
 from datetime import datetime
-import json
+import orjson
 
 from celery.result import AsyncResult
 from django.core.cache import cache
@@ -46,9 +46,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
             # Создаем список объектов авторизации
             al = list(
-                AuthGroup.objects.exclude(name=obj.auth_group.name)
-                .order_by("id")
-                .all()
+                AuthGroup.objects.exclude(name=obj.auth_group.name).order_by("id").all()
             )
 
             # Собираем интерфейсы снова
@@ -117,7 +115,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             }
             for line in dev.interfaces
         ]
-        current_device_info.vlans = json.dumps(vlans_interfaces_to_save)
+        current_device_info.vlans = orjson.dumps(vlans_interfaces_to_save).decode()
         current_device_info.vlans_date = datetime.now()
         print("Saved VLANS      ---", obj)
 
@@ -129,7 +127,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             }
             for line in dev.interfaces
         ]
-        current_device_info.interfaces = json.dumps(interfaces_to_save)
+        current_device_info.interfaces = orjson.dumps(interfaces_to_save).decode()
         current_device_info.interfaces_date = datetime.now()
 
         current_device_info.save()

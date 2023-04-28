@@ -4,7 +4,7 @@
 """
 
 import re
-import json
+import orjson
 from typing import Any, List
 from concurrent.futures import ThreadPoolExecutor
 
@@ -713,7 +713,7 @@ class Device:
                 device_data_history = DevicesInfo.objects.get(dev__name=self.name)
 
                 self.interfaces = Interfaces(
-                    json.loads(
+                    orjson.loads(
                         device_data_history.vlans
                         if vlans
                         else device_data_history.interfaces

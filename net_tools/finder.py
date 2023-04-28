@@ -1,14 +1,13 @@
+import orjson
 from re import findall, sub, IGNORECASE, compile
 from django.contrib.auth.models import User
 
 from check.models import Devices, InterfacesComments
 from devicemanager.vendors.base import range_to_numbers
 from .models import DevicesInfo, DescNameFormat
-import json
 
 
 class Finder:
-
     def __init__(self):
         self.desc_name_list = None
 
@@ -56,7 +55,7 @@ class Finder:
                 continue
 
             # Загрузка данных json из базы данных в словарь python.
-            interfaces = json.loads(device.interfaces)
+            interfaces = orjson.loads(device.interfaces)
 
             for line in interfaces:
 
@@ -152,7 +151,7 @@ class Finder:
         except DevicesInfo.DoesNotExist:
             return
 
-        interfaces = json.loads(dev.vlans or "[]")
+        interfaces = orjson.loads(dev.vlans or "[]")
         if not interfaces:
             return
 
@@ -177,7 +176,9 @@ class Finder:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device = findall(find_device_pattern, self.reformatting(line["Description"]))
+            next_device = findall(
+                find_device_pattern, self.reformatting(line["Description"])
+            )
             # Приводим к единому формату имя узла сети
             next_device = next_device[0] if next_device else ""
 

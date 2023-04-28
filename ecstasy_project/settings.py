@@ -14,7 +14,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import _locale
 import logging
 import os
-import json
+import orjson
 import re
 from datetime import timedelta, datetime
 from pathlib import Path
@@ -165,7 +165,7 @@ CACHES = {
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
+        "drf_orjson_renderer.renderers.ORJSONRenderer",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -173,6 +173,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PARSER_CLASSES": [
+        "drf_orjson_renderer.parsers.ORJSONParser",
     ],
 }
 
