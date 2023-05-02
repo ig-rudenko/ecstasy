@@ -54,7 +54,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "motr",
+    "dbbackup",
 ]
+
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': './db-backup'}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -87,7 +91,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 
-DATABASES = json.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
+DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
 if not DATABASES:
     DATABASES = {
         "default": {

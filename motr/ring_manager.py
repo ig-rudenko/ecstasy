@@ -1,10 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Set
+from typing import List, Tuple, Set
 
 from devicemanager.device import Interfaces, Interface
 from check import models
 from .models import RingDevs, TransportRing
+from .solutions import Solutions
 
 
 class InvalidRingStructureError(Exception):
@@ -243,7 +244,7 @@ class TransportRingManager(TransportRingBase):
                 f" головного устройства {self.head.device}"
             )
 
-    def create_solutions(self):
+    def create_solutions(self) -> Solutions:
         """
         Создает решения, которые необходимо сделать с кольцом, чтобы достичь оптимального состояния
 
@@ -252,7 +253,7 @@ class TransportRingManager(TransportRingBase):
 
         self._check_ring_status()
 
-        SOLUTIONS = []
+        SOLUTIONS = Solutions()
 
         # Последний доступный, перед недоступным сос стороны `head`
         last_available = None
@@ -283,15 +284,11 @@ class TransportRingManager(TransportRingBase):
             # Если после цепочки недоступных появляется еще одно недоступное устройство, то видимо проблемы на сети
             # Неопределенность.
             if first_unavailable is not None and first_available_after is not None and not dev.ping:
-                return (
-                    {
-                        "error": {
-                            "status": "uncertainty",
-                            "message": "После цепочки недоступных появляется еще одно недоступное устройство, "
-                            "видимо проблемы на сети",
-                        }
-                    },
+                SOLUTIONS.error(
+                    "uncertainty",
+                    "После цепочки недоступных появляется еще одно недоступное устройство, видимо проблемы на сети",
                 )
+                return SOLUTIONS
 
             # Смотрим какие порты admin down (у доступного оборудования)
             if dev.port_to_prev_dev and dev.ping and dev.port_to_prev_dev.is_admin_down:
@@ -336,51 +333,19 @@ class TransportRingManager(TransportRingBase):
                     f" и {link['to_dev']['device'].device} - порт ({link['to_dev']['port'].name})\n"
                 )
 
-            return (
-                {
-                    "error": {
-                        "status": "uncertainty",
-                        "message": message,
-                    }
-                },
-            )
+            SOLUTIONS.error("uncertainty", message)
+
+            return SOLUTIONS
 
         # ================== ADMIN DOWN PORTS ==================
 
         # Было обнаружено несколько выключенных портов (admin down)
         if len(closed_ports) == 2:
             # Создаем решение - включить порт, который ДАЛЬШЕ всего находится от `head`
-            SOLUTIONS.append(
-                {
-                    "set_port_status": {
-                        "status": "up",
-                        "device": closed_ports[-1]["point"].device,
-                        "port": closed_ports[-1]["port"].name,
-                        "message": "Было обнаружено несколько выключенных портов, открываем один из них",
-                    }
-                }
-            )
-
-        # =================== SET PORT STATUS DOWN =====================
-
-        if len(closed_ports) == 0 and len(broken_links) == 1:
-            # Если нашли обрыв, то надо закрыть порт со стороны `head`
-
-            b_link = broken_links[0]
-            message = (
-                f"Нашли обрыв между: {b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
-                f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})\n"
-            )
-
-            SOLUTIONS.append(
-                {
-                    "set_port_status": {
-                        "status": "down",
-                        "device": broken_links[0]["from_dev"]["device"].device,
-                        "port": broken_links[0]["from_dev"]["port"].name,
-                        "message": message,
-                    }
-                }
+            SOLUTIONS.port_set_up(
+                device=closed_ports[-1]["point"].device,
+                port=closed_ports[-1]["port"].name,
+                message="Было обнаружено несколько выключенных портов, открываем один из них",
             )
 
         # После того, как определили границы недоступных устройств, посмотрим какие VLAN уже прописаны на `tail`.
@@ -408,42 +373,41 @@ class TransportRingManager(TransportRingBase):
                 # Если имеется закрытый порт (admin down)
                 if len(closed_ports):
 
-                    SOLUTIONS.append(
-                        {
-                            "info": {
-                                "message": "Все оборудование доступно, но имеется закрытый порт! "
-                                "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо "
-                                "в штатное состояние",
-                            }
-                        }
+                    SOLUTIONS.info(
+                        "Все оборудование доступно, но имеется закрытый порт! "
+                        "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо "
+                        "в штатное состояние"
                     )
 
                     # Если на `tail` есть некоторые VLANS
                     if tail_exists_vlans:
                         # Необходимо удалить их
-                        SOLUTIONS.append(
-                            {
-                                "set_port_vlans": {
-                                    "status": "delete",
-                                    "vlans": tuple(required_vlans),
-                                    "device": self.tail.device,
-                                    "port": self.tail.port_to_prev_dev.name,
-                                    "message": f"Будут удалены VLAN - {required_vlans} на {self.tail.device} "
-                                    f"на порту {self.tail.port_to_prev_dev.name}",
-                                }
-                            }
+                        SOLUTIONS.delete_vlans(
+                            vlans=tuple(required_vlans),
+                            device=self.tail.device,
+                            port=self.tail.port_to_prev_dev.name,
+                            message=f"Будут удалены VLAN - {required_vlans} на {self.tail.device} "
+                            f"на порту {self.tail.port_to_prev_dev.name}",
                         )
 
                     # Создаем решение - включить порт
-                    SOLUTIONS.append(
-                        {
-                            "set_port_status": {
-                                "status": "up",
-                                "device": closed_ports[0]["point"].device,
-                                "port": closed_ports[0]["port"].name,
-                                "message": "Переводим кольцо в штатное состояние",
-                            }
-                        }
+                    SOLUTIONS.port_set_up(
+                        device=closed_ports[0]["point"].device,
+                        port=closed_ports[0]["port"].name,
+                        message="Переводим кольцо в штатное состояние",
+                    )
+                    return SOLUTIONS
+
+                # Если нашли обрыв, то надо закрыть порт со стороны `head`
+                elif len(broken_links) == 1:
+                    b_link = broken_links[0]
+
+                    SOLUTIONS.port_set_down(
+                        device=broken_links[0]["from_dev"]["device"].device,
+                        port=broken_links[0]["from_dev"]["port"].name,
+                        message="Нашли обрыв между: "
+                        f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
+                        f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
                     )
 
             # Если имеется некоторое недоступное оборудование и есть VLANS, которые необходимо прописать на `tail`.
@@ -456,29 +420,20 @@ class TransportRingManager(TransportRingBase):
                 # Если нет закрытых портов, то надо закрыть
                 else:
                     # Со стороны первого доступного, ПЕРЕД недоступными в сторону `tail`
-                    SOLUTIONS.append(
-                        {
-                            "set_port_status": {
-                                "status": "down",
-                                "device": last_available.device,
-                                "port": last_available.port_to_next_dev.name,
-                                "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
-                            }
-                        }
+                    SOLUTIONS.port_set_down(
+                        device=last_available.device,
+                        port=last_available.port_to_next_dev.name,
+                        message="Закрываем порт в сторону tail, готовимся разворачивать кольцо",
                     )
-                    # Разворачиваем кольцо - прописываем VLANS на `tail`
-                    SOLUTIONS.append(
-                        {
-                            "set_port_vlans": {
-                                "status": "add",
-                                "vlans": tuple(tail_required_vlans),
-                                "device": self.tail.device,
-                                "port": self.tail.port_to_prev_dev.name,
-                                "message": f"Прописываем VLANS {tail_required_vlans} на {self.tail.device} "
-                                f"на порту {self.tail.port_to_prev_dev.name}",
-                            }
-                        }
-                    )
+
+            # Разворачиваем кольцо - прописываем VLANS на `tail`
+            SOLUTIONS.add_vlans(
+                vlans=tuple(tail_required_vlans),
+                device=self.tail.device,
+                port=self.tail.port_to_prev_dev.name,
+                message=f"Прописываем VLANS {tail_required_vlans} на {self.tail.device} "
+                f"на порту {self.tail.port_to_prev_dev.name}",
+            )
 
         # Если на `tail` уже не требуется прописывать никакие VLAN, значит кольцо развернуто
         else:
@@ -487,23 +442,55 @@ class TransportRingManager(TransportRingBase):
             # тогда необходимо убрать VLANS с порта `tail`.
             # Так как по штатному состоянию VLAN должны идти c `head`
             if len(closed_ports) == 0 and len(broken_links) == 0:
-                SOLUTIONS.append(
-                    {
-                        "set_port_vlans": {
-                            "status": "delete",
-                            "vlans": tuple(required_vlans),
-                            "device": self.tail.device,
-                            "port": self.tail.port_to_prev_dev.name,
-                            "message": f"Если в кольце все исправно, то надо убрать VLANS {required_vlans} "
-                            f"на {self.tail.device} на порту {self.tail.port_to_prev_dev.name}",
-                        }
-                    }
+
+                SOLUTIONS.delete_vlans(
+                    vlans=tuple(required_vlans),
+                    device=self.tail.device,
+                    port=self.tail.port_to_prev_dev.name,
+                    message=f"Если в кольце все исправно, то надо убрать VLANS {required_vlans} "
+                    f"на {self.tail.device} на порту {self.tail.port_to_prev_dev.name}",
                 )
 
-            # Если имеется закрытый порт, а также некоторые недоступные оборудования в кольце
-            elif len(closed_ports) and first_unavailable and first_available_after:
-                # Кольцо развернуто, но некоторое оборудование не поднялось,
-                # возможна проблема на линии, либо в оборудовании
-                pass
+            # Имеется закрытый порт и все оборудование доступно, можно развернуть в штатное состояние
+            elif len(closed_ports) and first_unavailable is None and first_available_after is None:
+                SOLUTIONS.info(
+                    f"Транспортное кольцо в данный момент развернуто, со стороны {self.tail.device.name} "
+                    "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо "
+                    "в штатное состояние"
+                )
+                SOLUTIONS.delete_vlans(
+                    vlans=tuple(required_vlans),
+                    device=self.tail.device,
+                    port=self.tail.port_to_prev_dev.name,
+                    message=f"Сначала будут удалены VLAN'ы {required_vlans} на оборудовании "
+                    f"{self.tail.device} на порту {self.tail.port_to_prev_dev.name}",
+                )
+                SOLUTIONS.port_set_up(
+                    device=closed_ports[0]["point"].device,
+                    port=closed_ports[0]["port"].name,
+                    message="Переводим кольцо в штатное состояние",
+                )
 
-        return tuple(SOLUTIONS)
+            # Если имеется НЕ закрытый порт, а также некоторые недоступные оборудования в кольце
+            elif len(closed_ports) == 0 and first_unavailable and first_available_after:
+                # Если нет закрытых портов, то надо закрыть
+                # Со стороны первого доступного, ПЕРЕД недоступными в сторону `tail`
+                SOLUTIONS.port_set_down(
+                    device=last_available.device,
+                    port=last_available.port_to_next_dev.name,
+                    message="Закрываем порт в сторону tail, готовимся разворачивать кольцо",
+                )
+
+            # Если есть обрыв
+            elif len(broken_links):
+                b_link = broken_links[0]
+
+                SOLUTIONS.port_set_down(
+                    device=broken_links[0]["from_dev"]["device"].device,
+                    port=broken_links[0]["from_dev"]["port"].name,
+                    message="Нашли обрыв между: "
+                    f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
+                    f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
+                )
+
+        return SOLUTIONS

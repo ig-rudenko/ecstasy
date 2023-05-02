@@ -10,6 +10,7 @@ from net_tools.models import DevicesInfo
 
 class TestRingBase(test.TransactionTestCase):
     TEST_DEVICES: list
+    RING_VLANS = [1, 2, 3]
 
     def setUp(self):
         # Добавляем оборудования
@@ -61,5 +62,5 @@ class TestRingBase(test.TransactionTestCase):
             name="ring1",
             head=first_ring_dev,
             tail=last_ring_dev,
-            vlans=[1, 2, 3],
+            vlans=self.RING_VLANS,
         )

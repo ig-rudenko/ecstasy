@@ -49,7 +49,7 @@ TEST_DEVICES = [
             },
             {
                 "Interface": "GE0/3/4",
-                "Status": "up",  # ================== TO DEV4 - UP
+                "Status": "admin down",  # ================== TO DEV4 - ADMIN DOWN
                 "Description": "desc4_to_dev4",
             },
         ],
@@ -60,7 +60,7 @@ TEST_DEVICES = [
         "interfaces": [
             {
                 "Interface": "GE0/4/3",
-                "Status": "up",  # ================ TO DEV3 - UP
+                "Status": "down",  # ================ TO DEV3 - UP
                 "Description": "desc3_to_dev3",
             },
             {
@@ -78,7 +78,7 @@ TEST_DEVICES = [
                 "Interface": "GE0/5/3",
                 "Status": "up",  # ================ TO DEV4 - UP
                 "Description": "desc3_to_dev4",
-                "VLAN's": ["4", "30 to 32"],
+                "VLAN's": ["1-4", "30 to 32"],  # ============ HAS VLANS
             },
             {
                 "Interface": "GE0/5/4",
@@ -91,10 +91,17 @@ TEST_DEVICES = [
 ]
 
 
-class TestHeadDownSolutions(TestRingBase):
+class TestRotateToNormalSolutions(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
 
-    def test_head_down_solutions(self):
+    def test_rotate_to_normal_solutions(self):
+        """
+        Кольцо уже было развернуто, на оборудовании dev3 порт выключен в сторону dev4.
+        На dev5 (tail) необходимые VLAN's добавлены.
+        Необходимо проверить создание решений, для разворота в штатное состояние
+        :return:
+        """
+
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
@@ -102,27 +109,52 @@ class TestHeadDownSolutions(TestRingBase):
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 
-        r.ring_devs[0].ping = True  # dev1 `head`
-        r.ring_devs[1].ping = False  # dev2
-        r.ring_devs[2].ping = True  # dev3
-        r.ring_devs[3].ping = False  # dev4
-        r.ring_devs[4].ping = True  # dev5 `tail`
+        # Все оборудование доступно
+        for dev in r.ring_devs:
+            dev.ping = True
 
         solutions = r.create_solutions().solutions
 
         print(solutions)
 
-        # Найдено 1 решение
-        self.assertEqual(len(solutions), 1)
+        # Найдено 3 решение
+        self.assertEqual(len(solutions), 3)
 
-        # Решение
+        # Решение 1
         self.assertDictEqual(
             solutions[0],
             {
-                "error": {
-                    "status": "uncertainty",
-                    "message": "После цепочки недоступных появляется еще одно недоступное устройство, "
-                    "видимо проблемы на сети",
+                "info": {
+                    "message": "Транспортное кольцо в данный момент развернуто, со стороны dev5 "
+                    "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо в штатное состояние"
+                }
+            },
+        )
+
+        # Решение 2
+        self.assertDictEqual(
+            solutions[1],
+            {
+                "set_port_vlans": {
+                    "status": "delete",
+                    "vlans": (1, 2, 3),
+                    "device": r.ring_devs[-1].device,  # `tail`
+                    "port": "GE0/5/3",
+                    "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
+                    "на оборудовании dev5 (224.0.0.5) на порту GE0/5/3",
+                }
+            },
+        )
+
+        # Решение 3
+        self.assertDictEqual(
+            solutions[2],
+            {
+                "set_port_status": {
+                    "status": "up",
+                    "device": r.ring_devs[2].device,  # dev3
+                    "port": "GE0/3/4",
+                    "message": "Переводим кольцо в штатное состояние",
                 }
             },
         )

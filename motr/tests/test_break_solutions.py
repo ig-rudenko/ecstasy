@@ -87,15 +87,14 @@ class TestHeadDownSolutions(TestRingBase):
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 
-        # dev1 (head), dev2, dev4 (tail) доступно
         r.ring_devs[0].ping = True
-        r.ring_devs[3].ping = True
         r.ring_devs[1].ping = True
+        r.ring_devs[3].ping = True
 
-        # Кроме dev3
-        r.ring_devs[2].ping = False
+        # Обрыв до dev3
+        r.ring_devs[2].ping = True
 
-        solutions = r.create_solutions()
+        solutions = r.create_solutions().solutions
 
         print(solutions)
 
@@ -108,9 +107,10 @@ class TestHeadDownSolutions(TestRingBase):
             {
                 "set_port_status": {
                     "status": "down",
-                    "device": r.ring_devs[0].device,
-                    "port": r.ring_devs[0].port_to_next_dev.name,
-                    "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
+                    "device": r.ring_devs[1].device,
+                    "port": r.ring_devs[1].port_to_next_dev.name,
+                    "message": "Нашли обрыв между: "
+                    "dev2 (224.0.0.2) - порт (GE0/2/4) и dev3 (224.0.0.3) - порт (GE0/3/3)",
                 }
             },
         )

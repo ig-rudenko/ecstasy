@@ -18,6 +18,7 @@ logs
 data
 tmp
 map_layer_files
+db-backup
 
 venv
 node_modules

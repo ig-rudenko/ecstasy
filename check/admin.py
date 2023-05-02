@@ -10,12 +10,16 @@
 
 Также просмотр логов действий пользователей
 """
-
+import orjson
 
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+
+from devicemanager.device import Interfaces
+from net_tools.models import DevicesInfo
 from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 
 
@@ -41,6 +45,7 @@ class DevicesAdmin(admin.ModelAdmin):
     ]
     search_fields = ["ip", "name"]
     list_per_page = 50
+    readonly_fields = ["show_interfaces"]
     list_filter = ["vendor", "group", "auth_group", "model"]
     fieldsets = (
         ("Характеристика", {"fields": ("ip", "name")}),
@@ -50,20 +55,31 @@ class DevicesAdmin(admin.ModelAdmin):
             "Удаленное подключение",
             {"fields": ("snmp_community", "port_scan_protocol", "cmd_protocol")},
         ),
+        ("Интерфейсы", {"fields": ("show_interfaces",)}),
     )
     actions = ["set_telnet", "set_snmp", "set_ssh"]
+
+    @admin.display(description="Интерфейсы")
+    def show_interfaces(self, obj: Devices):
+        dev_info = DevicesInfo.objects.get(dev=obj)
+        interfaces = (
+            str(Interfaces(orjson.loads(dev_info.interfaces)))
+            .replace("\n", "<br>")
+            .replace(" ", "&nbsp; ")
+        )
+        return format_html(f"<div>{interfaces}</div>")
 
     @admin.display(description="Посмотреть")
     def show_device(self, obj: Devices):
         """Ссылка на страницу сканирования интерфейсов оборудования"""
 
         return mark_safe(
-            f'''<a target="_blank" href="{obj.get_absolute_url()}">
+            f"""<a target="_blank" href="{obj.get_absolute_url()}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box-arrow-in-right" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
                   <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
                 </svg>
-            </a>'''
+            </a>"""
         )
 
     @admin.action(description="telnet Протокол для поиска интерфейсов")
