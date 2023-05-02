@@ -1,8 +1,7 @@
 import hashlib
 import re
 import datetime
-import json
-import filecmp
+import orjson
 import pathlib
 
 from itertools import islice
@@ -133,7 +132,7 @@ class MacAddressTableGather:
         except DevicesInfo.DoesNotExist:
             device_history = DevicesInfo.objects.create(dev=self.device)
 
-        device_history.interfaces = json.dumps(interfaces_to_save)
+        device_history.interfaces = orjson.dumps(interfaces_to_save).decode()
         device_history.interfaces_date = datetime.datetime.now()
         device_history.save(update_fields=["interfaces", "interfaces_date"])
 

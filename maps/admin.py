@@ -1,4 +1,4 @@
-import json
+import orjson
 from collections import Counter
 
 from django.contrib import admin
@@ -16,7 +16,9 @@ svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/
 </svg>"""
 
 
-def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> (str, tuple):
+def get_icons_html_code(
+    fill_color: str, stroke_color: str, icon_name=None
+) -> (str, tuple):
     icons = [
         # Circle fill
         {
@@ -207,7 +209,7 @@ class LayersAdmin(admin.ModelAdmin):
         """
 
         with open(file_path, "rb") as file:
-            data = json.loads(file.read())
+            data = orjson.loads(file.read())
 
         feature_types: dict = {}
         total_count = 0

@@ -20,3 +20,5 @@ django-filter
 djangorestframework-simplejwt
 drf-yasg
 pysftp
+orjson
+drf-orjson-renderer

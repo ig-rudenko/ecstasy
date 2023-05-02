@@ -1,4 +1,4 @@
-import json
+import orjson
 
 import ping3
 from datetime import datetime
@@ -100,7 +100,7 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
 
     @staticmethod
     def get_interfaces_load(device: ModelDeviceInfo):
-        interfaces = InterfacesObject(json.loads(device.interfaces)).physical()
+        interfaces = InterfacesObject(orjson.loads(device.interfaces)).physical()
 
         non_system = interfaces.non_system()
         abons_up = non_system.up()
@@ -231,7 +231,7 @@ class DeviceInterfacesAPIView(APIView):
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
         if not current_status:
             last_interfaces, last_datetime = self.get_last_interfaces()
-            last_interfaces = json.loads(last_interfaces)
+            last_interfaces = orjson.loads(last_interfaces)
 
             self.add_comments(last_interfaces)
             self.add_devices_links(last_interfaces)
@@ -447,7 +447,7 @@ class DeviceInterfacesAPIView(APIView):
                 }
                 for line in self.device_collector.interfaces
             ]
-            self.current_device_info.vlans = json.dumps(interfaces_to_save)
+            self.current_device_info.vlans = orjson.dumps(interfaces_to_save).decode()
             self.current_device_info.vlans_date = datetime.now()
             self.current_device_info.save(update_fields=["vlans", "vlans_date"])
 
@@ -460,7 +460,9 @@ class DeviceInterfacesAPIView(APIView):
                 }
                 for line in self.device_collector.interfaces
             ]
-            self.current_device_info.interfaces = json.dumps(interfaces_to_save)
+            self.current_device_info.interfaces = orjson.dumps(
+                interfaces_to_save
+            ).decode()
             self.current_device_info.interfaces_date = datetime.now()
             self.current_device_info.save(
                 update_fields=["interfaces", "interfaces_date"]

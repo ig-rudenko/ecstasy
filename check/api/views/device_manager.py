@@ -1,4 +1,4 @@
-import json
+import orjson
 
 import pexpect
 from django.conf import settings
@@ -53,7 +53,7 @@ class PortControlAPIView(generics.GenericAPIView):
         # Смотрим интерфейсы, которые сохранены в БД
         interfaces_storage = get_object_or_404(DevicesInfo, dev__name=device_name)
         # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
-        interfaces = Interfaces(json.loads(interfaces_storage.interfaces))
+        interfaces = Interfaces(orjson.loads(interfaces_storage.interfaces))
 
         # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
         port_desc: str = interfaces[port_name].desc
@@ -345,9 +345,7 @@ class SetPoEAPIView(APIView):
                         status=400,
                     )
 
-                return Response(
-                    {"detail": "Unsupported for this device"}, status=400
-                )
+                return Response({"detail": "Unsupported for this device"}, status=400)
 
         except DeviceException as error:
             return Response({"detail": str(error)}, status=500)
@@ -430,9 +428,7 @@ class ChangeDSLProfileAPIView(APIView):
                     return Response({"status": status})
 
                 # Нельзя менять профиль для данного устройства
-                return Response(
-                    {"error": "Device can't change profile"}, status=400
-                )
+                return Response({"error": "Device can't change profile"}, status=400)
 
         except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
             return Response({"error": str(e)}, status=500)

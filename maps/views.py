@@ -1,4 +1,4 @@
-import json
+import orjson
 from datetime import datetime
 from functools import wraps
 
@@ -237,9 +237,9 @@ def render_interactive_map(request, map_obj: Maps):
                 # Читаем содержимое файла
                 with layer.from_file.open("r") as file:
                     try:
-                        layer_data["features"] = json.load(file)
-                    except json.JSONDecodeError:
-                        # Пропускаем файл который не получилось прочитать
+                        layer_data["features"] = orjson.loads(file.read())
+                    except orjson.JSONDecodeError:
+                        # Пропускаем файл, который не получилось прочитать
                         continue
 
                 # Сохраняем данные слоя

@@ -1,4 +1,4 @@
-import json
+import orjson
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
@@ -359,7 +359,7 @@ def get_vlan(request):
             node["value"] = 70
         if "-cr" in node["title"].lower():
             node["value"] = 100
-        # Пустой порт
+        # Пустой порт.
         # Устанавливаем размер узла равным 1, если узел является портом.
         if "p:(" in node["title"]:
             node["value"] = 1
@@ -373,6 +373,6 @@ def get_vlan(request):
         {
             "nodes": net.nodes,
             "edges": net.edges,
-            "options": json.loads(net.options.to_json()),
+            "options": orjson.loads(net.options.to_json()),
         }
     )
