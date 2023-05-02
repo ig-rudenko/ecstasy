@@ -71,9 +71,7 @@ class EdgeCore(BaseDevice):
         return [
             (
                 line[0],  # interface
-                line[2].lower()
-                if "Up" in line[1].lower()
-                else line[1].lower(),  # status
+                line[2].lower() if "up" in line[1].lower() else line[1].lower(),  # status
                 line[3],  # desc
             )
             for line in result
