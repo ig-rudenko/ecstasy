@@ -4,7 +4,7 @@ from datetime import datetime
 from django import test
 
 from check.models import Devices
-from motr.models import RingDevs, TransportRing
+from ring_manager.models import RingDev, TransportRing
 from net_tools.models import DevicesInfo
 
 
@@ -49,7 +49,7 @@ class TestRingBase(test.TransactionTestCase):
             # Функция `range()` используется для генерации последовательности чисел, начиная с индекса последнего
             # элемента в списке (`len(model_devices_list) - 1`) и заканчивая индексом 0 (`-1`), с шагом -1 (`-1`).
             # Это означает, что цикл начнется с последнего элемента в списке и будет двигаться назад к первому элементу.
-            first_ring_dev = RingDevs.objects.create(
+            first_ring_dev = RingDev.objects.create(
                 ring_name="ring1",
                 device=model_devices_list[i],
                 next_dev=first_ring_dev,

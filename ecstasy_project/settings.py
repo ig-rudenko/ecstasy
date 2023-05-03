@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
-    "motr",
+    "ring_manager",
     "dbbackup",
 ]
 

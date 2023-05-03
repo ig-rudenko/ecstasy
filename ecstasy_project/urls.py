@@ -40,6 +40,7 @@ urlpatterns = [
     path("tools/", include("net_tools.urls")),
     path("maps/", include("maps.urls")),
     path("gather/", include("gathering.urls")),
+    path("ring-manager/", include("ring_manager.urls")),
     path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),

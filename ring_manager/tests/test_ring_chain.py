@@ -6,7 +6,7 @@ from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo
 from devicemanager import Device as DeviceManager
 from .base import TestRingBase
-from ..models import TransportRing, RingDevs
+from ..models import TransportRing, RingDev
 from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError
 from ..ring_manager import TransportRingNormalizer
 
@@ -127,7 +127,7 @@ class TestRingChain(TestRingBase):
         with self.assertRaises(InvalidRingStructureError):
             TransportRingManager(
                 TransportRing.objects.create(
-                    name="without_vlans", head=RingDevs.objects.first(), vlans=[1]
+                    name="without_vlans", head=RingDev.objects.first(), vlans=[1]
                 )
             )
 
@@ -135,9 +135,9 @@ class TestRingChain(TestRingBase):
         """
         Проверяем инициализацию менеджера кольца
         """
-        point1 = RingDevs.objects.get(device__name="dev1")
-        point2 = RingDevs.objects.get(device__name="dev2")
-        point3 = RingDevs.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="dev1")
+        point2 = RingDev.objects.get(device__name="dev2")
+        point3 = RingDev.objects.get(device__name="dev3")
 
         r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 
@@ -162,9 +162,9 @@ class TestRingChain(TestRingBase):
         """
         ring = TransportRing.objects.get(name="ring1")
 
-        point1 = RingDevs.objects.get(device__name="dev1")
-        point2 = RingDevs.objects.get(device__name="dev2")
-        point3 = RingDevs.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="dev1")
+        point2 = RingDev.objects.get(device__name="dev2")
+        point3 = RingDev.objects.get(device__name="dev3")
 
         # Проверяем отсутствие обратной связи
         self.assertEqual(point1.prev_dev, None)
@@ -185,9 +185,9 @@ class TestRingChain(TestRingBase):
         # ========= Выполняем нормализацию ===========
         n = TransportRingNormalizer(ring=ring).normalize()
 
-        point1 = RingDevs.objects.get(device__name="dev1")
-        point2 = RingDevs.objects.get(device__name="dev2")
-        point3 = RingDevs.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="dev1")
+        point2 = RingDev.objects.get(device__name="dev2")
+        point3 = RingDev.objects.get(device__name="dev3")
 
         # Проверяем обратную связь
         self.assertEqual(point1.prev_dev, None)
@@ -208,9 +208,9 @@ class TestRingChain(TestRingBase):
         """
         Проверяем ping для менеджера кольца
         """
-        point1 = RingDevs.objects.get(device__name="dev1")
-        point2 = RingDevs.objects.get(device__name="dev2")
-        point3 = RingDevs.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="dev1")
+        point2 = RingDev.objects.get(device__name="dev2")
+        point3 = RingDev.objects.get(device__name="dev3")
 
         r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
 

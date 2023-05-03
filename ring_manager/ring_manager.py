@@ -2,9 +2,9 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import List, Tuple, Set
 
-from devicemanager.device import Interfaces, Interface
+from devicemanager.device import Interfaces, Interface, Device as DeviceManager
 from check import models
-from .models import RingDevs, TransportRing
+from .models import RingDev, TransportRing
 from .solutions import Solutions
 
 
@@ -19,7 +19,7 @@ class RingStatusError(Exception):
 @dataclass
 class RingPoint:
     device: models.Devices
-    point: RingDevs
+    point: RingDev
     port_to_prev_dev: Interface = Interface()
     port_to_next_dev: Interface = Interface()
     ping: bool = None
@@ -66,7 +66,7 @@ class TransportRingBase:
 
         devs = []
 
-        iter_dev: RingDevs = self.ring.head
+        iter_dev: RingDev = self.ring.head
 
         # Перебирает устройства в кольце и добавляет в список
         # Начинается с головного устройства кольца и продолжается добавление пока не достигнет конца кольца
@@ -101,7 +101,8 @@ class TransportRingNormalizer(TransportRingBase):
             if i == 0:
                 self.ring_devs[i].point.prev_dev = None
                 self.ring_devs[i].point.save(update_fields=["prev_dev"])
-            else:
+
+            elif self.ring_devs[i].point.prev_dev != self.ring_devs[i - 1].point:
                 self.ring_devs[i].point.prev_dev = self.ring_devs[i - 1].point
                 self.ring_devs[i].point.save(update_fields=["prev_dev"])
 
@@ -109,7 +110,7 @@ class TransportRingNormalizer(TransportRingBase):
 
 
 class TransportRingManager(TransportRingBase):
-    device_manager = None
+    device_manager = DeviceManager
 
     def check_devices_availability(self):
         """
