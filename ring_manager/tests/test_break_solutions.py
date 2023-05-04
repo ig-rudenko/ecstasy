@@ -107,7 +107,10 @@ class TestHeadDownSolutions(TestRingBase):
             {
                 "set_port_status": {
                     "status": "down",
-                    "device": r.ring_devs[1].device,
+                    "device": {
+                        "name": r.ring_devs[1].device.name,
+                        "ip": r.ring_devs[1].device.ip,
+                    },
                     "port": r.ring_devs[1].port_to_next_dev.name,
                     "message": "Нашли обрыв между: "
                     "dev2 (224.0.0.2) - порт (GE0/2/4) и dev3 (224.0.0.3) - порт (GE0/3/3)",
@@ -122,7 +125,10 @@ class TestHeadDownSolutions(TestRingBase):
                 "set_port_vlans": {
                     "status": "add",
                     "vlans": (1, 2, 3),
-                    "device": r.ring_devs[-1].device,
+                    "device": {
+                        "name": r.ring_devs[-1].device.name,
+                        "ip": r.ring_devs[-1].device.ip,
+                    },
                     "port": r.ring_devs[-1].port_to_prev_dev.name,
                     "message": "Прописываем VLANS (1, 2, 3) на dev4 (224.0.0.4) на порту GE0/4/3",
                 }

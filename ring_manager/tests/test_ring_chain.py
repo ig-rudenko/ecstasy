@@ -246,13 +246,6 @@ class TestRingChain(TestRingBase):
         """
         Проверяем сбор интерфейсов для менеджера кольца
         """
-
-        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
-        r.check_devices_availability()
-
-        with self.assertRaises(NotImplementedError):
-            r.collect_all_interfaces()
-
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 

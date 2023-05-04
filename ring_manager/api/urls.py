@@ -5,5 +5,6 @@ from . import views
 
 urlpatterns = [
     path("transport-ring/<str:ring_name>", views.TransportRingDetailAPIView.as_view()),
+    path("transport-ring/<str:ring_name>/solutions", views.CreateSubmitSolutionsAPIView.as_view()),
     path("transport-rings", views.ListTransportRingsAPIView.as_view())
 ]

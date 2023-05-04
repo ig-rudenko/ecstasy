@@ -107,7 +107,10 @@ class TestDownSolutions1(TestRingBase):
             {
                 "set_port_status": {
                     "status": "down",
-                    "device": r.ring_devs[0].device,
+                    "device": {
+                        "name": r.ring_devs[0].device.name,
+                        "ip": r.ring_devs[0].device.ip,
+                    },
                     "port": r.ring_devs[0].port_to_next_dev.name,
                     "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
                 }
@@ -121,7 +124,10 @@ class TestDownSolutions1(TestRingBase):
                 "set_port_vlans": {
                     "status": "add",
                     "vlans": (1, 2, 3),
-                    "device": r.ring_devs[-1].device,
+                    "device": {
+                        "name": r.ring_devs[-1].device.name,
+                        "ip": r.ring_devs[-1].device.ip,
+                    },
                     "port": r.ring_devs[-1].port_to_prev_dev.name,
                     "message": "Прописываем VLANS (1, 2, 3) на dev4 (224.0.0.4) на порту GE0/4/3",
                 }
@@ -161,7 +167,10 @@ class TestDownSolutions2(TestRingBase):
             {
                 "set_port_status": {
                     "status": "down",
-                    "device": r.ring_devs[1].device,
+                    "device": {
+                        "name": r.ring_devs[1].device.name,
+                        "ip": r.ring_devs[1].device.ip,
+                    },
                     "port": r.ring_devs[1].port_to_next_dev.name,
                     "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
                 }
@@ -175,7 +184,10 @@ class TestDownSolutions2(TestRingBase):
                 "set_port_vlans": {
                     "status": "add",
                     "vlans": (1, 2, 3),
-                    "device": r.ring_devs[-1].device,
+                    "device": {
+                        "name": r.ring_devs[-1].device.name,
+                        "ip": r.ring_devs[-1].device.ip,
+                    },
                     "port": r.ring_devs[-1].port_to_prev_dev.name,
                     "message": "Прописываем VLANS (1, 2, 3) на dev4 (224.0.0.4) на порту GE0/4/3",
                 }

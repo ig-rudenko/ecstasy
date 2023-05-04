@@ -41,7 +41,10 @@ class Solutions:
                 {
                     "set_port_status": {
                         "status": status,
-                        "device": device,
+                        "device": {
+                            "name": device.name,
+                            "ip": device.ip,
+                        },
                         "port": port,
                         "message": message,
                     }
@@ -54,14 +57,19 @@ class Solutions:
     def port_set_down(self, device: check.models.Devices, port: str, message: str):
         self.change_port(device, port, "down", message)
 
-    def change_vlans(self, status: str, vlans: tuple, device: check.models.Devices, port: str, message: str):
+    def change_vlans(
+        self, status: str, vlans: tuple, device: check.models.Devices, port: str, message: str
+    ):
         if not self.has_errors:
             self._solutions.append(
                 {
                     "set_port_vlans": {
                         "status": status,
                         "vlans": vlans,
-                        "device": device,
+                        "device": {
+                            "name": device.name,
+                            "ip": device.ip,
+                        },
                         "port": port,
                         "message": message,
                     }

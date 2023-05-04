@@ -3,7 +3,7 @@
   <div v-if="rings.selectedRing === null"
        class="container px-4" id="featured-3">
 
-    <h2 class="pb-2 border-bottom">Выберите кольца</h2>
+    <h2 class="pb-2 border-bottom">Доступные вам транспортные кольца</h2>
 
     <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
 
@@ -69,7 +69,7 @@ export default {
 
 <style scoped>
 .ring-card {
-  border: 1px solid;
+  border: 1px solid #cdcdcd;
   padding: 20px;
   border-radius: 20px;
 }

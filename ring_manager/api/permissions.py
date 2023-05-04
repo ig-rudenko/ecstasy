@@ -21,4 +21,4 @@ class RingPermission(BasePermission):
         :return: логическое значение, указывающее, имеет ли пользователь, делающий запрос, разрешение на доступ к
          указанному объекту TransportRing.
         """
-        return request.user.id in obj.users.all().values_list("id")
+        return request.user.id in obj.users.all().values_list("id", flat=True)

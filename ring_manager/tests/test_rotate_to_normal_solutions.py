@@ -138,7 +138,10 @@ class TestRotateToNormalSolutions(TestRingBase):
                 "set_port_vlans": {
                     "status": "delete",
                     "vlans": (1, 2, 3),
-                    "device": r.ring_devs[-1].device,  # `tail`
+                    "device": {  # `tail`
+                        "name": r.ring_devs[-1].device.name,
+                        "ip": r.ring_devs[-1].device.ip,
+                    },
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
                     "на оборудовании dev5 (224.0.0.5) на порту GE0/5/3",
@@ -152,7 +155,10 @@ class TestRotateToNormalSolutions(TestRingBase):
             {
                 "set_port_status": {
                     "status": "up",
-                    "device": r.ring_devs[2].device,  # dev3
+                    "device": {  # dev3
+                        "name": r.ring_devs[2].device.name,
+                        "ip": r.ring_devs[2].device.ip,
+                    },
                     "port": "GE0/3/4",
                     "message": "Переводим кольцо в штатное состояние",
                 }

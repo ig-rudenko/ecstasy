@@ -9,11 +9,13 @@ from .solutions import Solutions
 
 
 class InvalidRingStructureError(Exception):
-    pass
+    def __init__(self, message: str):
+        self.message = message
 
 
 class RingStatusError(Exception):
-    pass
+    def __init__(self, message: str):
+        self.message = message
 
 
 @dataclass
@@ -241,8 +243,9 @@ class TransportRingManager(TransportRingBase):
         diff = set(self.vlans) - set(self.head.port_to_next_dev.vlan)
         if diff:
             raise RingStatusError(
-                f"Указанные для разворота VLAN: {diff} отсутствуют на порту ({self.head.port_to_next_dev})"
-                f" головного устройства {self.head.device}"
+                f"Указанные для разворота VLAN: {diff} "
+                f"отсутствуют на порту ({self.head.port_to_next_dev}) "
+                f"головного устройства {self.head.device}"
             )
 
     def create_solutions(self) -> Solutions:
@@ -410,6 +413,23 @@ class TransportRingManager(TransportRingBase):
                         f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
                         f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
                     )
+                else:
+                    # Если на `tail` есть некоторые VLANS
+                    if tail_exists_vlans:
+                        SOLUTIONS.info(
+                            "Кольцо находится в исправном состоянии, но необходимо удалить зацикленные "
+                            "VLANS"
+                        )
+                        # Необходимо удалить их
+                        SOLUTIONS.delete_vlans(
+                            vlans=tuple(required_vlans),
+                            device=self.tail.device,
+                            port=self.tail.port_to_prev_dev.name,
+                            message=f"Будут удалены VLAN - {required_vlans} на {self.tail.device} "
+                            f"на порту {self.tail.port_to_prev_dev.name}",
+                        )
+                    SOLUTIONS.info("Кольцо находится в исправном состоянии")
+                    return SOLUTIONS
 
             # Если имеется некоторое недоступное оборудование и есть VLANS, которые необходимо прописать на `tail`.
             else:

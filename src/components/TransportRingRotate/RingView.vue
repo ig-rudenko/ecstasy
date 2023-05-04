@@ -112,13 +112,13 @@ export default {
 }
 
 .port-down {
-    background: #828282;
     border: 1px solid #000000;
+    background: #828282;
 }
 
 .port-admin-down {
-    background: #cc3f3f;
     border: 1px solid #000000;
+    background: #cc3f3f;
 }
 
 .port-line {
