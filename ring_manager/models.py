@@ -6,13 +6,13 @@ from django.dispatch import receiver
 
 class TransportRing(models.Model):
     NORMAL = "NORMAL"
-    ROTATED = "ROTATED"
-    DEACTIVATED = "DEACTIVATED"
+    DEACTIVATED = "DEACTIVATED"  # Кольцо отключено
+    IN_PROCESS = "IN_PROCESS"  # Совершается какое-то действие с кольцом
 
     _STATUS = (
         (NORMAL, "Штатное состояние"),
-        (ROTATED, "Развернуто"),
         (DEACTIVATED, "Деактивировано"),
+        (IN_PROCESS, "Занято в данный момент"),
     )
 
     name = models.CharField(
@@ -59,6 +59,8 @@ class TransportRing(models.Model):
         verbose_name="Состояние кольца",
         help_text="Какое в данный момент состояние имеет кольцо",
     )
+    solution_time = models.DateTimeField(null=True, blank=True)
+    solutions = models.JSONField(null=True, blank=True, default=list)
 
     def __setattr__(self, key, value):
         if key == "vlans":

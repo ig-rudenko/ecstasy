@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, response
 
@@ -78,11 +80,14 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         trm.find_link_between_devices()  # Находим связи
 
         points = PointRingSerializer(trm.ring_devs, many=True).data
-        solutions = trm.create_solutions().solutions
+
+        ring.solutions = trm.create_solutions().solutions
+        ring.solution_time = datetime.now()
+        ring.save(update_fields=["solutions", "solution_time"])
 
         return response.Response(
             {
                 "points": points,
-                "solutions": solutions,
+                "solutions": ring.solutions,
             }
         )
