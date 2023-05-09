@@ -1,10 +1,6 @@
-import json
-from datetime import datetime
-
 from check.models import Devices
 from devicemanager.device import Interfaces
-from net_tools.models import DevicesInfo
-from devicemanager import Device as DeviceManager
+from devicemanager import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing, RingDev
 from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError
@@ -246,6 +242,7 @@ class TestRingChain(TestRingBase):
         """
         Проверяем сбор интерфейсов для менеджера кольца
         """
+
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 

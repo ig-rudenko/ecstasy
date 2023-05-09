@@ -7,7 +7,7 @@ from django.core.cache import cache
 from ecstasy_project.celery import app
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from check.models import Devices as ModelDevices, AuthGroup
-from devicemanager.device import Device
+from devicemanager.device import DeviceManager
 from net_tools.models import DevicesInfo
 
 
@@ -20,24 +20,14 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         cache.set("periodically_scan_id", self.request.id, timeout=None)
 
     def thread_task(self, obj: ModelDevices, **kwargs):
-        dev = Device(name=obj.name)
-        ping = dev.ping()  # Оборудование доступно или нет
+        dev = DeviceManager.from_model(obj)
 
-        if not ping:
+        if not obj.available:
             # Если оборудование недоступно, то пропускаем
             return
 
-        # Устанавливаем протокол для подключения
-        dev.protocol = obj.port_scan_protocol
-        # Устанавливаем community для подключения
-        dev.snmp_community = obj.snmp_community
-        dev.auth_obj = obj.auth_group  # Устанавливаем подключение
-        dev.ip = obj.ip  # IP адрес
-
         # Собираем интерфейсы
-        status = dev.collect_interfaces(
-            vlans=True, current_status=True, make_session_global=False
-        )
+        status = dev.collect_interfaces(vlans=True, current_status=True, make_session_global=False)
 
         model_update_fields = []  # Поля для обновлений, в случае изменения записи в БД
 
@@ -45,14 +35,10 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         if "Неверный логин или пароль" in str(status):
 
             # Создаем список объектов авторизации
-            al = list(
-                AuthGroup.objects.exclude(name=obj.auth_group.name).order_by("id").all()
-            )
+            al = list(AuthGroup.objects.exclude(name=obj.auth_group.name).order_by("id").all())
 
             # Собираем интерфейсы снова
-            status = dev.collect_interfaces(
-                vlans=True, current_status=True, auth_obj=al
-            )
+            status = dev.collect_interfaces(vlans=True, current_status=True, auth_obj=al)
 
             if status is None:  # Если статус сбора интерфейсов успешный
                 # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной
@@ -79,18 +65,12 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
         # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
         # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
-        if (
-            dev.zabbix_info.inventory.model
-            and dev.zabbix_info.inventory.model != obj.model
-        ):
+        if dev.zabbix_info.inventory.model and dev.zabbix_info.inventory.model != obj.model:
             obj.model = dev.zabbix_info.inventory.model
             model_update_fields.append("model")
 
         # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
-        if (
-            dev.zabbix_info.inventory.vendor
-            and dev.zabbix_info.inventory.vendor != obj.vendor
-        ):
+        if dev.zabbix_info.inventory.vendor and dev.zabbix_info.inventory.vendor != obj.vendor:
             obj.vendor = dev.zabbix_info.inventory.vendor
             model_update_fields.append("vendor")
 

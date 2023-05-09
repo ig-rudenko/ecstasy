@@ -316,7 +316,9 @@ export default {
           url: "/device/api/" + this.deviceName + "/port-status",
           type: 'POST',
           data: data,
-          headers: {"X-CSRFToken": document.CSRF_TOKEN},
+          headers: {
+            "X-CSRFToken": document.CSRF_TOKEN
+          },
           success: function( resp ) {
             toastInfo.title= `Порт: ${resp.port}`
 
@@ -370,18 +372,18 @@ export default {
         data = {}
       }
 
-      $.ajax({
-          url: url,
-          type: method,
-          data: data,
-          headers:{"X-CSRFToken": document.CSRF_TOKEN},
-          success: function( data ) {
-            console.log(data)
-          },
-          error: function (data) {
-            console.log(data)
+      fetch(
+          url,
+          {
+              method: method,
+              body: JSON.stringify(data),
+              credentials: "include",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": document.CSRF_TOKEN
+              }
           }
-      });
+      );
 
     },
 

@@ -1,4 +1,4 @@
-from devicemanager import Device as DeviceManager
+from devicemanager import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager, RingStatusError
@@ -97,5 +97,6 @@ class TestHeadDownSolutions(TestRingBase):
         self.assertTrue(len(solutions), 1)
 
         self.assertTrue(
-            solutions[0], {"info": {"message": "Кольцо находится в исправном состоянии"}}
+            solutions[0],
+            {"info": {"message": "Кольцо находится в исправном состоянии"}},
         )

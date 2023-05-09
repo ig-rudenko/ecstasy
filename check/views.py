@@ -9,7 +9,7 @@ from django.http import (
 from django.shortcuts import render, resolve_url
 from django.contrib.auth.decorators import login_required
 
-from devicemanager import Device
+from devicemanager import DeviceManager
 from . import models
 
 
@@ -20,7 +20,7 @@ def by_zabbix_hostid(request, hostid: str):
     :param hostid: Идентификатор узла сети в Zabbix
     """
 
-    dev = Device.from_hostid(hostid)
+    dev = DeviceManager.from_hostid(hostid)
     if not dev:
         raise Http404
 

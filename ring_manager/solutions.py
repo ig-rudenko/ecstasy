@@ -6,9 +6,11 @@ from devicemanager.device import Interfaces
 from .models import TransportRing
 
 
-# Класс Solutions предоставляет методы для настройки состояния портов и VLAN, а также для создания отчетов об ошибках и
-# информационных сообщений.
 class Solutions:
+    """
+    Класс Solutions предоставляет методы для настройки состояния портов и VLAN, а также для создания отчетов об ошибках и
+    информационных сообщений.
+    """
     safe_solutions = ("info", "error")
     affect_solutions = ("set_port_status", "set_port_vlans")
 

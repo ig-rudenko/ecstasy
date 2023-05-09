@@ -340,13 +340,13 @@ class DevicesCollection:
 
         # Если верно передан параметр
         if isinstance(devs, (list, tuple)):
-            if all(isinstance(d, Device) for d in devs):
-                self.collection: List[Device] = devs
+            if all(isinstance(d, DeviceManager) for d in devs):
+                self.collection: List[DeviceManager] = devs
             elif all(isinstance(d, str) for d in devs):
-                self.collection: List[Device] = [Device(d) for d in devs]
+                self.collection: List[DeviceManager] = [DeviceManager(d) for d in devs]
             else:
                 raise TypeError(
-                    "Коллекция должна состоять из объектов Device или содержать имена устройств"
+                    "Коллекция должна состоять из объектов DeviceManager или содержать имена устройств"
                 )
         else:
             raise TypeError(
@@ -390,7 +390,7 @@ class DevicesCollection:
             devs = []
             for host in hosts:
                 bar.text = f'-> Собираем данные с {host["name"]}'
-                devs.append(Device(host["name"], zabbix_info=zabbix_info))
+                devs.append(DeviceManager(host["name"], zabbix_info=zabbix_info))
                 bar()
         return DevicesCollection(devs)
 
@@ -421,7 +421,7 @@ class DevicesCollection:
                 devs = []
                 for h in hosts:
                     bar.text = f'-> Собираем данные с {h["name"]}'
-                    devs.append(Device(h["name"], zabbix_info=zabbix_info))
+                    devs.append(DeviceManager(h["name"], zabbix_info=zabbix_info))
                     bar()
             return DevicesCollection(devs)
 
@@ -486,14 +486,14 @@ class DevicesCollection:
         return self.collection[item]
 
     def __add__(self, other):
-        if isinstance(other, Device):
+        if isinstance(other, DeviceManager):
             self.collection += [other]
         if isinstance(other, DevicesCollection):
             self.collection += other.collection
         return self.collection
 
     def __radd__(self, other):
-        if isinstance(other, Device):
+        if isinstance(other, DeviceManager):
             self.collection = [other] + self.collection
         if isinstance(other, DevicesCollection):
             self.collection = other.collection + self.collection
@@ -602,7 +602,7 @@ class DevicesCollection:
         return DevicesCollection(available_devices)
 
 
-class Device:
+class DeviceManager:
     """
     Собирает информации с Zabbix для одного узла сети
     Сканирует интерфейсы оборудования в реальном времени
@@ -697,7 +697,7 @@ class Device:
         return self._zabbix_info
 
     @classmethod
-    def from_model(cls, model_dev, zabbix_info=True) -> "Device":
+    def from_model(cls, model_dev, zabbix_info=True) -> "DeviceManager":
         dev = cls(model_dev.name, zabbix_info=False)
         dev.ip = model_dev.ip
         dev.protocol = model_dev.port_scan_protocol
@@ -719,17 +719,17 @@ class Device:
                 hosts = zbx.host.get(filter={"ip": ip}, output=["name"])
         except ZabbixConnectionError:
             return DevicesCollection([])
-        return DevicesCollection([Device(d["name"]) for d in hosts])
+        return DevicesCollection([DeviceManager(d["name"]) for d in hosts])
 
     @classmethod
-    def from_hostid(cls, hostid: str) -> ("Device", None):
+    def from_hostid(cls, hostid: str) -> ("DeviceManager", None):
         """Создаем объект через переданный hostid Zabbix"""
         try:
             with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
                 zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
-                return Device(host[0]["name"])
+                return DeviceManager(host[0]["name"])
         except ZabbixConnectionError:
             pass
         return None
@@ -812,7 +812,9 @@ class Device:
                 return str(e)
 
     def __str__(self):
-        return f'Device(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
+        return (
+            f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
+        )
 
     def __repr__(self):
         return self.__str__()

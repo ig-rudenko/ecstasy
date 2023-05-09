@@ -22,5 +22,7 @@ if __name__ == "__main__":
         "!maps.migration",
         "gathering",
         "!gathering.migration",
+        "ring_manager",
+        "!ring_manager.migration",
         output_directory=pathlib.Path(__file__).parent / "static" / "docs",
     )

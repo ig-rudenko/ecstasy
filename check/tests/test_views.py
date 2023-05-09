@@ -21,7 +21,7 @@ class ShowDevicesNoAccessTest(TestCase):
         g = DeviceGroup.objects.create(name="test")
 
         for i in range(1, 80):
-            Devices.objects.create(name=f"Device-{i}", ip=f"10.0.0.{i}", group=g)
+            Devices.objects.create(name=f"DeviceManager-{i}", ip=f"10.0.0.{i}", group=g)
 
     def test_redirect_if_not_logged_in(self):
         resp = self.client.get(reverse("home"))

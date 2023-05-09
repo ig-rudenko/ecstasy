@@ -13,7 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from check import models
 from app_settings.models import LogsElasticStackSettings
-from devicemanager.device import Device
+from devicemanager.device import DeviceManager
 from devicemanager.exceptions import DeviceException
 from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
@@ -205,21 +205,16 @@ class DeviceInterfacesAPIView(APIView):
 
         # Получаем объект устройства из БД
         self.device = get_object_or_404(models.Devices, name=device_name)
-
         self.check_object_permissions(request, self.device)
 
-        self.device_collector = Device(device_name)
+        self.device_collector = DeviceManager.from_model(self.device)
 
-        # Устанавливаем протокол для подключения
-        self.device_collector.protocol = self.device.port_scan_protocol
-        # Устанавливаем community для подключения
-        self.device_collector.snmp_community = self.device.snmp_community
-        self.device_collector.auth_obj = self.device.auth_group
-        self.device_collector.ip = self.device.ip  # IP адрес
-        ping = self.device_collector.ping()  # Оборудование доступно или нет
+        available = self.device.available  # Оборудование доступно или нет
 
         # Сканируем интерфейсы в реальном времени?
-        current_status = bool(request.GET.get("current_status", False)) and ping > 0
+        current_status = (
+            bool(request.GET.get("current_status", False)) and available > 0
+        )
 
         # Вместе с VLAN?
         self.with_vlans = (
@@ -231,7 +226,6 @@ class DeviceInterfacesAPIView(APIView):
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
         if not current_status:
             last_interfaces, last_datetime = self.get_last_interfaces()
-            last_interfaces = orjson.loads(last_interfaces)
 
             self.add_comments(last_interfaces)
             self.add_devices_links(last_interfaces)
@@ -239,13 +233,13 @@ class DeviceInterfacesAPIView(APIView):
             return Response(
                 {
                     "interfaces": last_interfaces,
-                    "deviceAvailable": ping > 0,
+                    "deviceAvailable": available > 0,
                     "collected": last_datetime,
                 }
             )
 
         # Собираем состояние интерфейсов оборудования в данный момент
-        self.get_current_interfaces()
+        self.collect_current_interfaces()
 
         # Обновляем данные по оборудованию на основе предыдущего подключения
         self.update_device_model_and_vendor()
@@ -256,7 +250,7 @@ class DeviceInterfacesAPIView(APIView):
             return Response(
                 {
                     "interfaces": [],
-                    "deviceAvailable": ping > 0,
+                    "deviceAvailable": available > 0,
                     "collected": datetime.now(),
                 }
             )
@@ -275,7 +269,7 @@ class DeviceInterfacesAPIView(APIView):
         return Response(
             {
                 "interfaces": interfaces,
-                "deviceAvailable": ping > 0,
+                "deviceAvailable": available > 0,
                 "collected": datetime.now(),
             }
         )
@@ -372,7 +366,7 @@ class DeviceInterfacesAPIView(APIView):
         # Обновляем данные в Zabbix
         self.device_collector.push_zabbix_inventory()
 
-    def get_current_interfaces(self) -> None:
+    def collect_current_interfaces(self) -> None:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
 
@@ -410,7 +404,7 @@ class DeviceInterfacesAPIView(APIView):
                 # Добавляем это поле в список изменений
                 self.model_update_fields.append("auth_group")
 
-    def get_last_interfaces(self) -> (str, datetime):
+    def get_last_interfaces(self) -> (dict, datetime):
         """
         ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
 
@@ -420,17 +414,23 @@ class DeviceInterfacesAPIView(APIView):
             )
         """
 
+        interfaces: dict = {}
+        collected_time: datetime = datetime.now()
+
         try:
             device_info = ModelDeviceInfo.objects.get(dev=self.device)
         except ModelDeviceInfo.DoesNotExist:
-            return "{}", ""
+            return interfaces, collected_time
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
-            return device_info.vlans, device_info.vlans_date
+            interfaces = orjson.loads(device_info.vlans or "{}")
+            collected_time = device_info.vlans_date or datetime.now()
+        else:
+            interfaces = orjson.loads(device_info.interfaces or "{}")
+            collected_time = device_info.interfaces_date or datetime.now()
 
-        # Отправляем интерфейсы без VLAN
-        return device_info.interfaces or "{}", device_info.interfaces_date or ""
+        return interfaces, collected_time
 
     def save_interfaces(self) -> list:
         """
@@ -515,7 +515,7 @@ class DeviceInfoAPIView(APIView):
         model_dev = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, model_dev)
 
-        dev = Device(name=device_name)
+        dev = DeviceManager(name=device_name)
 
         data = {
             "deviceName": device_name,

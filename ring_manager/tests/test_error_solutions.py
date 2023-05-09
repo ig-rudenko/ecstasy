@@ -1,4 +1,4 @@
-from devicemanager import Device as DeviceManager
+from devicemanager import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager, RingStatusError

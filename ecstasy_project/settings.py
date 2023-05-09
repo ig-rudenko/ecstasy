@@ -57,8 +57,8 @@ INSTALLED_APPS = [
     "dbbackup",
 ]
 
-DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
-DBBACKUP_STORAGE_OPTIONS = {'location': './db-backup'}
+DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
+DBBACKUP_STORAGE_OPTIONS = {"location": "./db-backup"}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -91,7 +91,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 
-DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
+DATABASES = orjson.loads(
+    os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", "")
+)
 if not DATABASES:
     DATABASES = {
         "default": {
@@ -238,47 +240,6 @@ django_actions_logger = logging.getLogger("django.actions")
 
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
-
-LOGGING = {
-    "version": 1,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
-        "simple": {
-            "format": "{levelname} {asctime} {message}",
-            "style": "{",
-        },
-    },
-    "filters": {
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugTrue",
-        },
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "filters": ["require_debug_true"],
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-        "file": {
-            "level": "DEBUG",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": LOGGING_DIR / "debug.log",
-            "formatter": "verbose",
-            "when": "midnight",
-            "backupCount": 30,
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file"],
-            "propagate": True,
-        }
-    },
-}
 
 
 # ================= JWT ===================

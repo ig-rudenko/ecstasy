@@ -14,7 +14,7 @@ from net_tools.models import DevicesInfo
 from .config_storage import ConfigStorage
 from .models import MacAddress
 from devicemanager.device import (
-    Device as ZabbixDevice,
+    DeviceManager,
     Config as DeviceZabbixConfig,
     Interfaces,
 )
@@ -76,15 +76,13 @@ class MacAddressTableGather:
 
         # Если сессия требует интерфейсов для работы
         if hasattr(session, "interfaces"):
-            session.interfaces = [
-                (line.name, line.status, line.desc) for line in self.interfaces
-            ]
+            session.interfaces = [(line.name, line.status, line.desc) for line in self.interfaces]
         if hasattr(session, "get_mac_table"):
             return session.get_mac_table() or []
         return []
 
     def get_interfaces(self) -> Interfaces:
-        device_manager = ZabbixDevice.from_model(self.device)
+        device_manager = DeviceManager.from_model(self.device)
         # Получение интерфейсов с устройства.
         device_manager.collect_interfaces(
             vlans=False, current_status=True, make_session_global=False
@@ -280,16 +278,12 @@ class ConfigurationGather:
 
         if isinstance(current_config, str):
             read_mode = "r"
-            current_config: bytes = self.re_pattern_space.sub(
-                "", current_config
-            ).encode()
+            current_config: bytes = self.re_pattern_space.sub("", current_config).encode()
 
         if self.last_config_file:
             try:
                 # Открытие файла в режиме чтения.
-                with self.storage.open(
-                    self.last_config_file.name, mode=read_mode
-                ) as file:
+                with self.storage.open(self.last_config_file.name, mode=read_mode) as file:
                     # Чтение последнего файла конфигурации.
                     last_config = file.read()
             # Резервный вариант, когда файл не в формате ascii.

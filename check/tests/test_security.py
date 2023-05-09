@@ -10,8 +10,8 @@ class NoAccessWithNoLogin(TestCase):
 
     def test_device_info_page(self):
         self.assertRedirects(
-            self.client.get(reverse("device_info", kwargs={"name": "Device"})),
-            expected_url="/accounts/login/?next=/device/Device",
+            self.client.get(reverse("device_info", kwargs={"name": "DeviceManager"})),
+            expected_url="/accounts/login/?next=/device/DeviceManager",
         )
 
     def test_show_bras_session_page(self):

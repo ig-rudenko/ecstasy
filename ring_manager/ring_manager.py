@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import List, Tuple, Set
 
-from devicemanager.device import Interfaces, Interface, Device as DeviceManager
+from devicemanager.device import Interfaces, Interface, DeviceManager
 from check import models
 from .models import RingDev, TransportRing
 from .solutions import Solutions
@@ -50,7 +50,7 @@ class TransportRingBase:
         self.validate_ring(ring)
 
         self.ring = ring
-        self.vlans = ring.vlans
+        self.vlans: List[int] = ring.vlans  # Форматируется в list of integers
         self.ring_devs = self.ring_devices()
 
         self.head = self.ring_devs[0]
