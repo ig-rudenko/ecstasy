@@ -1,14 +1,13 @@
 """
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
-import time
 from datetime import datetime, timedelta
 import re
-import threading
 
 import pexpect
 from .vendors import *
 from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceError
+from .session_control import DEVICE_SESSIONS
 
 
 class SimpleAuthObject:
@@ -16,30 +15,6 @@ class SimpleAuthObject:
         self.login = login
         self.password = password
         self.secret = secret
-
-
-DEVICE_SESSIONS = {}
-
-
-def session_cleaner():
-    """
-    Эта функция удаляет все сеансы старше текущего времени за вычетом переменной session_timeout.
-    """
-    while True:
-        for ip, device in tuple(DEVICE_SESSIONS.items()):
-            if (
-                device["expired"] < datetime.now().timestamp()
-                and device["session"].session
-                and device["session"].session.isalive()
-            ):
-
-                device["session"].session.close()
-                del DEVICE_SESSIONS[ip]
-
-        time.sleep(30)
-
-
-threading.Thread(target=session_cleaner, daemon=True, name="Session Cleaner").start()
 
 
 class DeviceFactory:
@@ -55,9 +30,7 @@ class DeviceFactory:
     password_input_expect = r"[Pp]ass.*:\s*$"
 
     # Совпадения, после которых надо нажать `N` (no)
-    send_N_key = (
-        r"The password needs to be changed|Do you want to see the software license"
-    )
+    send_N_key = r"The password needs to be changed|Do you want to see the software license"
 
     # Не доступен telnet
     telnet_unavailable = r"Connection closed|Unable to connect"
@@ -168,9 +141,7 @@ class DeviceFactory:
 
         # ZTE
         if " ZTE Corporation:" in version:
-            model = BaseDevice.find_or_empty(
-                r"Module 0:\s*(\S+\s\S+);\s*fasteth", version
-            )
+            model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version)
             return ZTE(self.session, self.ip, auth, model=model)
 
         # HUAWEI
@@ -212,9 +183,7 @@ class DeviceFactory:
 
         # Eltex MES, ESR
         if "Active-image:" in version or "Boot version:" in version:
-            eltex_device = EltexBase(
-                self.session, self.ip, self.privilege_mode_password
-            )
+            eltex_device = EltexBase(self.session, self.ip, self.privilege_mode_password)
             if "MES" in eltex_device.model:
                 return EltexMES(
                     eltex_device.session,
@@ -243,9 +212,7 @@ class DeviceFactory:
 
         # ISKRATEL CONTROL
         if "ISKRATEL" in version:
-            return IskratelControl(
-                self.session, self.ip, auth, model="ISKRATEL Switching"
-            )
+            return IskratelControl(self.session, self.ip, auth, model="ISKRATEL Switching")
 
         # ISKRATEL mBAN>
         if "IskraTEL" in version:
@@ -259,9 +226,7 @@ class DeviceFactory:
         if "% Unknown command" in version:
             self.session.sendline("display version")
             while True:
-                match = self.session.expect(
-                    [r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"]
-                )
+                match = self.session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
                 if match == 5:
                     self.session.expect(r"\}:")
                     self.session.sendline("\n")
@@ -339,9 +304,7 @@ class DeviceFactory:
                 raise TelnetConnectionError(f"Telnet недоступен! ({self.ip})")
 
             # Press any key to continue
-            if (
-                expect_index == 4
-            ):  # Если необходимо нажать любую клавишу, чтобы продолжить
+            if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
                 self.session.send(" ")
                 self.session.send(login + "\r")  # Вводим логин
                 self.session.send(password + "\r")  # Вводим пароль
@@ -359,40 +322,20 @@ class DeviceFactory:
 
             break
 
-    def __enter__(
-        self, algorithm: str = "", cipher: str = "", timeout: int = 30
-    ) -> BaseDevice:
+    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30) -> BaseDevice:
         """
-        ## При входе в контекстный менеджер подключаемся к оборудованию
+        ## При входе в контекстный менеджер подключаемся к оборудованию.
         """
-        # print(DEVICE_SESSIONS)
-        # Проверяем, жива ли сессия.
-        if (
-            self._session_global
-            and DEVICE_SESSIONS.get(self.ip)
-            and DEVICE_SESSIONS[self.ip]["session"]
-            and DEVICE_SESSIONS[self.ip]["session"].session
-            and DEVICE_SESSIONS[self.ip]["session"].session.isalive()
-        ):
-            # Проверка, не истек ли срок действия сеанса устройства.
-            if DEVICE_SESSIONS[self.ip]["expired"] >= datetime.now().timestamp():
 
-                # Продлеваем срок действия сессии еще на 2 минуты.
-                DEVICE_SESSIONS[self.ip]["expired"] = (
-                    datetime.now() + timedelta(minutes=2)
-                ).timestamp()
-
-                # Возвращаем сеанс, связанный с этим IP-адресом.
-                return DEVICE_SESSIONS[self.ip]["session"]
+        if self._session_global and DEVICE_SESSIONS.has_connection(self.ip):
+            return DEVICE_SESSIONS.get_connection(self.ip)
 
         connected = False
         if self.protocol == "ssh":
             algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
             cipher_str = f" -c {cipher}" if cipher else ""
 
-            for login, password in zip(
-                self.login + ["admin"], self.password + ["admin"]
-            ):
+            for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
 
                 self.session = pexpect.spawn(
                     f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=15
@@ -462,9 +405,7 @@ class DeviceFactory:
             status = "Не был передал логин/пароль"
             for login, password in zip(self.login, self.password):
 
-                status = self.__login_to_by_telnet(
-                    login, password, timeout, pre_set_index
-                )
+                status = self.__login_to_by_telnet(login, password, timeout, pre_set_index)
 
                 if status == "Connected":
                     # Сохраняем текущие введенные логин и пароль, они являются верными
@@ -482,11 +423,7 @@ class DeviceFactory:
         device_session = self.get_device()
 
         if self._session_global:
-            DEVICE_SESSIONS[self.ip] = {
-                "session": device_session,
-                # Данная сессия будет доступна в течение 2 минут.
-                "expired": (datetime.now() + timedelta(minutes=2)).timestamp(),
-            }
+            DEVICE_SESSIONS.add_connection(self.ip, device_session)
 
         return device_session
 

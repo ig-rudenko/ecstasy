@@ -10,3 +10,5 @@
 !manage.py
 !requirements.txt
 !create_docs.py
+!gathering
+!ring_manager
