@@ -1,4 +1,5 @@
 from datetime import timedelta, datetime
+from typing import Literal, Sequence, Dict
 
 import check.models
 from devicemanager import DeviceException
@@ -11,6 +12,7 @@ class Solutions:
     Класс Solutions предоставляет методы для настройки состояния портов и VLAN, а также для создания отчетов об ошибках и
     информационных сообщений.
     """
+
     safe_solutions = ("info", "error")
     affect_solutions = ("set_port_status", "set_port_vlans")
 
@@ -129,8 +131,18 @@ class SolutionsPerformer:
             )
 
     def perform_all(self) -> int:
+        """
+        Функция выполняет набор решений, пропуская безопасные решения и выполняя оставшиеся решения в зависимости от их
+        типа.
+
+        :return: Метод `perform_all` возвращает целочисленное значение, которое представляет количество выполненных
+         решений. Если все решения уже безопасны (т. е. их ключи являются подмножеством списка `safe_solutions`
+         в классе `Solutions`), то метод возвращает 0 без выполнения каких-либо решений.
+        """
         if set(self.solutions).issubset(Solutions.safe_solutions):
             return 0
+
+        count = 0
 
         for solution in self.solutions:
 
@@ -150,10 +162,14 @@ class SolutionsPerformer:
                 self.perform_port_status(**solution["set_port_status"])
 
             elif solution_type == "set_port_vlans":
-                ...
+                self.perform_vlans(**solution["set_port_vlans"])
+
+            count += 1
+
+        return count
 
     @staticmethod
-    def _get_device(device: dict) -> check.models.Devices:
+    def _get_device(device: Dict[str, str]) -> check.models.Devices:
         """
         Это функция Python, которая принимает словарь, представляющий устройство, и возвращает объект типа
         check.models.Devices.
@@ -181,7 +197,31 @@ class SolutionsPerformer:
                 f"Не было найдено оборудование в базе с IP={device['ip']} и name={device['name']}"
             ) from error
 
-    def perform_vlans(self, status: str, device: dict, port: str, vlans: tuple, message: str = ""):
+    def perform_vlans(
+        self,
+        status: Literal["add", "delete"],
+        device: Dict[str, str],
+        port: str,
+        vlans: Sequence[int],
+        message: str = "",
+    ):
+        """
+        Выполняет операции по добавлению или удалению VLAN на порту сетевого устройства с
+        обработкой ошибок и логикой повторных попыток.
+
+        :param status: Параметр состояния — это строковый литерал, который может иметь только значения «add» или
+         «delete». Он используется для указания, следует ли добавлять или удалять VLAN из порта сетевого устройства.
+        :param device: Параметр `device` представляет собой словарь, содержащий информацию о сетевом устройстве,
+         на котором должна выполняться операция VLAN. Он должен иметь ключи `name` и `ip`.
+        :param port: Параметр `port` представляет собой строку, представляющую сетевой порт на устройстве,
+         где VLAN будут добавлены или удалены
+        :param vlans: Параметр `vlans` представляет собой последовательность целых чисел, представляющих VLAN, которые
+         необходимо добавить или удалить из сетевого порта на устройстве.
+        :param message: Параметр `message` — необязательный строковый параметр, который можно использовать для
+         предоставления дополнительной информации или контекста для выполняемой операции VLAN.
+         Он имеет значение по умолчанию пустой строки
+        """
+
         if status not in ("add", "delete"):
             raise SolutionsPerformerError(
                 f"Для изменения VLAN на порту его оператор должен быть `add` либо `delete`, а был передан `{status}`"
@@ -243,23 +283,21 @@ class SolutionsPerformer:
                 f"Оборудование {device_obj} вызвало ошибку {error.message}"
             ) from error
 
-    def perform_port_status(self, status: str, device: dict, port: str, message: str = ""):
+    def perform_port_status(
+        self, status: Literal["up", "down"], device: Dict[str, str], port: str, message: str = ""
+    ):
         """
         Это функция Python, которая выполняет обновление состояния порта для заданного устройства.
 
         :param status: Требуемый статус порта, который представляет собой строковое значение.
          Это может быть «up» или «down»
-        :type status: str
         :param device: Параметр `device` представляет собой словарь, содержащий информацию о сетевом устройстве.
          Он должен включать такие атрибуты, как IP-адрес устройства и его имя.
-        :type device: dict
         :param port: Строка, представляющая имя или идентификатор сетевого порта на устройстве.
-        :type port: str
         :param message: Параметр «message» — это необязательный строковый параметр, который можно передать в метод
          «perform_port_status». Он используется для предоставления дополнительной информации или контекста об изменении
          состояния порта, о котором сообщается. Если сообщение не предоставлено, в качестве значения по умолчанию будет
          использоваться пустая строка
-        :type message: str
         """
         if status not in ("up", "down"):
             raise SolutionsPerformerError(
