@@ -1,10 +1,8 @@
 import orjson
 
-import pexpect
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from django.utils.html import escape
 
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -14,12 +12,6 @@ from rest_framework.exceptions import ValidationError
 from check import models
 from check.permissions import profile_permission
 from devicemanager.device import Interfaces
-from devicemanager.exceptions import (
-    TelnetLoginError,
-    TelnetConnectionError,
-    UnknownDeviceError,
-    DeviceException,
-)
 from net_tools.models import VlanName, DevicesInfo
 
 from ..serializers import (
@@ -28,9 +20,10 @@ from ..serializers import (
     PortControlSerializer,
     PoEPortStatusSerializer,
 )
+from ..decorators import device_connection
 from ..permissions import DevicePermission
-from ...logging import log
 from ..swagger import schemas
+from ...logging import log
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -39,6 +32,7 @@ class PortControlAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
     serializer_class = PortControlSerializer
 
+    @device_connection
     def post(self, request, device_name: str):
         """
         ## Изменяем состояние порта оборудования
@@ -90,31 +84,22 @@ class PortControlAPIView(generics.GenericAPIView):
         if not model_dev.available:
             return Response({"error": "Оборудование недоступно!"}, status=500)
 
-        try:
-            # Теперь наконец можем подключиться к оборудованию :)
-            with model_dev.connect() as session:
-                try:
-                    # Перезагрузка порта
-                    if port_status == "reload":
-                        port_change_status = session.reload_port(
-                            port=port_name, save_config=save_config
-                        )
+        # Теперь наконец можем подключиться к оборудованию :)
+        with model_dev.connect() as session:
+            # Перезагрузка порта
+            if port_status == "reload":
+                port_change_status = session.reload_port(
+                    port=port_name,
+                    save_config=save_config,
+                )
 
-                    # UP and DOWN
-                    else:
-                        port_change_status = session.set_port(
-                            port=port_name, status=port_status, save_config=save_config
-                        )
-
-                except pexpect.TIMEOUT:
-                    return Response({"error": "device timeout"}, status=500)
-
-        except TelnetConnectionError:
-            return Response({"error": "Telnet недоступен"}, status=500)
-        except TelnetLoginError:
-            return Response({"error": "Неверный Логин/Пароль"}, status=500)
-        except UnknownDeviceError:
-            return Response({"error": "Неизвестный тип оборудования"}, status=500)
+            # UP and DOWN
+            else:
+                port_change_status = session.set_port(
+                    port=port_name,
+                    status=port_status,
+                    save_config=save_config,
+                )
 
         # Логи
         log(
@@ -134,6 +119,7 @@ class ChangeDescription(APIView):
 
     permission_classes = [DevicePermission]
 
+    @device_connection
     def post(self, request, device_name: str):
         """
         ## Меняем описание на порту оборудования
@@ -170,13 +156,9 @@ class ChangeDescription(APIView):
         new_description = self.request.data.get("description")
         port = self.request.data.get("port")
 
-        try:
-            with dev.connect() as session:
-                set_description_status = session.set_description(port=port, desc=new_description)
-                new_description = session.clear_description(new_description)
-
-        except DeviceException as e:
-            return Response({"detail": str(e)}, status=500)
+        with dev.connect() as session:
+            set_description_status = session.set_description(port=port, desc=new_description)
+            new_description = session.clear_description(new_description)
 
         if "Неверный порт" in set_description_status:
             return Response({"detail": f"Неверный порт {port}"}, status=400)
@@ -200,6 +182,7 @@ class ChangeDescription(APIView):
 class MacListAPIView(APIView):
     permission_classes = [DevicePermission]
 
+    @device_connection
     def get(self, request, device_name):
         """
         ## Смотрим MAC-адреса на порту оборудования
@@ -257,6 +240,7 @@ class MacListAPIView(APIView):
 class CableDiagAPIView(APIView):
     permission_classes = [DevicePermission]
 
+    @device_connection
     def get(self, request, device_name):
         """
         ## Запускаем диагностику кабеля на порту
@@ -288,21 +272,18 @@ class CableDiagAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        data = {}
-        # Если оборудование доступно
-        if device.available:
-            try:
-                with device.connect() as session:
-                    if hasattr(session, "virtual_cable_test"):
-                        cable_test = session.virtual_cable_test(request.GET["port"])
-                        if cable_test:  # Если имеются данные
-                            data = cable_test
-                    else:
-                        return Response({"detail": "Unsupported for this device"}, status=400)
-            except DeviceException as error:
-                return Response({"detail": str(error)}, status=500)
+        # Если оборудование недоступно
+        if not device.available:
+            return Response({"detail": "Device unavailable"}, status=500)
 
-        return Response(data)
+        with device.connect() as session:
+            if hasattr(session, "virtual_cable_test"):
+                cable_test = session.virtual_cable_test(request.GET["port"])
+                if cable_test:  # Если имеются данные
+                    return Response(cable_test)
+                return Response({})
+
+            return Response({"detail": "Unsupported for this device"}, status=400)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
@@ -310,6 +291,7 @@ class SetPoEAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
     serializer_class = PoEPortStatusSerializer
 
+    @device_connection
     def post(self, request, device_name):
         """
         ## Устанавливает PoE статус на порту
@@ -324,32 +306,29 @@ class SetPoEAPIView(generics.GenericAPIView):
 
         # Если оборудование недоступно
         if not device.available:
-            return Response({"detail": "Device unavailable"}, status=400)
+            return Response({"detail": "Device unavailable"}, status=500)
 
         poe_status = serializer.validated_data["status"]
         port_name = serializer.validated_data["port"]
 
-        try:
-            with device.connect() as session:
-                if hasattr(session, "set_poe_out"):
-                    # Меняем PoE
-                    _, err = session.set_poe_out(port_name, poe_status)
-                    if not err:
-                        return Response({"status": poe_status})
-                    return Response(
-                        {"detail": f"Invalid data ({poe_status})"},
-                        status=400,
-                    )
+        with device.connect() as session:
+            if hasattr(session, "set_poe_out"):
+                # Меняем PoE
+                _, err = session.set_poe_out(port_name, poe_status)
+                if not err:
+                    return Response({"status": poe_status})
+                return Response(
+                    {"detail": f"Invalid data ({poe_status})"},
+                    status=400,
+                )
 
-                return Response({"detail": "Unsupported for this device"}, status=400)
-
-        except DeviceException as error:
-            return Response({"detail": str(error)}, status=500)
+            return Response({"detail": "Unsupported for this device"}, status=400)
 
 
 class InterfaceInfoAPIView(APIView):
     permission_classes = [DevicePermission]
 
+    @device_connection
     def get(self, request, device_name):
         """
         ## Общая информация об определенном порте оборудования
@@ -379,6 +358,10 @@ class InterfaceInfoAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
+        # Если оборудование недоступно
+        if not device.available:
+            return Response({"detail": "Device unavailable"}, status=500)
+
         result = {}
         with device.connect() as session:
             result["portDetailInfo"] = session.get_port_info(port)
@@ -394,6 +377,7 @@ class InterfaceInfoAPIView(APIView):
 class ChangeDSLProfileAPIView(APIView):
     permission_classes = [DevicePermission]
 
+    @device_connection
     def post(self, request, device_name: str):
         """
         ## Изменяем профиль xDSL порта на другой
@@ -408,26 +392,23 @@ class ChangeDSLProfileAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
+        # Если оборудование недоступно
         if not device.available:
-            return Response({"error": "Device down"}, status=500)
+            return Response({"detail": "Device unavailable"}, status=500)
 
-        try:
-            # Подключаемся к оборудованию
-            with device.connect() as session:
-                if hasattr(session, "change_profile"):
-                    # Если можно поменять профиль
-                    status = session.change_profile(
-                        serializer.validated_data["port"],
-                        serializer.validated_data["index"],
-                    )
+        # Подключаемся к оборудованию
+        with device.connect() as session:
+            if hasattr(session, "change_profile"):
+                # Если можно поменять профиль
+                status = session.change_profile(
+                    serializer.validated_data["port"],
+                    serializer.validated_data["index"],
+                )
 
-                    return Response({"status": status})
+                return Response({"status": status})
 
-                # Нельзя менять профиль для данного устройства
-                return Response({"error": "Device can't change profile"}, status=400)
-
-        except (TelnetLoginError, TelnetConnectionError, UnknownDeviceError) as e:
-            return Response({"error": str(e)}, status=500)
+            # Нельзя менять профиль для данного устройства
+            return Response({"error": "Device can't change profile"}, status=400)
 
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):

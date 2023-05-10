@@ -211,7 +211,7 @@
               <td></td>
 
               <td style="font-family: monospace; font-size: x-large;">
-                  <span :id="mac.mac" data-bs-toggle="tooltip" data-bs-placement="right" :data-bs-title="mac.vlanName"
+                  <span :id="mac.mac" :title="mac.vlanName"
                         style="cursor: help; font-family: monospace;">
                       {{mac.vlanID}}
                   </span>
