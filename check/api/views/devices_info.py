@@ -18,6 +18,7 @@ from devicemanager.exceptions import DeviceException
 from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo
+from ..decorators import device_connection
 
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter, DeviceInfoFilter
@@ -44,12 +45,8 @@ class DevicesListAPIView(generics.ListAPIView):
         """
 
         # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list(
-            "id", flat=True
-        )
-        return models.Devices.objects.filter(group_id__in=group_ids).select_related(
-            "group"
-        )
+        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+        return models.Devices.objects.filter(group_id__in=group_ids).select_related("group")
 
     def get(self, request, *args, **kwargs):
         """
@@ -89,9 +86,7 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
         """
 
         # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list(
-            "id", flat=True
-        )
+        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         return (
             ModelDeviceInfo.objects.filter(dev__group_id__in=group_ids)
             .select_related("dev")
@@ -212,15 +207,11 @@ class DeviceInterfacesAPIView(APIView):
         available = self.device.available  # Оборудование доступно или нет
 
         # Сканируем интерфейсы в реальном времени?
-        current_status = (
-            bool(request.GET.get("current_status", False)) and available > 0
-        )
+        current_status = bool(request.GET.get("current_status", False)) and available > 0
 
         # Вместе с VLAN?
         self.with_vlans = (
-            False
-            if self.device_collector.protocol == "snmp"
-            else request.GET.get("vlans") == "1"
+            False if self.device_collector.protocol == "snmp" else request.GET.get("vlans") == "1"
         )
 
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
@@ -404,17 +395,17 @@ class DeviceInterfacesAPIView(APIView):
                 # Добавляем это поле в список изменений
                 self.model_update_fields.append("auth_group")
 
-    def get_last_interfaces(self) -> (dict, datetime):
+    def get_last_interfaces(self) -> (list, datetime):
         """
-        ## Возвращает кортеж из последних собранных интерфейсов (JSON) и времени их последнего изменения.
+        ## Возвращает кортеж из последних собранных интерфейсов и времени их последнего изменения.
 
             (
-                "[ { "Interface": "GE0/0/2", "Status": "down", "Description": "desc" }, ... ]" ,
+                [ { "Interface": "GE0/0/2", "Status": "down", "Description": "desc" }, ... ] ,
                 datetime
             )
         """
 
-        interfaces: dict = {}
+        interfaces = []
         collected_time: datetime = datetime.now()
 
         try:
@@ -424,10 +415,10 @@ class DeviceInterfacesAPIView(APIView):
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
-            interfaces = orjson.loads(device_info.vlans or "{}")
+            interfaces = orjson.loads(device_info.vlans or "[]")
             collected_time = device_info.vlans_date or datetime.now()
         else:
-            interfaces = orjson.loads(device_info.interfaces or "{}")
+            interfaces = orjson.loads(device_info.interfaces or "[]")
             collected_time = device_info.interfaces_date or datetime.now()
 
         return interfaces, collected_time
@@ -460,13 +451,9 @@ class DeviceInterfacesAPIView(APIView):
                 }
                 for line in self.device_collector.interfaces
             ]
-            self.current_device_info.interfaces = orjson.dumps(
-                interfaces_to_save
-            ).decode()
+            self.current_device_info.interfaces = orjson.dumps(interfaces_to_save).decode()
             self.current_device_info.interfaces_date = datetime.now()
-            self.current_device_info.save(
-                update_fields=["interfaces", "interfaces_date"]
-            )
+            self.current_device_info.save(update_fields=["interfaces", "interfaces_date"])
 
         else:
             return []
@@ -516,27 +503,24 @@ class DeviceInfoAPIView(APIView):
         self.check_object_permissions(request, model_dev)
 
         dev = DeviceManager(name=device_name)
-
-        data = {
-            "deviceName": device_name,
-            "deviceIP": model_dev.ip,
-            # Создание URL-адреса для запроса журналов Kibana.
-            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(
-                device=model_dev
-            ),
-            "zabbixHostID": int(dev.zabbix_info.hostid or 0),
-            "zabbixURL": ZabbixConfig.ZABBIX_URL,
-            "zabbixInfo": {
-                "description": dev.zabbix_info.description,
-                "inventory": dev.zabbix_info.inventory.to_dict,
-            },
-            "permission": models.Profile.permissions_level.index(
-                models.Profile.objects.get(user_id=request.user.id).permissions
-            ),
-            "coords": list(dev.zabbix_info.inventory.coordinates()),
-        }
-
-        return Response(data)
+        return Response(
+            {
+                "deviceName": device_name,
+                "deviceIP": model_dev.ip,
+                # Создание URL-адреса для запроса журналов Kibana.
+                "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(
+                    device=model_dev
+                ),
+                "zabbixHostID": int(dev.zabbix_info.hostid or 0),
+                "zabbixURL": ZabbixConfig.ZABBIX_URL,
+                "zabbixInfo": {
+                    "description": dev.zabbix_info.description,
+                    "inventory": dev.zabbix_info.inventory.to_dict,
+                },
+                "permission": request.user.profile.perm_level,
+                "coords": dev.zabbix_info.inventory.coordinates(),
+            }
+        )
 
 
 class DeviceStatsInfoAPIView(APIView):
@@ -567,18 +551,15 @@ class DeviceStatsInfoAPIView(APIView):
 
     permission_classes = [DevicePermission]
 
+    @device_connection
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        if not ping3.ping(device.ip, timeout=2):
-            return Response()
+        # Если оборудование недоступно
+        if not device.available:
+            return Response({"detail": "Device unavailable"}, status=500)
 
-        try:
-            # Подключаемся к оборудованию
-            with device.connect() as session:
-                device_stats: dict = session.get_device_info() or {}
-                return Response(device_stats)
-
-        except DeviceException:
-            return Response(status=400)
+        with device.connect() as session:
+            device_stats: dict = session.get_device_info() or {}
+            return Response(device_stats)

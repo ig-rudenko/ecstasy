@@ -126,9 +126,7 @@ class CutBrassSessionAPIView(APIView):
 
         # Берем mac-адрес из формы и форматируем его в строку вида `aaaa-bbbb-cccc`.
         mac = models.Bras.format_mac(serializer.validated_data["mac"])
-        device = get_object_or_404(
-            models.Devices, name=serializer.validated_data["device"]
-        )
+        device = get_object_or_404(models.Devices, name=serializer.validated_data["device"])
         self.check_object_permissions(request, device)
 
         # Словарь, который будет содержать данные для отправки
@@ -160,13 +158,10 @@ class CutBrassSessionAPIView(APIView):
                 log(
                     request.user,
                     device,
-                    f"reload port {serializer.validated_data['port']} \n"
-                    f"{reload_port_status}",
+                    f"reload port {serializer.validated_data['port']} \n" f"{reload_port_status}",
                 )
 
         except DeviceException as e:
-            result["errors"].append(
-                f"Сессия сброшена, но порт не был перезагружен! {e}"
-            )
+            result["errors"].append(f"Сессия сброшена, но порт не был перезагружен! {e}")
 
         return Response(result)
