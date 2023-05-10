@@ -1,5 +1,5 @@
 import orjson
-from re import findall, sub, IGNORECASE, compile
+from re import findall, sub, IGNORECASE, compile, escape
 from django.contrib.auth.models import User
 
 from check.models import Devices, InterfacesComments
@@ -34,7 +34,7 @@ class Finder:
         :return: Список результатов поиска
         """
 
-        pattern = compile(pattern, flags=IGNORECASE)
+        pattern = compile(escape(pattern), flags=IGNORECASE)
 
         result = []
 
