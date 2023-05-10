@@ -4,6 +4,7 @@ import pexpect
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from django.utils.html import escape
 
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -25,6 +26,7 @@ from ..serializers import (
     InterfacesCommentsSerializer,
     ADSLProfileSerializer,
     PortControlSerializer,
+    PoEPortStatusSerializer,
 )
 from ..permissions import DevicePermission
 from ...logging import log
@@ -59,9 +61,7 @@ class PortControlAPIView(generics.GenericAPIView):
         port_desc: str = interfaces[port_name].desc
 
         # Если не суперпользователь, то нельзя изменять состояние определенных портов
-        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(
-            port_desc
-        ):
+        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(port_desc):
             return Response(
                 {"error": "Запрещено изменять состояние данного порта!"},
                 status=403,
@@ -172,9 +172,7 @@ class ChangeDescription(APIView):
 
         try:
             with dev.connect() as session:
-                set_description_status = session.set_description(
-                    port=port, desc=new_description
-                )
+                set_description_status = session.set_description(port=port, desc=new_description)
                 new_description = session.clear_description(new_description)
 
         except DeviceException as e:
@@ -193,9 +191,7 @@ class ChangeDescription(APIView):
             else:
                 max_length = 32
             raise ValidationError(
-                {
-                    "detail": f"Слишком длинное описание! Укажите не более {max_length} символов."
-                }
+                {"detail": f"Слишком длинное описание! Укажите не более {max_length} символов."}
             )
 
         return Response({"description": new_description})
@@ -302,9 +298,7 @@ class CableDiagAPIView(APIView):
                         if cable_test:  # Если имеются данные
                             data = cable_test
                     else:
-                        return Response(
-                            {"detail": "Unsupported for this device"}, status=400
-                        )
+                        return Response({"detail": "Unsupported for this device"}, status=400)
             except DeviceException as error:
                 return Response({"detail": str(error)}, status=500)
 
@@ -312,36 +306,38 @@ class CableDiagAPIView(APIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class SetPoEAPIView(APIView):
+class SetPoEAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
+    serializer_class = PoEPortStatusSerializer
 
     def post(self, request, device_name):
         """
         ## Устанавливает PoE статус на порту
         """
 
-        if not request.data.get("port") or not request.data.get("status"):
-            raise ValidationError({"detail": "Неверные данные"})
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         # Находим оборудование
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        # Если оборудование доступно
+        # Если оборудование недоступно
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=400)
+
+        poe_status = serializer.validated_data["status"]
+        port_name = serializer.validated_data["port"]
 
         try:
             with device.connect() as session:
                 if hasattr(session, "set_poe_out"):
                     # Меняем PoE
-                    _, err = session.set_poe_out(
-                        request.data["port"], request.data["status"]
-                    )
+                    _, err = session.set_poe_out(port_name, poe_status)
                     if not err:
-                        return Response({"status": request.data["status"]})
+                        return Response({"status": poe_status})
                     return Response(
-                        {"detail": f"Invalid data ({request.data['status']})"},
+                        {"detail": f"Invalid data ({poe_status})"},
                         status=400,
                     )
 

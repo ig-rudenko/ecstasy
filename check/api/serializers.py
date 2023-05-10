@@ -97,6 +97,17 @@ class PortControlSerializer(serializers.Serializer):
         pass
 
 
+class PoEPortStatusSerializer(serializers.Serializer):
+    port = serializers.CharField(max_length=50, required=True)
+    status = serializers.ChoiceField(choices=["auto-on", "forced-on", "off"], required=True)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+
 class ConfigFileSerializer(serializers.Serializer):
     name = serializers.CharField()
     size = serializers.IntegerField()
