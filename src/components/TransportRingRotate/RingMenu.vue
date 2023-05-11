@@ -18,7 +18,7 @@
 <!--          Кнопка-->
           <div class="gap-3 py-3 rounded-4" aria-current="true">
 
-            <div v-if="!getSolutionsActive" @click="getSolutions" class="btn btn-success">
+            <div v-if="!getSolutionsActive" @click="getSolutions" :class="getSolutionsButtonClasses">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16">
                 <path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0zM2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1z"></path>
               </svg>
@@ -39,22 +39,33 @@
           </div>
 
 <!--          Ошибки-->
-          <div class="gap-3 py-3 rounded-4" aria-current="true">
+          <div class="gap-3 py-3 rounded-4">
             <template v-for="error in reversedErrors" >
-              <div class="text-muted" style="text-align: left; font-size: 0.75rem;">
-                # {{error.time}}
-              </div>
-              <div class="alert alert-danger">
-                {{error.text}}
-              </div>
+              <div class="text-muted" style="text-align: left; font-size: 0.75rem;"> # {{error.time}} </div>
+              <div class="alert alert-danger"> {{error.text}} </div>
             </template>
           </div>
 
+<!--          Информация-->
+          <div class="gap-3 py-3 rounded-4">
+            <template v-for="info in reversedInfos" >
+              <div class="text-muted" style="text-align: left; font-size: 0.75rem;"> # {{info.time}} </div>
+              <div class="alert alert-primary"> {{info.text}} </div>
+            </template>
+          </div>
+
+<!--          Перечень решений-->
           <div v-if="solutions.length">
             <div class="text-muted" style="text-align: left; font-size: 0.75rem;">
                 # {{getTime()}}
               </div>
-            <Solutions :solutions="solutions" />
+
+            <Solutions
+                :solutions="solutions"
+                :submit-solutions-active="submitSolutionsActive"
+                @submitSolutions="submitSolutions"
+            />
+
           </div>
 
       </div>
@@ -88,7 +99,9 @@ export default {
       points: [],
       solutions: [],
       getSolutionsActive: false,
-      errors: []
+      submitSolutionsActive: false,
+      errors: [],
+      infos: []
     }
   },
   async mounted() {
@@ -97,15 +110,30 @@ export default {
 
   computed: {
     reversedErrors() {
-      let reversed = [];
-      for (let i = this.errors.length - 1; i >= 0; i--) {
-        reversed.push(this.errors[i]);
+      return this.reverseArray(this.errors)
+    },
+    reversedInfos() {
+      return this.reverseArray(this.infos)
+    },
+
+    getSolutionsButtonClasses() {
+      if (this.submitSolutionsActive) {
+        return ["btn", "btn-success", "disabled"]
       }
-      return reversed;
+      return ["btn", "btn-success"]
     }
+
   },
 
   methods: {
+    reverseArray(array) {
+      let reversed = [];
+      for (let i = array.length - 1; i >= 0; i--) {
+        reversed.push(array[i]);
+      }
+      return reversed;
+    },
+
     getTime() {
       let date = new Date()
       let padZero = n => n<10?"0"+n:n
@@ -128,11 +156,17 @@ export default {
       if (this.getSolutionsActive) return;
       this.getSolutionsActive = true
       this.solutions = []
+      this.errors = []
+      this.infos = []
 
       try {
         const resp = await fetch(
             "/ring-manager/api/transport-ring/" + this.rings.selectedRing.name + "/solutions",
-            {method: "get", credentials: "include"}
+            {
+              method: "get",
+              credentials: "include",
+              headers: {"X-CSRFToken": document.CSRF_TOKEN}
+            }
         )
         const data = await resp.json()
 
@@ -143,7 +177,6 @@ export default {
         if (resp.status === 200) {
           this.points = data.points
           this.solutions = data.solutions
-          this.errors = []
         } else {
           this.errors.push(
               {
@@ -157,6 +190,50 @@ export default {
         console.log(e)
       }
       this.getSolutionsActive = false
+    },
+
+    async submitSolutions() {
+      if (this.submitSolutionsActive) return;
+      this.submitSolutionsActive = true
+      this.errors = []
+      this.infos = []
+
+      try {
+        const resp = await fetch(
+            "/ring-manager/api/transport-ring/" + this.rings.selectedRing.name + "/solutions",
+            {
+              method: "post",
+              credentials: "include",
+              headers: {
+                "X-CSRFToken": document.CSRF_TOKEN
+              }
+            }
+        )
+        const data = await resp.json()
+
+        if (resp.status === 200) {
+            this.infos.push(
+                {
+                  text: data.status,
+                  time: this.getTime()
+                }
+            )
+
+        } else {
+            this.errors.push(
+                {
+                  text: data.error,
+                  time: this.getTime()
+                }
+            )
+        }
+
+        this.solutions = []
+
+      } catch (e) {
+        console.log(e)
+      }
+      this.submitSolutionsActive = false
     },
 
     backToAllRings() {

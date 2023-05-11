@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Literal, Sequence, Dict
+from typing import Literal, Sequence, Dict, Union
 
 import check.models
 from devicemanager import DeviceException
@@ -13,8 +13,8 @@ class Solutions:
     информационных сообщений.
     """
 
-    safe_solutions = ("info", "error")
-    affect_solutions = ("set_port_status", "set_port_vlans")
+    safe_solutions = {"info", "error"}
+    affect_solutions = {"set_port_status", "set_port_vlans"}
 
     def __init__(self):
         self.has_errors = False
@@ -105,30 +105,28 @@ class SolutionsPerformer:
     # указанного времени, они будут считаться просроченным и не станут выполняться.
     solution_expire: timedelta = timedelta(minutes=1)
 
-    def __init__(self, ring: TransportRing, solutions: (Solutions, tuple, list)):
+    def __init__(self, ring: TransportRing):
         self.ring = ring
 
         if not self.ring.solutions:
             raise SolutionsPerformerError("Нет решений, которые необходимо выполнить")
 
-        if self.ring.solution_time < datetime.now() - self.solution_expire:
+        if (
+            not self.ring.solution_time
+            or self.ring.solution_time < datetime.now() - self.solution_expire
+        ):
             # Этот код проверяет, является ли время создания решений (сохраненное в `self.ring.solution_time`)
             # более ранним чем текущее время минус время истечения срока действия решений (`self.solution_expire`).
             # Это делается для того, чтобы решения выполнялись своевременно и не применялись к сети после того, как они
             # перестали быть актуальными.
             raise SolutionsPerformerError("Решения просрочены, необходимо заново сформировать их")
 
-        if isinstance(solutions, Solutions):
-            self.solutions: tuple = solutions.solutions
-        elif isinstance(solutions, tuple):
-            self.solutions: tuple = solutions
-        elif isinstance(solutions, list):
-            self.solutions: tuple = tuple(solutions)
-        else:
+        if not isinstance(self.ring.solutions, Sequence):
             raise SolutionsPerformerError(
-                "Передан неверный тип для solutions. Ожидается `list`, `tuple` или `Solutions`, "
-                f"а был передан {type(solutions)}"
+                f"Неправильный тип для решений, ожидается `Sequence`, а был передан {type(self.ring.solutions)}"
             )
+        else:
+            self.solutions: Sequence = self.ring.solutions
 
     def perform_all(self) -> int:
         """
@@ -139,7 +137,10 @@ class SolutionsPerformer:
          решений. Если все решения уже безопасны (т. е. их ключи являются подмножеством списка `safe_solutions`
          в классе `Solutions`), то метод возвращает 0 без выполнения каких-либо решений.
         """
-        if set(self.solutions).issubset(Solutions.safe_solutions):
+
+        solutions_keys = set(tuple(sol.keys())[0] for sol in self.solutions)
+
+        if solutions_keys.issubset(Solutions.safe_solutions):
             return 0
 
         count = 0

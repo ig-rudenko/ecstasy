@@ -65,14 +65,49 @@
 
   </template>
 
+  <div v-if="!submitSolutionsActive" class="gap-3 py-3 rounded-4" aria-current="true">
+    <div class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#submitSolutionModal">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
+        <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"></path>
+      </svg>
+      <span style="vertical-align: middle;">Выполнить решения!</span>
+    </div>
+  </div>
+
 </div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="submitSolutionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Вы хотите применить данные решения?</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Соглашаясь вы подтверждаете, что ознакомились с предложенным вам перечнем решений,
+        а также с тем, что он удовлетворяет вашим требованиям.
+        <br>
+        Все действия выполнятся автоматически.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="submitSolutions">Согласен</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </template>
 
 <script>
 export default {
   name: "Solutions",
   props: {
-    solutions: {required: true}
+    solutions: {required: true},
+    submitSolutionsActive: {required: true},
   },
   methods: {
     portStatusClasses(status) {
@@ -87,6 +122,9 @@ export default {
     vlanStatusClasses(status) {
       if (status === "delete") return ["badge", "bg-danger", "sol-badge"]
       return ["badge", "bg-success", "sol-badge"]
+    },
+    submitSolutions() {
+      this.$emit("submitSolutions")
     }
   },
 }

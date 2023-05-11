@@ -6,5 +6,6 @@
 {% endblock %}
 
 {% block js %}
+{% csrf_token %}
 <script src="{% static 'js/transport_ring.js' %}"></script>
 {% endblock %}

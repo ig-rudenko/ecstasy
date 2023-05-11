@@ -87,6 +87,18 @@ class TransportRing(models.Model):
         tail = self.tail.device.name if self.tail else None
         return f"TransportRing: {self.name} head: {head}, tail: {tail}"
 
+    def set_status_in_progress(self):
+        self.status = self.IN_PROCESS
+        self.save(update_fields=["status"])
+
+    def set_status_normal(self):
+        self.status = self.NORMAL
+        self.save(update_fields=["status"])
+
+    def set_status_deactivated(self):
+        self.status = self.DEACTIVATED
+        self.save(update_fields=["status"])
+
 
 class RingDev(models.Model):
 

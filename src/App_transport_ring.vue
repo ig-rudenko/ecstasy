@@ -46,6 +46,7 @@ export default {
 
   async mounted() {
     await this.getRings();
+    document.CSRF_TOKEN = $("input[name=csrfmiddlewaretoken]")[0].value
   },
 
   methods: {

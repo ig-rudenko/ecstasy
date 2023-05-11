@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, response
+from rest_framework import generics
+from rest_framework.response import Response
 
 from .decorators import ring_valid
 from .permissions import RingPermission
@@ -9,6 +10,7 @@ from .serializers import RingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager, TransportRingNormalizer
 from ..models import RingDev, TransportRing
+from ..solutions import SolutionsPerformer, SolutionsPerformerError
 
 
 class ListTransportRingsAPIView(generics.ListAPIView):
@@ -53,14 +55,14 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
         trm.collect_all_interfaces()  # Берем из истории
         trm.find_link_between_devices()
 
-        return response.Response(PointRingSerializer(trm.ring_devs, many=True).data)
+        return Response(PointRingSerializer(trm.ring_devs, many=True).data)
 
 
 class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
     permission_classes = [RingPermission]
 
     @ring_valid
-    def get(self, request, ring_name: str, *args, **kwargs):
+    def get(self, request, ring_name: str):
         """
         Эта функция извлекает информацию о транспортном кольце, проверяет доступность устройств, собирает интерфейсы,
         находит связи между устройствами и возвращает points и решения `solutions`, которые можно будет применить,
@@ -85,9 +87,33 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         ring.solution_time = datetime.now()
         ring.save(update_fields=["solutions", "solution_time"])
 
-        return response.Response(
+        return Response(
             {
                 "points": points,
                 "solutions": ring.solutions,
             }
         )
+
+    @ring_valid
+    def post(self, request, ring_name: str):
+        """
+        Эта функция выполняет набор действий над объектом транспортного кольца и возвращает ответ с количеством
+        выполненных действий.
+        """
+
+        ring = get_object_or_404(TransportRing, name=ring_name)
+        self.check_object_permissions(request, ring)
+
+        if ring.status == ring.IN_PROCESS:
+            return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
+
+        try:
+            ring.set_status_in_progress()
+            performer = SolutionsPerformer(ring=ring)
+            count = performer.perform_all()
+        except SolutionsPerformerError as error:
+            return Response({"error": error.message}, status=500)
+        finally:
+            ring.set_status_normal()
+
+        return Response({"status": count})
