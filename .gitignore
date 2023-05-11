@@ -7,10 +7,12 @@ templates/tools/vlans
 templates/test*
 templates/maps/external
 ecstasy_project/settings_prod.py
+docker-compose-dev.yaml
 
 .run
 .idea
 .coverage
+.obsidian
 
 configs
 lib
@@ -26,7 +28,6 @@ node_modules
 db.sqlite3*
 test.py
 _test*
-*.drawio*
 
 celerybeat-schedule*
 */fixtures

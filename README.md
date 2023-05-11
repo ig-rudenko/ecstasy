@@ -18,6 +18,7 @@
 Позволяет отображать информацию о сетевых устройствах в удобном для чтения формате
 без ввода консольных команд.
 
+
 ![img.png](img/img_3.png)
 
 ### Возможности:
@@ -119,3 +120,10 @@
 ### Поиск IP или MAC адреса
 
 ![img.png](img/img_7.png)
+
+## Создание связей моделей
+
+```shell
+python manage.py graph_models -a --rankdir LR --dot -g -o ./docs/models.dot
+dot -Tsvg ./docs/models.dot -o ./docs/models.svg
+```
