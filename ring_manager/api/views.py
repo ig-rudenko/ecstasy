@@ -9,7 +9,7 @@ from .permissions import RingPermission
 from .serializers import RingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager, TransportRingNormalizer
-from ..models import RingDev, TransportRing
+from ..models import TransportRing
 from ..solutions import SolutionsPerformer, SolutionsPerformerError
 
 

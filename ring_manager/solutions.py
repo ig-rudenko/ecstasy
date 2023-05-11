@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Literal, Sequence, Dict, Union
+from typing import Literal, Sequence, Dict, Tuple
 
 import check.models
 from devicemanager import DeviceException
@@ -9,8 +9,8 @@ from .models import TransportRing
 
 class Solutions:
     """
-    Класс Solutions предоставляет методы для настройки состояния портов и VLAN, а также для создания отчетов об ошибках и
-    информационных сообщений.
+    Класс Solutions предоставляет методы для настройки состояния портов и VLAN, а также для создания отчетов об ошибках
+    и информационных сообщений.
     """
 
     safe_solutions = {"info", "error"}
@@ -47,7 +47,9 @@ class Solutions:
             }
         )
 
-    def change_port(self, device: check.models.Devices, port: str, status: str, message: str):
+    def _change_port(
+        self, device: check.models.Devices, port: str, status: Literal["up", "down"], message: str
+    ):
         if not self.has_errors:
             self._solutions.append(
                 {
@@ -64,13 +66,24 @@ class Solutions:
             )
 
     def port_set_up(self, device: check.models.Devices, port: str, message: str):
-        self.change_port(device, port, "up", message)
+        """
+        Переводит указанный порт устройства в состояние `admin up`.
+        """
+        self._change_port(device, port, "up", message)
 
     def port_set_down(self, device: check.models.Devices, port: str, message: str):
-        self.change_port(device, port, "down", message)
+        """
+        Переводит указанный порт устройства в состояние `admin down`.
+        """
+        self._change_port(device, port, "down", message)
 
-    def change_vlans(
-        self, status: str, vlans: tuple, device: check.models.Devices, port: str, message: str
+    def _change_vlans(
+        self,
+        status: Literal["add", "delete"],
+        vlans: Tuple[int],
+        device: check.models.Devices,
+        port: str,
+        message: str,
     ):
         if not self.has_errors:
             self._solutions.append(
@@ -88,11 +101,19 @@ class Solutions:
                 }
             )
 
-    def delete_vlans(self, vlans: tuple, device: check.models.Devices, port: str, message: str):
-        self.change_vlans("delete", vlans, device, port, message)
+    def delete_vlans(
+        self, vlans: Tuple[int], device: check.models.Devices, port: str, message: str
+    ):
+        """
+        Удаляет указанные VLAN на порту данного устройства.
+        """
+        self._change_vlans("delete", vlans, device, port, message)
 
-    def add_vlans(self, vlans: tuple, device: check.models.Devices, port: str, message: str):
-        self.change_vlans("add", vlans, device, port, message)
+    def add_vlans(self, vlans: Tuple[int], device: check.models.Devices, port: str, message: str):
+        """
+        Добавляет указанные VLAN на порт данного устройства.
+        """
+        self._change_vlans("add", vlans, device, port, message)
 
 
 class SolutionsPerformerError(Exception):
@@ -101,6 +122,11 @@ class SolutionsPerformerError(Exception):
 
 
 class SolutionsPerformer:
+    """
+    Выполняет операции с сетевыми устройствами, такие как установка состояния порта и VLAN,
+    с обработкой ошибок и логикой повторных попыток.
+    """
+
     # Используется в качестве срока жизни (TTL) для решений, что означает, если решения были созданы ранее
     # указанного времени, они будут считаться просроченным и не станут выполняться.
     solution_expire: timedelta = timedelta(minutes=1)

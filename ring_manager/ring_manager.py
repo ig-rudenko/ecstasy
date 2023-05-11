@@ -50,7 +50,7 @@ class TransportRingBase:
         self.validate_ring(ring)
 
         self.ring = ring
-        self.vlans: List[int] = ring.vlans  # Форматируется в list of integers
+        self.vlans: List[int] = ring.vlans  # Форматируется при обращении в list of integers
         self.ring_devs = self.ring_devices()
 
         self.head = self.ring_devs[0]
