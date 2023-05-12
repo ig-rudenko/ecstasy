@@ -57,12 +57,13 @@
 <!--          Перечень решений-->
           <div v-if="solutions.length">
             <div class="text-muted" style="text-align: left; font-size: 0.75rem;">
-                # {{getTime()}}
+                # {{solutionsTime}}
               </div>
 
             <Solutions
                 :solutions="solutions"
-                :submit-solutions-active="submitSolutionsActive"
+                :safe-solutions="safeSolutions"
+                :rotating-now="rotatingNow"
                 @submitSolutions="submitSolutions"
             />
 
@@ -98,14 +99,19 @@ export default {
     return {
       points: [],
       solutions: [],
+      safeSolutions: true,  // Безопасны ли решения (т.е. информационные они или затрагивают работу кольца)
+      solutionsTime: "",
       getSolutionsActive: false,
-      submitSolutionsActive: false,
+      rotatingNow: true,
+      ringActive: true,
       errors: [],
       infos: []
     }
   },
   async mounted() {
     await this.getRing()
+    await this.getLastSolutions()
+    await this.periodicalRingCheck()
   },
 
   computed: {
@@ -117,7 +123,7 @@ export default {
     },
 
     getSolutionsButtonClasses() {
-      if (this.submitSolutionsActive) {
+      if (this.rotatingNow) {
         return ["btn", "btn-success", "disabled"]
       }
       return ["btn", "btn-success"]
@@ -134,8 +140,16 @@ export default {
       return reversed;
     },
 
+    // Возвращает текущее время в формате «ЧЧ:ММ:СС» (часы, минуты, секунды).
     getTime() {
       let date = new Date()
+      let padZero = n => n<10?"0"+n:n
+      return padZero(date.getHours()) + ":" + padZero(date.getMinutes()) + ":" + padZero(date.getSeconds())
+    },
+
+    // Принимает объект `Date` в качестве входных данных и возвращает отформатированную
+    // строку, представляющую время в формате «ЧЧ:ММ:СС» (часы, минуты, секунды).
+    formatDateToTime(date) {
       let padZero = n => n<10?"0"+n:n
       return padZero(date.getHours()) + ":" + padZero(date.getMinutes()) + ":" + padZero(date.getSeconds())
     },
@@ -146,9 +160,60 @@ export default {
             "/ring-manager/api/transport-ring/" + this.rings.selectedRing.name,
             {method: "get", credentials: "include"}
         )
-        this.points = await resp.json()
+        const data = await resp.json()
+        this.points = data.points
+        this.rotatingNow = data.rotating
+        this.ringActive = data.active
       } catch (e) {
         console.log(e)
+      }
+    },
+
+    // Метод async PeriodicalRingCheck() представляет собой функцию, которая периодически отправляет запрос GET на сервер
+    // для проверки состояния выбранного транспортного кольца. Он использует метод `fetch()` для отправки запроса и `await`
+    // для ожидания ответа. Если ответ успешен, он обновляет свойства `rotatingNow` и `ringActive` на основе данных,
+    // полученных от сервера. Если есть ошибка, она регистрирует ошибку на консоли.
+    async periodicalRingCheck() {
+      try {
+        let resp = await fetch(
+            "/ring-manager/api/transport-ring/" + this.rings.selectedRing.name + "/status",
+            {method: "get", credentials: "include"}
+        )
+        const data = await resp.json()
+        this.rotatingNow = data.rotating
+        this.ringActive = data.active
+      } catch (e) {
+        console.log(e)
+      }
+      // setTimeout(this.periodicalRingCheck, 5000) устанавливает таймер для вызова метода PeriodicalRingCheck каждые 5000
+      // миллисекунд (5 секунд). Это создает периодическую проверку состояния выбранного транспортного кольца, отправляя
+      // запрос GET на сервер каждые 5 секунд.
+      setTimeout(this.periodicalRingCheck, 5000)
+    },
+
+    async getLastSolutions() {
+      try {
+        const resp = await fetch(
+            "/ring-manager/api/transport-ring/" + this.rings.selectedRing.name + "/solutions/last",
+            {
+              method: "get",
+              credentials: "include",
+              headers: {"X-CSRFToken": document.CSRF_TOKEN}
+            }
+        )
+        const data = await resp.json()
+
+        if (resp.status === 200) {
+          this.solutions = data.solutions
+          this.safeSolutions = data.safeSolutions
+          if (data.solutionsTime) {
+            // преобразует метку времени Unix (в секундах) в объект даты JavaScript, а затем форматирует его как
+            // строку в формате «ЧЧ:ММ:СС».
+            this.solutionsTime = this.formatDateToTime(new Date(data.solutionsTime * 1000))
+          }
+        }
+      } catch (error) {
+        console.log(error)
       }
     },
 
@@ -156,6 +221,7 @@ export default {
       if (this.getSolutionsActive) return;
       this.getSolutionsActive = true
       this.solutions = []
+      this.solutionsTime = ""
       this.errors = []
       this.infos = []
 
@@ -177,6 +243,8 @@ export default {
         if (resp.status === 200) {
           this.points = data.points
           this.solutions = data.solutions
+          this.safeSolutions = data.safeSolutions
+          this.solutionsTime = this.getTime()
         } else {
           this.errors.push(
               {
@@ -193,8 +261,8 @@ export default {
     },
 
     async submitSolutions() {
-      if (this.submitSolutionsActive) return;
-      this.submitSolutionsActive = true
+      if (this.rotatingNow) return;
+      this.rotatingNow = true
       this.errors = []
       this.infos = []
 
@@ -233,7 +301,7 @@ export default {
       } catch (e) {
         console.log(e)
       }
-      this.submitSolutionsActive = false
+      this.rotatingNow = false
     },
 
     backToAllRings() {

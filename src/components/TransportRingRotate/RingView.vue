@@ -2,7 +2,7 @@
 <div class="list-group">
 
   <template v-for="dev in points">
-    <div :class="['port', 'bottom'].concat(portStatusClass(dev.port_to_prev_dev))" :title="dev.port_to_prev_dev.status">
+    <div :class="['port', 'bottom'].concat(portStatusClass(dev, dev.port_to_prev_dev))" :title="dev.port_to_prev_dev.status">
 <!--      Предыдущее оборудование-->
       <span>{{dev.port_to_prev_dev.name}}</span>
     </div>
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div :class="['port', 'top'].concat(portStatusClass(dev.port_to_next_dev))" :title="dev.port_to_next_dev.status">
+    <div :class="['port', 'top'].concat(portStatusClass(dev, dev.port_to_next_dev))" :title="dev.port_to_next_dev.status">
 <!--      Следующее оборудование-->
       <span>{{dev.port_to_next_dev.name}}</span>
     </div>
@@ -66,12 +66,10 @@ export default {
     }
   },
   methods: {
-    portStatusClass(port) {
-      if (port.status === "up") {
-        return ["port-up"]
-      } else if (port.status === "down") {
-        return ["port-down"]
-      }
+    portStatusClass(device, port) {
+      if (!device.available) return ["port-unknown"];
+      if (port.status === "up") return ["port-up"];
+      if (port.status === "down") return ["port-down"];
       return ["port-admin-down"]
     }
   },
@@ -114,6 +112,11 @@ export default {
 .port-down {
     border: 1px solid #000000;
     background: #828282;
+}
+
+.port-unknown {
+    border: 1px solid #000000;
+    background: #ffffff;
 }
 
 .port-admin-down {

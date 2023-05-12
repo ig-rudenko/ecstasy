@@ -10,7 +10,7 @@ from .serializers import RingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager, TransportRingNormalizer
 from ..models import TransportRing
-from ..solutions import SolutionsPerformer, SolutionsPerformerError
+from ..solutions import SolutionsPerformer, SolutionsPerformerError, Solutions
 
 
 class ListTransportRingsAPIView(generics.ListAPIView):
@@ -28,6 +28,26 @@ class ListTransportRingsAPIView(generics.ListAPIView):
         и упорядоченных по имени.
         """
         return TransportRing.objects.filter(users=self.request.user).order_by("name")
+
+
+class TransportRingStatusAPIView(generics.GenericAPIView):
+    permission_classes = [RingPermission]
+
+    @ring_valid
+    def get(self, request, ring_name: str, *args, **kwargs):
+        """
+        Эта функция извлекает состояние транспортного кольца и возвращает информацию о том,
+        активно ли оно и разворачивается ли в данный момент.
+        """
+
+        ring = get_object_or_404(TransportRing, name=ring_name)
+        self.check_object_permissions(request, ring)
+        return Response(
+            {
+                "active": ring.status != ring.DEACTIVATED,
+                "rotating": ring.status == ring.IN_PROCESS
+            }
+        )
 
 
 class TransportRingDetailAPIView(generics.GenericAPIView):
@@ -54,8 +74,40 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
         trm = TransportRingManager(ring=ring)
         trm.collect_all_interfaces()  # Берем из истории
         trm.find_link_between_devices()
+        points = PointRingSerializer(trm.ring_devs, many=True).data
+        return Response(
+            {
+                "points": points,
+                "active": ring.status != ring.DEACTIVATED,
+                "rotating": ring.status == ring.IN_PROCESS
+            }
+        )
 
-        return Response(PointRingSerializer(trm.ring_devs, many=True).data)
+
+class GetLastSolutionsAPIView(generics.GenericAPIView):
+    permission_classes = [RingPermission]
+
+    @ring_valid
+    def get(self, request, ring_name: str):
+        ring = get_object_or_404(TransportRing, name=ring_name)
+        self.check_object_permissions(request, ring)
+
+        last_solutions_time = 0
+        solutions = Solutions()
+
+        # Есть ли какие-либо решения и не истек ли срок действия последнего решения.
+        if ring.solutions and not SolutionsPerformer.is_solution_expired(ring.solution_time):
+            solutions = Solutions.from_ring_history(ring)
+            last_solutions_time = ring.solution_time.timestamp()
+
+        return Response(
+            {
+                "solutions": solutions.solutions,
+                "solutionsTime": last_solutions_time,
+                # Все ли решения безопасны или нет.
+                "safeSolutions": solutions.has_only_safe_solutions,
+            }
+        )
 
 
 class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
@@ -81,16 +133,19 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         trm.collect_all_interfaces()  # Собираем интерфейсы
         trm.find_link_between_devices()  # Находим связи
 
-        points = PointRingSerializer(trm.ring_devs, many=True).data
+        # Создаем решения
+        solution_manager = trm.create_solutions()
 
-        ring.solutions = trm.create_solutions().solutions
+        # Записываем в БД
+        ring.solutions = solution_manager.solutions
         ring.solution_time = datetime.now()
         ring.save(update_fields=["solutions", "solution_time"])
 
         return Response(
             {
-                "points": points,
+                "points": PointRingSerializer(trm.ring_devs, many=True).data,
                 "solutions": ring.solutions,
+                "safeSolutions": solution_manager.has_only_safe_solutions,
             }
         )
 

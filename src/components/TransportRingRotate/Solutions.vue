@@ -45,17 +45,21 @@
 
       <div class="solution-content">
 
+<!--        Описание действия-->
         <div v-if="sol.set_port_vlans.message.length" class="alert alert-primary alert-in-solution">{{sol.set_port_vlans.message}}</div>
 
+<!--        Название оборудования-->
         <div class="device-name">
           {{sol.set_port_vlans.device.name}}
         </div>
         <div style="padding: 5px">
+
+<!--          Добавляем/Удаляем-->
           <span :class="vlanStatusClasses(sol.set_port_vlans.status)">
             {{vlanAction(sol.set_port_vlans.status)}}
           </span>
           VLAN
-          <span class="badge bg-primary sol-badge" v-for="vlan in sol.set_port_vlans.vlans">{{vlan}} </span>
+          <span class="badge bg-secondary sol-badge" v-for="vlan in sol.set_port_vlans.vlans">{{vlan}} </span>
           на порту
           <span class="badge bg-primary sol-badge">{{sol.set_port_vlans.port}}</span>
         </div>
@@ -65,7 +69,8 @@
 
   </template>
 
-  <div v-if="!submitSolutionsActive" class="gap-3 py-3 rounded-4" aria-current="true">
+<!--  Выполнить решения-->
+  <div v-if="!rotatingNow && !safeSolutions" class="gap-3 py-3 rounded-4" aria-current="true">
     <div class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#submitSolutionModal">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -107,7 +112,8 @@ export default {
   name: "Solutions",
   props: {
     solutions: {required: true},
-    submitSolutionsActive: {required: true},
+    rotatingNow: {required: true},  // Выполняются ли в данный момент решения
+    safeSolutions: {required: true}  // Безопасны ли решения (т.е. информационные они или затрагивают работу кольца)
   },
   methods: {
     portStatusClasses(status) {
@@ -146,7 +152,7 @@ export default {
 }
 
 .sol-badge {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .alert-solution {

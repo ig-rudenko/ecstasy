@@ -13,15 +13,36 @@ class Solutions:
     и информационных сообщений.
     """
 
+    # Категории решений, которые не затрагивают работу кольца
     safe_solutions = {"info", "error"}
+
+    # Категории решений, которые изменяют поведение оборудований в кольце
     affect_solutions = {"set_port_status", "set_port_vlans"}
 
     def __init__(self):
         self.has_errors = False
         self._solutions = []
 
+        # Показывает, являются ли сформированные решения безопасными, т.е. их не требуется выполнять.
+        # Безопасными считаются информационные (info, error)
+        self.has_only_safe_solutions = True
+
     def __len__(self):
         return len(self._solutions)
+
+    @classmethod
+    def from_ring_history(cls, ring: TransportRing) -> "Solutions":
+        sm = Solutions()
+        if not ring.solutions:
+            return sm
+
+        if isinstance(ring.solutions, Sequence):
+            for solution in ring.solutions:
+                if set(solution).issubset(cls.affect_solutions):
+                    sm.has_only_safe_solutions = False
+                sm._solutions.append(solution)
+
+        return sm
 
     @property
     def solutions(self) -> tuple:
@@ -51,6 +72,7 @@ class Solutions:
         self, device: check.models.Devices, port: str, status: Literal["up", "down"], message: str
     ):
         if not self.has_errors:
+            self.has_only_safe_solutions = False
             self._solutions.append(
                 {
                     "set_port_status": {
@@ -86,6 +108,7 @@ class Solutions:
         message: str,
     ):
         if not self.has_errors:
+            self.has_only_safe_solutions = False
             self._solutions.append(
                 {
                     "set_port_vlans": {
@@ -137,10 +160,7 @@ class SolutionsPerformer:
         if not self.ring.solutions:
             raise SolutionsPerformerError("Нет решений, которые необходимо выполнить")
 
-        if (
-            not self.ring.solution_time
-            or self.ring.solution_time < datetime.now() - self.solution_expire
-        ):
+        if self.is_solution_expired(self.ring.solution_time):
             # Этот код проверяет, является ли время создания решений (сохраненное в `self.ring.solution_time`)
             # более ранним чем текущее время минус время истечения срока действия решений (`self.solution_expire`).
             # Это делается для того, чтобы решения выполнялись своевременно и не применялись к сети после того, как они
@@ -153,6 +173,15 @@ class SolutionsPerformer:
             )
         else:
             self.solutions: Sequence = self.ring.solutions
+
+    @classmethod
+    def is_solution_expired(cls, solution_time: datetime) -> bool:
+        """
+        Эта функция проверяет, истекло ли заданное время решения или нет.
+
+        :param solution_time: параметр типа «datetime», представляющий время создания или последнего обновления решения.
+        """
+        return not solution_time or solution_time < datetime.now() - cls.solution_expire
 
     def perform_all(self) -> int:
         """
