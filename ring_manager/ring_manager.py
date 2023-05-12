@@ -50,7 +50,7 @@ class TransportRingBase:
         self.validate_ring(ring)
 
         self.ring = ring
-        self.vlans: List[int] = ring.vlans  # Форматируется при обращении в list of integers
+        self.vlans: List[int] = ring.vlans
         self.ring_devs = self.ring_devices()
 
         self.head = self.ring_devs[0]
@@ -77,7 +77,19 @@ class TransportRingBase:
             devs.append(RingPoint(point=iter_dev, device=iter_dev.device))
             if iter_dev.next_dev is None:
                 break
+
+            if iter_dev == iter_dev.next_dev:
+                raise InvalidRingStructureError(
+                    f"Устройство {iter_dev.device} на позиции ({len(devs)}) в кольце ссылается само на себя"
+                )
+
             iter_dev = iter_dev.next_dev
+
+            if len(devs) > 100:
+                raise InvalidRingStructureError(
+                    f"Превышен лимит (100) устройств в кольце. "
+                    f"Вероятно образовалась ссылочная петля и устройства в кольце ссылаются друг на друга"
+                )
 
         # Если указано замыкающее устройство, но оно не совпадает с цепочкой устройств в кольце
         if last_device and iter_dev.id != last_device.id:

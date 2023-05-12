@@ -161,9 +161,18 @@ export default {
             {method: "get", credentials: "include"}
         )
         const data = await resp.json()
-        this.points = data.points
-        this.rotatingNow = data.rotating
-        this.ringActive = data.active
+        if (resp.ok) {
+          this.points = data.points
+          this.rotatingNow = data.rotating
+          this.ringActive = data.active
+        } else {
+          this.errors.push(
+              {
+                text: data.error,
+                time: this.getTime()
+              }
+          )
+        }
       } catch (e) {
         console.log(e)
       }

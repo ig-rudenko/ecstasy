@@ -47,7 +47,8 @@ class TransportRing(models.Model):
         verbose_name="Оконечная точка в кольце.",
         help_text="Для данного оборудования будут добавляться VLAN в случае разворота кольца",
     )
-    vlans = models.TextField(
+    # Форматируется при обращении в list
+    vlans: list = models.TextField(
         verbose_name="VLAN'S",
         help_text="Укажите через запятую, "
         "какие VLAN необходимо добавить для оконечного оборудования в кольце в случае разворота",
