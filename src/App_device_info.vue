@@ -312,33 +312,42 @@ export default {
         status: this.portAction.action,   // Что сделать с портом
         save: save_config,                // Сохранить конфигурацию после действия?
       }
-      $.ajax({
-          url: "/device/api/" + this.deviceName + "/port-status",
-          type: 'POST',
-          data: data,
-          headers: {
-            "X-CSRFToken": document.CSRF_TOKEN
-          },
-          success: function( resp ) {
-            toastInfo.title= `Порт: ${resp.port}`
 
-            if (resp.save) {
-              toastInfo.message = `Состояние: ${resp.status.toUpperCase()}<br> Конфигурация была сохранена!`
-            } else {
-              toastInfo.message = `Состояние: ${resp.status.toUpperCase()}<br> Конфигурация НЕ была сохранена!`
-            }
-
-            toastInfo.color = data.save?"#198754":"#0d6efd"
-            toast.toast('show')
-          },
-          error: function (data) {
-            console.log("error", data)
-            toastInfo.title= "ERROR"
-            toastInfo.message = data.error
-            toastInfo.color = "#cb0707"
-            toast.toast('show')
+      fetch(
+          "/device/api/" + this.deviceName + "/port-status",
+          {
+              method: 'post',
+              body: JSON.stringify(data),
+              credentials: "include",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": document.CSRF_TOKEN
+              }
           }
-      });
+      )
+          .then(response => response.json())
+          .then(
+            respData => {
+              if (respData.error) {
+                  console.log("error", respData)
+                  toastInfo.title= "ERROR"
+                  toastInfo.message = respData.error
+                  toastInfo.color = "#cb0707"
+              } else {
+                  toastInfo.title= `Порт: ${respData.port}`
+
+                  if (respData.save) {
+                    toastInfo.message = `Состояние: ${respData.status.toUpperCase()}<br> Конфигурация была сохранена!`
+                  } else {
+                    toastInfo.message = `Состояние: ${respData.status.toUpperCase()}<br> Конфигурация НЕ была сохранена!`
+                  }
+
+                  toastInfo.color = data.save?"#198754":"#0d6efd"
+              }
+              toast.toast('show')
+            }
+          );
+
     },
 
     /**
