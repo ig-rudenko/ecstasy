@@ -106,14 +106,16 @@ class TestSolutionsPerformer(TestRingBase):
         ring.save(update_fields=["solutions", "solution_time"])
 
         performer = SolutionsPerformer(ring=ring)
-        performer.perform_all()
+        performed_solutions = performer.perform_all()
 
         # Найдено 2 решения
-        self.assertEqual(len(solutions), 2)
+        self.assertEqual(len(performed_solutions), 2)
 
-        # 1 решение - закрыть порт на dev1 (head) в сторону dev2
+        print(performed_solutions)
+
+        # 1 решение - STATUS FAIL
         self.assertDictEqual(
-            solutions[0],
+            performed_solutions[0],
             {
                 "set_port_status": {
                     "status": "down",
@@ -123,13 +125,15 @@ class TestSolutionsPerformer(TestRingBase):
                     },
                     "port": r.ring_devs[0].port_to_next_dev.name,
                     "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
+                    # Status FAIL
+                    "perform_status": "fail",
                 }
             },
         )
 
-        # 2 решение - прописать VLANS на dev4 (tail) в сторону dev3
+        # 2 решение - NO STATUS
         self.assertDictEqual(
-            solutions[1],
+            performed_solutions[1],
             {
                 "set_port_vlans": {
                     "status": "add",

@@ -5,5 +5,6 @@ from .models import MacAddress
 @admin.register(MacAddress)
 class MacAddressesAdmin(admin.ModelAdmin):
     list_display = ["address", "vlan", "device", "port"]
+    list_select_related = ["device"]
 
 

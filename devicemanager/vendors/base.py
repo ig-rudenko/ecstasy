@@ -3,7 +3,7 @@ import pathlib
 import string
 import time
 from functools import wraps
-from typing import List, Tuple
+from typing import List, Tuple, Literal
 
 import pexpect
 from abc import ABC, abstractmethod
@@ -351,9 +351,7 @@ class BaseDevice(ABC):
                 )
 
                 # Убираем управляющие последовательности ANSI
-                output += self.ansi_escape.sub(
-                    "", self.session.before.decode(errors="ignore")
-                )
+                output += self.ansi_escape.sub("", self.session.before.decode(errors="ignore"))
 
                 if match == 0:
                     break
@@ -362,9 +360,7 @@ class BaseDevice(ABC):
                     self.session.send(" ")
                     output += "\n"
                 else:
-                    print(
-                        f'{self.ip} - timeout во время выполнения команды "{command}"'
-                    )
+                    print(f'{self.ip} - timeout во время выполнения команды "{command}"')
                     break
 
                 # Если задано кол-во страниц
@@ -377,9 +373,7 @@ class BaseDevice(ABC):
             except pexpect.TIMEOUT:
                 pass
             # Убираем управляющие последовательности ANSI
-            output += self.ansi_escape.sub(
-                "", self.session.before.decode(errors="ignore")
-            )
+            output += self.ansi_escape.sub("", self.session.before.decode(errors="ignore"))
         return output
 
     @abstractmethod
@@ -411,7 +405,7 @@ class BaseDevice(ABC):
         """Перезагрузка порта"""
 
     @abstractmethod
-    def set_port(self, port: str, status: str, save_config=True) -> str:
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """Изменение состояния порта"""
 
     @abstractmethod

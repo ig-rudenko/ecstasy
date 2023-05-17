@@ -1,7 +1,7 @@
 from devicemanager import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing
-from ..ring_manager import TransportRingManager, RingStatusError
+from ..ring_manager import TransportRingManager
 
 
 TEST_DEVICES = [

@@ -1,6 +1,8 @@
 import re
 from functools import wraps
 from time import sleep
+from typing import Literal, Sequence
+
 import pexpect
 import textfsm
 from .base import (
@@ -9,7 +11,8 @@ from .base import (
     range_to_numbers,
     T_InterfaceVLANList,
     T_InterfaceList,
-    T_MACList, T_MACTable,
+    T_MACList,
+    T_MACTable,
 )
 
 
@@ -111,9 +114,7 @@ class Extreme(BaseDevice):
             int_des_ = textfsm.TextFSM(template_file)
             result_des = int_des_.ParseText(output_des)  # Ищем desc
 
-        result = [
-            result_port_state[n] + result_des[n] for n in range(len(result_port_state))
-        ]
+        result = [result_port_state[n] + result_des[n] for n in range(len(result_port_state))]
         return [
             (
                 line[0],  # interface
@@ -167,9 +168,7 @@ class Extreme(BaseDevice):
 
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append(
-                (line[0], line[1], line[2], ports_vlan.get(int(line[0]), []))
-            )
+            interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))
 
         return interfaces_vlan
 
@@ -286,7 +285,7 @@ class Extreme(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def set_port(self, port: str, status: str, save_config=True) -> str:
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
 
@@ -355,9 +354,7 @@ class Extreme(BaseDevice):
 
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            self.send_command(
-                f"unconfigure ports {port} description-string", expect_command=False
-            )
+            self.send_command(f"unconfigure ports {port} description-string", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
             self.send_command(
@@ -370,10 +367,7 @@ class Extreme(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     def get_port_info(self, port: str) -> dict:
-        return {
-            "type": "text",
-            "data": ""
-        }
+        return {"type": "text", "data": ""}
 
     def get_port_config(self, port: str) -> str:
         return ""
@@ -384,3 +378,34 @@ class Extreme(BaseDevice):
     def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("show configuration")
         return config.strip()
+
+    @BaseDevice._lock
+    @_validate_port()
+    def vlans_on_port(
+        self,
+        port: str,
+        operation: Literal["add", "delete"],
+        vlans: Sequence[int],
+        tagged: bool = True,
+    ):
+        """
+        Эта функция добавляет или удаляет VLAN на указанном порту устройства и сохраняет конфигурацию.
+
+        :param port: Параметр `port` представляет собой строку, представляющую имя или идентификатор порта,
+         на котором будет выполняться операция VLAN
+        :param operation: Параметр `operation` представляет собой строковый литерал, который указывает,
+         следует ли добавлять или удалять VLAN на данном порту. Может иметь два возможных значения: «add» или «delete»
+        :param vlans: Параметр `vlans` представляет собой последовательность целых чисел, представляющих идентификаторы
+         VLAN, которые будут добавлены или удалены из указанного порта
+        :param tagged: (optional) Параметр tagged представляет собой логический флаг, указывающий, следует ли добавлять
+         или удалять VLAN как тегированные или нетегированные на указанном порту. Если `tagged` равно `True`,
+         VLAN будут добавлены или удалены как тегированные на порту
+        """
+
+        tagged_option = "tagged" if tagged else ""
+
+        for vlan in vlans:
+            self.send_command(f"configure vlan v{vlan} {operation} ports {port} {tagged_option}")
+
+        self.lock = False
+        self.save_config()

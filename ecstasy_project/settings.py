@@ -91,9 +91,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 
-DATABASES = orjson.loads(
-    os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", "")
-)
+DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
 if not DATABASES:
     DATABASES = {
         "default": {

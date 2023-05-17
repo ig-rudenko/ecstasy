@@ -70,6 +70,7 @@
               </a>
             </li>
 
+          {% if request.user.transportring_set.count %}
     {#              Ring Manager #}
             <li class="nav-item active">
               <a href="{% url 'ring-manager' %}" class="nav-link text-white">
@@ -79,6 +80,8 @@
                 Rings
               </a>
             </li>
+          {% endif %}
+
     {#              LOGOUT #}
             <li class="nav-item active">
               <a href="{% url 'logout' %}" class="nav-link text-white">

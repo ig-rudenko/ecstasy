@@ -23,7 +23,7 @@ from ..serializers import (
 from ..decorators import device_connection
 from ..permissions import DevicePermission
 from ..swagger import schemas
-from ...logging import log
+from check.logging import log
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC

@@ -10,4 +10,6 @@ class TransportRingAdmin(admin.ModelAdmin):
 
 @admin.register(RingDev)
 class RingDevsAdmin(admin.ModelAdmin):
-    list_display = ["device"]
+    list_display = ["device", "ring_name"]
+    list_filter = ["ring_name"]
+    search_fields = ["device__name"]

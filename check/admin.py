@@ -34,19 +34,13 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 class DevicesAdmin(admin.ModelAdmin):
     """Управление оборудованием"""
 
-    list_display = [
-        "ip",
-        "name",
-        "vendor",
-        "model",
-        "group",
-        "auth_group",
-        "show_device",
-    ]
-    search_fields = ["ip", "name"]
-    list_per_page = 50
-    readonly_fields = ["show_interfaces"]
+    list_display = ["ip", "name", "vendor", "model", "group", "auth_group", "show_device"]
     list_filter = ["vendor", "group", "auth_group", "model"]
+    search_fields = ["ip", "name"]
+    readonly_fields = ["show_interfaces"]
+    list_select_related = ["auth_group", "group"]
+    list_per_page = 50
+
     fieldsets = (
         ("Характеристика", {"fields": ("ip", "name")}),
         ("Тип", {"fields": ("vendor", "model")}),
