@@ -166,7 +166,8 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
 
         # Смотрим статус кольца
         trm = TransportRingManager(ring=ring)
-        trm.collect_all_interfaces()  # Берем из истории
+        trm.check_devices_availability()  # Проверяем доступность
+        trm.collect_all_interfaces()  # Собираем интерфейсы
         trm.find_link_between_devices()
         points = PointRingSerializer(trm.ring_devs, many=True).data
 

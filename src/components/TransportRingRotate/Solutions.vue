@@ -1,9 +1,5 @@
 <template>
 
-  <div>
-
-  </div>
-
 <div class="rounded-4 list-group-item py-3 solutions" aria-current="true">
 
   <template v-for="(sol, index) in solutions">
@@ -26,7 +22,10 @@
       <div v-if="!performed" class="sol-index">{{index+1}}.</div>
       <!--Для выполненного решения (статус)-->
       <div v-else>
-        <SolutionStatus :status="sol.perform_status" :error="sol.error" />
+        <SolutionStatus
+            :status="sol.set_port_status.perform_status"
+            :error="sol.set_port_status.error"
+        />
       </div>
 
       <div class="solution-content">
@@ -53,7 +52,10 @@
       <div v-if="!performed" class="sol-index">{{index+1}}.</div>
       <!--Для выполненного решения (статус)-->
       <div v-else>
-        <SolutionStatus :status="sol.perform_status" :error="sol.error" />
+        <SolutionStatus
+            :status="sol.set_port_vlans.perform_status"
+            :error="sol.set_port_vlans.error"
+        />
       </div>
 
       <div class="solution-content">

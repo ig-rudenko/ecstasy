@@ -18,7 +18,7 @@
 <!--          Кнопка-->
           <div class="gap-3 py-3 rounded-4" aria-current="true">
 
-            <div v-if="!getSolutionsActive" @click="getSolutions" :class="getSolutionsButtonClasses">
+            <div v-if="!getSolutionsActive && !rotatingNow" @click="getSolutions" :class="getSolutionsButtonClasses">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-steps" viewBox="0 0 16 16">
                 <path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0zM2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1z"></path>
               </svg>
@@ -39,7 +39,7 @@
           </div>
 
 <!--          Ошибки-->
-          <div class="gap-3 py-3 rounded-4">
+          <div v-if="reversedErrors.length" class="gap-3 py-3 rounded-4">
             <template v-for="error in reversedErrors" >
               <div class="text-muted" style="text-align: left; font-size: 0.75rem;"> # {{error.time}} </div>
               <div class="alert alert-danger"> {{error.text}} </div>
@@ -47,7 +47,7 @@
           </div>
 
 <!--          Информация-->
-          <div class="gap-3 py-3 rounded-4">
+          <div v-if="reversedInfos.length" class="gap-3 py-3 rounded-4">
             <template v-for="info in reversedInfos" >
               <div class="text-muted" style="text-align: left; font-size: 0.75rem;"> # {{info.time}} </div>
               <div class="alert alert-primary"> {{info.text}} </div>
@@ -64,7 +64,7 @@
                 :solutions="solutions"
                 :safe-solutions="safeSolutions"
                 :rotating-now="rotatingNow"
-                :performed="performed"
+                :performed="solutionsPerformed"
                 @submitSolutions="submitSolutions"
             />
 
@@ -295,10 +295,12 @@ export default {
         const data = await resp.json()
 
         if (resp.status === 200) {
-            this.solutions = data.solutions  // Решения и их статус
+
+            this.solutions = await data.solutions  // Решения и их статус
             this.points = data.points  // Состояние кольца
             this.solutionsPerformed = true  // Отображаемые решения уже были применены
             this.solutionsTime = this.getTime()
+            this.rotatingNow = false
 
         } else {
             this.errors.push(
@@ -307,12 +309,13 @@ export default {
                   time: this.getTime()
                 }
             )
+            this.rotatingNow = false
         }
 
       } catch (e) {
         console.log(e)
+        this.rotatingNow = false
       }
-      this.rotatingNow = false
     },
 
     backToAllRings() {
