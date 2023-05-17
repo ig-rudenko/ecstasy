@@ -245,7 +245,6 @@ class TestRotateToNormalSolutions(TestRingBase):
         )
 
     def test_perform_solutions_fail_first(self):
-
         ring = TransportRing.objects.get(name="ring1")
 
         r = TestTransportRingManager(ring=ring)
@@ -296,6 +295,7 @@ class TestRotateToNormalSolutions(TestRingBase):
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
                     "на оборудовании dev5 (224.0.0.5) на порту GE0/5/3",
                     "perform_status": "fail",
+                    "error": "Оборудование dev5 (224.0.0.5) недоступно",
                 }
             },
         )
@@ -317,7 +317,6 @@ class TestRotateToNormalSolutions(TestRingBase):
         )
 
     def test_perform_solutions_fail_last(self):
-
         # Меняем IP TAIL чтобы он был доступен
         Devices.objects.filter(ip="224.0.0.5").update(
             ip="127.0.0.1",
@@ -406,12 +405,12 @@ class TestRotateToNormalSolutions(TestRingBase):
                     "port": "GE0/3/4",
                     "message": "Переводим кольцо в штатное состояние",
                     "perform_status": "fail",
+                    "error": f"Оборудование {r.ring_devs[2].device.name} ({r.ring_devs[2].device.ip}) недоступно",
                 }
             },
         )
 
     def test_perform_solutions_ok(self):
-
         # Меняем IP TAIL и Dev3 чтобы они были доступны
         auth = AuthGroup.objects.create(login="admin", password="admin", name="test")
         Devices.objects.filter(ip="224.0.0.5").update(ip="127.0.0.1", auth_group=auth)

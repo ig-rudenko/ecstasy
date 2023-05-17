@@ -127,6 +127,7 @@ class TestSolutionsPerformer(TestRingBase):
                     "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
                     # Status FAIL
                     "perform_status": "fail",
+                    'error': f'Оборудование {r.ring_devs[0].device.name} ({r.ring_devs[0].device.ip}) недоступно'
                 }
             },
         )

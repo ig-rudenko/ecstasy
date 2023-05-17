@@ -159,10 +159,16 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         if ring.status == ring.IN_PROCESS:
             return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
 
-        ring.set_status_in_progress()
-        performer = SolutionsPerformer(ring=ring)
-        performed_solutions = performer.perform_all()
-        ring.set_status_normal(clear_solutions=True)
+        ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
+        try:
+            # Инициализируем исполнителя решений для кольца
+            performer = SolutionsPerformer(ring=ring)
+            performed_solutions = performer.perform_all()  # Выполняем решения
+
+        except SolutionsPerformerError:
+            # Обязательно надо вернуть статус кольца в нормальное состояние
+            ring.set_status_normal(clear_solutions=True)
+            raise  # Продолжаем ошибку
 
         # Смотрим статус кольца
         trm = TransportRingManager(ring=ring)

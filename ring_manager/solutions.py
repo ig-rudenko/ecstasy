@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Literal, Sequence, Dict, Tuple
+from typing import Literal, Sequence, Dict, Tuple, Callable
 
 import check.models
 from devicemanager import DeviceException
@@ -155,31 +155,31 @@ class SolutionsPerformer:
     solution_expire: timedelta = timedelta(minutes=1)
 
     def __init__(self, ring: TransportRing):
-        self.ring = ring
+        self._ring = ring
 
-        if not self.ring.solutions:
+        if not self._ring.solutions:
             raise SolutionsPerformerError("Нет решений, которые необходимо выполнить")
 
-        if self.is_solution_expired(self.ring.solution_time):
+        if self.is_solution_expired(self._ring.solution_time):
             # Этот код проверяет, является ли время создания решений (сохраненное в `self.ring.solution_time`)
             # более ранним чем текущее время минус время истечения срока действия решений (`self.solution_expire`).
             # Это делается для того, чтобы решения выполнялись своевременно и не применялись к сети после того, как они
             # перестали быть актуальными.
             raise SolutionsPerformerError("Решения просрочены, необходимо заново сформировать их")
 
-        if not isinstance(self.ring.solutions, Sequence):
+        if not isinstance(self._ring.solutions, Sequence):
             raise SolutionsPerformerError(
-                f"Неправильный тип для решений, ожидается `Sequence`, а был передан {type(self.ring.solutions)}"
+                f"Неправильный тип для решений, ожидается `Sequence`, а был передан {type(self._ring.solutions)}"
             )
         else:
-            self.solutions: Sequence = self.ring.solutions
+            self._solutions: Sequence[dict] = self._ring.solutions
 
     @classmethod
     def is_solution_expired(cls, solution_time: datetime) -> bool:
         """
         Эта функция проверяет, истекло ли заданное время решения или нет.
 
-        :param solution_time: параметр типа «datetime», представляющий время создания или последнего обновления решения.
+        :param solution_time: Параметр типа «datetime», представляющий время создания или последнего обновления решения.
         """
         return not solution_time or solution_time < datetime.now() - cls.solution_expire
 
@@ -187,14 +187,14 @@ class SolutionsPerformer:
         """
         Эта функция выполняет конвейер решений, и если возникает ошибка, она пытается выполнить конвейер в обратном
          порядке, начиная с последнего успешного решения.
-        :return: список решений, хранящихся в атрибуте self.solutions экземпляра класса.
+        :return: Список решений, хранящихся в атрибуте self.solutions экземпляра класса.
         """
 
         counter = {"normal": 0, "reversed": 0}
 
         try:
             # Выполняем все решения по очереди
-            self._perform_pipeline(self.solutions, counter=counter)
+            self._perform_pipeline(self._solutions, counter=counter)
         except SolutionsPerformerError:
             # Если в одном из решений произошла ошибка, то необходимо откатить примененные изменения
             try:
@@ -205,21 +205,25 @@ class SolutionsPerformer:
                     position = counter["normal"] - 1
 
                     self._perform_pipeline(
-                        self.solutions[position::-1], counter=counter, reverse_status=True
+                        self._solutions[position::-1], counter=counter, reverse_status=True
                     )
 
             except SolutionsPerformerError:
-                return self.solutions
+                return self._solutions
 
-        return self.solutions
+        return self._solutions
 
     def _perform_pipeline(
         self, solutions: Sequence[dict], counter: Dict[str, int], reverse_status: bool = False
     ):
         """
-        Эта функция выполняет конвейер решений, проверяя их безопасность и выполняя их в зависимости от их типа.
+        Эта функция выполняет конвейер решений, проверяя их безопасность и выполняя их в зависимости от типа.
 
-        :param solutions: последовательность словарей, представляющих решения, которые необходимо выполнить
+        Выполняет решение через вызов метода `_perform_<solution_type>`, где `solution_type` - имя типа решения.
+        Например, для решения `set_port_vlans` будет вызван метод `_perform_set_port_vlans`, в который будет
+        передано содержимое словаря решения как именованные аргументы - `_perform_set_port_vlans(**solution)`.
+
+        :param solutions: Последовательность словарей, представляющих решения, которые необходимо выполнить
         :param counter: Словарь счетчиков "normal" и "reversed" для подсчета кол-ва выполненных решений в pipeline
         :param reverse_status: Логический параметр, определяющий, следует ли обратить все действия в решениях.
         """
@@ -227,7 +231,6 @@ class SolutionsPerformer:
         counter_name = "reversed" if reverse_status else "normal"
 
         for solution in solutions:
-
             # Этот код проверяет, являются ли ключи в словаре «solution» подмножеством списка «safe_solutions»
             # в классе «Solutions». Если они есть, это означает, что решение безопасно и не требует каких-либо
             # действий. Оператор continue пропускает текущую итерацию цикла и переходит к следующему решению.
@@ -242,13 +245,17 @@ class SolutionsPerformer:
             solution_type = tuple(solution)[0]
 
             try:
-                if solution_type == "set_port_status":
-                    self.perform_port_status(
-                        **solution[solution_type], reverse_status=reverse_status
+                if hasattr(self, f"_perform_{solution_type}") and hasattr(
+                    getattr(self, f"_perform_{solution_type}"), "__call__"
+                ):
+                    # Если имеется метод (а не атрибут) для текущего типа решения
+                    performer_method: Callable = getattr(self, f"_perform_{solution_type}")
+                    performer_method(**solution[solution_type], reverse_status=reverse_status)
+                else:
+                    # Нет такого метода, либо это был атрибут((
+                    raise SolutionsPerformerError(
+                        f"Не был найден метод для решения типа {solution_type}"
                     )
-
-                elif solution_type == "set_port_vlans":
-                    self.perform_vlans(**solution[solution_type], reverse_status=reverse_status)
 
             except SolutionsPerformerError as error:
                 # Помечаем статус данного решения, как ошибка
@@ -291,7 +298,7 @@ class SolutionsPerformer:
                 f"Не было найдено оборудование в базе с IP={device['ip']} и name={device['name']}"
             ) from error
 
-    def perform_vlans(
+    def _perform_set_port_vlans(
         self,
         status: Literal["add", "delete"],
         device: Dict[str, str],
@@ -342,7 +349,6 @@ class SolutionsPerformer:
 
         try:
             with device_obj.connect() as conn:
-
                 tries = 2
                 while tries:
                     # Этот цикл используется для повторной попытки кон VLANS в случае сбоя.
@@ -390,14 +396,14 @@ class SolutionsPerformer:
                 f"Оборудование {device_obj} вызвало ошибку {error.message}"
             ) from error
 
-    def perform_port_status(
+    def _perform_set_port_status(
         self,
         status: Literal["up", "down"],
         device: Dict[str, str],
         port: str,
         message: str = "",
         reverse_status: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         Это функция Python, которая выполняет обновление состояния порта для заданного устройства.
@@ -430,7 +436,6 @@ class SolutionsPerformer:
 
         try:
             with device_obj.connect() as conn:
-
                 tries = 2
                 while tries:
                     # Этот цикл используется для повторной попытки установить статус порта в случае сбоя.

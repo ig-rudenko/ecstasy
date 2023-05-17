@@ -9,8 +9,8 @@ from ..solutions import SolutionsPerformerError
 
 def ring_valid(handler):
     """
-    Декоратор перехватывает любые исключения «InvalidRingStructureError» или «RingStatusError»,
-    которые могут быть вызваны функцией «обработчик», и возвращает ответ JSON с сообщением об ошибке
+    Декоратор перехватывает исключения «InvalidRingStructureError», «RingStatusError», «SolutionsPerformerError»
+    которые могут быть вызваны функцией «handler», и возвращает ответ JSON с сообщением об ошибке
     и кодом состояния 500.
     """
 
