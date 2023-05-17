@@ -22,12 +22,19 @@
 
 <!--    SET PORT STATUS-->
     <div v-if="sol.hasOwnProperty('set_port_status')" class="alert alert-solution">
-      <div class="sol-index">{{index+1}}.</div>
+      <!--Номер решения (по порядку)-->
+      <div v-if="!performed" class="sol-index">{{index+1}}.</div>
+      <!--Для выполненного решения (статус)-->
+      <div v-else>
+        <SolutionStatus :status="sol.perform_status" :error="sol.error" />
+      </div>
 
       <div class="solution-content">
 
+        <!--Описание действия-->
         <div v-if="sol.set_port_status.message.length" class="alert alert-primary alert-in-solution">{{sol.set_port_status.message}}</div>
 
+        <!--Название оборудования-->
         <div class="device-name">{{sol.set_port_status.device.name}}</div>
 
         <div style="padding: 5px">
@@ -41,20 +48,26 @@
 
 <!--    VLANS -->
     <div v-if="sol.hasOwnProperty('set_port_vlans')" class="alert alert-solution">
-      <div class="sol-index">{{index+1}}.</div>
+
+      <!--Номер решения (по порядку)-->
+      <div v-if="!performed" class="sol-index">{{index+1}}.</div>
+      <!--Для выполненного решения (статус)-->
+      <div v-else>
+        <SolutionStatus :status="sol.perform_status" :error="sol.error" />
+      </div>
 
       <div class="solution-content">
 
-<!--        Описание действия-->
+        <!--Описание действия-->
         <div v-if="sol.set_port_vlans.message.length" class="alert alert-primary alert-in-solution">{{sol.set_port_vlans.message}}</div>
 
-<!--        Название оборудования-->
+        <!--Название оборудования-->
         <div class="device-name">
           {{sol.set_port_vlans.device.name}}
         </div>
         <div style="padding: 5px">
 
-<!--          Добавляем/Удаляем-->
+        <!--Добавляем/Удаляем-->
           <span :class="vlanStatusClasses(sol.set_port_vlans.status)">
             {{vlanAction(sol.set_port_vlans.status)}}
           </span>
@@ -70,7 +83,7 @@
   </template>
 
 <!--  Выполнить решения-->
-  <div v-if="!rotatingNow && !safeSolutions" class="gap-3 py-3 rounded-4" aria-current="true">
+  <div v-if="displaySubmitButton" class="gap-3 py-3 rounded-4" aria-current="true">
     <div class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#submitSolutionModal">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -108,12 +121,21 @@
 </template>
 
 <script>
+import SolutionStatus from "./SolutionStatus.vue";
+
 export default {
   name: "Solutions",
+  components: {SolutionStatus},
   props: {
     solutions: {required: true},
     rotatingNow: {required: true},  // Выполняются ли в данный момент решения
-    safeSolutions: {required: true}  // Безопасны ли решения (т.е. информационные они или затрагивают работу кольца)
+    safeSolutions: {required: true},  // Безопасны ли решения (т.е. информационные они или затрагивают работу кольца)
+    performed: {required: true},  // Отображаемые решения уже были выполнены
+  },
+  computed: {
+    displaySubmitButton() {
+      return !this.rotatingNow && !this.safeSolutions && !this.performed
+    }
   },
   methods: {
     portStatusClasses(status) {

@@ -64,6 +64,7 @@
                 :solutions="solutions"
                 :safe-solutions="safeSolutions"
                 :rotating-now="rotatingNow"
+                :performed="performed"
                 @submitSolutions="submitSolutions"
             />
 
@@ -101,6 +102,7 @@ export default {
       solutions: [],
       safeSolutions: true,  // Безопасны ли решения (т.е. информационные они или затрагивают работу кольца)
       solutionsTime: "",
+      solutionsPerformed: false,
       getSolutionsActive: false,
       rotatingNow: true,
       ringActive: true,
@@ -228,8 +230,11 @@ export default {
 
     async getSolutions() {
       if (this.getSolutionsActive) return;
+
+      // Обнуляем данные, так как происходит новый опрос
       this.getSolutionsActive = true
       this.solutions = []
+      this.solutionsPerformed = false
       this.solutionsTime = ""
       this.errors = []
       this.infos = []
@@ -269,6 +274,7 @@ export default {
       this.getSolutionsActive = false
     },
 
+    // Метод async вызывается, когда пользователь подтверждает решения для выбранного транспортного кольца.
     async submitSolutions() {
       if (this.rotatingNow) return;
       this.rotatingNow = true
@@ -289,12 +295,10 @@ export default {
         const data = await resp.json()
 
         if (resp.status === 200) {
-            this.infos.push(
-                {
-                  text: data.status,
-                  time: this.getTime()
-                }
-            )
+            this.solutions = data.solutions  // Решения и их статус
+            this.points = data.points  // Состояние кольца
+            this.solutionsPerformed = true  // Отображаемые решения уже были применены
+            this.solutionsTime = this.getTime()
 
         } else {
             this.errors.push(
@@ -304,8 +308,6 @@ export default {
                 }
             )
         }
-
-        this.solutions = []
 
       } catch (e) {
         console.log(e)

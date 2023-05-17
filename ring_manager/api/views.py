@@ -43,10 +43,7 @@ class TransportRingStatusAPIView(generics.GenericAPIView):
         ring = get_object_or_404(TransportRing, name=ring_name)
         self.check_object_permissions(request, ring)
         return Response(
-            {
-                "active": ring.status != ring.DEACTIVATED,
-                "rotating": ring.status == ring.IN_PROCESS
-            }
+            {"active": ring.status != ring.DEACTIVATED, "rotating": ring.status == ring.IN_PROCESS}
         )
 
 
@@ -79,7 +76,7 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
             {
                 "points": points,
                 "active": ring.status != ring.DEACTIVATED,
-                "rotating": ring.status == ring.IN_PROCESS
+                "rotating": ring.status == ring.IN_PROCESS,
             }
         )
 
@@ -152,8 +149,8 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
     @ring_valid
     def post(self, request, ring_name: str):
         """
-        Эта функция выполняет набор действий над объектом транспортного кольца и возвращает ответ с количеством
-        выполненных действий.
+        Эта функция выполняет набор действий над объектом транспортного кольца и возвращает выполненные действия,
+        а также их статус
         """
 
         ring = get_object_or_404(TransportRing, name=ring_name)
@@ -162,13 +159,20 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         if ring.status == ring.IN_PROCESS:
             return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
 
-        try:
-            ring.set_status_in_progress()
-            performer = SolutionsPerformer(ring=ring)
-            count = performer.perform_all()
-        except SolutionsPerformerError as error:
-            return Response({"error": error.message}, status=500)
-        finally:
-            ring.set_status_normal()
+        ring.set_status_in_progress()
+        performer = SolutionsPerformer(ring=ring)
+        performed_solutions = performer.perform_all()
+        ring.set_status_normal(clear_solutions=True)
 
-        return Response({"status": count})
+        # Смотрим статус кольца
+        trm = TransportRingManager(ring=ring)
+        trm.collect_all_interfaces()  # Берем из истории
+        trm.find_link_between_devices()
+        points = PointRingSerializer(trm.ring_devs, many=True).data
+
+        return Response(
+            {
+                "solutions": performed_solutions,
+                "points": points,
+            }
+        )

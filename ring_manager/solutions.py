@@ -250,9 +250,10 @@ class SolutionsPerformer:
                 elif solution_type == "set_port_vlans":
                     self.perform_vlans(**solution[solution_type], reverse_status=reverse_status)
 
-            except SolutionsPerformerError:
+            except SolutionsPerformerError as error:
                 # Помечаем статус данного решения, как ошибка
                 solution[solution_type]["perform_status"] = "fail"
+                solution[solution_type]["error"] = error.message
                 raise
 
             # Помечаем статус решения "reversed" или "done"

@@ -2,7 +2,7 @@
 <div class="list-group">
 
   <template v-for="dev in points">
-    <div :class="['port', 'bottom'].concat(portStatusClass(dev, dev.port_to_prev_dev))" :title="dev.port_to_prev_dev.status">
+    <div :class="['port', 'bottom'].concat(portStatusClass(dev, dev.port_to_prev_dev))" v-tooltip="dev.port_to_prev_dev.status">
 <!--      Предыдущее оборудование-->
       <span>{{dev.port_to_prev_dev.name}}</span>
     </div>
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div :class="['port', 'top'].concat(portStatusClass(dev, dev.port_to_next_dev))" :title="dev.port_to_next_dev.status">
+    <div :class="['port', 'top'].concat(portStatusClass(dev, dev.port_to_next_dev))" v-tooltip="dev.port_to_next_dev.status">
 <!--      Следующее оборудование-->
       <span>{{dev.port_to_next_dev.name}}</span>
     </div>

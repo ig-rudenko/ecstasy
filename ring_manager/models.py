@@ -92,9 +92,14 @@ class TransportRing(models.Model):
         self.status = self.IN_PROCESS
         self.save(update_fields=["status"])
 
-    def set_status_normal(self):
+    def set_status_normal(self, clear_solutions: bool):
         self.status = self.NORMAL
-        self.save(update_fields=["status"])
+        update_fields = ["status"]
+        if clear_solutions:
+            self.solutions = None
+            update_fields.append("solutions")
+
+        self.save(update_fields=update_fields)
 
     def set_status_deactivated(self):
         self.status = self.DEACTIVATED
