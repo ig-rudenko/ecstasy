@@ -358,10 +358,10 @@ class TestCiscoGetMACAddress(SimpleTestCase):
         self.assertEqual(
             mac_list,
             [
-                ("716", "2887.baf2.0f9a"),
-                ("716", "50ff.2028.f55b"),
-                ("716", "b0a7.b9c4.aa41"),
-                ("800", "80fb.06cb.ee68"),
+                (716, "2887.baf2.0f9a"),
+                (716, "50ff.2028.f55b"),
+                (716, "b0a7.b9c4.aa41"),
+                (800, "80fb.06cb.ee68"),
             ],
         )
 

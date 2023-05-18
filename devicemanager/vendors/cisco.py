@@ -196,7 +196,8 @@ class Cisco(BaseDevice):
             f"show mac address-table interface {port}",
             expect_command=False,
         )
-        return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice._lock
     def get_mac_table(self) -> T_MACTable:

@@ -327,7 +327,8 @@ class EltexMES(BaseDevice):
         """
 
         mac_str = self.send_command(f"show mac address-table interface {port}")
-        return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice._lock
     @_validate_port()
@@ -965,16 +966,17 @@ class EltexLTP(BaseDevice):
             )
             self.session.send("exit\r")
             self.session.expect(self.prompt)
-            return re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+", macs_output)
+            macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+", macs_output)
+            return [(int(vid), mac) for vid, mac in macs_list]
 
         # Если указан порт конкретного ONT `0/1`, то используем другую команду
         # И другое регулярное выражение
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
-            macs_list = re.findall(
+            macs_list: List[Tuple[str, str]] = re.findall(
                 rf"(\d+)\s+({self.mac_format})",
                 self.send_command(f"show mac interface ont {port_number}"),
             )
-            return macs_list
+            return [(int(vid), mac) for vid, mac in macs_list]
 
         # Если неверный порт
         return []

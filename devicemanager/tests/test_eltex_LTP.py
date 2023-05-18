@@ -233,9 +233,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("front-port 4")
@@ -249,9 +249,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("front 4")
@@ -265,9 +265,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("front4")
@@ -282,9 +282,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("front-port 8")
@@ -298,9 +298,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("front 8")
@@ -314,9 +314,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("front8")
@@ -331,9 +331,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("10G-front-port 2")
@@ -347,9 +347,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("10G-front 2")
@@ -363,9 +363,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_4x.get_mac("10g-front3")
@@ -380,9 +380,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("10G-front-port 2")
@@ -396,9 +396,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("10G-front 2")
@@ -412,9 +412,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("10g-front3")
@@ -429,9 +429,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("pon-port 8")
@@ -445,9 +445,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("pon 8")
@@ -461,9 +461,9 @@ class TestEltexLTPMAC(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1052", "44:8a:5b:70:a7:bf"),
-                ("688", "e8:28:c1:f4:d6:88"),
-                ("1052", "94:04:9c:65:1d:8d"),
+                (1052, "44:8a:5b:70:a7:bf"),
+                (688, "e8:28:c1:f4:d6:88"),
+                (1052, "94:04:9c:65:1d:8d"),
             ],
         )
         macs = self.eltex_ltp_8x.get_mac("pon8")

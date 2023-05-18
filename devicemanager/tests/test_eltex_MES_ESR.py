@@ -336,9 +336,9 @@ class TestEltexMESMacAddress(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("711", "1c:af:f7:41:bd:3f"),
-                ("711", "4c:5e:0c:d5:da:c8"),
-                ("711", "70:62:b8:72:62:ee"),
+                (711, "1c:af:f7:41:bd:3f"),
+                (711, "4c:5e:0c:d5:da:c8"),
+                (711, "70:62:b8:72:62:ee"),
             ],
         )
 
@@ -626,9 +626,9 @@ class TestEltexESRMacAddress(SimpleTestCase):
         self.assertEqual(
             macs,
             [
-                ("1959", "bc:16:65:4f:a3:a2"),
-                ("1959", "00:0f:e2:b6:eb:78"),
-                ("1959", "00:0f:e2:07:f2:e0"),
+                (1959, "bc:16:65:4f:a3:a2"),
+                (1959, "00:0f:e2:b6:eb:78"),
+                (1959, "00:0f:e2:07:f2:e0"),
             ],
         )
 

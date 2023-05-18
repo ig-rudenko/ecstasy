@@ -571,8 +571,8 @@ class TestDLinkMAC(SimpleTestCase):
         self.assertEqual(
             mac_result,
             [
-                ("111", "F4-28-54-06-33-85"),
-                ("121", "F4-28-54-06-33-86"),
+                (111, "F4-28-54-06-33-85"),
+                (121, "F4-28-54-06-33-86"),
             ],
         )
 
