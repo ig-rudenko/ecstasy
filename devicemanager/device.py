@@ -5,7 +5,7 @@
 
 import re
 import orjson
-from typing import Any, List
+from typing import Any, List, Sequence, Optional
 from concurrent.futures import ThreadPoolExecutor
 
 from django.db.utils import OperationalError, ProgrammingError
@@ -65,11 +65,11 @@ class Interfaces:
 
     >>> Interfaces(['eth1', 'up', 'description', [10, 20]])
 
-    >>> Interfaces({"Interface": "eth1", "Status": "up", "Description": "desc", "VLAN's": [10, 20]})
+    >>> Interfaces([{"Interface": "eth1", "Status": "up", "Description": "desc", "VLAN's": [10, 20]}])
 
-    >>> Interfaces({'Interface': 'eth1', 'Admin Status': 'up', 'Link': 'up', 'Description': 'desc', "VLAN's": [10, 20]})
+    >>> Interfaces([{'Interface': '1', 'Admin Status': 'up', 'Link': 'up', 'Description': 'desc', "VLAN's": [1, 2]}])
 
-    >>> Interfaces(Interface())
+    >>> Interfaces([Interface()])
 
     """
 
@@ -100,11 +100,11 @@ class Interfaces:
                 vlans_list.append(vlan)
         return vlans_list
 
-    def __init__(self, data=None):
+    def __init__(self, data: Optional[Sequence] = None):
         if not data:  # Если не были переданы интерфейсы, то создаем пустой список
             self.__interfaces = []
         else:
-            self.__interfaces: List[Interface, None] = []
+            self.__interfaces: List[Interface] = []
 
             for intf in data:
 
@@ -193,10 +193,10 @@ class Interfaces:
         while i < len(intf):
             # Комбо-порт. Надо выбрать один.
             if (
-                "(C)" in intf[i].name
-                and "(F)" in intf[i + 1].name
-                and re.findall(r"^\d+", intf[i].name)
-                == re.findall(r"^\d+", intf[i].name)
+                    "(C)" in intf[i].name
+                    and "(F)" in intf[i + 1].name
+                    and re.findall(r"^\d+", intf[i].name)
+                    == re.findall(r"^\d+", intf[i].name)
             ):
                 # Выбираем, какой комбо порт добавить.
                 # Смотрим состояние и добавляем активный.
@@ -361,7 +361,7 @@ class DevicesCollection:
 
     @classmethod
     def from_zabbix_groups(
-        cls, groups_name: (str, list), zabbix_info: bool
+            cls, groups_name: (str, list), zabbix_info: bool
     ) -> "DevicesCollection":
         """
         Создаем коллекцию из групп узлов сети Zabbix
@@ -396,7 +396,7 @@ class DevicesCollection:
 
     @classmethod
     def from_zabbix_ips(
-        cls, ips: (str, list), zabbix_info: bool
+            cls, ips: (str, list), zabbix_info: bool
     ) -> "DevicesCollection":
         """
         Создаем коллекцию из переданных IP адресов
@@ -437,7 +437,7 @@ class DevicesCollection:
                 string += f"{i:<{s}}  {d}\n"
             string += " " * s + "  ...\n"
             for i, d in enumerate(
-                self.collection[-3:], len(self.collection) - 3
+                    self.collection[-3:], len(self.collection) - 3
             ):  # Последние 3 устройства
                 string += f"{i:<{s}}  {d}\n"
 
@@ -671,8 +671,8 @@ class DeviceManager:
                     i
                     for i in self.zabbix_info.ip
                     if len(self.zabbix_info.ip) > 1
-                    and i != "127.0.0.1"
-                    or len(self.zabbix_info.ip) == 1
+                       and i != "127.0.0.1"
+                       or len(self.zabbix_info.ip) == 1
                 ][0]
 
     def push_zabbix_inventory(self):
@@ -735,7 +735,7 @@ class DeviceManager:
         return None
 
     def collect_interfaces(
-        self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
+            self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
     ) -> str:
         """Собираем интерфейсы оборудования"""
 
@@ -785,7 +785,7 @@ class DeviceManager:
 
             try:
                 with self.connect(
-                    self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
+                        self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
                 ) as session:
 
                     if session.model:
@@ -839,9 +839,9 @@ class DeviceManager:
         if self._zabbix_info.inventory.location:
             return self._zabbix_info.inventory.location
         if (
-            self._zabbix_info.inventory.location_lat
-            and self._zabbix_info.inventory.location_lon
-            and not self._location
+                self._zabbix_info.inventory.location_lat
+                and self._zabbix_info.inventory.location_lon
+                and not self._location
         ):
             location = Nominatim(user_agent="coordinateconverter").reverse(
                 ", ".join(self._zabbix_info.inventory.coordinates())
@@ -851,7 +851,7 @@ class DeviceManager:
         return self._location
 
     def connect(
-        self, protocol: str = None, auth_obj: Any = None, *args, **kwargs
+            self, protocol: str = None, auth_obj: Any = None, *args, **kwargs
     ) -> DeviceFactory:
         """
         Устанавливаем подключение к оборудованию

@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 from time import sleep
-from typing import Literal, Sequence
+from typing import Literal, Sequence, Tuple, List
 
 import pexpect
 import textfsm
@@ -12,7 +12,7 @@ from .base import (
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
-    T_MACTable,
+    T_MACTable, MACType,
 )
 
 
@@ -212,12 +212,13 @@ class Extreme(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
         mac_str = self.send_command("show fdb", expect_command=False)
-        mac_table = re.findall(
+        mac_table: List[Tuple[str, str, str]] = re.findall(
             rf"({self.mac_format})\s+v\S+\((\d+)\)\s+\d+\s+d m\s+(\d+).*\n",
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(int(vid), mac, "dynamic", port) for mac, vid, port in mac_table]
+        mac_type: MACType = "dynamic"
+        return [(int(vid), mac, mac_type, port) for mac, vid, port in mac_table]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -234,12 +235,9 @@ class Extreme(BaseDevice):
         """
 
         output = self.send_command(f"show fdb ports {port}", expect_command=False)
-        macs = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
+        macs: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
 
-        res = []
-        for m in macs:
-            res.append(m[::-1])
-        return res
+        return [(int(vid), mac) for mac, vid in macs]
 
     @BaseDevice._lock
     @_validate_port()

@@ -1,6 +1,8 @@
 import re
 from functools import wraps
 from time import sleep
+from typing import Literal, Union, Tuple, List
+
 import pexpect
 import textfsm
 from .base import (
@@ -11,6 +13,7 @@ from .base import (
     T_InterfaceList,
     T_MACList,
     T_MACTable,
+    MACType,
 )
 
 
@@ -286,13 +289,15 @@ class Dlink(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', {'static'|'dynamic'|'security'}, '{port}'), ... ]```
         """
 
-        def format_type(type_: str) -> str:
+        def format_type(type_: str) -> MACType:
             if type_ == "DeleteOnTimeout":
                 return "security"
-            return type_.lower()
+            if type_ == "Dynamic":
+                return "dynamic"
+            return "static"
 
         mac_str = self.send_command("show fdb", expect_command=False)
-        mac_table = re.findall(
+        mac_table: List[Tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",
             mac_str,
             flags=re.IGNORECASE,
@@ -318,7 +323,10 @@ class Dlink(BaseDevice):
 
         mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
         # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
-        return re.findall(rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str)
+        mac_lines: List[Tuple[str, str]] = re.findall(
+            rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str
+        )
+        return [(int(vid), mac) for vid, mac in mac_lines]
 
     @BaseDevice._lock
     def reload_port(self, port, save_config=True) -> str:
@@ -381,7 +389,7 @@ class Dlink(BaseDevice):
         return r1 + r2 + s
 
     @BaseDevice._lock
-    def set_port(self, port, status, save_config=True) -> str:
+    def set_port(self, port, status: Literal["up", "down"], save_config=True) -> str:
         """
         Устанавливает статус порта на коммутаторе **up** или **down**
 

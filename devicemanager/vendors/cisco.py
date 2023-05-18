@@ -1,6 +1,8 @@
 from functools import wraps
 import re
 from time import sleep
+from typing import Tuple, List
+
 import pexpect
 import textfsm
 from .base import (
@@ -13,6 +15,7 @@ from .base import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
+    MACType,
 )
 
 
@@ -207,16 +210,22 @@ class Cisco(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        mac_str = self.send_command(
-            "show mac address-table",
-            expect_command=False,
-        )
-        mac_table = re.findall(
+        def mac_type(type_: str) -> MACType:
+            type_ = type_.lower()
+            if type_ == "dynamic":
+                return "dynamic"
+            if type_ == "static":
+                return "static"
+            if type_ == "security":
+                return "security"
+
+        mac_str = self.send_command("show mac address-table", expect_command=False)
+        mac_table: List[Tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(dynamic|static)\s+.*?(\S+)\s*\n",
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(int(vid), mac, type_, port) for vid, mac, type_, port in mac_table]
+        return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice._lock
     @_validate_port()

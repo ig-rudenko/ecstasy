@@ -2,6 +2,7 @@ from datetime import datetime
 import pathlib
 import re
 import time
+from typing import Tuple, List, Literal
 
 import pysftp
 import pexpect
@@ -11,7 +12,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable,
+    T_MACTable, MACType,
 )
 
 
@@ -202,7 +203,7 @@ class MikroTik(BaseDevice):
             "interface bridge host print without-paging terse", expect_command=False
         )
 
-        mac_table = []
+        mac_table: T_MACTable = []
 
         # Разбиваем вывод на строки, начинающиеся с числа и пробела.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
@@ -210,7 +211,7 @@ class MikroTik(BaseDevice):
             line = line.replace("\r\n", "")
 
             # Находим необходимые элементы в строке
-            parsed = re.findall(
+            parsed: List[Tuple[str, str, str, str]] = re.findall(
                 r"\d+\s+(DL?)\s+mac-address=(\S+) .* bridge=(\S+) .*on-interface=(\S+).*",
                 line,
             )
@@ -218,18 +219,22 @@ class MikroTik(BaseDevice):
             if not parsed:
                 continue
 
-            # Распаковка кортежа, возвращенного `re.findall`, в переменные `type_`, `mac`, `bridge` и `port`.
+            # Распаковка кортежа, возвращенного `re.findall`.
             type_, mac, bridge, port = parsed[0]
 
             # Получение идентификатора vlan моста.
             vid = self._bridges.get(bridge, {}).get("vlans", ["0"])[0]
+
+            mac_type: MACType
             if type_ == "D":
-                type_ = "dynamic"
-            if type_ == "DL":
-                type_ = "static"
+                mac_type = "dynamic"
+            elif type_ == "DL":
+                mac_type = "static"
+            else:
+                mac_type = "security"
 
             # Добавление MAC в таблицу
-            mac_table.append((int(vid), mac, type_, port))
+            mac_table.append((int(vid), mac, mac_type, port))
 
         return mac_table
 
@@ -252,17 +257,21 @@ class MikroTik(BaseDevice):
             expect_command=False,
         )
 
-        macs = []
+        macs: T_MACList = []
+        # Приведенный выше код разбивает строку `output` на строки на основе шаблона регулярного выражения.
+        # Затем для каждой строки он ищет MAC-адрес и соответствующий `bridge`, используя шаблон регулярного выражения.
+        # Если MAC-адрес и `bridge` найдены, он добавляет кортеж из VLAN ID и MAC-адреса в список под названием «macs».
+        # Идентификатор VLAN получается из словаря под названием «_bridges», используя имя `bridge` в качестве ключа.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
             line = line.replace("\r\n", "")
-            mac_line = BaseDevice.find_or_empty(
+            mac_line: List[Tuple[str, str]] = BaseDevice.find_or_empty(
                 rf"mac-address=({self.mac_format}) .* bridge=(\S+)", line
             )
             if not mac_line:
                 continue
             mac_address, bridge = mac_line
             macs.append(
-                (self._bridges.get(bridge, {}).get("vlans", [""])[0], mac_address)
+                (int(self._bridges.get(bridge, {}).get("vlans", [""])[0]), mac_address)
             )
         return macs
 
@@ -276,7 +285,7 @@ class MikroTik(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def set_port(self, port: str, status: str, save_config=True) -> str:
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
 
         if status == "up":
             self.send_command(f'interface enable "{port}"')

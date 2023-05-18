@@ -1,14 +1,14 @@
 import re
 from functools import lru_cache
 from time import sleep
-from typing import Tuple
+from typing import Tuple, List
 
 from .base import (
     BaseDevice,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable,
+    T_MACTable, MACType,
 )
 
 
@@ -306,8 +306,9 @@ class IskratelMBan(BaseDevice):
         """
 
         output = self.send_command("show bridge mactable")
-        parsed = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
-        return [(int(vid), mac, "dynamic", port) for vid, mac, port in parsed]
+        parsed: List[Tuple[str, str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
+        mac_type: MACType = "dynamic"
+        return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
     @BaseDevice._lock
     def get_mac(self, port: str) -> T_MACList:

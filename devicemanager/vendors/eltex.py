@@ -1,7 +1,7 @@
 import re
 from time import sleep
 from functools import lru_cache, wraps
-from typing import List
+from typing import List, Tuple
 
 import pexpect
 import textfsm
@@ -14,6 +14,7 @@ from .base import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
+    MACType,
 )
 
 
@@ -293,7 +294,7 @@ class EltexMES(BaseDevice):
         return interface_normal_view(intf)
 
     @BaseDevice._lock
-    def get_mac_table(self) -> list:
+    def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -850,6 +851,7 @@ class EltexLTP(BaseDevice):
 
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
+
         self.session.send("switch\r")
         self.session.expect(self.prompt)
 
@@ -857,10 +859,20 @@ class EltexLTP(BaseDevice):
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        parsed = re.findall(
+        parsed: List[Tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output
         )
-        return [(int(vid), mac, type_, port) for vid, mac, port, type_ in parsed]
+
+        table = []
+        for vid, mac, port, type_ in parsed:
+            if type_ == "Dynamic":
+                mac_type: MACType = "dynamic"
+            else:
+                mac_type: MACType = "static"
+
+            table.append((int(vid), mac, mac_type, port))
+
+        return table
 
     @BaseDevice._lock
     def get_vlans(self) -> T_InterfaceVLANList:

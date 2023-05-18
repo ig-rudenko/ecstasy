@@ -1,6 +1,8 @@
 import re
 from functools import wraps
 from time import sleep
+from typing import List, Tuple, Literal
+
 import pexpect
 import textfsm
 from .base import (
@@ -214,7 +216,7 @@ class ZTE(BaseDevice):
             (cfg)# show mac dynamic port {port}
 
         :param port: Номер порта коммутатора
-        :return: ```[ ('vid', 'mac'), ... ]```
+        :return: ```[ (vid, 'mac'), ... ]```
         """
 
         output_macs = self.send_command(
@@ -225,11 +227,8 @@ class ZTE(BaseDevice):
                 f"show mac dynamic port {port}", expect_command=False
             )
 
-        mac_list = []
-        for i in re.findall(rf"({self.mac_format})\s+(\d+)", output_macs):
-            mac_list.append(i[::-1])
-
-        return mac_list
+        mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
+        return [(int(vid), mac) for vid, mac in mac_lines]
 
     @BaseDevice._lock
     def save_config(self) -> str:
@@ -280,7 +279,7 @@ class ZTE(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def set_port(self, port: str, status: str, save_config=True) -> str:
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
 

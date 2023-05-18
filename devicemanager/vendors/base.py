@@ -12,10 +12,17 @@ from abc import ABC, abstractmethod
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent / "templates"
 
 # Аннотации типов
-T_InterfaceList: type = List[Tuple[str, str, str]]
-T_InterfaceVLANList: type = List[Tuple[str, str, str, list]]
-T_MACTable: type = List[Tuple[int, str, str, str]]
-T_MACList: type = List[Tuple[str, str]]
+MAC: type = str
+MACType: type = Literal["static", "dynamic", "security"]
+PORT: type = str
+STATUS: type = str
+DESCRIPTION: type = str
+VID: type = int
+VLAN_LIST: type = list
+T_InterfaceList: type = List[Tuple[PORT, STATUS, DESCRIPTION]]
+T_InterfaceVLANList: type = List[Tuple[PORT, STATUS, DESCRIPTION, VLAN_LIST]]
+T_MACTable: type = List[Tuple[VID, MAC, MACType, PORT]]
+T_MACList: type = List[Tuple[VID, MAC]]
 T_SplittedPort: type = Tuple[str, Tuple[str]]
 
 # Обозначения медных типов по стандарту IEEE 802.3

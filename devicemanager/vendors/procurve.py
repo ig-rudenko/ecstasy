@@ -1,7 +1,9 @@
 import re
+from typing import List
+
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER
+from .base import BaseDevice, TEMPLATE_FOLDER, T_InterfaceList
 
 
 class ProCurve(BaseDevice):
@@ -21,7 +23,7 @@ class ProCurve(BaseDevice):
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
 
     @BaseDevice._lock
-    def get_interfaces(self) -> list:
+    def get_interfaces(self) -> T_InterfaceList:
         result = []
         raw_intf_status = self.send_command(
             "show interfaces brief", expect_command=False
@@ -30,19 +32,20 @@ class ProCurve(BaseDevice):
             f"{TEMPLATE_FOLDER}/interfaces/procurve_status.template", encoding="utf-8"
         ) as template_file:
             int_des_ = textfsm.TextFSM(template_file)
-        intf_status = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
+        intf_status: List[str, str, str] = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
+
         for line in intf_status:
             port = self.find_or_empty(r"[ABCD]*\d+", line[0])
             port_output = self.send_command(
                 f"show interfaces ethernet {port}", expect_command=False
             )
-            descr = re.findall(r"Name\s*(:\s*\S*)\W+Link", port_output)
+            desc = re.findall(r"Name\s*(:\s*\S*)\W+Link", port_output)
             result.append(
-                [
+                (
                     line[0],
                     line[2].lower() if line[1] == "Yes" else "admin down",
-                    descr[0][1:] if descr else "",
-                ]
+                    desc[0][1:] if desc else "",
+                )
             )
         return result
 

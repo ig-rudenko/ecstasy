@@ -1,6 +1,8 @@
 import re
 from time import sleep
 from functools import wraps
+from typing import Tuple, List, Literal
+
 import textfsm
 from .base import (
     BaseDevice,
@@ -8,7 +10,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable,
+    T_MACTable, MACType,
 )
 
 
@@ -155,10 +157,11 @@ class Qtech(BaseDevice):
         """
 
         output = self.send_command("show mac-address-table")
-        parsed = re.findall(
+        parsed: List[Tuple[str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+DYNAMIC\s+\S+\s+(\S+).*\n", output
         )
-        return [(int(vid), mac, "dynamic", port) for vid, mac, port in parsed]
+        mac_type: MACType = "dynamic"
+        return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -175,8 +178,8 @@ class Qtech(BaseDevice):
         """
 
         output = self.send_command(f"show mac-address-table interface ethernet {port}")
-        macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
-        return macs
+        macs: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})", output)
+        return [(int(vid), mac) for vid, mac in macs]
 
     @BaseDevice._lock
     @_validate_port()
@@ -222,7 +225,7 @@ class Qtech(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def set_port(self, port, status, save_config=True):
+    def set_port(self, port: str, status: Literal["up", "down"], save_config: bool = True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
 

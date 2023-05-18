@@ -1,6 +1,8 @@
 import re
 from time import sleep
 from functools import lru_cache, wraps
+from typing import Literal, List, Tuple
+
 import pexpect
 import textfsm
 from .base import (
@@ -171,8 +173,10 @@ class EdgeCore(BaseDevice):
         mac_table = re.findall(
             rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output
         )
+
+        mac_type: Literal["dynamic"] = "dynamic"
         return [
-            (int(vid), mac, "dynamic", re.sub(r"\s", "", port))
+            (int(vid), str(mac), mac_type, re.sub(r"\s", "", port))
             for port, mac, vid in mac_table
         ]
 
@@ -191,8 +195,8 @@ class EdgeCore(BaseDevice):
         """
 
         output = self.send_command(f"show mac-address-table interface {port}")
-        macs = re.findall(rf"({self.mac_format})\s+(\d+)", output)
-        return [m[::-1] for m in macs]
+        macs: List[Tuple[str, ...]] = re.findall(rf"({self.mac_format})\s+(\d+)", output)
+        return [(int(vid), mac) for mac, vid, in macs]
 
     @BaseDevice._lock
     @_validate_port()

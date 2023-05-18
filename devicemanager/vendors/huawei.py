@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 import pexpect
 import textfsm
@@ -13,7 +14,7 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable,
+    T_MACTable, MACType,
 )
 
 
@@ -273,12 +274,12 @@ class Huawei(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', '{type:static|dynamic|security}', '{port}'), ... ]```
         """
 
-        def format_type(type_: str) -> str:
+        def format_type(type_: str) -> MACType:
             if type_.lower() == "noaged":
                 return "static"
             if type_.lower() == "aging":
                 return "dynamic"
-            return type_
+            return "security"
 
         mac_str = self.send_command("display mac-address", expect_command=False)
         mac_table = re.findall(
@@ -454,7 +455,7 @@ class Huawei(BaseDevice):
 
     @BaseDevice._lock
     @_validate_port()
-    def set_port(self, port, status, save_config=True) -> str:
+    def set_port(self, port, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
 

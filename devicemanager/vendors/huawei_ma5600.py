@@ -4,7 +4,7 @@ import re
 import pexpect
 from time import sleep
 from functools import lru_cache
-from typing import Tuple
+from typing import Tuple, List
 from django.template.loader import render_to_string
 from .base import (
     BaseDevice,
@@ -840,7 +840,7 @@ class HuaweiMA5600T(BaseDevice):
         #     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
         #     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
         #   ---------------------------------------------------------------------
-        macs1 = re.findall(
+        macs1: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
             self.send_command(
                 f"display mac-address port {'/'.join(indexes)}", num_of_expect=6
@@ -852,16 +852,16 @@ class HuaweiMA5600T(BaseDevice):
         #   ------------------------------------------------------------------------------
         #       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
-        macs2 = re.findall(
+        macs2: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
             self.send_command(
                 f"display security bind mac {'/'.join(indexes)}", num_of_expect=6
             ),
         )
 
-        res = []
-        for m in macs1 + macs2:
-            res.append(m[::-1])
+        res: T_MACList = []
+        for mac, vid in macs1 + macs2:
+            res.append((int(vid), mac))
         return res
 
     @staticmethod
@@ -1016,12 +1016,12 @@ class HuaweiMA5600T(BaseDevice):
         return s
 
     @BaseDevice._lock
-    def get_interfaces(self) -> list:
-        pass
+    def get_interfaces(self) -> T_InterfaceList:
+        return []
 
     @BaseDevice._lock
-    def get_vlans(self) -> list:
-        pass
+    def get_vlans(self) -> T_InterfaceVLANList:
+        return []
 
     @BaseDevice._lock
     def set_description(self, port: str, desc: str) -> str:
