@@ -10,7 +10,7 @@ from .serializers import RingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager, TransportRingNormalizer
 from ..models import TransportRing
-from ..solutions import SolutionsPerformer, SolutionsPerformerError, Solutions
+from ..solutions import SolutionsPerformer, Solutions
 
 
 class ListTransportRingsAPIView(generics.ListAPIView):

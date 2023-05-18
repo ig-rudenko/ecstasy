@@ -64,12 +64,30 @@ class TransportRing(models.Model):
     solutions = models.JSONField(null=True, blank=True, default=list)
 
     def __setattr__(self, key, value):
+        """
+        Эта функция переопределяет метод setattr по умолчанию и преобразует ввод списка в строку JSON
+        для атрибута «vlans»
+
+        :param key: Имя устанавливаемого атрибута
+        :param value: Значение, которое присваивается атрибуту/ключу в объекте
+        """
         if key == "vlans":
             # Принимаем список в качестве входных данных и преобразует его в строку JSON
             self._vlans = json.dumps(value)
         super().__setattr__(key, value)
 
     def __getattribute__(self, item):
+        """
+        Эта функция переопределяет поведение по умолчанию при доступе к атрибуту объекта и преобразует
+        атрибут "vlans" из строки JSON в список целых чисел.
+
+        :param item: Строка, представляющая имя атрибута, к которому осуществляется доступ в классе.
+         В этом случае код проверяет, является ли запрашиваемый атрибут «vlans»
+        :return: Если элементом является «vlans», метод возвращает либо существующий список vlan, либо новый список
+         vlan, созданный путем синтаксического анализа строки JSON. Если элемент не является «vlans», метод возвращает
+         атрибут, используя поведение родительского класса по умолчанию.
+        """
+
         if item == "vlans":
             # Меняем поведение для vlans
             if isinstance(self.__dict__[item], list):
@@ -89,10 +107,19 @@ class TransportRing(models.Model):
         return f"TransportRing: {self.name} head: {head}, tail: {tail}"
 
     def set_status_in_progress(self):
+        """
+        Эта функция устанавливает статус кольца в «in progress», для того, чтобы применить решения.
+        """
         self.status = self.IN_PROCESS
         self.save(update_fields=["status"])
 
     def set_status_normal(self, clear_solutions: bool):
+        """
+        Эта функция устанавливает нормальный статус кольца и опционально очищает его предыдущие решения.
+
+        :param clear_solutions: clear_solutions — это логический параметр, определяющий, следует ли очищать поле решений
+         объекта.
+        """
         self.status = self.NORMAL
         update_fields = ["status"]
         if clear_solutions:
@@ -102,6 +129,9 @@ class TransportRing(models.Model):
         self.save(update_fields=update_fields)
 
     def set_status_deactivated(self):
+        """
+        Эта функция устанавливает статус объекта на «deactivated», это означает, что кольцо не будет использоваться
+        """
         self.status = self.DEACTIVATED
         self.save(update_fields=["status"])
 
