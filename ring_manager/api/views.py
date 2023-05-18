@@ -10,7 +10,7 @@ from .serializers import RingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager, TransportRingNormalizer
 from ..models import TransportRing
-from ..solutions import SolutionsPerformer, Solutions
+from ..solutions import SolutionsPerformer, Solutions, SolutionsPerformerError
 
 
 class ListTransportRingsAPIView(generics.ListAPIView):
@@ -141,36 +141,8 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         return Response(
             {
                 "points": PointRingSerializer(trm.ring_devs, many=True).data,
-                "solutions": [
-                    {
-                        "info": {
-                            "message": "Транспортное кольцо в данный момент развернуто, со "
-                            "стороны dev5 Убедитесь, что линия исправна, ведь "
-                            "дальнейшие действия развернут кольцо в штатное "
-                            "состояние"
-                        }
-                    },
-                    {
-                        "set_port_vlans": {
-                            "device": {"ip": "127.0.0.1", "name": "dev5"},
-                            "message": "Сначала будут удалены VLAN'ы {1, 2, 3} на "
-                            "оборудовании dev5 (127.0.0.1) на порту "
-                            "GE0/5/3",
-                            "port": "GE0/5/3",
-                            "status": "delete",
-                            "vlans": (1, 2, 3),
-                        }
-                    },
-                    {
-                        "set_port_status": {
-                            "device": {"ip": "127.0.0.2", "name": "dev3"},
-                            "message": "Переводим кольцо в штатное состояние",
-                            "port": "GE0/3/4",
-                            "status": "up",
-                        }
-                    },
-                ],
-                "safeSolutions": False,
+                "solutions": ring.solutions,
+                "safeSolutions": solution_manager.has_only_safe_solutions,
             }
         )
 
@@ -187,16 +159,16 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         if ring.status == ring.IN_PROCESS:
             return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
 
-        # ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
-        # try:
-        #     # Инициализируем исполнителя решений для кольца
-        #     performer = SolutionsPerformer(ring=ring)
-        #     performed_solutions = performer.perform_all()  # Выполняем решения
-        #
-        # except SolutionsPerformerError:
-        #     # Обязательно надо вернуть статус кольца в нормальное состояние
-        #     ring.set_status_normal(clear_solutions=True)
-        #     raise  # Продолжаем ошибку
+        ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
+        try:
+            # Инициализируем исполнителя решений для кольца
+            performer = SolutionsPerformer(ring=ring)
+            performed_solutions = performer.perform_all()  # Выполняем решения
+
+        except SolutionsPerformerError:
+            # Обязательно надо вернуть статус кольца в нормальное состояние
+            ring.set_status_normal(clear_solutions=True)
+            raise  # Продолжаем ошибку
 
         # Смотрим статус кольца
         trm = TransportRingManager(ring=ring)
@@ -207,38 +179,7 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
 
         return Response(
             {
-                "solutions": [
-                    {
-                        "info": {
-                            "message": "Транспортное кольцо в данный момент развернуто, со "
-                            "стороны dev5 Убедитесь, что линия исправна, ведь "
-                            "дальнейшие действия развернут кольцо в штатное "
-                            "состояние"
-                        }
-                    },
-                    {
-                        "set_port_vlans": {
-                            "device": {"ip": "127.0.0.1", "name": "dev5"},
-                            "message": "Сначала будут удалены VLAN'ы {1, 2, 3} на "
-                            "оборудовании dev5 (127.0.0.1) на порту "
-                            "GE0/5/3",
-                            "perform_status": "reversed",
-                            "port": "GE0/5/3",
-                            "status": "delete",
-                            "vlans": (1, 2, 3),
-                        }
-                    },
-                    {
-                        "set_port_status": {
-                            "device": {"ip": "127.0.0.2", "name": "dev3"},
-                            "message": "Переводим кольцо в штатное состояние",
-                            "perform_status": "fail",
-                            "port": "GE0/3/4",
-                            "status": "up",
-                            "error": "Недоступно оборудование"
-                        }
-                    },
-                ],
+                "solutions": performed_solutions,
                 "points": points,
             }
         )
