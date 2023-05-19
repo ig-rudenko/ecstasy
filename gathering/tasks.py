@@ -4,7 +4,7 @@ from django.core.cache import cache
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from ecstasy_project.celery import app
 from check.models import Devices
-from .collectors import MacAddressTableGather, ConfigurationGather
+from .collectors import MacAddressTableGather, ConfigurationGather, ConfigFileError
 from .config_storage import LocalConfigStorage
 
 
@@ -74,10 +74,14 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
 
     def thread_task(self, obj: Devices, **kwargs):
         storage = LocalConfigStorage(obj)
-        gather = ConfigurationGather(storage=storage)
-        gather.delete_outdated_configs()
-        status = gather.collect_config_file()
-        print(f"configuration_gather_task {status} {obj}")
+        try:
+            gather = ConfigurationGather(storage=storage)
+            gather.delete_outdated_configs()
+            status = gather.collect_config_file()
+            print(f"configuration_gather_task {status} {obj}")
+        except ConfigFileError as error:
+            print(f"configuration_gather_task {error.message} {obj}")
+
         self.update_state()
 
 

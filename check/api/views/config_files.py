@@ -227,5 +227,3 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
 
         except ConfigFileError as error:
             return Response({"error": error.message}, status=500)
-
-        return Response(status=status)
