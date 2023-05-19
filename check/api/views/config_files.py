@@ -10,7 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from check import models
 from check.permissions import profile_permission
 
-from gathering.collectors import ConfigurationGather
+from gathering.collectors import ConfigurationGather, ConfigFileError
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter
 from ..serializers import DevicesSerializer, ConfigFileSerializer
@@ -130,12 +130,8 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
         """
 
         # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list(
-            "id", flat=True
-        )
-        return models.Devices.objects.filter(group_id__in=group_ids).select_related(
-            "group"
-        )
+        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+        return models.Devices.objects.filter(group_id__in=group_ids).select_related("group")
 
     def get(self, request, **kwargs):
         """
@@ -213,10 +209,23 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
         storage = self.get_storage(device_name)
 
         gather = ConfigurationGather(storage)
-        if gather.collect_config_file():
-            # Файл конфигурации был добавлен
-            status = 201
-        else:
-            # Файл конфигурации не потребовалось добавлять
-            status = 200
+        try:
+            if gather.collect_config_file():
+                # Файл конфигурации был добавлен
+                return Response(
+                    {"status": "Была получена новая конфигурация"}
+                )
+            else:
+                # Файл конфигурации не потребовалось добавлять
+                return Response(
+                    {
+                        "status": "Текущая конфигурация не отличается от последней сохраненной,"
+                        " так что файл не был создан"
+                    },
+                    status=200
+                )
+
+        except ConfigFileError as error:
+            return Response({"error": error.message}, status=500)
+
         return Response(status=status)

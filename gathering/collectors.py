@@ -1,6 +1,8 @@
 import hashlib
 import re
 import datetime
+import shutil
+
 import orjson
 import pathlib
 
@@ -47,6 +49,8 @@ class MacAddressTableGather:
 
                 # Если в сеансе есть функция с именем normalize_interface_name,
                 # установите атрибут normalize_interface для этой функции.
+                # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.
+                # Например - `1/1` и `1`, `26(C)` и `26(F)`.
                 if hasattr(session, "normalize_interface_name"):
                     self.normalize_interface = session.normalize_interface_name
 
@@ -76,6 +80,8 @@ class MacAddressTableGather:
 
         # Если сессия требует интерфейсов для работы
         if hasattr(session, "interfaces"):
+            # Используется для MA5600T, где сбор интерфейсов происходит по snmp, а для получения таблицы MAC адресов
+            # необходимо по очереди перебрать все интерфейсы
             session.interfaces = [(line.name, line.status, line.desc) for line in self.interfaces]
         if hasattr(session, "get_mac_table"):
             return session.get_mac_table() or []
@@ -243,6 +249,11 @@ class MacAddressTableGather:
         return count
 
 
+class ConfigFileError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+
+
 class ConfigurationGather:
     def __init__(self, storage: ConfigStorage):
 
@@ -260,13 +271,14 @@ class ConfigurationGather:
         for file in self.files[:-10]:
             self.storage.delete(file.name)
 
-    def save_by_content(self, current_config: Union[str, bytes]) -> bool:
+    def _save_by_content(self, current_config: Union[str, bytes], file_format: str) -> bool:
         """
         ## Берет текущую конфигурацию, удаляет все пробелы, хеширует ее и сравниваем с последней конфигурацией.
         Если они совпадают, то возвращает False.
         Если они разные, то сохраняет текущую конфигурацию в хранилище и возвращает True.
 
         :param current_config: [str, bytes] - текущая конфигурация устройства
+        :param file_format: Формат файла `.txt`, `.zip`, или пустая строка
         :return: Правда или ложь.
         """
 
@@ -286,8 +298,8 @@ class ConfigurationGather:
                 with self.storage.open(self.last_config_file.name, mode=read_mode) as file:
                     # Чтение последнего файла конфигурации.
                     last_config = file.read()
-            # Резервный вариант, когда файл не в формате ascii.
-            except UnicodeError:
+            # Резервный вариант, когда файл не в формате ascii или отсутствует.
+            except (UnicodeError, FileNotFoundError):
                 last_config: str = ""
 
         if isinstance(last_config, str):
@@ -304,20 +316,31 @@ class ConfigurationGather:
             return False
 
         # Создание нового имени файла для нового файла конфигурации.
-        new_file_name = "config_file_" + current_config_hash[:15] + ".txt"
+        new_file_name = "config_file_" + current_config_hash[:15] + file_format
 
-        self.storage.add(new_file_name, file_content=unformatted_config)
+        self.storage.add(new_file_name=new_file_name, file_content=unformatted_config)
 
         return True
 
-    def save_config(self, new_config) -> bool:
+    def save_config(self, new_config: Union[str, pathlib.Path]) -> bool:
         """
         Сохраняем конфигурацию в зависимости от типа (str или pathlib.Path)
         """
 
         # Если файл представлен в виде строки
         if isinstance(new_config, str):
-            return self.save_by_content(new_config)
+            return self._save_by_content(current_config=new_config, file_format=".txt")
+
+        file_format = ""  # По умолчанию без формата
+
+        # Если конфигурация представлена в виде папки, то делаем из неё архив и удаляем всю папку
+        if isinstance(new_config, pathlib.Path) and new_config.is_dir():
+            shutil.make_archive(new_config, "zip", new_config)  # Создаем архив
+            new_config_folder = new_config
+            new_config = new_config.parent / f"{new_config.name}.zip"  # Меняем путь на созданный архив
+            shutil.rmtree(new_config_folder, ignore_errors=True)  # Удаляем папку
+
+            file_format = ".zip"
 
         # Если файл был скачан, то используем его путь
         if isinstance(new_config, pathlib.Path) and new_config.is_file():
@@ -329,7 +352,7 @@ class ConfigurationGather:
             new_config.unlink()
 
             # Обрабатываем содержимое файла
-            return self.save_by_content(file_data)
+            return self._save_by_content(current_config=file_data, file_format=file_format)
 
         return False
 
@@ -341,8 +364,10 @@ class ConfigurationGather:
         with self.storage.device.connect(make_session_global=False) as session:
             if hasattr(session, "get_current_configuration"):
                 current_config = session.get_current_configuration(
-                    folder_path=self.storage._storage
+                    local_folder_path=self.storage.storage_path()
                 )
+                if current_config is None:
+                    raise ConfigFileError("Файл конфигурации не удалось получить!")
             else:
                 return False
 

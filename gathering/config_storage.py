@@ -48,6 +48,10 @@ class ConfigStorage(ABC):
         self.device = device
 
     @abstractmethod
+    def storage_path(self):
+        pass
+
+    @abstractmethod
     def check_storage(self) -> bool:
         """
         ## Проверяет, инициализирует или создает хранилище для оборудования.
@@ -241,6 +245,9 @@ class LocalConfigStorage(ConfigStorage):
         self._storage = pathlib.Path()
         self.check_storage()
 
+    def storage_path(self):
+        return self._storage
+
     def check_storage(self) -> bool:
         # Проверяем наличие переменной
         if not settings.CONFIG_STORAGE_DIR or not isinstance(settings.CONFIG_STORAGE_DIR, pathlib.Path):
@@ -281,10 +288,16 @@ class LocalConfigStorage(ConfigStorage):
         # Если передали только путь к файлу
         elif not file_content and file_path:
             new_file_path = self._storage / new_file_name
+
+            # Если это один и тот же файл
+            if file_path == new_file_path:
+                return True
+
             # Открываем переданный файл (чтение) и новый (запись)
             with file_path.open("rb") as source_file, new_file_path.open("wb") as dest_file:
                 # Копируем содержимое файла
                 shutil.copyfileobj(source_file, dest_file)
+            file_path.unlink()  # И удаляем старый файл
             return True
 
         # Выбираем флаги для записи

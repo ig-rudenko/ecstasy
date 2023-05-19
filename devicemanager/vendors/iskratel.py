@@ -1,7 +1,11 @@
+import pathlib
 import re
+import socket
 from functools import lru_cache
 from time import sleep
-from typing import Tuple, List
+from typing import Tuple, List, Optional
+
+from django.conf import settings as django_settings
 
 from .base import (
     BaseDevice,
@@ -64,7 +68,7 @@ class IskratelControl(BaseDevice):
     def set_description(self, port: str, desc: str) -> str:
         pass
 
-    def get_port_info(self, port: str) -> str:
+    def get_port_info(self, port: str) -> dict:
         pass
 
     def get_port_type(self, port: str) -> str:
@@ -273,16 +277,16 @@ class IskratelMBan(BaseDevice):
         :return: Информация о порте либо ```"Неверный порт!"```
         """
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None:
             return {"type": "error", "detail": "Неверный порт!"}
 
         if port_type == "fasteth":
-            cmd = f"show interface fasteth{port}"
+            cmd = f"show interface fasteth{port_number}"
             before_catch = r"\[Enabled Connected Bridging\]"
 
         else:  # Если указан физический adsl порт
-            cmd = f"show dsl port {port} detail"
+            cmd = f"show dsl port {port_number} detail"
             before_catch = None
 
         output = self.send_command(cmd, expect_command=False, before_catch=before_catch)
@@ -329,14 +333,14 @@ class IskratelMBan(BaseDevice):
 
         macs = []  # Итоговый список маков
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None:
             return []
 
         # Для fasteth портов
         if port_type == "fasteth":
             output = self.send_command(
-                f"show bridge mactable interface fasteth{port}", expect_command=False
+                f"show bridge mactable interface fasteth{port_number}", expect_command=False
             )
             macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
             return macs
@@ -344,7 +348,7 @@ class IskratelMBan(BaseDevice):
         # Для dsl портов
         for sp in self._get_service_ports:  # смотрим маки на сервис портах
             output = self.send_command(
-                f"show bridge mactable interface dsl{port}:{sp}", expect_command=False
+                f"show bridge mactable interface dsl{port_number}:{sp}", expect_command=False
             )
             macs.extend(re.findall(rf"(\d*)\s+({self.mac_format})", output))
 
@@ -352,7 +356,7 @@ class IskratelMBan(BaseDevice):
 
     @staticmethod
     @lru_cache()
-    def validate_port(port: str) -> (Tuple[str, int], Tuple[None, None]):
+    def validate_port(port: str) -> Tuple[Optional[str], Optional[int]]:
         """
         ## Проверяем правильность полученного порта
 
@@ -384,11 +388,11 @@ class IskratelMBan(BaseDevice):
             return "fasteth", int(port[7:])
 
         # Для портов типа: 12, port1, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
-        port = re.findall(
+        port_slice: List[Tuple[str, str, str, str]] = re.findall(
             r"^(\d+)$|^port(\d+)$|^ISKRATEL.+/(\d+)$|^dsl(\d+):\S+$", port
         )
-        if port and any(port[0]):
-            return "dsl", int("".join(port[0]))  # Возвращаем номер порта
+        if port_slice and any(port_slice[0]):
+            return "dsl", int("".join(port_slice[0]))  # Возвращаем номер порта
 
         return None, None
 
@@ -404,16 +408,16 @@ class IskratelMBan(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None:
             return "Неверный порт!"
 
         s1 = self.send_command(
-            f"set dsl port {port} port_equp unequipped", expect_command=False
+            f"set dsl port {port_number} port_equp unequipped", expect_command=False
         )
         sleep(1)
         s2 = self.send_command(
-            f"set dsl port {port} port_equp equipped", expect_command=False
+            f"set dsl port {port_number} port_equp equipped", expect_command=False
         )
 
         return s1 + s2
@@ -430,13 +434,13 @@ class IskratelMBan(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None:
             return "Неверный порт!"
 
         # Меняем состояние порта
         return self.send_command(
-            f'set dsl port {port} port_equp {"equipped" if status == "up" else "unequipped"}',
+            f'set dsl port {port_number} port_equp {"equipped" if status == "up" else "unequipped"}',
             expect_command=False,
         )
 
@@ -497,7 +501,7 @@ class IskratelMBan(BaseDevice):
         :return: Вывод команды смены описания
         """
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None:
             return "Неверный порт!"
 
@@ -506,7 +510,7 @@ class IskratelMBan(BaseDevice):
         if len(desc) > 32:
             return "Max length:32"
 
-        self.send_command(f"set dsl port {port} name {desc}", expect_command=False)
+        self.send_command(f"set dsl port {port_number} name {desc}", expect_command=False)
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
@@ -520,25 +524,25 @@ class IskratelMBan(BaseDevice):
         :return: Статус изменения профиля либо "Неверный порт!"
         """
 
-        port_type, port = self.validate_port(port)
+        port_type, port_number = self.validate_port(port)
         if port_type is None or port_type != "dsl":
             return "Неверный порт!"
 
         output = self.send_command(
-            f"set dsl port {port} profile {profile_index}", expect_command=False
+            f"set dsl port {port_number} profile {profile_index}", expect_command=False
         )
         if "According to the attached ATM QoS" in output:
             # Если возникает ошибка:
             #   Profile can't be changed. According to the attached ATM QoS profile
             #   DSL downstream rate can't be less than 21024 kbits/s!
             no_policing = self.send_command(
-                f"set atm vc tp dsl{port}:1_33 qos_profile UBR:No-policing",
+                f"set atm vc tp dsl{port_number}:1_33 qos_profile UBR:No-policing",
                 expect_command=False,
             )
             if "successfully updated" in no_policing:
                 # Если ограничение снято, снова меняем профиль
                 output = self.send_command(
-                    f"set dsl port {port} profile {profile_index}", expect_command=False
+                    f"set dsl port {port_number} profile {profile_index}", expect_command=False
                 )
 
         return output
@@ -556,7 +560,24 @@ class IskratelMBan(BaseDevice):
         # > show system info
         pass
 
-    def get_current_configuration(self, *args, **kwargs):
-        config = self.send_command("show system config", expect_command=False)
-        return config.strip()
+    def get_current_configuration(self, local_folder_path: pathlib.Path) -> Optional[pathlib.Path]:
+        """
+        Эта функция загружает с FTP-сервера папку конфигурации, соответствующую определенному шаблону,
+         и возвращает ее локальный путь.
 
+        :param local_folder_path: Параметр local_folder_path представляет собой объект pathlib.Path, представляющий
+         локальный каталог, в котором будет сохранена загруженная папка конфигурации
+        :return: объект `pathlib.Path`, представляющий локальный каталог, в который были загружены файлы конфигурации.
+         Если функция встречает исключение socket.timeout, она возвращает None.
+        """
+
+        ftp_collector = django_settings.FTP_COLLECTOR_CLASS
+
+        folder_pattern = re.compile(r"MY\S+77")
+        try:
+            ftp = ftp_collector(host=self.ip, timeout=30)
+            ftp.login(username=self.auth["login"], password=self.auth["password"])
+            config_folder = ftp.download_folder(folder_or_pattern=folder_pattern, local_dir=local_folder_path)
+        except socket.timeout:
+            return None
+        return config_folder

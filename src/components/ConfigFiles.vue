@@ -219,26 +219,24 @@ export default defineComponent({
             }
         )
 
-        if (response.status === 201) {
+        const data = await response.json()
+        if (response.ok) {
           await this.getFiles()
-          this.collectNew.display = true
           this.collectNew.status = "success"
-          this.collectNew.text = "Была получена новая конфигурация"
-
-        } else if (response.status === 200) {
-          this.collectNew.display = true
-          this.collectNew.status = "success"
-          this.collectNew.text = "Текущая конфигурация не отличается от последней сохраненной, так что файл не был создан"
+          this.collectNew.text = data.status
+        } else {
+          this.collectNew.status = "error"
+          this.collectNew.text = data.error
         }
 
       } catch (error) {
         console.log(error)
-        this.collectNew.display = true
         this.collectNew.status = "error"
         this.collectNew.text = "Ошибка во время сбора новой конфигурации"
         await this.getFiles()
       }
 
+      this.collectNew.display = true
       this.collectNew.active = false
 
     },
@@ -279,6 +277,8 @@ export default defineComponent({
     },
 
     async toggleFileDisplay(file) {
+      if (file.size > 1024 * 1024) return
+
       if (!file.content) {
         let content = await this.getFile(file)
         if (!content) return

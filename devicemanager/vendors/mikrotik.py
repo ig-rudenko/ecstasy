@@ -2,7 +2,7 @@ from datetime import datetime
 import pathlib
 import re
 import time
-from typing import Tuple, List, Literal
+from typing import Tuple, List, Literal, Any, Optional, Dict
 
 import pysftp
 import pexpect
@@ -28,13 +28,13 @@ class MikroTik(BaseDevice):
         self.model = self.find_or_empty(r"model: (\S+)", routerboard)
 
         # {"bridge_name": {"vlans": ['10', '20']}}
-        self._bridges = {}
+        self._bridges: Dict[str, Dict[str, List[str]]] = {}
 
         # {"vlan10": '10', "vlan20": '20'}
-        self._vlans_interfaces = {}
+        self._vlans_interfaces: Dict[str, str] = {}
 
         # {"ether1": {"bridge": "bridge_name"}, "ether2": {"bridge": "bridge_name"}}
-        self._ether_interfaces = {}
+        self._ether_interfaces: Dict[str, Dict[str, str]] = {}
 
         self._get_vlans_bridges()
         self._get_bridges_interfaces()
@@ -44,13 +44,18 @@ class MikroTik(BaseDevice):
 
         for line in re.split(r"(?<=\S)\s*(?=\d+\s+[RX]*\s+)", output):
             line = line.replace("\r\n", "")
-            match = BaseDevice.find_or_empty(
+
+            match: List[Tuple[str, str, str]] = re.findall(
                 r"\d+\s+R*\s+name=(\S+) .+vlan-id=(\d+) interface=(\S+)", line
             )
             if not match:
                 continue
-            vlan_name, vlan_id, bridge_name = match
+            vlan_name, vlan_id, bridge_name = match[0]
+
+            # {"vlan10": '10'}
             self._vlans_interfaces[vlan_name] = vlan_id
+
+            # {"bridge_name": {"vlans": ['10', '20']}}
             if not self._bridges.get(bridge_name):
                 self._bridges[bridge_name] = {"vlans": [vlan_id]}
             else:
@@ -62,27 +67,32 @@ class MikroTik(BaseDevice):
         for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+interface)", output):
             line = line.replace("\r\n", "")
 
-            match = BaseDevice.find_or_empty(
+            match: List[Tuple[str, str]] = re.findall(
                 r"\d+\s+[XIDH]*\s+interface=(\S+) bridge=(\S+)", line
             )
             if not match:
                 continue
 
-            interface_name, bridge_name = match
-            if not self._vlans_interfaces.get(interface_name):
-                self._ether_interfaces[interface_name] = {"bridge": bridge_name}
-                continue
+            interface_name, bridge_name = match[0]
 
-            if not self._bridges.get(bridge_name):
-                self._bridges[bridge_name] = {"vlans": []}
-            self._bridges.get(bridge_name)["vlans"].append(
-                self._vlans_interfaces.get(interface_name)
-            )
+            # {"<interface_name>": '10', "vlan20": '20'}
+            if not self._vlans_interfaces.get(interface_name):
+
+                # {"<interface_name>": {"bridge": "bridge_name"} }
+                self._ether_interfaces[interface_name] = {"bridge": bridge_name}
+
+            else:
+                # {"<bridge_name>": {"vlans": ['10', '20']}}
+                if not self._bridges.get(bridge_name):
+                    self._bridges[bridge_name] = {"vlans": []}
+                self._bridges[bridge_name]["vlans"].append(
+                    self._vlans_interfaces[interface_name]
+                )
 
     def send_command(
         self,
         command: str,
-        before_catch: str = None,
+        before_catch: Optional[str] = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -101,7 +111,7 @@ class MikroTik(BaseDevice):
             command_linesep,
         )
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта MikroTik
 
@@ -167,16 +177,18 @@ class MikroTik(BaseDevice):
         interfaces_with_vlans = []
 
         self.lock = False
-        interfaces = self.get_interfaces()
+        interfaces: T_InterfaceList = self.get_interfaces()
         self.lock = True
         for line in interfaces:
-            bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge")
+            bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge", "")
+            bridge = self._bridges.get(bridge_name, {"vlans": []})
+            vlans_list = bridge.get("vlans", [])
             interfaces_with_vlans.append(
                 (
                     line[0],
                     line[1],
                     line[2],
-                    self._bridges.get(bridge_name, {}).get("vlans", []),
+                    vlans_list,
                 )
             )
         return interfaces_with_vlans
@@ -264,14 +276,16 @@ class MikroTik(BaseDevice):
         # Идентификатор VLAN получается из словаря под названием «_bridges», используя имя `bridge` в качестве ключа.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
             line = line.replace("\r\n", "")
-            mac_line: List[Tuple[str, str]] = BaseDevice.find_or_empty(
+            mac_line: Tuple[str, str] = BaseDevice.find_or_empty(
                 rf"mac-address=({self.mac_format}) .* bridge=(\S+)", line
             )
             if not mac_line:
                 continue
-            mac_address, bridge = mac_line
+            mac_address, bridge_name = mac_line
+            bridge = self._bridges.get(bridge_name, {})
+            vlan: str = bridge.get("vlans", ["1"])[0]
             macs.append(
-                (int(self._bridges.get(bridge, {}).get("vlans", [""])[0]), mac_address)
+                (int(vlan), mac_address)
             )
         return macs
 
@@ -352,15 +366,15 @@ class MikroTik(BaseDevice):
         return "COPPER"
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
-    def get_current_configuration(self, folder_path: pathlib.Path) -> pathlib.Path:
+    def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
 
         config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
 
@@ -379,10 +393,10 @@ class MikroTik(BaseDevice):
             password=self.auth["password"],
             cnopts=cnopts,
         ) as session:
-            path = str((folder_path / config_file_name).absolute())
+            path = str((local_folder_path / config_file_name).absolute())
             # Приведенный выше код создает резервную копию файла конфигурации.
             session.get(config_file_name, path)
 
         self.send_command(f"file remove {config_file_name}")
 
-        return folder_path / config_file_name
+        return local_folder_path / config_file_name
