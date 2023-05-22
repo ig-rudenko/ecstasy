@@ -327,6 +327,7 @@ def get_vlan(request):
             empty_ports=request.GET.get("ep"),
             only_admin_up=request.GET.get("ad"),
             find_device_pattern=vlan_traceroute_settings.find_device_pattern,
+            double_check=request.GET.get("double-check") == "true"
         )
 
     if not result:  # Если поиск не дал результатов

@@ -36,8 +36,9 @@ export default {
       vlanTracerouteOptions: {
         adminDownPorts: false,
         showEmptyPorts: false,
+        doubleCheckVlan: true,
       },
-      
+
       // Базовая конфигурация для сети vis.js.
       baseVisOptions: {
           height: '900',
@@ -283,7 +284,8 @@ export default {
       try {
         let url = '/tools/ajax/vlantraceroute?vlan=' + this.inputVlan +
             '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
-            '&ad=' + this.vlanTracerouteOptions.adminDownPorts
+            '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
+            '&double-check=' + this.vlanTracerouteOptions.doubleCheckVlan
         let resp = await fetch(
           url,
           {

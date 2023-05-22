@@ -68,6 +68,15 @@
       </label>
     </div>
 
+    <div class="form-check form-switch py-1">
+      <input v-model="vlanTracerouteOptions.doubleCheckVlan"
+             class="form-check-input" type="checkbox" role="switch" id="double-check-vlan"
+      >
+      <label class="form-check-label text-light" for="empty-ports">
+          Двухстороннее соответствие VLAN на соседних портах
+      </label>
+    </div>
+
 </div>
 
 <div v-show="tracerouteMode === 'mac'">

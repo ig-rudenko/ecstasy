@@ -1,9 +1,11 @@
+from functools import lru_cache
+
 import orjson
 from re import findall, sub, IGNORECASE, compile, escape
 from django.contrib.auth.models import User
 
 from check.models import Devices, InterfacesComments
-from devicemanager.vendors.base import range_to_numbers
+from devicemanager.device import Interfaces
 from .models import DevicesInfo, DescNameFormat
 
 
@@ -90,14 +92,13 @@ class Finder:
                             "Interface": line["Interface"],
                             "Description": line["Description"],
                             "Comments": comments,
-                            "SavedTime": device.interfaces_date.strftime(
-                                "%d.%m.%Y %H:%M:%S"
-                            ),
+                            "SavedTime": device.interfaces_date.strftime("%d.%m.%Y %H:%M:%S"),
                         }
                     )
 
         return result
 
+    @lru_cache(maxsize=200)
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
 
@@ -124,6 +125,7 @@ class Finder:
         empty_ports: str,
         only_admin_up: str,
         find_device_pattern: str,
+        double_check: bool = False,
     ):
         """
         ## Осуществляет поиск VLAN'ов по портам оборудования.
@@ -137,13 +139,12 @@ class Finder:
         :param result:  Итоговый список
         :param empty_ports:  Включать пустые порты в анализ? ('true', 'false')
         :param only_admin_up:  Включать порты со статусом admin down в анализ? ('true', 'false')
-        :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта
+        :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта.
+        :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
         """
 
         if not self.desc_name_list:
             self.desc_name_list = list(DescNameFormat.objects.all())
-
-        admin_status = ""  # Состояние порта
 
         passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
         try:
@@ -151,47 +152,47 @@ class Finder:
         except DevicesInfo.DoesNotExist:
             return
 
-        interfaces = orjson.loads(dev.vlans or "[]")
+        interfaces = Interfaces(orjson.loads(dev.vlans or "[]"))
         if not interfaces:
             return
 
-        for line in interfaces:
-            vlans_list = set()  # Список VLAN'ов на порту
-
-            for v in line["VLAN's"]:
-                if isinstance(v, int):
-                    vlans_list.add(v)
-
-                elif isinstance(v, str) and v.isdigit():
-                    vlans_list.add(int(v))
-                    continue
-
-                else:
-                    if v in ("trunk", "access", "hybrid", "dot1q-tunnel"):
-                        continue
-                    vlans_list.update(range_to_numbers(str(v)))
-
-            if vlan_to_find not in vlans_list:
+        for interface in interfaces:
+            if vlan_to_find not in interface.vlan:
                 # Пропускаем несоответствующие порты
                 continue
 
             # Ищем в описании порта следующий узел сети
             next_device = findall(
-                find_device_pattern, self.reformatting(line["Description"])
+                find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
             )
             # Приводим к единому формату имя узла сети
             next_device = next_device[0] if next_device else ""
 
             # Пропускаем порты admin down, если включена опция only admin up
             if only_admin_up == "true":
-                admin_status = (
-                    "down"
-                    if "down" in str(line.get("Admin Status")).lower()
-                    or "dis" in str(line.get("Admin Status")).lower()
-                    or "admin down" in str(line.get("Status")).lower()
-                    or "dis" in str(line.get("Status")).lower()
-                    else "up"
-                )
+                admin_status = "down" if interface.is_admin_down else "up"
+            else:
+                admin_status = ""
+
+            # Проверяем, имеется ли такой же VLAN на другом оборудовании в сторону текущего
+            if double_check and next_device:  # Если есть следующее оборудование
+                try:
+                    dev = DevicesInfo.objects.get(dev__name=next_device)
+                except DevicesInfo.DoesNotExist:
+                    return
+
+                next_dev_interfaces = Interfaces(orjson.loads(dev.vlans or "[]"))
+                if not next_dev_interfaces:
+                    return
+
+                for next_dev_interface in next_dev_interfaces:
+                    if vlan_to_find in next_dev_interface.vlan and findall(
+                        device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
+                    ):
+                        # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
+                        break
+                else:
+                    next_device = ""
 
             # Создаем данные для visual map
             if next_device:
@@ -201,18 +202,18 @@ class Finder:
                         device,  # Устройство (название узла)
                         next_device,  # Сосед (название узла)
                         10,  # Толщина линии соединения
-                        f'{device} ({line["Interface"]}) --- {line["Description"]}',  # Описание линии соединения
+                        f"{device} ({interface.name}) --- {interface.desc}",  # Описание линии соединения
                         admin_status,
                     )
                 )
             # Порт с описанием
-            elif line["Description"]:
+            elif interface.desc:
                 result.append(
                     (
                         device,  # Устройство (название узла)
-                        f'{device} d:({line["Description"]})',  # Порт (название узла)
+                        f"{device} d:({interface.desc})",  # Порт (название узла)
                         10,  # Толщина линии соединения
-                        line["Interface"],  # Описание линии соединения
+                        interface.name,  # Описание линии соединения
                         admin_status,
                     )
                 )
@@ -221,9 +222,9 @@ class Finder:
                 result.append(
                     (
                         device,  # Устройство (название узла)
-                        f'{device} p:({line["Interface"]})',  # Порт (название узла)
+                        f"{device} p:({interface.name})",  # Порт (название узла)
                         5,  # Толщина линии соединения
-                        line["Interface"],  # Описание линии соединения
+                        interface.name,  # Описание линии соединения
                         admin_status,
                     )
                 )
