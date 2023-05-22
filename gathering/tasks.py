@@ -1,3 +1,4 @@
+import pexpect.exceptions
 from celery.result import AsyncResult
 from django.core.cache import cache
 
@@ -28,10 +29,14 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
 
     def thread_task(self, obj: Devices, **kwargs):
-        gather = MacAddressTableGather(obj)
-        gather.clear_old_records()
-        print(f"{obj} bulk_create: {gather.bulk_create()}")
-        self.update_state()
+        try:
+            gather = MacAddressTableGather(obj)
+            gather.clear_old_records()
+            print(f"{obj} bulk_create: {gather.bulk_create()}")
+        except pexpect.exceptions.ExceptionPexpect as error:
+            print(f"{obj} --> {error}")
+        finally:
+            self.update_state()
 
 
 # Регистрация задачи в приложении Celery.
