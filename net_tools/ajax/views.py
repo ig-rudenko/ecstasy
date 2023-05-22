@@ -1,3 +1,5 @@
+from typing import List
+
 import orjson
 from re import findall
 from concurrent.futures import ThreadPoolExecutor
@@ -12,9 +14,9 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
-from ..finder import Finder
-from ..models import VlanName, DevicesForMacSearch
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
+from ..finder import Finder, VlanTraceroute, VlanTracerouteResult
+from ..models import VlanName, DevicesForMacSearch
 from ..tasks import interfaces_scan, check_scanning_status
 
 
@@ -173,100 +175,105 @@ def get_vlan_desc(request) -> JsonResponse:
         return JsonResponse({})
 
 
-def create_nodes(result: list, net: Network, show_admin_down_ports: str):
+def create_nodes(result: List[VlanTracerouteResult], net: Network, show_admin_down_ports: bool):
     """
     ## Создает элементы и связи между ними для карты VLAN
     """
 
     for e in result:
-        src = e[0]
-        dst = e[1]
-        w = e[2]
-        desc = e[3]
-        admin_status = e[4]
 
         # По умолчанию зеленый цвет, форма точки
         src_gr = 3
         dst_gr = 3
         src_shape = "dot"
         dst_shape = "dot"
-        src_label = src
-        dst_label = dst
+        src_label = e.node
+        dst_label = e.next_node
+        line_width = e.line_width
 
         # ASW: желтый
-        if "ASW" in str(src):
+        if "ASW" in e.node:
             src_gr = 1
-        if "ASW" in str(dst):
+        if "ASW" in e.next_node:
             dst_gr = 1
 
         # SSW: голубой
-        if "SSW" in str(src):
+        if "SSW" in e.node:
             src_gr = 0
-        if "SSW" in str(dst):
+        if "SSW" in e.next_node:
             dst_gr = 0
 
         # Порт: зеленый, форма треугольника - △
-        if "-->" in str(src).lower():
+        if "-->" in e.node.lower():
             src_gr = 3
             src_shape = "triangle"
-            src_label = src.split("-->")[1]
-        if "-->" in str(dst).lower():
+            src_label = e.node.split("-->")[1]
+        if "-->" in e.next_node.lower():
             dst_gr = 3
             dst_shape = "triangle"
-            dst_label = src.split("-->")[1]
+            dst_label = e.node.split("-->")[1]
 
         # DSL: оранжевый, форма квадрата - ☐
-        if "DSL" in str(src):
+        if "DSL" in e.node:
             src_gr = 6
             src_shape = "square"
-        if "DSL" in str(dst):
+        if "DSL" in e.next_node:
             dst_gr = 6
             dst_shape = "square"
 
         # CORE: розовый, форма ромба - ◊
-        if "SVSL-99-GP15-SSW" in src or "SVSL-99-GP15-SSW" in dst:
+        if "SVSL-99-GP15-SSW" in e.node or "SVSL-99-GP15-SSW" in e.next_node:
             src_gr = 4
             src_shape = "diamond"
-        if "core" in str(src).lower() or "-cr" in str(dst).lower():
+        if "core" in e.node.lower() or "-cr" in e.next_node.lower():
             src_gr = 4
             src_shape = "diamond"
-        if "core" in str(dst).lower() or "-cr" in str(src).lower():
+        if "core" in e.next_node.lower() or "-cr" in e.node.lower():
             dst_gr = 4
             dst_shape = "diamond"
 
         # Пустой порт: светло-зеленый, форма треугольника - △
-        if "p:(" in str(src).lower():
+        if "p:(" in e.node.lower():
             src_gr = 9
             src_shape = "triangle"
-            src_label = src.split("p:(")[1][:-1]
-        if "p:(" in str(dst).lower():
+            src_label = e.node.split("p:(")[1][:-1]
+        if "p:(" in e.next_node.lower():
             dst_gr = 9
             dst_shape = "triangle"
-            dst_label = dst.split("p:(")[1][:-1]
+            dst_label = e.next_node.split("p:(")[1][:-1]
 
         # Только описание: зеленый
-        if "d:(" in str(src).lower():
+        if "d:(" in e.node.lower():
             src_gr = 3
-            src_label = src.split("d:(")[1][:-1]
-        if "d:(" in str(dst).lower():
+            src_label = e.node.split("d:(")[1][:-1]
+        if "d:(" in e.next_node.lower():
             dst_gr = 3
-            dst_label = dst.split("d:(")[1][:-1]
+            dst_label = e.next_node.split("d:(")[1][:-1]
 
         # Если стиль отображения admin down status
-        if show_admin_down_ports == "true" and admin_status == "down":
-            w = 0.5  # ширина линии связи
+        if show_admin_down_ports and e.admin_down_status == "down":
+            line_width = 0.5  # ширина линии связи
         # print(src, admin_status)
 
         all_nodes = net.get_nodes()
         # Создаем узлы, если их не было
-        if src not in all_nodes:
-            net.add_node(src, src_label, title=src_label, group=src_gr, shape=src_shape)
+        if e.node not in all_nodes:
+            net.add_node(e.node, src_label, title=src_label, group=src_gr, shape=src_shape)
 
-        if dst not in all_nodes:
-            net.add_node(dst, dst_label, title=src_label, group=dst_gr, shape=dst_shape)
+        if e.next_node not in all_nodes:
+            net.add_node(e.next_node, dst_label, title=dst_label, group=dst_gr, shape=dst_shape)
 
         # Добавление ребра между двумя узлами.
-        net.add_edge(src, dst, value=w, title=desc)
+        net.add_edge(e.node, e.next_node, value=line_width, title=e.line_description)
+
+
+def add_node_neighbors(node, neighbor_list: List[str]):
+    title = node["title"] + " Соединено:"
+
+    for i, dev in enumerate(neighbor_list, 1):
+        title += f"""<br>{i}. <span>{dev}</span>"""
+
+    node["title"] = title
 
 
 @login_required
@@ -306,29 +313,26 @@ def get_vlan(request):
         # Если не нашли, то обнуляем список начальных устройств для поиска, чтобы не запускать трассировку vlan
         vlan_start = []
 
-    result = []  # Список узлов сети, соседей и линий связи для визуализации
-    finder = Finder()
+    finder = VlanTraceroute()
 
     # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
     for start_dev in vlan_start:
-        passed = set()  # Имена уже проверенных устройств
         try:
             # Преобразуем VLAN в число
             vlan = int(request.GET["vlan"])
         except ValueError:
             break
-
         # Трассировка vlan
         finder.find_vlan(
             device=start_dev,
             vlan_to_find=vlan,
-            passed_devices=passed,
-            result=result,
-            empty_ports=request.GET.get("ep"),
-            only_admin_up=request.GET.get("ad"),
+            empty_ports=request.GET.get("ep") == "true",
+            only_admin_up=request.GET.get("ad") == "true",
             find_device_pattern=vlan_traceroute_settings.find_device_pattern,
             double_check=request.GET.get("double-check") == "true"
         )
+
+    result = finder.result
 
     if not result:  # Если поиск не дал результатов
         return HttpResponse("empty")
@@ -342,12 +346,10 @@ def get_vlan(request):
         net.add_node(i, i, title="", group=i, hidden=True)
 
     # Создаем элементы и связи между ними
-    create_nodes(result, net, request.GET.get("ad"))
+    create_nodes(result, net, request.GET.get("ad") == "true")
 
     neighbor_map = net.get_adj_list()
     nodes_count = len(net.nodes)
-
-    print("Всего узлов создано:", nodes_count)
 
     # Настройка физики для карты сети.
     net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
@@ -365,7 +367,7 @@ def get_vlan(request):
         if "p:(" in node["title"]:
             node["value"] = 1
         # Добавление списка соседей в заголовок узла.
-        node["title"] += " Соединено:<br>" + "<br>".join(neighbor_map[node["id"]])
+        add_node_neighbors(node, neighbor_map[node["id"]])
 
     # Установка сглаживания краев на динамическое.
     net.set_edge_smooth("dynamic")

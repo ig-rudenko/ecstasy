@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import List, NamedTuple
 
 import orjson
 from re import findall, sub, IGNORECASE, compile, escape
@@ -10,9 +11,6 @@ from .models import DevicesInfo, DescNameFormat
 
 
 class Finder:
-    def __init__(self):
-        self.desc_name_list = None
-
     @staticmethod
     def find_description(pattern: str, user: User) -> list:
         """
@@ -85,7 +83,6 @@ class Finder:
                 # Формируем список найденных комментариев
                 # Если нашли совпадение в описании или в комментариях, то добавляем в итоговый список
                 if find_on_desc or comments:
-                    # print(comments)
                     result.append(
                         {
                             "Device": device.dev.name,
@@ -98,11 +95,37 @@ class Finder:
 
         return result
 
+
+class VlanTracerouteResult(NamedTuple):
+    """
+    Представляет собой именованный кортеж, который содержит информацию об узле сети, его
+    следующем узле, ширине линии, описании линии и статусе административного отключения.
+    """
+
+    node: str
+    next_node: str
+    line_width: int
+    line_description: str
+    admin_down_status: str
+
+
+# Класс VlanTraceroute
+class VlanTraceroute:
+    """
+    Используется для поиска конкретного VLAN на сетевых устройствах для последующего создания
+    визуальной карты топологии сети.
+    """
+
+    def __init__(self):
+        self.result: List[VlanTracerouteResult] = []  # Итоговый список
+        self._desc_name_list: List[DescNameFormat] = []
+        self.passed_devices = set()  # Множество уже пройденного оборудования
+
     @lru_cache(maxsize=200)
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
 
-        for reformat in self.desc_name_list:
+        for reformat in self._desc_name_list:
             if reformat.standard == name:
                 # Если имя совпадает с правильным, то отправляем его
                 return name
@@ -120,33 +143,28 @@ class Finder:
         self,
         device: str,
         vlan_to_find: int,
-        passed_devices: set,
-        result: list,
-        empty_ports: str,
-        only_admin_up: str,
+        empty_ports: bool,
+        only_admin_up: bool,
         find_device_pattern: str,
         double_check: bool = False,
     ):
         """
-        ## Осуществляет поиск VLAN'ов по портам оборудования.
+        ## Осуществляет поиск VLAN по портам оборудования.
 
         Функция загружает данные об устройстве из базы данных, парсит информацию о VLAN на портах,
         и если находит совпадение с искомым VLAN, то добавляет информацию в итоговый список.
 
         :param device: Имя устройства, на котором осуществляется поиск
         :param vlan_to_find: VLAN, который ищем
-        :param passed_devices:  Уже пройденные устройства
-        :param result:  Итоговый список
-        :param empty_ports:  Включать пустые порты в анализ? ('true', 'false')
-        :param only_admin_up:  Включать порты со статусом admin down в анализ? ('true', 'false')
+        :param empty_ports: Включать пустые порты в анализ?
+        :param only_admin_up:  Включать порты со статусом admin down в анализ?
         :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта.
         :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
         """
+        if not self._desc_name_list:
+            self._desc_name_list: List[DescNameFormat] = list(DescNameFormat.objects.all())
 
-        if not self.desc_name_list:
-            self.desc_name_list = list(DescNameFormat.objects.all())
-
-        passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
+        self.passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
         try:
             dev = DevicesInfo.objects.get(dev__name=device)
         except DevicesInfo.DoesNotExist:
@@ -162,34 +180,42 @@ class Finder:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device = findall(
+            next_device_find: List[str] = findall(
                 find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
             )
             # Приводим к единому формату имя узла сети
-            next_device = next_device[0] if next_device else ""
+            next_device = next_device_find[0] if next_device_find else ""
 
             # Пропускаем порты admin down, если включена опция only admin up
-            if only_admin_up == "true":
+            if only_admin_up:
                 admin_status = "down" if interface.is_admin_down else "up"
             else:
                 admin_status = ""
 
-            # Проверяем, имеется ли такой же VLAN на другом оборудовании в сторону текущего
+            # Блок кода ниже проверяет, включен ли флаг double_check и найдено ли следующее устройство. Если оба
+            # условия выполняются, он получает информацию о VLAN для следующего устройства из базы данных и проверяет,
+            # есть ли на следующем устройстве порт, который имеет желаемую VLAN и подключен к текущему устройству.
+            # Если такой порт найден, переменная next_device не изменяется. В противном случае `next_device`
+            # устанавливается в пустую строку, указывающую, что следующего устройства нет или следующее устройство
+            # не имеет подходящего порта.
+            next_dev_interface_name = ""
             if double_check and next_device:  # Если есть следующее оборудование
                 try:
-                    dev = DevicesInfo.objects.get(dev__name=next_device)
+                    next_dev_intf_json: str = (
+                        DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
+                    )
                 except DevicesInfo.DoesNotExist:
-                    return
+                    next_dev_intf_json = "[]"
 
-                next_dev_interfaces = Interfaces(orjson.loads(dev.vlans or "[]"))
-                if not next_dev_interfaces:
-                    return
+                next_dev_interfaces = Interfaces(orjson.loads(next_dev_intf_json))
 
                 for next_dev_interface in next_dev_interfaces:
+
                     if vlan_to_find in next_dev_interface.vlan and findall(
                         device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
+                        next_dev_interface_name = str(next_dev_interface.name)
                         break
                 else:
                     next_device = ""
@@ -197,46 +223,59 @@ class Finder:
             # Создаем данные для visual map
             if next_device:
                 # Следующий узел сети
-                result.append(
-                    (
-                        device,  # Устройство (название узла)
-                        next_device,  # Сосед (название узла)
-                        10,  # Толщина линии соединения
-                        f"{device} ({interface.name}) --- {interface.desc}",  # Описание линии соединения
-                        admin_status,
+                self.result.append(
+                    VlanTracerouteResult(
+                        node=device,  # Устройство (название узла)
+                        next_node=next_device,  # Сосед (название узла)
+                        line_width=10,  # Толщина линии соединения
+                        line_description=f"""
+                        <strong>
+                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
+                            {next_device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
+                        </strong>
+                        """,  # Описание линии
+                        admin_down_status=admin_status,
                     )
                 )
             # Порт с описанием
             elif interface.desc:
-                result.append(
-                    (
-                        device,  # Устройство (название узла)
-                        f"{device} d:({interface.desc})",  # Порт (название узла)
-                        10,  # Толщина линии соединения
-                        interface.name,  # Описание линии соединения
-                        admin_status,
+                self.result.append(
+                    VlanTracerouteResult(
+                        node=device,  # Устройство (название узла)
+                        next_node=f"{device} d:({interface.desc})",  # Порт (название узла)
+                        line_width=10,  # Толщина линии соединения
+                        line_description=f"""
+                        <strong>
+                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
+                            {interface.desc}
+                        </strong>
+                        """,  # Описание линии соединения
+                        admin_down_status=admin_status,
                     )
                 )
             # Пустые порты
-            elif empty_ports == "true":
-                result.append(
-                    (
-                        device,  # Устройство (название узла)
-                        f"{device} p:({interface.name})",  # Порт (название узла)
-                        5,  # Толщина линии соединения
-                        interface.name,  # Описание линии соединения
-                        admin_status,
+            elif empty_ports:
+                self.result.append(
+                    VlanTracerouteResult(
+                        node=device,  # Устройство (название узла)
+                        next_node=f"{device} p:({interface.name})",  # Порт (название узла)
+                        line_width=5,  # Толщина линии соединения
+                        line_description=f"""
+                        <strong>
+                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span>
+                        </strong>
+                        """,  # Описание линии соединения
+                        admin_down_status=admin_status,
                     )
                 )
 
             # Проверка наличия следующего устройства в списке пройденных устройств.
-            if next_device and next_device not in list(passed_devices):
+            if next_device and next_device not in self.passed_devices:
                 self.find_vlan(
-                    next_device,
-                    vlan_to_find,
-                    passed_devices,
-                    result=result,
+                    device=next_device,
+                    vlan_to_find=vlan_to_find,
                     empty_ports=empty_ports,
                     only_admin_up=only_admin_up,
                     find_device_pattern=find_device_pattern,
+                    double_check=double_check,
                 )
