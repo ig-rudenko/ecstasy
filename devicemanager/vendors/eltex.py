@@ -1187,6 +1187,10 @@ class EltexLTP(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
+    @BaseDevice._lock
+    def get_current_configuration(self, *args, **kwargs) -> str:
+        return self.send_command("show running-config", expect_command=True)
+
 
 class EltexLTP16N(BaseDevice):
     """
@@ -1561,3 +1565,7 @@ class EltexLTP16N(BaseDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+    @BaseDevice._lock
+    def get_current_configuration(self, *args, **kwargs) -> str:
+        return self.send_command("show running-config", expect_command=True)
