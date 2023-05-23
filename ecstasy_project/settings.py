@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "ring_manager",
     "dbbackup",
+    "django_celery_beat",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -135,7 +136,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-# USE_TZ = True
+USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -212,23 +213,7 @@ REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/0")
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-CELERY_BEAT_SCHEDULE = {
-    # Собираем интерфейсы и VLAN оборудования каждый четный час.
-    "periodically-interfaces": {
-        "task": "interfaces_scan",
-        "schedule": crontab(minute="0", hour="*/2"),
-    },
-    # Собираем все MAC на оборудовании, а также интерфейсы в указанные часы.
-    # "periodically-gather": {
-    #     "task": "mac_table_gather_task",
-    #     "schedule": crontab(minute="0", hour="1,3,5,7,9,11,13,15,17,19,21,23"),
-    # },
-    # Собираем конфигурации оборудования каждый день в 04:30.
-    "configuration-gather": {
-        "task": "configuration_gather_task",
-        "schedule": crontab(minute="30", hour="4"),
-    },
-}
+
 
 # ========== CONFIGURATION STORAGE ===========
 

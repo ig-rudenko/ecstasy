@@ -1,7 +1,7 @@
-from datetime import datetime
 import orjson
 
 from celery.result import AsyncResult
+from django.utils import timezone
 from django.core.cache import cache
 
 from ecstasy_project.celery import app
@@ -96,8 +96,8 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             for line in dev.interfaces
         ]
         current_device_info.vlans = orjson.dumps(vlans_interfaces_to_save).decode()
-        current_device_info.vlans_date = datetime.now()
-        print("Saved VLANS      ---", obj)
+        current_device_info.vlans_date = timezone.now()
+        print(f"Saved VLANS   -->  {obj}")
 
         interfaces_to_save = [
             {
@@ -108,10 +108,10 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             for line in dev.interfaces
         ]
         current_device_info.interfaces = orjson.dumps(interfaces_to_save).decode()
-        current_device_info.interfaces_date = datetime.now()
+        current_device_info.interfaces_date = timezone.now()
 
         current_device_info.save()
-        print("Saved Interfaces ---", obj)
+        print(f"Saved Interfaces   -->  {obj}")
 
         self.update_state()
 

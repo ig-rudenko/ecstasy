@@ -79,8 +79,9 @@ class TestLocalStorage(TestCase):
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
             storage = LocalConfigStorage(dev)
 
-            config_file_path = pathlib.Path("./manage.py")
+            config_file_path = pathlib.Path("./manage_copy.py")
             config_name = "new_config.txt"
+            shutil.copy("./manage.py", config_file_path)
 
             # Если не передаем данные, то ничего не будет добавлено
             self.assertFalse(storage.add(config_name))
