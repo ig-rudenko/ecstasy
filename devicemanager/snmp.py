@@ -20,16 +20,12 @@ def physical_interface(name: str) -> bool:
     """
 
     name = name.lower()
-    if findall(
-        r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE
-    ):
+    if findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE):
         return False
     return True
 
 
-def show_interfaces(
-    device_ip, community, snmp_port=161
-) -> List[Tuple[str, str, str, str]]:
+def show_interfaces(device_ip, community, snmp_port=161) -> List[Tuple[str, str, str, str]]:
     """
 
     С помощью snmpwalk смотрит состояние интерфейсов, имена, описания

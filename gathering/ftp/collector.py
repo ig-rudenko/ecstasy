@@ -2,24 +2,10 @@ import socket
 import ftplib
 import pathlib
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
 from typing import List, Union, Pattern, Optional
 
-
-class AbstractFTPCollector(ABC):
-    @abstractmethod
-    def login(self, username: str, password: str, *args, **kwargs):
-        pass
-
-    @abstractmethod
-    def download_folder(
-        self, folder_or_pattern: Union[str, Pattern], local_dir: str, *args, **kwargs
-    ) -> pathlib.Path:
-        pass
-
-    @abstractmethod
-    def download_file(self, file_or_pattern: Union[str, Pattern], local_dir: str, *args, **kwargs):
-        pass
+from .base import AbstractFTPCollector
+from .exceptions import NotFound, FileDownloadError
 
 
 @dataclass
@@ -37,7 +23,7 @@ class FTPItem:
         return self.mode.startswith("d") and self.is_valid_item()
 
 
-class FPTCollector(AbstractFTPCollector):
+class FTPCollector(AbstractFTPCollector):
     def __init__(self, host: str, timeout: Optional[int] = None):
         self._ftp = ftplib.FTP(host, timeout=timeout)
         self.local_dir: pathlib.Path = pathlib.Path()
@@ -56,10 +42,10 @@ class FPTCollector(AbstractFTPCollector):
         local_dir: Union[str, pathlib.Path],
         retry_after_fail: bool = False,
         retry_counts: int = 1,
-    ) -> Optional[pathlib.Path]:
+    ) -> pathlib.Path:
         """
-        Функция загружает файлы с FTP-сервера в локальный каталог либо путем указания пути к папке, либо с помощью шаблона
-        регулярного выражения, соответствующего имени папки.
+        Функция загружает файлы с FTP-сервера в локальный каталог либо путем указания пути к папке, либо с помощью
+        шаблона регулярного выражения, соответствующего имени папки.
 
         :param folder_or_pattern: Этот параметр может быть либо строкой, либо шаблоном регулярного выражения. Он
          представляет собой имя папки или шаблон для сопоставления с именем папки на FTP-сервере.
@@ -92,11 +78,14 @@ class FPTCollector(AbstractFTPCollector):
 
         elif isinstance(folder_or_pattern, Pattern):
             folder = self._find_folder(pattern=folder_or_pattern)
-            if folder:
-                self._mirror_ftp_dir(folder)
-                return self.local_dir / folder
+            self._mirror_ftp_dir(folder)
+            return self.local_dir / folder
 
-            return None
+        else:
+            raise ValueError(
+                f"Неверный тип параметра `folder_or_pattern`, "
+                f"требуется `str` или `Pattern`, а был передан {type(folder_or_pattern)}"
+            )
 
     def _list_dir(self, path: str) -> List[FTPItem]:
         """
@@ -132,7 +121,9 @@ class FPTCollector(AbstractFTPCollector):
         for item in self._list_dir("/"):
             if item.is_valid_item() and pattern.match(item.name):
                 return item.name
-        return ""
+
+        # Если не удалось найти папку по паттерну
+        raise NotFound(f"По паттерну {repr(pattern.pattern)} не была найдена папка")
 
     def _mirror_ftp_dir(self, path: str):
         """
@@ -155,7 +146,6 @@ class FPTCollector(AbstractFTPCollector):
                 file_path = file_path / item.name
 
                 self._ftp.cwd(path)
-                print("DOWNLOADING", file_path)
 
                 # Цикл while с блоком try-except пытается загрузить файл с FTP-сервера и повторяет попытку,
                 # если возникает ошибка socket.timeout. Количество повторных попыток определяется параметром
@@ -171,11 +161,14 @@ class FPTCollector(AbstractFTPCollector):
                         break
 
                     except socket.timeout:
-                        print("socket.timeout", "self.retry_after_fail:", file_retry_counts)
                         if self.retry_after_fail:
                             file_retry_counts -= 1
                             continue
+
                         else:
-                            raise
+                            raise FileDownloadError(
+                                f"Превышено время ожидания ({self._ftp.timeout} секунд) "
+                                f"скачивания файла ({path}/{item.name})"
+                            )
 
                 self._ftp.cwd("/")

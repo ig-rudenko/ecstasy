@@ -12,7 +12,8 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable, MACType,
+    T_MACTable,
+    MACType,
 )
 
 
@@ -85,9 +86,7 @@ class MikroTik(BaseDevice):
                 # {"<bridge_name>": {"vlans": ['10', '20']}}
                 if not self._bridges.get(bridge_name):
                     self._bridges[bridge_name] = {"vlans": []}
-                self._bridges[bridge_name]["vlans"].append(
-                    self._vlans_interfaces[interface_name]
-                )
+                self._bridges[bridge_name]["vlans"].append(self._vlans_interfaces[interface_name])
 
     def send_command(
         self,
@@ -130,9 +129,7 @@ class MikroTik(BaseDevice):
         def validate(func):
             @wraps(func)
             def __wrapper(self, port, *args, **kwargs):
-                if not BaseDevice.find_or_empty(
-                    r"^ether|^sfp\d+|^wlan\d+$", port.lower()
-                ):
+                if not BaseDevice.find_or_empty(r"^ether|^sfp\d+|^wlan\d+$", port.lower()):
                     # Неверный порт
                     return if_invalid_return
 
@@ -284,9 +281,7 @@ class MikroTik(BaseDevice):
             mac_address, bridge_name = mac_line
             bridge = self._bridges.get(bridge_name, {})
             vlan: str = bridge.get("vlans", ["1"])[0]
-            macs.append(
-                (int(vlan), mac_address)
-            )
+            macs.append((int(vlan), mac_address))
         return macs
 
     @BaseDevice._lock
@@ -325,22 +320,16 @@ class MikroTik(BaseDevice):
             # Устанавливаем описание
             self.send_command(f'interface comment "{port}" comment="{desc}"')
 
-        return (
-            f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
-        )
+        return f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
 
     @BaseDevice._lock
     @_validate_port()
     def get_port_info(self, port: str) -> dict:
         data = {}
 
-        raw_poe_info = self.send_command(
-            f'interface ethernet poe print terse where name="{port}"'
-        )
+        raw_poe_info = self.send_command(f'interface ethernet poe print terse where name="{port}"')
         raw_poe_info = raw_poe_info.replace("\r\n", "")
-        data["poeStatus"] = self.find_or_empty(
-            "poe-out=(auto-on|forced-on|off)", raw_poe_info
-        )
+        data["poeStatus"] = self.find_or_empty("poe-out=(auto-on|forced-on|off)", raw_poe_info)
         data["poeChoices"] = ["auto-on", "forced-on", "off"]
 
         return {
@@ -351,9 +340,7 @@ class MikroTik(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def set_poe_out(self, port: str, status: str) -> tuple:
-        output = self.send_command(
-            f'interface ethernet poe set "{port}" poe-out={status}'
-        )
+        output = self.send_command(f'interface ethernet poe set "{port}" poe-out={status}')
         output = output.replace("\r\n", "")
         return status, "no such item" in output or "syntax error" in output
 
@@ -378,9 +365,7 @@ class MikroTik(BaseDevice):
 
         config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
 
-        self.send_command(
-            f"system backup save dont-encrypt=yes name={config_file_name}"
-        )
+        self.send_command(f"system backup save dont-encrypt=yes name={config_file_name}")
 
         config_file_name += ".backup"
 

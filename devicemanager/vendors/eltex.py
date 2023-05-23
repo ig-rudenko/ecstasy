@@ -1,7 +1,7 @@
 import re
 from time import sleep
 from functools import lru_cache, wraps
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Union, Any, Optional, TypedDict
 
 import pexpect
 import textfsm
@@ -64,37 +64,37 @@ class EltexBase(BaseDevice):
         pass
 
     def get_mac(self, port) -> list:
-        pass
+        return []
 
     def get_interfaces(self) -> list:
-        pass
+        return []
 
     def get_vlans(self) -> list:
-        pass
+        return []
 
     def reload_port(self, port: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        return ""
 
-    def get_port_info(self, port: str) -> str:
-        pass
+    def get_port_info(self, port: str) -> dict:
+        return {}
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class EltexMES(BaseDevice):
@@ -139,7 +139,7 @@ class EltexMES(BaseDevice):
         # Нахождение серийного номера устройства.
         self.serialno = self.find_or_empty(r"SN: (\S+)", inv)
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Eltex
 
@@ -204,9 +204,7 @@ class EltexMES(BaseDevice):
         output = ""
         while True:
             # Ожидание prompt, space prompt или тайм-аута.
-            match = self.session.expect(
-                [self.prompt, self.space_prompt, pexpect.TIMEOUT]
-            )
+            match = self.session.expect([self.prompt, self.space_prompt, pexpect.TIMEOUT])
             output += self.session.before.decode("utf-8").strip()
             # Проверяем, есть ли в выводе строка "Ch Port Mode (VLAN)".
             # Если это так, он отправляем команду «q», а затем выходим из цикла.
@@ -327,7 +325,9 @@ class EltexMES(BaseDevice):
         """
 
         mac_str = self.send_command(f"show mac address-table interface {port}")
-        macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        macs_list: List[Tuple[str, str]] = re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str
+        )
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice._lock
@@ -466,9 +466,7 @@ class EltexMES(BaseDevice):
         :return: "SFP", "COPPER", "COMBO-FIBER", "COMBO-COPPER" или "?"
         """
 
-        port_type = self.find_or_empty(
-            r"Type: (\S+)", self.get_port_info(port).get("data")
-        )
+        port_type = self.find_or_empty(r"Type: (\S+)", self.get_port_info(port).get("data"))
         if "Fiber" in port_type:
             return "SFP"
         if "Copper" in port_type:
@@ -564,9 +562,7 @@ class EltexMES(BaseDevice):
             self.session.sendline("end")
             self.session.expect(self.prompt)
 
-            return "Max length:" + self.find_or_empty(
-                r" Up to (\d+) characters", output
-            )
+            return "Max length:" + self.find_or_empty(r" Up to (\d+) characters", output)
 
         self.session.sendline("end")
         self.session.expect(self.prompt)
@@ -576,7 +572,7 @@ class EltexMES(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class EltexESR(EltexMES):
@@ -641,9 +637,7 @@ class EltexESR(EltexMES):
             # Выходим из режима редактирования конфигурации
             self.session.sendline("end")
             self.session.sendline("commit")
-            self.session.expect(
-                [self.prompt, "Configuration has been successfully applied"]
-            )
+            self.session.expect([self.prompt, "Configuration has been successfully applied"])
 
         # Подтверждаем изменение
         status = self.send_command("confirm")
@@ -714,7 +708,12 @@ class EltexESR(EltexMES):
         return errors
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
+
+
+class _EltexLTPPortTypes(TypedDict):
+    name: str
+    max_number: int
 
 
 class EltexLTP(BaseDevice):
@@ -767,7 +766,7 @@ class EltexLTP(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: str = None,
+        before_catch: Optional[str] = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -817,9 +816,7 @@ class EltexLTP(BaseDevice):
             f"show interfaces status front-port 0 - {self._front_ports_count - 1}",
             expect_command=False,
         )
-        interfaces += re.findall(
-            r"(front\S+ \d+)\s+(\S{2,})\s+", interfaces_front_output
-        )
+        interfaces += re.findall(r"(front\S+ \d+)\s+(\S{2,})\s+", interfaces_front_output)
 
         interfaces_pon_output = self.send_command(
             f"show interfaces status pon-port 0 - {self._gpon_ports_count - 1}",
@@ -864,12 +861,14 @@ class EltexLTP(BaseDevice):
             rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output
         )
 
-        table = []
+        table: T_MACTable = []
+        mac_type: MACType
+
         for vid, mac, port, type_ in parsed:
             if type_ == "Dynamic":
-                mac_type: MACType = "dynamic"
+                mac_type = "dynamic"
             else:
-                mac_type: MACType = "static"
+                mac_type = "static"
 
             table.append((int(vid), mac, mac_type, port))
 
@@ -880,8 +879,7 @@ class EltexLTP(BaseDevice):
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
-    # Декоратор
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return: Any = None):
         """
         ## Декоратор для проверки правильности порта Eltex LTP
 
@@ -893,50 +891,49 @@ class EltexLTP(BaseDevice):
 
         def validate(func):
             @wraps(func)
-            def __wrapper(self, port="", *args, **kwargs):
+            def __wrapper(deco_self: "EltexLTP", port="", *args, **kwargs):
 
-                port_types = {
+                port_types: Dict[int, _EltexLTPPortTypes] = {
                     0: {
                         "name": "front-port",
-                        "max-number": self._front_ports_count - 1,
+                        "max_number": deco_self._front_ports_count - 1,
                     },
                     1: {
                         "name": "10G-front-port",
-                        "max-number": self._10G_ports_count - 1,
+                        "max_number": deco_self._10G_ports_count - 1,
                     },
                     2: {
                         "name": "pon-port",
-                        "max-number": self._gpon_ports_count - 1,
+                        "max_number": deco_self._gpon_ports_count - 1,
                     },
                 }
 
                 # Регулярное выражения для поиска трёх типов портов на Eltex LTP
-                port_match = self.find_or_empty(
+                port_match: List[Tuple[str]] = re.findall(
                     r"^front[-port]*\s*(\d+)$|"  # `0` - front-port
                     r"^10[Gg]-front[-port]*\s*(\d+)$|"  # `1` - 10G-front-port
-                    r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*){,1})$",  # `2` - ont-port | gpon-port
+                    r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*)?)$",  # `2` - ont-port | gpon-port
                     port,
                 )
                 if not port_match:
                     # Неверный порт
                     return if_invalid_return
 
-                for i, port_num in enumerate(port_match):
+                for i, port_num in enumerate(port_match[0]):
                     if not port_num:
                         # Пропускаем не найденное сравнение в регулярном выражении
                         continue
 
                     # Если порт представлен в виде `2/23`, то берем первую цифру `2` как port_num
-                    num: str = (
-                        port_num if port_num.isdigit() else port_num.split("/")[0]
-                    )
+                    num = int(port_num if port_num.isdigit() else port_num.split("/")[0])
 
                     # Проверка, меньше или равен ли номер порта максимальному количеству портов для этого типа.
-                    if int(num) <= port_types[i]["max-number"]:
+                    port_max_number = port_types[i]["max_number"]
+                    if num <= port_max_number:
                         # port_type number
                         port = f"{port_types[i]['name']} {port_num}"
                         # Вызываем метод
-                        return func(self, port, *args, **kwargs)
+                        return func(deco_self, port, *args, **kwargs)
 
                 # Неверный порт
                 return if_invalid_return
@@ -957,6 +954,7 @@ class EltexLTP(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
         port_type, port_number = port.split()
+        macs_list: List[Tuple[str, str]]
 
         if port_number.isdigit():
             self.session.send("switch\r")
@@ -966,13 +964,13 @@ class EltexLTP(BaseDevice):
             )
             self.session.send("exit\r")
             self.session.expect(self.prompt)
-            macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+", macs_output)
+            macs_list = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+", macs_output)
             return [(int(vid), mac) for vid, mac in macs_list]
 
         # Если указан порт конкретного ONT `0/1`, то используем другую команду
         # И другое регулярное выражение
-        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
-            macs_list: List[Tuple[str, str]] = re.findall(
+        elif port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+            macs_list = re.findall(
                 rf"(\d+)\s+({self.mac_format})",
                 self.send_command(f"show mac interface ont {port_number}"),
             )
@@ -1002,7 +1000,7 @@ class EltexLTP(BaseDevice):
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data = {}
+            data: Dict[str, Any] = {}
 
             # Смотрим сконфигурированные ONT на данном порту
             ont_info = self.send_command(f"show interface ont {port_number} configured")
@@ -1024,7 +1022,7 @@ class EltexLTP(BaseDevice):
             # сконфигурированных ONT в виде List[List], вместо List[Tuple].
             # Добавляем для каждой записи пустой список, который далее будет использоваться
             # для заполнения VLAN/MAC
-            data["onts_lines"]: List[List] = onts_lines
+            data["onts_lines"] = onts_lines
 
             # Общее кол-во сконфигурированных ONT на данном порту
             data["total_count"] = len(data["onts_lines"])
@@ -1140,6 +1138,8 @@ class EltexLTP(BaseDevice):
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+        return ""
+
     @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
@@ -1182,10 +1182,10 @@ class EltexLTP(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class EltexLTP16N(BaseDevice):
@@ -1243,9 +1243,7 @@ class EltexLTP16N(BaseDevice):
 
         interfaces = []
 
-        interfaces_front_output = self.send_command(
-            "show interface front-port 1-8 state"
-        )
+        interfaces_front_output = self.send_command("show interface front-port 1-8 state")
         interfaces += [
             (f"front-port {line[0]}", line[1])
             for line in re.findall(r"(\d)\s+(\S+)", interfaces_front_output)
@@ -1265,7 +1263,7 @@ class EltexLTP16N(BaseDevice):
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     # Декоратор
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Eltex LTP
 
@@ -1277,45 +1275,44 @@ class EltexLTP16N(BaseDevice):
 
         def validate(func):
             @wraps(func)
-            def __wrapper(self, port="", *args, **kwargs):
+            def __wrapper(deco_self: "EltexLTP16N", port="", *args, **kwargs):
 
-                port_types = {
+                port_types: Dict[int, _EltexLTPPortTypes] = {
                     0: {
                         "name": "front-port",
-                        "max-number": 8,
+                        "max_number": 8,
                     },
                     1: {
                         "name": "pon-port",
-                        "max-number": 16,
+                        "max_number": 16,
                     },
                 }
 
                 # Регулярное выражения для поиска трёх типов портов на Eltex LTP
-                port_match = self.find_or_empty(
+                port_match: List[Tuple[str]] = re.findall(
                     r"^front[-port]*\s*(\d+)$|"  # `0` - front-port
-                    r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*){,1})$",  # `2` - ont-port | gpon-port
+                    r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*)?)$",  # `1` - ont-port | gpon-port
                     port,
                 )
                 if not port_match:
                     # Неверный порт
                     return if_invalid_return
 
-                for i, port_num in enumerate(port_match):
+                for i, port_num in enumerate(port_match[0]):
                     if not port_num:
                         # Пропускаем не найденное сравнение в регулярном выражении
                         continue
 
                     # Если порт представлен в виде `2/23`, то берем первую цифру `2` как port_num
-                    num: str = (
-                        port_num if port_num.isdigit() else port_num.split("/")[0]
-                    )
+                    num = int(port_num if port_num.isdigit() else port_num.split("/")[0])
 
                     # Проверка, меньше или равен ли номер порта максимальному количеству портов для этого типа.
-                    if int(num) <= port_types[i]["max-number"]:
+                    port_max_number = port_types[i]["max_number"]
+                    if num <= port_max_number:
                         # port_type number
                         port = f"{port_types[i]['name']} {port_num}"
                         # Вызываем метод
-                        return func(self, port, *args, **kwargs)
+                        return func(deco_self, port, *args, **kwargs)
 
                 # Неверный порт
                 return if_invalid_return
@@ -1379,7 +1376,7 @@ class EltexLTP16N(BaseDevice):
         return macs
 
     @lru_cache
-    def get_vlan_name(self, vid: int):
+    def get_vlan_name(self, vid: int) -> str:
         from net_tools.models import VlanName
 
         vlan_name = ""
@@ -1398,12 +1395,10 @@ class EltexLTP16N(BaseDevice):
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data = {}
+            data: Dict[str, Union[int, list]] = {}
 
             # Смотрим ONLINE ONT
-            ont_online_info = self.send_command(
-                f"show interface ont {port_number} online"
-            )
+            ont_online_info = self.send_command(f"show interface ont {port_number} online")
             # Парсим данные
             onts_lines = [
                 # 0       1        2         3       4        5     6
@@ -1418,9 +1413,7 @@ class EltexLTP16N(BaseDevice):
             data["online_count"] = len(onts_lines)
 
             # Смотрим OFFLINE ONT
-            ont_offline_info = self.send_command(
-                f"show interface ont {port_number} offline"
-            )
+            ont_offline_info = self.send_command(f"show interface ont {port_number} offline")
             # Парсим данные
             onts_lines += [
                 # 0       1        2         3       4        5     6
@@ -1431,20 +1424,19 @@ class EltexLTP16N(BaseDevice):
                     ont_offline_info,
                 )
             ]
+            # Сортируем
+            onts_lines = sorted(onts_lines, key=lambda x: int(x[0]))
 
             # Добавляем в итоговый словарь список из отсортированных по возрастанию ONT ID записей
-            data["onts_lines"]: List[List] = sorted(onts_lines, key=lambda x: int(x[0]))
-
+            data["onts_lines"] = onts_lines
             # Общее кол-во сконфигурированных ONT на данном порту
-            data["total_count"] = len(data["onts_lines"])
+            data["total_count"] = len(onts_lines)
 
             # Смотрим MAC на pon порту
             if port_number.isdigit():
                 macs_list = re.findall(
                     rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d+/(\d+)",
-                    self.send_command(
-                        f"show mac verbose include interface pon-port {port_number}"
-                    ),
+                    self.send_command(f"show mac verbose include interface pon-port {port_number}"),
                 )
             else:
                 macs_list = []
@@ -1452,7 +1444,7 @@ class EltexLTP16N(BaseDevice):
             # Перебираем список macs_list и назначаем каждому ONT ID свой VLAN/MAC
             for mac, vlan_id, ont_id in macs_list:
                 # Выбираем запись ONT по индексу ONT ID - int(mac_line[0])
-                for ont in data["onts_lines"]:
+                for ont in onts_lines:
                     if ont[0] == ont_id:
                         # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
                         # и добавляем VLAN, MAC и описание VLAN
@@ -1486,7 +1478,7 @@ class EltexLTP16N(BaseDevice):
     @BaseDevice._lock
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     @BaseDevice._lock
     @_validate_port()
@@ -1546,6 +1538,8 @@ class EltexLTP16N(BaseDevice):
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
+        return ""
+
     @BaseDevice._lock
     @_validate_port()
     def get_port_config(self, port: str) -> str:
@@ -1566,4 +1560,4 @@ class EltexLTP16N(BaseDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}

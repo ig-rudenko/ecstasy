@@ -156,12 +156,8 @@ class TestEltexLTPInterfaces(SimpleTestCase):
         cls.fake_session_4x = EltexLTP4XPexpectFaker()
         cls.fake_session_8x = EltexLTP8XPexpectFaker()
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
-        cls.eltex_ltp_4x = EltexLTP(
-            cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X"
-        )
-        cls.eltex_ltp_8x = EltexLTP(
-            cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X"
-        )
+        cls.eltex_ltp_4x = EltexLTP(cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X")
+        cls.eltex_ltp_8x = EltexLTP(cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X")
 
     def test_interfaces_ltp_4x(self):
         interfaces = self.eltex_ltp_4x.get_interfaces()
@@ -220,12 +216,8 @@ class TestEltexLTPMAC(SimpleTestCase):
         cls.fake_session_4x = EltexLTP4XPexpectFaker()
         cls.fake_session_8x = EltexLTP8XPexpectFaker()
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
-        cls.eltex_ltp_4x = EltexLTP(
-            cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X"
-        )
-        cls.eltex_ltp_8x = EltexLTP(
-            cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X"
-        )
+        cls.eltex_ltp_4x = EltexLTP(cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X")
+        cls.eltex_ltp_8x = EltexLTP(cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X")
 
     def test_get_mac_front_port_LTP_4X(self):
         # front-port {n}

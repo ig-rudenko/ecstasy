@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 from time import sleep
-from typing import Literal, Sequence, Tuple, List
+from typing import Literal, Sequence, Tuple, List, Any, Dict
 
 import pexpect
 import textfsm
@@ -12,7 +12,8 @@ from .base import (
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
-    T_MACTable, MACType,
+    T_MACTable,
+    MACType,
 )
 
 
@@ -145,7 +146,7 @@ class Extreme(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
         self.lock = False
-        interfaces = self.get_interfaces()
+        interfaces: T_InterfaceList = self.get_interfaces()
         self.lock = True
 
         output_vlans = self.send_command(
@@ -156,23 +157,23 @@ class Extreme(BaseDevice):
             f"{TEMPLATE_FOLDER}/vlans_templates/extreme.template", "r", encoding="utf-8"
         ) as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
-            result_vlans = vlan_templ.ParseText(output_vlans)
+            result_vlans: List[str] = vlan_templ.ParseText(output_vlans)
 
         # Создаем словарь, где ключи это порты, а значениями будут вланы на них
-        ports_vlan = {num: [] for num in range(1, len(interfaces) + 1)}
+        ports_vlan: Dict[int, List[str]] = {num: [] for num in range(1, len(interfaces) + 1)}
 
         for vlan in result_vlans:
             for port in range_to_numbers(vlan[1]):
                 # Добавляем вланы на порты
                 ports_vlan[port].append(vlan[0])
 
-        interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
+        interfaces_vlan: T_InterfaceVLANList = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
             interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))
 
         return interfaces_vlan
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Extreme
 
@@ -371,7 +372,7 @@ class Extreme(BaseDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
     def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("show configuration")

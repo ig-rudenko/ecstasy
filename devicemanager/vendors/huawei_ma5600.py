@@ -73,9 +73,7 @@ class HuaweiMA5600T(BaseDevice):
         templates = sorted(
             re.findall(
                 r"\s+(\d+)\s+(.+)",
-                self.send_command(
-                    "display vdsl line-template info", expect_command=False
-                ),
+                self.send_command("display vdsl line-template info", expect_command=False),
             ),
             key=lambda x: int(x[0]),  # Сортируем по убыванию индекса
             reverse=True,
@@ -145,9 +143,7 @@ class HuaweiMA5600T(BaseDevice):
                 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
                 # Убираем их
-                output += ansi_escape.sub(
-                    "", self.session.before.decode(errors="ignore")
-                )
+                output += ansi_escape.sub("", self.session.before.decode(errors="ignore"))
 
                 if match == 0:
                     break
@@ -159,9 +155,7 @@ class HuaweiMA5600T(BaseDevice):
                     # { <cr>|ontid<U><0,255> }:
                     self.session.send("\n")
                 else:
-                    print(
-                        f'{self.ip} - timeout во время выполнения команды "{command}"'
-                    )
+                    print(f'{self.ip} - timeout во время выполнения команды "{command}"')
                     break
 
                 # Если задано кол-во страниц
@@ -173,9 +167,7 @@ class HuaweiMA5600T(BaseDevice):
                 self.session.expect(prompt)
             except pexpect.TIMEOUT:
                 pass
-            output = re.sub(
-                r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore")
-            )
+            output = re.sub(r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore"))
         return output
 
     @BaseDevice._lock
@@ -270,9 +262,7 @@ class HuaweiMA5600T(BaseDevice):
         if port_type == "ethernet":
             board_info = self.get_boards(indexes[0])
 
-            board_list = self.find_or_empty(
-                rf"\s+({indexes[1]})\s+(\S+)\s+\S+", board_info
-            )
+            board_list = self.find_or_empty(rf"\s+({indexes[1]})\s+(\S+)\s+\S+", board_info)
             if board_list:
                 if "SCU" in board_list[1]:
                     return "scu", tuple(indexes)
@@ -374,9 +364,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         }
 
-    def _render_gpon_port_info(
-        self, indexes: (Tuple[str, str, str], Tuple[str, str, str, str])
-    ) -> dict:
+    def _render_gpon_port_info(self, indexes: Tuple[str, ...]) -> dict:
         """
         ## Преобразовываем информацию о GPON порте для отображения на странице
         """
@@ -474,9 +462,7 @@ class HuaweiMA5600T(BaseDevice):
         data = []  # Общий список
 
         # Разделяем на сервисы
-        parts = info.split(
-            "---------------------------------------------------------------"
-        )
+        parts = info.split("---------------------------------------------------------------")
 
         for service_part in parts:
             if "Service type" not in service_part:
@@ -493,15 +479,9 @@ class HuaweiMA5600T(BaseDevice):
                     "ipv4_access_type": self.find_or_empty(
                         r"IPv4 access type\s+: (\S+)", service_part
                     ),
-                    "ipv4_address": self.find_or_empty(
-                        r"IPv4 address\s+: (\S+)", service_part
-                    ),
-                    "subnet_mask": self.find_or_empty(
-                        r"Subnet mask\s+: (\S+)", service_part
-                    ),
-                    "manage_vlan": self.find_or_empty(
-                        r"Manage VLAN\s+: (\d+)", service_part
-                    ),
+                    "ipv4_address": self.find_or_empty(r"IPv4 address\s+: (\S+)", service_part),
+                    "subnet_mask": self.find_or_empty(r"Subnet mask\s+: (\S+)", service_part),
+                    "manage_vlan": self.find_or_empty(r"Manage VLAN\s+: (\d+)", service_part),
                     "mac": self.find_or_empty(
                         r"MAC address\s+: ([0-9A-F]+-[0-9A-F]+-[0-9A-F]+)", service_part
                     ),
@@ -510,9 +490,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
-    def _render_vdsl_port_info(
-        self, info: str, profile_name: str, all_profiles: list
-    ) -> dict:
+    def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list) -> dict:
         """
         ## Преобразовываем информацию о VDSL порте для отображения на странице
 
@@ -643,13 +621,9 @@ class HuaweiMA5600T(BaseDevice):
         """
 
         self.send_command("config")
-        self.send_command(
-            f"interface vdsl {indexes[0]}/{indexes[1]}", expect_command=False
-        )
+        self.send_command(f"interface vdsl {indexes[0]}/{indexes[1]}", expect_command=False)
 
-        port_stats = self.send_command(
-            f"display line operation {indexes[2]}", expect_command=False
-        )
+        port_stats = self.send_command(f"display line operation {indexes[2]}", expect_command=False)
 
         # Индекс текущего шаблона
         current_line_template_index = self.find_or_empty(
@@ -666,9 +640,7 @@ class HuaweiMA5600T(BaseDevice):
         self.send_command("quit")
         self.send_command("quit")
 
-        return self._render_vdsl_port_info(
-            port_stats, template_name, self.vdsl_templates
-        )
+        return self._render_vdsl_port_info(port_stats, template_name, self.vdsl_templates)
 
     @BaseDevice._lock
     def get_port_info(self, port: str) -> dict:
@@ -699,9 +671,7 @@ class HuaweiMA5600T(BaseDevice):
             return self._vdsl_port_info(indexes=indexes)
 
         self.send_command("config")
-        self.send_command(
-            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
-        )
+        self.send_command(f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False)
 
         self.session.sendline(f"display line operation {indexes[2]}")
         if self.session.expect([r"Are you sure to continue", "Unknown command"]):
@@ -710,9 +680,7 @@ class HuaweiMA5600T(BaseDevice):
                 "text": "Unknown command",
             }
 
-        output = self.send_command(
-            "y", expect_command=True, before_catch=r"Failure|------[-]+"
-        )
+        output = self.send_command("y", expect_command=True, before_catch=r"Failure|------[-]+")
 
         profile_output = self.send_command(f"display port state {indexes[2]}")
         profile_index = self.find_or_empty(r"\s+\d+\s+\S+\s+(\d+)", profile_output)
@@ -760,14 +728,10 @@ class HuaweiMA5600T(BaseDevice):
             change_profile_cmd = "template-index"
 
         self.send_command("config")
-        self.send_command(
-            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
-        )
+        self.send_command(f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False)
 
         self.send_command(f"deactivate {indexes[2]}")
-        status = self.send_command(
-            f"activate {indexes[2]} {change_profile_cmd} {profile_index}"
-        )
+        status = self.send_command(f"activate {indexes[2]} {change_profile_cmd} {profile_index}")
         self.send_command("quit")
         return status
 
@@ -799,9 +763,7 @@ class HuaweiMA5600T(BaseDevice):
 
         for interface in self.interfaces:
             port_macs = self.get_mac(interface[0])
-            mac_table += [
-                (int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs
-            ]
+            mac_table += [(int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs]
         return mac_table
 
     @BaseDevice._lock
@@ -842,9 +804,7 @@ class HuaweiMA5600T(BaseDevice):
         #   ---------------------------------------------------------------------
         macs1: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.send_command(
-                f"display mac-address port {'/'.join(indexes)}", num_of_expect=6
-            ),
+            self.send_command(f"display mac-address port {'/'.join(indexes)}", num_of_expect=6),
         )
 
         # Попробуем еще одну команду -> display security bind mac
@@ -854,9 +814,7 @@ class HuaweiMA5600T(BaseDevice):
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
         macs2: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.send_command(
-                f"display security bind mac {'/'.join(indexes)}", num_of_expect=6
-            ),
+            self.send_command(f"display security bind mac {'/'.join(indexes)}", num_of_expect=6),
         )
 
         res: T_MACList = []
@@ -923,9 +881,7 @@ class HuaweiMA5600T(BaseDevice):
             return f"Неверный порт! ({port})"
 
         self.send_command("config")
-        self.send_command(
-            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
-        )
+        self.send_command(f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False)
 
         s = ""
         if port_type == "gpon" and len(indexes) == 4:
@@ -990,9 +946,7 @@ class HuaweiMA5600T(BaseDevice):
             return f"Неверный порт! ({port})"
 
         self.send_command("config")
-        self.send_command(
-            f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False
-        )
+        self.send_command(f"interface {port_type} {indexes[0]}/{indexes[1]}", expect_command=False)
 
         if port_type == "gpon" and len(indexes) == 4:
             # Для ONT
@@ -1005,9 +959,7 @@ class HuaweiMA5600T(BaseDevice):
         else:
             # Другие порты
             # Выключаем или включаем порт, в зависимости от типа будут разные команды
-            self.session.sendline(
-                f"{self._up_down_command(port_type, status)} {indexes[2]}"
-            )
+            self.session.sendline(f"{self._up_down_command(port_type, status)} {indexes[2]}")
             self.send_command("\n", expect_command=False)
             s = f"{self._up_down_command(port_type, status)} {indexes[2]}"
 
@@ -1090,4 +1042,4 @@ class HuaweiMA5600T(BaseDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}

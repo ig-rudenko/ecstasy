@@ -3,7 +3,7 @@ from typing import List
 
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, T_InterfaceList
+from .base import BaseDevice, TEMPLATE_FOLDER, T_InterfaceList, T_InterfaceVLANList, T_MACList
 
 
 class ProCurve(BaseDevice):
@@ -25,14 +25,12 @@ class ProCurve(BaseDevice):
     @BaseDevice._lock
     def get_interfaces(self) -> T_InterfaceList:
         result = []
-        raw_intf_status = self.send_command(
-            "show interfaces brief", expect_command=False
-        )
+        raw_intf_status = self.send_command("show interfaces brief", expect_command=False)
         with open(
             f"{TEMPLATE_FOLDER}/interfaces/procurve_status.template", encoding="utf-8"
         ) as template_file:
             int_des_ = textfsm.TextFSM(template_file)
-        intf_status: List[str, str, str] = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
+        intf_status: List[str] = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
 
         for line in intf_status:
             port = self.find_or_empty(r"[ABCD]*\d+", line[0])
@@ -49,35 +47,35 @@ class ProCurve(BaseDevice):
             )
         return result
 
-    def get_vlans(self) -> list:
-        pass
+    def get_vlans(self) -> T_InterfaceVLANList:
+        return []
 
-    def get_mac(self, port: str) -> list:
-        pass
+    def get_mac(self, port: str) -> T_MACList:
+        return []
 
     def reload_port(self, port: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     def save_config(self):
         pass
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        return ""
 
-    def get_port_info(self, port: str) -> str:
-        pass
+    def get_port_info(self, port: str) -> dict:
+        return {}
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}

@@ -20,7 +20,7 @@ from datetime import timedelta, datetime
 from pathlib import Path
 from celery.schedules import crontab
 
-from gathering.ftp_collector import FPTCollector, AbstractFTPCollector
+from gathering.ftp import FTPCollector, AbstractFTPCollector
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
 
@@ -64,7 +64,7 @@ DBBACKUP_STORAGE_OPTIONS = {"location": "./db-backup"}
 
 
 # Эта переменная используется, чтобы определить, какой класс сборщика FTP использовать для сбора данных с FTP-серверов.
-FTP_COLLECTOR_CLASS = FPTCollector
+FTP_COLLECTOR_CLASS = FTPCollector
 # По умолчанию установлено значение `FPTCollector`, но его можно переопределить, если требуется другой класс коллектора.
 # Он должен наследоваться от `AbstractFTPCollector`.
 

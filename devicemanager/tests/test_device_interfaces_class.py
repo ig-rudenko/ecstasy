@@ -51,9 +51,7 @@ class TestInterfacesClass(SimpleTestCase):
             {"Interface": "eth4", "Status": "up", "Description": "description4"},
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на основе словарей дают одинаковые данные.
-        self.assertEqual(
-            str(Interfaces(interfaces_as_dict_list)), str(Interfaces(interfaces_list))
-        )
+        self.assertEqual(str(Interfaces(interfaces_as_dict_list)), str(Interfaces(interfaces_list)))
 
     def test_interface_init_vlans(self):
         # Создание списка интерфейсов.
@@ -77,9 +75,7 @@ class TestInterfacesClass(SimpleTestCase):
         # Проверяем, что количество интерфейсов со статусом admin_down равно 1.
         self.assertEqual(intf.admin_down(only_count=True), 1)
         # Проверка того, что метод with_vlans возвращает правильный интерфейс.
-        self.assertEqual(
-            str(intf.with_vlans([11])), str(Interfaces([interfaces_list[0]]))
-        )
+        self.assertEqual(str(intf.with_vlans([11])), str(Interfaces([interfaces_list[0]])))
         # Проверка того, что метод filter_by_desc возвращает правильный ответ.
         self.assertEqual(str(intf.filter_by_desc("description")), str(intf))
         # Проверка того, что метод filter_by_desc возвращает правильный ответ.
@@ -118,9 +114,7 @@ class TestInterfacesClass(SimpleTestCase):
             },
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на основе словарей дают одинаковые данные.
-        self.assertEqual(
-            str(Interfaces(interfaces_dict)), str(Interfaces(interfaces_list))
-        )
+        self.assertEqual(str(Interfaces(interfaces_dict)), str(Interfaces(interfaces_list)))
 
     def test_interface_init_mixed_interface_list(self):
         # Создание списка интерфейсов.
@@ -148,6 +142,4 @@ class TestInterfacesClass(SimpleTestCase):
             },
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на смешанной основе дают одинаковые данные.
-        self.assertEqual(
-            str(Interfaces(interfaces_mixed)), str(Interfaces(interfaces_list))
-        )
+        self.assertEqual(str(Interfaces(interfaces_mixed)), str(Interfaces(interfaces_list)))

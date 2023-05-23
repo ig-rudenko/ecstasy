@@ -112,9 +112,7 @@ class Interfaces:
                 if isinstance(intf, dict):
                     if intf.get("Status") is None:
                         intf["Status"] = (
-                            "admin down"
-                            if intf["Admin Status"] == "down"
-                            else intf["Link"]
+                            "admin down" if intf["Admin Status"] == "down" else intf["Link"]
                         )
 
                     self.__interfaces.append(
@@ -129,14 +127,10 @@ class Interfaces:
                 # Если был передан список, кортеж
                 elif isinstance(intf, (list, tuple)):
                     if len(intf) == 3:  # Без VLAN
-                        self.__interfaces.append(
-                            Interface(intf[0], intf[1], intf[2], [])
-                        )
+                        self.__interfaces.append(Interface(intf[0], intf[1], intf[2], []))
                     elif len(intf) == 4:  # + VLAN
                         self.__interfaces.append(
-                            Interface(
-                                intf[0], intf[1], intf[2], self._parse_vlans_line(intf[3])
-                            )
+                            Interface(intf[0], intf[1], intf[2], self._parse_vlans_line(intf[3]))
                         )
 
                 # Если был передан объект Interface
@@ -177,6 +171,9 @@ class Interfaces:
     def __enter__(self):
         return self.__interfaces
 
+    def __iter__(self):
+        return iter(self.__interfaces)
+
     def __bool__(self):
         return bool(self.__interfaces)
 
@@ -193,18 +190,15 @@ class Interfaces:
         while i < len(intf):
             # Комбо-порт. Надо выбрать один.
             if (
-                    "(C)" in intf[i].name
-                    and "(F)" in intf[i + 1].name
-                    and re.findall(r"^\d+", intf[i].name)
-                    == re.findall(r"^\d+", intf[i].name)
+                "(C)" in intf[i].name
+                and "(F)" in intf[i + 1].name
+                and re.findall(r"^\d+", intf[i].name) == re.findall(r"^\d+", intf[i].name)
             ):
                 # Выбираем, какой комбо порт добавить.
                 # Смотрим состояние и добавляем активный.
                 combo_interface = intf[i] if intf[i].is_up else intf[i + 1]
                 # Выбираем описание комбо порта, если нет на (C), то берем с (F).
-                combo_interface.desc = (
-                    intf[i].desc if intf[i].has_desc else intf[i + 1].desc
-                )
+                combo_interface.desc = intf[i].desc if intf[i].has_desc else intf[i + 1].desc
                 res.append(combo_interface)
                 i += 2  # Пропускаем 2 комбо-порта.
 
@@ -319,9 +313,7 @@ class Interfaces:
         """
         if isinstance(vlans, list):
             vlans = list(map(int, vlans))
-            return Interfaces(
-                [i for i in self.__interfaces if set(vlans) & set(i.vlan)]
-            )
+            return Interfaces([i for i in self.__interfaces if set(vlans) & set(i.vlan)])
         return Interfaces()
 
     def filter_by_desc(self, pattern: str):
@@ -349,9 +341,7 @@ class DevicesCollection:
                     "Коллекция должна состоять из объектов DeviceManager или содержать имена устройств"
                 )
         else:
-            raise TypeError(
-                f'Коллекция принимает список или кортеж, а не "{type(devs)}"'
-            )
+            raise TypeError(f'Коллекция принимает список или кортеж, а не "{type(devs)}"')
 
     @property
     def count(self) -> int:
@@ -360,9 +350,7 @@ class DevicesCollection:
         return len(self.collection)
 
     @classmethod
-    def from_zabbix_groups(
-            cls, groups_name: (str, list), zabbix_info: bool
-    ) -> "DevicesCollection":
+    def from_zabbix_groups(cls, groups_name: (str, list), zabbix_info: bool) -> "DevicesCollection":
         """
         Создаем коллекцию из групп узлов сети Zabbix
 
@@ -372,9 +360,7 @@ class DevicesCollection:
         try:
             with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
                 zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-                groups = zbx.hostgroup.get(
-                    filter={"name": groups_name}, output=["groupid"]
-                )
+                groups = zbx.hostgroup.get(filter={"name": groups_name}, output=["groupid"])
                 if groups:
                     hosts = zbx.host.get(
                         groupids=[g["groupid"] for g in groups],
@@ -395,9 +381,7 @@ class DevicesCollection:
         return DevicesCollection(devs)
 
     @classmethod
-    def from_zabbix_ips(
-            cls, ips: (str, list), zabbix_info: bool
-    ) -> "DevicesCollection":
+    def from_zabbix_ips(cls, ips: (str, list), zabbix_info: bool) -> "DevicesCollection":
         """
         Создаем коллекцию из переданных IP адресов
 
@@ -410,9 +394,7 @@ class DevicesCollection:
         try:
             with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
                 zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
-                hosts = zbx.host.get(
-                    filter={"ip": ips}, output=["name"], sortfield=["name"]
-                )
+                hosts = zbx.host.get(filter={"ip": ips}, output=["name"], sortfield=["name"])
         except ZabbixConnectionError:
             return DevicesCollection([])
 
@@ -436,9 +418,8 @@ class DevicesCollection:
             for i, d in enumerate(self.collection[:3]):  # Первые 3 устройства
                 string += f"{i:<{s}}  {d}\n"
             string += " " * s + "  ...\n"
-            for i, d in enumerate(
-                    self.collection[-3:], len(self.collection) - 3
-            ):  # Последние 3 устройства
+            # Последние 3 устройства
+            for i, d in enumerate(self.collection[-3:], len(self.collection) - 3):
                 string += f"{i:<{s}}  {d}\n"
 
         # Вывод всех устройств
@@ -452,20 +433,14 @@ class DevicesCollection:
         """
         Фильтр по имени узлов сети с помощью регулярного выражения
         """
-        return DevicesCollection(
-            [dev for dev in self.collection if re.search(pattern, dev.name)]
-        )
+        return DevicesCollection([dev for dev in self.collection if re.search(pattern, dev.name)])
 
     def filter_by(self, field: str, pattern: str) -> "DevicesCollection":
         """
         Фильтр по переданному полю узлов сети с помощью регулярного выражения
         """
         return DevicesCollection(
-            [
-                dev
-                for dev in self.collection
-                if re.search(pattern, str(dev.__dict__[field]))
-            ]
+            [dev for dev in self.collection if re.search(pattern, str(dev.__dict__[field]))]
         )
 
     def filter_by_inventory(self, inventory: str, pattern: str) -> "DevicesCollection":
@@ -538,9 +513,7 @@ class DevicesCollection:
         Возвращаем новую коллекцию, в которой все узлы сети по информации из Zabbix имеют неактивный статус
         """
 
-        return DevicesCollection(
-            [d for d in self.collection if not d.zabbix_info.status]
-        )
+        return DevicesCollection([d for d in self.collection if not d.zabbix_info.status])
 
     def sort_by(self, field: str) -> "DevicesCollection":
         """
@@ -569,9 +542,7 @@ class DevicesCollection:
                 )
             )
 
-        return DevicesCollection(
-            sorted(self.collection, key=lambda d: d.__dict__[field])
-        )
+        return DevicesCollection(sorted(self.collection, key=lambda d: d.__dict__[field]))
 
     def ping_devs(self, unavailable=False) -> "DevicesCollection":
         """
@@ -648,11 +619,7 @@ class DeviceManager:
             )
 
             # Инвентарные данные
-            inventory = (
-                zabbix_info[0]["inventory"].values()
-                if zabbix_info[0]["inventory"]
-                else {}
-            )
+            inventory = zabbix_info[0]["inventory"].values() if zabbix_info[0]["inventory"] else {}
             del zabbix_info[0]["inventory"]
 
             # Группы
@@ -671,8 +638,8 @@ class DeviceManager:
                     i
                     for i in self.zabbix_info.ip
                     if len(self.zabbix_info.ip) > 1
-                       and i != "127.0.0.1"
-                       or len(self.zabbix_info.ip) == 1
+                    and i != "127.0.0.1"
+                    or len(self.zabbix_info.ip) == 1
                 ][0]
 
     def push_zabbix_inventory(self):
@@ -735,7 +702,7 @@ class DeviceManager:
         return None
 
     def collect_interfaces(
-            self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
+        self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
     ) -> str:
         """Собираем интерфейсы оборудования"""
 
@@ -748,9 +715,7 @@ class DeviceManager:
 
                 self.interfaces = Interfaces(
                     orjson.loads(
-                        device_data_history.vlans
-                        if vlans
-                        else device_data_history.interfaces
+                        device_data_history.vlans if vlans else device_data_history.interfaces
                     )
                 )
             except DevicesInfo.DoesNotExist:
@@ -760,9 +725,7 @@ class DeviceManager:
         elif self.protocol == "snmp":
 
             # SNMP
-            raw_interfaces = snmp.show_interfaces(
-                device_ip=self.ip, community=self.snmp_community
-            )
+            raw_interfaces = snmp.show_interfaces(device_ip=self.ip, community=self.snmp_community)
             self.interfaces = Interfaces(
                 [
                     {
@@ -785,7 +748,7 @@ class DeviceManager:
 
             try:
                 with self.connect(
-                        self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
+                    self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
                 ) as session:
 
                     if session.model:
@@ -812,9 +775,7 @@ class DeviceManager:
                 return str(e)
 
     def __str__(self):
-        return (
-            f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
-        )
+        return f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
 
     def __repr__(self):
         return self.__str__()
@@ -839,9 +800,9 @@ class DeviceManager:
         if self._zabbix_info.inventory.location:
             return self._zabbix_info.inventory.location
         if (
-                self._zabbix_info.inventory.location_lat
-                and self._zabbix_info.inventory.location_lon
-                and not self._location
+            self._zabbix_info.inventory.location_lat
+            and self._zabbix_info.inventory.location_lon
+            and not self._location
         ):
             location = Nominatim(user_agent="coordinateconverter").reverse(
                 ", ".join(self._zabbix_info.inventory.coordinates())
@@ -850,9 +811,7 @@ class DeviceManager:
                 self._location = Location(**location.raw["address"])
         return self._location
 
-    def connect(
-            self, protocol: str = None, auth_obj: Any = None, *args, **kwargs
-    ) -> DeviceFactory:
+    def connect(self, protocol: str = None, auth_obj: Any = None, *args, **kwargs) -> DeviceFactory:
         """
         Устанавливаем подключение к оборудованию
 

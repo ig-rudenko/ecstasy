@@ -1,9 +1,9 @@
-import orjson
+from typing import Literal
 
+import orjson
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -13,7 +13,6 @@ from check import models
 from check.permissions import profile_permission
 from devicemanager.device import Interfaces
 from net_tools.models import VlanName, DevicesInfo
-
 from ..serializers import (
     InterfacesCommentsSerializer,
     ADSLProfileSerializer,
@@ -42,7 +41,7 @@ class PortControlAPIView(generics.GenericAPIView):
         serializer: PortControlSerializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        port_status: str = serializer.validated_data["status"]
+        port_status: Literal["up", "down", "reload"] = serializer.validated_data["status"]
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 

@@ -1,7 +1,6 @@
 """
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
-from datetime import datetime, timedelta
 import re
 
 import pexpect

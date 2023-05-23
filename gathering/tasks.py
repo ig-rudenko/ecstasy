@@ -5,8 +5,10 @@ from django.core.cache import cache
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from ecstasy_project.celery import app
 from check.models import Devices
-from .collectors import MacAddressTableGather, ConfigurationGather, ConfigFileError
-from .config_storage import LocalConfigStorage
+from .mac import MacAddressTableGather
+from .configurations.collector import ConfigurationGather
+from .configurations.exceptions import ConfigFileError
+from .configurations.local_storage import LocalConfigStorage
 
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):

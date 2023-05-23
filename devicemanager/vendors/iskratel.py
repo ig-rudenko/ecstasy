@@ -1,18 +1,19 @@
 import pathlib
 import re
-import socket
 from functools import lru_cache
 from time import sleep
 from typing import Tuple, List, Optional
 
 from django.conf import settings as django_settings
 
+from gathering.ftp.exceptions import NotFound
 from .base import (
     BaseDevice,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable, MACType,
+    T_MACTable,
+    MACType,
 )
 
 
@@ -190,27 +191,19 @@ class IskratelMBan(BaseDevice):
         ) or [("", "")]
         max_rate = [
             (
-                self.find_or_empty(
-                    r"Maximum DS attainable aggregate rate\s+(\d+) kbit", info
-                ),
-                self.find_or_empty(
-                    r"Maximum US attainable aggregate rate\s+(\d+) kbit", info
-                ),
+                self.find_or_empty(r"Maximum DS attainable aggregate rate\s+(\d+) kbit", info),
+                self.find_or_empty(r"Maximum US attainable aggregate rate\s+(\d+) kbit", info),
             )
         ]
 
         # Нахождение сигнал/шума для нисходящего и восходящего каналов.
-        snr = re.findall(r"DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)", info) or [
-            ("", "")
-        ]
+        snr = re.findall(r"DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)", info) or [("", "")]
         # Нахождение чередующейся задержки для нисходящего и восходящего каналов.
         intl = re.findall(
             r"DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)", info
         ) or [("", "")]
         # Нахождение уровня затухания для нисходящего и восходящего каналов.
-        att = re.findall(
-            r"DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)", info
-        ) or [("", "")]
+        att = re.findall(r"DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)", info) or [("", "")]
 
         names = [
             "Фактическая скорость передачи данных (Кбит/с)",
@@ -310,7 +303,9 @@ class IskratelMBan(BaseDevice):
         """
 
         output = self.send_command("show bridge mactable")
-        parsed: List[Tuple[str, str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
+        parsed: List[Tuple[str, str, str]] = re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output
+        )
         mac_type: MACType = "dynamic"
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
@@ -466,9 +461,7 @@ class IskratelMBan(BaseDevice):
                 interfaces_list.append(
                     (
                         interface[0][0],  # name
-                        interface[0][3].lower()
-                        if interface[0][2] == "Equipped"
-                        else "admin down",
+                        interface[0][3].lower() if interface[0][2] == "Equipped" else "admin down",
                         interface[0][1],  # desc
                     )
                 )
@@ -560,7 +553,7 @@ class IskratelMBan(BaseDevice):
         # > show system info
         pass
 
-    def get_current_configuration(self, local_folder_path: pathlib.Path) -> Optional[pathlib.Path]:
+    def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
         """
         Эта функция загружает с FTP-сервера папку конфигурации, соответствующую определенному шаблону,
          и возвращает ее локальный путь.
@@ -573,11 +566,20 @@ class IskratelMBan(BaseDevice):
 
         ftp_collector = django_settings.FTP_COLLECTOR_CLASS
 
-        folder_pattern = re.compile(r"MY\S+77")
+        ftp = ftp_collector(host=self.ip, timeout=30)
+        ftp.login(username=self.auth["login"], password=self.auth["password"])
+        folder_pattern = re.compile(r"^MY\S+77$")
+
+        # Предпочтительная папка MY****77
         try:
-            ftp = ftp_collector(host=self.ip, timeout=30)
-            ftp.login(username=self.auth["login"], password=self.auth["password"])
-            config_folder = ftp.download_folder(folder_or_pattern=folder_pattern, local_dir=local_folder_path)
-        except socket.timeout:
-            return None
+            config_folder = ftp.download_folder(
+                folder_or_pattern=folder_pattern, local_dir=local_folder_path
+            )
+        except NotFound:
+            # Если такой нет, то MY****5*
+            folder_pattern = re.compile(r"^MY\S+5\d$")
+            config_folder = ftp.download_folder(
+                folder_or_pattern=folder_pattern, local_dir=local_folder_path
+            )
+
         return config_folder

@@ -10,12 +10,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from check import models
 from check.permissions import profile_permission
 
-from gathering.collectors import ConfigurationGather, ConfigFileError
+from gathering.configurations.collector import ConfigurationGather
+from gathering.configurations.exceptions import ConfigFileError
+from gathering.configurations.local_storage import LocalConfigStorage, ConfigStorage
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter
 from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
-from gathering.config_storage import LocalConfigStorage, ConfigStorage
 
 
 class BaseConfigStorageAPIView(APIView):
@@ -99,7 +100,6 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
                     "name": "config_file_96f7d499c739875.txt",
                     "size": 19346,
                     "modTime": "11:53 28.03.2023",
-                    "isDir": false
                 }
             ]
         """
@@ -155,7 +155,6 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
                                 "name": "config_file_96f7d499c739875.txt",
                                 "size": 19346,
                                 "modTime": "11:53 28.03.2023",
-                                "isDir": false,
                             }
                         ],
                     },
@@ -212,9 +211,7 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
         try:
             if gather.collect_config_file():
                 # Файл конфигурации был добавлен
-                return Response(
-                    {"status": "Была получена новая конфигурация"}
-                )
+                return Response({"status": "Была получена новая конфигурация"})
             else:
                 # Файл конфигурации не потребовалось добавлять
                 return Response(
@@ -222,7 +219,7 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
                         "status": "Текущая конфигурация не отличается от последней сохраненной,"
                         " так что файл не был создан"
                     },
-                    status=200
+                    status=200,
                 )
 
         except ConfigFileError as error:

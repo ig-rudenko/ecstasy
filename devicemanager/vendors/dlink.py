@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 from time import sleep
-from typing import Literal, Union, Tuple, List
+from typing import Literal, Tuple, List, Optional, Dict, Any
 
 import pexpect
 import textfsm
@@ -85,15 +85,11 @@ class Dlink(BaseDevice):
 
         # Смотрим характеристики устройства
         version = self.send_command("show switch")
-        self.mac = self.find_or_empty(
-            r"MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)", version
-        )
-        self.model = self.model or self.find_or_empty(
-            r"Device Type\s+:\s+(\S+)\s", version
-        )
+        self.mac = self.find_or_empty(r"MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)", version)
+        self.model = self.model or self.find_or_empty(r"Device Type\s+:\s+(\S+)\s", version)
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Cisco
 
@@ -119,7 +115,7 @@ class Dlink(BaseDevice):
         return validate
 
     @staticmethod
-    def validate_port(port: str) -> (str, None):
+    def validate_port(port: str) -> Optional[str]:
         """
         Проверяем порт на валидность
 
@@ -165,7 +161,7 @@ class Dlink(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: str = None,
+        before_catch: Optional[str] = None,
         expect_command=False,
         num_of_expect=10,
         space_prompt=None,
@@ -251,7 +247,7 @@ class Dlink(BaseDevice):
         port_num = set(sorted([int(re.findall(r"\d+", p[0])[0]) for p in interfaces]))
 
         # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
-        ports_vlan = {str(num): [] for num in range(1, len(port_num) + 1)}
+        ports_vlan: Dict[str, list] = {str(num): [] for num in range(1, len(port_num) + 1)}
 
         for vlan in result_vlan:
             # Преобразуем диапазон VLAN в список чисел.
@@ -302,10 +298,7 @@ class Dlink(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [
-            (int(vid), mac, format_type(type_), port)
-            for vid, mac, port, type_ in mac_table
-        ]
+        return [(int(vid), mac, format_type(type_), port) for vid, mac, port, type_ in mac_table]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -368,9 +361,7 @@ class Dlink(BaseDevice):
         r1 = self.send_command(f"config ports {port}{media_type} state disable")
         # Проверка, не установлен ли тип порта и порт больше 23
         if not media_type and int(port) > 23:
-            r1 += self.send_command(
-                f"config ports {port} medium_type fiber state disable"
-            )
+            r1 += self.send_command(f"config ports {port} medium_type fiber state disable")
 
         # Задержка, позволяющая коммутатору обработать команду.
         sleep(4)
@@ -379,9 +370,7 @@ class Dlink(BaseDevice):
         r2 = self.send_command(f"config ports {port}{media_type} state enable")
         # Проверка, не установлен ли тип порта и порт больше 23
         if not media_type and int(port) > 23:
-            r2 += self.send_command(
-                f"config ports {port} medium_type fiber state enable"
-            )
+            r2 += self.send_command(f"config ports {port} medium_type fiber state enable")
 
         self.lock = False
         # Сохранение конфигурации, если для параметра `save_config` установлено значение `True`.
@@ -437,9 +426,7 @@ class Dlink(BaseDevice):
         if not media_type and int(port) > 23:
             # Проверка, является ли порт оптоволоконным портом, и если это так,
             # он установит порт в состояние, которое было передано.
-            r += self.send_command(
-                f"config ports {port} medium_type fiber state {state}"
-            )
+            r += self.send_command(f"config ports {port} medium_type fiber state {state}")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
@@ -493,8 +480,8 @@ class Dlink(BaseDevice):
         else:
             media_type = ""
 
-        port = self.validate_port(port)
-        if port is None:
+        valid_port = self.validate_port(port)
+        if valid_port is None:
             return "Неверный порт"
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
@@ -502,14 +489,14 @@ class Dlink(BaseDevice):
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             status = self.send_command(
-                f"config ports {port}{media_type} clear_description",
+                f"config ports {valid_port}{media_type} clear_description",
                 expect_command=False,
                 before_catch="desc",
             )
 
         else:  # В другом случае, меняем описание на оборудовании
             status = self.send_command(
-                f"config ports {port}{media_type} description {desc}",
+                f"config ports {valid_port}{media_type} description {desc}",
                 expect_command=False,
                 before_catch="desc",
             )
@@ -557,16 +544,14 @@ class Dlink(BaseDevice):
         :return: Словарь с данными тестирования
         """
 
-        diag_output = self.send_command(
-            f"cable_diag ports {port}", expect_command=False
-        )
+        diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
         if "Available commands" in diag_output:
             return {}
 
-        result = {
-            "len": "-",  # Length
-            "status": "",  # Up, Down
+        result: Dict[str, Any] = {
+            "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
+            "status": "",  # Состояние на порту (Up, Down, Empty)
         }
 
         if "can't support" in diag_output or "Unknown" in diag_output:
@@ -580,30 +565,26 @@ class Dlink(BaseDevice):
 
         if re.findall(r"Link (Up|Down)\s+OK", diag_output):
             # Если статус OK
-            match = self.find_or_empty(
-                r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output
-            )
+            match = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
             if len(match) == 2:
                 result["len"] = match[1]  # Длина
                 result["status"] = match[0]  # Up или Down
         else:
             # C ошибкой
             result["status"] = (
-                self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output)
-                or "None"
+                self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
             )
             # Смотрим по очереди 4 пары
             for i in range(1, 5):
                 # Нахождение пары по номеру `i`.
-                pair_n = self.find_or_empty(
-                    rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output
-                )
+                pair_n = self.find_or_empty(rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output)
                 # Проверка, не является ли пара пустой.
                 if pair_n:
                     # Создаем пустой словарь для пары
-                    result[f"pair{i}"] = {}
-                    result[f"pair{i}"]["status"] = pair_n[0].lower()  # Open, Short
-                    result[f"pair{i}"]["len"] = pair_n[1]  # Длина
+                    result["pair" + str(i)] = {
+                        "status": pair_n[0].lower(),  # Open, Short
+                        "len": pair_n[1],  # Длина
+                    }
 
         return result
 

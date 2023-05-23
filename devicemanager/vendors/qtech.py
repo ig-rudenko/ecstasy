@@ -10,7 +10,8 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable, MACType,
+    T_MACTable,
+    MACType,
 )
 
 
@@ -43,19 +44,14 @@ class Qtech(BaseDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command(
-            command="show interface ethernet status", expect_command=False
-        )
+        output = self.send_command(command="show interface ethernet status", expect_command=False)
         output = re.sub(r"[\W\S]+\nInterface", "\nInterface", output)
         with open(
             f"{TEMPLATE_FOLDER}/interfaces/q-tech.template", "r", encoding="utf-8"
         ) as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
-        return [
-            (line[0], line[1].lower().replace("a-", "admin "), line[2])
-            for line in result
-        ]
+        return [(line[0], line[1].lower().replace("a-", "admin "), line[2]) for line in result]
 
     @BaseDevice._lock
     def get_vlans(self) -> T_InterfaceVLANList:
@@ -86,9 +82,7 @@ class Qtech(BaseDevice):
                 output = self.send_command(
                     command=f"show running-config interface ethernet {line[0]}"
                 )
-                vlans_group = re.findall(
-                    r"vlan [ad ]*(\S*\d)", output
-                )  # Строчки вланов
+                vlans_group = re.findall(r"vlan [ad ]*(\S*\d)", output)  # Строчки вланов
                 vlans = []
                 for v in vlans_group:
                     vlans += v.split(";")
@@ -351,9 +345,7 @@ class Qtech(BaseDevice):
             # show running-config interface ethernet {port}
         """
 
-        return self.send_command(
-            f"show running-config interface ethernet {port}"
-        ).strip()
+        return self.send_command(f"show running-config interface ethernet {port}").strip()
 
     @BaseDevice._lock
     @_validate_port()

@@ -13,7 +13,8 @@ from .base import (
     range_to_numbers,
     T_InterfaceList,
     T_InterfaceVLANList,
-    T_MACList, T_MACTable,
+    T_MACList,
+    T_MACTable,
 )
 
 
@@ -32,9 +33,7 @@ class ZTE(BaseDevice):
     space_prompt = "----- more -----"
     # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
     mac_format = (
-        r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S"
-        + "|"
-        + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
+        r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
     )
     vendor = "ZTE"
 
@@ -91,9 +90,7 @@ class ZTE(BaseDevice):
 
         output = self.send_command("show port")
 
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/zte.template", encoding="utf-8"
-        ) as template_file:
+        with open(f"{TEMPLATE_FOLDER}/interfaces/zte.template", encoding="utf-8") as template_file:
             int_des_ = textfsm.TextFSM(template_file)
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [
@@ -199,10 +196,7 @@ class ZTE(BaseDevice):
 
         output = self.send_command("show fdb detail", expect_command=False)
         parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
-        return [
-            (int(vid), mac, type_, port)
-            for mac, vid, port, type_ in parsed
-        ]
+        return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -219,13 +213,9 @@ class ZTE(BaseDevice):
         :return: ```[ (vid, 'mac'), ... ]```
         """
 
-        output_macs = self.send_command(
-            f"show fdb port {port} detail", expect_command=False
-        )
+        output_macs = self.send_command(f"show fdb port {port} detail", expect_command=False)
         if "not found" in output_macs:
-            output_macs = self.send_command(
-                f"show mac dynamic port {port}", expect_command=False
-            )
+            output_macs = self.send_command(f"show mac dynamic port {port}", expect_command=False)
 
         mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
         return [(int(vid), mac) for vid, mac in mac_lines]
@@ -409,14 +399,10 @@ class ZTE(BaseDevice):
 
         if desc == "":
             # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            status = self.send_command(
-                f"clear port {port} description", expect_command=False
-            )
+            status = self.send_command(f"clear port {port} description", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
-            status = self.send_command(
-                f"set port {port} description {desc}", expect_command=False
-            )
+            status = self.send_command(f"set port {port} description {desc}", expect_command=False)
 
         if "Parameter too long" in status:
             # Если длина описания больше чем доступно на оборудовании
@@ -424,10 +410,7 @@ class ZTE(BaseDevice):
             return "Max length:" + self.find_or_empty(r"maxsize:(\d+)", output)
 
         self.lock = False
-        return (
-            f'Description has been {"changed" if desc else "cleared"}.'
-            + self.save_config()
-        )
+        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return={})

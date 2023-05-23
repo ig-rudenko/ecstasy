@@ -3,7 +3,7 @@ import shutil
 from datetime import datetime
 
 from django.test import TestCase
-from ..config_storage import LocalConfigStorage, ConfigFile
+from gathering.configurations.local_storage import LocalConfigStorage, ConfigFile
 from check.models import Devices
 
 
@@ -60,7 +60,6 @@ class TestLocalStorage(TestCase):
                     size=file_stats.st_size,
                     # Время последней модификации
                     modTime=datetime.fromtimestamp(file_stats.st_mtime).strftime("%H:%M %d.%m.%Y"),
-                    isDir=False,
                 ),
             )
 
@@ -114,6 +113,5 @@ class TestLocalStorage(TestCase):
                     size=file_stats.st_size,
                     # Время последней модификации
                     modTime=datetime.fromtimestamp(file_stats.st_mtime).strftime("%H:%M %d.%m.%Y"),
-                    isDir=False,
                 ),
             )

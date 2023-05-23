@@ -1,5 +1,6 @@
 import binascii
 from re import findall, sub
+from typing import List
 
 import textfsm
 from .base import BaseDevice, TEMPLATE_FOLDER
@@ -47,9 +48,7 @@ class Juniper(BaseDevice):
             return formatted_result
 
         # >> Ищем в таблице ARP <<
-        match = self.send_command(
-            f"show arp | match {formatted_mac}", expect_command=False
-        )
+        match = self.send_command(f"show arp | match {formatted_mac}", expect_command=False)
 
         # Форматируем вывод
         with open(
@@ -90,9 +89,7 @@ class Juniper(BaseDevice):
             return formatted_result
 
         # >> Ищем в таблице ARP <<
-        match = self.send_command(
-            f"show arp | match {ip_address}", expect_command=False
-        )
+        match = self.send_command(f"show arp | match {ip_address}", expect_command=False)
 
         # Форматируем вывод
         with open(
@@ -122,9 +119,7 @@ class Juniper(BaseDevice):
             # в байтовый объект, затем используем метод `decode()` для преобразования bytes в строку
             # с использованием кодировки ASCII. Аргумент `errors="replace"` указывает, что любые символы,
             # отличные от ASCII, во входной строке должны быть заменены символом замены Unicode (U+FFFD) в строке.
-            return binascii.unhexlify(unknown_format_str).decode(
-                "ascii", errors="replace"
-            )
+            return binascii.unhexlify(unknown_format_str).decode("ascii", errors="replace")
 
         # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
         # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
@@ -150,7 +145,7 @@ class Juniper(BaseDevice):
 
         # Форматируем вывод
 
-        info = []
+        info: List[str] = []
 
         # IP / MAC / VLAN
         ip_mac_vlan = findall(

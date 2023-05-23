@@ -109,11 +109,11 @@ class ZabbixHostInfo:
     hostid: str = ""
     host: str = ""
     name: str = ""
-    status: int = ""
+    status: int = 0
     description: str = ""
     ip: tuple = tuple()
     inventory: ZabbixInventory = ZabbixInventory()
-    hostgroups: Tuple[ZabbixHostGroup] = tuple()
+    hostgroups: Tuple[ZabbixHostGroup] = ()
 
     @property
     def host_group_names(self):

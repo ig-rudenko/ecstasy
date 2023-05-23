@@ -1,10 +1,10 @@
 import orjson
 
-import ping3
 from datetime import datetime
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -242,7 +242,7 @@ class DeviceInterfacesAPIView(APIView):
                 {
                     "interfaces": [],
                     "deviceAvailable": available > 0,
-                    "collected": datetime.now(),
+                    "collected": timezone.now(),
                 }
             )
 
@@ -261,7 +261,7 @@ class DeviceInterfacesAPIView(APIView):
             {
                 "interfaces": interfaces,
                 "deviceAvailable": available > 0,
-                "collected": datetime.now(),
+                "collected": timezone.now(),
             }
         )
 
@@ -406,7 +406,7 @@ class DeviceInterfacesAPIView(APIView):
         """
 
         interfaces = []
-        collected_time: datetime = datetime.now()
+        collected_time: datetime = timezone.now()
 
         try:
             device_info = ModelDeviceInfo.objects.get(dev=self.device)
@@ -416,10 +416,10 @@ class DeviceInterfacesAPIView(APIView):
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
             interfaces = orjson.loads(device_info.vlans or "[]")
-            collected_time = device_info.vlans_date or datetime.now()
+            collected_time = device_info.vlans_date or timezone.now()
         else:
             interfaces = orjson.loads(device_info.interfaces or "[]")
-            collected_time = device_info.interfaces_date or datetime.now()
+            collected_time = device_info.interfaces_date or timezone.now()
 
         return interfaces, collected_time
 
@@ -439,7 +439,7 @@ class DeviceInterfacesAPIView(APIView):
                 for line in self.device_collector.interfaces
             ]
             self.current_device_info.vlans = orjson.dumps(interfaces_to_save).decode()
-            self.current_device_info.vlans_date = datetime.now()
+            self.current_device_info.vlans_date = timezone.now()
             self.current_device_info.save(update_fields=["vlans", "vlans_date"])
 
         elif self.device_collector.interfaces:
@@ -452,7 +452,7 @@ class DeviceInterfacesAPIView(APIView):
                 for line in self.device_collector.interfaces
             ]
             self.current_device_info.interfaces = orjson.dumps(interfaces_to_save).decode()
-            self.current_device_info.interfaces_date = datetime.now()
+            self.current_device_info.interfaces_date = timezone.now()
             self.current_device_info.save(update_fields=["interfaces", "interfaces_date"])
 
         else:

@@ -1,7 +1,7 @@
 from functools import wraps
 import re
 from time import sleep
-from typing import Tuple, List
+from typing import Tuple, List, Dict, Any
 
 import pexpect
 import textfsm
@@ -57,9 +57,9 @@ class Cisco(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
-        self.__cache_port_info = {}
+        self.__cache_port_info: Dict[str, str] = {}
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Cisco
 
@@ -129,9 +129,7 @@ class Cisco(BaseDevice):
         return [
             (
                 line[0],  # interface
-                line[2].lower()
-                if "up" in line[1].lower()
-                else line[1].lower(),  # status
+                line[2].lower() if "up" in line[1].lower() else line[1].lower(),  # status
                 line[3],  # desc
             )
             for line in result
@@ -155,14 +153,13 @@ class Cisco(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
-        result = []
+        result: T_InterfaceVLANList = []
 
         self.lock = False
-        interfaces = self.get_interfaces()
+        interfaces: T_InterfaceList = self.get_interfaces()
         self.lock = True
 
         for line in interfaces:
-            line: list = list(line)
             # Отфильтровываем интерфейсы VLAN.
             if not line[0].startswith("V"):
                 output = self.send_command(
@@ -170,11 +167,12 @@ class Cisco(BaseDevice):
                     before_catch="Building configuration",
                     expect_command=False,
                 )
-                vlans_group = re.findall(
+
+                #
+                vlans_group: List[str] = re.findall(
                     r"(?<=access|llowed) vlan [ad\s]*(\S*\d)", output
-                )  # Строчки вланов
-                line = line + [vlans_group]
-                result.append(tuple(line))
+                )
+                result.append((line[0], line[1], line[2], vlans_group))
 
         return result
 
@@ -196,7 +194,9 @@ class Cisco(BaseDevice):
             f"show mac address-table interface {port}",
             expect_command=False,
         )
-        macs_list: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
+        macs_list: List[Tuple[str, str]] = re.findall(
+            rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str
+        )
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice._lock
@@ -217,8 +217,7 @@ class Cisco(BaseDevice):
                 return "dynamic"
             if type_ == "static":
                 return "static"
-            if type_ == "security":
-                return "security"
+            return "security"
 
         mac_str = self.send_command("show mac address-table", expect_command=False)
         mac_table: List[Tuple[str, str, str, str]] = re.findall(
@@ -375,9 +374,7 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
-            "data", ""
-        )
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
         # Ищем тип порта.
         port_type = "".join(
             self.find_or_empty(
@@ -401,13 +398,9 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
-            "data", ""
-        )
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
 
-        media_type = [
-            line.strip() for line in port_info.split("\n") if "errors" in line
-        ]
+        media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice._lock
@@ -545,7 +538,7 @@ class Cisco(BaseDevice):
 
     @BaseDevice._lock
     def get_device_info(self) -> dict:
-        data = {"cpu": {}, "ram": {}, "flash": {}}
+        data: Dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         for key in data:
             data[key]["util"] = getattr(self, f"get_{key}_utilization")()
         data["temp"] = self.get_temp()
@@ -558,9 +551,7 @@ class Cisco(BaseDevice):
 
         cpu_percent = re.findall(
             r"one minute: (\d+)%",
-            self.send_command(
-                "show processes cpu | include minute", expect_command=False
-            ),
+            self.send_command("show processes cpu | include minute", expect_command=False),
             flags=re.IGNORECASE,
         )
 
@@ -577,9 +568,7 @@ class Cisco(BaseDevice):
             flags=re.IGNORECASE,
         )
 
-        flash_percent = (
-            int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
-        )
+        flash_percent = int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
         return flash_percent
 
     def get_ram_utilization(self) -> int:
@@ -602,36 +591,41 @@ class Cisco(BaseDevice):
     def get_temp(self) -> dict:
 
         output = self.send_command("show env temp status")
-        pattern = r"Temperature Value: ([-]?\d+[.]?\d?) Degree Celsius"
 
         if "Invalid input" in output:
             output = self.send_command("show env temp")
             pattern = r"CPU\s+([-]?\d+)C"
+        else:
+            pattern = r"Temperature Value: ([-]?\d+[.]?\d?) Degree Celsius"
 
         temp = self.find_or_empty(pattern, output)
 
         if not temp:
             return {}
 
-        temp = float(temp)
+        current_temp = float(temp)
 
-        high_temp = "".join(
-            self.find_or_empty(
-                r"SYSTEM High Temperature Shutdown Threshold: (\d+[.]?\d?) Degree Celsius|"
-                r"Red Threshold    : (\d+) Degree Celsius",
-                output,
-            )
-            or 80
+        high_temp_limit: List[Tuple[str, str]] = re.findall(
+            r"SYSTEM High Temperature Shutdown Threshold: (\d+[.]?\d?) Degree Celsius|"
+            r"Red Threshold {4}: (\d+) Degree Celsius",
+            output,
         )
-        medium_temp = "".join(
-            self.find_or_empty(
-                r"SYSTEM High Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius|"
-                r"Yellow Threshold : (\d+) Degree Celsius",
-                output,
-            )
-            or 60
+        if high_temp_limit:
+            high_temp = float("".join(high_temp_limit[0]))
+        else:
+            high_temp = 60.0
+
+        medium_temp_limit: List[Tuple[str, str]] = re.findall(
+            r"SYSTEM High Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius|"
+            r"Yellow Threshold : (\d+) Degree Celsius",
+            output,
         )
-        low_temp = (
+        if medium_temp_limit:
+            medium_temp = float("".join(medium_temp_limit[0]))
+        else:
+            medium_temp = 60.0
+
+        low_temp = float(
             self.find_or_empty(
                 r"SYSTEM Low Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius",
                 output,
@@ -640,14 +634,14 @@ class Cisco(BaseDevice):
         )
 
         status = "normal"
-        if temp >= float(medium_temp):
+        if current_temp >= medium_temp:
             status = "medium"
-        elif temp >= float(high_temp) - 6:
+        elif current_temp >= high_temp - 6:
             status = "high"
-        elif temp <= float(low_temp):
+        elif current_temp <= low_temp:
             status = "low"
 
-        return {"value": temp, "status": status}
+        return {"value": current_temp, "status": status}
 
     @BaseDevice._lock
     def get_current_configuration(self, *args, **kwargs) -> str:

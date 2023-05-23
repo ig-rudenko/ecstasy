@@ -1,7 +1,7 @@
 import re
 from time import sleep
 from functools import lru_cache, wraps
-from typing import Literal, List, Tuple
+from typing import Literal, List, Tuple, Any
 
 import pexpect
 import textfsm
@@ -27,7 +27,7 @@ class EdgeCore(BaseDevice):
     vendor = "Edge-Core"
     mac_format = r"\S\S-" * 5 + r"\S\S"
 
-    def _validate_port(self=None, if_invalid_return=None):
+    def _validate_port(self: Any = None, if_invalid_return=None):
         """
         ## Декоратор для проверки правильности порта Edge Core
 
@@ -117,9 +117,7 @@ class EdgeCore(BaseDevice):
                     vlans.extend(v.split(","))
 
                 # Добавляем в словарь с ключом интерфейса отсортированный список VLANs
-                int_vlan[self.find_or_empty(r"^ethernet \d+/\d+", piece)] = sorted(
-                    set(vlans)
-                )
+                int_vlan[self.find_or_empty(r"^ethernet \d+/\d+", piece)] = sorted(set(vlans))
 
         # Распаковка кортежа `line` и добавление кортежа `vlans` в конец нового кортежа.
         # Создание списка кортежей.
@@ -170,14 +168,11 @@ class EdgeCore(BaseDevice):
         """
 
         output = self.send_command("show mac-address-table", expect_command=False)
-        mac_table = re.findall(
-            rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output
-        )
+        mac_table = re.findall(rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output)
 
         mac_type: Literal["dynamic"] = "dynamic"
         return [
-            (int(vid), str(mac), mac_type, re.sub(r"\s", "", port))
-            for port, mac, vid in mac_table
+            (int(vid), str(mac), mac_type, re.sub(r"\s", "", port)) for port, mac, vid in mac_table
         ]
 
     @BaseDevice._lock
@@ -326,9 +321,7 @@ class EdgeCore(BaseDevice):
         """
         port_type_result = ""
         # Нахождение режима комбо.
-        combo_mode = self.find_or_empty(
-            "Combo forced mode: (.+)", self.__get_port_info(port)
-        )
+        combo_mode = self.find_or_empty("Combo forced mode: (.+)", self.__get_port_info(port))
 
         if combo_mode != "None":
             # Код проверяет, является ли тип порта комбинированным портом.
@@ -453,4 +446,4 @@ class EdgeCore(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
     def get_device_info(self) -> dict:
-        pass
+        return {}

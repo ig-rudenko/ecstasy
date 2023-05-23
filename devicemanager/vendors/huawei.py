@@ -14,7 +14,8 @@ from .base import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    T_MACTable, MACType,
+    T_MACTable,
+    MACType,
 )
 
 
@@ -73,25 +74,19 @@ class Huawei(BaseDevice):
 
         version = self.send_command("display version")
         # Нахождение модели устройства.
-        self.model = self.find_or_empty(
-            r"Quidway (\S+) [Routing Switch]*uptime", version
-        )
+        self.model = self.find_or_empty(r"Quidway (\S+) [Routing Switch]*uptime", version)
 
         if "S2403" in self.model:
             manuinfo = self.send_command("display device manuinfo")
             # Нахождение MAC-адреса устройства.
             self.mac = self.find_or_empty(r"MAC ADDRESS\s+:\s+(\S+)", manuinfo)
             # Нахождение серийного номера устройства.
-            self.serialno = self.find_or_empty(
-                r"DEVICE SERIAL NUMBER\s+:\s+(\S+)", manuinfo
-            )
+            self.serialno = self.find_or_empty(r"DEVICE SERIAL NUMBER\s+:\s+(\S+)", manuinfo)
 
         elif "S2326" in self.model:
             mac = self.send_command("display bridge mac-address")
             # Нахождение mac адреса устройства.
-            self.mac = self.find_or_empty(
-                r"System Bridge Mac Address\s+:\s+(\S+)\.", mac
-            )
+            self.mac = self.find_or_empty(r"System Bridge Mac Address\s+:\s+(\S+)\.", mac)
 
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
@@ -188,10 +183,7 @@ class Huawei(BaseDevice):
         return [
             (
                 line[0],  # interface
-                line[1]
-                .lower()
-                .replace("adm", "admin")
-                .replace("*", "admin "),  # status
+                line[1].lower().replace("adm", "admin").replace("*", "admin "),  # status
                 line[2],  # desc
             )
             for line in result
@@ -287,10 +279,7 @@ class Huawei(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [
-            (int(vid), mac, format_type(type_), port)
-            for mac, vid, port, type_ in mac_table
-        ]
+        return [(int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table]
 
     @BaseDevice._lock
     @_validate_port(if_invalid_return=[])
@@ -319,9 +308,7 @@ class Huawei(BaseDevice):
 
         if "2403" in self.model:
             mac_str = self.send_command(f"display mac-address interface {port}")
-            for i in re.findall(
-                rf"({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str
-            ):
+            for i in re.findall(rf"({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str):
                 mac_list.append(i[::-1])
 
         elif "2326" in self.model:
@@ -403,11 +390,7 @@ class Huawei(BaseDevice):
 
         errors = self.__port_info(port).split("\n")
         return "\n".join(
-            [
-                line.strip()
-                for line in errors
-                if "error" in line.lower() or "CRC" in line
-            ]
+            [line.strip() for line in errors if "error" in line.lower() or "CRC" in line]
         )
 
     @BaseDevice._lock
@@ -565,19 +548,14 @@ class Huawei(BaseDevice):
         if "Wrong parameter found" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
-            return "Max length:" + self.find_or_empty(
-                r"no more than (\d+) characters", output
-            )
+            return "Max length:" + self.find_or_empty(r"no more than (\d+) characters", output)
 
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.lock = False
-        return (
-            f'Description has been {"changed" if desc else "cleared"}.'
-            + self.save_config()
-        )
+        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
 
     def __parse_virtual_cable_test_data(self, data: str) -> dict:
         """
@@ -596,18 +574,10 @@ class Huawei(BaseDevice):
 
         if "2326" in self.model:
             # Для Huawei 2326
-            parse_data["pair1"]["len"] = self.find_or_empty(
-                r"Pair A length: (\d+)meter", data
-            )
-            parse_data["pair2"]["len"] = self.find_or_empty(
-                r"Pair B length: (\d+)meter", data
-            )
-            parse_data["pair1"]["status"] = self.find_or_empty(
-                r"Pair A state: (\S+)", data
-            ).lower()
-            parse_data["pair2"]["status"] = self.find_or_empty(
-                r"Pair B state: (\S+)", data
-            ).lower()
+            parse_data["pair1"]["len"] = self.find_or_empty(r"Pair A length: (\d+)meter", data)
+            parse_data["pair2"]["len"] = self.find_or_empty(r"Pair B length: (\d+)meter", data)
+            parse_data["pair1"]["status"] = self.find_or_empty(r"Pair A state: (\S+)", data).lower()
+            parse_data["pair2"]["status"] = self.find_or_empty(r"Pair B state: (\S+)", data).lower()
 
             if parse_data["pair1"]["status"] == parse_data["pair2"]["status"] == "ok":
                 parse_data["status"] = "Up"
@@ -626,9 +596,9 @@ class Huawei(BaseDevice):
             # Для Huawei 2403
             parse_data["len"] = self.find_or_empty(r"(\d+) meter", data)
 
-            status = self.find_or_empty(
-                r"Cable status: (normal)", data
-            ) or self.find_or_empty(r"Cable status: abnormal\((\S+)\),", data)
+            status = self.find_or_empty(r"Cable status: (normal)", data) or self.find_or_empty(
+                r"Cable status: abnormal\((\S+)\),", data
+            )
 
             parse_data["status"] = "Up" if status == "normal" else status.capitalize()
             del parse_data["pair1"]
@@ -690,16 +660,14 @@ class Huawei(BaseDevice):
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
-        return self.__parse_virtual_cable_test_data(
-            cable_test_data
-        )  # Парсим полученные данные
+        return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
 
     def get_port_info(self, port: str) -> dict:
         return {"type": "text", "data": ""}
 
     @BaseDevice._lock
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
     @BaseDevice._lock
     def get_current_configuration(self, *args, **kwargs) -> str:
@@ -788,38 +756,38 @@ class HuaweiCX600(BaseDevice):
 
         return []
 
-    def get_interfaces(self) -> list:
-        pass
+    def get_interfaces(self) -> T_InterfaceList:
+        return []
 
-    def get_vlans(self) -> list:
-        pass
+    def get_vlans(self) -> T_InterfaceVLANList:
+        return []
 
-    def get_mac(self, port: str) -> list:
-        pass
+    def get_mac(self, port: str) -> T_MACList:
+        return []
 
     def reload_port(self, port: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     def save_config(self):
         pass
 
     def set_description(self, port: str, desc: str) -> str:
-        pass
+        return ""
 
     def get_port_info(self, port: str) -> dict:
-        pass
+        return {}
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}

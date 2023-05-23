@@ -3,7 +3,7 @@ import pathlib
 import string
 import time
 from functools import wraps
-from typing import List, Tuple, Literal
+from typing import List, Tuple, Literal, Optional, TypedDict
 
 import pexpect
 from abc import ABC, abstractmethod
@@ -12,18 +12,18 @@ from abc import ABC, abstractmethod
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent / "templates"
 
 # Аннотации типов
-MAC: type = str
-MACType: type = Literal["static", "dynamic", "security"]
-PORT: type = str
-STATUS: type = str
-DESCRIPTION: type = str
-VID: type = int
-VLAN_LIST: type = list
-T_InterfaceList: type = List[Tuple[PORT, STATUS, DESCRIPTION]]
-T_InterfaceVLANList: type = List[Tuple[PORT, STATUS, DESCRIPTION, VLAN_LIST]]
-T_MACTable: type = List[Tuple[VID, MAC, MACType, PORT]]
-T_MACList: type = List[Tuple[VID, MAC]]
-T_SplittedPort: type = Tuple[str, Tuple[str]]
+MAC = str
+MACType = Literal["static", "dynamic", "security"]
+PORT = str
+STATUS = str
+DESCRIPTION = str
+VID = int
+VLAN_LIST = list
+T_InterfaceList = List[Tuple[PORT, STATUS, DESCRIPTION]]
+T_InterfaceVLANList = List[Tuple[PORT, STATUS, DESCRIPTION, VLAN_LIST]]
+T_MACTable = List[Tuple[VID, MAC, MACType, PORT]]
+T_MACList = List[Tuple[VID, MAC]]
+T_SplittedPort = Tuple[str, Tuple[str, ...]]
 
 # Обозначения медных типов по стандарту IEEE 802.3
 COOPER_TYPES = ["T", "TX", "VG", "CX", "CR"]
@@ -134,6 +134,12 @@ def range_to_numbers(ports_string: str) -> List[int]:
     return sorted(res_ports)
 
 
+class DeviceAuthDict(TypedDict):
+    login: str
+    password: str
+    privilege_mode_password: str
+
+
 class BaseDevice(ABC):
     """
     Абстрактный базовый класс для устройств,
@@ -144,7 +150,7 @@ class BaseDevice(ABC):
     prompt: str
 
     # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
-    space_prompt: str
+    space_prompt: Optional[str]
 
     mac_format = ""  # Регулярное выражение, которое определяет отображение МАС адреса
     SAVED_OK = "Saved OK"  # Конфигурация была сохранена
@@ -158,7 +164,7 @@ class BaseDevice(ABC):
         self.session: pexpect.spawn = session
         self.ip = ip
         self.model: str = model
-        self.auth: dict = auth
+        self.auth: DeviceAuthDict = auth
         self.mac: str = ""
         self.serialno: str = ""
         self.os: str = ""
@@ -305,7 +311,7 @@ class BaseDevice(ABC):
     def send_command(
         self,
         command: str,
-        before_catch: str = None,
+        before_catch: Optional[str] = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,

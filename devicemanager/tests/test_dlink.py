@@ -212,8 +212,7 @@ Total Entries  : 0
         elif "cable_diag ports" in command:
             self.before = self._virtual_cable_test(command)
         elif (
-            "config ports 2 description" in command
-            or "config ports 2 clear_description" in command
+            "config ports 2 description" in command or "config ports 2 clear_description" in command
         ):
             self.before = b"Success"
         else:
@@ -366,9 +365,7 @@ class TestDLinkInterfaceParser(SimpleTestCase):
 Notes:(F)indicates fiber medium and (C)indicates copper medium in a combo port.
         """
 
-        with open(
-            self.TEMPLATE_DIR / "interfaces" / "d-link.template"
-        ) as template_file:
+        with open(self.TEMPLATE_DIR / "interfaces" / "d-link.template") as template_file:
             int_des_ = textfsm.TextFSM(template_file)
         result = int_des_.ParseText(interfaces_output)
 
@@ -428,9 +425,7 @@ Static Tagged Ports    : 25-26
 Static Untagged Ports  :
 Forbidden Ports        :
 """
-        with open(
-            self.TEMPLATE_DIR / "vlans_templates" / "d-link.template"
-        ) as template_file:
+        with open(self.TEMPLATE_DIR / "vlans_templates" / "d-link.template") as template_file:
             int_des_ = textfsm.TextFSM(template_file)
         result = int_des_.ParseText(vlan_output)
 
