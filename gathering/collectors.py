@@ -1,14 +1,13 @@
 import hashlib
 import re
-import datetime
 import shutil
+from typing import Union
+from itertools import islice
+from datetime import timedelta
 
 import orjson
 import pathlib
-
-from itertools import islice
-from typing import Union
-
+from django.utils import timezone
 from django.conf import settings
 
 from check.models import Devices
@@ -137,7 +136,7 @@ class MacAddressTableGather:
             device_history = DevicesInfo.objects.create(dev=self.device)
 
         device_history.interfaces = orjson.dumps(interfaces_to_save).decode()
-        device_history.interfaces_date = datetime.datetime.now()
+        device_history.interfaces_date = timezone.now()
         device_history.save(update_fields=["interfaces", "interfaces_date"])
 
     def get_desc(self, interface_name: str) -> str:
@@ -176,15 +175,15 @@ class MacAddressTableGather:
             return "E"
         return ""
 
-    def clear_old_records(self, timedelta=datetime.timedelta(hours=48)) -> None:
+    def clear_old_records(self, timedelta_=timedelta(hours=48)) -> None:
         """
         ## Удаляет из базы данных все записи MAC адресов для оборудования старше 48 часов.
 
-        :param timedelta: Количество времени для хранения записей
+        :param timedelta_: Количество времени для хранения записей
         """
         MacAddress.objects.filter(
             device_id=self.device.id,
-            datetime__lt=datetime.datetime.now() - timedelta,
+            datetime__lt=timezone.now() - timedelta_,
         ).delete()
 
     @property
