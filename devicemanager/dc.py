@@ -2,6 +2,7 @@
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
 import re
+from dataclasses import dataclass
 
 import pexpect
 from .vendors import *
@@ -9,11 +10,11 @@ from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceEr
 from .session_control import DEVICE_SESSIONS
 
 
+@dataclass
 class SimpleAuthObject:
-    def __init__(self, login, password, secret=""):
-        self.login = login
-        self.password = password
-        self.secret = secret
+    login: str
+    password: str
+    secret: str = ""
 
 
 class DeviceFactory:
@@ -41,30 +42,29 @@ class DeviceFactory:
         telnet_unavailable,  # 3
         r"Press any key to continue",  # 4
         r"Timeout or some unexpected error happened on server host",  # 5 - Ошибка радиуса
-        r"The password needs to be changed",  # 6 Нажать `N`
+        send_N_key,  # 6 Нажать `N`
     ]
 
-    def __init__(self, ip: str, protocol: str, auth_obj=None, make_session_global=True):
+    def __init__(self, ip: str, protocol: str, auth_obj, make_session_global: bool = True):
         self.ip = ip
         self.session: pexpect.spawn
         self.protocol = protocol
-        self.login = []
-        self.password = []
-        self.privilege_mode_password = "enable"
         self._session_global = make_session_global
 
         if isinstance(auth_obj, list):
+            self.login = []
+            self.password = []
             # Список объектов
-            for auth_ in auth_obj:
-                self.login.append(auth_.login)
-                self.password.append(auth_.password)
-                self.privilege_mode_password = auth_.secret or "enable"
+            for auth in auth_obj:
+                self.login.append(auth.login)
+                self.password.append(auth.password)
+                self.privilege_mode_password = auth.secret
 
         else:
             # Один объект
-            self.login = [auth_obj.login] or ["admin"]
-            self.password = [auth_obj.password] or ["admin"]
-            self.privilege_mode_password = auth_obj.secret or "enable"
+            self.login = [auth_obj.login]
+            self.password = [auth_obj.password]
+            self.privilege_mode_password = auth_obj.secret
 
     def send_command(self, command: str) -> str:
         """
@@ -422,6 +422,7 @@ class DeviceFactory:
         device_session = self.get_device()
 
         if self._session_global:
+            # Сохраняем новую сессию, если было указано хранение глобально
             DEVICE_SESSIONS.add_connection(self.ip, device_session)
 
         return device_session

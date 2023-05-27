@@ -1,6 +1,7 @@
-import datetime
 import re
+from functools import lru_cache
 
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.humanize.templatetags.humanize import naturaltime
@@ -23,6 +24,7 @@ class MacTraceroute(APIView):
         # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
         self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
 
+    @lru_cache(maxsize=255)
     def reformatting(self, name: str):
         """
         ### Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat
@@ -168,9 +170,7 @@ class MacTraceroute(APIView):
                 exist_nodes_id.append(record.device.name)
 
             # Он вычисляет разницу во времени между текущим временем и временем создания записи.
-            time_delta = (
-                datetime.datetime.now().timestamp() - record.datetime.timestamp()
-            )
+            time_delta = timezone.now().timestamp() - record.datetime.timestamp()
             # Вычисляем вес. Чем запись новее, тем больше вес.
             #         `172800` - количество секунд в двух днях.
             #         `100` - максимальный вес.

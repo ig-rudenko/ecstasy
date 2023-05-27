@@ -10,8 +10,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-from devicemanager.dc import DeviceFactory
-from devicemanager.dc import SimpleAuthObject
+from devicemanager.dc import DeviceFactory, SimpleAuthObject
 
 
 class DeviceGroup(models.Model):
