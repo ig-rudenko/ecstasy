@@ -10,7 +10,7 @@ from check.models import Devices
 from net_tools.models import DevicesInfo
 from devicemanager.device import (
     DeviceManager,
-    Config as DeviceZabbixConfig,
+    ZabbixAPIConfig as DeviceZabbixConfig,
     Interfaces,
 )
 from devicemanager.vendors.base import T_MACTable
@@ -25,7 +25,6 @@ class MacAddressTableGather:
     """
 
     def __init__(self, from_: Devices):
-
         if not DeviceZabbixConfig.ZABBIX_URL:
             DeviceZabbixConfig.set(ZabbixConfig.load())
 
@@ -40,7 +39,6 @@ class MacAddressTableGather:
         try:
             # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
             with self.device.connect(make_session_global=False) as session:
-
                 # Если в сеансе есть функция с именем normalize_interface_name,
                 # установите атрибут normalize_interface для этой функции.
                 # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.

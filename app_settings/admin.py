@@ -55,7 +55,7 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
         """
 
         try:
-            with ZabbixAPI(server=obj.url) as zabbix_api:
+            with ZabbixAPI(server=obj.url, timeout=2) as zabbix_api:
                 zabbix_api.login(user=obj.login, password=obj.password)
                 return "✅" if zabbix_api.api_version() else "❌"
         except ZabbixConnectionError:

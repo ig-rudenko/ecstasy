@@ -1,7 +1,7 @@
 """
 # Модели для сохранения настроек для взаимодействия Ecstasy с Zabbix, Elastic, VLAN Traceroute
 
-Каждая модель представляет из себя singleton, так как настройка должна быть только в единственном варианте
+Каждая модель представляет собой singleton, так как настройка должна быть только в единственном варианте
 
 """
 
@@ -32,7 +32,7 @@ class SingletonModel(models.Model):
         ## Загрузка объекта из базы данных.
 
         В противном случае создадим новый пустой (по умолчанию) экземпляр объекта
-         и вернем его (без сохранения в базе данных).
+        и вернем его (без сохранения в базе данных).
         """
         try:
             return cls.objects.get()
@@ -104,9 +104,7 @@ class LogsElasticStackSettings(SingletonModel):
 
     def is_set(self):
         """Проверяет, настройки имеются или нет"""
-        return (
-            self.kibana_url and self.time_range and self.time_field and self.query_str
-        )
+        return self.kibana_url and self.time_range and self.time_field and self.query_str
 
     def query_kibana_url(self, **kwargs) -> str:
         """
@@ -140,14 +138,21 @@ class ZabbixConfig(SingletonModel):
     ## Настройки для подключения к Zabbix API через http
     """
 
-    url = models.URLField(
-        verbose_name="URL", help_text="Например: https://10.0.0.1/zabbix"
-    )
+    url = models.URLField(verbose_name="URL", help_text="Например: https://10.0.0.1/zabbix")
     login = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
 
     def __str__(self):
         return "Zabbix settings"
+
+    def save(self, *args, **kwargs):
+        """
+        После сохранения новых настроек Zabbix API в базу, необходимо указать эти параметры для `ZabbixAPIConfig`.
+        """
+        super().save(*args, **kwargs)
+        # Устанавливаем конфигурацию для работы с devicemanager
+        from devicemanager import ZabbixAPIConfig
+        ZabbixAPIConfig.set(self)
 
     class Meta:
         db_table = "zabbix_api_settings"

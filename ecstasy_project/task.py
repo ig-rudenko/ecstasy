@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from celery import Task
 
 from app_settings.models import ZabbixConfig
-from devicemanager import Config
+from devicemanager import ZabbixAPIConfig
 
 
 class ThreadUpdatedStatusTask(Task):
@@ -27,7 +27,7 @@ class ThreadUpdatedStatusTask(Task):
         """
         ## Эта функция вызывается перед началом симуляции
         """
-        Config.set(ZabbixConfig.load())
+        ZabbixAPIConfig.set(ZabbixConfig.load())
 
     def run(self, *args, **kwargs):
         """

@@ -1,5 +1,5 @@
 from .device import DeviceManager, DevicesCollection
-from .device import Config
+from .device import ZabbixAPIConfig
 from .exceptions import (
     AuthException,
     DeviceException,

@@ -15,7 +15,7 @@ from check import models
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import DeviceManager
 from devicemanager.exceptions import DeviceException
-from devicemanager.device import Interfaces as InterfacesObject, Config as ZabbixConfig
+from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConfig as ZabbixConfig
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..decorators import device_connection
@@ -75,7 +75,6 @@ class DevicesListAPIView(generics.ListAPIView):
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
 class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
-
     serializer_class = DevicesSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceInfoFilter

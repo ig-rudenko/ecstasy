@@ -8,7 +8,7 @@ import orjson
 from typing import Any, List, Sequence, Optional
 from concurrent.futures import ThreadPoolExecutor
 
-from django.db.utils import OperationalError, ProgrammingError
+from django.db import ProgrammingError
 from ping3 import ping as socket_ping
 import tabulate
 from pyzabbix import ZabbixAPI
@@ -16,8 +16,8 @@ from requests import ConnectionError as ZabbixConnectionError
 from alive_progress import alive_bar
 from geopy.geocoders import Nominatim
 
-from ecstasy_project.settings import NON_ABON_INTERFACES_PATTERN
 from app_settings.models import ZabbixConfig
+from ecstasy_project.settings import NON_ABON_INTERFACES_PATTERN
 from . import snmp
 from .dc import DeviceFactory
 from .exceptions import (
@@ -36,7 +36,7 @@ from .zabbix_info_dataclasses import (
 )
 
 
-class Config:
+class ZabbixAPIConfig:
     """Конфигурация для работы с Zabbix API"""
 
     ZABBIX_URL: str = ""
@@ -47,15 +47,15 @@ class Config:
     @staticmethod
     def set(obj):
         """Задаем настройки"""
-        Config.ZABBIX_URL = obj.url
-        Config.ZABBIX_USER = obj.login
-        Config.ZABBIX_PASSWORD = obj.password
+        ZabbixAPIConfig.ZABBIX_URL = obj.url
+        ZabbixAPIConfig.ZABBIX_USER = obj.login
+        ZabbixAPIConfig.ZABBIX_PASSWORD = obj.password
 
 
 try:
     # Устанавливаем конфигурацию для работы с devicemanager
-    Config.set(ZabbixConfig.load())
-except (OperationalError, ProgrammingError):
+    ZabbixAPIConfig.set(ZabbixConfig.load())
+except ProgrammingError:
     pass
 
 
@@ -107,7 +107,6 @@ class Interfaces:
             self.__interfaces: List[Interface] = []
 
             for intf in data:
-
                 # Если был передан словарь
                 if isinstance(intf, dict):
                     if intf.get("Status") is None:
@@ -152,7 +151,7 @@ class Interfaces:
             ],
             headers=["Interface", "Status", "Description", "VLAN"],
             maxcolwidths=[None, None, None, 40],
-            tablefmt=Config.TABLE_FORMAT,
+            tablefmt=ZabbixAPIConfig.TABLE_FORMAT,
         )
 
     def __getitem__(self, item):
@@ -325,7 +324,6 @@ class DevicesCollection:
     """Создает коллекцию из узлов сети, для комплексной работы с ними"""
 
     def __init__(self, devs: (list, tuple), intf_coll=False, zbx_coll=False):
-
         self.interfaces_collected = intf_coll  # Были собраны интерфейсы
         self.zabbix_collected = zbx_coll  # Были собраны из Zabbix данные
         self.auth_groups: list = []
@@ -358,8 +356,8 @@ class DevicesCollection:
         :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
         """
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 groups = zbx.hostgroup.get(filter={"name": groups_name}, output=["groupid"])
                 if groups:
                     hosts = zbx.host.get(
@@ -392,8 +390,8 @@ class DevicesCollection:
         if ips.count(" "):
             ips = ips.split()
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 hosts = zbx.host.get(filter={"ip": ips}, output=["name"], sortfield=["name"])
         except ZabbixConnectionError:
             return DevicesCollection([])
@@ -575,8 +573,8 @@ class DevicesCollection:
 
 class DeviceManager:
     """
-    Собирает информации с Zabbix для одного узла сети
-    Сканирует интерфейсы оборудования в реальном времени
+    Собирает информации с Zabbix для одного узла сети.
+    Сканирует интерфейсы оборудования в реальном времени.
     """
 
     def __init__(self, name, zabbix_info=True):
@@ -598,8 +596,8 @@ class DeviceManager:
         """Собирает информацию по данному оборудованию из Zabbix"""
 
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL, timeout=5) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL, timeout=5) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 zabbix_info = zbx.host.get(
                     filter={"name": self.name},
                     output=["hostid", "host", "name", "status", "description"],
@@ -645,8 +643,8 @@ class DeviceManager:
     def push_zabbix_inventory(self):
         """Обновляем инвентарные данные узла сети в Zabbix"""
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 zbx.host.update(
                     hostid=self.zabbix_info.hostid,
                     inventory={
@@ -681,8 +679,8 @@ class DeviceManager:
         Коллекция, потому что по данному IP могут быть несколько записей в Zabbix
         """
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 hosts = zbx.host.get(filter={"ip": ip}, output=["name"])
         except ZabbixConnectionError:
             return DevicesCollection([])
@@ -692,8 +690,8 @@ class DeviceManager:
     def from_hostid(cls, hostid: str) -> ("DeviceManager", None):
         """Создаем объект через переданный hostid Zabbix"""
         try:
-            with ZabbixAPI(server=Config.ZABBIX_URL) as zbx:
-                zbx.login(Config.ZABBIX_USER, Config.ZABBIX_PASSWORD)
+            with ZabbixAPI(server=ZabbixAPIConfig.ZABBIX_URL) as zbx:
+                zbx.login(ZabbixAPIConfig.ZABBIX_USER, ZabbixAPIConfig.ZABBIX_PASSWORD)
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
                 return DeviceManager(host[0]["name"])
@@ -707,7 +705,6 @@ class DeviceManager:
         """Собираем интерфейсы оборудования"""
 
         if not current_status:  # Смотрим из истории
-
             from net_tools.models import DevicesInfo
 
             try:
@@ -723,7 +720,6 @@ class DeviceManager:
 
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == "snmp":
-
             # SNMP
             raw_interfaces = snmp.show_interfaces(device_ip=self.ip, community=self.snmp_community)
             self.interfaces = Interfaces(
@@ -739,7 +735,6 @@ class DeviceManager:
             )
 
         else:
-
             # CMD
             if not auth_obj and not self.auth_obj:
                 return "Не указан профиль авторизации для данного оборудования"
@@ -750,7 +745,6 @@ class DeviceManager:
                 with self.connect(
                     self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
                 ) as session:
-
                     if session.model:
                         self.zabbix_info.inventory.model = session.model
 
