@@ -6,16 +6,39 @@ on:
   pull_request:
     branches: [ "master" ]
 env:
-  DJANGO_SECRET_KEY: qwertyuiop1234567890
+  DJANGO_SECRET_KEY: qwerty*!(#*JJSAJ_!@+uiop1234567890
+  DATABASES: |
+      {
+          "default": {
+              "ENGINE": "django.db.backends.mysql",
+              "NAME": "ecstasy",
+              "USER": "root",
+              "PASSWORD": "root_password",
+              "HOST": "127.0.0.1",
+              "PORT": "3306"
+          }
+      }
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    services:
+      database:
+        image: mysql
+        ports:
+          - 3306:3306
+        options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        env:
+          MYSQL_ROOT_PASSWORD: "root_password"
+          MYSQL_USER: "user"
+          MYSQL_PASSWORD: "password"
+          MYSQL_DATABASE: "ecstasy"
+
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v3
