@@ -4,7 +4,6 @@ from devicemanager import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing, RingDev
 from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError
-from ..ring_manager import TransportRingNormalizer
 
 #    DEV1 (gi4) --> (gi3) DEV2
 #    (gi3)               (gi4)
@@ -179,7 +178,7 @@ class TestRingChain(TestRingBase):
         )
 
         # ========= Выполняем нормализацию ===========
-        n = TransportRingNormalizer(ring=ring).normalize()
+        r.normalize()
 
         point1 = RingDev.objects.get(device__name="dev1")
         point2 = RingDev.objects.get(device__name="dev2")
@@ -192,7 +191,7 @@ class TestRingChain(TestRingBase):
 
         # Проверяем, что кольцо исправно
         self.assertEqual(
-            n.ring_devs,
+            r.ring_devs,
             [
                 RingPoint(point=point1, device=point1.device, collect_vlans=True),
                 RingPoint(point=point2, device=point2.device, collect_vlans=False),

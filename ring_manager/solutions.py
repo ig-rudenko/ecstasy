@@ -238,36 +238,46 @@ class SolutionsPerformer:
                 counter[counter_name] += 1
                 continue
 
-            # `tuple(solution)` создает кортеж из ключей словаря `solution`. `tuple(solution)[0]` затем извлекает
-            # первый элемент (т.е. первый ключ) этого кортежа, который представляет тип выполняемого решения
-            # (например, "set_port_status", "set_port_vlans"). Это используется для определения того, какое
-            # действие следует предпринять в методе `perform`.
-            solution_type = tuple(solution)[0]
-
-            try:
-                if hasattr(self, f"_perform_{solution_type}") and hasattr(
-                    getattr(self, f"_perform_{solution_type}"), "__call__"
-                ):
-                    # Если имеется метод (а не атрибут) для текущего типа решения
-                    performer_method: Callable = getattr(self, f"_perform_{solution_type}")
-                    performer_method(**solution[solution_type], reverse_status=reverse_status)
-                else:
-                    # Нет такого метода, либо это был атрибут((
-                    raise SolutionsPerformerError(
-                        f"Не был найден метод для решения типа {solution_type}"
-                    )
-
-            except SolutionsPerformerError as error:
-                # Помечаем статус данного решения, как ошибка
-                solution[solution_type]["perform_status"] = "fail"
-                solution[solution_type]["error"] = error.message
-                raise
-
-            # Помечаем статус решения "reversed" или "done"
-            solution[solution_type]["perform_status"] = "reversed" if reverse_status else "done"
+            self._perform_solution(solution, reverse_status)
 
             # Выполнили решение
             counter[counter_name] += 1
+
+    def _perform_solution(self, solution: dict, reverse_status: bool) -> None:
+        # `tuple(solution)` создает кортеж из ключей словаря `solution`. `tuple(solution)[0]` затем извлекает
+        # первый элемент (т.е. первый ключ) этого кортежа, который представляет тип выполняемого решения
+        # (например, "set_port_status", "set_port_vlans"). Это используется для определения того, какое
+        # действие следует предпринять в методе `perform`.
+        solution_type = tuple(solution)[0]
+
+        try:
+            if self._solution_has_perform_method(solution_type):
+                # Если имеется метод (а не атрибут) для текущего типа решения
+                performer_method: Callable = getattr(self, f"_perform_{solution_type}")
+                performer_method(**solution[solution_type], reverse_status=reverse_status)
+            else:
+                # Нет такого метода, либо это был атрибут((
+                raise SolutionsPerformerError(
+                    f"Не был найден метод для решения типа {solution_type}"
+                )
+
+        except SolutionsPerformerError as error:
+            # Помечаем статус данного решения, как ошибка
+            solution[solution_type]["perform_status"] = "fail"
+            solution[solution_type]["error"] = error.message
+            raise
+
+        # Помечаем статус решения "reversed" или "done"
+        solution[solution_type]["perform_status"] = "reversed" if reverse_status else "done"
+
+    def _solution_has_perform_method(self, solution_type: str) -> bool:
+        """
+        Проверяет, имеется ли метод (не атрибут) для текущего типа решения.
+        :param solution_type: Тип решения.
+        """
+        return hasattr(self, f"_perform_{solution_type}") and hasattr(
+            getattr(self, f"_perform_{solution_type}"), "__call__"
+        )
 
     @staticmethod
     def _get_device(device: Dict[str, str]) -> check.models.Devices:
@@ -326,16 +336,7 @@ class SolutionsPerformer:
         :param reverse_status: (optional) Необходимо ли обратить переданный `status` (default = False)
         """
 
-        if status not in ("add", "delete"):
-            raise SolutionsPerformerError(
-                f"Для изменения VLAN на порту его оператор должен быть `add` либо `delete`, а был передан `{status}`"
-            )
-
-        if not isinstance(vlans, (tuple, list)) or any(map(lambda v: type(v) != int, vlans)):
-            raise SolutionsPerformerError(
-                "параметр `vlans` должен быть типом `list` или `tuple`, а также содержать в себе список целых чисел,"
-                f" а был передан {vlans}, Type: {type(vlans)}"
-            )
+        self._validate_data_for_vlan_performer(status, vlans)
 
         # Если `reverse_status` равно True, то значение `status` будет переключено на противоположное его
         # текущему значению. Если `reverse_status` равно False, то значение `status` останется прежним.
@@ -376,12 +377,11 @@ class SolutionsPerformer:
                     if status == "add" and not set(vlans).issubset(set(interfaces[port].vlan)):
                         continue
                     # Если нужно удалить, но VLAN присутствуют на порту, переходит к следующей попытке удаления.
-                    elif status == "delete" and set(vlans).issubset(set(interfaces[port].vlan)):
+                    if status == "delete" and set(vlans).issubset(set(interfaces[port].vlan)):
                         continue
 
                     # Если операция прошла успешно, то выходим из цикла
-                    else:
-                        break
+                    break
 
                 else:
                     # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».
@@ -395,6 +395,34 @@ class SolutionsPerformer:
             raise SolutionsPerformerError(
                 f"Оборудование {device_obj} вызвало ошибку {error.message}"
             ) from error
+
+    @staticmethod
+    def _validate_data_for_vlan_performer(status: str, vlans: Sequence):
+        """
+        Проверяет данные для решения по управлению VLAN. Вызывает ошибку `SolutionsPerformerError`,
+        если параметры не прошли проверку.
+
+        :param status: Должен быть "add" или "delete". Указывает, что необходимо делать с VLAN.
+        :param vlans: Перечень VLAN. Должен быть список или кортеж из целых чисел в диапазоне от 1 до 4096.
+        """
+        if status not in ("add", "delete"):
+            raise SolutionsPerformerError(
+                f"Для изменения VLAN на порту его оператор должен быть `add` либо `delete`,"
+                f" а был передан `{status}`"
+            )
+
+        if not isinstance(vlans, (tuple, list)):
+            raise SolutionsPerformerError(
+                "Параметр `vlans` должен быть типом `list` или `tuple`,"
+                f" а был передан type: `{type(vlans)}`"
+            )
+
+        for vlan in vlans:
+            if type(vlan) != int or vlan < 1 or vlan > 4096:
+                raise SolutionsPerformerError(
+                    "Параметр `vlans` должен содержать в себе список целых чисел в диапазоне от 1 до 4096,"
+                    f" а были переданы `{vlans}`"
+                )
 
     def _perform_set_port_status(
         self,

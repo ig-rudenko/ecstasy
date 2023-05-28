@@ -8,7 +8,7 @@ from .decorators import ring_valid
 from .permissions import RingPermission
 from .serializers import RingSerializer, PointRingSerializer
 
-from ..ring_manager import TransportRingManager, TransportRingNormalizer
+from ..ring_manager import TransportRingManager
 from ..models import TransportRing
 from ..solutions import SolutionsPerformer, Solutions, SolutionsPerformerError
 
@@ -60,15 +60,16 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
         ring = get_object_or_404(TransportRing, name=ring_name)
         self.check_object_permissions(request, ring)
 
+        # trm экземпляр используется для управления транспортным кольцом, включая сбор всех интерфейсов
+        # из его истории и поиск связи между устройствами.
+        trm = TransportRingManager(ring=ring)
+
         # Метод `normalize()` отвечает за нормализацию данных в объекте «кольцо»,
         # что включает в себя преобразование данных в стандартизированный формат и обеспечение их согласованности
         # во всех экземплярах модели «TransportRing». Этот процесс нормализации необходим для того, чтобы данные могли
         # правильно обрабатываться и анализироваться другими частями приложения.
-        TransportRingNormalizer(ring=ring).normalize()
+        trm.normalize()
 
-        # trm экземпляр используется для управления транспортным кольцом, включая сбор всех интерфейсов
-        # из его истории и поиск связи между устройствами.
-        trm = TransportRingManager(ring=ring)
         trm.collect_all_interfaces()  # Берем из истории
         trm.find_link_between_devices()
         points = PointRingSerializer(trm.ring_devs, many=True).data
