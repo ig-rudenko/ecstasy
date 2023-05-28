@@ -20,7 +20,7 @@ from datetime import timedelta, datetime
 from pathlib import Path
 from celery.schedules import crontab
 
-from gathering.ftp import FTPCollector, AbstractFTPCollector
+from gathering.ftp import FTPCollector
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
 

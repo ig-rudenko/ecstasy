@@ -8,9 +8,9 @@ import orjson
 from typing import Any, List, Sequence, Optional
 from concurrent.futures import ThreadPoolExecutor
 
-from django.db import ProgrammingError
-from ping3 import ping as socket_ping
 import tabulate
+from django.db import DatabaseError
+from ping3 import ping as socket_ping
 from pyzabbix import ZabbixAPI
 from requests import ConnectionError as ZabbixConnectionError
 from alive_progress import alive_bar
@@ -55,7 +55,7 @@ class ZabbixAPIConfig:
 try:
     # Устанавливаем конфигурацию для работы с devicemanager
     ZabbixAPIConfig.set(ZabbixConfig.load())
-except ProgrammingError:
+except DatabaseError:
     pass
 
 
