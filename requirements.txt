@@ -24,3 +24,4 @@ django-dbbackup
 drf-orjson-renderer
 orjson
 django-celery-beat
+xlwt

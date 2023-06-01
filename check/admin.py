@@ -11,7 +11,7 @@
 Также просмотр логов действий пользователей
 """
 import orjson
-
+from django.db.models import QuerySet
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
@@ -20,6 +20,7 @@ from django.utils.safestring import mark_safe
 
 from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo
+from .export import DevicesInterfacesWorkloadExcelExport
 from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 
 
@@ -51,7 +52,7 @@ class DevicesAdmin(admin.ModelAdmin):
         ),
         ("Интерфейсы", {"fields": ("show_interfaces",)}),
     )
-    actions = ["set_telnet", "set_snmp", "set_ssh"]
+    actions = ["excel_interfaces_export", "set_telnet", "set_snmp", "set_ssh"]
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
@@ -93,6 +94,12 @@ class DevicesAdmin(admin.ModelAdmin):
         """Действие. Меняем протокол поиска интерфейсов на SSH"""
 
         queryset.update(port_scan_protocol="ssh")
+
+    @admin.action(description="Экспорт ёмкости интерфейсов в xls")
+    def excel_interfaces_export(self, request, queryset: QuerySet[Devices]):
+        export = DevicesInterfacesWorkloadExcelExport(queryset)
+        export.make_excel()
+        return export.create_response()
 
 
 @admin.register(AuthGroup)
