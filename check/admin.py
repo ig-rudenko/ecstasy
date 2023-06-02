@@ -10,16 +10,17 @@
 
 Также просмотр логов действий пользователей
 """
+
+# pylint: disable=maybe-no-member
+
 import orjson
-from django.db.models import QuerySet
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from devicemanager.device import Interfaces
-from net_tools.models import DevicesInfo
 from .export import DevicesInterfacesWorkloadExcelExport
 from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 
@@ -56,9 +57,9 @@ class DevicesAdmin(admin.ModelAdmin):
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
-        dev_info = DevicesInfo.objects.get(dev=obj)
+        """Выводит табличку интерфейсов оборудования из истории"""
         interfaces = (
-            str(Interfaces(orjson.loads(dev_info.interfaces)))
+            str(Interfaces(orjson.loads(obj.devicesinfo.interfaces)))
             .replace("\n", "<br>")
             .replace(" ", "&nbsp; ")
         )
@@ -79,24 +80,25 @@ class DevicesAdmin(admin.ModelAdmin):
 
     @admin.action(description="telnet Протокол для поиска интерфейсов")
     def set_telnet(self, request, queryset):
-        """Действие. Меняем протокол поиска интерфейсов на TELNET"""
+        """Меняем протокол поиска интерфейсов на TELNET"""
 
         queryset.update(port_scan_protocol="telnet")
 
     @admin.action(description="snmp Протокол для поиска интерфейсов")
     def set_snmp(self, request, queryset):
-        """Действие. Меняем протокол поиска интерфейсов на SNMP"""
+        """Меняем протокол поиска интерфейсов на SNMP"""
 
         queryset.update(port_scan_protocol="snmp")
 
     @admin.action(description="ssh Протокол для поиска интерфейсов")
     def set_ssh(self, request, queryset):
-        """Действие. Меняем протокол поиска интерфейсов на SSH"""
+        """Меняем протокол поиска интерфейсов на SSH"""
 
         queryset.update(port_scan_protocol="ssh")
 
     @admin.action(description="Экспорт ёмкости интерфейсов в xls")
-    def excel_interfaces_export(self, request, queryset: QuerySet[Devices]):
+    def excel_interfaces_export(self, request, queryset):
+        """Экспортируем ёмкость интерфейсов в excel файл"""
         export = DevicesInterfacesWorkloadExcelExport(queryset)
         export.make_excel()
         return export.create_response()
@@ -131,6 +133,8 @@ class ProfileAdmin(admin.ModelAdmin):
         return obj.user.username
 
 
+User = get_user_model()
+
 admin.site.unregister(User)  # Отменяем старую админку для пользователя
 
 
@@ -153,16 +157,13 @@ class UserProfileAdmin(UserAdmin):
     @admin.display(description="Права")
     def permission(self, obj: User):
         """Отображение привилегий пользователя"""
-
         return Profile.objects.get(user_id=obj.pk).permissions
 
     @admin.display(description="Группы")
     def dev_groups(self, obj: User):
         """Отображение доступных групп для пользователя"""
-
-        groups_string = ""
-        for group in obj.profile.devices_groups.all():
-            groups_string += f"<li>{group}</li>"
+        user_groups = obj.profile.devices_groups.all()
+        groups_string = "".join([f"<li>{group}</li>" for group in user_groups])
         return mark_safe(groups_string)
 
 

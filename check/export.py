@@ -1,3 +1,9 @@
+"""
+Модуль предоставляет функциональность для создания Excel-файлов на основе переданной выборки из модели.
+"""
+
+# pylint: disable=maybe-no-member, missing-function-docstring
+
 import xlwt
 import orjson
 from django.db.models import QuerySet
@@ -5,59 +11,87 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from devicemanager.device import Interfaces
-from .models import Devices
 
 
 class ExcelExport:
-    queryset_values = []
-    select_related = []
-    excel_headers = []
-    sheet_name = "data"
+    """
+    Предоставляет функциональность для создания Excel-файлов на основе переданной выборки из модели.
 
-    def __init__(self, queryset: QuerySet[Devices]):
+    Для каждого поля, участвующего в формировании выборки `queryset_values`, необходимо реализовать
+    соответствующий метод извлечения данных из полученного результата queryset, который будет
+    называться `get_<field_name>`.
+
+    Для каждого поля соответствующий метод должен вернуть словарь, где ключом будет название колонки,
+    excel, одной или несколько, из перечня `excel_headers`.
+
+    Класс также предоставляет методы для записи заголовков столбцов и строк, последней строки с общим
+    количеством значений для некоторых колонок.
+    """
+
+    # Список полей из queryset, которые будут использоваться для формирования выборки.
+    queryset_values = []
+
+    # Список полей, которые будут использоваться для формирования join запроса,
+    # с целью оптимизации скорости выборки.
+    select_related = []
+
+    excel_headers = []  # Список заголовков столбцов excel файла.
+    sheet_name = "data"  # имя листа в excel файле.
+
+    def __init__(self, queryset: QuerySet):
         for select_related_field in self.select_related:
             queryset = queryset.select_related(select_related_field)
 
         # Формируем данные
-        self._queryset: QuerySet[dict] = queryset.values(
-            *self.queryset_values
-        )
+        self._queryset: QuerySet[dict] = queryset.values(*self.queryset_values)
 
         # Создаем excel
         self._wb = xlwt.Workbook()
         self._sheet = self._wb.add_sheet(self.sheet_name)
 
         # Словарь в который можно помещать значения некоторых колонок для суммирования значений
-        self.total = dict()
+        self.total = {}
 
     @staticmethod
-    def get_file_name():
+    def get_file_name() -> str:
         return f"interfaces_{timezone.now().strftime('%Y.%m.%d_%H.%M.%S')}.xls"
 
-    def _create_workbook_headers(self):
-        for i, h in enumerate(self.excel_headers):
-            self._sheet.write(0, i, h)
+    def _create_workbook_headers(self) -> None:
+        """Запись заголовков столбцов excel файла."""
+        for column_index, header_name in enumerate(self.excel_headers):
+            self._sheet.write(0, column_index, header_name)
 
-    def write_total_row(self, to_row: int):
+    def write_total_row(self, to_row: int) -> None:
+        """
+        Запись последней строки в excel файле,
+        в которой будут отображаться значения для некоторых колонок.
+        """
         for column_name, total_value in self.total.items():
-            self._sheet.write(to_row, self.excel_headers.index(column_name), f"Всего: {total_value}")
+            self._sheet.write(
+                to_row, self.excel_headers.index(column_name), f"Всего: {total_value}"
+            )
+
+    def _get_query_value_data(self, query_data: dict, value: str) -> dict:
+        return getattr(self, f"get_{value}")(query_data)
 
     def make_excel(self):
+        """Создание excel структуры файла на основе выборки и указанных полей."""
+
         self._create_workbook_headers()
 
         row = 1
 
         # Проходимся по элементам (строчки `queryset`)
-        for query_element_data in self._queryset:
-
+        for query_element in self._queryset:
             # По очереди необходимо обработать ключи каждого элемента (столбцы)
             for query_value in self.queryset_values:
-
                 # Имеется ли метод для обработки этого ключа элемента
                 if not hasattr(self, f"get_{query_value}"):
                     continue
 
-                for column_name, column_value in getattr(self, f"get_{query_value}")(query_element_data).items():
+                data = self._get_query_value_data(query_element, query_value)
+
+                for column_name, column_value in data.items():
                     # Смотрим какие названия колонок были возвращены, а также их значения
                     # Ведь для одного поля элемента `queryset` может быть возвращено несколько значений для
                     # колонок excel файла.
@@ -75,6 +109,13 @@ class ExcelExport:
 
 
 class DevicesInterfacesWorkloadExcelExport(ExcelExport):
+    """
+    Наследуется от ExcelExport и расширяет его функциональность требуемой логикой, связанной
+    с выборкой интерфейсных данных устройств.
+
+    Реализует метод для создания HTTP-ответа в виде excel файла.
+    """
+
     queryset_values = ["ip", "name", "vendor", "model", "devicesinfo__interfaces"]
     excel_headers = [
         "IP",
@@ -104,8 +145,11 @@ class DevicesInterfacesWorkloadExcelExport(ExcelExport):
         return {"Модель": query_element.get("model")}
 
     def get_devicesinfo__interfaces(self, query_element: dict):
+        """
+        Получение количества интерфейсов,
+        абонентских портов и задействованных абонентских портов устройства.
+        """
         interfaces = Interfaces(orjson.loads(query_element.get("devicesinfo__interfaces") or "[]"))
-
         interfaces = interfaces.physical()
 
         non_system = interfaces.non_system()
@@ -125,6 +169,8 @@ class DevicesInterfacesWorkloadExcelExport(ExcelExport):
         return data
 
     def create_response(self) -> HttpResponse:
+        """Создание HTTP-ответа в виде excel файла."""
+
         response = HttpResponse(content_type="application/vnd.ms-excel")
         response["Content-Disposition"] = f"attachment; filename={self.get_file_name()}"
         self._wb.save(response)
