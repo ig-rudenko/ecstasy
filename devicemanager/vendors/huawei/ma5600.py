@@ -1,13 +1,14 @@
-import datetime
 import re
+import datetime
+from time import sleep
+from typing import Tuple, List
+from functools import lru_cache
 
 import pexpect
-from time import sleep
-from functools import lru_cache
-from typing import Tuple, List
 from django.template.loader import render_to_string
-from .base import (
-    BaseDevice,
+
+from ..base.device import BaseDevice
+from ..base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,

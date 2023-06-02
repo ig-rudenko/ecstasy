@@ -7,8 +7,8 @@ from typing import Tuple, List, Optional
 from django.conf import settings as django_settings
 
 from gathering.ftp.exceptions import NotFound
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -100,7 +100,10 @@ class IskratelMBan(BaseDevice):
 
     def __init__(self, session, ip: str, auth: dict, model):
         super().__init__(session, ip, auth, model)
-        self.dsl_profiles = sorted(
+        self.dsl_profiles = self._get_dsl_profiles()
+
+    def _get_dsl_profiles(self) -> list:
+        return sorted(
             re.findall(
                 r"(\d+)\s+(.+)",
                 self.send_command(

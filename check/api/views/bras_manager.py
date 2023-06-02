@@ -7,17 +7,17 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from check import models
 from check.logging import log
 from check.permissions import profile_permission
 from ..permissions import DevicePermission
-from check import models
+from ..serializers import BrassSessionSerializer, MacSerializer
 from devicemanager.exceptions import (
     TelnetConnectionError,
     TelnetLoginError,
     UnknownDeviceError,
     DeviceException,
 )
-from ..serializers import BrassSessionSerializer, MacSerializer
 
 
 def get_user_session(bras: models.Bras, mac: str, result: dict):

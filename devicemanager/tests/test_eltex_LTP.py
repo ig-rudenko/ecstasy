@@ -145,6 +145,10 @@ VID    MAC address         Interface                                  Type
 
 
 class TestEltexLTPInterfaces(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_esr.
+    fake_session_4x = EltexLTP4XPexpectFaker()
+    fake_session_8x = EltexLTP8XPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
         """
@@ -152,9 +156,6 @@ class TestEltexLTPInterfaces(SimpleTestCase):
 
         :param cls: Настраиваемый объект класса
         """
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_esr.
-        cls.fake_session_4x = EltexLTP4XPexpectFaker()
-        cls.fake_session_8x = EltexLTP8XPexpectFaker()
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
         cls.eltex_ltp_4x = EltexLTP(cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X")
         cls.eltex_ltp_8x = EltexLTP(cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X")
@@ -205,6 +206,10 @@ class TestEltexLTPInterfaces(SimpleTestCase):
 
 
 class TestEltexLTPMAC(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_esr.
+    fake_session_4x = EltexLTP4XPexpectFaker()
+    fake_session_8x = EltexLTP8XPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
         """
@@ -212,9 +217,7 @@ class TestEltexLTPMAC(SimpleTestCase):
 
         :param cls: Настраиваемый объект класса
         """
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_esr.
-        cls.fake_session_4x = EltexLTP4XPexpectFaker()
-        cls.fake_session_8x = EltexLTP8XPexpectFaker()
+
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
         cls.eltex_ltp_4x = EltexLTP(cls.fake_session_4x, "10.10.10.10", auth={}, model="LTP-4X")
         cls.eltex_ltp_8x = EltexLTP(cls.fake_session_8x, "10.10.10.10", auth={}, model="LTP-8X")

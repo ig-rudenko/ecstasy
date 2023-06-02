@@ -1,16 +1,16 @@
 import re
-from functools import wraps
 from time import sleep
 from typing import List, Tuple, Literal
 
 import pexpect
 import textfsm
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.helpers import range_to_numbers
+from .base.validators import validate_and_format_port_only_digit
+from .base.types import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    range_to_numbers,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -148,34 +148,6 @@ class ZTE(BaseDevice):
             interfaces_vlan.append((line[0], line[1], line[2], vlans))
         return interfaces_vlan
 
-    def _validate_port(self=None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта ZTE
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def wrapper(self, port: str, *args, **kwargs):
-                port = port.strip()
-                if not port.isdigit():
-                    # Неверный порт
-                    if isinstance(if_invalid_return, str):
-                        return f"{if_invalid_return} {port}"
-
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return wrapper
-
-        return validate
-
     @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
@@ -199,7 +171,7 @@ class ZTE(BaseDevice):
         return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @validate_and_format_port_only_digit(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -244,7 +216,7 @@ class ZTE(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -268,7 +240,7 @@ class ZTE(BaseDevice):
         return f"reset port {port} " + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -297,7 +269,7 @@ class ZTE(BaseDevice):
         return f"{status} port {port} " + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -319,7 +291,7 @@ class ZTE(BaseDevice):
         return port_config
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return="?")
+    @validate_and_format_port_only_digit(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -357,7 +329,7 @@ class ZTE(BaseDevice):
         return "?"
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -372,7 +344,7 @@ class ZTE(BaseDevice):
         return self.send_command(f"show port {port} statistics")
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -413,7 +385,7 @@ class ZTE(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return={})
+    @validate_and_format_port_only_digit(if_invalid_return={})
     def virtual_cable_test(self, port: str):
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:

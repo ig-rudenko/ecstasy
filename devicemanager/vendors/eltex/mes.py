@@ -1,46 +1,20 @@
 import re
-from functools import wraps
 from time import sleep
 from typing import List, Tuple
 
 import pexpect
 import textfsm
 
-from ..base import (
-    BaseDevice,
+from ..base.device import BaseDevice
+from ..base.helpers import interface_normal_view
+from ..base.validators import validate_and_format_port_as_normal
+from ..base.types import (
     TEMPLATE_FOLDER,
-    interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
 )
-
-
-def _validate_port(if_invalid_return=None):
-    """
-    ## Декоратор для проверки правильности порта Eltex MES.
-
-    :param if_invalid_return: что нужно вернуть, если порт неверный.
-    """
-
-    if if_invalid_return is None:
-        if_invalid_return = "Неверный порт"
-
-    def validate(func):
-        @wraps(func)
-        def wrapper(self, port="", *args, **kwargs):
-            port = interface_normal_view(port)
-            if not port:
-                # Неверный порт
-                return if_invalid_return
-
-            # Вызываем метод
-            return func(self, port, *args, **kwargs)
-
-        return wrapper
-
-    return validate
 
 
 class EltexMES(BaseDevice):
@@ -231,7 +205,7 @@ class EltexMES(BaseDevice):
         return [(int(vid), mac, type_, port) for vid, mac, port, type_ in mac_table]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @validate_and_format_port_as_normal(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -251,7 +225,7 @@ class EltexMES(BaseDevice):
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -292,7 +266,7 @@ class EltexMES(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_port(self, port, status, save_config=True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -334,7 +308,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     @BaseDevice.lock_session
     def get_port_info(self, port):
         """
@@ -363,7 +337,7 @@ class EltexMES(BaseDevice):
 
         return {"type": "html", "data": port_info_html}
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def _get_port_stats(self, port):
         """
         ## Возвращает полную информацию о порте.
@@ -377,7 +351,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show interfaces {port}").split("\n")
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -398,7 +372,7 @@ class EltexMES(BaseDevice):
         return "?"
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -412,7 +386,7 @@ class EltexMES(BaseDevice):
         return self.send_command(f"show running-config interface {port}").strip()
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -428,7 +402,7 @@ class EltexMES(BaseDevice):
         return "\n".join(errors)
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

@@ -3,7 +3,8 @@ from typing import List
 
 import pexpect
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER, T_InterfaceList, T_InterfaceVLANList, T_MACList
+from .base.device import BaseDevice
+from .base.types import TEMPLATE_FOLDER, T_InterfaceList, T_InterfaceVLANList, T_MACList
 
 
 class ProCurve(BaseDevice):

@@ -1,15 +1,13 @@
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import exceptions
 
-from django_filters.rest_framework import DjangoFilterBackend
-
 from check import models
 from check.permissions import profile_permission
-
 from gathering.configurations.collector import ConfigurationGather
 from gathering.configurations.exceptions import ConfigFileError
 from gathering.configurations.local_storage import LocalConfigStorage, ConfigStorage

@@ -1,7 +1,7 @@
 import pathlib
 import textfsm
 from django.test import SimpleTestCase
-from devicemanager.vendors.dlink import Dlink
+from devicemanager.vendors.dlink import Dlink, validate_port
 
 
 class DLinkPexpectFaker:
@@ -755,17 +755,18 @@ class TestDLinkPortValid(SimpleTestCase):
     """
 
     def test_port(self):
-        self.assertEqual(Dlink.validate_port("1/2"), "2")
-        self.assertEqual(Dlink.validate_port("23"), "23")
-        self.assertEqual(Dlink.validate_port("26(C)"), "26")
-        self.assertEqual(Dlink.validate_port("1c"), None)
+        self.assertEqual(validate_port("1/2"), "2")
+        self.assertEqual(validate_port("23"), "23")
+        self.assertEqual(validate_port("26(C)"), "26")
+        self.assertEqual(validate_port("1c"), None)
 
 
 class TestCiscoPortDescription(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Dlink.
+    fake_session = DLinkPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Dlink.
-        cls.fake_session = DLinkPexpectFaker()
         auth = {"privilege_mode_password": ""}
         # Создание объекта Dlink с fake_session, ip-адресом и авторизацией.
         cls.dlink = Dlink(cls.fake_session, "10.10.10.10", auth=auth)

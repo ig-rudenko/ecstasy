@@ -13,7 +13,7 @@ from devicemanager.device import (
     ZabbixAPIConfig as DeviceZabbixConfig,
     Interfaces,
 )
-from devicemanager.vendors.base import T_MACTable
+from devicemanager.vendors.base.types import T_MACTable
 from app_settings.models import ZabbixConfig
 from devicemanager import exceptions
 from ..models import MacAddress

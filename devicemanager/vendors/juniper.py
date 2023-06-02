@@ -3,7 +3,8 @@ from re import findall, sub
 from typing import List
 
 import textfsm
-from .base import BaseDevice, TEMPLATE_FOLDER
+from .base.device import BaseDevice
+from .base.types import TEMPLATE_FOLDER
 
 
 class Juniper(BaseDevice):

@@ -1,20 +1,55 @@
 import re
-from functools import wraps
+from functools import partial
 from time import sleep
 from typing import Literal, Tuple, List, Optional, Dict, Any
 
 import pexpect
 import textfsm
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.helpers import range_to_numbers
+from .base.validators import validate_and_format_port
+from .base.types import (
     TEMPLATE_FOLDER,
-    range_to_numbers,
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
     T_MACTable,
     MACType,
 )
+
+
+def validate_port(port: str) -> Optional[str]:
+    """
+    Проверяем порт на валидность для D-Link.
+
+    >>> validate_port("1/2")
+    '2'
+    >>> validate_port("23")
+    '23'
+    >>> validate_port("26(C)")
+    '26'
+    >>> validate_port("уфы(C)")
+    None
+
+    :return Отформатированный порт или None, если был передан неверный.
+    """
+
+    port = port.strip()
+    if re.findall(r"^\d/\d+$", port):
+        # Если порт представлен в виде "1/2"
+        port = re.sub(r"^\d/", "", port)  # Оставляем только "2"
+    elif re.findall(r"^\d+$|^\d+\s*\([FC]\)$", port):
+        port = re.sub(r"\D", "", port)
+    else:
+        port = ""
+    if port.isdigit():
+        return port
+
+    return None
+
+
+# Создаем свой декоратор для проверки портов
+dlink_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
 class Dlink(BaseDevice):
@@ -88,59 +123,6 @@ class Dlink(BaseDevice):
         self.mac = self.find_or_empty(r"MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)", version)
         self.model = self.model or self.find_or_empty(r"Device Type\s+:\s+(\S+)\s", version)
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
-
-    def _validate_port(self: Any = None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта Cisco
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def __wrapper(self, port, *args, **kwargs):
-                port = Dlink.validate_port(port)
-                if port is None:
-                    # Неверный порт
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return __wrapper
-
-        return validate
-
-    @staticmethod
-    def validate_port(port: str) -> Optional[str]:
-        """
-        Проверяем порт на валидность
-
-        >>> Dlink.validate_port("1/2")
-        '2'
-        >>> Dlink.validate_port("23")
-        '23'
-        >>> Dlink.validate_port("26(C)")
-        '26'
-        >>> Dlink.validate_port("уфы(C)")
-        None
-        """
-
-        port = port.strip()
-        if re.findall(r"^\d/\d+$", port):
-            # Если порт представлен в виде "1/2"
-            port = re.sub(r"^\d/", "", port)  # Оставляем только "2"
-        elif re.findall(r"^\d+$|^\d+\s*\([FC]\)$", port):
-            port = re.sub(r"\D", "", port)
-        else:
-            port = ""
-        if port.isdigit():
-            return port
-
-        return None
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -301,7 +283,7 @@ class Dlink(BaseDevice):
         return [(int(vid), mac, format_type(type_), port) for vid, mac, port, type_ in mac_table]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @dlink_validate_and_format_port(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
@@ -353,7 +335,7 @@ class Dlink(BaseDevice):
         else:
             media_type = ""
 
-        port = self.validate_port(port)
+        port = validate_port(port)
         if port is None:
             return "Неверный порт"
 
@@ -407,7 +389,7 @@ class Dlink(BaseDevice):
             media_type = ""
 
         # Проверка правильности порта.
-        port = self.validate_port(port)
+        port = validate_port(port)
 
         if port is None:
             return "Неверный порт"
@@ -435,7 +417,7 @@ class Dlink(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @dlink_validate_and_format_port()
     def get_port_errors(self, port: str) -> str:
         """
         Получаем ошибки на порту через команду:
@@ -480,7 +462,7 @@ class Dlink(BaseDevice):
         else:
             media_type = ""
 
-        valid_port = self.validate_port(port)
+        valid_port = validate_port(port)
         if valid_port is None:
             return "Неверный порт"
 
@@ -515,7 +497,7 @@ class Dlink(BaseDevice):
         return status
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return={})
+    @dlink_validate_and_format_port(if_invalid_return={})
     def virtual_cable_test(self, port: str) -> dict:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:

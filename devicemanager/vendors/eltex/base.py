@@ -1,6 +1,6 @@
 import pexpect
 
-from ..base import BaseDevice
+from ..base.device import BaseDevice
 
 
 class EltexBase(BaseDevice):
