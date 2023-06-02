@@ -4,8 +4,8 @@ from typing import List, Tuple, Dict, Union
 
 import pexpect
 
-from ..base import (
-    BaseDevice,
+from ..base.device import BaseDevice
+from ..base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -26,7 +26,7 @@ def _validate_port(if_invalid_return=None):
 
     def validate(func):
         @wraps(func)
-        def __wrapper(deco_self: "EltexLTP16N", port, *args, **kwargs):
+        def wrapper(deco_self: "EltexLTP16N", port, *args, **kwargs):
             port_types: Dict[int, _EltexLTPPortTypes] = {
                 0: {
                     "name": "front-port",
@@ -67,7 +67,7 @@ def _validate_port(if_invalid_return=None):
             # Неверный порт
             return if_invalid_return
 
-        return __wrapper
+        return wrapper
 
     return validate
 

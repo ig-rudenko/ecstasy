@@ -11,16 +11,17 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 
+import re
+import os
 import _locale
 import logging
-import os
-import orjson
-import re
-from datetime import timedelta, datetime
 from pathlib import Path
-from celery.schedules import crontab
+from datetime import timedelta, datetime
+
+import orjson
 
 from gathering.ftp import FTPCollector
+
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
 
@@ -232,6 +233,47 @@ django_actions_logger = logging.getLogger("django.actions")
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
 
+
+LOGGING = {
+    "version": 1,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": LOGGING_DIR / "debug.log",
+            "formatter": "verbose",
+            "when": "midnight",
+            "backupCount": 30,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file", "console"],
+            "propagate": True,
+        }
+    },
+}
 
 # ================= JWT ===================
 

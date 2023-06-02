@@ -24,7 +24,7 @@ services:
 
   celery: &backend
     build: .
-    image: ecstasy:v.0.9.6
+    image: ecstasy:v.0.13.13
     restart: always
     command: celery -A ecstasy_project worker -B -l INFO -c 5 -n worker1
     environment:

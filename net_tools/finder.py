@@ -1,8 +1,8 @@
 from functools import lru_cache
 from typing import List, NamedTuple
+from re import findall, sub, IGNORECASE, compile, escape
 
 import orjson
-from re import findall, sub, IGNORECASE, compile, escape
 from django.contrib.auth.models import User
 
 from check.models import Devices, InterfacesComments
@@ -58,7 +58,6 @@ class Finder:
             interfaces = orjson.loads(device.interfaces)
 
             for line in interfaces:
-
                 find_on_desc = False
 
                 # Если нашли совпадение в описании порта
@@ -132,7 +131,6 @@ class VlanTraceroute:
 
             for pattern in reformat.replacement.split(", "):
                 if pattern in name:  # Если паттерн содержится в исходном имени
-
                     # Заменяем совпадение "pattern" в названии "name" на правильное "n"
                     return sub(pattern, reformat.standard, name)
 
@@ -210,7 +208,6 @@ class VlanTraceroute:
                 next_dev_interfaces = Interfaces(orjson.loads(next_dev_intf_json))
 
                 for next_dev_interface in next_dev_interfaces:
-
                     if vlan_to_find in next_dev_interface.vlan and findall(
                         device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
                     ):

@@ -1,11 +1,11 @@
 import re
 from time import sleep
-from functools import wraps
-from typing import Tuple, List, Literal
+from functools import partial
+from typing import Tuple, List, Literal, Optional
 
 import textfsm
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.types import (
     TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
@@ -13,6 +13,29 @@ from .base import (
     T_MACTable,
     MACType,
 )
+from .base.validators import validate_and_format_port
+
+
+def validate_port(port: str) -> Optional[str]:
+    """
+    ## Проверка правильности порта Q-Tech.
+
+    valid ports:
+      - "1/2/1"
+      - "1/1/21"
+
+    invalid ports:
+      - "23"
+      - "port12"
+    """
+
+    port = port.strip()
+    if re.match(r"^\d+/\d+/\d+$", port):
+        return port
+
+
+# Создаем свой декоратор для проверки портов
+qtech_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
 class Qtech(BaseDevice):
@@ -90,44 +113,6 @@ class Qtech(BaseDevice):
 
         return result
 
-    def _validate_port(self=None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта Q-Tech
-
-        valid ports:
-
-            "1/2/1"
-            "1/1/21"
-
-        invalid ports:
-
-            "23"
-            "port12"
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def wrapper(self, port: str, *args, **kwargs):
-                port = port.strip()
-                if not re.match(r"^\d+/\d+/\d+$", port):
-                    # Неверный порт
-                    if isinstance(if_invalid_return, str):
-                        return f"{if_invalid_return} {port}"
-
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return wrapper
-
-        return validate
-
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
         return BaseDevice.find_or_empty(r"(\d+/\d+/?\d*)", intf)
@@ -158,7 +143,7 @@ class Qtech(BaseDevice):
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @qtech_validate_and_format_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -176,7 +161,7 @@ class Qtech(BaseDevice):
         return [(int(vid), mac) for vid, mac in macs]
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -218,7 +203,7 @@ class Qtech(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config: bool = True):
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -281,7 +266,7 @@ class Qtech(BaseDevice):
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def get_port_info(self, port) -> dict:
         """
         ## Возвращаем информацию о порте.
@@ -301,7 +286,7 @@ class Qtech(BaseDevice):
             "data": "<br>".join(self.__get_port_info(port).split("\n")[:10]),
         }
 
-    @_validate_port(if_invalid_return="?")
+    @qtech_validate_and_format_port(if_invalid_return="?")
     def get_port_type(self, port):
         """
         ## Возвращает тип порта
@@ -317,7 +302,7 @@ class Qtech(BaseDevice):
 
         return "COPPER"
 
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def get_port_errors(self, port):
         """
         ## Выводим ошибки на порту
@@ -335,7 +320,7 @@ class Qtech(BaseDevice):
         return "\n".join(result)
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
@@ -348,7 +333,7 @@ class Qtech(BaseDevice):
         return self.send_command(f"show running-config interface ethernet {port}").strip()
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @qtech_validate_and_format_port()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

@@ -2,19 +2,33 @@ from datetime import datetime
 import pathlib
 import re
 import time
-from typing import Tuple, List, Literal, Any, Optional, Dict
+from typing import Tuple, List, Literal, Optional, Dict
 
 import pysftp
 import pexpect
-from functools import wraps
-from .base import (
-    BaseDevice,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
-    MACType,
-)
+from functools import partial
+from .base.device import BaseDevice
+from .base.validators import validate_and_format_port
+from .base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType
+
+
+def validate_port(port: str) -> Optional[str]:
+    """
+    ## Проверка правильности порта MikroTik.
+
+    Разрешенные:
+     - ether4
+     - sfp1
+     - sfp-sfpplus1
+     - wlan2
+    """
+    port = port.lower()
+    if re.match(r"^ether|^sfp\d+|^wlan\d+$", port):
+        return port
+
+
+# Создаем свой декоратор для проверки портов
+mikrotik_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
 class MikroTik(BaseDevice):
@@ -108,36 +122,6 @@ class MikroTik(BaseDevice):
             pages_limit,
             command_linesep,
         )
-
-    def _validate_port(self: Any = None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта MikroTik
-
-            Разрешенные:
-
-              ether4
-              sfp1
-              sfp-sfpplus1
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def __wrapper(self, port, *args, **kwargs):
-                if not BaseDevice.find_or_empty(r"^ether|^sfp\d+|^wlan\d+$", port.lower()):
-                    # Неверный порт
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return __wrapper
-
-        return validate
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
@@ -246,7 +230,7 @@ class MikroTik(BaseDevice):
         return mac_table
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @mikrotik_validate_and_format_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -283,7 +267,7 @@ class MikroTik(BaseDevice):
         return macs
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @mikrotik_validate_and_format_port()
     def reload_port(self, port: str, save_config=True) -> str:
         self.send_command(f'interface disable "{port}"')
         time.sleep(2)
@@ -291,7 +275,7 @@ class MikroTik(BaseDevice):
         return self.SAVED_OK
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @mikrotik_validate_and_format_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         if status == "up":
             self.send_command(f'interface enable "{port}"')
@@ -303,7 +287,7 @@ class MikroTik(BaseDevice):
         """Автоматическое сохранение на Mikrotik"""
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @mikrotik_validate_and_format_port()
     def set_description(self, port: str, desc: str) -> str:
         # Очищаем описание от запрещенных символов
         desc = self.clear_description(desc)
@@ -319,7 +303,7 @@ class MikroTik(BaseDevice):
         return f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @mikrotik_validate_and_format_port()
     def get_port_info(self, port: str) -> dict:
         data = {}
 
@@ -334,13 +318,13 @@ class MikroTik(BaseDevice):
         }
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @mikrotik_validate_and_format_port()
     def set_poe_out(self, port: str, status: str) -> tuple:
         output = self.send_command(f'interface ethernet poe set "{port}" poe-out={status}')
         output = output.replace("\r\n", "")
         return status, "no such item" in output or "syntax error" in output
 
-    @_validate_port(if_invalid_return="?")
+    @mikrotik_validate_and_format_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         if "sfp" in port.lower():
             return "SFP"

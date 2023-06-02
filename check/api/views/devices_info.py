@@ -14,7 +14,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from check import models
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import DeviceManager
-from devicemanager.exceptions import DeviceException
 from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConfig as ZabbixConfig
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo

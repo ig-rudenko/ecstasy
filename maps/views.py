@@ -1,14 +1,14 @@
-import orjson
 from datetime import datetime
 from functools import wraps
 
+import orjson
+from pyzabbix import ZabbixAPI
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden, Http404
-from pyzabbix import ZabbixAPI
-from maps.models import Maps, Layers
 
 from app_settings.models import ZabbixConfig
+from .models import Maps, Layers
 
 
 @login_required
@@ -70,9 +70,7 @@ def show_interactive_map(request, map_obj: Maps):
 
     # Проверка, является ли карта файлом.
     if map_obj.type == "file":
-        return render(
-            request, "maps/external/" + map_obj.from_file.name.rsplit("/", 1)[-1]
-        )
+        return render(request, "maps/external/" + map_obj.from_file.name.rsplit("/", 1)[-1])
 
     # 404 если карта пустая
     raise Http404
@@ -187,7 +185,6 @@ def render_interactive_map(request, map_obj: Maps):
         z.login(user=zbx_settings.login, password=zbx_settings.password)
 
         for layer in map_obj.layers.all():  # Проходимся по введенным именам групп
-
             # Если слой покрывает группу Zabbix
             if layer.type == "zabbix":
                 layer_data = {
@@ -200,7 +197,6 @@ def render_interactive_map(request, map_obj: Maps):
                 group = z.hostgroup.get(filter={"name": layer.zabbix_group_name})
 
                 if group:  # Если такая группа существует
-
                     # Добавление результата функции `zabbix_get` в список `geo_json["features"]`
                     layer_data["features"] = zabbix_get(
                         group_id=int(group[0]["groupid"]),
@@ -213,7 +209,6 @@ def render_interactive_map(request, map_obj: Maps):
 
             # Для внешних карт.
             elif layer.type == "file":
-
                 # Создаем стиль для слоя
                 layer_data = {
                     "name": layer.name,
@@ -276,10 +271,8 @@ def get_hosts_with_problem(zabbix_session: ZabbixAPI, zabbix_group_id: str) -> l
 
     # Перебор списка проблем.
     for device_problem in device_problems_list:
-
         # Проверяем, есть ли проблема с устройством.
         if device_problem:
-
             # ID узла сети, у которого проблема.
             host_id = zabbix_session.item.get(
                 triggerids=[device_problem["objectid"]], output=["hostid", "name"]
@@ -292,9 +285,7 @@ def get_hosts_with_problem(zabbix_session: ZabbixAPI, zabbix_group_id: str) -> l
                 acknowledges = [
                     [
                         ack["message"],
-                        datetime.fromtimestamp(int(ack["clock"])).strftime(
-                            "%H:%M %d-%m-%Y"
-                        ),
+                        datetime.fromtimestamp(int(ack["clock"])).strftime("%H:%M %d-%m-%Y"),
                     ]
                     for ack in device_problem["acknowledges"]
                 ] or []
@@ -329,10 +320,7 @@ def update_interactive_map(request, map_obj: Maps):
 
     zbx_settings = ZabbixConfig.load()
 
-    groups = [
-        gr["zabbix_group_name"]
-        for gr in map_obj.layers.all().values("zabbix_group_name")
-    ]
+    groups = [gr["zabbix_group_name"] for gr in map_obj.layers.all().values("zabbix_group_name")]
 
     problem_hosts = []
 

@@ -352,7 +352,6 @@ class TestCiscoGetMACAddress(SimpleTestCase):
         cls.cisco = Cisco(fake_session, "10.10.10.10", auth={})
 
     def test_get_mac(self):
-
         mac_list = self.cisco.get_mac("Gi0/1")
 
         self.assertEqual(
@@ -370,10 +369,11 @@ class TestCiscoGetMACAddress(SimpleTestCase):
 
 
 class TestCiscoPortControl(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
+    fake_session = CiscoPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
-        cls.fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
@@ -381,7 +381,6 @@ class TestCiscoPortControl(SimpleTestCase):
         self.fake_session.sent_commands = []
 
     def test_reload_port(self):
-
         self.cisco.reload_port("Gi0/1")
 
         self.assertEqual(
@@ -397,7 +396,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_reload_port_no_save(self):
-
         self.cisco.reload_port("Gi0/1", save_config=False)
 
         self.assertEqual(
@@ -412,7 +410,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_reload_invalid_port(self):
-
         status = self.cisco.reload_port("Re0/1")
 
         self.assertEqual(status, "Неверный порт")
@@ -423,7 +420,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_set_up_port(self):
-
         # Установка порта Te 0/1/2 на up.
         self.cisco.set_port("Te 0/1/2", "up")
 
@@ -439,7 +435,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_set_up_port_no_save(self):
-
         # Установка порта Te 0/1/2 на up.
         self.cisco.set_port("Te 0/1/2", "up", save_config=False)
 
@@ -454,7 +449,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_set_up_invalid_port(self):
-
         status = self.cisco.set_port("Re 0/1/2", "up")
 
         self.assertEqual(status, "Неверный порт")
@@ -465,7 +459,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_set_down_port(self):
-
         self.cisco.set_port("Fa 0/2", "down")
 
         self.assertEqual(
@@ -480,7 +473,6 @@ class TestCiscoPortControl(SimpleTestCase):
         )
 
     def test_set_down_invalid_port(self):
-
         status = self.cisco.set_port("Ra 0/2", "down")
 
         self.assertEqual(status, "Неверный порт")
@@ -492,10 +484,11 @@ class TestCiscoPortControl(SimpleTestCase):
 
 
 class TestCiscoInfo(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
+    fake_session = CiscoPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
-        cls.fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
@@ -503,7 +496,6 @@ class TestCiscoInfo(SimpleTestCase):
         self.fake_session.sent_commands = []
 
     def test_get_port_info(self):
-
         self.cisco.get_port_info(port="Gi 0/1")
 
         self.assertEqual(
@@ -512,7 +504,6 @@ class TestCiscoInfo(SimpleTestCase):
         )
 
     def test_invalid_get_port_info(self):
-
         status = self.cisco.get_port_info(port="Re 0/1")
 
         self.assertEqual(status, "Неверный порт")
@@ -543,15 +534,15 @@ class TestCiscoInfo(SimpleTestCase):
 
 
 class TestCiscoFindAddress(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
+    fake_session = CiscoPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
-        cls.fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
     def test_search_mac_address(self):
-
         result = self.cisco.search_mac("0000aaaa0000")
         self.assertEqual(
             result,
@@ -577,7 +568,6 @@ class TestCiscoFindAddress(SimpleTestCase):
         )
 
     def test_search_ip_address(self):
-
         result = self.cisco.search_ip("10.100.10.100")
         self.assertEqual(
             result,
@@ -592,10 +582,11 @@ class TestCiscoFindAddress(SimpleTestCase):
 
 
 class TestCiscoPortDescription(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
+    fake_session = CiscoPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
-        cls.fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 

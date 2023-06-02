@@ -354,6 +354,9 @@ class TestEltexMESMacAddress(SimpleTestCase):
 
 
 class TestEltexMESPortControl(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
+    fake_session = EltexMESPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
         """
@@ -361,8 +364,6 @@ class TestEltexMESPortControl(SimpleTestCase):
 
         :param cls: Настраиваемый объект класса
         """
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
-        cls.fake_session = EltexMESPexpectFaker()
         auth = {"privilege_mode_password": ""}
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
         cls.eltex_mes = EltexMES(cls.fake_session, "10.10.10.10", auth=auth)
@@ -371,7 +372,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         self.fake_session.sent_commands = []
 
     def test_reload_port(self):
-
         self.eltex_mes.reload_port("Gi0/1")
 
         self.assertEqual(
@@ -388,7 +388,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_reload_port_no_save(self):
-
         self.eltex_mes.reload_port("Gi0/1", save_config=False)
 
         self.assertEqual(
@@ -403,7 +402,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_reload_invalid_port(self):
-
         status = self.eltex_mes.reload_port("Re0/1")
 
         self.assertEqual(status, "Неверный порт")
@@ -414,7 +412,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_set_up_port(self):
-
         # Установка порта Te 0/1/2 на up.
         self.eltex_mes.set_port("Te 0/1/2", "up")
 
@@ -431,7 +428,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_set_up_port_no_save(self):
-
         # Установка порта Te 0/1/2 на up.
         self.eltex_mes.set_port("Te 0/1/2", "up", save_config=False)
 
@@ -446,7 +442,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_set_up_invalid_port(self):
-
         status = self.eltex_mes.set_port("Re 0/1/2", "up")
 
         self.assertEqual(status, "Неверный порт")
@@ -457,7 +452,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_set_down_port(self):
-
         self.eltex_mes.set_port("Fa 0/2", "down")
 
         self.assertEqual(
@@ -473,7 +467,6 @@ class TestEltexMESPortControl(SimpleTestCase):
         )
 
     def test_set_down_invalid_port(self):
-
         status = self.eltex_mes.set_port("Ra 0/2", "down")
 
         self.assertEqual(status, "Неверный порт")
@@ -485,6 +478,9 @@ class TestEltexMESPortControl(SimpleTestCase):
 
 
 class TestEltexMESPortInfo(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
+    fake_session = EltexMESPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
         """
@@ -492,8 +488,6 @@ class TestEltexMESPortInfo(SimpleTestCase):
 
         :param cls: Настраиваемый объект класса
         """
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
-        cls.fake_session = EltexMESPexpectFaker()
         auth = {"privilege_mode_password": ""}
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
         cls.eltex_mes = EltexMES(cls.fake_session, "10.10.10.10", auth=auth)
@@ -510,10 +504,11 @@ class TestEltexMESPortInfo(SimpleTestCase):
 
 
 class TestEltexMESPortDescription(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
+    fake_session = EltexMESPexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса eltex_mes.
-        cls.fake_session = EltexMESPexpectFaker()
         # Создание объекта eltex_mes с fake_session, ip-адресом и авторизацией.
         cls.eltex_mes = EltexMES(cls.fake_session, "10.10.10.10", auth={})
 

@@ -1,16 +1,16 @@
-from functools import wraps
 import re
 from time import sleep
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Dict
 
 import pexpect
 import textfsm
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.validators import validate_and_format_port_as_normal
+from .base.helpers import interface_normal_view
+from .base.types import (
     TEMPLATE_FOLDER,
     FIBER_TYPES,
     COOPER_TYPES,
-    interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -58,31 +58,6 @@ class Cisco(BaseDevice):
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
         self.__cache_port_info: Dict[str, str] = {}
-
-    def _validate_port(self: Any = None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта Cisco
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def __wrapper(self, port, *args, **kwargs):
-                port = interface_normal_view(port)
-                if not port:
-                    # Неверный порт
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return __wrapper
-
-        return validate
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
@@ -177,7 +152,7 @@ class Cisco(BaseDevice):
         return result
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @validate_and_format_port_as_normal(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -228,7 +203,7 @@ class Cisco(BaseDevice):
         return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -270,7 +245,7 @@ class Cisco(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -308,7 +283,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     @BaseDevice.lock_session
     def get_port_info(self, port: str) -> dict:
         """
@@ -338,7 +313,7 @@ class Cisco(BaseDevice):
             "data": "\n".join(port_info.splitlines()[1:]),
         }
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -389,7 +364,7 @@ class Cisco(BaseDevice):
 
         return "?"
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -404,7 +379,7 @@ class Cisco(BaseDevice):
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -482,7 +457,7 @@ class Cisco(BaseDevice):
         return formatted_result
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

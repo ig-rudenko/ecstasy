@@ -10,19 +10,19 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from check import models
+from check.logging import log
 from check.permissions import profile_permission
 from devicemanager.device import Interfaces
 from net_tools.models import VlanName, DevicesInfo
+from ..swagger import schemas
+from ..decorators import device_connection
+from ..permissions import DevicePermission
 from ..serializers import (
     InterfacesCommentsSerializer,
     ADSLProfileSerializer,
     PortControlSerializer,
     PoEPortStatusSerializer,
 )
-from ..decorators import device_connection
-from ..permissions import DevicePermission
-from ..swagger import schemas
-from check.logging import log
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC

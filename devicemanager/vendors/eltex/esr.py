@@ -1,5 +1,6 @@
-from .mes import EltexMES, _validate_port
-from ..base import BaseDevice
+from .mes import EltexMES
+from ..base.device import BaseDevice
+from ..base.validators import validate_and_format_port_as_normal
 
 
 class EltexESR(EltexMES):
@@ -53,7 +54,7 @@ class EltexESR(EltexMES):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -71,7 +72,7 @@ class EltexESR(EltexMES):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.
@@ -94,7 +95,7 @@ class EltexESR(EltexMES):
         }
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту

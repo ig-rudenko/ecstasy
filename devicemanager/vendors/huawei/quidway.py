@@ -1,16 +1,18 @@
 import re
+from time import sleep
 from typing import Literal
+from functools import lru_cache
 
 import pexpect
 import textfsm
-from time import sleep
-from functools import lru_cache, wraps
-from .base import (
-    BaseDevice,
+
+from ..base.device import BaseDevice
+from ..base.helpers import interface_normal_view
+from ..base.validators import validate_and_format_port_as_normal
+from ..base.types import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    interface_normal_view,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -66,7 +68,10 @@ class Huawei(BaseDevice):
             self.session.sendline(self.auth["privilege_mode_password"])
 
         if self.session.expect(
-            [r"<\S+>", r"\[\S+\]"]  # 0 - режим просмотра  # 1 - режим редактирования
+            [
+                r"<\S+>",  # 0 - режим просмотра
+                r"\[\S+\]",  # 1 - режим редактирования
+            ]
         ):
             # Если находимся в режиме редактирования, то понижаем до режима просмотра
             self.session.sendline("quit")
@@ -91,31 +96,6 @@ class Huawei(BaseDevice):
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
-
-    def _validate_port(self=None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта Cisco
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def __wrapper(self, port, *args, **kwargs):
-                port = interface_normal_view(port)
-                if not port:
-                    # Неверный порт
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return __wrapper
-
-        return validate
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -282,7 +262,7 @@ class Huawei(BaseDevice):
         return [(int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @validate_and_format_port_as_normal(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -329,7 +309,7 @@ class Huawei(BaseDevice):
 
         return mac_list
 
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     @lru_cache
     @BaseDevice.lock_session
     def __port_info(self, port):
@@ -393,7 +373,7 @@ class Huawei(BaseDevice):
         )
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -436,7 +416,7 @@ class Huawei(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_port(self, port, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -481,7 +461,7 @@ class Huawei(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def get_port_config(self, port):
         """
         ## Выводим конфигурацию порта
@@ -499,7 +479,7 @@ class Huawei(BaseDevice):
         return config
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_as_normal()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -606,7 +586,7 @@ class Huawei(BaseDevice):
         return parse_data
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return={"len": "-", "status": "Неверный порт"})
+    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Неверный порт"})
     def virtual_cable_test(self, port: str):
         """
         Эта функция запускает диагностику состояния линии на порту оборудования
@@ -672,121 +652,3 @@ class Huawei(BaseDevice):
     def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("display current-configuration", expect_command=True)
         return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
-
-
-class HuaweiCX600(BaseDevice):
-    """
-    # Для оборудования серии CX600 от производителя Huawei
-    """
-
-    prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
-    space_prompt = r"  ---- More ----|Are you sure to display some information"
-    # Регулярное выражение, которое соответствует MAC-адресу.
-    mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
-    vendor = "Huawei"
-
-    @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> list:
-        """
-        ## Возвращаем данные абонента по его MAC адресу
-
-        **MAC необходимо передавать без разделительных символов** он сам преобразуется к виду, требуемому для CX600
-
-        Отправляем на оборудование команду:
-
-            # display access-user mac-address {mac_address}
-
-        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
-
-        :param mac_address: MAC-адрес
-        :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
-        """
-
-        formatted_mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_address)
-
-        match = self.send_command(
-            f"display access-user mac-address {formatted_mac}",
-            expect_command=False,
-        )
-
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            return formatted_result[0]
-
-        return []
-
-    @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> list:
-        """
-        ## Ищем абонента по его IP адресу
-
-        Отправляем на оборудование команду:
-
-            # display access-user ip-address {ip_address}
-
-        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
-
-        :param ip_address: IP-адрес
-        :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
-        """
-
-        match = self.send_command(
-            f"display access-user ip-address {ip_address}",
-            expect_command=False,
-        )
-
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            return formatted_result[0]
-
-        return []
-
-    def get_interfaces(self) -> T_InterfaceList:
-        return []
-
-    def get_vlans(self) -> T_InterfaceVLANList:
-        return []
-
-    def get_mac(self, port: str) -> T_MACList:
-        return []
-
-    def reload_port(self, port: str, save_config=True) -> str:
-        return ""
-
-    def set_port(self, port: str, status: str, save_config=True) -> str:
-        return ""
-
-    def save_config(self):
-        pass
-
-    def set_description(self, port: str, desc: str) -> str:
-        return ""
-
-    def get_port_info(self, port: str) -> dict:
-        return {}
-
-    def get_port_type(self, port: str) -> str:
-        return ""
-
-    def get_port_config(self, port: str) -> str:
-        return ""
-
-    def get_port_errors(self, port: str) -> str:
-        return ""
-
-    def get_device_info(self) -> dict:
-        return {}

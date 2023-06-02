@@ -1,13 +1,13 @@
-import orjson
 from collections import Counter
 
-from django.contrib import admin
+import orjson
 from django import forms
+from django.contrib import admin
+from django.utils.html import mark_safe, format_html
 from pyzabbix import ZabbixAPI
 
-from django.utils.html import mark_safe, format_html
 from app_settings.models import ZabbixConfig
-from maps.models import Layers, Maps
+from .models import Layers, Maps
 
 
 svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-file-earmark-code" viewBox="0 0 16 16">
@@ -16,9 +16,7 @@ svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/
 </svg>"""
 
 
-def get_icons_html_code(
-    fill_color: str, stroke_color: str, icon_name=None
-) -> (str, tuple):
+def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> (str, tuple):
     icons = [
         # Circle fill
         {

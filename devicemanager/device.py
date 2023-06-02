@@ -26,7 +26,7 @@ from .exceptions import (
     TelnetLoginError,
     UnknownDeviceError,
 )
-from .vendors.base import range_to_numbers
+from .vendors.base.helpers import range_to_numbers
 from .zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,

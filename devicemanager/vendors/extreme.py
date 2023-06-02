@@ -1,14 +1,15 @@
 import re
-from functools import wraps
+from functools import partial
 from time import sleep
-from typing import Literal, Sequence, Tuple, List, Any, Dict
+from typing import Literal, Sequence, Tuple, List, Dict, Optional
 
 import pexpect
 import textfsm
-from .base import (
-    BaseDevice,
+from .base.device import BaseDevice
+from .base.helpers import range_to_numbers
+from .base.validators import validate_and_format_port_only_digit
+from .base.types import (
     TEMPLATE_FOLDER,
-    range_to_numbers,
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
@@ -173,34 +174,6 @@ class Extreme(BaseDevice):
 
         return interfaces_vlan
 
-    def _validate_port(self: Any = None, if_invalid_return=None):
-        """
-        ## Декоратор для проверки правильности порта Extreme
-
-        :param if_invalid_return: что нужно вернуть, если порт неверный
-        """
-
-        if if_invalid_return is None:
-            if_invalid_return = "Неверный порт"
-
-        def validate(func):
-            @wraps(func)
-            def wrapper(self, port: str, *args, **kwargs):
-                port = port.strip()
-                if not port.isdigit():
-                    # Неверный порт
-                    if isinstance(if_invalid_return, str):
-                        return f"{if_invalid_return} {port}"
-
-                    return if_invalid_return
-
-                # Вызываем метод
-                return func(self, port, *args, **kwargs)
-
-            return wrapper
-
-        return validate
-
     @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
@@ -222,7 +195,7 @@ class Extreme(BaseDevice):
         return [(int(vid), mac, mac_type, port) for mac, vid, port in mac_table]
 
     @BaseDevice.lock_session
-    @_validate_port(if_invalid_return=[])
+    @validate_and_format_port_only_digit(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -241,7 +214,7 @@ class Extreme(BaseDevice):
         return [(int(vid), mac) for mac, vid in macs]
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def get_port_errors(self, port: str):
         """
         ## Выводим ошибки на порту
@@ -260,7 +233,7 @@ class Extreme(BaseDevice):
         return rx_errors + "\n" + tx_errors
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -283,7 +256,7 @@ class Extreme(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -310,7 +283,7 @@ class Extreme(BaseDevice):
         return r + s
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def get_port_type(self, port) -> str:
         """
         ## Возвращает тип порта
@@ -331,7 +304,7 @@ class Extreme(BaseDevice):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -379,7 +352,7 @@ class Extreme(BaseDevice):
         return config.strip()
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @validate_and_format_port_only_digit()
     def vlans_on_port(
         self,
         port: str,

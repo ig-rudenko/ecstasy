@@ -192,12 +192,13 @@ class TestEdgeCoreInterfaces(SimpleTestCase):
 
 
 class TestEdgeCoreMAC(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
-        cls.edge_core = EdgeCore(fake_session, "10.10.10.10", auth={})
+        cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
     def test_get_mac(self):
         mac_result = self.edge_core.get_mac(port="eth 1/1")
@@ -222,10 +223,11 @@ class TestEdgeCoreMAC(SimpleTestCase):
 
 
 class TestEdgeCorePortControl(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        cls.fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
         cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
@@ -233,7 +235,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         self.fake_session.sent_commands = []
 
     def test_reload_port(self):
-
         self.edge_core.reload_port("Gi 0/1")
 
         self.assertEqual(
@@ -250,7 +251,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         )
 
     def test_reload_invalid_port(self):
-
         self.edge_core.reload_port("Ri0/1")
 
         self.assertEqual(
@@ -259,7 +259,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         )
 
     def test_set_port_up(self):
-
         self.edge_core.set_port("Gi 0/1", "up")
 
         self.assertEqual(
@@ -275,7 +274,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         )
 
     def test_set_port_down(self):
-
         self.edge_core.set_port("Gi 0/1", "down")
 
         self.assertEqual(
@@ -291,7 +289,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         )
 
     def test_set_invalid_port_up(self):
-
         self.edge_core.set_port("Ri0/1", "up")
 
         self.assertEqual(
@@ -300,7 +297,6 @@ class TestEdgeCorePortControl(SimpleTestCase):
         )
 
     def test_set_invalid_port_down(self):
-
         self.edge_core.set_port("i0/1", "down")
 
         self.assertEqual(
@@ -310,10 +306,11 @@ class TestEdgeCorePortControl(SimpleTestCase):
 
 
 class TestEdgeCoreInfo(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        cls.fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
         cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
@@ -344,10 +341,11 @@ class TestEdgeCoreInfo(SimpleTestCase):
 
 
 class TestEdgeCorePortType(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        cls.fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
         cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
@@ -373,15 +371,15 @@ class TestEdgeCorePortType(SimpleTestCase):
 
 
 class TestEdgeCoreGetConfig(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        cls.fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
         cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
     def test_get_port_config(self):
-
         valid_port_config = (
             "interface ethernet 1/1\n"
             " description Description11\n"
@@ -397,10 +395,11 @@ class TestEdgeCoreGetConfig(SimpleTestCase):
 
 
 class TestEdgeCorePortDescriptions(SimpleTestCase):
+    # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
+    fake_session = EdgeCorePexpectFaker()
+
     @classmethod
     def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса EdgeCore.
-        cls.fake_session = EdgeCorePexpectFaker()
         # Создание объекта EdgeCore с fake_session, ip-адресом и авторизацией.
         cls.edge_core = EdgeCore(cls.fake_session, "10.10.10.10", auth={})
 
