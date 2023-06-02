@@ -78,7 +78,6 @@ class MikroTik(BaseDevice):
 
             # {"<interface_name>": '10', "vlan20": '20'}
             if not self._vlans_interfaces.get(interface_name):
-
                 # {"<interface_name>": {"bridge": "bridge_name"} }
                 self._ether_interfaces[interface_name] = {"bridge": bridge_name}
 
@@ -140,14 +139,13 @@ class MikroTik(BaseDevice):
 
         return validate
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         interfaces_output = self.send_command("interface print without-paging terse")
 
         interfaces = []
 
         for line in re.split(r"(?=\S)\s*(?=\d+\s+[DRSX]*\s+)", interfaces_output):
-
             line = line.replace("\r\n", "")
             match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=(ether|wlan)", line)
 
@@ -169,7 +167,7 @@ class MikroTik(BaseDevice):
 
         return interfaces
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         interfaces_with_vlans = []
 
@@ -190,7 +188,7 @@ class MikroTik(BaseDevice):
             )
         return interfaces_with_vlans
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
 
@@ -247,7 +245,7 @@ class MikroTik(BaseDevice):
 
         return mac_table
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -284,7 +282,7 @@ class MikroTik(BaseDevice):
             macs.append((int(vlan), mac_address))
         return macs
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         self.send_command(f'interface disable "{port}"')
@@ -292,10 +290,9 @@ class MikroTik(BaseDevice):
         self.send_command(f'interface enable "{port}"')
         return self.SAVED_OK
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
-
         if status == "up":
             self.send_command(f'interface enable "{port}"')
         elif status == "down":
@@ -305,10 +302,9 @@ class MikroTik(BaseDevice):
     def save_config(self):
         """Автоматическое сохранение на Mikrotik"""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
-
         # Очищаем описание от запрещенных символов
         desc = self.clear_description(desc)
 
@@ -322,7 +318,7 @@ class MikroTik(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_info(self, port: str) -> dict:
         data = {}
@@ -337,7 +333,7 @@ class MikroTik(BaseDevice):
             "data": data,
         }
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_poe_out(self, port: str, status: str) -> tuple:
         output = self.send_command(f'interface ethernet poe set "{port}" poe-out={status}')
@@ -362,7 +358,6 @@ class MikroTik(BaseDevice):
         return {}
 
     def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
-
         config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
 
         self.send_command(f"system backup save dont-encrypt=yes name={config_file_name}")

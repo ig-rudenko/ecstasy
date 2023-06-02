@@ -76,7 +76,7 @@ class ZTE(BaseDevice):
         else:
             self.__privileged = True
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -102,7 +102,7 @@ class ZTE(BaseDevice):
             for line in result
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -176,7 +176,7 @@ class ZTE(BaseDevice):
 
         return validate
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
@@ -198,7 +198,7 @@ class ZTE(BaseDevice):
         parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
         return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -220,7 +220,7 @@ class ZTE(BaseDevice):
         mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
         return [(int(vid), mac) for vid, mac in mac_lines]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self) -> str:
         """
         ## Сохраняем конфигурацию оборудования
@@ -243,7 +243,7 @@ class ZTE(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -267,7 +267,7 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"reset port {port} " + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
@@ -296,7 +296,7 @@ class ZTE(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -318,7 +318,7 @@ class ZTE(BaseDevice):
 
         return port_config
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
         """
@@ -356,7 +356,7 @@ class ZTE(BaseDevice):
 
         return "?"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -371,7 +371,7 @@ class ZTE(BaseDevice):
 
         return self.send_command(f"show port {port} statistics")
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -412,7 +412,7 @@ class ZTE(BaseDevice):
         self.lock = False
         return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return={})
     def virtual_cable_test(self, port: str):
         """

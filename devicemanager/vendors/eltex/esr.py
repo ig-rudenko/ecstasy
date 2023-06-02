@@ -16,7 +16,7 @@ class EltexESR(EltexMES):
         system = self.send_command("show system")
         self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования
@@ -52,7 +52,7 @@ class EltexESR(EltexMES):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def port_type(self, port: str) -> str:
         """
@@ -70,7 +70,7 @@ class EltexESR(EltexMES):
             return "SFP"
         return "COPPER"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_info(self, port: str) -> dict:
         """
@@ -93,7 +93,7 @@ class EltexESR(EltexMES):
             "data": info,
         }
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """

@@ -32,7 +32,7 @@ class Qtech(BaseDevice):
         super().__init__(session, ip, auth, model)
         self.__cache_port_info = {}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -53,7 +53,7 @@ class Qtech(BaseDevice):
             result = int_des_.ParseText(output)  # Ищем интерфейсы
         return [(line[0], line[1].lower().replace("a-", "admin "), line[2]) for line in result]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -132,7 +132,7 @@ class Qtech(BaseDevice):
     def normalize_interface_name(intf: str) -> str:
         return BaseDevice.find_or_empty(r"(\d+/\d+/?\d*)", intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic MAC-type и порта для данного оборудования.
@@ -157,7 +157,7 @@ class Qtech(BaseDevice):
         mac_type: MACType = "dynamic"
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -175,7 +175,7 @@ class Qtech(BaseDevice):
         macs: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})", output)
         return [(int(vid), mac) for vid, mac in macs]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -217,7 +217,7 @@ class Qtech(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config: bool = True):
         """
@@ -256,7 +256,7 @@ class Qtech(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -274,7 +274,7 @@ class Qtech(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def __get_port_info(self, port):
         """Общая информация о порте"""
 
@@ -334,7 +334,7 @@ class Qtech(BaseDevice):
 
         return "\n".join(result)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port):
         """
@@ -347,7 +347,7 @@ class Qtech(BaseDevice):
 
         return self.send_command(f"show running-config interface ethernet {port}").strip()
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """

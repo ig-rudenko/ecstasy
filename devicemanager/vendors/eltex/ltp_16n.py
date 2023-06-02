@@ -102,7 +102,7 @@ class EltexLTP16N(BaseDevice):
         super().__init__(session, ip, auth)
         self.model = model
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self) -> str:
         """
         ## Сохраняем конфигурацию оборудования
@@ -117,7 +117,7 @@ class EltexLTP16N(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         Интерфейсы на оборудовании
@@ -141,12 +141,12 @@ class EltexLTP16N(BaseDevice):
 
         return [(line[0], line[1], "") for line in interfaces]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
@@ -174,7 +174,7 @@ class EltexLTP16N(BaseDevice):
             for mac, port, vid, index, _, type_ in parsed
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -212,7 +212,7 @@ class EltexLTP16N(BaseDevice):
         finally:
             return vlan_name
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_info(self, port: str):
         # Получаем тип порта и его номер
@@ -282,7 +282,7 @@ class EltexLTP16N(BaseDevice):
 
         return {}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -300,12 +300,12 @@ class EltexLTP16N(BaseDevice):
 
         return "Этот порт нельзя перезагружать"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -365,7 +365,7 @@ class EltexLTP16N(BaseDevice):
 
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         # Получаем тип порта и его номер
@@ -387,6 +387,6 @@ class EltexLTP16N(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_current_configuration(self, *args, **kwargs) -> str:
         return self.send_command("show running-config", expect_command=True)

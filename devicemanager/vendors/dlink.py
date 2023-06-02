@@ -142,7 +142,7 @@ class Dlink(BaseDevice):
 
         return None
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         Сохраняем конфигурацию оборудования командой:
@@ -180,7 +180,7 @@ class Dlink(BaseDevice):
             command_linesep=command_linesep,
         )
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         Эта функция возвращает список всех интерфейсов на устройстве
@@ -212,7 +212,7 @@ class Dlink(BaseDevice):
             for line in result
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
@@ -273,7 +273,7 @@ class Dlink(BaseDevice):
         """
         return re.sub(r"\D", "", intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
@@ -300,7 +300,7 @@ class Dlink(BaseDevice):
         )
         return [(int(vid), mac, format_type(type_), port) for vid, mac, port, type_ in mac_table]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
@@ -321,7 +321,7 @@ class Dlink(BaseDevice):
         )
         return [(int(vid), mac) for vid, mac in mac_lines]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def reload_port(self, port, save_config=True) -> str:
         """
         Перезагружает порт
@@ -377,7 +377,7 @@ class Dlink(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def set_port(self, port, status: Literal["up", "down"], save_config=True) -> str:
         """
         Устанавливает статус порта на коммутаторе **up** или **down**
@@ -434,7 +434,7 @@ class Dlink(BaseDevice):
         # Возврат результата команды и результата функции save_config().
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -453,7 +453,7 @@ class Dlink(BaseDevice):
 
         return self.session.before.decode()
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def set_description(self, port: str, desc: str) -> str:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -514,7 +514,7 @@ class Dlink(BaseDevice):
         # Уникальный случай
         return status
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return={})
     def virtual_cable_test(self, port: str) -> dict:
         """
@@ -588,7 +588,7 @@ class Dlink(BaseDevice):
 
         return result
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         stats = ["cpu", "ram", "flash"]
         data = {}
@@ -640,7 +640,7 @@ class Dlink(BaseDevice):
     def get_port_config(self, port: str) -> str:
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command(
             "show config current_config",

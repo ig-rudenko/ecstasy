@@ -292,17 +292,25 @@ class BaseDevice(ABC):
         return m[0] if m else ""
 
     @staticmethod
-    def _lock(func):
+    def lock_session(func):
+        """
+        Используется для синхронизации доступа к удаленному терминалу оборудования между
+        несколькими потоками.
+        Блокирует доступ к удаленному терминалу для другого метода текущего оборудования
+        на время выполнения данного метода.
+
+        Необходимо декорировать каждый метод, в котором происходит отправка команд на
+        оборудование, чтобы не было наложения команд, так как удаленная сессия для одного
+        оборудования общая.
+        """
+
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            # print("Try LOCK", func.__name__)
             while True:
                 if not self.lock:
                     self.lock = True
-                    # print("LOCK", func.__name__)
                     res = func(self, *args, **kwargs)
                     self.lock = False
-                    # print("UNLOCK", func.__name__)
                     return res
                 time.sleep(0.02)
 

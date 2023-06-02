@@ -170,11 +170,11 @@ class HuaweiMA5600T(BaseDevice):
             output = re.sub(r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore"))
         return output
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         pass
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -562,7 +562,6 @@ class HuaweiMA5600T(BaseDevice):
         ]
 
         for line in info.split("\n"):  # Построчно смотрим данные
-
             if "Actual line rate downstream" in line:
                 index = 0
                 stream = "down"
@@ -642,7 +641,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return self._render_vdsl_port_info(port_stats, template_name, self.vdsl_templates)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_info(self, port: str) -> dict:
         """
         ## Смотрим информацию на порту
@@ -704,7 +703,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return self._render_adsl_port_info(port, output, profile_name, profiles)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def change_profile(self, port: str, profile_index: int) -> str:
         """
         ## Меняем профиль на xDSL порту
@@ -766,7 +765,7 @@ class HuaweiMA5600T(BaseDevice):
             mac_table += [(int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs]
         return mac_table
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac(self, port) -> T_MACList:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -842,7 +841,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -913,7 +912,7 @@ class HuaweiMA5600T(BaseDevice):
         self.send_command("quit")
         return s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -967,15 +966,15 @@ class HuaweiMA5600T(BaseDevice):
 
         return s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         return []
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         return []
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def set_description(self, port: str, desc: str) -> str:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -1033,11 +1032,11 @@ class HuaweiMA5600T(BaseDevice):
 
         return f'Description has been {"changed" if desc else "cleared"}.'
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_type(self, port: str) -> str:
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_errors(self, port: str) -> str:
         return ""
 

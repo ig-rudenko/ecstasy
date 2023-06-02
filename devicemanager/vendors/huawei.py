@@ -117,7 +117,7 @@ class Huawei(BaseDevice):
 
         return validate
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -149,7 +149,7 @@ class Huawei(BaseDevice):
                 continue
             return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -190,7 +190,7 @@ class Huawei(BaseDevice):
             if not line[0].startswith("NULL") and not line[0].startswith("V")
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -242,7 +242,7 @@ class Huawei(BaseDevice):
     def normalize_interface_name(intf: str) -> str:
         return interface_normal_view(intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
@@ -281,7 +281,7 @@ class Huawei(BaseDevice):
         )
         return [(int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
@@ -331,7 +331,7 @@ class Huawei(BaseDevice):
 
     @_validate_port()
     @lru_cache
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def __port_info(self, port):
         """
         ## Возвращаем полную информацию о порте.
@@ -359,7 +359,6 @@ class Huawei(BaseDevice):
         type_ = self.find_or_empty(r"Port hardware type is (\S+)|Port Mode: (.*)", res)
 
         if type_:
-
             # Тип порта
             type_ = type_[0] if type_[0] else type_[1]
 
@@ -393,7 +392,7 @@ class Huawei(BaseDevice):
             [line.strip() for line in errors if "error" in line.lower() or "CRC" in line]
         )
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -436,7 +435,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port, status: Literal["up", "down"], save_config=True) -> str:
         """
@@ -481,7 +480,7 @@ class Huawei(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port):
         """
@@ -499,7 +498,7 @@ class Huawei(BaseDevice):
         )
         return config
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -606,7 +605,7 @@ class Huawei(BaseDevice):
 
         return parse_data
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return={"len": "-", "status": "Неверный порт"})
     def virtual_cable_test(self, port: str):
         """
@@ -665,11 +664,11 @@ class Huawei(BaseDevice):
     def get_port_info(self, port: str) -> dict:
         return {"type": "text", "data": ""}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         return {}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_current_configuration(self, *args, **kwargs) -> str:
         config = self.send_command("display current-configuration", expect_command=True)
         return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
@@ -686,7 +685,7 @@ class HuaweiCX600(BaseDevice):
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list:
         """
         ## Возвращаем данные абонента по его MAC адресу
@@ -723,7 +722,7 @@ class HuaweiCX600(BaseDevice):
 
         return []
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def search_ip(self, ip_address: str) -> list:
         """
         ## Ищем абонента по его IP адресу

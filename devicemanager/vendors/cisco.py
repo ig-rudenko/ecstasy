@@ -88,7 +88,7 @@ class Cisco(BaseDevice):
     def normalize_interface_name(intf: str) -> str:
         return interface_normal_view(intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -107,7 +107,7 @@ class Cisco(BaseDevice):
                 return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -136,7 +136,7 @@ class Cisco(BaseDevice):
             if not line[0].startswith("V")
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -176,7 +176,7 @@ class Cisco(BaseDevice):
 
         return result
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
@@ -199,7 +199,7 @@ class Cisco(BaseDevice):
         )
         return [(int(vid), mac) for vid, mac in macs_list]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
@@ -227,7 +227,7 @@ class Cisco(BaseDevice):
         )
         return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -269,7 +269,7 @@ class Cisco(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port, status, save_config=True) -> str:
         """
@@ -309,7 +309,7 @@ class Cisco(BaseDevice):
         return r + s
 
     @_validate_port()
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.
@@ -403,7 +403,7 @@ class Cisco(BaseDevice):
         media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -420,7 +420,7 @@ class Cisco(BaseDevice):
         ).strip()
         return config
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list:
         """
         ## Ищем MAC адрес в таблице ARP оборудования
@@ -454,7 +454,7 @@ class Cisco(BaseDevice):
 
         return formatted_result
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def search_ip(self, ip_address: str) -> list:
         """
         ## Ищем IP адрес в таблице ARP оборудования
@@ -481,7 +481,7 @@ class Cisco(BaseDevice):
 
         return formatted_result
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -536,7 +536,7 @@ class Cisco(BaseDevice):
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         data: Dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         for key in data:
@@ -589,7 +589,6 @@ class Cisco(BaseDevice):
         return dram_percent
 
     def get_temp(self) -> dict:
-
         output = self.send_command("show env temp status")
 
         if "Invalid input" in output:
@@ -643,7 +642,7 @@ class Cisco(BaseDevice):
 
         return {"value": current_temp, "status": status}
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_current_configuration(self, *args, **kwargs) -> str:
         return self.send_command(
             "show running-config",

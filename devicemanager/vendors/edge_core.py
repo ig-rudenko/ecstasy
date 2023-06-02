@@ -52,7 +52,7 @@ class EdgeCore(BaseDevice):
 
         return validate
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -80,7 +80,7 @@ class EdgeCore(BaseDevice):
             if not line[0].startswith("V")
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -133,7 +133,7 @@ class EdgeCore(BaseDevice):
 
         return interfaces_vlans
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой:
@@ -155,7 +155,7 @@ class EdgeCore(BaseDevice):
     def normalize_interface_name(intf: str) -> str:
         return interface_normal_view(intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
@@ -175,7 +175,7 @@ class EdgeCore(BaseDevice):
             (int(vid), str(mac), mac_type, re.sub(r"\s", "", port)) for port, mac, vid in mac_table
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -193,7 +193,7 @@ class EdgeCore(BaseDevice):
         macs: List[Tuple[str, ...]] = re.findall(rf"({self.mac_format})\s+(\d+)", output)
         return [(int(vid), mac) for mac, vid, in macs]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         """
@@ -235,7 +235,7 @@ class EdgeCore(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
         """
@@ -280,7 +280,7 @@ class EdgeCore(BaseDevice):
 
     @_validate_port()
     @lru_cache
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def __get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте.
@@ -337,7 +337,7 @@ class EdgeCore(BaseDevice):
 
         return port_type_result
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -370,7 +370,7 @@ class EdgeCore(BaseDevice):
                 return "interface " + port_config
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -390,7 +390,7 @@ class EdgeCore(BaseDevice):
 
         return ""
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """

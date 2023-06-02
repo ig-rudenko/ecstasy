@@ -55,7 +55,7 @@ class Extreme(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"Switch\s+: \S+ (\S+)", version)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования командой и подтверждаем:
@@ -73,7 +73,7 @@ class Extreme(BaseDevice):
             return self.SAVED_OK
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -128,7 +128,7 @@ class Extreme(BaseDevice):
             for line in result
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         r"""
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -201,7 +201,7 @@ class Extreme(BaseDevice):
 
         return validate
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
@@ -221,7 +221,7 @@ class Extreme(BaseDevice):
         mac_type: MACType = "dynamic"
         return [(int(vid), mac, mac_type, port) for mac, vid, port in mac_table]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> T_MACList:
         """
@@ -240,7 +240,7 @@ class Extreme(BaseDevice):
 
         return [(int(vid), mac) for mac, vid in macs]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str):
         """
@@ -259,7 +259,7 @@ class Extreme(BaseDevice):
 
         return rx_errors + "\n" + tx_errors
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -282,7 +282,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         """
@@ -309,7 +309,7 @@ class Extreme(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_type(self, port) -> str:
         """
@@ -330,7 +330,7 @@ class Extreme(BaseDevice):
 
         return "COPPER"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
@@ -378,7 +378,7 @@ class Extreme(BaseDevice):
         config = self.send_command("show configuration")
         return config.strip()
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def vlans_on_port(
         self,

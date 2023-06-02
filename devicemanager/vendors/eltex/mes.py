@@ -84,7 +84,7 @@ class EltexMES(BaseDevice):
         # Нахождение серийного номера устройства.
         self.serialno = self.find_or_empty(r"SN: (\S+)", inv)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def save_config(self):
         """
         ## Сохраняем конфигурацию оборудования
@@ -105,7 +105,7 @@ class EltexMES(BaseDevice):
 
         return self.SAVED_ERR
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
         """
         ## Возвращаем список всех интерфейсов на устройстве
@@ -158,7 +158,7 @@ class EltexMES(BaseDevice):
             if not line[0].startswith("V")  # Пропускаем Vlan интерфейсы
         ]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
@@ -211,7 +211,7 @@ class EltexMES(BaseDevice):
     def normalize_interface_name(intf: str) -> str:
         return interface_normal_view(intf)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
@@ -230,7 +230,7 @@ class EltexMES(BaseDevice):
         )
         return [(int(vid), mac, type_, port) for vid, mac, port, type_ in mac_table]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port) -> T_MACList:
         """
@@ -250,7 +250,7 @@ class EltexMES(BaseDevice):
         )
         return [(int(vid), mac) for vid, mac in macs_list]
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -291,7 +291,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port, status, save_config=True):
         """
@@ -335,7 +335,7 @@ class EltexMES(BaseDevice):
         return r + s
 
     @_validate_port()
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     def get_port_info(self, port):
         """
         ## Возвращает частичную информацию о порте.
@@ -397,7 +397,7 @@ class EltexMES(BaseDevice):
             return "COMBO-COPPER"
         return "?"
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_config(self, port: str) -> str:
         """
@@ -411,7 +411,7 @@ class EltexMES(BaseDevice):
 
         return self.send_command(f"show running-config interface {port}").strip()
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def get_port_errors(self, port: str) -> str:
         """
@@ -427,7 +427,7 @@ class EltexMES(BaseDevice):
                 errors.append(line.strip())
         return "\n".join(errors)
 
-    @BaseDevice._lock
+    @BaseDevice.lock_session
     @_validate_port()
     def set_description(self, port: str, desc: str) -> str:
         """
