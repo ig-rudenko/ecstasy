@@ -181,6 +181,17 @@ class Interfaces:
         """Количество интерфейсов"""
         return len(self.__interfaces)
 
+    def json(self):
+        return [
+            {
+                "Interface": line.name,
+                "Status": line.status,
+                "Description": line.desc,
+                "VLAN's": line.vlan,
+            }
+            for line in self.__interfaces
+        ]
+
     def physical(self):
         res = []
         i = 0
@@ -753,6 +764,9 @@ class DeviceManager:
 
                     if session.serialno:
                         self.zabbix_info.inventory.serialno_a = session.serialno
+
+                    if session.mac:
+                        self.zabbix_info.inventory.macaddress_a = session.mac
 
                     # Получаем верные логин/пароль
                     self.success_auth = session.auth

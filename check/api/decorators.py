@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from devicemanager.exceptions import UnknownDeviceError, TelnetLoginError, TelnetConnectionError
 
 
-def device_connection(handler):
+def except_connection_errors(handler):
     """
     Декоратор, который оборачивает функцию-обработчик и перехватывает определенные
     исключения, связанные с ошибками подключения устройства, возвращая соответствующий ответ.

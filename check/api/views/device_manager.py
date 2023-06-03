@@ -15,7 +15,7 @@ from check.permissions import profile_permission
 from devicemanager.device import Interfaces
 from net_tools.models import VlanName, DevicesInfo
 from ..swagger import schemas
-from ..decorators import device_connection
+from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..serializers import (
     InterfacesCommentsSerializer,
@@ -31,7 +31,7 @@ class PortControlAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
     serializer_class = PortControlSerializer
 
-    @device_connection
+    @except_connection_errors
     def post(self, request, device_name: str):
         """
         ## Изменяем состояние порта оборудования
@@ -118,7 +118,7 @@ class ChangeDescription(APIView):
 
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def post(self, request, device_name: str):
         """
         ## Меняем описание на порту оборудования
@@ -181,7 +181,7 @@ class ChangeDescription(APIView):
 class MacListAPIView(APIView):
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def get(self, request, device_name):
         """
         ## Смотрим MAC-адреса на порту оборудования
@@ -239,7 +239,7 @@ class MacListAPIView(APIView):
 class CableDiagAPIView(APIView):
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def get(self, request, device_name):
         """
         ## Запускаем диагностику кабеля на порту
@@ -290,7 +290,7 @@ class SetPoEAPIView(generics.GenericAPIView):
     permission_classes = [DevicePermission]
     serializer_class = PoEPortStatusSerializer
 
-    @device_connection
+    @except_connection_errors
     def post(self, request, device_name):
         """
         ## Устанавливает PoE статус на порту
@@ -327,7 +327,7 @@ class SetPoEAPIView(generics.GenericAPIView):
 class InterfaceInfoAPIView(APIView):
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def get(self, request, device_name):
         """
         ## Общая информация об определенном порте оборудования
@@ -376,7 +376,7 @@ class InterfaceInfoAPIView(APIView):
 class ChangeDSLProfileAPIView(APIView):
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def post(self, request, device_name: str):
         """
         ## Изменяем профиль xDSL порта на другой

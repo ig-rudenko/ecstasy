@@ -1,3 +1,5 @@
+from typing import Optional
+
 import orjson
 
 from datetime import datetime
@@ -17,7 +19,7 @@ from devicemanager.device import DeviceManager
 from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConfig as ZabbixConfig
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo
-from ..decorators import device_connection
+from ..decorators import except_connection_errors
 
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter, DeviceInfoFilter
@@ -147,9 +149,8 @@ class DeviceInterfacesAPIView(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.device = None
-        self.current_device_info = None
-        self.device_collector = None
+        self.device: models.Devices = Optional[None]
+        self.device_collector: DeviceManager = Optional[None]
 
         # Поля для обновлений, в случае изменения записи в БД
         self.model_update_fields = []
@@ -158,6 +159,7 @@ class DeviceInterfacesAPIView(APIView):
         self.with_vlans = False
 
     @interfaces_list_api_doc
+    @except_connection_errors
     def get(self, request, device_name: str):
         """
         ## Вывод интерфейсов оборудования
@@ -227,11 +229,14 @@ class DeviceInterfacesAPIView(APIView):
                 }
             )
 
-        # Собираем состояние интерфейсов оборудования в данный момент
+        # Собираем состояние интерфейсов оборудования в данный момент.
         self.collect_current_interfaces()
 
-        # Обновляем данные по оборудованию на основе предыдущего подключения
-        self.update_device_model_and_vendor()
+        # Синхронизируем реальные данные оборудования и поля в базе.
+        self.sync_device_info_to_db()
+
+        # Обновляем данные в Zabbix.
+        self.device_collector.push_zabbix_inventory()
 
         # Если не собрали интерфейсы.
         if not self.device_collector.interfaces:
@@ -244,14 +249,9 @@ class DeviceInterfacesAPIView(APIView):
                 }
             )
 
-        # Проверка наличия устройства в базе данных. Если это так, он получит устройство.
-        # Если это не так, будет создано новое устройство.
-        try:
-            self.current_device_info = ModelDeviceInfo.objects.get(dev=self.device)
-        except ModelDeviceInfo.DoesNotExist:
-            self.current_device_info = ModelDeviceInfo.objects.create(dev=self.device)
+        self.save_interfaces_to_db()
 
-        interfaces = self.save_interfaces()
+        interfaces = self.device_collector.interfaces.json()
         self.add_devices_links(interfaces)
         self.add_comments(interfaces)
 
@@ -328,32 +328,23 @@ class DeviceInterfacesAPIView(APIView):
 
         return interfaces
 
-    def update_device_model_and_vendor(self):
+    def sync_device_info_to_db(self):
         """
-        ## Обновляем информацию об устройстве (вендор, модель) в БД и Zabbix.
-
-        Также отправляем данные, взятые при подключении к оборудованию на Zabbix сервер
+        ## Обновляем информацию об устройстве (вендор, модель) в БД.
         """
+        actual_inventory: ZabbixInventory = self.device_collector.zabbix_info.inventory
 
-        inventory: ZabbixInventory = self.device_collector.zabbix_info.inventory
+        for field_name in ["vendor", "model"]:
+            inventory_field_value = getattr(actual_inventory, field_name)
+            dev_field_value = getattr(self.device, field_name)
 
-        # Обновляем модель устройства, взятую непосредственно во время подключения, либо с Zabbix
-        # dev.zabbix_info.inventory.model обновляется на основе реальной модели при подключении
-        if inventory.model and inventory.model != self.device.model:
-            self.device.model = inventory.model
-            self.model_update_fields.append("model")
-
-        # Обновляем вендора оборудования, если он отличается от реального либо еще не существует
-        if inventory.vendor and inventory.vendor != self.device.vendor:
-            self.device.vendor = inventory.vendor
-            self.model_update_fields.append("vendor")
+            if inventory_field_value and inventory_field_value != dev_field_value:
+                setattr(self.device, field_name, inventory_field_value)
+                self.model_update_fields.append(field_name)
 
         # Сохраняем изменения
         if self.model_update_fields:
             self.device.save(update_fields=self.model_update_fields)
-
-        # Обновляем данные в Zabbix
-        self.device_collector.push_zabbix_inventory()
 
     def collect_current_interfaces(self) -> None:
         """
@@ -421,42 +412,19 @@ class DeviceInterfacesAPIView(APIView):
 
         return interfaces, collected_time
 
-    def save_interfaces(self) -> list:
+    def save_interfaces_to_db(self):
         """
         ## Сохраняем интерфейсы в БД
         :return: Список сохраненных интерфейсов
         """
+        device_info, _ = ModelDeviceInfo.objects.get_or_create(dev=self.device)
         if self.device_collector.interfaces and self.with_vlans:
-            interfaces_to_save = [
-                {
-                    "Interface": line.name,
-                    "Status": line.status,
-                    "Description": line.desc,
-                    "VLAN's": line.vlan,
-                }
-                for line in self.device_collector.interfaces
-            ]
-            self.current_device_info.vlans = orjson.dumps(interfaces_to_save).decode()
-            self.current_device_info.vlans_date = timezone.now()
-            self.current_device_info.save(update_fields=["vlans", "vlans_date"])
+            device_info.update_interfaces_with_vlans_state(self.device_collector.interfaces)
+            device_info.save(update_fields=["vlans", "vlans_date"])
 
         elif self.device_collector.interfaces:
-            interfaces_to_save = [
-                {
-                    "Interface": line.name,
-                    "Status": line.status,
-                    "Description": line.desc,
-                }
-                for line in self.device_collector.interfaces
-            ]
-            self.current_device_info.interfaces = orjson.dumps(interfaces_to_save).decode()
-            self.current_device_info.interfaces_date = timezone.now()
-            self.current_device_info.save(update_fields=["interfaces", "interfaces_date"])
-
-        else:
-            return []
-
-        return interfaces_to_save
+            device_info.update_interfaces_state(self.device_collector.interfaces)
+            device_info.save(update_fields=["interfaces", "interfaces_date"])
 
 
 class DeviceInfoAPIView(APIView):
@@ -549,7 +517,7 @@ class DeviceStatsInfoAPIView(APIView):
 
     permission_classes = [DevicePermission]
 
-    @device_connection
+    @except_connection_errors
     def get(self, request, device_name: str):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
