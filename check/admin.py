@@ -29,7 +29,11 @@ from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions
 class DeviceGroupAdmin(admin.ModelAdmin):
     """Управление группами оборудования"""
 
-    list_display = ["name", "description"]
+    list_display = ["name", "description", "dev_count"]
+
+    @admin.display(description="Кол-во")
+    def dev_count(self, obj: DeviceGroup) -> int:
+        return obj.devices_set.count()
 
 
 @admin.register(Devices)
@@ -38,13 +42,14 @@ class DevicesAdmin(admin.ModelAdmin):
 
     list_display = ["ip", "name", "vendor", "model", "group", "auth_group", "show_device"]
     list_filter = ["vendor", "group", "auth_group", "model"]
-    search_fields = ["ip", "name"]
+    radio_fields = {"port_scan_protocol": admin.HORIZONTAL, "cmd_protocol": admin.HORIZONTAL}
     readonly_fields = ["show_interfaces"]
+    search_fields = ["ip", "name"]
     list_select_related = ["auth_group", "group"]
     list_per_page = 50
 
     fieldsets = (
-        ("Характеристика", {"fields": ("ip", "name")}),
+        ("Характеристика", {"fields": ("ip", "name"), "classes": ("wide",)}),
         ("Тип", {"fields": ("vendor", "model")}),
         ("Принадлежность", {"fields": ("group", "auth_group")}),
         (
@@ -108,8 +113,12 @@ class DevicesAdmin(admin.ModelAdmin):
 class AuthGroupAdmin(admin.ModelAdmin):
     """Взаимодействие с профилями авторизации к оборудованию"""
 
-    list_display = ["name", "login", "description"]
+    list_display = ["name", "login", "description", "dev_count"]
     search_fields = ["name", "login"]
+
+    @admin.display(description="Кол-во")
+    def dev_count(self, obj: AuthGroup) -> int:
+        return obj.devices_set.count()
 
 
 @admin.register(Bras)
@@ -125,6 +134,7 @@ class ProfileAdmin(admin.ModelAdmin):
     """Управление уровнем привилегий пользователей"""
 
     list_display = ["user", "permissions"]
+    list_select_related = ["user"]
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):
@@ -147,8 +157,6 @@ class UserProfileAdmin(UserAdmin):
         "first_name",
         "last_name",
         "email",
-        "is_active",
-        "is_superuser",
         "last_login",
         "permission",
         "dev_groups",
@@ -174,5 +182,6 @@ class UsersActionsAdmin(admin.ModelAdmin):
     list_display = ["time", "user", "device", "action"]
     list_filter = ["user"]
     search_fields = ["action"]
+    date_hierarchy = "time"
     readonly_fields = list_display
     list_per_page = 50

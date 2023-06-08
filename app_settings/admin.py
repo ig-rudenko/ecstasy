@@ -22,7 +22,7 @@
 
 
 from django.contrib import admin
-from pyzabbix import ZabbixAPI
+from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import ConnectionError as ZabbixConnectionError
 from app_settings.models import (
     LogsElasticStackSettings,
@@ -48,18 +48,18 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
 
     list_display = ["url", "login", "connectable"]
 
-    @admin.display(description="Connectable")
-    def connectable(self, obj: ZabbixConfig):
+    @admin.display(description="Connectable", boolean=True)
+    def connectable(self, obj: ZabbixConfig) -> bool:
         """
         Отображает, можно ли подключиться к Zabbix по указанным настройкам
         """
 
-        try:
-            with ZabbixAPI(server=obj.url, timeout=2) as zabbix_api:
+        with ZabbixAPI(server=obj.url, timeout=2) as zabbix_api:
+            try:
                 zabbix_api.login(user=obj.login, password=obj.password)
-                return "✅" if zabbix_api.api_version() else "❌"
-        except ZabbixConnectionError:
-            return "❌"
+                return zabbix_api.is_authenticated
+            except (ZabbixAPIException, ZabbixConnectionError):
+                return False
 
 
 @admin.register(VlanTracerouteConfig)
