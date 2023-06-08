@@ -4,6 +4,7 @@ import orjson
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -28,7 +29,7 @@ from ..serializers import (
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
 @method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
 class PortControlAPIView(generics.GenericAPIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PortControlSerializer
 
     @except_connection_errors
@@ -116,7 +117,7 @@ class ChangeDescription(APIView):
     ## Изменяем описание на порту у оборудования
     """
 
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def post(self, request, device_name: str):
@@ -179,7 +180,7 @@ class ChangeDescription(APIView):
 
 
 class MacListAPIView(APIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def get(self, request, device_name):
@@ -237,7 +238,7 @@ class MacListAPIView(APIView):
 
 
 class CableDiagAPIView(APIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def get(self, request, device_name):
@@ -287,7 +288,7 @@ class CableDiagAPIView(APIView):
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class SetPoEAPIView(generics.GenericAPIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PoEPortStatusSerializer
 
     @except_connection_errors
@@ -325,7 +326,7 @@ class SetPoEAPIView(generics.GenericAPIView):
 
 
 class InterfaceInfoAPIView(APIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def get(self, request, device_name):
@@ -374,7 +375,7 @@ class InterfaceInfoAPIView(APIView):
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class ChangeDSLProfileAPIView(APIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def post(self, request, device_name: str):

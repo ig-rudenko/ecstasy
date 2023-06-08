@@ -2,6 +2,7 @@ from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import exceptions
@@ -60,7 +61,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     # Для загрузки и удаления файла конфигурации конкретного оборудования
     """
 
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
     config_storage = LocalConfigStorage
 
     def get(self, request, device_name: str, file_name: str):
@@ -82,7 +83,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
 

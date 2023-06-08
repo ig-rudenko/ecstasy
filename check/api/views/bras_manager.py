@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pexpect
 from django.utils.decorators import method_decorator
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -99,7 +100,7 @@ class CutBrassSessionAPIView(APIView):
     ## Сбрасываем сессию по MAC адресу и перезагружаем порт на оборудовании
     """
 
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     def post(self, request):
         """

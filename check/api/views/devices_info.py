@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
 from check import models
@@ -144,7 +145,7 @@ class DeviceInterfacesWorkLoadAPIView(
 
 
 class DeviceInterfacesAPIView(APIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -462,7 +463,7 @@ class DeviceInfoAPIView(APIView):
 
     """
 
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     def get(self, request, device_name: str):
         model_dev = get_object_or_404(models.Devices, name=device_name)
@@ -515,7 +516,7 @@ class DeviceStatsInfoAPIView(APIView):
 
     """
 
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
     def get(self, request, device_name: str):
