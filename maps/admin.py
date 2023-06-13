@@ -17,6 +17,17 @@ svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/
 
 
 def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> (str, tuple):
+    """
+    Функция возвращает HTML-код для различных иконок на основе входных параметров.
+
+    :param fill_color: Цвет заливки значка в шестнадцатеричном формате (например, "#FF0000" для красного).
+    :param stroke_color: Параметр цвета обводки — это цвет контура или границы значка.
+    :param icon_name: Имя значка, для которого вы хотите получить HTML-код.
+     Если нет, функция вернет HTML-коды для всех доступных значков.
+    :return: Если `icon_name` равно `None`, возвращается объект-генератор, который выдает кортежи имен значков и
+     соответствующий им HTML-код. Если `icon_name` не равно `None`, возвращается код HTML для указанного значка.
+
+    """
     icons = [
         # Circle fill
         {
@@ -177,64 +188,22 @@ class LayersAdmin(admin.ModelAdmin):
 
         return ""
 
-    @staticmethod
-    def parse_layer_file(file_path):
-        """
-        ## Определяем содержимое geojson файла
-        Какие типы геометрий присутствуют, их кол-во, цвета
-
-            {
-                'LineString': {
-                    'colours': Counter({'#ed4543': 332, '#595959': 138}),
-                    'count': 470,
-                    'percent': 0.4
-                },
-                'Point': {
-                    'colours': Counter({'#ed4543': 200, '#595959': 67, '#b51eff': 1}),
-                    'count': 268,
-                    'percent': 0.23
-                },
-                'Polygon': {
-                    'colours': Counter({'#56db40': 233, '#ffd21e': 210, '#f371d1': 2, '#ed4543': 1}),
-                    'count': 446,
-                    'percent': 0.38
-                }
-            }
-
-
-        :param file_path: Путь к файлу
-        :return: словарь со значениями
-        """
-
-        with open(file_path, "rb") as file:
-            data = orjson.loads(file.read())
-
-        feature_types: dict = {}
-        total_count = 0
-        for feature in data["features"]:
-            total_count += 1
-
-            feature_types.setdefault(
-                feature["geometry"]["type"], {"count": 0, "colours": Counter()}
-            )
-
-            feature_types[feature["geometry"]["type"]]["count"] += 1
-
-            colour = (
-                feature.get("properties", {}).get("fill", "")
-                or feature.get("properties", {}).get("marker-color", "")
-                or feature.get("properties", {}).get("stroke", "")
-            )
-            if colour:
-                feature_types[feature["geometry"]["type"]]["colours"][colour] += 1
-
-        for _, data in feature_types.items():
-            data["percent"] = round(data["count"] / total_count, 2)
-
-        return feature_types
-
     @admin.display(description="Типы геометрий")
     def icon(self, instance: Layers):
+        """
+        Эта функция генерирует HTML-код для значков на основе типа предоставленного слоя:
+        либо из файла, либо из экземпляра Zabbix.
+
+        :param instance: Параметр instance представляет собой экземпляр класса модели Layers,
+         который содержит информацию.
+        :return: форматированный HTML-код для значка на основе типа экземпляра слоя,
+         переданного в качестве аргумента. Если экземпляр имеет тип "zabbix",
+         возвращается значок с заливкой круга указанными цветами. В противном случае, если
+         экземпляр представляет собой слой из файла, функция анализирует файл, чтобы определить,
+         содержит ли он маркер, многоугольник или линию, и возвращает соответствующий HTML-код с
+         отображением нескольких значков.
+        """
+
         if instance.type == "zabbix":
             html = get_icons_html_code(
                 instance.points_color,
@@ -269,6 +238,11 @@ class LayersAdmin(admin.ModelAdmin):
 
     @admin.display(description="Тип слоя")
     def layer_type(self, instance: Layers):
+        """
+        Эта функция возвращает тип слоя в зависимости от того, был ли он создан из файла или группы Zabbix.
+
+        :return: Функция layer_type возвращает строку, описывающую тип экземпляра Layers.
+        """
         if instance.from_file:
             return mark_safe(
                 f"На основе файла - <strong>\"{instance.from_file.name.rsplit('/', 1)[-1]}\"</strong>"
@@ -279,6 +253,64 @@ class LayersAdmin(admin.ModelAdmin):
             )
 
         return "Неизвестный тип слоя"
+
+    @staticmethod
+    def parse_layer_file(file_path):
+        """
+        ## Функция анализирует файл слоя и возвращает словарь, содержащий информацию о типах и цветах объектов в файле.
+
+        ```python
+            {
+                'LineString': {
+                    'colours': Counter({'#ed4543': 332, '#595959': 138}),
+                    'count': 470,
+                    'percent': 0.4
+                },
+                'Point': {
+                    'colours': Counter({'#ed4543': 200, '#595959': 67, '#b51eff': 1}),
+                    'count': 268,
+                    'percent': 0.23
+                },
+                'Polygon': {
+                    'colours': Counter({'#56db40': 233, '#ffd21e': 210, '#f371d1': 2, '#ed4543': 1}),
+                    'count': 446,
+                    'percent': 0.38
+                }
+            }
+        ```
+
+        :param file_path: Путь к файлу слоя, который содержит географические объекты в формате GeoJSON.
+        :return: Функция `parse_layer_file` возвращает словарь, содержащий информацию о типах объектов
+         в данном файле слоя, включая количество объектов каждого типа, процентное соотношение каждого
+         типа объектов и количество каждого цвета, используемого для каждого типа объектов.
+        """
+
+        with open(file_path, "rb") as file:
+            data = orjson.loads(file.read())
+
+        feature_types: dict = {}
+        total_count = 0
+        for feature in data["features"]:
+            total_count += 1
+
+            feature_types.setdefault(
+                feature["geometry"]["type"], {"count": 0, "colours": Counter()}
+            )
+
+            feature_types[feature["geometry"]["type"]]["count"] += 1
+
+            colour = (
+                feature.get("properties", {}).get("fill", "")
+                or feature.get("properties", {}).get("marker-color", "")
+                or feature.get("properties", {}).get("stroke", "")
+            )
+            if colour:
+                feature_types[feature["geometry"]["type"]]["colours"][colour] += 1
+
+        for _, data in feature_types.items():
+            data["percent"] = round(data["count"] / total_count, 2)
+
+        return feature_types
 
 
 @admin.register(Maps)

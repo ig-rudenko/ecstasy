@@ -1,31 +1,28 @@
 from django.urls import path
 from maps import views
+from maps.api import views as api_views
 
 # maps/
 
 urlpatterns = [
     # Домашняя страница для карт
     path("", views.map_home, name="map-home"),
-    # Обновление точек на интерактивной карте
-    path(
+    path(  # Обновление точек на интерактивной карте
         "<int:map_id>/api/update",
-        views.update_interactive_map,
+        api_views.UpdateInteractiveMapAPIView.as_view(),
         name="interactive-map-update",
     ),
-    # Возвращаем слои на интерактивной карте
-    path(
+    path(  # Возвращаем слои на интерактивной карте
         "<int:map_id>/api/layers",
-        views.send_layers,
+        api_views.MapLayersListAPIView.as_view(),
         name="interactive-map-layers",
     ),
-    # Возврат всех точек для интерактивной карты
-    path(
+    path(  # Возврат всех точек для интерактивной карты
         "<int:map_id>/api/render",
-        views.render_interactive_map,
+        api_views.InteractiveMapAPIView.as_view(),
         name="interactive-map-render",
     ),
-    # Возвращаем шаблон интерактивной карты
-    path(
+    path(  # Возвращаем шаблон интерактивной карты
         "<int:map_id>",
         views.show_interactive_map,
         name="interactive-map-show",

@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -183,7 +184,7 @@ class Maps(models.Model):
         return f"Map: {self.name}"
 
     @property
-    def type(self) -> str:
+    def type(self) -> Literal["file", "external", "zabbix", "none"]:
         if self.from_file:
             return "file"
         if self.map_url:
