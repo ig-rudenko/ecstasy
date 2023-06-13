@@ -300,7 +300,7 @@ class Interfaces:
         count = 0
         intf = []
         for i in self.__interfaces:
-            if re.findall(NON_ABON_INTERFACES_PATTERN, i.desc, flags=re.IGNORECASE):
+            if NON_ABON_INTERFACES_PATTERN.findall(i.desc, flags=re.IGNORECASE):
                 continue
             if not only_count:
                 intf.append(i)

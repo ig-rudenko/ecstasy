@@ -310,7 +310,6 @@ class Huawei(BaseDevice):
         return mac_list
 
     @validate_and_format_port_as_normal()
-    @lru_cache
     @BaseDevice.lock_session
     def __port_info(self, port):
         """
