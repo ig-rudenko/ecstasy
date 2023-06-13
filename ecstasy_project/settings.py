@@ -233,47 +233,47 @@ django_actions_logger = logging.getLogger("django.actions")
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
 
-#
-# LOGGING = {
-#     "version": 1,
-#     "formatters": {
-#         "verbose": {
-#             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-#             "style": "{",
-#         },
-#         "simple": {
-#             "format": "{levelname} {asctime} {message}",
-#             "style": "{",
-#         },
-#     },
-#     "filters": {
-#         "require_debug_true": {
-#             "()": "django.utils.log.RequireDebugTrue",
-#         },
-#     },
-#     "handlers": {
-#         "console": {
-#             "level": "DEBUG",
-#             "filters": ["require_debug_true"],
-#             "class": "logging.StreamHandler",
-#             "formatter": "verbose",
-#         },
-#         "file": {
-#             "level": "DEBUG",
-#             "class": "logging.handlers.TimedRotatingFileHandler",
-#             "filename": LOGGING_DIR / "debug.log",
-#             "formatter": "verbose",
-#             "when": "midnight",
-#             "backupCount": 30,
-#         },
-#     },
-#     "loggers": {
-#         "django": {
-#             "handlers": ["file", "console"],
-#             "propagate": True,
-#         }
-#     },
-# }
+
+LOGGING = {
+    "version": 1,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": LOGGING_DIR / "debug.log",
+            "formatter": "verbose",
+            "when": "midnight",
+            "backupCount": 30,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file", "console"],
+            "propagate": True,
+        }
+    },
+}
 
 # ================= JWT ===================
 
