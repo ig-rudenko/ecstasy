@@ -6,6 +6,7 @@ from .models import RingDev, TransportRing
 class TransportRingAdmin(admin.ModelAdmin):
     list_display = ["name"]
     readonly_fields = ["status", "solutions", "solution_time"]
+    filter_horizontal = ["users"]
 
 
 @admin.register(RingDev)
@@ -13,3 +14,4 @@ class RingDevsAdmin(admin.ModelAdmin):
     list_display = ["device", "ring_name"]
     list_filter = ["ring_name"]
     search_fields = ["device__name"]
+    raw_id_fields = ["device"]

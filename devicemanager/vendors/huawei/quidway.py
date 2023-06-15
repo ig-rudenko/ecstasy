@@ -1,7 +1,6 @@
 import re
 from time import sleep
 from typing import Literal
-from functools import lru_cache
 
 import pexpect
 import textfsm
