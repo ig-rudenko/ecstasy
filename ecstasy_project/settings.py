@@ -158,11 +158,12 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 NON_ABON_INTERFACES_PATTERN = re.compile(
-    r"power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras|voip|fttb|honet"
+    r"power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras|voip|fttb|honet",
+    re.IGNORECASE,
 )
 
 PORT_GUARD_PATTERN = re.compile(
-    r"svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras"
+    r"svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras", re.IGNORECASE
 )
 
 # ================= CACHE ===================
