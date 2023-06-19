@@ -25,3 +25,4 @@ drf-orjson-renderer
 orjson
 django-celery-beat
 xlwt
+django-jazzmin
