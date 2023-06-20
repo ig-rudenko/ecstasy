@@ -179,7 +179,7 @@ function createPolygon(feature, latlng, defaults) {
     let polygon = L.polygon(latlng, options)
 
     if (popup_text) {
-        polygon.bindPopup(format_to_html(popup_text))
+        polygon.bindPopup(wrapLinks(format_to_html(popup_text)))
     }
 
     return polygon
@@ -212,7 +212,7 @@ function createPolyline(feature, latlng, defaults) {
     let polyline = L.polyline(latlng, options)
 
     if (popup_text) {
-        polyline.bindPopup(format_to_html(popup_text))
+        polyline.bindPopup(wrapLinks(format_to_html(popup_text)))
     }
 
     /* Возврат полилинейного объекта. */
@@ -274,11 +274,11 @@ function createMarker(feature, latlng, defaults) {
 
     /* Создание всплывающего окна для маркера. */
     if (popup_text) {
-        marker.bindPopup(format_to_html(popup_text))
+        marker.bindPopup(wrapLinks(format_to_html(popup_text)))
     }
     /* Создание всплывающей подсказки для маркера. */
     if (tooltip_text) {
-        marker.bindTooltip(tooltip_text)
+        marker.bindTooltip(wrapLinks(tooltip_text))
     }
     return marker
 }
@@ -296,4 +296,16 @@ function format_to_html(string) {
 
     string = string.replace(n_re, '<br>')
     return string
+}
+
+// Функция, которая принимает текст и возвращает его с обрамленными ссылками
+function wrapLinks(text) {
+  // Создаем регулярное выражение для поиска ссылок
+  let regex = /https?:\/\/\S+/g;
+  // Заменяем все найденные ссылки на теги <a href="...">...</a>
+  let result = text.replace(regex, function(match) {
+    return `<a href="${match}">${match}</a>`;
+  });
+  // Возвращаем результат
+  return result;
 }
