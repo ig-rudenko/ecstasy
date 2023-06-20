@@ -11,7 +11,7 @@
     <div class="file-upload">
       <label for="file-input">
 
-        <span v-if="file" style="cursor: pointer">Заменить файл</span>
+        <span v-if="file" style="cursor: pointer" class="btn btn-outline-primary">Заменить файл</span>
         <span v-else>
           <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" style="cursor: pointer" viewBox="0 0 16 16">
             <path d="M8 6.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 .5-.5z"/>
@@ -20,10 +20,18 @@
         </span>
 
       </label>
-      <input hidden id="file-input" type="file" @change="handleFileChange" />
+      <input hidden id="file-input" type="file" @change="handleFileChange"/>
       <div v-if="file">
-        <img class="rounded-3" v-if="isImage" :src="imageSrc" alt="Предпросмотр изображения" />
-        <div v-else>{{file.name}}</div>
+
+<!--        Предпросмотр изображения-->
+        <img v-if="isImage" class="rounded-3" :src="imageSrc" alt="Предпросмотр изображения"/>
+
+<!--        Отображение иконки файла-->
+        <div v-else class="align-items-md-center d-flex flex-column py-4">
+          <i :class="['bi', fileEarmarkClass]" style="font-size: 150px"></i>
+          {{file.name}}
+        </div>
+
       </div>
     </div>
 
@@ -38,6 +46,8 @@
 </template>
 
 <script>
+import getFileEarmarkClass from "../../helpers/fileFormat";
+
 export default {
   name: "LoadMedia",
   props: {
@@ -68,7 +78,12 @@ export default {
       let classes = ["alert", "modal-header", "rounded-3"]
       classes.push(`alert-${this.notification.type}`)
       return classes
-    }
+    },
+
+    fileEarmarkClass() {
+      if (!this.file) return;
+      return getFileEarmarkClass(this.file.name)
+    },
   },
 
   methods: {
