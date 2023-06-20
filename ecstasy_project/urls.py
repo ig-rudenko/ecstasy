@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 
@@ -66,6 +67,12 @@ urlpatterns += [
 handler404 = "app_settings.errors_views.page404"
 handler500 = "app_settings.errors_views.page500"
 
+
+@login_required
+def protected_serve(request, path, document_root=None, show_indexes=False):
+    return serve(request, path, document_root, show_indexes)
+
+
 # Static
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
@@ -81,7 +88,7 @@ else:
     urlpatterns += (
         re_path(
             r"^media/(?P<path>.*)$",
-            serve,
+            protected_serve,
             {"document_root": settings.MEDIA_ROOT},
         ),
     )
