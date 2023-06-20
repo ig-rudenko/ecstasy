@@ -4,7 +4,7 @@ URL Configuration для API
 """
 
 from django.urls import path
-from .views import devices_info, device_manager, bras_manager, config_files
+from .views import devices_info, device_manager, bras_manager, config_files, device_media
 
 # /device/api/
 
@@ -28,6 +28,14 @@ urlpatterns = [
     path("<device_name>/collect-config", config_files.CollectConfigAPIView.as_view()),
     path("<device_name>/configs", config_files.ListDeviceConfigFilesAPIView.as_view()),
     path("<device_name>/config/<file_name>", config_files.DownloadDeleteConfigAPIView.as_view()),
+    # ===========================================
+    #                Device Media
+    # ===========================================
+    path("<device_name>/media", device_media.DeviceMediaListAPIView.as_view()),
+    path(
+        "<device_name>/media/<int:pk>",
+        device_media.DeviceMediaRetrieveUpdateDestroyAPIView.as_view(),
+    ),
     # ===========================================
     #                Device Manager
     # ===========================================

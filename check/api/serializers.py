@@ -3,7 +3,7 @@ from re import findall
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from ..models import Devices, InterfacesComments
+from ..models import Devices, InterfacesComments, DeviceMedia
 
 
 class DevicesSerializer(serializers.ModelSerializer):
@@ -16,6 +16,18 @@ class DevicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Devices
         fields = ["ip", "name", "vendor", "group", "model", "port_scan_protocol"]
+
+
+class DeviceMediaSerializer(serializers.ModelSerializer):
+    url = serializers.URLField(source="file.url", read_only=True)
+    name = serializers.CharField(source="file_name", read_only=True)
+    is_image = serializers.BooleanField(read_only=True)
+    file = serializers.FileField(write_only=True)
+
+    class Meta:
+        model = DeviceMedia
+        fields = ["id", "file", "name", "file_type", "is_image", "description", "mod_time", "url"]
+        read_only_fields = ["id", "mod_time", "file_type"]
 
 
 class InterfacesCommentsSerializer(serializers.ModelSerializer):

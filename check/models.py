@@ -3,13 +3,13 @@
 # Модели для оборудования
 
 """
-
+from django.utils.text import slugify
 from ping3 import ping
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from devicemanager.dc import DeviceFactory, SimpleAuthObject
 
 
@@ -17,9 +17,7 @@ class DeviceGroup(models.Model):
     """Группа для оборудования"""
 
     name = models.CharField(max_length=100, verbose_name="Название")
-    description = models.TextField(
-        max_length=255, null=True, blank=True, verbose_name="Описание"
-    )
+    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
 
     def __str__(self):
         return f"[ {self.name} ]"
@@ -43,9 +41,7 @@ class AuthGroup(models.Model):
         blank=True,
         verbose_name="Пароль от привилегированного режима",
     )
-    description = models.TextField(
-        max_length=255, null=True, blank=True, verbose_name="Описание"
-    )
+    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
 
     def __str__(self):
         return f"< {self.name} >"
@@ -160,6 +156,40 @@ class Devices(models.Model):
         verbose_name_plural = "Devices"
 
 
+def get_device_media_path(instance, file_name: str) -> str:
+    slug = slugify(instance.device.name, allow_unicode=True)
+    return f"{slug}/{file_name}"
+
+
+class DeviceMedia(models.Model):
+    device = models.ForeignKey(Devices, on_delete=models.CASCADE, related_name="medias")
+    file = models.FileField(upload_to=get_device_media_path)
+    description = models.CharField(max_length=256)
+    mod_time = models.DateTimeField(auto_now=True)
+
+    @property
+    def file_type(self) -> str:
+        return self.file.path.rsplit(".")[-1]
+
+    @property
+    def is_image(self) -> bool:
+        return self.file_type in ["png", "jpeg", "jpg", "bmp", "gif", "svg"]
+
+    @property
+    def file_name(self):
+        return self.file.name.rsplit('/')[-1]
+
+    class Meta:
+        db_table = "device_media"
+        verbose_name = "Медиафайл"
+        verbose_name_plural = "Медиафайлы"
+
+
+@receiver(pre_delete, sender=DeviceMedia)
+def delete_files(sender, instance: DeviceMedia, **kwargs):
+    instance.file.delete()
+
+
 class Bras(models.Model):
     """
     Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
@@ -243,9 +273,7 @@ class UsersActions(models.Model):
     """Логирование действий пользователя"""
 
     time = models.DateTimeField(auto_now_add=True, verbose_name="Дата/время")
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Пользователь"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     device = models.ForeignKey(
         Devices, on_delete=models.CASCADE, null=True, verbose_name="Оборудование"
     )

@@ -3,6 +3,8 @@ static/docs
 static/admin
 static/rest_framework
 
+media
+
 templates/tools/vlans
 templates/test*
 templates/maps/external
