@@ -14,13 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.contrib.auth.decorators import login_required
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 
 from check import views
 from django.conf import settings
-from django.contrib.staticfiles.urls import static
 from django.views.static import serve
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -29,6 +27,8 @@ from rest_framework_simplejwt.views import (
 )
 
 from .swagger import schema_view
+from .protected_serve import protected_serve, LoginRequiredLimitation
+from maps.protected_serve import MapMediaServeLimitation
 
 
 urlpatterns = [
@@ -68,27 +68,19 @@ handler404 = "app_settings.errors_views.page404"
 handler500 = "app_settings.errors_views.page500"
 
 
-@login_required
-def protected_serve(request, path, document_root=None, show_indexes=False):
-    return serve(request, path, document_root, show_indexes)
-
-
-# Static
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    urlpatterns += (
-        re_path(
-            r"^static/(?P<path>.*)$",
-            serve,
-            {"document_root": settings.STATICFILES_DIRS[0]},
-        ),
-    )
-    urlpatterns += (
-        re_path(
-            r"^media/(?P<path>.*)$",
-            protected_serve,
-            {"document_root": settings.MEDIA_ROOT},
-        ),
-    )
+protected_serve.add_limitation(LoginRequiredLimitation())
+protected_serve.add_limitation(MapMediaServeLimitation())
+urlpatterns += (
+    re_path(
+        r"^static/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.STATICFILES_DIRS[0]},
+    ),
+)
+urlpatterns += (
+    re_path(
+        r"^media/(?P<path>.*)$",
+        protected_serve.serve,
+        {"document_root": settings.MEDIA_ROOT},
+    ),
+)
