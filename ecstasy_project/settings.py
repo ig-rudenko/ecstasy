@@ -325,4 +325,29 @@ JAZZMIN_SETTINGS = {
     "site_logo": "flavico.ico",
     "welcome_sign": "Добро пожаловать в панель администратора",
     "copyright": "Ecstasy",
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+
+        "check.AuthGroup": "fas fa-key",
+        "check.Bras": "fas fa-box",
+        "check.DeviceGroup": "fas fa-object-group",
+        "check.Devices": "fas fa-server",
+        "check.Profile": "fas fa-id-card",
+        "check.UsersActions": "fas fa-font",
+        "check.DeviceMedia": "fas fa-images",
+
+        "app_settings.LogsElasticStackSettings": "fas fas fa-wrench",
+        "app_settings.ZabbixConfig": "fas fas fa-wrench",
+        "app_settings.VlanTracerouteConfig": "fas fas fa-wrench",
+
+        "gathering.MacAddress": "fas fa-ethernet",
+
+        "maps.Layers": "fas fa-layer-group",
+        "maps.Maps": "fas fa-map",
+
+        "net_tools.VlanName": "fas fa-network-wired",
+        "net_tools.DevicesForMacSearch": "fas fa-server",
+    },
 }
