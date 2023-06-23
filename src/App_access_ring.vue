@@ -3,7 +3,7 @@
   <div v-if="rings.selectedRing === null"
        class="container px-4" id="featured-3">
 
-    <h2 class="pb-2">Доступные вам абонентские кольца</h2>
+    <h2 class="pb-2">Доступные вам абонентские кольца ({{filteredRings.length}})</h2>
 
     <div class="py-2">
       <input class="form-control" placeholder="Поиск" v-model.trim="search">

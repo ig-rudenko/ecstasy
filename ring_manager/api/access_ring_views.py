@@ -13,11 +13,19 @@ class ListAccessRingsAPIView(generics.ListAPIView):
     pagination_class = None
     serializer_class = AccessRingSerializer
 
+    def get_queryset(self):
+        user_available_groups = self.request.user.profile.devices_groups.all().values_list(
+            "id", flat=True
+        )
+        return Devices.objects.filter(
+            group__name="SSW", group_id__in=user_available_groups
+        ).select_related("devicesinfo")
+
     def list(self, request, *args, **kwargs):
 
         access_rings = []
 
-        for agg in Devices.objects.filter(group__name="SSW"):
+        for agg in self.get_queryset():
             ring_finder = AggregationRingFinder(agg)
             ring_finder.start_find()
             access_rings.extend(ring_finder.get_rings())
