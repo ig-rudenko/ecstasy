@@ -2,31 +2,18 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import List, Tuple, Set, Optional
 
-from devicemanager.device import Interfaces, Interface, DeviceManager
-from check import models
-from .models import RingDev, TransportRing
+from devicemanager.device import Interfaces, DeviceManager
 from .solutions import Solutions
-
-
-class InvalidRingStructureError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-
-
-class RingStatusError(Exception):
-    def __init__(self, message: str):
-        self.message = message
+from .models import RingDev, TransportRing
+from .base.types import BaseRingPoint
+from .base.helpers import thread_ping, collect_current_interfaces
+from .base.finder import find_links_between_points
+from .base.exceptions import InvalidRingStructureError, RingStatusError
 
 
 @dataclass
-class RingPoint:
-    device: models.Devices
-    point: RingDev
-    port_to_prev_dev: Interface = Interface()
-    port_to_next_dev: Interface = Interface()
-    ping: bool = None
-    collect_vlans: bool = False
-    interfaces: Interfaces = Interfaces()
+class RingPoint(BaseRingPoint):
+    point: RingDev = None
 
 
 class RingStatus:
@@ -403,86 +390,16 @@ class TransportRingManager:
         :return: Список объектов RingPoint, где каждый объект RingPoint имеет логическое значение,
          указывающее доступность устройства, которое он представляет.
         """
-        with ThreadPoolExecutor() as ex:
-            futures = []
-            for point in self.ring_devs:
-                # Проверяем пинг
-                futures.append(ex.submit(self._ping_point, point=point))
-
-            for i, f in enumerate(futures):
-                self.ring_devs[i].ping = f.result()
+        thread_ping(self.ring_devs)
 
     def collect_all_interfaces(self):
         """
         Эта функция использует ThreadPoolExecutor для сбора всех интерфейсов устройств в кольце.
         """
-        with ThreadPoolExecutor() as ex:
-            futures = []
-            for dev_point in self.ring_devs:
-                # Собираем интерфейсы
-                futures.append(ex.submit(self._get_device_interfaces, dev_point))
-
-            for i, f in enumerate(futures):
-                self.ring_devs[i].interfaces = f.result()
+        collect_current_interfaces(self.ring_devs, self.get_device_manager())
 
     def find_link_between_devices(self):
-        length = len(self.ring_devs)
-
-        # Проходимся по кольцу
-        for i in range(length):
-            # Необходимо пройти два барьера - найти связь с предыдущим устройством и с последующим
-            link_with_prev = 1
-            link_with_next = 1
-
-            # Текущий элемент
-            current_node = self.ring_devs[i]
-
-            # Предыдущий элемент в кольце
-            prev_node = self.ring_devs[i - 1]
-
-            increment = 1
-            if i == length - 1:
-                # Этот код используется для обработки последнего элемента кольца.
-                # Когда `i` равно `length - 1`, это означает, что текущий элемент является последним элементом кольца.
-                # В этом случае для `increment` устанавливается значение `-i`, что означает, что следующим элементом
-                # для проверки будет первый элемент кольца.
-                # Это делается для того, чтобы последний элемент был соединен с первым элементом кольца.
-                increment = -i
-
-            # Следующий элемент в кольце
-            next_node = self.ring_devs[i + increment]
-
-            # Смотрим по очереди интерфейсы на текущем оборудовании
-            for interface in current_node.interfaces:
-                # Если имя следующего устройства находится в описании на порту текущего
-                if next_node.device.name in interface.desc:
-                    current_node.port_to_next_dev = interface
-                    link_with_next -= 1  # Нашли связь
-
-                # Если имя предыдущего устройства находится в описании на порту текущего
-                if prev_node.device.name in interface.desc:
-                    current_node.port_to_prev_dev = interface
-                    link_with_prev -= 1  # Нашли связь
-
-            # Проверка связи между текущим и следующим оборудованием
-            if link_with_next > 0:
-                InvalidRingStructureError(
-                    f"Не удалось найти связь между {current_node.device} и {next_node.device}"
-                )
-            if link_with_next < 0:
-                InvalidRingStructureError(
-                    f"Найдено {link_with_next} связи между {current_node.device} и {next_node.device}, неоднозначность"
-                )
-
-            # Проверка связи между текущим и предыдущим оборудованием
-            if link_with_prev > 0:
-                InvalidRingStructureError(
-                    f"Не удалось найти связь между {current_node.device} и {prev_node.device}"
-                )
-            if link_with_prev < 0:
-                InvalidRingStructureError(
-                    f"Найдено {link_with_prev} связи между {current_node.device} и {prev_node.device}, неоднозначность"
-                )
+        find_links_between_points(self.ring_devs)
 
     def create_solutions(self) -> Solutions:
         """
@@ -506,13 +423,6 @@ class TransportRingManager:
         self._ring_status.compute_solutions()
 
         return self._ring_status.solutions
-
-    def _get_device_interfaces(self, point: RingPoint) -> Interfaces:
-        device_manager = self.get_device_manager()
-        dev = device_manager.from_model(point.device, zabbix_info=False)
-        # Собираем текущее состояние интерфейсов, если оборудование доступно
-        dev.collect_interfaces(vlans=point.collect_vlans, current_status=point.ping)
-        return dev.interfaces
 
     @staticmethod
     def _validate_ring(ring):
@@ -568,11 +478,6 @@ class TransportRingManager:
             )
 
         return devs
-
-    @staticmethod
-    def _ping_point(point: RingPoint):
-        # Дважды
-        return point.device.available and point.device.available
 
     def _check_ring_before_compute_solutions(self):
         if all(not point.ping for point in self.ring_devs):

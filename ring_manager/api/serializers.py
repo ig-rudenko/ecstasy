@@ -3,12 +3,19 @@ from rest_framework import serializers
 from ..models import TransportRing
 
 
-class RingSerializer(serializers.ModelSerializer):
+class TransportRingSerializer(serializers.ModelSerializer):
     vlans = serializers.ListSerializer(child=serializers.IntegerField())
 
     class Meta:
         model = TransportRing
         fields = ["name", "description", "vlans"]
+
+
+class AccessRingSerializer(serializers.Serializer):
+    head_name = serializers.CharField()
+    ports = serializers.CharField()
+    description = serializers.CharField()
+    is_normal_rotate_status = serializers.BooleanField()
 
 
 class PointInterfacesSerializer(serializers.Serializer):

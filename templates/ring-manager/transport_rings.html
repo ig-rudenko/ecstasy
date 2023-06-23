@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div id="app"></div>
+{% endblock %}
+
+{% block js %}
+{% csrf_token %}
+<script src="{% static 'js/transport_ring.js' %}"></script>
+{% endblock %}

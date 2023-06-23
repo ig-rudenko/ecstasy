@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from .decorators import ring_valid
 from .permissions import RingPermission
-from .serializers import RingSerializer, PointRingSerializer
+from .serializers import TransportRingSerializer, PointRingSerializer
 
 from ..ring_manager import TransportRingManager
 from ..models import TransportRing
@@ -20,7 +20,7 @@ class ListTransportRingsAPIView(generics.ListAPIView):
     """
 
     pagination_class = None
-    serializer_class = RingSerializer
+    serializer_class = TransportRingSerializer
 
     def get_queryset(self):
         """

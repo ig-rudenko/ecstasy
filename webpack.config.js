@@ -7,7 +7,8 @@ module.exports = {
         device_info: './src/device_info.js',
         search_description: './src/search_description.js',
         traceroute: './src/traceroute.js',
-        transport_ring: './src/transport_ring.js'
+        transport_ring: './src/transport_ring.js',
+        access_rings: './src/access_rings.js'
     },
     mode: "production",
     output: {

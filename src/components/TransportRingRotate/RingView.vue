@@ -1,13 +1,14 @@
 <template>
 <div class="list-group">
 
-  <template v-for="dev in points">
-    <div :class="['port', 'bottom'].concat(portStatusClass(dev, dev.port_to_prev_dev))" v-tooltip="dev.port_to_prev_dev.status">
+  <template v-for="(dev, index) in ringsPoints" :key="dev.name">
+    <div v-if="index !== 0" :class="['port', 'bottom'].concat(portStatusClass(dev, dev.port_to_prev_dev))"
+         v-tooltip="dev.port_to_prev_dev.status">
 <!--      Предыдущее оборудование-->
       <span>{{dev.port_to_prev_dev.name}}</span>
     </div>
 
-    <div class="rounded-4 list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+    <div :style="pointStyle(dev, index)" class="hover-shadow rounded-4 list-group-item d-flex py-3" aria-current="true">
       <div class="d-flex gap-2 w-100 justify-content-between">
 
 <!--        НЕ ОПРЕДЕЛЕНО-->
@@ -18,7 +19,9 @@
         <svg v-else xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="red" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"></path></svg>
 
         <div>
-          <span>{{dev.name}}</span>
+          <a class="point-name" :href="getURLForDevice(dev.name)" target="_blank">
+            {{dev.name}}
+          </a>
         </div>
 
         <div>
@@ -28,11 +31,14 @@
       </div>
     </div>
 
-    <div :class="['port', 'top'].concat(portStatusClass(dev, dev.port_to_next_dev))" v-tooltip="dev.port_to_next_dev.status">
+    <template v-if="index !== ringsPoints.length - 1" >
+      <div :class="['port', 'top'].concat(portStatusClass(dev, dev.port_to_next_dev))"
+           v-tooltip="dev.port_to_next_dev.status">
 <!--      Следующее оборудование-->
-      <span>{{dev.port_to_next_dev.name}}</span>
-    </div>
-    <div class="port-line"></div>
+        <span>{{dev.port_to_next_dev.name}}</span>
+      </div>
+      <div class="port-line"></div>
+    </template>
 
   </template>
 
@@ -43,6 +49,8 @@
 export default {
   name: "RingView",
   props: {
+    portsColorAlways: {required: false, default: true},
+    copyHeadToTail: {required: false, default: false},
     points: {
       required: true,
       type: [
@@ -65,18 +73,49 @@ export default {
       default: [],
     }
   },
+
+  computed: {
+    ringsPoints() {
+      if (this.copyHeadToTail){
+        return [...this.points, this.points[0]]
+      }
+      return this.points
+    },
+  },
+
   methods: {
+    pointStyle(point, index) {
+      let style = {"min-width": "500px"}
+      if (this.copyHeadToTail && (index === 0 || index === this.ringsPoints.length - 1)) {
+        style["background-color"]= "#c1dbff"
+      }
+      return style
+    },
     portStatusClass(device, port) {
-      if (!device.available) return ["port-unknown"];
-      if (port.status === "up") return ["port-up"];
+      if (this.portsColorAlways && !device.available) return ["port-unknown"];
+      if (port.status === "admin down") return ["port-admin-down"];
       if (port.status === "down") return ["port-down"];
-      return ["port-admin-down"]
+      return ["port-up"]
+    },
+    getURLForDevice(device_name) {
+      return `/device/${device_name}`
     }
   },
 }
 </script>
 
 <style scoped>
+.point-name {
+  text-decoration: none;
+  color: currentColor;
+  display: inline-block;
+  padding: 7px;
+}
+
+.point-name:hover {
+  color: #0037ff;
+}
+
 .port {
     box-sizing: border-box;
     position: relative;
@@ -131,5 +170,7 @@ export default {
     transform: rotate(90deg);
     width: 50px;
 }
-
+.hover-shadow:hover {
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
 </style>
