@@ -400,7 +400,7 @@ class HuaweiMA5600T(BaseDevice):
             }
 
             lines = re.findall(
-                r"(\d+)\s+(online|offline)\s+(\d+-\d+-\d+ \d+:\d+:\d+)\s+(\d+-\d+-\d+ \d+:\d+:\d+)\s+(\S+)",
+                r"(\d+)\s+(online|offline)\s+(\d*-?\d*-?\d* ?\d*:?\d*:?\d*)\s+(\d*-?\d*-?\d* ?\d*:?\d*:?\d*)\s+(\S+)",
                 output,
             )
 
@@ -414,9 +414,6 @@ class HuaweiMA5600T(BaseDevice):
             for j in range(len(lines)):
                 part1 = list(lines[j])
                 part2 = list(ont_info[j])
-
-                part1[2] = datetime.datetime.strptime(part1[2], "%Y-%m-%d %H:%M:%S")
-                part1[3] = datetime.datetime.strptime(part1[3], "%Y-%m-%d %H:%M:%S")
 
                 data["onts_lines"].append(part1 + part2)
 
