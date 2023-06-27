@@ -5,10 +5,9 @@
 !ecstasy_project
 !net_tools
 !maps
-!static
 !templates
+!gathering
+!ring_manager
 !manage.py
 !requirements.txt
 !create_docs.py
-!gathering
-!ring_manager

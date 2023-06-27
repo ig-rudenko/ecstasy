@@ -9,10 +9,10 @@ services:
     image: nginx
     restart: always
     ports:
-      - "80:80"
+      - "8888:80"
     volumes:
-      - ./static:/var/www/static
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - "./static:/var/www/static"
+      - "./nginx/default.conf:/etc/nginx/conf.d/default.conf"
     depends_on:
       - backend
 
@@ -20,13 +20,13 @@ services:
     image: redis
     restart: always
     volumes:
-      - redis-data:/data
+      - "redis-data:/data"
 
   celery: &backend
     build: .
-    image: ecstasy:v.0.13.13
+    image: ecstasy:v.15.2
     restart: always
-    command: celery -A ecstasy_project worker -B -l INFO -c 5 -n worker1
+    command: celery -A ecstasy_project worker -B -l INFO -c 4 -n worker1
     environment:
       ALLOWED_HOSTS: "*"
       REDIS_CACHE_URL: "redis:6379/0"
@@ -43,6 +43,7 @@ services:
             }
         }
       DJANGO_SECRET_KEY: "django-key"
+      CONFIG_STORAGE_DIR: "/configurations"
 
     depends_on:
       - redis
@@ -52,7 +53,14 @@ services:
 
   backend:
     <<: *backend
-    command: gunicorn --workers 5 --bind 0.0.0.0:8000 ecstasy_project.wsgi:application
+    command: /bin/sh run.sh
+    volumes:
+    - "./run.sh:/app/run.sh"
+    - "./logs:/app/logs"
+    - "./static:/app/static"
+    - "./media:/app/media"
+    - "./map_layer_files:/app/media/map_layer_files"
+    - "./configurations:/configurations"
 
   mysql:
     image: mysql
@@ -63,4 +71,4 @@ services:
       MYSQL_DATABASE: ecstasy
     restart: always
     volumes:
-      - ./data:/var/lib/mysql
+      - "./data:/var/lib/mysql"
