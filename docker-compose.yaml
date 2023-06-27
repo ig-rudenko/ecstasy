@@ -21,6 +21,10 @@ services:
     restart: always
     volumes:
       - "redis-data:/data"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      timeout: 20s
+      retries: 10
 
   celery: &backend
     build: .
@@ -61,8 +65,10 @@ services:
     - "./map_layer_files:/app/media/map_layer_files"
     - "./configurations:/configurations"
     depends_on:
-      - redis
-      - mysql
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
 
   mysql:
     image: mysql
@@ -75,6 +81,6 @@ services:
     volumes:
       - "./data:/var/lib/mysql"
     healthcheck:
-        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-        timeout: 20s
-        retries: 10
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
