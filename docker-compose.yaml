@@ -46,8 +46,7 @@ services:
       CONFIG_STORAGE_DIR: "/configurations"
 
     depends_on:
-      - redis
-      - mysql
+      - backend
     volumes:
     - "./logs:/app/logs"
 
@@ -61,6 +60,9 @@ services:
     - "./media:/app/media"
     - "./map_layer_files:/app/media/map_layer_files"
     - "./configurations:/configurations"
+    depends_on:
+      - redis
+      - mysql
 
   mysql:
     image: mysql
@@ -72,3 +74,7 @@ services:
     restart: always
     volumes:
       - "./data:/var/lib/mysql"
+    healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        timeout: 20s
+        retries: 10
