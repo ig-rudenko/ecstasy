@@ -90,7 +90,7 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
 
     @staticmethod
     def get_interfaces_load(device: ModelDeviceInfo):
-        interfaces = InterfacesObject(orjson.loads(device.interfaces)).physical()
+        interfaces = InterfacesObject(orjson.loads(device.interfaces or "[]")).physical()
 
         non_system = interfaces.non_system()
         abons_up = non_system.up()

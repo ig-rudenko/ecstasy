@@ -4,9 +4,8 @@ import orjson
 from django import forms
 from django.contrib import admin
 from django.utils.html import mark_safe, format_html
-from pyzabbix import ZabbixAPI
 
-from app_settings.models import ZabbixConfig
+from devicemanager.device.zabbix_api import ZabbixAPIConnection
 from .models import Layers, Maps
 
 
@@ -101,10 +100,7 @@ def get_zabbix_groups():
     Возвращает список кортежей вида (group_name, group_name) для всех групп в Zabbix
     :return: Список кортежей.
     """
-    zbx_settings = ZabbixConfig.load()
-    with ZabbixAPI(zbx_settings.url) as zbx:
-        # Вход на сервер Zabbix.
-        zbx.login(zbx_settings.login, zbx_settings.password)
+    with ZabbixAPIConnection().connect() as zbx:
         # Получение всех групп узлов сети из Zabbix.
         groups = zbx.hostgroup.get(output=["name"])
 

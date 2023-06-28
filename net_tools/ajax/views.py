@@ -5,7 +5,6 @@ from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
 import requests as requests_lib
-from pyzabbix import ZabbixAPI
 from requests import ConnectionError as ZabbixConnectionError
 from pyvis.network import Network
 
@@ -14,8 +13,9 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
-from app_settings.models import ZabbixConfig, VlanTracerouteConfig
+from app_settings.models import VlanTracerouteConfig
 from check.models import Devices
+from devicemanager import ZabbixAPIConnection
 from ..finder import Finder, VlanTraceroute, VlanTracerouteResult
 from ..models import VlanName, DevicesForMacSearch
 from ..tasks import interfaces_scan, check_scanning_status
@@ -23,7 +23,6 @@ from ..tasks import interfaces_scan, check_scanning_status
 
 @login_required
 def run_periodically_scan(request):
-
     if request.method == "POST":
         task_id = cache.get("periodically_scan_id")
         if not task_id:
@@ -65,9 +64,7 @@ def find_as_str(request):
     )
 
 
-def get_ip_or_mac_from(
-    model_dev, find_address: str, result: list, find_type: str
-) -> None:
+def get_ip_or_mac_from(model_dev, find_address: str, result: list, find_type: str) -> None:
     """
     ## Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result
 
@@ -126,9 +123,7 @@ def ip_mac_info(request, ip_or_mac):
         # Проходит через каждое устройство в списке устройств.
         for dev in devices_for_search:
             # Отправка задачи в пул потоков.
-            execute.submit(
-                get_ip_or_mac_from, dev.device, find_address, match, find_type
-            )
+            execute.submit(get_ip_or_mac_from, dev.device, find_address, match, find_type)
 
     names = []  # Список имен оборудования и его hostid из Zabbix
 
@@ -137,11 +132,8 @@ def ip_mac_info(request, ip_or_mac):
         # Поиск всех IP-адресов в списке совпадений.
         ip = findall(r"\d+\.\d+\.\d+\.\d+", str(match))
 
-        # Загрузка настроек Zabbix из базы данных.
-        zabbix_settings = ZabbixConfig.load()
         try:
-            with ZabbixAPI(server=zabbix_settings.url) as zbx:
-                zbx.login(user=zabbix_settings.login, password=zabbix_settings.password)
+            with ZabbixAPIConnection().connect() as zbx:
                 # Ищем хост по IP
                 hosts = zbx.host.get(
                     output=["name", "status"],
@@ -152,9 +144,7 @@ def ip_mac_info(request, ip_or_mac):
         except ZabbixConnectionError:
             pass
 
-    return render(
-        request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names}
-    )
+    return render(request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names})
 
 
 @login_required
@@ -182,7 +172,6 @@ def create_nodes(result: List[VlanTracerouteResult], net: Network, show_admin_do
     """
 
     for e in result:
-
         # По умолчанию зеленый цвет, форма точки
         src_gr = 3
         dst_gr = 3
@@ -331,7 +320,7 @@ def get_vlan(request):
             empty_ports=request.GET.get("ep") == "true",
             only_admin_up=request.GET.get("ad") == "true",
             find_device_pattern=vlan_traceroute_settings.find_device_pattern,
-            double_check=request.GET.get("double-check") == "true"
+            double_check=request.GET.get("double-check") == "true",
         )
 
     result = finder.result

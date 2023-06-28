@@ -1,12 +1,13 @@
 from datetime import datetime
 
 import orjson
-from django.template.loader import render_to_string
 from pyzabbix import ZabbixAPI
+from django.template.loader import render_to_string
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from devicemanager.device import ZabbixAPIConnection
 from app_settings.models import ZabbixConfig
 from maps.models import Maps, Layers
 from .permissions import MapPermission
@@ -29,10 +30,7 @@ class ZabbixSessionMixin:
 
     def get_zbx_session(self) -> ZabbixAPI:
         if self._zbx_session is None:
-            self._zbx_session = ZabbixAPI(server=self._zbx_settings.url)
-            self._zbx_session.login(
-                user=self._zbx_settings.login, password=self._zbx_settings.password
-            )
+            self._zbx_session = ZabbixAPIConnection().connect()
         return self._zbx_session
 
     def __del__(self, *args, **kwargs):
