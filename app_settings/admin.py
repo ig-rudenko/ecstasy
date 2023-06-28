@@ -20,7 +20,6 @@
     чтобы найти в описании порта имя другого оборудования и продолжить трассировку
 """
 
-
 from django.contrib import admin
 from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import ConnectionError as ZabbixConnectionError, Session
@@ -56,16 +55,15 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
 
         session = Session()
         session.verify = False
-
-        with ZabbixAPI(server=obj.url, session=session, timeout=2) as zabbix_api:
-            try:
+        try:
+            with ZabbixAPI(server=obj.url, session=session, timeout=2) as zabbix_api:
                 zabbix_api.login(user=obj.login, password=obj.password)
                 return zabbix_api.is_authenticated
-            except (ZabbixAPIException, ZabbixConnectionError):
-                return False
-            except Exception as error:
-                print(error)
-                return False
+        except (ZabbixAPIException, ZabbixConnectionError):
+            return False
+        except Exception as error:
+            print(error)
+            return False
 
 
 @admin.register(VlanTracerouteConfig)
