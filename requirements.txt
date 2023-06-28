@@ -26,3 +26,4 @@ orjson
 django-celery-beat
 xlwt
 django-jazzmin
+urllib3

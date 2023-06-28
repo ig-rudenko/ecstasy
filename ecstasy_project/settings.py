@@ -10,19 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-
 import re
 import os
 import _locale
 import logging
+import urllib3
 from pathlib import Path
 from datetime import timedelta, datetime
+from urllib3.exceptions import InsecureRequestWarning
 
 import orjson
 
 from gathering.ftp import FTPCollector
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
+
+# Отключает warnings для `Unverified HTTPS request`
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -329,7 +333,6 @@ JAZZMIN_SETTINGS = {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
-
         "check.AuthGroup": "fas fa-key",
         "check.Bras": "fas fa-box",
         "check.DeviceGroup": "fas fa-object-group",
@@ -337,16 +340,12 @@ JAZZMIN_SETTINGS = {
         "check.Profile": "fas fa-id-card",
         "check.UsersActions": "fas fa-font",
         "check.DeviceMedia": "fas fa-images",
-
         "app_settings.LogsElasticStackSettings": "fas fas fa-wrench",
         "app_settings.ZabbixConfig": "fas fas fa-wrench",
         "app_settings.VlanTracerouteConfig": "fas fas fa-wrench",
-
         "gathering.MacAddress": "fas fa-ethernet",
-
         "maps.Layers": "fas fa-layer-group",
         "maps.Maps": "fas fa-map",
-
         "net_tools.VlanName": "fas fa-network-wired",
         "net_tools.DevicesForMacSearch": "fas fa-server",
     },
