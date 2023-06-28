@@ -6,7 +6,7 @@ import orjson
 
 from check.models import Devices
 from devicemanager.device import Interfaces
-from devicemanager.zabbix_info_dataclasses import Interface
+from devicemanager.device.interfaces import Interface
 from .base.finder import find_links_between_points
 from .base.types import BaseRingPoint
 

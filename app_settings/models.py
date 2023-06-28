@@ -147,12 +147,12 @@ class ZabbixConfig(SingletonModel):
 
     def save(self, *args, **kwargs):
         """
-        После сохранения новых настроек Zabbix API в базу, необходимо указать эти параметры для `ZabbixAPIConfig`.
+        После сохранения новых настроек Zabbix API в базу, необходимо указать эти параметры для `ZabbixAPIConnection`.
         """
         super().save(*args, **kwargs)
         # Устанавливаем конфигурацию для работы с devicemanager
-        from devicemanager import ZabbixAPIConfig
-        ZabbixAPIConfig.set(self)
+        from devicemanager import ZabbixAPIConnection
+        ZabbixAPIConnection.set(self)
 
     class Meta:
         db_table = "zabbix_api_settings"

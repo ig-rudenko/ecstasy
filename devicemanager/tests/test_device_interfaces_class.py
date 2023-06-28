@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 from devicemanager.device import Interfaces
-from devicemanager.zabbix_info_dataclasses import Interface
+from devicemanager.device.interfaces import Interface
 
 
 class TestInterfacesClass(SimpleTestCase):

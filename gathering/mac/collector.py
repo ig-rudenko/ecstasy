@@ -10,7 +10,7 @@ from check.models import Devices
 from net_tools.models import DevicesInfo
 from devicemanager.device import (
     DeviceManager,
-    ZabbixAPIConfig as DeviceZabbixConfig,
+    ZabbixAPIConnection,
     Interfaces,
 )
 from devicemanager.vendors.base.types import T_MACTable
@@ -25,8 +25,8 @@ class MacAddressTableGather:
     """
 
     def __init__(self, from_: Devices):
-        if not DeviceZabbixConfig.ZABBIX_URL:
-            DeviceZabbixConfig.set(ZabbixConfig.load())
+        if not ZabbixAPIConnection.ZABBIX_URL:
+            ZabbixAPIConnection.set(ZabbixConfig.load())
 
         self.device: Devices = from_
 

@@ -22,7 +22,6 @@ import orjson
 
 from gathering.ftp import FTPCollector
 
-
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -243,47 +242,47 @@ django_actions_logger = logging.getLogger("django.actions")
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
 
-
-LOGGING = {
-    "version": 1,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
+if not DEBUG:
+    LOGGING = {
+        "version": 1,
+        "formatters": {
+            "verbose": {
+                "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+                "style": "{",
+            },
+            "simple": {
+                "format": "{levelname} {asctime} {message}",
+                "style": "{",
+            },
         },
-        "simple": {
-            "format": "{levelname} {asctime} {message}",
-            "style": "{",
+        "filters": {
+            "require_debug_true": {
+                "()": "django.utils.log.RequireDebugTrue",
+            },
         },
-    },
-    "filters": {
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugTrue",
+        "handlers": {
+            "console": {
+                "level": "DEBUG",
+                "filters": ["require_debug_true"],
+                "class": "logging.StreamHandler",
+                "formatter": "verbose",
+            },
+            "file": {
+                "level": "DEBUG",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": LOGGING_DIR / "debug.log",
+                "formatter": "verbose",
+                "when": "midnight",
+                "backupCount": 30,
+            },
         },
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "filters": ["require_debug_true"],
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
+        "loggers": {
+            "django": {
+                "handlers": ["file", "console"],
+                "propagate": True,
+            }
         },
-        "file": {
-            "level": "DEBUG",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": LOGGING_DIR / "debug.log",
-            "formatter": "verbose",
-            "when": "midnight",
-            "backupCount": 30,
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file", "console"],
-            "propagate": True,
-        }
-    },
-}
+    }
 
 # ================= JWT ===================
 

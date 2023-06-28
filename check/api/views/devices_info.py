@@ -17,7 +17,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from check import models
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import DeviceManager
-from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConfig as ZabbixConfig
+from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConnection
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..decorators import except_connection_errors
@@ -479,7 +479,7 @@ class DeviceInfoAPIView(APIView):
                     device=model_dev
                 ),
                 "zabbixHostID": int(dev.zabbix_info.hostid or 0),
-                "zabbixURL": ZabbixConfig.ZABBIX_URL,
+                "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
                 "zabbixInfo": {
                     "description": dev.zabbix_info.description,
                     "inventory": dev.zabbix_info.inventory.to_dict,

@@ -23,7 +23,7 @@
 
 from django.contrib import admin
 from pyzabbix import ZabbixAPI, ZabbixAPIException
-from requests import ConnectionError as ZabbixConnectionError
+from requests import ConnectionError as ZabbixConnectionError, Session
 from app_settings.models import (
     LogsElasticStackSettings,
     ZabbixConfig,
@@ -54,11 +54,17 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
         Отображает, можно ли подключиться к Zabbix по указанным настройкам
         """
 
-        with ZabbixAPI(server=obj.url, timeout=2) as zabbix_api:
+        session = Session()
+        session.verify = False
+
+        with ZabbixAPI(server=obj.url, session=session, timeout=2) as zabbix_api:
             try:
                 zabbix_api.login(user=obj.login, password=obj.password)
                 return zabbix_api.is_authenticated
             except (ZabbixAPIException, ZabbixConnectionError):
+                return False
+            except Exception as error:
+                print(error)
                 return False
 
 

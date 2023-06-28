@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from check import models
 from devicemanager.device import Interfaces
-from devicemanager.zabbix_info_dataclasses import Interface
+from devicemanager.device.interfaces import Interface
 
 
 @dataclass

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Tuple
 import tabulate
 
@@ -87,11 +87,7 @@ class ZabbixInventory:
 
     def print(self):
         """Выводит в терминал данные инвентаризации, только те, что имеются"""
-        print(
-            tabulate.tabulate(
-                [[i, self.__dict__[i]] for i in self.__dict__ if self.__dict__[i]]
-            )
-        )
+        print(tabulate.tabulate([[i, self.__dict__[i]] for i in self.__dict__ if self.__dict__[i]]))
 
     @property
     def to_dict(self):
@@ -135,36 +131,6 @@ class ZabbixHostInfo:
 
 
 @dataclass
-class Interface:
-    name: str = ""
-    status: str = ""
-    desc: str = ""
-    vlan: list = field(default_factory=list)
-
-    @property
-    def has_desc(self):
-
-        if "HUAWEI, Quidway Series" in self.desc:
-            return False
-
-        return len(self.desc) > 1
-
-    @property
-    def is_up(self) -> bool:
-        status = self.status.lower()
-        return "down" not in status and "disable" not in status
-
-    @property
-    def is_admin_down(self) -> bool:
-        status = self.status.lower()
-        return "admin" in status or "disable" in status
-
-    @property
-    def is_down(self) -> bool:
-        return not self.is_up and not self.is_admin_down
-
-
-@dataclass
 class Location:
     state: str
     city: str
@@ -175,12 +141,8 @@ class Location:
     def __init__(self, **kwargs):
         self.state = kwargs.get("state") or ""
         self.city = kwargs.get("town") or kwargs.get("city") or ""
-        self.district = (
-            kwargs.get("city_district") or kwargs.get("state_district") or ""
-        )
-        self.street = " ".join(
-            [kwargs.get("allotments") or "", kwargs.get("road") or ""]
-        ).strip()
+        self.district = kwargs.get("city_district") or kwargs.get("state_district") or ""
+        self.street = " ".join([kwargs.get("allotments") or "", kwargs.get("road") or ""]).strip()
         print(f'"{self.street}"')
         self.house_number = kwargs.get("house_number") or ""
 

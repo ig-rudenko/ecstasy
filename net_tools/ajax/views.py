@@ -15,6 +15,7 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 
 from app_settings.models import ZabbixConfig, VlanTracerouteConfig
+from check.models import Devices
 from ..finder import Finder, VlanTraceroute, VlanTracerouteResult
 from ..models import VlanName, DevicesForMacSearch
 from ..tasks import interfaces_scan, check_scanning_status
@@ -316,7 +317,8 @@ def get_vlan(request):
     finder = VlanTraceroute()
 
     # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
-    for start_dev in vlan_start:
+    for start_dev in Devices.objects.all():
+        start_dev: Devices
         try:
             # Преобразуем VLAN в число
             vlan = int(request.GET["vlan"])
@@ -324,7 +326,7 @@ def get_vlan(request):
             break
         # Трассировка vlan
         finder.find_vlan(
-            device=start_dev,
+            device=start_dev.name,
             vlan_to_find=vlan,
             empty_ports=request.GET.get("ep") == "true",
             only_admin_up=request.GET.get("ad") == "true",

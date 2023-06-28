@@ -1,7 +1,8 @@
-static/map_previews
-static/docs
-static/admin
-static/rest_framework
+/static/*
+!/static/css
+!/static/js
+!/static/img
+!/static/flavico.ico
 
 media
 
