@@ -110,6 +110,7 @@ class LocalConfigStorage(ConfigStorage):
                     modTime=datetime.fromtimestamp(stats.st_mtime).strftime(
                         "%H:%M %d.%m.%Y"  # Время последней модификации
                     ),
+                    path=file.absolute()
                 )
             )
         return res

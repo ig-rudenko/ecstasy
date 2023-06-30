@@ -71,7 +71,7 @@ class ConfigurationGather:
             return False
 
         # Создание нового имени файла для нового файла конфигурации.
-        new_file_name = "config_file_" + current_config_hash[:15] + file_format
+        new_file_name = f"config_file_{self.storage.device.name}___{self.storage.device.ip}{file_format}"
 
         self.storage.add(new_file_name=new_file_name, file_content=unformatted_config)
 

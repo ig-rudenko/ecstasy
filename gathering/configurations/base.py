@@ -2,7 +2,7 @@ import pathlib
 import string
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import IO, List
+from typing import IO, List, Union
 from check import models
 
 
@@ -15,6 +15,7 @@ class ConfigFile:
     name: str
     size: int
     modTime: str
+    path: Union[str, pathlib.Path] = ""
 
     def __bool__(self):
         return bool(self.name)

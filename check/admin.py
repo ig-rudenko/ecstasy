@@ -12,15 +12,21 @@
 """
 
 # pylint: disable=maybe-no-member
+import zipfile
+from datetime import datetime
 
 import orjson
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
+from django.db.models import QuerySet
+from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from devicemanager.device import Interfaces
+from gathering.configurations.local_storage import LocalConfigStorage
 from .export import DevicesInterfacesWorkloadExcelExport
 from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions, DeviceMedia
 
@@ -58,7 +64,13 @@ class DevicesAdmin(admin.ModelAdmin):
         ),
         ("Интерфейсы", {"fields": ("show_interfaces",)}),
     )
-    actions = ["excel_interfaces_export", "set_telnet", "set_snmp", "set_ssh"]
+    actions = [
+        "excel_interfaces_export",
+        "load_last_config_files",
+        "set_telnet",
+        "set_snmp",
+        "set_ssh",
+    ]
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
@@ -107,6 +119,42 @@ class DevicesAdmin(admin.ModelAdmin):
         export = DevicesInterfacesWorkloadExcelExport(queryset)
         export.make_excel()
         return export.create_response()
+
+    @admin.action(description="Скачать последние конфигурации ZIP")
+    def load_last_config_files(self, request, queryset: QuerySet[Devices]):
+        """
+        Функция `load_last_config_files` создает zip-файл, содержащий первый файл конфигурации с каждого устройства в
+        заданном наборе запросов, и возвращает его как загружаемый ответ.
+
+        :return: Код возвращает объект HttpResponse с вложенным zip-файлом.
+        """
+        config_files_path_list = []
+        for device in queryset:
+            storage = LocalConfigStorage(device)
+            configs = storage.files_list()
+            if configs:
+                config_files_path_list.append(configs[0].path)
+
+        archive_storage_dir = settings.CONFIG_STORAGE_DIR / "archives"
+        archive_storage_dir.mkdir(parents=True, exist_ok=True)
+
+        datetime_part = datetime.now().strftime("%d %b %Y %Hh %Mm")
+
+        zip_file_path = (
+            archive_storage_dir / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
+        )
+
+        with zipfile.ZipFile(zip_file_path, "w") as my_zip:
+            for file in config_files_path_list:
+                file_name_with_parent_folder = str(file.absolute().as_posix()).split("/")[-2:]
+                my_zip.write(filename=file, arcname="/".join(file_name_with_parent_folder))
+
+        response = HttpResponse(
+            zip_file_path.open("rb"), content_type="application/x-zip-compressed"
+        )
+        response["Content-Disposition"] = f"attachment; filename={zip_file_path.name}"
+        zip_file_path.unlink()
+        return response
 
 
 @admin.register(AuthGroup)
