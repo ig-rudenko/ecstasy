@@ -9,14 +9,14 @@
 <!--        Нагрузка по портам-->
         <div v-if="displayMode === 'default'" class="col-md-3 py-2">
             <button @click="getDeviceWithStats" class="btn">
-                <img src="/static/img/loading_circle.png" height="50" class="me-2">
+                <img src="/static/img/loading_circle.svg" height="50" class="me-2">
                 Нагрузка по портам
             </button>
         </div>
 <!--        Ожидание-->
         <div v-if="displayMode === 'waiting'" class="col-md-3 py-2">
             <button class="btn">
-                <img src="/static/img/loading_circle.png" class="spinner-border me-2"
+                <img src="/static/img/loading_circle.svg" class="spinner-border me-2"
                      style="vertical-align: middle; height: 50px; width: 50px; border: none;">
                 Нагрузка по портам
             </button>
