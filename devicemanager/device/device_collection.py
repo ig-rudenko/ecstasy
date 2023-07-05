@@ -3,7 +3,7 @@ from typing import List
 from concurrent.futures import ThreadPoolExecutor
 
 from alive_progress import alive_bar
-from requests import ConnectionError as ZabbixConnectionError
+from requests import RequestException
 
 from .device_manager import DeviceManager
 from .zabbix_api import ZabbixAPIConnection
@@ -47,7 +47,7 @@ class DevicesCollection:
         try:
             with ZabbixAPIConnection().connect() as zbx:
                 hosts = zbx.host.get(filter={"ip": ip}, output=["name"])
-        except ZabbixConnectionError:
+        except RequestException:
             return DevicesCollection([])
         return DevicesCollection([DeviceManager(d["name"]) for d in hosts])
 
@@ -70,7 +70,7 @@ class DevicesCollection:
                     )
                 else:
                     return DevicesCollection([])
-        except ZabbixConnectionError:
+        except RequestException:
             return DevicesCollection([])
 
         with alive_bar(len(hosts), title="Создаем коллекцию") as bar:
@@ -95,7 +95,7 @@ class DevicesCollection:
         try:
             with ZabbixAPIConnection().connect() as zbx:
                 hosts = zbx.host.get(filter={"ip": ips}, output=["name"], sortfield=["name"])
-        except ZabbixConnectionError:
+        except RequestException:
             return DevicesCollection([])
 
         if hosts:

@@ -3,6 +3,7 @@ from datetime import datetime
 import orjson
 from pyzabbix import ZabbixAPI
 from django.template.loader import render_to_string
+from requests import RequestException
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -80,7 +81,10 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
             "type": "zabbix",
             "features": {},
         }
-        zbx = self.get_zbx_session()
+        try:
+            zbx = self.get_zbx_session()
+        except RequestException:
+            return {}
 
         # Находим группу в Zabbix
         group = zbx.hostgroup.get(filter={"name": layer.zabbix_group_name})
@@ -110,7 +114,12 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         """
         result = {"type": "FeatureCollection", "features": []}
 
-        hosts = self.get_zbx_session().host.get(
+        try:
+            zbx = self.get_zbx_session()
+        except RequestException:
+            return {}
+
+        hosts = zbx.host.get(
             groupids=group_id,
             selectInterfaces=["ip"],
             selectInventory=["location_lat", "location_lon"],
@@ -212,13 +221,16 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
             "features": {},
         }
 
-        # Читаем содержимое файла
-        with layer.from_file.open("r") as file:
-            try:
-                layer_data["features"] = orjson.loads(file.read())
-            except orjson.JSONDecodeError:
-                # Пропускаем файл, который не получилось прочитать
-                return {}
+        try:
+            # Читаем содержимое файла
+            with layer.from_file.open("r") as file:
+                try:
+                    layer_data["features"] = orjson.loads(file.read())
+                except orjson.JSONDecodeError:
+                    # Пропускаем файл, который не получилось прочитать
+                    return {}
+        except FileNotFoundError:
+            return {}
 
         return layer_data
 
@@ -260,7 +272,12 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
 
         :param group_name: Строка, представляющая имя группы Zabbix.
         """
-        group = self.get_zbx_session().hostgroup.get(filter={"name": group_name})
+        try:
+            zbx = self.get_zbx_session()
+        except RequestException:
+            return []
+
+        group = zbx.hostgroup.get(filter={"name": group_name})
         if group:  # Если такая группа существует
             return self.get_hosts_problems(zabbix_group_id=group[0]["groupid"])
         else:
@@ -273,7 +290,11 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         :return: Список из ID тех узлов, которые недоступны в этой группе и подтверждения по этим проблемам
         """
 
-        zbx = self.get_zbx_session()
+        try:
+            zbx = self.get_zbx_session()
+        except RequestException:
+            return []
+
         hosts_id = [
             host["hostid"]
             # Получение всех хостов в группе с заданным идентификатором группы.
@@ -303,9 +324,13 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
          список подтверждений (если есть) для этой проблемы.
         """
         # ID узла сети, у которого проблема.
-        host_id = self.get_zbx_session().item.get(
-            triggerids=[problem["objectid"]], output=["hostid", "name"]
-        )
+
+        try:
+            zbx = self.get_zbx_session()
+        except RequestException:
+            return {}
+
+        host_id = zbx.item.get(triggerids=[problem["objectid"]], output=["hostid", "name"])
 
         acknowledges = [
             [

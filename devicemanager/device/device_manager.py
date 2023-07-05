@@ -1,8 +1,8 @@
 import orjson
-from typing import Any
+from typing import Any, Union
 
 from ping3 import ping as socket_ping
-from requests import ConnectionError as ZabbixConnectionError
+from requests import RequestException
 from geopy.geocoders import Nominatim
 
 from .interfaces import Interfaces
@@ -55,7 +55,7 @@ class DeviceManager:
                     selectInterfaces=["ip"],
                     selectInventory="extend",
                 )
-        except ZabbixConnectionError:
+        except RequestException:
             return
 
         if zabbix_info:
@@ -102,7 +102,7 @@ class DeviceManager:
                         if value  # Только заполненные поля
                     },
                 )
-        except ZabbixConnectionError:
+        except RequestException:
             pass
 
     @property
@@ -122,14 +122,14 @@ class DeviceManager:
         return dev
 
     @classmethod
-    def from_hostid(cls, hostid: str) -> ("DeviceManager", None):
+    def from_hostid(cls, hostid: str) -> Union["DeviceManager", None]:
         """Создаем объект через переданный hostid Zabbix"""
         try:
             with ZabbixAPIConnection().connect() as zbx:
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
                 return DeviceManager(host[0]["name"])
-        except ZabbixConnectionError:
+        except RequestException:
             pass
         return None
 

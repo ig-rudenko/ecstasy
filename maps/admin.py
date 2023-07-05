@@ -1,9 +1,11 @@
+import os
 from collections import Counter
 
 import orjson
 from django import forms
 from django.contrib import admin
 from django.utils.html import mark_safe, format_html
+from requests import RequestException
 
 from devicemanager.device.zabbix_api import ZabbixAPIConnection
 from .models import Layers, Maps
@@ -100,9 +102,12 @@ def get_zabbix_groups():
     Возвращает список кортежей вида (group_name, group_name) для всех групп в Zabbix
     :return: Список кортежей.
     """
-    with ZabbixAPIConnection().connect() as zbx:
-        # Получение всех групп узлов сети из Zabbix.
-        groups = zbx.hostgroup.get(output=["name"])
+    try:
+        with ZabbixAPIConnection().connect() as zbx:
+            # Получение всех групп узлов сети из Zabbix.
+            groups = zbx.hostgroup.get(output=["name"])
+    except RequestException:
+        groups = []
 
     choices_groups = ((g["name"], g["name"]) for g in groups)
     return choices_groups
@@ -251,7 +256,7 @@ class LayersAdmin(admin.ModelAdmin):
         return "Неизвестный тип слоя"
 
     @staticmethod
-    def parse_layer_file(file_path):
+    def parse_layer_file(file_path) -> dict:
         """
         ## Функция анализирует файл слоя и возвращает словарь, содержащий информацию о типах и цветах объектов в файле.
 
@@ -280,6 +285,9 @@ class LayersAdmin(admin.ModelAdmin):
          в данном файле слоя, включая количество объектов каждого типа, процентное соотношение каждого
          типа объектов и количество каждого цвета, используемого для каждого типа объектов.
         """
+
+        if not os.path.exists(path=file_path):
+            return {}
 
         with open(file_path, "rb") as file:
             data = orjson.loads(file.read())

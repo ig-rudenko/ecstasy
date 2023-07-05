@@ -5,7 +5,7 @@ from re import findall
 from concurrent.futures import ThreadPoolExecutor
 
 import requests as requests_lib
-from requests import ConnectionError as ZabbixConnectionError
+from requests import RequestException
 from pyvis.network import Network
 
 from django.core.cache import cache
@@ -141,7 +141,7 @@ def ip_mac_info(request, ip_or_mac):
                     selectInterfaces=["ip"],
                 )
             names = [[h["name"], h["hostid"]] for h in hosts if h["status"] == "0"]
-        except ZabbixConnectionError:
+        except RequestException:
             pass
 
     return render(request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names})
