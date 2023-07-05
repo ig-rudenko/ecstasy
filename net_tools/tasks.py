@@ -1,3 +1,6 @@
+import logging
+
+from pyzabbix.api import logger
 from celery.result import AsyncResult
 from django.core.cache import cache
 
@@ -14,6 +17,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
     def pre_run(self):
         super().pre_run()
+        logger.setLevel(logging.ERROR)
         cache.set("periodically_scan_id", self.request.id, timeout=None)
 
     def thread_task(self, obj: ModelDevices, **kwargs):
@@ -21,14 +25,18 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             # Если оборудование недоступно, то пропускаем
             return
 
-        collector = DeviceInterfacesCollectorMixin()
-        collector.device = obj
-        collector.device_collector = DeviceManager.from_model(obj)
-        collector.collect_current_interfaces()
-        collector.sync_device_info_to_db()
-        collector.device_collector.push_zabbix_inventory()
-        collector.save_interfaces_to_db()
-        print(f"Saved Interfaces --> {obj}")
+        try:
+            print(f"Start collect interfaces --> {obj}")
+            collector = DeviceInterfacesCollectorMixin()
+            collector.device = obj
+            collector.device_collector = DeviceManager.from_model(obj)
+            collector.collect_current_interfaces(make_session_global=False)
+            collector.sync_device_info_to_db()
+            collector.device_collector.push_zabbix_inventory()
+            collector.save_interfaces_to_db()
+            print(f"Saved Interfaces --> {obj}")
+        except Exception as e:
+            print(f"Error when collect interfaces of {obj}: {e}")
 
         self.update_state()
 

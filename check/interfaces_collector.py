@@ -44,7 +44,7 @@ class DeviceInterfacesCollectorMixin:
         if self.model_update_fields:
             self.device.save(update_fields=self.model_update_fields)
 
-    def collect_current_interfaces(self) -> None:
+    def collect_current_interfaces(self, make_session_global=True, **kwargs) -> None:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
 
@@ -53,20 +53,25 @@ class DeviceInterfacesCollectorMixin:
 
         # Собираем интерфейсы
         status = self.device_collector.collect_interfaces(
-            vlans=self.with_vlans, current_status=True
+            vlans=self.with_vlans,
+            current_status=True,
+            make_session_global=make_session_global,
+            **kwargs
         )
 
         # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
         if "Неверный логин или пароль" in str(status):
             # Создаем список объектов авторизации
             auth_list = list(
-                AuthGroup.objects.exclude(name=self.device.auth_group.name)
-                .order_by("id")
-                .all()
+                AuthGroup.objects.exclude(name=self.device.auth_group.name).order_by("id").all()
             )
             # Собираем интерфейсы снова
             status = self.device_collector.collect_interfaces(
-                vlans=self.with_vlans, current_status=True, auth_obj=auth_list
+                vlans=self.with_vlans,
+                current_status=True,
+                auth_obj=auth_list,
+                make_session_global=make_session_global,
+                **kwargs
             )
 
             if status is None:  # Если статус сбора интерфейсов успешный

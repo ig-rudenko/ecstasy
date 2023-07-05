@@ -218,7 +218,7 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
             )
 
         # Собираем состояние интерфейсов оборудования в данный момент.
-        self.collect_current_interfaces()
+        self.collect_current_interfaces(make_session_global=True)
 
         # Синхронизируем реальные данные оборудования и поля в базе.
         self.sync_device_info_to_db()
