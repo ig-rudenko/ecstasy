@@ -164,7 +164,7 @@ def get_device_media_path(instance, file_name: str) -> str:
 class DeviceMedia(models.Model):
     device = models.ForeignKey(Devices, on_delete=models.CASCADE, related_name="medias")
     file = models.FileField(upload_to=get_device_media_path)
-    description = models.CharField(max_length=256)
+    description = models.CharField(max_length=1024, null=True, blank=True)
     mod_time = models.DateTimeField(auto_now=True)
 
     @property

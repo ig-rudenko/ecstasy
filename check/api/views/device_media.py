@@ -9,7 +9,7 @@ from ..permissions import DevicePermission, DeviceMediaPermission
 from ..serializers import DeviceMediaSerializer
 
 
-class DeviceMediaListAPIView(generics.ListCreateAPIView):
+class DeviceMediaListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = DeviceMediaSerializer
     lookup_url_kwarg = "device_name"

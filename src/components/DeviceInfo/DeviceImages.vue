@@ -32,7 +32,7 @@
           </div>
 
           <div v-if="items.length" class="list-group list-group-flush border-bottom scrollarea">
-            <template v-for="item in items">
+            <template v-for="(item, index) in items">
 
               <div @click="currentItem = item" :class="itemClasses(item)" aria-current="true">
                 <div class="d-flex w-100 align-items-center justify-content-between">
@@ -46,9 +46,15 @@
 
                   <small>{{ parseDateTimeString(item.mod_time) }}</small>
 
-                  <span @click="deleteForm.show = true" class="btn delete-item">
+                  <span @click="showDeleteFrom" class="btn delete-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"></path>
+                    </svg>
+                  </span>
+
+                  <span @click="showEditForm(index);" class="btn edit-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                     </svg>
                   </span>
 
@@ -72,7 +78,7 @@
 
           <div v-else class="m-4" style="height: 100%;">
 
-<!--Форма удаления-->
+    <!--Форма удаления-->
             <template v-if="deleteForm.show">
               <div class="modal-body">
                 <p>Вы уверены, что хотите удалить данный медиафайл?</p>
@@ -86,13 +92,22 @@
               </div>
             </template>
 
-<!--Просмотр изображения-->
-            <a v-if="currentItem.is_image" :href="currentItem.url" target="_blank">
+    <!--Форма редактирования-->
+            <template v-else-if="editForm.show">
+              <EditMedia :item="items[editForm.itemIndex]"
+                         :device-name="deviceName"
+                         @close="editForm.show=false;currentItem=items[editForm.itemIndex]"
+                         @reloadedmedia="updateMedia">
+              </EditMedia>
+            </template>
+
+    <!--Просмотр изображения-->
+            <a v-if="!editForm.show && currentItem.is_image" :href="currentItem.url" target="_blank">
               <img class="media-image" :src="currentItem.url" alt="image">
             </a>
 
-<!--Файл PDF-->
-            <div v-else class="align-content-center justify-content-md-center row h-100">
+    <!--Другие файлы-->
+            <div v-else-if="!editForm.show" class="align-content-center justify-content-md-center row h-100">
               <div class="col-md-auto">
                 <div class="file-link">
                   <a :href="currentItem.url" target="_blank">
@@ -117,11 +132,12 @@
 
 <script>
 import {defineComponent} from "vue";
-import LoadMedia from "./LoadMedia.vue";
 import getFileEarmarkClass from "../../helpers/fileFormat";
+import LoadMedia from "./LoadMedia.vue";
+import EditMedia from "./EditMedia.vue";
 
 export default defineComponent({
-  components: {LoadMedia},
+  components: {EditMedia, LoadMedia},
   props: {
     deviceName: {required: true, type: String}
   },
@@ -135,6 +151,10 @@ export default defineComponent({
     return {
       items: [],
       currentItem: null,
+      editForm: {
+        show: false,
+        itemIndex: null,
+      },
       deleteForm: {
         show: false,
         notification: {
@@ -152,6 +172,18 @@ export default defineComponent({
     }
   },
   methods: {
+
+    showDeleteFrom() {
+      this.editForm.show = false
+      this.deleteForm.show = true
+    },
+
+    showEditForm(itemIndex) {
+      this.deleteForm.show = false
+      this.editForm.show = true
+      this.editForm.itemIndex = itemIndex
+    },
+
     fileEarmarkClass(filename) {
       return getFileEarmarkClass(filename)
     },
@@ -190,6 +222,10 @@ export default defineComponent({
     addNewMedia(media) {
       console.log("media", media)
       this.items.push(media)
+    },
+
+    updateMedia(newMedia) {
+      this.items.splice(this.editForm.itemIndex, 1, newMedia)
     },
 
     // Функция для парсинга строки даты времени в формате ISO 8601
@@ -276,5 +312,11 @@ export default defineComponent({
   position: absolute;
   top: 0;
   right: 0;
+}
+
+.edit-item {
+  position: absolute;
+  top: 0;
+  right: 50px;
 }
 </style>
