@@ -22,7 +22,7 @@
         </button>
       </div>
 
-      <div class="card mb-3">
+      <div class="mb-3">
 
         <div class="g-0 row">
 
@@ -33,7 +33,7 @@
             </div>
           </div>
 
-          <div class="col-md-4 m-3">
+          <div class="col-md-6 m-3">
             <MediaPreview :item="getCurrentItem"></MediaPreview>
             <label for="edit-file-input" class="d-block text-center" style="cursor: pointer">
               <span class="text-center">Заменить</span>
@@ -41,7 +41,7 @@
             <input hidden id="edit-file-input" multiple type="file" @change="handleFileChange"/>
           </div>
 
-          <div class="card-body col-md-7">
+          <div class="card-body col-md-5">
             <label for="desc" class="form-label">Описание</label>
             <textarea v-model.trim="item.description" id="desc" cols="50" rows="8" class="form-control"></textarea>
           </div>
