@@ -3,7 +3,12 @@ from functools import wraps
 import pexpect
 from django.conf import settings
 from rest_framework.response import Response
-from devicemanager.exceptions import UnknownDeviceError, TelnetLoginError, TelnetConnectionError
+from devicemanager.exceptions import (
+    UnknownDeviceError,
+    DeviceLoginError,
+    TelnetConnectionError,
+    SSHConnectionError,
+)
 
 
 def except_connection_errors(handler):
@@ -29,14 +34,19 @@ def except_connection_errors(handler):
                 {"error": f"Timeout при выполнении команды на оборудовании. {contact}"},
                 status=500,
             )
-        except TelnetConnectionError:
+        except SSHConnectionError as exc:
             return Response(
-                {"error": f"Telnet недоступен. {contact}"},
+                {"error": f"{exc}. {contact}"},
                 status=500,
             )
-        except TelnetLoginError:
+        except TelnetConnectionError as exc:
             return Response(
-                {"error": f"Неверный Логин/Пароль. {contact}"},
+                {"error": f"{exc}. {contact}"},
+                status=500,
+            )
+        except DeviceLoginError as exc:
+            return Response(
+                {"error": f"{exc}. {contact}"},
                 status=500,
             )
         except UnknownDeviceError:

@@ -19,11 +19,15 @@ class DeviceException(Exception):
         return self.message
 
 
+class SSHConnectionError(DeviceException):
+    pass
+
+
 class TelnetConnectionError(DeviceException):
     pass
 
 
-class TelnetLoginError(DeviceException):
+class DeviceLoginError(DeviceException):
     pass
 
 

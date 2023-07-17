@@ -6,7 +6,12 @@ from dataclasses import dataclass
 
 import pexpect
 from .vendors import *
-from .exceptions import TelnetConnectionError, TelnetLoginError, UnknownDeviceError
+from .exceptions import (
+    TelnetConnectionError,
+    DeviceLoginError,
+    UnknownDeviceError,
+    SSHConnectionError,
+)
 from .session_control import DEVICE_SESSIONS
 
 
@@ -281,9 +286,8 @@ class DeviceFactory:
             if expect_index == 0:
 
                 if login_try > 1:
-                    print("login ", login_try)
                     # Если это вторая попытка ввода логина, то предыдущий был неверный
-                    return f"Неверный логин или пароль! ({self.ip})"
+                    return f"Неверный логин или пароль (подключение telnet)"
 
                 self.session.send(login + "\r")  # Вводим логин
                 login_try += 1
@@ -333,6 +337,8 @@ class DeviceFactory:
         if self.protocol == "ssh":
             algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
             cipher_str = f" -c {cipher}" if cipher else ""
+            last_cipher_index = -1
+            cipher_list = []
 
             for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
 
@@ -344,12 +350,14 @@ class DeviceFactory:
                     expect_index = self.session.expect(
                         [
                             r"no matching key exchange method found",  # 0
-                            r"no matching cipher found",  # 1
+                            r"no matching cipher found|Unknown cipher",  # 1
                             r"Are you sure you want to continue connecting",  # 2
                             self.password_input_expect,  # 3
                             self.prompt_expect,  # 4
-                            r"Connection closed",  # 5
-                            self.send_N_key,  # 6
+                            self.send_N_key,  # 5
+                            r"Connection closed",  # 6
+                            r"Incorrect login",  # 7
+                            pexpect.EOF,  # 8
                         ],
                         timeout=timeout,
                     )
@@ -367,11 +375,16 @@ class DeviceFactory:
 
                     elif expect_index == 1:
                         self.session.expect(pexpect.EOF)
-                        cipher = re.findall(
-                            r"Their offer: (\S+)", self.session.before.decode("utf-8")
-                        )
-                        if cipher:
-                            cipher_str = f' -c {cipher[0].split(",")[-1]}'
+                        if not cipher_list:
+                            cipher_output = re.findall(
+                                r"Their offer: (\S+)", self.session.before.decode("utf-8")
+                            )
+                            if cipher_output:
+                                cipher_list = cipher_output[0].split(",")
+
+                        if cipher_list:
+                            last_cipher_index += 1
+                            cipher_str = f" -c {cipher_list[last_cipher_index]}"
                             self.session = pexpect.spawn(
                                 f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
                             )
@@ -381,16 +394,24 @@ class DeviceFactory:
 
                     elif expect_index == 3:
                         self.session.send(password + "\r")
-                        if self.session.expect(["[Pp]assword:", r"[#>\]]\s*$"]):
-                            connected = True
+                        # if self.session.expect(["[Pp]assword:", r"[#>\]]\s*$"]):
+                        #     connected = True
 
-                        break  # Пробуем новый логин/пароль
+                        # break  # Пробуем новый логин/пароль
 
                     elif expect_index == 4:
                         connected = True
 
-                    elif expect_index == 6:
+                    elif expect_index == 5:
                         self.session.send("N\r")
+
+                    elif expect_index == 7:
+                        print(self.session.before)
+                        raise DeviceLoginError("Неверный Логин/Пароль (подключение SSH)")
+
+                    elif expect_index in {6, 8}:
+                        print(self.session.before)
+                        raise SSHConnectionError("SSH недоступен")
 
                 if connected:
                     self.login = login
@@ -417,7 +438,7 @@ class DeviceFactory:
                     continue
 
             else:
-                raise TelnetLoginError(status)
+                raise DeviceLoginError(status)
 
         device_session = self.get_device()
 

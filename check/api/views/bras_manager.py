@@ -15,7 +15,7 @@ from ..permissions import DevicePermission
 from ..serializers import BrassSessionSerializer, MacSerializer
 from devicemanager.exceptions import (
     TelnetConnectionError,
-    TelnetLoginError,
+    DeviceLoginError,
     UnknownDeviceError,
     DeviceException,
 )
@@ -49,7 +49,7 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
 
     except TelnetConnectionError:
         result[bras.name]["errors"].append("Не удалось подключиться")
-    except TelnetLoginError:
+    except DeviceLoginError:
         result[bras.name]["errors"].append("Неверный Логин/Пароль")
     except UnknownDeviceError:
         result[bras.name]["errors"].append("Неизвестные тип оборудования")

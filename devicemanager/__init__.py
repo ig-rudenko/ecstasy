@@ -5,5 +5,5 @@ from .exceptions import (
     DeviceException,
     UnknownDeviceError,
     TelnetConnectionError,
-    TelnetLoginError,
+    DeviceLoginError,
 )
