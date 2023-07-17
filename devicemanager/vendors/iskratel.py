@@ -14,6 +14,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -457,14 +458,24 @@ class IskratelMBan(BaseDevice):
         output = self.send_command("show dsl port", expect_command=False)
         interfaces_list = []
         for line in output.split("\n"):
-            interface = re.findall(
+            interface: List[List[str]] = re.findall(
                 r"(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)", line
             )
+
             if interface:
+                if interface[0][2] != "Equipped":
+                    status = InterfaceStatus.admin_down.value
+                elif interface[0][3] == "Down":
+                    status = InterfaceStatus.down.value
+                elif interface[0][3] == "Up":
+                    status = InterfaceStatus.up.value
+                else:
+                    status = InterfaceStatus.not_present.value
+
                 interfaces_list.append(
                     (
                         interface[0][0],  # name
-                        interface[0][3].lower() if interface[0][2] == "Equipped" else "admin down",
+                        status,
                         interface[0][1],  # desc
                     )
                 )
@@ -479,7 +490,7 @@ class IskratelMBan(BaseDevice):
 
         :return: ```[ ('name', 'status', 'desc', [''] ), ... ]```
         """
-        return [(line[0], line[1], line[2], [""]) for line in self.get_interfaces()]
+        return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
     def set_description(self, port: str, desc: str) -> str:

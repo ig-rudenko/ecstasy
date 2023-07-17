@@ -6,7 +6,7 @@ from typing import Literal, Sequence, Tuple, List, Dict, Optional
 import pexpect
 import textfsm
 from .base.device import BaseDevice
-from .base.helpers import range_to_numbers
+from .base.helpers import range_to_numbers, parse_by_template
 from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
     TEMPLATE_FOLDER,
@@ -15,6 +15,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -88,46 +89,33 @@ class Extreme(BaseDevice):
 
         # Смотрим имена интерфейсов, статус порта и его состояние
         output_links = self.send_command("show ports information")
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/extreme_links.template",
-            "r",
-            encoding="utf-8",
-        ) as template_file:
-            # Создание объекта TextFSM из файла шаблона.
-            int_des_ = textfsm.TextFSM(template_file)
-            # Анализ вывода команды «show ports information» и возврат списка списков.
-            result_port_state = int_des_.ParseText(output_links)
 
-        for position, line in enumerate(result_port_state):
-            # Проверяем статус порта и меняем его на более понятный для пользователя
-            if result_port_state[position][1].startswith("D"):
-                result_port_state[position][1] = "Disable"
-            elif result_port_state[position][1].startswith("E"):
-                result_port_state[position][1] = "Enable"
-            else:
-                result_port_state[position][1] = "None"
+        result_port_state: List[List[str, str, str]] = parse_by_template(
+            "interfaces/extreme_links.template", output_links
+        )
 
         # Смотрим имена интерфейсов и описания
         output_des = self.send_command("show ports description")
+        result_des: List[List[str]] = parse_by_template(
+            "interfaces/extreme_des.template", output_des
+        )
 
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/extreme_des.template", "r", encoding="utf-8"
-        ) as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-            result_des = int_des_.ParseText(output_des)  # Ищем desc
-
-        result = [result_port_state[n] + result_des[n] for n in range(len(result_port_state))]
-        return [
-            (
-                line[0],  # interface
-                line[2].replace("ready", "down").replace("active", "up")
-                if "Enable" in line[1]
-                else "admin down",
-                # status
-                line[3],  # desc
-            )
-            for line in result
+        interfaces_lines = [
+            result_port_state[n] + result_des[n] for n in range(len(result_port_state))
         ]
+
+        interfaces: List[Tuple[str, InterfaceStatus, str]] = []
+        for port_name, admin_status, link_status, desc in interfaces_lines:
+            # Проверяем статус порта и меняем его на более понятный для пользователя
+            if admin_status.startswith("D"):
+                status = InterfaceStatus.admin_down.value
+            elif link_status == "ready":
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
@@ -153,20 +141,17 @@ class Extreme(BaseDevice):
         output_vlans = self.send_command(
             'show configuration "vlan"', before_catch=r"Module vlan configuration\."
         )
-
-        with open(
-            f"{TEMPLATE_FOLDER}/vlans_templates/extreme.template", "r", encoding="utf-8"
-        ) as template_file:
-            vlan_templ = textfsm.TextFSM(template_file)
-            result_vlans: List[str] = vlan_templ.ParseText(output_vlans)
+        result_vlans: List[List[str, str]] = parse_by_template(
+            "vlans_templates/extreme.template", output_vlans
+        )
 
         # Создаем словарь, где ключи это порты, а значениями будут вланы на них
         ports_vlan: Dict[int, List[str]] = {num: [] for num in range(1, len(interfaces) + 1)}
 
-        for vlan in result_vlans:
-            for port in range_to_numbers(vlan[1]):
+        for vlan_id, ports in result_vlans:
+            for port in range_to_numbers(ports):
                 # Добавляем вланы на порты
-                ports_vlan[port].append(vlan[0])
+                ports_vlan[port].append(vlan_id)
 
         interfaces_vlan: T_InterfaceVLANList = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:

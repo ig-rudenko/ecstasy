@@ -4,6 +4,7 @@ from typing import List, Tuple, Dict, Union
 
 import pexpect
 
+from .extra import validate_ltp_interfaces_list
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -139,7 +140,7 @@ class EltexLTP16N(BaseDevice):
             for line in re.findall(r"(\d+)\s+(\S+).+[\r\n]", interfaces_pon_output)
         ]
 
-        return [(line[0], line[1], "") for line in interfaces]
+        return validate_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

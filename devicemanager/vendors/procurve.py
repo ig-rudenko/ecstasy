@@ -4,7 +4,14 @@ from typing import List
 import pexpect
 import textfsm
 from .base.device import BaseDevice
-from .base.types import TEMPLATE_FOLDER, T_InterfaceList, T_InterfaceVLANList, T_MACList
+from .base.helpers import parse_by_template
+from .base.types import (
+    TEMPLATE_FOLDER,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    InterfaceStatus,
+)
 
 
 class ProCurve(BaseDevice):
@@ -27,11 +34,10 @@ class ProCurve(BaseDevice):
     def get_interfaces(self) -> T_InterfaceList:
         result = []
         raw_intf_status = self.send_command("show interfaces brief", expect_command=False)
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/procurve_status.template", encoding="utf-8"
-        ) as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-        intf_status: List[str] = int_des_.ParseText(raw_intf_status)  # Ищем интерфейсы
+
+        intf_status: List[str] = parse_by_template(
+            "interfaces/procurve_status.template", raw_intf_status
+        )
 
         for line in intf_status:
             port = self.find_or_empty(r"[ABCD]*\d+", line[0])
@@ -39,10 +45,18 @@ class ProCurve(BaseDevice):
                 f"show interfaces ethernet {port}", expect_command=False
             )
             desc = re.findall(r"Name\s*(:\s*\S*)\W+Link", port_output)
+
+            if line[1].strip() != "Yes":
+                status = InterfaceStatus.admin_down.value
+            elif line[2].strip().lower() == "up":
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.down.value
+
             result.append(
                 (
                     line[0],
-                    line[2].lower() if line[1] == "Yes" else "admin down",
+                    status,
                     desc[0][1:] if desc else "",
                 )
             )

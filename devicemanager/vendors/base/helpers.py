@@ -1,6 +1,10 @@
 import re
 from typing import List
 
+import textfsm
+
+from devicemanager.vendors.base.types import TEMPLATE_FOLDER
+
 
 def range_to_numbers(ports_string: str) -> List[int]:
     """
@@ -82,3 +86,22 @@ def interface_normal_view(interface) -> str:
         return f"TenGigabitEthernet {interface_number[0][0]}"
 
     return ""
+
+
+def parse_by_template(template_name: str, text: str) -> list:
+    """
+    Принимает имя шаблона и текст в качестве входных данных, открывает файл шаблона,
+    использует библиотеку TextFSM для анализа текста и возвращает проанализированный вывод.
+
+    :param template_name: Параметр `template_name` представляет собой строку, представляющую имя файла шаблона.
+     Этот файл содержит структуру шаблона, которая будет использоваться для разбора параметра text.
+    :param text: Параметр `text` представляет собой строку, представляющую входной текст, который вы хотите
+     проанализировать, используя указанный шаблон
+    :return: Возвращает список.
+    """
+
+    with open(f"{TEMPLATE_FOLDER}/{template_name}", "r", encoding="utf-8") as template_file:
+        # Используем библиотеку TextFSM для анализа.
+        int_des_ = textfsm.TextFSM(template_file)
+        # Разбираем вывод команды.
+        return int_des_.ParseText(text)

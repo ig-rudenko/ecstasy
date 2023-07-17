@@ -6,7 +6,7 @@ from typing import Literal, Tuple, List, Optional, Dict, Any
 import pexpect
 import textfsm
 from .base.device import BaseDevice
-from .base.helpers import range_to_numbers
+from .base.helpers import range_to_numbers, parse_by_template
 from .base.validators import validate_and_format_port
 from .base.types import (
     TEMPLATE_FOLDER,
@@ -15,6 +15,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -176,23 +177,22 @@ class Dlink(BaseDevice):
 
         output = self.send_command("show ports des")
 
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/d-link.template", "r", encoding="utf-8"
-        ) as template_file:
-            # Используем библиотеку TextFSM для анализа вывода команды show.
-            int_des_ = textfsm.TextFSM(template_file)
-            # Разбираем вывод команды «show ports description» и ищем интерфейсы.
-            result = int_des_.ParseText(output)
-        return [
-            (
-                line[0],  # interface
-                re.sub(r"Link\s*?Down", "down", line[2])
-                if "Enabled" in line[1]
-                else "admin down",  # status
-                line[3],  # desc
-            )
-            for line in result
-        ]
+        result: List[List[str]] = parse_by_template(
+            "interfaces/d-link.template", output
+        )
+
+        interfaces = []
+        for port_name, admin_status, link_status, desc in result:
+            if admin_status != "Enabled":
+                status = InterfaceStatus.admin_down.value
+            elif "Down" in link_status:
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

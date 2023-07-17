@@ -6,7 +6,7 @@ import pexpect
 import textfsm
 
 from ..base.device import BaseDevice
-from ..base.helpers import interface_normal_view
+from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
     TEMPLATE_FOLDER,
@@ -14,6 +14,7 @@ from ..base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
+    InterfaceStatus,
 )
 
 
@@ -113,24 +114,26 @@ class EltexMES(BaseDevice):
             else:
                 print(self.ip, "Ошибка: timeout")
                 break
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/{self._template_name}.template",
-            "r",
-            encoding="utf-8",
-        ) as template_file:
-            # используем TextFSM для анализа вывода команды.
-            int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
 
-        return [
-            (
-                line[0],  # interface
-                line[2].lower() if "up" in line[1].lower() else "admin down",  # status
-                line[3],  # desc
-            )
-            for line in result
-            if not line[0].startswith("V")  # Пропускаем Vlan интерфейсы
-        ]
+        result: List[List[str, str, str, str]] = parse_by_template(
+            f"interfaces/{self._template_name}.template", output
+        )
+
+        interfaces = []
+        for port_name, admin_status, link_status, desc in result:
+            if port_name.startswith("V"):
+                # Пропускаем Vlan интерфейсы
+                continue
+            if admin_status.lower() != "up":
+                status = InterfaceStatus.admin_down.value
+            elif "down" in link_status.lower():
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

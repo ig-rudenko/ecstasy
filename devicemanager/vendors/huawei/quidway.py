@@ -6,7 +6,7 @@ import pexpect
 import textfsm
 
 from ..base.device import BaseDevice
-from ..base.helpers import interface_normal_view
+from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
     TEMPLATE_FOLDER,
@@ -17,6 +17,7 @@ from ..base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -154,20 +155,27 @@ class Huawei(BaseDevice):
         else:
             ht = "huawei"
 
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/{ht}.template", "r", encoding="utf-8"
-        ) as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
-        return [
-            (
-                line[0],  # interface
-                line[1].lower().replace("adm", "admin").replace("*", "admin "),  # status
-                line[2],  # desc
-            )
-            for line in result
-            if not line[0].startswith("NULL") and not line[0].startswith("V")
-        ]
+        result = parse_by_template(f"interfaces/{ht}.template", output)
+
+        interfaces = []
+        for port_name, link_status, desc in result:
+            if port_name.startswith("NULL") or port_name.startswith("V"):
+                continue
+
+            if (
+                "*" in link_status.lower()
+                or "adm" in link_status.lower()
+                or "admin" in link_status.lower()
+            ):
+                status = InterfaceStatus.admin_down.value
+            elif "down" in link_status.lower():
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

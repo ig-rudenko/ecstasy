@@ -6,7 +6,7 @@ import pexpect
 import textfsm
 from .base.device import BaseDevice
 from .base.validators import validate_and_format_port_as_normal
-from .base.helpers import interface_normal_view
+from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
     TEMPLATE_FOLDER,
     FIBER_TYPES,
@@ -16,6 +16,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -96,20 +97,23 @@ class Cisco(BaseDevice):
 
         output = self.send_command("show interfaces description")
         output = re.sub(".+\nInterface", "Interface", output)
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/cisco.template", "r", encoding="utf-8"
-        ) as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
-        return [
-            (
-                line[0],  # interface
-                line[2].lower() if "up" in line[1].lower() else line[1].lower(),  # status
-                line[3],  # desc
-            )
-            for line in result
-            if not line[0].startswith("V")
-        ]
+
+        result: List[List[str]] = parse_by_template(
+            "interfaces/cisco.template", output
+        )
+
+        interfaces = []
+        for port_name, admin_status, link_status, desc in result:
+            if admin_status.lower() != "up":
+                status = InterfaceStatus.admin_down.value
+            elif "down" in link_status.lower():
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

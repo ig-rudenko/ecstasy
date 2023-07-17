@@ -1,7 +1,8 @@
 import subprocess
 from re import findall, IGNORECASE
-from typing import Tuple, List
 from concurrent.futures import ThreadPoolExecutor
+
+from .vendors.base.types import T_InterfaceList, InterfaceStatus
 
 
 def physical_interface(name: str) -> bool:
@@ -25,7 +26,7 @@ def physical_interface(name: str) -> bool:
     return True
 
 
-def show_interfaces(device_ip, community, snmp_port=161) -> List[Tuple[str, str, str, str]]:
+def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
     """
 
     С помощью snmpwalk смотрит состояние интерфейсов, имена, описания
@@ -86,13 +87,27 @@ def show_interfaces(device_ip, community, snmp_port=161) -> List[Tuple[str, str,
     result = []
 
     for snmp_index in snmp_result["IF-MIB::ifIndex"]:
+        port_name = (
+            snmp_result["IF-MIB::ifName"].get(snmp_index)
+            or snmp_result["IF-MIB::ifDescr"][snmp_index]
+        )
+
+        if not physical_interface(port_name):
+            continue
+
+        if snmp_result["IF-MIB::ifAdminStatus"].get(snmp_index, "") == "down":
+            status = InterfaceStatus.admin_down.value
+        elif snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "") in {"up", "down", "dormant"}:
+            snmp_status = snmp_result["IF-MIB::ifOperStatus"][snmp_index]
+            status = getattr(InterfaceStatus, snmp_status).value
+        else:
+            status = InterfaceStatus.not_present.value
+
         result.append(
             (
-                snmp_result["IF-MIB::ifName"].get(snmp_index)
-                or snmp_result["IF-MIB::ifDescr"][snmp_index],
-                snmp_result["IF-MIB::ifAdminStatus"].get(snmp_index) or "-",
-                snmp_result["IF-MIB::ifOperStatus"].get(snmp_index) or "-",
-                snmp_result["IF-MIB::ifAlias"].get(snmp_index) or "",
+                port_name,
+                status,
+                snmp_result["IF-MIB::ifAlias"].get(snmp_index, ""),
             )
         )
     return result

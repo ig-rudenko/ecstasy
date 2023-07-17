@@ -9,7 +9,7 @@ import pexpect
 from functools import partial
 from .base.device import BaseDevice
 from .base.validators import validate_and_format_port
-from .base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType
+from .base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType, InterfaceStatus
 
 
 def validate_port(port: str) -> Optional[str]:
@@ -138,11 +138,11 @@ class MikroTik(BaseDevice):
 
             flags = match.group(2)
             if "R" in flags:
-                status = "up"
+                status = InterfaceStatus.up.value
             elif "X" in flags:
-                status = "admin down"
+                status = InterfaceStatus.admin_down.value
             else:
-                status = "down"
+                status = InterfaceStatus.down.value
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 

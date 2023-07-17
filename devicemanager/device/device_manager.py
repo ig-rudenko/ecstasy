@@ -134,7 +134,7 @@ class DeviceManager:
         return None
 
     def collect_interfaces(
-        self, vlans=True, current_status=False, auth_obj=None, *args, **kwargs
+        self, vlans=True, current_status=False, auth_obj=None, raise_exception=False, *args, **kwargs
     ) -> str:
         """Собираем интерфейсы оборудования"""
 
@@ -155,18 +155,8 @@ class DeviceManager:
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == "snmp":
             # SNMP
-            raw_interfaces = snmp.show_interfaces(device_ip=self.ip, community=self.snmp_community)
-            self.interfaces = Interfaces(
-                [
-                    {
-                        "Interface": line[0],
-                        "Status": "admin down" if "down" in line[1] else line[2],
-                        "Description": line[3],
-                    }
-                    for line in raw_interfaces
-                    if snmp.physical_interface(line[0])
-                ]
-            )
+            interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
+            self.interfaces = Interfaces(interfaces)
 
         else:
             # CMD

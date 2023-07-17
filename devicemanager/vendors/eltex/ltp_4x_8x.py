@@ -4,6 +4,7 @@ from typing import List, Tuple, Dict, Any, Optional, TypedDict
 
 import pexpect
 
+from .extra import validate_ltp_interfaces_list
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -11,6 +12,7 @@ from ..base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 
 
@@ -170,7 +172,8 @@ class EltexLTP(BaseDevice):
     def get_interfaces(self) -> T_InterfaceList:
         self.session.send("switch\r")
         self.session.expect(self.prompt)
-        interfaces = []
+
+        interfaces: List[List[str, str]] = []
 
         interfaces_10gig_output = self.send_command(
             f"show interfaces status 10G-front-port 0 - {self.the_10G_ports_count - 1}",
@@ -192,7 +195,7 @@ class EltexLTP(BaseDevice):
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        return [(line[0], line[1], "") for line in interfaces]
+        return validate_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:

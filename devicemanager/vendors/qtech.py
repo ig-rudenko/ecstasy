@@ -5,6 +5,7 @@ from typing import Tuple, List, Literal, Optional
 
 import textfsm
 from .base.device import BaseDevice
+from .base.helpers import parse_by_template
 from .base.types import (
     TEMPLATE_FOLDER,
     T_InterfaceList,
@@ -12,6 +13,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
+    InterfaceStatus,
 )
 from .base.validators import validate_and_format_port
 
@@ -69,12 +71,21 @@ class Qtech(BaseDevice):
 
         output = self.send_command(command="show interface ethernet status", expect_command=False)
         output = re.sub(r"[\W\S]+\nInterface", "\nInterface", output)
-        with open(
-            f"{TEMPLATE_FOLDER}/interfaces/q-tech.template", "r", encoding="utf-8"
-        ) as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
-        return [(line[0], line[1].lower().replace("a-", "admin "), line[2]) for line in result]
+
+        result = parse_by_template("interfaces/q-tech.template", output)
+
+        interfaces = []
+        for port_name, link_status, desc in result:
+            if link_status == "A-DOWN":
+                status = InterfaceStatus.admin_down.value
+            elif link_status == "DOWN":
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

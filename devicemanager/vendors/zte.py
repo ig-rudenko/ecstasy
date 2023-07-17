@@ -5,7 +5,7 @@ from typing import List, Tuple, Literal
 import pexpect
 import textfsm
 from .base.device import BaseDevice
-from .base.helpers import range_to_numbers
+from .base.helpers import range_to_numbers, parse_by_template
 from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
     TEMPLATE_FOLDER,
@@ -15,6 +15,7 @@ from .base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
+    InterfaceStatus,
 )
 
 
@@ -90,17 +91,20 @@ class ZTE(BaseDevice):
 
         output = self.send_command("show port")
 
-        with open(f"{TEMPLATE_FOLDER}/interfaces/zte.template", encoding="utf-8") as template_file:
-            int_des_ = textfsm.TextFSM(template_file)
-            result = int_des_.ParseText(output)  # Ищем интерфейсы
-        return [
-            (
-                line[0],  # interface
-                line[2] if "enabled" in line[1] else "admin down",  # status
-                line[3],  # desc
-            )
-            for line in result
-        ]
+        result = parse_by_template("interfaces/zte.template", output)
+
+        interfaces = []
+        for port_name, admin_status, link_status, desc in result:
+            if admin_status.lower() != "enabled":
+                status = InterfaceStatus.admin_down.value
+            elif "down" in link_status.lower():
+                status = InterfaceStatus.down.value
+            else:
+                status = InterfaceStatus.up.value
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
