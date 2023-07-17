@@ -9,11 +9,7 @@ from .interfaces import Interfaces
 from .zabbix_api import ZabbixAPIConnection
 from .. import snmp
 from ..dc import DeviceFactory
-from ..exceptions import (
-    TelnetConnectionError,
-    TelnetLoginError,
-    UnknownDeviceError,
-)
+from ..exceptions import AuthException, DeviceException
 from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -134,23 +130,18 @@ class DeviceManager:
         return None
 
     def collect_interfaces(
-        self, vlans=True, current_status=False, auth_obj=None, raise_exception=False, *args, **kwargs
-    ) -> str:
+        self,
+        vlans=True,
+        current_status=False,
+        auth_obj=None,
+        raise_exception=False,
+        *args,
+        **kwargs,
+    ) -> None:
         """Собираем интерфейсы оборудования"""
 
         if not current_status:  # Смотрим из истории
-            from net_tools.models import DevicesInfo
-
-            try:
-                device_data_history = DevicesInfo.objects.get(dev__name=self.name)
-
-                self.interfaces = Interfaces(
-                    orjson.loads(
-                        device_data_history.vlans if vlans else device_data_history.interfaces
-                    )
-                )
-            except DevicesInfo.DoesNotExist:
-                self.interfaces = Interfaces()
+            self._get_interfaces_from_history(with_vlans=vlans)
 
         # Собираем интерфейсы в реальном времени с устройства
         elif self.protocol == "snmp":
@@ -158,42 +149,55 @@ class DeviceManager:
             interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
             self.interfaces = Interfaces(interfaces)
 
-        else:
+        elif self.protocol in {"telnet", "ssh"}:
             # CMD
-            if not auth_obj and not self.auth_obj:
-                return "Не указан профиль авторизации для данного оборудования"
-            if not self.protocol:
-                return "Не указан протокол для подключения к оборудованию"
-
             try:
-                with self.connect(
-                    self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
-                ) as session:
-                    if session.model:
-                        self.zabbix_info.inventory.model = session.model
+                self._get_interfaces_from_connection(
+                    with_vlans=vlans, auth_obj=auth_obj, *args, **kwargs
+                )
+            except (DeviceException, AuthException) as exc:
+                if raise_exception:
+                    raise exc
 
-                    if session.vendor:
-                        self.zabbix_info.inventory.vendor = session.vendor
+    def _get_interfaces_from_history(self, with_vlans: bool):
+        from net_tools.models import DevicesInfo
 
-                    if session.serialno:
-                        self.zabbix_info.inventory.serialno_a = session.serialno
+        try:
+            device_data_history = DevicesInfo.objects.get(dev__name=self.name)
+            json_data = device_data_history.vlans if with_vlans else device_data_history.interfaces
+            self.interfaces = Interfaces(orjson.loads(json_data or "[]"))
 
-                    if session.mac:
-                        self.zabbix_info.inventory.macaddress_a = session.mac
+        except DevicesInfo.DoesNotExist:
+            self.interfaces = Interfaces()
 
-                    # Получаем верные логин/пароль
-                    self.success_auth = session.auth
+    def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, *args, **kwargs):
+        auth_obj = auth_obj or self.auth_obj
+        if not auth_obj:
+            raise AuthException("Не указан объект авторизации!")
 
-                    if vlans:
-                        # Если не получилось собрать vlan тогда собираем интерфейсы
-                        self.interfaces = Interfaces(
-                            session.get_vlans() or session.get_interfaces()
-                        )
-                    else:
-                        self.interfaces = Interfaces(session.get_interfaces())
+        with self.connect(
+            self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
+        ) as session:
+            if session.model:
+                self.zabbix_info.inventory.model = session.model
 
-            except (TelnetConnectionError, TelnetLoginError, UnknownDeviceError) as e:
-                return str(e)
+            if session.vendor:
+                self.zabbix_info.inventory.vendor = session.vendor
+
+            if session.serialno:
+                self.zabbix_info.inventory.serialno_a = session.serialno
+
+            if session.mac:
+                self.zabbix_info.inventory.macaddress_a = session.mac
+
+            # Получаем верные логин/пароль
+            self.success_auth = session.auth
+
+            if with_vlans:
+                # Если не получилось собрать vlan тогда собираем интерфейсы
+                self.interfaces = Interfaces(session.get_vlans() or session.get_interfaces())
+            else:
+                self.interfaces = Interfaces(session.get_interfaces())
 
     def __str__(self):
         return f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'

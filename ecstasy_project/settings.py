@@ -350,3 +350,6 @@ JAZZMIN_SETTINGS = {
         "net_tools.DevicesForMacSearch": "fas fa-server",
     },
 }
+
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
+CONTACT_NAME = os.getenv("CONTACT_NAME")

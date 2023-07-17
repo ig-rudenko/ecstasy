@@ -44,7 +44,7 @@ class DeviceInterfacesCollectorMixin:
         if self.model_update_fields:
             self.device.save(update_fields=self.model_update_fields)
 
-    def collect_current_interfaces(self, make_session_global=True, **kwargs) -> None:
+    def collect_current_interfaces(self, make_session_global, **kwargs) -> None:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
 
@@ -52,40 +52,13 @@ class DeviceInterfacesCollectorMixin:
         """
 
         # Собираем интерфейсы
-        status = self.device_collector.collect_interfaces(
+        self.device_collector.collect_interfaces(
             vlans=self.with_vlans,
             current_status=True,
+            raise_exception=True,
             make_session_global=make_session_global,
             **kwargs
         )
-
-        # Если пароль неверный, то пробуем все по очереди, кроме уже введенного
-        if "Неверный логин или пароль" in str(status):
-            # Создаем список объектов авторизации
-            auth_list = list(
-                AuthGroup.objects.exclude(name=self.device.auth_group.name).order_by("id").all()
-            )
-            # Собираем интерфейсы снова
-            status = self.device_collector.collect_interfaces(
-                vlans=self.with_vlans,
-                current_status=True,
-                auth_obj=auth_list,
-                make_session_global=make_session_global,
-                **kwargs
-            )
-
-            if status is None:  # Если статус сбора интерфейсов успешный
-                # Необходимо перезаписать верный логин/пароль в БД, так как первая попытка была неудачной.
-                # Смотрим объект у которого такие логин и пароль
-                success_auth_obj = AuthGroup.objects.get(
-                    login=self.device_collector.success_auth["login"],
-                    password=self.device_collector.success_auth["password"],
-                )
-
-                # Указываем новый логин/пароль для этого устройства
-                self.device.auth_group = success_auth_obj
-                # Добавляем это поле в список изменений
-                self.model_update_fields.append("auth_group")
 
     def get_last_interfaces(self) -> (list, datetime):
         """

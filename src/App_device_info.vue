@@ -31,7 +31,7 @@ export default {
       collected: "new", // Дата и время сбора интерфейсов
       seconds_pass: 0,
 
-      errorStatus: "", // Ошибка сбора интерфейсов
+      errorStatus: null, // Ошибка сбора интерфейсов
       deviceAvailable: -1, // Оборудование доступно?
       permissionLevel: 0, // Уровень привилегий пользователя
       withVlans: false, // Собирать VLAN?
@@ -142,6 +142,7 @@ export default {
       try {
         let url = "/device/api/" + this.deviceName + "/stats"
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+        if (!response.ok) return;
 
         this.deviceStats = await response.json()
 
@@ -156,10 +157,9 @@ export default {
       try {
         let url = "/device/api/workload/interfaces/" + this.deviceName
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+        if (!response.ok) return;
 
-        if (response.status === 200) {
-          this.interfacesWorkload = await response.json()
-        }
+        this.interfacesWorkload = await response.json()
 
       } catch (error) {
         console.log(error)
@@ -172,6 +172,9 @@ export default {
         let url = "/device/api/" + this.deviceName + "/info"
 
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+
+        if (!response.ok) return;
+
         let data = await response.json()
 
         this.deviceName = data.deviceName
@@ -209,17 +212,20 @@ export default {
         }
 
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+
         let data = await response.json()
 
-        this.interfaces = data.interfaces
-        this.collected = new Date(data.collected)
-        this.deviceAvailable = data.deviceAvailable ? 1 : 0
+        if (response.ok) {
+          this.interfaces = data.interfaces
+          this.collected = new Date(data.collected)
+          this.deviceAvailable = data.deviceAvailable ? 1 : 0
+          // Если оборудование недоступно, то автообновление тоже недоступно
+          this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable)
 
-        // Если оборудование доступно, то смотрим интерфейсы в реальном времени
-        // this.currentStatus = this.deviceAvailable
-
-        // Если оборудование недоступно, то автообновление тоже недоступно
-        this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable)
+        } else {
+          this.autoUpdateInterfaces = false
+          this.errorStatus = data.error
+        }
 
       } catch (error) {
         console.log(error)

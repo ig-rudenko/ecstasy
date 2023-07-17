@@ -1,6 +1,7 @@
 from functools import wraps
 
 import pexpect
+from django.conf import settings
 from rest_framework.response import Response
 from devicemanager.exceptions import UnknownDeviceError, TelnetLoginError, TelnetConnectionError
 
@@ -13,17 +14,35 @@ def except_connection_errors(handler):
 
     @wraps(handler)
     def wrapper(*args, **kwargs):
+        contact = (
+            f'Пишите на почту: <br><span class="badge bg-success">{settings.CONTACT_EMAIL}</span>'
+        )
         try:
             return handler(*args, **kwargs)
         except pexpect.EOF:
-            return Response({"error": "EOF при считывании данных с оборудования"}, status=500)
+            return Response(
+                {"error": f"EOF при считывании данных с оборудования. {contact}"},
+                status=500,
+            )
         except pexpect.TIMEOUT:
-            return Response({"error": "Timeout при выполнении команды на оборудовании"}, status=500)
+            return Response(
+                {"error": f"Timeout при выполнении команды на оборудовании. {contact}"},
+                status=500,
+            )
         except TelnetConnectionError:
-            return Response({"error": "Telnet недоступен"}, status=500)
+            return Response(
+                {"error": f"Telnet недоступен. {contact}"},
+                status=500,
+            )
         except TelnetLoginError:
-            return Response({"error": "Неверный Логин/Пароль"}, status=500)
+            return Response(
+                {"error": f"Неверный Логин/Пароль. {contact}"},
+                status=500,
+            )
         except UnknownDeviceError:
-            return Response({"error": "Неизвестный тип оборудования"}, status=500)
+            return Response(
+                {"error": f"Неподдерживаемый тип оборудования. {contact}"},
+                status=500,
+            )
 
     return wrapper
