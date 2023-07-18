@@ -1,22 +1,21 @@
 from ecstasy_project.settings import django_actions_logger
 
 
-class AuthException(Exception):
-    def __init__(self, message: str):
-        django_actions_logger.warning(message)
+class BaseDeviceException(Exception):
+    def __init__(self, message: str, ip: str = "no ip"):
+        django_actions_logger.warning(f"{ip} {message}")
         self.message: str = message
 
     def __str__(self):
         return self.message
 
 
-class DeviceException(Exception):
-    def __init__(self, message: str):
-        django_actions_logger.warning(message)
-        self.message: str = message
+class AuthException(BaseDeviceException):
+    pass
 
-    def __str__(self):
-        return self.message
+
+class DeviceException(BaseDeviceException):
+    pass
 
 
 class SSHConnectionError(DeviceException):

@@ -13,12 +13,7 @@ from check.logging import log
 from check.permissions import profile_permission
 from ..permissions import DevicePermission
 from ..serializers import BrassSessionSerializer, MacSerializer
-from devicemanager.exceptions import (
-    TelnetConnectionError,
-    DeviceLoginError,
-    UnknownDeviceError,
-    DeviceException,
-)
+from devicemanager.exceptions import BaseDeviceException
 
 
 def get_user_session(bras: models.Bras, mac: str, result: dict):
@@ -47,12 +42,8 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
 
             result[bras.name]["session"] = bras_output
 
-    except TelnetConnectionError:
-        result[bras.name]["errors"].append("Не удалось подключиться")
-    except DeviceLoginError:
-        result[bras.name]["errors"].append("Неверный Логин/Пароль")
-    except UnknownDeviceError:
-        result[bras.name]["errors"].append("Неизвестные тип оборудования")
+    except BaseDeviceException as exc:
+        result[bras.name]["errors"].append(exc.message)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
@@ -162,7 +153,7 @@ class CutBrassSessionAPIView(APIView):
                     f"reload port {serializer.validated_data['port']} \n" f"{reload_port_status}",
                 )
 
-        except DeviceException as e:
+        except BaseDeviceException as e:
             result["errors"].append(f"Сессия сброшена, но порт не был перезагружен! {e}")
 
         return Response(result)

@@ -263,7 +263,7 @@ class DeviceFactory:
         if "unknown keyword show" in version:
             return Juniper(self.session, self.ip, auth)
 
-        raise UnknownDeviceError("Модель оборудования не была распознана")
+        raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
 
     def __login_to_by_telnet(
         self, login: str, password: str, timeout: int, pre_expect_index=None
@@ -304,7 +304,7 @@ class DeviceFactory:
 
             # TELNET FAIL
             if expect_index == 3:
-                raise TelnetConnectionError(f"Telnet недоступен! ({self.ip})")
+                raise TelnetConnectionError(f"Telnet недоступен", ip=self.ip)
 
             # Press any key to continue
             if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
@@ -407,11 +407,13 @@ class DeviceFactory:
 
                     elif expect_index == 7:
                         print(self.session.before)
-                        raise DeviceLoginError("Неверный Логин/Пароль (подключение SSH)")
+                        raise DeviceLoginError(
+                            "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
+                        )
 
                     elif expect_index in {6, 8}:
                         print(self.session.before)
-                        raise SSHConnectionError("SSH недоступен")
+                        raise SSHConnectionError("SSH недоступен", ip=self.ip)
 
                 if connected:
                     self.login = login
@@ -438,7 +440,7 @@ class DeviceFactory:
                     continue
 
             else:
-                raise DeviceLoginError(status)
+                raise DeviceLoginError(status, ip=self.ip)
 
         device_session = self.get_device()
 

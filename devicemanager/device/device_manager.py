@@ -9,7 +9,7 @@ from .interfaces import Interfaces
 from .zabbix_api import ZabbixAPIConnection
 from .. import snmp
 from ..dc import DeviceFactory
-from ..exceptions import AuthException, DeviceException
+from ..exceptions import AuthException, BaseDeviceException
 from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
@@ -155,7 +155,7 @@ class DeviceManager:
                 self._get_interfaces_from_connection(
                     with_vlans=vlans, auth_obj=auth_obj, *args, **kwargs
                 )
-            except (DeviceException, AuthException) as exc:
+            except BaseDeviceException as exc:
                 if raise_exception:
                     raise exc
 
@@ -173,7 +173,7 @@ class DeviceManager:
     def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, *args, **kwargs):
         auth_obj = auth_obj or self.auth_obj
         if not auth_obj:
-            raise AuthException("Не указан объект авторизации!")
+            raise AuthException("Не указан объект авторизации!", ip=self.ip)
 
         with self.connect(
             self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs

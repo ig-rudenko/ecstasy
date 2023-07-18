@@ -4,6 +4,7 @@ from typing import Literal, Sequence, Dict, Tuple, Callable
 import check.models
 from devicemanager import DeviceException
 from devicemanager.device import Interfaces
+from devicemanager.exceptions import BaseDeviceException
 from .models import TransportRing
 
 
@@ -391,7 +392,7 @@ class SolutionsPerformer:
                         f"Не удалось {status} VLANS - {vlans} в на оборудовании {device_obj} на порт {port}"
                     )
 
-        except DeviceException as error:
+        except BaseDeviceException as error:
             raise SolutionsPerformerError(
                 f"Оборудование {device_obj} вызвало ошибку {error.message}"
             ) from error

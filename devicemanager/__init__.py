@@ -6,4 +6,5 @@ from .exceptions import (
     UnknownDeviceError,
     TelnetConnectionError,
     DeviceLoginError,
+    SSHConnectionError,
 )

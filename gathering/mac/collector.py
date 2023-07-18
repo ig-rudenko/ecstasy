@@ -8,14 +8,10 @@ from django.conf import settings
 
 from check.models import Devices
 from net_tools.models import DevicesInfo
-from devicemanager.device import (
-    DeviceManager,
-    ZabbixAPIConnection,
-    Interfaces,
-)
+from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
 from devicemanager.vendors.base.types import T_MACTable
 from app_settings.models import ZabbixConfig
-from devicemanager import exceptions
+from devicemanager.exceptions import BaseDeviceException
 from ..models import MacAddress
 
 
@@ -58,7 +54,7 @@ class MacAddressTableGather:
             # Сохранение интерфейсов в базу данных.
             self.save_interfaces()
 
-        except exceptions.DeviceException:
+        except BaseDeviceException:
             pass
 
     def get_mac_address_table(self, session) -> T_MACTable:

@@ -3,12 +3,7 @@ from functools import wraps
 import pexpect
 from django.conf import settings
 from rest_framework.response import Response
-from devicemanager.exceptions import (
-    UnknownDeviceError,
-    DeviceLoginError,
-    TelnetConnectionError,
-    SSHConnectionError,
-)
+from devicemanager.exceptions import BaseDeviceException
 
 
 def except_connection_errors(handler):
@@ -34,24 +29,9 @@ def except_connection_errors(handler):
                 {"error": f"Timeout при выполнении команды на оборудовании. {contact}"},
                 status=500,
             )
-        except SSHConnectionError as exc:
+        except BaseDeviceException as exc:
             return Response(
                 {"error": f"{exc}. {contact}"},
-                status=500,
-            )
-        except TelnetConnectionError as exc:
-            return Response(
-                {"error": f"{exc}. {contact}"},
-                status=500,
-            )
-        except DeviceLoginError as exc:
-            return Response(
-                {"error": f"{exc}. {contact}"},
-                status=500,
-            )
-        except UnknownDeviceError:
-            return Response(
-                {"error": f"Неподдерживаемый тип оборудования. {contact}"},
                 status=500,
             )
 
