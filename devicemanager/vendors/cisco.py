@@ -104,7 +104,7 @@ class Cisco(BaseDevice):
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
-            if admin_status.lower() != "up":
+            if admin_status.lower() == "admin down":
                 status = InterfaceStatus.admin_down.value
             elif "down" in link_status.lower():
                 status = InterfaceStatus.down.value
