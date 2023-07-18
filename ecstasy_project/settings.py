@@ -184,6 +184,7 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"redis://{REDIS_CACHE_URL}",
+        "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
     }
 }
 
@@ -222,7 +223,7 @@ SWAGGER_SETTINGS = {
 
 # ================= CELERY ==================
 
-REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/0")
+REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/1")
 
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"

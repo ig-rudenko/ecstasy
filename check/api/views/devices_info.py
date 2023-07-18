@@ -1,8 +1,9 @@
-import orjson
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -12,9 +13,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from check import models
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import DeviceManager
-from devicemanager.device import Interfaces as InterfacesObject, ZabbixAPIConnection
+from devicemanager.device import ZabbixAPIConnection
 from net_tools.models import DevicesInfo as ModelDeviceInfo
-from check.interfaces_collector import DeviceInterfacesCollectorMixin
+from check.interfaces_collector import (
+    DeviceInterfacesCollectorMixin,
+    DevicesInterfacesWorkloadCollector,
+)
 from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..filters import DeviceFilter, DeviceInfoFilter
@@ -44,6 +48,8 @@ class DevicesListAPIView(generics.ListAPIView):
         group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         return models.Devices.objects.filter(group_id__in=group_ids).select_related("group")
 
+    @method_decorator(cache_page(60 * 10))
+    @method_decorator(vary_on_cookie)
     def get(self, request, *args, **kwargs):
         """
         ## Возвращаем список всех устройств, без пагинации
@@ -70,59 +76,32 @@ class DevicesListAPIView(generics.ListAPIView):
 
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
-class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView):
-    serializer_class = DevicesSerializer
+class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView, DevicesInterfacesWorkloadCollector):
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceInfoFilter
 
     def get_queryset(self):
-        """
-        ## Возвращаем queryset всех устройств из доступных для пользователя групп
-        """
+        return ModelDeviceInfo.objects.all().select_related("dev").order_by("dev__name")
 
-        # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
-        return (
-            ModelDeviceInfo.objects.filter(dev__group_id__in=group_ids)
-            .select_related("dev")
-            .order_by("dev__name")
-        )
-
-    @staticmethod
-    def get_interfaces_load(device: ModelDeviceInfo):
-        interfaces = InterfacesObject(orjson.loads(device.interfaces or "[]")).physical()
-
-        non_system = interfaces.non_system()
-        abons_up = non_system.up()
-        abons_up_with_desc = abons_up.with_description()
-        abons_down = non_system.down()
-        abons_down_with_desc = abons_down.with_description()
-
-        return {
-            "count": interfaces.count,
-            "abons": non_system.count,
-            "abons_up": abons_up.count,
-            "abons_up_with_desc": abons_up_with_desc.count,
-            "abons_up_no_desc": abons_up.count - abons_up_with_desc.count,
-            "abons_down": abons_down.count,
-            "abons_down_with_desc": abons_down_with_desc.count,
-            "abons_down_no_desc": abons_down.count - abons_down_with_desc.count,
-        }
+    def get_serializer_class(self):
+        return DevicesSerializer
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        response_data = {
-            "devices_count": queryset.count(),
-            "devices": [
-                {
-                    "interfaces_count": self.get_interfaces_load(dev_info),
-                    **DevicesSerializer(dev_info.dev).data,
-                }
-                for dev_info in queryset
-            ],
+        data = self.get_all_device_interfaces_workload()
+        groups_names = self.request.user.profile.devices_groups.all().values_list("name", flat=True)
+
+        valid_data = {
+            "devices_count": data["devices_count"],
+            "devices": [],
         }
 
-        return Response(response_data)
+        for device_info in data["devices"]:
+            if device_info["group"] not in groups_names:
+                valid_data["devices_count"] -= 1
+            else:
+                valid_data["devices"].append(device_info)
+
+        return Response(valid_data)
 
 
 @method_decorator(interfaces_workload_api_doc, name="get")

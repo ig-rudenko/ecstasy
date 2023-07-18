@@ -1,11 +1,16 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Type
 
 import orjson
+from django.db.models import QuerySet
 from django.utils import timezone
+from django.core.cache import cache
+from rest_framework.serializers import ModelSerializer
 
-from .models import Devices, AuthGroup
+from .api.serializers import DevicesSerializer
+from .models import Devices
 from devicemanager import DeviceManager
+from devicemanager.device.interfaces import Interfaces
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo
 
@@ -101,3 +106,58 @@ class DeviceInterfacesCollectorMixin:
         elif self.device_collector.interfaces:
             device_info.update_interfaces_state(self.device_collector.interfaces)
             device_info.save(update_fields=["interfaces", "interfaces_date"])
+
+
+class DevicesInterfacesWorkloadCollector:
+    cache_key = "all_devices_interfaces_workload_api_view"
+    cache_seconds = 60 * 10
+
+    @staticmethod
+    def get_interfaces_load(device: DevicesInfo):
+        interfaces = Interfaces(orjson.loads(device.interfaces or "[]")).physical()
+
+        non_system = interfaces.non_system()
+        abons_up = non_system.up()
+        abons_up_with_desc = abons_up.with_description()
+        abons_down = non_system.down()
+        abons_down_with_desc = abons_down.with_description()
+
+        return {
+            "count": interfaces.count,
+            "abons": non_system.count,
+            "abons_up": abons_up.count,
+            "abons_up_with_desc": abons_up_with_desc.count,
+            "abons_up_no_desc": abons_up.count - abons_up_with_desc.count,
+            "abons_down": abons_down.count,
+            "abons_down_with_desc": abons_down_with_desc.count,
+            "abons_down_no_desc": abons_down.count - abons_down_with_desc.count,
+        }
+
+    def get_all_device_interfaces_workload(self, from_cache=True):
+        cache_value = cache.get(self.cache_key)
+
+        if not cache_value or not from_cache:
+            queryset = self.get_queryset()
+            DeviceSerializerClass = self.get_serializer_class()
+
+            cache_value = {
+                "devices_count": queryset.count(),
+                "devices": [
+                    {
+                        "interfaces_count": self.get_interfaces_load(dev_info),
+                        **DeviceSerializerClass(dev_info.dev).data,
+                    }
+                    for dev_info in queryset
+                    if dev_info.dev and dev_info.interfaces
+                ],
+            }
+            cache.set(self.cache_key, cache_value, timeout=self.cache_seconds)
+
+        return cache_value
+
+    def get_queryset(self) -> QuerySet:
+        return DevicesInfo.objects.all().select_related("dev").order_by("dev__name")
+
+    @staticmethod
+    def get_serializer_class() -> Type[ModelSerializer]:
+        return DevicesSerializer
