@@ -9,7 +9,7 @@ from rest_framework.serializers import ModelSerializer
 
 from .api.serializers import DevicesSerializer
 from .models import Devices
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo

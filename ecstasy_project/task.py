@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from celery import Task
 
 from app_settings.models import ZabbixConfig
-from devicemanager import ZabbixAPIConnection
+from devicemanager.device import ZabbixAPIConnection
 
 
 class ThreadUpdatedStatusTask(Task):

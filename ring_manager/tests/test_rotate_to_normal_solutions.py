@@ -2,7 +2,7 @@ import pprint
 from datetime import datetime
 
 from check.models import Devices, AuthGroup
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from devicemanager.session_control import DEVICE_SESSIONS
 from .base import TestRingBase
 from ..models import TransportRing

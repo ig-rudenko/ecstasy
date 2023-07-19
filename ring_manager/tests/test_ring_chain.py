@@ -1,6 +1,6 @@
 from check.models import Devices
 from devicemanager.device import Interfaces
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing, RingDev
 from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError

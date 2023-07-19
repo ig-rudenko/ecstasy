@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple
 import tabulate
 
@@ -107,9 +107,9 @@ class ZabbixHostInfo:
     name: str = ""
     status: int = 0
     description: str = ""
-    ip: tuple = tuple()
+    ip: tuple = field(default_factory=tuple)
     inventory: ZabbixInventory = ZabbixInventory()
-    hostgroups: Tuple[ZabbixHostGroup] = ()
+    hostgroups: Tuple[ZabbixHostGroup] = field(default_factory=tuple)
 
     @property
     def host_group_names(self):

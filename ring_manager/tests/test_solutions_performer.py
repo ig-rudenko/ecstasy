@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from ring_manager.models import TransportRing
 from ring_manager.ring_manager import TransportRingManager
 from ring_manager.solutions import SolutionsPerformer

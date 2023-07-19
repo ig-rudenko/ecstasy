@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 
 from app_settings.models import VlanTracerouteConfig
 from check.models import Devices
-from devicemanager import ZabbixAPIConnection
+from devicemanager.device import ZabbixAPIConnection
 from ..finder import Finder, VlanTraceroute, VlanTracerouteResult
 from ..models import VlanName, DevicesForMacSearch
 from ..tasks import interfaces_scan, check_scanning_status

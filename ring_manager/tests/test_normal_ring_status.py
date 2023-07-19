@@ -1,4 +1,4 @@
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from .base import TestRingBase
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager

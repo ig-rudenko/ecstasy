@@ -9,7 +9,7 @@ from django.http import (
 from django.shortcuts import render, resolve_url
 from django.contrib.auth.decorators import login_required
 
-from devicemanager import DeviceManager
+from devicemanager.device import DeviceManager
 from . import models
 
 
