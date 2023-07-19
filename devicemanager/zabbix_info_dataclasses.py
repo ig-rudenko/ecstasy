@@ -108,7 +108,7 @@ class ZabbixHostInfo:
     status: int = 0
     description: str = ""
     ip: tuple = field(default_factory=tuple)
-    inventory: ZabbixInventory = ZabbixInventory()
+    inventory: ZabbixInventory = field(default_factory=ZabbixInventory)
     hostgroups: Tuple[ZabbixHostGroup] = field(default_factory=tuple)
 
     @property
