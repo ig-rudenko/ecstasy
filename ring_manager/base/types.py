@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from check import models
 from devicemanager.device import Interfaces
@@ -9,7 +9,7 @@ from devicemanager.device.interfaces import Interface
 class BaseRingPoint:
     device: models.Devices
     ping: bool = None
-    port_to_prev_dev: Interface = Interface()
-    port_to_next_dev: Interface = Interface()
-    interfaces: Interfaces = Interfaces()
+    port_to_prev_dev: Interface = field(default_factory=Interface)
+    port_to_next_dev: Interface = field(default_factory=Interface)
+    interfaces: Interfaces = field(default_factory=Interfaces)
     collect_vlans: bool = False
