@@ -142,9 +142,13 @@ export default {
       try {
         let url = "/device/api/" + this.deviceName + "/stats"
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
-        if (!response.ok) return;
+        let data = await response.json()
 
-        this.deviceStats = await response.json()
+        if (response.ok) {
+          this.deviceStats = data
+        } else {
+          this.errorStatus = data.error
+        }
 
       } catch (error) {
         console.log(error)
@@ -157,9 +161,14 @@ export default {
       try {
         let url = "/device/api/workload/interfaces/" + this.deviceName
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
-        if (!response.ok) return;
 
-        this.interfacesWorkload = await response.json()
+        let data = await response.json()
+
+        if (response.ok) {
+          this.interfacesWorkload = data
+        } else {
+          this.errorStatus = data.error
+        }
 
       } catch (error) {
         console.log(error)
@@ -173,18 +182,21 @@ export default {
 
         let response = await fetch(url, {method: "GET", credentials: "same-origin"});
 
-        if (!response.ok) return;
-
         let data = await response.json()
 
-        this.deviceName = data.deviceName
-        this.deviceIP = data.deviceIP
-        this.elasticStackLink = data.elasticStackLink
-        this.zabbixHostID = data.zabbixHostID
-        this.zabbixURL = data.zabbixURL
-        this.permissionLevel = data.permission
-        this.deviceCoords = data.coords
-        this.zabbixInfo = data.zabbixInfo
+        if (response.ok) {
+          this.deviceName = data.deviceName
+          this.deviceIP = data.deviceIP
+          this.elasticStackLink = data.elasticStackLink
+          this.zabbixHostID = data.zabbixHostID
+          this.zabbixURL = data.zabbixURL
+          this.permissionLevel = data.permission
+          this.deviceCoords = data.coords
+          this.zabbixInfo = data.zabbixInfo
+
+        } else {
+          this.errorStatus = data.error
+        }
 
       } catch (error) {
         console.log(error)
