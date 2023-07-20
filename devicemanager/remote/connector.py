@@ -30,7 +30,7 @@ class RemoteDevice(AbstractDevice):
         self._snmp_community = snmp_community
         self._make_session_global = make_session_global
         self._remote_connector_address = os.getenv(
-            "REMOTE_CONNECTOR_ADDRESS", "http://localhost:8001"
+            "DEVICE_CONNECTOR_ADDRESS", "http://localhost:8001"
         )
 
     def _handle_error(self, error: dict):
