@@ -27,3 +27,5 @@ django-celery-beat
 xlwt
 django-jazzmin
 urllib3
+flask
+gevent

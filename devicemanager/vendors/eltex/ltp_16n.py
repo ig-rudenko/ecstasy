@@ -1,5 +1,5 @@
 import re
-from functools import lru_cache, wraps
+from functools import wraps
 from typing import List, Tuple, Dict, Union
 
 import pexpect
@@ -201,18 +201,6 @@ class EltexLTP16N(BaseDevice):
 
         return macs
 
-    @lru_cache
-    def get_vlan_name(self, vid: int) -> str:
-        from net_tools.models import VlanName
-
-        vlan_name = ""
-        try:
-            vlan_name = VlanName.objects.get(vid=int(vid)).name
-        except (ValueError, VlanName.DoesNotExist):
-            pass
-        finally:
-            return vlan_name
-
     @BaseDevice.lock_session
     @_validate_port()
     def get_port_info(self, port: str):
@@ -274,7 +262,7 @@ class EltexLTP16N(BaseDevice):
                     if ont[0] == ont_id:
                         # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
                         # и добавляем VLAN, MAC и описание VLAN
-                        ont[6].append([vlan_id, mac, self.get_vlan_name(vlan_id)])
+                        ont[6].append([vlan_id, mac, ""])
 
             return {
                 "type": "eltex-gpon",

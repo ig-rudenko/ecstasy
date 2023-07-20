@@ -4,9 +4,10 @@ import re
 import shutil
 from typing import Union
 
-from gathering.ftp.exceptions import FTPCollectorError
 from .base import ConfigStorage
 from .exceptions import ConfigFileError
+from gathering.ftp.exceptions import FTPCollectorError
+from devicemanager.remote.exceptions import InvalidMethod
 
 
 class ConfigurationGather:
@@ -71,7 +72,9 @@ class ConfigurationGather:
             return False
 
         # Создание нового имени файла для нового файла конфигурации.
-        new_file_name = f"config_file_{self.storage.device.name}___{self.storage.device.ip}{file_format}"
+        new_file_name = (
+            f"config_file_{self.storage.device.name}___{self.storage.device.ip}{file_format}"
+        )
 
         self.storage.add(new_file_name=new_file_name, file_content=unformatted_config)
 
@@ -117,16 +120,13 @@ class ConfigurationGather:
         Подключаемся к оборудованию и вызываем метод для получения текущей конфигурации
         """
 
-        with self.storage.device.connect(make_session_global=False) as session:
-            if hasattr(session, "get_current_configuration"):
-                try:
-                    current_config = session.get_current_configuration(
-                        local_folder_path=self.storage.storage_path()
-                    )
-                    return self.save_config(current_config)
-                except FTPCollectorError as error:
-                    raise ConfigFileError(error.message) from error
-            else:
-                raise ConfigFileError(
-                    f"Данное оборудование не поддерживает сохранение конфигурации"
-                )
+        session = self.storage.device.connect(make_session_global=False)
+        try:
+            current_config = session.get_current_configuration(
+                local_folder_path=self.storage.storage_path()
+            )
+            return self.save_config(current_config)
+        except FTPCollectorError as error:
+            raise ConfigFileError(error.message) from error
+        except InvalidMethod:
+            raise ConfigFileError(f"Данное оборудование не поддерживает сохранение конфигурации")

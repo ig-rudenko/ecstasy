@@ -194,7 +194,7 @@ class ZTE(BaseDevice):
             output_macs = self.send_command(f"show mac dynamic port {port}", expect_command=False)
 
         mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
-        return [(int(vid), mac) for vid, mac in mac_lines]
+        return [(int(vid), mac) for mac, vid in mac_lines]
 
     @BaseDevice.lock_session
     def save_config(self) -> str:

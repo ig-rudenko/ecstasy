@@ -10,7 +10,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_delete
-from devicemanager.dc import DeviceFactory, SimpleAuthObject
+from devicemanager.dc import SimpleAuthObject
+from devicemanager.remote.connector import RemoteDevice
 
 
 class DeviceGroup(models.Model):
@@ -141,11 +142,16 @@ class Devices(models.Model):
         p = ping(self.ip, timeout=2)
         return isinstance(p, float)
 
-    def connect(self, **kwargs) -> DeviceFactory:
+    def connect(self, make_session_global=True) -> RemoteDevice:
         """Удаленное подключение к оборудованию"""
 
-        return DeviceFactory(
-            self.ip, protocol=self.cmd_protocol, auth_obj=self.auth_group, **kwargs
+        return RemoteDevice(
+            ip=self.ip,
+            cmd_protocol=self.cmd_protocol,
+            port_scan_protocol=self.port_scan_protocol,
+            snmp_community=self.snmp_community,
+            auth_obj=self.auth_group,
+            make_session_global=make_session_global,
         )
 
     class Meta:
@@ -177,7 +183,7 @@ class DeviceMedia(models.Model):
 
     @property
     def file_name(self):
-        return self.file.name.rsplit('/')[-1]
+        return self.file.name.rsplit("/")[-1]
 
     class Meta:
         db_table = "device_media"
@@ -217,11 +223,14 @@ class Bras(models.Model):
         verbose_name = "BRAS"
         verbose_name_plural = "BRASes"
 
-    def connect(self):
-        return DeviceFactory(
+    def connect(self) -> RemoteDevice:
+        return RemoteDevice(
             ip=self.ip,
-            protocol="telnet",
+            cmd_protocol="telnet",
+            port_scan_protocol="telnet",
+            snmp_community="",
             auth_obj=SimpleAuthObject(self.login, self.password, self.secret),
+            make_session_global=True,
         )
 
     @staticmethod

@@ -6,14 +6,7 @@ import pexpect
 
 from .extra import validate_ltp_interfaces_list
 from ..base.device import BaseDevice
-from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
-    MACType,
-    InterfaceStatus,
-)
+from ..base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType
 
 
 class _EltexLTPPortTypes(TypedDict):

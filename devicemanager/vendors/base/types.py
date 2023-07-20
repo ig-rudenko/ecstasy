@@ -63,3 +63,10 @@ class DeviceAuthDict(TypedDict):
     login: str
     password: str
     privilege_mode_password: str
+
+
+class SystemInfo(TypedDict):
+    mac: str
+    vendor: str
+    model: str
+    serialno: str
