@@ -110,9 +110,8 @@ class DeviceFactory:
         for i in range(self.pool_size):
             print("START THREAD")
             new_thread = Thread(
-                target=lambda: connections.append(
-                    self._get_device_session(algorithm, cipher, timeout)
-                ),
+                target=self._add_device_session,
+                args=(connections,),
                 name=f"Get session for ip {self.ip} - {i}",
             )
             threads.append(new_thread)
@@ -120,6 +119,10 @@ class DeviceFactory:
 
         for i in range(len(threads)):
             threads[i].join()
+
+        for val in connections:
+            if isinstance(val, Exception):
+                raise val
 
         print("GOT CONNECTIONS")
 
@@ -133,12 +136,18 @@ class DeviceFactory:
 
         return connections[0]
 
-    def _get_device_session(self, algorithm: str = "", cipher: str = "", timeout: int = 30):
+    def _add_device_session(self, result_list: list):
+        try:
+            result_list.append(self._get_device_session(timeout=30))
+        except Exception as exc:
+            result_list.append(exc)
+
+    def _get_device_session(self, timeout: int = 30):
         connected = False
 
         if self.protocol == "ssh":
-            algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
-            cipher_str = f" -c {cipher}" if cipher else ""
+            algorithm_str = ""
+            cipher_str = ""
             last_cipher_index = -1
             cipher_list = []
 
@@ -209,12 +218,14 @@ class DeviceFactory:
 
                     elif expect_index == 7:
                         print(session.before)
+                        session.close()
                         raise DeviceLoginError(
                             "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
                         )
 
                     elif expect_index in {6, 8}:
                         print(session.before)
+                        session.close()
                         raise SSHConnectionError("SSH недоступен", ip=self.ip)
 
                 if connected:
@@ -243,6 +254,7 @@ class DeviceFactory:
                     continue
 
             else:
+                session.close()
                 raise DeviceLoginError(status, ip=self.ip)
 
         return self.get_device(session)

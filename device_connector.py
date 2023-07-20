@@ -65,7 +65,7 @@ def connector(ip: str, method: str):
                 resp.status_code = 400
                 return resp
 
-    except BaseDeviceException as err:
+    except (BaseDeviceException, Exception) as err:
         resp = jsonify(
             {
                 "type": err.__class__.__name__,
@@ -77,4 +77,4 @@ def connector(ip: str, method: str):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port="8001", use_reloader=True)
+    app.run(host="127.0.0.1", port=9999, use_reloader=True)

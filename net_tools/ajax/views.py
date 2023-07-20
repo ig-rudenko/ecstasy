@@ -46,7 +46,7 @@ def get_vendor(request, mac: str) -> JsonResponse:
     resp = requests_lib.get("https://macvendors.com/query/" + mac, timeout=2)
     if resp.status_code == 200:
         return JsonResponse({"vendor": resp.text})
-    return JsonResponse({"vendor": ""})
+    return JsonResponse({"vendor": resp.status_code})
 
 
 @login_required
