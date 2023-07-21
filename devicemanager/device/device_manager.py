@@ -135,25 +135,20 @@ class DeviceManager:
         current_status=False,
         auth_obj=None,
         raise_exception=False,
-        *args,
-        **kwargs,
+        make_session_global=True,
     ) -> None:
         """Собираем интерфейсы оборудования"""
 
         if not current_status:  # Смотрим из истории
             self._get_interfaces_from_history(with_vlans=vlans)
 
-        # Собираем интерфейсы в реальном времени с устройства
-        # elif self.protocol == "snmp":
-        #     # SNMP
-        #     interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
-        #     self.interfaces = Interfaces(interfaces)
-
         elif self.protocol in {"snmp", "telnet", "ssh"}:
             # CMD
             try:
                 self._get_interfaces_from_connection(
-                    with_vlans=vlans, auth_obj=auth_obj, *args, **kwargs
+                    with_vlans=vlans,
+                    auth_obj=auth_obj,
+                    make_session_global=make_session_global,
                 )
             except BaseDeviceException as exc:
                 if raise_exception:

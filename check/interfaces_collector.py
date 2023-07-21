@@ -49,7 +49,7 @@ class DeviceInterfacesCollectorMixin:
         if self.model_update_fields:
             self.device.save(update_fields=self.model_update_fields)
 
-    def collect_current_interfaces(self, make_session_global, **kwargs) -> None:
+    def collect_current_interfaces(self, make_session_global: bool) -> None:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
 
@@ -62,7 +62,6 @@ class DeviceInterfacesCollectorMixin:
             current_status=True,
             raise_exception=True,
             make_session_global=make_session_global,
-            **kwargs
         )
 
     def get_last_interfaces(self) -> (list, datetime):

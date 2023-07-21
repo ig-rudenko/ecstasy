@@ -17,6 +17,7 @@ class ConnectionType(TypedDict):
     port_scan_protocol: str
     snmp_community: str
     pool_size: int
+    make_session_global: bool
 
 
 @app.route("/connector/<ip>/<method>", methods=["POST"])
@@ -40,7 +41,7 @@ def connector(ip: str, method: str):
             ip=ip,
             protocol=connection.get("cmd_protocol"),
             auth_obj=SimpleAuthObject(**data.get("auth")),
-            make_session_global=data.get("make_session_global", True),
+            make_session_global=connection.get("make_session_global", True),
             pool_size=connection.get("pool_size", 3),
         ) as session:
 

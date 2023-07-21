@@ -29,9 +29,7 @@ class RemoteDevice(AbstractDevice):
         self._port_scan_protocol = port_scan_protocol
         self._snmp_community = snmp_community
         self._make_session_global = make_session_global
-        self._remote_connector_address = os.getenv(
-            "DEVICE_CONNECTOR_ADDRESS", "http://localhost:8001"
-        )
+        self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
 
     def _handle_error(self, error: dict):
         if hasattr(exceptions, error["type"]):
@@ -49,12 +47,13 @@ class RemoteDevice(AbstractDevice):
                     "cmd_protocol": self._cmd_protocol,
                     "port_scan_protocol": self._port_scan_protocol,
                     "snmp_community": self._snmp_community,
+                    "make_session_global": self._make_session_global,
                 },
                 "auth": self._remote_auth,
                 "params": params,
             },
             headers={
-                "Token": os.getenv("DEVICE_CONNECTOR_TOKEN"),
+                "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", ""),
             },
         )
         if 200 <= resp.status_code <= 299:

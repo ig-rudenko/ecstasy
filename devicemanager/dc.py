@@ -2,7 +2,6 @@
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
 import re
-import threading
 import time
 from dataclasses import dataclass
 from threading import Thread
