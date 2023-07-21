@@ -1,3 +1,4 @@
+import io
 import re
 from time import sleep
 from typing import Literal
@@ -655,6 +656,7 @@ class Huawei(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("display current-configuration", expect_command=True)
-        return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        return io.BytesIO(config.encode())

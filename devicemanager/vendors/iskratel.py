@@ -1,11 +1,14 @@
+import os
 import pathlib
 import re
+import shutil
 from functools import lru_cache
 from time import sleep
 from typing import Tuple, List, Optional
 
 from django.conf import settings as django_settings
 
+from gathering.ftp import FTPCollector
 from gathering.ftp.exceptions import NotFound
 from .base.device import BaseDevice
 from .base.types import (
@@ -567,20 +570,16 @@ class IskratelMBan(BaseDevice):
         # > show system info
         pass
 
-    def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
+    def get_current_configuration(self) -> pathlib.Path:
         """
-        Эта функция загружает с FTP-сервера папку конфигурации, соответствующую определенному шаблону,
-         и возвращает ее локальный путь.
-
-        :param local_folder_path: Параметр local_folder_path представляет собой объект pathlib.Path, представляющий
-         локальный каталог, в котором будет сохранена загруженная папка конфигурации
-        :return: объект `pathlib.Path`, представляющий локальный каталог, в который были загружены файлы конфигурации.
-         Если функция встречает исключение socket.timeout, она возвращает None.
+        Эта функция загружает с FTP-сервера папку конфигурации
         """
 
-        ftp_collector = django_settings.FTP_COLLECTOR_CLASS
+        local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))
+        print(local_folder_path.absolute().as_posix())
+        local_folder_path.mkdir(parents=True, exist_ok=True)
 
-        ftp = ftp_collector(host=self.ip, timeout=30)
+        ftp = FTPCollector(host=self.ip, timeout=30)
         ftp.login(username=self.auth["login"], password=self.auth["password"])
         folder_pattern = re.compile(r"^MY\S+77$")
 
@@ -596,4 +595,11 @@ class IskratelMBan(BaseDevice):
                 folder_or_pattern=folder_pattern, local_dir=local_folder_path
             )
 
-        return config_folder
+        print(config_folder.absolute().as_posix())
+
+        archive_path = config_folder
+
+        shutil.make_archive(archive_path, "zip", config_folder)  # Создаем архив
+        archive_path = archive_path.parent / f"{archive_path.name}.zip"
+        shutil.rmtree(config_folder, ignore_errors=True)  # Удаляем папку
+        return archive_path

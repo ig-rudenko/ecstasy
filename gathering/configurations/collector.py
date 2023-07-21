@@ -80,38 +80,20 @@ class ConfigurationGather:
 
         return True
 
-    def save_config(self, new_config: Union[str, pathlib.Path]) -> bool:
+    def save_config(self, new_config: Union[str, bytes], file_name: str) -> bool:
         """
-        Сохраняем конфигурацию в зависимости от типа (str или pathlib.Path)
+        Сохраняем конфигурацию в зависимости от типа (str или bytes)
         """
 
-        # Если файл представлен в виде строки
+        file_split = file_name.split(".")
+        file_format = ""
+        if len(file_split) > 1:
+            file_format = f".{file_split[-1]}"
+
         if isinstance(new_config, str):
-            return self._save_by_content(current_config=new_config, file_format=".txt")
-
-        file_format = ""  # По умолчанию без формата
-
-        # Если конфигурация представлена в виде папки, то делаем из неё архив и удаляем всю папку
-        if isinstance(new_config, pathlib.Path) and new_config.is_dir():
-            shutil.make_archive(new_config, "zip", new_config)  # Создаем архив
-            new_config_folder = new_config
-            # Меняем путь на созданный архив
-            new_config = new_config.parent / f"{new_config.name}.zip"
-            shutil.rmtree(new_config_folder, ignore_errors=True)  # Удаляем папку
-
-            file_format = ".zip"
-
-        # Если файл был скачан, то используем его путь
-        if isinstance(new_config, pathlib.Path) and new_config.is_file():
-
-            # Записываем содержимое скачанного файла
-            with new_config.open("rb") as f:
-                file_data = f.read()
-            # Удаляем его, так как далее будет сохранен новый файл в хранилище
-            new_config.unlink()
-
-            # Обрабатываем содержимое файла
-            return self._save_by_content(current_config=file_data, file_format=file_format)
+            return self._save_by_content(current_config=new_config, file_format=file_format or ".txt")
+        elif isinstance(new_config, bytes):
+            return self._save_by_content(current_config=new_config, file_format=file_format or "")
 
         return False
 
@@ -122,10 +104,8 @@ class ConfigurationGather:
 
         session = self.storage.device.connect(make_session_global=False)
         try:
-            current_config = session.get_current_configuration(
-                local_folder_path=self.storage.storage_path()
-            )
-            return self.save_config(current_config)
+            current_config, file_name = session.get_current_configuration()
+            return self.save_config(current_config, file_name)
         except FTPCollectorError as error:
             raise ConfigFileError(error.message) from error
         except InvalidMethod:

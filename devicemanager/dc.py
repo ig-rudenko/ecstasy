@@ -5,7 +5,7 @@ import re
 import time
 from dataclasses import dataclass
 from threading import Thread
-from typing import List
+from typing import List, Union
 
 import pexpect
 from .vendors import *
@@ -23,6 +23,48 @@ class SimpleAuthObject:
     login: str
     password: str
     secret: str = ""
+
+
+class SSHSpawn:
+    def __init__(self, ip, login):
+        self.ip = ip
+        self.login = login
+        self.kex_algorithms = ""
+        self.host_key_algorithms = ""
+        self.ciphers = ""
+
+    @staticmethod
+    def _get_algorithm(output: str) -> str:
+        algorithms = re.findall(r"Their offer: (\S+)", output)
+        if algorithms:
+            return algorithms[0]
+        return ""
+
+    def get_kex_algorithms(self, output: str):
+        self.kex_algorithms = self._get_algorithm(output)
+
+    def get_host_key_algorithms(self, output: str):
+        self.host_key_algorithms = self._get_algorithm(output)
+
+    def get_ciphers(self, output: str):
+        self.ciphers = self._get_algorithm(output)
+
+    def get_spawn_string(self) -> str:
+        base = f"ssh -p 22 {self.login}@{self.ip}"
+
+        if self.kex_algorithms:
+            base += f" -oKexAlgorithms=+{self.kex_algorithms}"
+
+        if self.host_key_algorithms:
+            base += f" -oHostKeyAlgorithms=+{self.host_key_algorithms}"
+
+        if self.ciphers:
+            base += f" -c {self.ciphers}"
+
+        return base
+
+    def get_session(self) -> pexpect.spawn:
+        return pexpect.spawn(self.get_spawn_string(), timeout=15)
 
 
 class DeviceFactory:
@@ -57,7 +99,7 @@ class DeviceFactory:
         self, ip: str, protocol: str, auth_obj, make_session_global: bool = True, pool_size: int = 1
     ):
         self.ip = ip
-        self.session = None
+        self.device_connection: Union[BaseDevice, None] = None
         self.protocol = protocol
         self._session_global = make_session_global
         if not make_session_global:
@@ -85,6 +127,9 @@ class DeviceFactory:
         ## При входе в контекстный менеджер подключаемся к оборудованию.
         """
 
+        if not self._session_global:
+            return self._get_device_session(timeout=30)
+
         start_time = time.perf_counter()
 
         if DEVICE_SESSIONS.has_pool(device_ip=self.ip):
@@ -95,10 +140,14 @@ class DeviceFactory:
                 not DEVICE_SESSIONS.pool_is_created(self.ip)
                 and time.perf_counter() - start_time < 30.0
             ):
-                print("waiting for pool creation")
-                time.sleep(0.5)
+                # print("waiting for pool creation", time.perf_counter() - start_time)
+                time.sleep(0.3)
+            if time.perf_counter() - start_time > 30.0:
+                # Если не удалось дождаться пула более 30с, очищаем его и будем создавать заново
+                print(f"CLEAR POOL {self.ip}", time.perf_counter() - start_time)
+                DEVICE_SESSIONS.clear_pool(self.ip)
 
-        if self._session_global and DEVICE_SESSIONS.has_connection(self.ip):
+        if DEVICE_SESSIONS.has_connection(self.ip):
             print("GLOBAL")
             return DEVICE_SESSIONS.get_connection(self.ip)
 
@@ -119,19 +168,17 @@ class DeviceFactory:
         for i in range(len(threads)):
             threads[i].join()
 
-        for val in connections:
-            if isinstance(val, Exception):
-                raise val
+        # Проверяем наличие ошибок
+        if all(isinstance(val, Exception) for val in connections):
+            raise connections[0]
+        connections = [conn for conn in connections if not isinstance(conn, Exception)]
 
         print("GOT CONNECTIONS")
 
-        if self._session_global:
-            # Сохраняем новые сессии, если было указано хранение глобально.
-            # Но для начала очистим пул от возможных не сброшенных подключений.
-            DEVICE_SESSIONS.clear_pool(self.ip)
-            DEVICE_SESSIONS.add_connections_to_pool(self.ip, connections)
-        else:
-            self.session = connections[0]
+        # Сохраняем новые сессии, если было указано хранение глобально.
+        # Но для начала очистим пул от возможных не сброшенных подключений.
+        DEVICE_SESSIONS.clear_pool(self.ip)
+        DEVICE_SESSIONS.add_connections_to_pool(self.ip, connections)
 
         return connections[0]
 
@@ -141,88 +188,76 @@ class DeviceFactory:
         except Exception as exc:
             result_list.append(exc)
 
-    def _get_device_session(self, timeout: int = 30):
+    def _get_device_session(self, timeout: int = 30) -> BaseDevice:
         connected = False
 
         if self.protocol == "ssh":
-            algorithm_str = ""
-            cipher_str = ""
-            last_cipher_index = -1
-            cipher_list = []
 
             for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
 
-                session = pexpect.spawn(
-                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=15
-                )
+                ssh_spawn = SSHSpawn(ip=self.ip, login=self.login[0])
+
+                session = ssh_spawn.get_session()
 
                 while not connected:
                     expect_index = session.expect(
                         [
                             r"no matching key exchange method found",  # 0
-                            r"no matching cipher found|Unknown cipher",  # 1
-                            r"Are you sure you want to continue connecting",  # 2
-                            self.password_input_expect,  # 3
-                            self.prompt_expect,  # 4
-                            self.send_N_key,  # 5
-                            r"Connection closed",  # 6
-                            r"Incorrect login",  # 7
-                            pexpect.EOF,  # 8
+                            r"no matching host key type found",  # 1
+                            r"no matching cipher found|Unknown cipher",  # 2
+                            r"Are you sure you want to continue connecting",  # 3
+                            self.password_input_expect,  # 4
+                            self.prompt_expect,  # 5
+                            self.send_N_key,  # 6
+                            r"Connection closed",  # 7
+                            r"Incorrect login",  # 8
+                            pexpect.EOF,  # 9
                         ],
                         timeout=timeout,
                     )
 
+                    print(expect_index)
+
                     if expect_index == 0:
+                        # KexAlgorithms
                         session.expect(pexpect.EOF)
-                        algorithm = re.findall(
-                            r"Their offer: (\S+)", session.before.decode("utf-8")
-                        )
-                        if algorithm:
-                            algorithm_str = f" -oKexAlgorithms=+{algorithm[0]}"
-                            session = pexpect.spawn(
-                                f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
-                            )
+                        ssh_spawn.get_kex_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 1:
+                        # HostKeyAlgorithms
                         session.expect(pexpect.EOF)
-                        if not cipher_list:
-                            cipher_output = re.findall(
-                                r"Their offer: (\S+)", session.before.decode("utf-8")
-                            )
-                            if cipher_output:
-                                cipher_list = cipher_output[0].split(",")
-
-                        if cipher_list:
-                            last_cipher_index += 1
-                            cipher_str = f" -c {cipher_list[last_cipher_index]}"
-                            session = pexpect.spawn(
-                                f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
-                            )
+                        ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 2:
-                        session.sendline("yes")
+                        # Cipher
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_ciphers(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 3:
-                        session.send(password + "\r")
-                        # if session.expect(["[Pp]assword:", r"[#>\]]\s*$"]):
-                        #     connected = True
-
-                        # break  # Пробуем новый логин/пароль
+                        # Continue connection?
+                        session.sendline("yes")
 
                     elif expect_index == 4:
-                        connected = True
+                        session.send(password + "\r")
 
                     elif expect_index == 5:
+                        # Got prompt
+                        connected = True
+
+                    elif expect_index == 6:
                         session.send("N\r")
 
-                    elif expect_index == 7:
+                    elif expect_index == 8:
                         print(session.before)
                         session.close()
                         raise DeviceLoginError(
                             "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
                         )
 
-                    elif expect_index in {6, 8}:
+                    elif expect_index in {7, 9}:
                         print(session.before)
                         session.close()
                         raise SSHConnectionError("SSH недоступен", ip=self.ip)
@@ -514,6 +549,6 @@ class DeviceFactory:
         ## При выходе из контекстного менеджера завершаем сессию
         """
 
-        if not self._session_global and self.session:
-            self.session.close()
+        if not self._session_global and self.device_connection:
+            self.device_connection.session.close()
             del self

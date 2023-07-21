@@ -1,15 +1,20 @@
+import io
+import logging
 import os
+import pathlib
 from typing import TypedDict
 
-from flask import Flask
-from flask import request, jsonify
+from flask import Flask, after_this_request
+from flask import request, jsonify, send_file
 
 from devicemanager.dc import DeviceFactory, SimpleAuthObject
 from devicemanager import snmp
 from devicemanager.exceptions import BaseDeviceException
 
+
 app = Flask(__name__)
 TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN")
+app.logger.setLevel(logging.INFO)
 
 
 class ConnectionType(TypedDict):
@@ -18,6 +23,25 @@ class ConnectionType(TypedDict):
     snmp_community: str
     pool_size: int
     make_session_global: bool
+
+
+def handle_method_data(data):
+    if isinstance(data, pathlib.Path):
+
+        @after_this_request
+        def remove_file(response):
+            try:
+                data.unlink()
+            except Exception as error:
+                app.logger.error("Error removing or closing downloaded file handle", error)
+            return response
+
+        return send_file(data, download_name=data.name)
+
+    if isinstance(data, io.BytesIO):
+        return send_file(data, download_name="file")
+
+    return jsonify({"data": data})
 
 
 @app.route("/connector/<ip>/<method>", methods=["POST"])
@@ -53,13 +77,13 @@ def connector(ip: str, method: str):
                         )
                     }
                 )
-
+            app.logger.info(f"{method}, {session.__class__.__name__}")
             if hasattr(session, method):
                 session_method = getattr(session, method)
                 params = data.get("params", {})
-
                 method_data = session_method(**params)
-                return jsonify({"data": method_data})
+
+                return handle_method_data(method_data)
 
             else:
                 resp = jsonify({"error": "no attr"})
@@ -67,6 +91,7 @@ def connector(ip: str, method: str):
                 return resp
 
     except (BaseDeviceException, Exception) as err:
+        app.logger.error(err.__class__.__name__, exc_info=err)
         resp = jsonify(
             {
                 "type": err.__class__.__name__,
@@ -78,4 +103,4 @@ def connector(ip: str, method: str):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=9999, use_reloader=True)
+    app.run(host="0.0.0.0", port=9999, use_reloader=True)

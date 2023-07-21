@@ -1,5 +1,6 @@
 import os
-from typing import Literal, Type
+import re
+from typing import Literal, Type, Union, Tuple
 
 import requests
 
@@ -57,13 +58,25 @@ class RemoteDevice(AbstractDevice):
             },
         )
         if 200 <= resp.status_code <= 299:
-            return resp.json().get("data")
+            return self._handle_response(resp)
         elif resp.status_code == 401:
             raise RemoteAuthenticationFailed(resp.json().get("message"), ip=self.ip)
         elif 400 <= resp.status_code <= 499:
             raise InvalidMethod(f'Метод "{method}" отсутствует', ip=self.ip)
         elif resp.status_code >= 500:
             self._handle_error(resp.json())
+
+    @staticmethod
+    def _handle_response(resp):
+        if "filename" in resp.headers.get("Content-Disposition", ""):
+            file_name_match = re.findall(
+                r"filename=\"(\S+)\"", resp.headers.get("Content-Disposition")
+            )
+            file_name = file_name_match[0] if file_name_match else "file_name"
+            return resp.content, file_name
+
+        if resp.headers.get("Content-Type") == "application/json":
+            return resp.json().get("data")
 
     def get_system_info(self):
         return self._remote_call("get_system_info")
@@ -107,12 +120,8 @@ class RemoteDevice(AbstractDevice):
     def virtual_cable_test(self, port: str) -> dict:
         return self._remote_call("virtual_cable_test", port=port)
 
-    def get_current_configuration(self, local_folder_path, **kwargs):
-        return self._remote_call(
-            "virtual_cable_test",
-            local_folder_path=local_folder_path,
-            **kwargs,
-        )
+    def get_current_configuration(self) -> Tuple[Union[str, bytes], str]:
+        return self._remote_call("get_current_configuration")
 
     def set_poe_out(self, port: str, status: str):
         return self._remote_call("set_poe_out", port=port, status=status)

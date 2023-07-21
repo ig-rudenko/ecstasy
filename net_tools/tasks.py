@@ -12,6 +12,7 @@ from devicemanager.device import DeviceManager
 
 
 class InterfacesScanTask(ThreadUpdatedStatusTask):
+    max_workers = 80
     name = "interfaces_scan"
     queryset = ModelDevices.objects.all()
 

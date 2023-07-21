@@ -1,3 +1,4 @@
+import io
 import re
 from time import sleep
 from typing import Tuple, List, Dict
@@ -622,9 +623,10 @@ class Cisco(BaseDevice):
         return {"value": current_temp, "status": status}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
-        return self.send_command(
+    def get_current_configuration(self) -> io.BytesIO:
+        data = self.send_command(
             "show running-config",
             expect_command=True,
             before_catch=r"Building configuration\.\.\.",
         )
+        return io.BytesIO(data.encode())

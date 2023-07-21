@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import pathlib
 import re
@@ -341,7 +342,9 @@ class MikroTik(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
-    def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
+    def get_current_configuration(self) -> pathlib.Path:
+        local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))
+
         config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
 
         self.send_command(f"system backup save dont-encrypt=yes name={config_file_name}")

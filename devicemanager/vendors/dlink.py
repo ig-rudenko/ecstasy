@@ -1,3 +1,4 @@
+import io
 import re
 from functools import partial
 from time import sleep
@@ -177,9 +178,7 @@ class Dlink(BaseDevice):
 
         output = self.send_command("show ports des")
 
-        result: List[List[str]] = parse_by_template(
-            "interfaces/d-link.template", output
-        )
+        result: List[List[str]] = parse_by_template("interfaces/d-link.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
@@ -623,10 +622,11 @@ class Dlink(BaseDevice):
         return ""
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command(
             "show config current_config",
             expect_command=False,
             before_catch="Command: show config current_config",
         )
-        return re.sub("[\r\n]{3}", "\n", config.strip())
+        config = re.sub("[\r\n]{3}", "\n", config.strip())
+        return io.BytesIO(config.encode())
