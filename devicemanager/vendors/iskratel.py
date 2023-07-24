@@ -6,8 +6,6 @@ from functools import lru_cache
 from time import sleep
 from typing import Tuple, List, Optional
 
-from django.conf import settings as django_settings
-
 from gathering.ftp import FTPCollector
 from gathering.ftp.exceptions import NotFound
 from .base.device import BaseDevice
@@ -576,7 +574,6 @@ class IskratelMBan(BaseDevice):
         """
 
         local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))
-        print(local_folder_path.absolute().as_posix())
         local_folder_path.mkdir(parents=True, exist_ok=True)
 
         ftp = FTPCollector(host=self.ip, timeout=30)
@@ -594,8 +591,6 @@ class IskratelMBan(BaseDevice):
             config_folder = ftp.download_folder(
                 folder_or_pattern=folder_pattern, local_dir=local_folder_path
             )
-
-        print(config_folder.absolute().as_posix())
 
         archive_path = config_folder
 

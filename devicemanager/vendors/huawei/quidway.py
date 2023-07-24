@@ -4,13 +4,11 @@ from time import sleep
 from typing import Literal
 
 import pexpect
-import textfsm
 
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
-    TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
     T_InterfaceList,

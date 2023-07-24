@@ -77,7 +77,7 @@ def connector(ip: str, method: str):
                         )
                     }
                 )
-            app.logger.info(f"{method}, {session.__class__.__name__}")
+            app.logger.info(f"{ip} {method}, {session.__class__.__name__}")
             if hasattr(session, method):
                 session_method = getattr(session, method)
                 params = data.get("params", {})

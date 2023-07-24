@@ -1,7 +1,5 @@
 import hashlib
-import pathlib
 import re
-import shutil
 from typing import Union
 
 from .base import ConfigStorage
@@ -104,8 +102,8 @@ class ConfigurationGather:
 
         session = self.storage.device.connect(make_session_global=False)
         try:
-            current_config, file_name = session.get_current_configuration()
-            return self.save_config(current_config, file_name)
+            current_config_data, file_name = session.get_current_configuration()
+            return self.save_config(current_config_data, file_name)
         except FTPCollectorError as error:
             raise ConfigFileError(error.message) from error
         except InvalidMethod:

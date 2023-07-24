@@ -56,6 +56,7 @@ class RemoteDevice(AbstractDevice):
             headers={
                 "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", ""),
             },
+            timeout=60,
         )
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
