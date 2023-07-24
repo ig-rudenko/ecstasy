@@ -1,6 +1,9 @@
+import logging
+
 import pexpect.exceptions
 from celery.result import AsyncResult
 from django.core.cache import cache
+from pyzabbix.api import logger
 
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from ecstasy_project.celery import app
@@ -22,12 +25,14 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
 
     name = "mac_table_gather_task"
     queryset = Devices.objects.all()
+    max_workers = 80
 
     def pre_run(self):
         """
         Он устанавливает ключ кэша с именем «mac_table_gather_task_id» на идентификатор текущей задачи.
         """
         super().pre_run()
+        logger.setLevel(logging.ERROR)
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
 
     def thread_task(self, obj: Devices, **kwargs):

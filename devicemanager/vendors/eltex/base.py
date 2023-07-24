@@ -17,7 +17,7 @@ class EltexBase(BaseDevice):
     )
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
         """
         ## При инициализации смотрим характеристики устройства:
 
@@ -34,7 +34,7 @@ class EltexBase(BaseDevice):
         :param model: Модель коммутатора
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         # Получение системной информации с устройства.
         system = self.send_command("show system")
         # Нахождение MAC-адреса устройства.

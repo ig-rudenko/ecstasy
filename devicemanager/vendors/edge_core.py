@@ -4,12 +4,10 @@ from functools import lru_cache
 from typing import Literal, List, Tuple
 
 import pexpect
-import textfsm
 from .base.device import BaseDevice
 from .base.validators import validate_and_format_port_as_normal
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,

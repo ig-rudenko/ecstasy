@@ -1,5 +1,4 @@
 import re
-import datetime
 from time import sleep
 from typing import Tuple, List
 from functools import lru_cache
@@ -7,6 +6,7 @@ from functools import lru_cache
 import pexpect
 from django.template.loader import render_to_string
 
+from devicemanager import snmp
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -28,7 +28,9 @@ class HuaweiMA5600T(BaseDevice):
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         При инициализации активируем режим пользователя командой:
 
@@ -40,7 +42,7 @@ class HuaweiMA5600T(BaseDevice):
         :param model: Модель коммутатора
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         self.session.sendline("enable")
         self.session.expect(r"\S+#")
 
@@ -758,7 +760,7 @@ class HuaweiMA5600T(BaseDevice):
 
         mac_table: T_MACTable = []
 
-        for interface in self.interfaces:
+        for interface in self.get_interfaces():
             port_macs = self.get_mac(interface[0])
             mac_table += [(int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs]
         return mac_table
@@ -966,7 +968,7 @@ class HuaweiMA5600T(BaseDevice):
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
-        return []
+        return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:

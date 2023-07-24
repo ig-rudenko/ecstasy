@@ -100,7 +100,7 @@ class BaseDevice(AbstractDevice, ABC):
     # Паттерн для управляющих последовательностей ANSI
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
         self.session: pexpect.spawn = session
         self.ip = ip
         self.model: str = model
@@ -109,6 +109,7 @@ class BaseDevice(AbstractDevice, ABC):
         self.serialno: str = ""
         self.os: str = ""
         self.os_version: str = ""
+        self.snmp_community = snmp_community
         self.lock = False
 
     def get_system_info(self) -> SystemInfo:

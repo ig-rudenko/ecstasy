@@ -38,7 +38,7 @@ class ZTE(BaseDevice):
     )
     vendor = "ZTE"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
         """
         ## При инициализации повышаем уровень привилегий:
 
@@ -53,7 +53,7 @@ class ZTE(BaseDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         version = self.send_command("show version")
         self.mac = self.find_or_empty(r"Mac Address: (\S+)", version)
 

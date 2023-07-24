@@ -3,11 +3,9 @@ from time import sleep
 from functools import partial
 from typing import Tuple, List, Literal, Optional
 
-import textfsm
 from .base.device import BaseDevice
 from .base.helpers import parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -53,8 +51,8 @@ class Qtech(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
-    def __init__(self, session, ip: str, auth: dict, model):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
         self.__cache_port_info = {}
 
     @BaseDevice.lock_session

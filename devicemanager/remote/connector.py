@@ -7,7 +7,12 @@ import requests
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 from devicemanager import exceptions
 from devicemanager.vendors.base.device import AbstractDevice
-from devicemanager.vendors.base.types import T_MACList, T_InterfaceVLANList, T_InterfaceList
+from devicemanager.vendors.base.types import (
+    T_MACList,
+    T_InterfaceVLANList,
+    T_InterfaceList,
+    T_MACTable,
+)
 
 
 class RemoteDevice(AbstractDevice):
@@ -56,7 +61,7 @@ class RemoteDevice(AbstractDevice):
             headers={
                 "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", ""),
             },
-            timeout=60,
+            timeout=60 * 10,
         )
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
@@ -142,5 +147,8 @@ class RemoteDevice(AbstractDevice):
     def search_mac(self, mac_address: str) -> list:
         return self._remote_call("search_mac", mac_address=mac_address)
 
-    def normalize_interface_name(self, port: str) -> str:
-        return self._remote_call("normalize_interface_name", port=port)
+    def normalize_interface_name(self, intf: str) -> str:
+        return self._remote_call("normalize_interface_name", intf=intf)
+
+    def get_mac_table(self) -> T_MACTable:
+        return self._remote_call("get_mac_table")

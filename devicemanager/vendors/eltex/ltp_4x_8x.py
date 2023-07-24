@@ -104,9 +104,8 @@ class EltexLTP(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP"):
-        super().__init__(session, ip, auth)
-        self.model = model
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
 
         # Проверяем, является ли модель LTP-4X.
         if "LTP-4X" in self.model:

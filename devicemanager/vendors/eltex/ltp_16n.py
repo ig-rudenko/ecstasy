@@ -99,9 +99,8 @@ class EltexLTP16N(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP-16N"):
-        super().__init__(session, ip, auth)
-        self.model = model
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP-16N", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
 
     @BaseDevice.lock_session
     def save_config(self) -> str:

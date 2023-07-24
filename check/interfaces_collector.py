@@ -102,7 +102,7 @@ class DeviceInterfacesCollectorMixin:
             device_info.update_interfaces_with_vlans_state(self.device_collector.interfaces)
             device_info.save(update_fields=["vlans", "vlans_date"])
 
-        elif self.device_collector.interfaces:
+        if self.device_collector.interfaces:
             device_info.update_interfaces_state(self.device_collector.interfaces)
             device_info.save(update_fields=["interfaces", "interfaces_date"])
 

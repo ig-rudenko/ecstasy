@@ -96,9 +96,16 @@ class DeviceFactory:
     ]
 
     def __init__(
-        self, ip: str, protocol: str, auth_obj, make_session_global: bool = True, pool_size: int = 1
+        self,
+        ip: str,
+        protocol: str,
+        snmp_community: str,
+        auth_obj,
+        make_session_global: bool = True,
+        pool_size: int = 1,
     ):
         self.ip = ip
+        self.snmp_community = snmp_community
         self.device_connection: Union[BaseDevice, None] = None
         self.protocol = protocol
         self._session_global = make_session_global
@@ -331,16 +338,16 @@ class DeviceFactory:
 
         # Mikrotik
         if "mikrotik" in version.lower():
-            return MikroTik(session, self.ip, auth)
+            return MikroTik(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # ProCurve
         if "Image stamp:" in version:
-            return ProCurve(session, self.ip, auth)
+            return ProCurve(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # ZTE
         if " ZTE Corporation:" in version:
             model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version)
-            return ZTE(session, self.ip, auth, model=model)
+            return ZTE(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # HUAWEI
         if "Unrecognized command" in version:
@@ -350,34 +357,38 @@ class DeviceFactory:
                     model = BaseDevice.find_or_empty(
                         r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE
                     )
-                    return HuaweiCX600(session, self.ip, auth, model=model)
+                    return HuaweiCX600(session, self.ip, auth, model, self.snmp_community)
                 if "quidway" in version.lower():
-                    return Huawei(session, self.ip, auth)
+                    return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
             if "Unrecognized command" in version:
-                return Huawei(session, self.ip, auth)
+                return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # CISCO
         if "cisco" in version.lower():
             model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version)
-            return Cisco(session, self.ip, auth, model=model)
+            return Cisco(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # D-LINK
         if "Next possible completions:" in version:
-            return Dlink(session, self.ip, auth)
+            return Dlink(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # Edge Core
         if "Hardware version" in version:
-            return EdgeCore(session, self.ip, auth)
+            return EdgeCore(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # Eltex LTP
         if "Eltex LTP" in version:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version)
             if re.match(r"LTP-[48]X", model):
-                return EltexLTP(session, self.ip, auth, model=model)
+                return EltexLTP(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
             if "LTP-16N" in model:
-                return EltexLTP16N(session, self.ip, auth, model=model)
+                return EltexLTP16N(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
 
         # Eltex MES, ESR
         if "Active-image:" in version or "Boot version:" in version:
@@ -389,6 +400,7 @@ class DeviceFactory:
                     auth,
                     model=eltex_device.model,
                     mac=eltex_device.mac,
+                    snmp_community=self.snmp_community,
                 )
             if "ESR" in eltex_device.model:
                 return EltexESR(
@@ -406,20 +418,28 @@ class DeviceFactory:
         # Q-Tech
         if "QTECH" in version:
             model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version)
-            return Qtech(session, self.ip, auth, model=model)
+            return Qtech(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # ISKRATEL CONTROL
         if "ISKRATEL" in version:
-            return IskratelControl(session, self.ip, auth, model="ISKRATEL Switching")
+            return IskratelControl(
+                session,
+                self.ip,
+                auth,
+                model="ISKRATEL Switching",
+                snmp_community=self.snmp_community,
+            )
 
         # ISKRATEL mBAN>
         if "IskraTEL" in version:
             model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version)
-            return IskratelMBan(session, self.ip, auth, model=model)
+            return IskratelMBan(
+                session, self.ip, auth, model=model, snmp_community=self.snmp_community
+            )
 
         if "JUNOS" in version:
             model = BaseDevice.find_or_empty(r"Model: (\S+)", version)
-            return Juniper(session, self.ip, auth, model)
+            return Juniper(session, self.ip, auth, model, snmp_community=self.snmp_community)
 
         if "% Unknown command" in version:
             session.sendline("display version")
@@ -438,7 +458,9 @@ class DeviceFactory:
                     break
             if re.findall(r"VERSION : MA5600", version):
                 model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version)
-                return HuaweiMA5600T(session, self.ip, auth, model=model)
+                return HuaweiMA5600T(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
 
         if "show: invalid command, valid commands are" in version:
             session.sendline("sys info show")
@@ -453,7 +475,7 @@ class DeviceFactory:
                     break
 
         if "unknown keyword show" in version:
-            return Juniper(session, self.ip, auth)
+            return Juniper(session, self.ip, auth, snmp_community=self.snmp_community)
 
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
 

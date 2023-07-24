@@ -41,7 +41,9 @@ class Cisco(BaseDevice):
     mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"  # 0018.e7d3.1d43
     vendor = "Cisco"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         ## При инициализации смотрим характеристики устройства:
 
@@ -55,7 +57,7 @@ class Cisco(BaseDevice):
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
@@ -99,9 +101,7 @@ class Cisco(BaseDevice):
         output = self.send_command("show interfaces description")
         output = re.sub(".+\nInterface", "Interface", output)
 
-        result: List[List[str]] = parse_by_template(
-            "interfaces/cisco.template", output
-        )
+        result: List[List[str]] = parse_by_template("interfaces/cisco.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:

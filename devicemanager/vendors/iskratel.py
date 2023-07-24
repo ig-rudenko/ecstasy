@@ -100,8 +100,8 @@ class IskratelMBan(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Iskratel"
 
-    def __init__(self, session, ip: str, auth: dict, model):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
         self.dsl_profiles = self._get_dsl_profiles()
 
     def _get_dsl_profiles(self) -> list:

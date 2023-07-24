@@ -30,7 +30,7 @@ class DevicesInfo(models.Model):
         """
         Обновляет поле интерфейсов и вланов, а также время
         """
-        self.interfaces = self._parse_interfaces_to_json(interfaces, with_vlans=True)
+        self.vlans = self._parse_interfaces_to_json(interfaces, with_vlans=True)
         self.vlans_date = timezone.now()
 
     @staticmethod
@@ -39,13 +39,19 @@ class DevicesInfo(models.Model):
             interfaces = Interfaces(interfaces)
 
         def get_intf_dict(interface) -> dict:
-            res = {
-                "Interface": interface.name,
-                "Status": interface.status,
-                "Description": interface.desc,
-            }
             if with_vlans:
-                res["VLAN's"]: interface.vlan
+                res = {
+                    "Interface": interface.name,
+                    "Status": interface.status,
+                    "Description": interface.desc.strip(),
+                    "VLAN's": interface.vlan,
+                }
+            else:
+                res = {
+                    "Interface": interface.name,
+                    "Status": interface.status,
+                    "Description": interface.desc.strip(),
+                }
             return res
 
         interfaces_list = [get_intf_dict(line) for line in interfaces]

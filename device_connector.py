@@ -67,6 +67,7 @@ def connector(ip: str, method: str):
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
             pool_size=connection.get("pool_size", 3),
+            snmp_community=connection.get("snmp_community"),
         ) as session:
 
             if method == "get_interfaces" and connection.get("port_scan_protocol") == "snmp":

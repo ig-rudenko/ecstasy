@@ -34,7 +34,7 @@ class Huawei(BaseDevice):
     mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
     vendor = "Huawei"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
         """
         ## При инициализации заходим в привилегированный режим, но остаемся на уровне просмотра
 
@@ -52,7 +52,7 @@ class Huawei(BaseDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         # Заходим в привилегированный режим
         self.session.sendline("super")
         v = session.expect(

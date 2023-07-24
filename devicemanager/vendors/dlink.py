@@ -73,7 +73,9 @@ class Dlink(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "D-Link"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         При инициализации повышаем уровень привилегий до уровня администратора командой:
 
@@ -96,7 +98,7 @@ class Dlink(BaseDevice):
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
         :param model: Модель коммутатора
         """
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
 
         status = True
         # Повышает уровень привилегий до уровня администратора

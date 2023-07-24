@@ -10,7 +10,14 @@ import pexpect
 from functools import partial
 from .base.device import BaseDevice
 from .base.validators import validate_and_format_port
-from .base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType, InterfaceStatus
+from .base.types import (
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    T_MACTable,
+    MACType,
+    InterfaceStatus,
+)
 
 
 def validate_port(port: str) -> Optional[str]:
@@ -38,8 +45,10 @@ class MikroTik(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
     vendor = "MikroTik"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict):
-        super().__init__(session, ip, auth)
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
+        super().__init__(session, ip, auth, model, snmp_community)
         routerboard = self.send_command("system routerboard print")
         self.model = self.find_or_empty(r"model: (\S+)", routerboard)
 

@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from check.models import Devices
+from devicemanager.remote.exceptions import InvalidMethod
 from net_tools.models import DevicesInfo
 from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
 from devicemanager.vendors.base.types import T_MACTable
@@ -33,23 +34,15 @@ class MacAddressTableGather:
         self.interfaces_desc: dict = {}
 
         try:
-            # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
-            with self.device.connect(make_session_global=False) as session:
-                # Если в сеансе есть функция с именем normalize_interface_name,
-                # установите атрибут normalize_interface для этой функции.
-                # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.
-                # Например - `1/1` и `1`, `26(C)` и `26(F)`.
-                if hasattr(session, "normalize_interface_name"):
-                    self.normalize_interface = session.normalize_interface_name
+            self.session = self.device.connect()
 
-                # Получение интерфейсов с устройства.
-                self.interfaces = self.get_interfaces()
+            self.interfaces = self.get_interfaces()
 
-                # Создание словаря интерфейсов и их описаний.
-                self.interfaces_desc = self.format_interfaces(self.interfaces)
+            # Создание словаря интерфейсов и их описаний.
+            self.interfaces_desc = self.format_interfaces(self.interfaces)
 
-                # Собираем таблицу MAC адресов с оборудования.
-                self.table = self.get_mac_address_table(session)
+            # Собираем таблицу MAC адресов с оборудования.
+            self.table = self.get_mac_address_table()
 
             # Сохранение интерфейсов в базу данных.
             self.save_interfaces()
@@ -57,23 +50,11 @@ class MacAddressTableGather:
         except BaseDeviceException:
             pass
 
-    def get_mac_address_table(self, session) -> T_MACTable:
-        """
-        # Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
-        случае вернуть пустой список
-
-        :param session: Объект сеанса, который используется для подключения к устройству
-        :return: Список MAC-адресов на устройстве.
-        """
-
-        # Если сессия требует интерфейсов для работы
-        if hasattr(session, "interfaces"):
-            # Используется для MA5600T, где сбор интерфейсов происходит по snmp, а для получения таблицы MAC адресов
-            # необходимо по очереди перебрать все интерфейсы
-            session.interfaces = [(line.name, line.status, line.desc) for line in self.interfaces]
-        if hasattr(session, "get_mac_table"):
-            return session.get_mac_table() or []
-        return []
+    def get_mac_address_table(self) -> T_MACTable:
+        try:
+            return self.session.get_mac_table()
+        except InvalidMethod:
+            return []
 
     def get_interfaces(self) -> Interfaces:
         device_manager = DeviceManager.from_model(self.device)
@@ -90,10 +71,21 @@ class MacAddressTableGather:
         :return: Словарь интерфейсов и соответствующих им описаний.
         """
         interfaces = {}
+        has_normalizer = True
 
         # Перебираем список интерфейсов
         for line in old_interfaces:
-            normal_interface = self.normalize_interface(line.name)
+
+            if has_normalizer:
+                # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.
+                # Например - `1/1` и `1`, `26(C)` и `26(F)`.
+                try:
+                    normal_interface = self.session.normalize_interface_name(line.name)
+                except InvalidMethod:
+                    has_normalizer = False
+                    normal_interface = line.name
+            else:
+                normal_interface = line.name
 
             # Проверка, не является ли имя интерфейса пустым.
             if normal_interface:
@@ -135,7 +127,7 @@ class MacAddressTableGather:
         :param interface_name: Имя интерфейса для получения описания
         :return: Описание интерфейса.
         """
-        normal_interface = self.normalize_interface(interface_name)
+        normal_interface = self.session.normalize_interface_name(interface_name)
         if normal_interface:
             return self.interfaces_desc.get(normal_interface, "")
         return ""

@@ -195,7 +195,7 @@ class DeviceManager:
 
         if with_vlans:
             # Если не получилось собрать vlan тогда собираем интерфейсы
-            self.interfaces = Interfaces(session.get_vlans() or session.get_interfaces())
+            self.interfaces = Interfaces(session.get_vlans())
         else:
             self.interfaces = Interfaces(session.get_interfaces())
 

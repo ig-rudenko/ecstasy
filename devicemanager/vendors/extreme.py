@@ -1,15 +1,12 @@
 import re
-from functools import partial
 from time import sleep
-from typing import Literal, Sequence, Tuple, List, Dict, Optional
+from typing import Literal, Sequence, Tuple, List, Dict
 
 import pexpect
-import textfsm
 from .base.device import BaseDevice
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
@@ -33,7 +30,9 @@ class Extreme(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Extreme"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         ## При инициализации смотрим характеристики устройства:
 
@@ -50,7 +49,7 @@ class Extreme(BaseDevice):
         :param model: Модель коммутатора
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         system = self.send_command("show switch")
         self.mac = self.find_or_empty(r"System MAC:\s+(\S+)", system)
         self.model = self.find_or_empty(r"System Type:\s+(\S+)", system)
