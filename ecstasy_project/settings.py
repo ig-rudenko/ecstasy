@@ -20,6 +20,7 @@ from datetime import timedelta, datetime
 from urllib3.exceptions import InsecureRequestWarning
 
 import orjson
+from pyzabbix.api import logger as zabbix_api_logger
 
 from gathering.ftp import FTPCollector
 
@@ -248,28 +249,25 @@ else:
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
 
+zabbix_api_logger.setLevel(logging.ERROR)
+
 if not DEBUG:
     LOGGING = {
         "version": 1,
+        "disable_existing_loggers": False,
         "formatters": {
             "verbose": {
-                "format": "{levelname} {asctime} {module} {message}",
+                "format": "{asctime} {levelname} {module} {message}",
                 "style": "{",
             },
             "simple": {
-                "format": "{levelname} {asctime} {message}",
+                "format": "{asctime} {levelname} {message}",
                 "style": "{",
-            },
-        },
-        "filters": {
-            "require_debug_true": {
-                "()": "django.utils.log.RequireDebugTrue",
             },
         },
         "handlers": {
             "console": {
                 "level": "DEBUG",
-                "filters": ["require_debug_true"],
                 "class": "logging.StreamHandler",
                 "formatter": "verbose",
             },
@@ -282,12 +280,18 @@ if not DEBUG:
                 "backupCount": 30,
             },
         },
-        "loggers": {
-            "django": {
-                "handlers": ["file", "console"],
-                "propagate": True,
-            }
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"],
+            "propagate": True,
         },
+        # "loggers": {
+        #     "django": {
+        #         "level": "INFO",
+        #         "handlers": ["file", "console"],
+        #         "propagate": True,
+        #     }
+        # },
     }
 
 # ================= JWT ===================
