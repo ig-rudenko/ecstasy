@@ -10,6 +10,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_delete
+
+from devicemanager.remote import remote_connector
 from devicemanager.dc import SimpleAuthObject
 from devicemanager.remote.connector import RemoteDevice
 
@@ -145,7 +147,7 @@ class Devices(models.Model):
     def connect(self, make_session_global=True) -> RemoteDevice:
         """Удаленное подключение к оборудованию"""
 
-        return RemoteDevice(
+        return remote_connector.create(
             ip=self.ip,
             cmd_protocol=self.cmd_protocol,
             port_scan_protocol=self.port_scan_protocol,
@@ -224,7 +226,7 @@ class Bras(models.Model):
         verbose_name_plural = "BRASes"
 
     def connect(self) -> RemoteDevice:
-        return RemoteDevice(
+        return remote_connector.create(
             ip=self.ip,
             cmd_protocol="telnet",
             port_scan_protocol="telnet",

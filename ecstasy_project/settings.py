@@ -74,6 +74,9 @@ FTP_COLLECTOR_CLASS = FTPCollector
 # Он должен наследоваться от `AbstractFTPCollector`.
 
 
+REMOTE_DEVICE_CLASS = "devicemanager.remote.connector.RemoteDevice"
+
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
@@ -240,8 +243,6 @@ else:
     CONFIG_STORAGE_DIR = BASE_DIR / "configs"
 
 # ================= LOGGING ==================
-
-django_actions_logger = logging.getLogger("django.actions")
 
 
 LOGGING_DIR = BASE_DIR / "logs"

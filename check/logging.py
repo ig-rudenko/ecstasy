@@ -1,5 +1,5 @@
-from ecstasy_project.settings import django_actions_logger
 from . import models
+from .logger import django_actions_logger
 
 
 def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):

@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Literal, Type, Union, Tuple
+from typing import Literal, Type, Union, Tuple, Sequence
 
 import requests
 
@@ -152,3 +152,14 @@ class RemoteDevice(AbstractDevice):
 
     def get_mac_table(self) -> T_MACTable:
         return self._remote_call("get_mac_table")
+
+    def vlans_on_port(
+        self,
+        port: str,
+        operation: Literal["add", "delete"],
+        vlans: Sequence[int],
+        tagged: bool = True,
+    ) -> T_MACTable:
+        return self._remote_call(
+            "vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged
+        )

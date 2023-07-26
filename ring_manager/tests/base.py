@@ -58,9 +58,9 @@ class TestRingBase(test.TransactionTestCase):
                 last_ring_dev = first_ring_dev
 
         # Создаем кольцо
-        TransportRing.objects.create(
+        print("Создаем кольцо", TransportRing.objects.create(
             name="ring1",
             head=first_ring_dev,
             tail=last_ring_dev,
             vlans=self.RING_VLANS,
-        )
+        ))

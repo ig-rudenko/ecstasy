@@ -7,7 +7,7 @@ from geopy.geocoders import Nominatim
 
 from .interfaces import Interfaces
 from .zabbix_api import ZabbixAPIConnection
-from .. import snmp
+from devicemanager.remote import remote_connector, RemoteDevice
 from ..exceptions import AuthException, BaseDeviceException
 from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostInfo,
@@ -15,7 +15,6 @@ from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostGroup,
     Location,
 )
-from ..remote.connector import RemoteDevice
 
 
 class DeviceManager:
@@ -170,7 +169,7 @@ class DeviceManager:
         if not auth_obj:
             raise AuthException("Не указан объект авторизации!", ip=self.ip)
 
-        session = RemoteDevice(
+        session = remote_connector.create(
             ip=self.ip,
             port_scan_protocol=self.protocol,
             cmd_protocol=self.protocol if self.protocol != "snmp" else "telnet",
@@ -243,7 +242,7 @@ class DeviceManager:
         Устанавливаем подключение к оборудованию
         """
 
-        return RemoteDevice(
+        return remote_connector.create(
             self.ip,
             cmd_protocol=protocol or self.protocol,
             port_scan_protocol=protocol or self.protocol,

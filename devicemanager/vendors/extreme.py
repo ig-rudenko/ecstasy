@@ -14,6 +14,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .. import DeviceException
 
 
 class Extreme(BaseDevice):
@@ -355,10 +356,16 @@ class Extreme(BaseDevice):
          VLAN, которые будут добавлены или удалены из указанного порта
         :param tagged: (optional) Параметр tagged представляет собой логический флаг, указывающий, следует ли добавлять
          или удалять VLAN как тегированные или нетегированные на указанном порту. Если `tagged` равно `True`,
-         VLAN будут добавлены или удалены как тегированные на порту
+         VLAN будут добавлены или удалены как тегированные на порту.
         """
 
         tagged_option = "tagged" if tagged else ""
+        if operation not in {"add", "delete"}:
+            raise DeviceException(
+                f"Параметр `operation` должен принимать значения `add` или `delete`,"
+                f" а было передано {operation}",
+                ip=self.ip,
+            )
 
         for vlan in vlans:
             self.send_command(f"configure vlan v{vlan} {operation} ports {port} {tagged_option}")

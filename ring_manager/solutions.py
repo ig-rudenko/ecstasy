@@ -5,6 +5,8 @@ import check.models
 from devicemanager import DeviceException
 from devicemanager.device import Interfaces
 from devicemanager.exceptions import BaseDeviceException
+from devicemanager.remote import remote_connector
+from devicemanager.remote.exceptions import InvalidMethod
 from .models import TransportRing
 
 
@@ -157,6 +159,7 @@ class SolutionsPerformer:
 
     def __init__(self, ring: TransportRing):
         self._ring = ring
+        print(f"{remote_connector.create=}")
 
         if not self._ring.solutions:
             raise SolutionsPerformerError("Нет решений, которые необходимо выполнить")
@@ -350,47 +353,47 @@ class SolutionsPerformer:
             raise SolutionsPerformerError(f"Оборудование {device_obj} недоступно")
 
         try:
-            with device_obj.connect() as conn:
-                tries = 2
-                while tries:
-                    # Этот цикл используется для повторной попытки кон VLANS в случае сбоя.
-                    # Цикл будет выполняться не более `tries = 2` раз.
+            conn = device_obj.connect()
+            tries = 2
+            while tries:
+                # Этот цикл используется для повторной попытки кон VLANS в случае сбоя.
+                # Цикл будет выполняться не более `tries = 2` раз.
 
-                    if hasattr(conn, "vlans_on_port"):
-                        conn.vlans_on_port(port=port, operation=status, vlans=vlans)
-                    else:
-                        raise SolutionsPerformerError(
-                            f"Оборудование {device_obj}, vendor={conn.vendor} не имеет метода "
-                            f"для управления VLAN на порту"
-                        )
-
-                    tries -= 1
-
-                    # Приведенный выше код проверяет наличие или отсутствие набора VLAN на определенном сетевом
-                    # интерфейсе.
-                    # Он делает это, сначала извлекая существующие сети VLAN на интерфейсе.
-                    interfaces = Interfaces(conn.get_vlans())
-
-                    # А затем проверяя, является ли набор добавляемых или удаляемых сетей VLAN подмножеством
-                    # существующих сетей VLAN на интерфейсе.
-
-                    # Если нужно добавить, но VLAN не были добавлены к порту, переходит к следующей попытке добавить.
-                    if status == "add" and not set(vlans).issubset(set(interfaces[port].vlan)):
-                        continue
-                    # Если нужно удалить, но VLAN присутствуют на порту, переходит к следующей попытке удаления.
-                    if status == "delete" and set(vlans).issubset(set(interfaces[port].vlan)):
-                        continue
-
-                    # Если операция прошла успешно, то выходим из цикла
-                    break
-
-                else:
-                    # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».
-                    # В этом случае это означает,
-                    # что операция добавления или удаления VLAN к/от порта устройства не удалась.
+                try:
+                    conn.vlans_on_port(port=port, operation=status, vlans=vlans)
+                except InvalidMethod:
                     raise SolutionsPerformerError(
-                        f"Не удалось {status} VLANS - {vlans} в на оборудовании {device_obj} на порт {port}"
+                        f"Оборудование {device_obj}, не имеет метода "
+                        f"для управления VLAN на порту"
                     )
+
+                tries -= 1
+
+                # Приведенный выше код проверяет наличие или отсутствие набора VLAN на определенном сетевом
+                # интерфейсе.
+                # Он делает это, сначала извлекая существующие сети VLAN на интерфейсе.
+                interfaces = Interfaces(conn.get_vlans())
+
+                # А затем проверяя, является ли набор добавляемых или удаляемых сетей VLAN подмножеством
+                # существующих сетей VLAN на интерфейсе.
+
+                # Если нужно добавить, но VLAN не были добавлены к порту, переходит к следующей попытке добавить.
+                if status == "add" and not set(vlans).issubset(set(interfaces[port].vlan)):
+                    continue
+                # Если нужно удалить, но VLAN присутствуют на порту, переходит к следующей попытке удаления.
+                if status == "delete" and set(vlans).issubset(set(interfaces[port].vlan)):
+                    continue
+
+                # Если операция прошла успешно, то выходим из цикла
+                break
+
+            else:
+                # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».
+                # В этом случае это означает,
+                # что операция добавления или удаления VLAN к/от порта устройства не удалась.
+                raise SolutionsPerformerError(
+                    f"Не удалось {status} VLANS - {vlans} в на оборудовании {device_obj} на порт {port}"
+                )
 
         except BaseDeviceException as error:
             raise SolutionsPerformerError(
@@ -464,46 +467,46 @@ class SolutionsPerformer:
             raise SolutionsPerformerError(f"Оборудование {device_obj} недоступно")
 
         try:
-            with device_obj.connect() as conn:
-                tries = 2
-                while tries:
-                    # Этот цикл используется для повторной попытки установить статус порта в случае сбоя.
-                    # Цикл будет выполняться не более `tries = 2` раз.
+            conn = device_obj.connect()
+            tries = 2
+            while tries:
+                # Этот цикл используется для повторной попытки установить статус порта в случае сбоя.
+                # Цикл будет выполняться не более `tries = 2` раз.
 
-                    result = conn.set_port(port=port, status=status, save_config=True)
-                    if result == "Неверный порт":
-                        raise SolutionsPerformerError(
-                            f"Неверный порт {port} для оборудования {device_obj}"
-                        )
-
-                    tries -= 1
-
-                    # Этот блок кода проверяет текущее состояние порта на устройстве и сравнивает его с желаемым
-                    # состоянием (включено или выключено).
-                    # Сначала он извлекает интерфейсы из устройства.
-                    interfaces = Interfaces(conn.get_interfaces())
-
-                    # Если желаемое состояние порта - «down» и он не отключен административно,
-                    # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «down».
-                    if status == "down" and not interfaces[port].is_admin_down:
-                        continue
-
-                    # Точно так же, если желаемое состояние - «up», а порт административно выключен,
-                    # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «up».
-                    elif status == "up" and interfaces[port].is_admin_down:
-                        continue
-
-                    # Если ни одно из этих условий не выполняется, то выходим из цикла.
-                    else:
-                        break
-
-                else:
-                    # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».
-                    # В этом случае это означает, что требуемый статус порта не может быть установлен на устройстве
-                    # после максимального количества повторных попыток (2).
+                result = conn.set_port(port=port, status=status, save_config=True)
+                if result == "Неверный порт":
                     raise SolutionsPerformerError(
-                        f"Не удалось установить состояние порта {port} в {status} на оборудовании {device_obj}"
+                        f"Неверный порт {port} для оборудования {device_obj}"
                     )
+
+                tries -= 1
+
+                # Этот блок кода проверяет текущее состояние порта на устройстве и сравнивает его с желаемым
+                # состоянием (включено или выключено).
+                # Сначала он извлекает интерфейсы из устройства.
+                interfaces = Interfaces(conn.get_interfaces())
+
+                # Если желаемое состояние порта - «down» и он не отключен административно,
+                # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «down».
+                if status == "down" and not interfaces[port].is_admin_down:
+                    continue
+
+                # Точно так же, если желаемое состояние - «up», а порт административно выключен,
+                # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «up».
+                elif status == "up" and interfaces[port].is_admin_down:
+                    continue
+
+                # Если ни одно из этих условий не выполняется, то выходим из цикла.
+                else:
+                    break
+
+            else:
+                # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».
+                # В этом случае это означает, что требуемый статус порта не может быть установлен на устройстве
+                # после максимального количества повторных попыток (2).
+                raise SolutionsPerformerError(
+                    f"Не удалось установить состояние порта {port} в {status} на оборудовании {device_obj}"
+                )
 
         except DeviceException as error:
             raise SolutionsPerformerError(

@@ -133,8 +133,10 @@ class TestRingChain(TestRingBase):
         point1 = RingDev.objects.get(device__name="dev1")
         point2 = RingDev.objects.get(device__name="dev2")
         point3 = RingDev.objects.get(device__name="dev3")
-
+        self.maxDiff = None
         r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+
+        print(r.ring_devs)
 
         self.assertEqual(
             r.ring_devs,

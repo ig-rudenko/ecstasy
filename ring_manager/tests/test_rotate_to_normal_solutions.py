@@ -3,7 +3,8 @@ from datetime import datetime
 
 from check.models import Devices, AuthGroup
 from devicemanager.device import DeviceManager
-from devicemanager.session_control import DEVICE_SESSIONS
+from devicemanager.remote import remote_connector
+from devicemanager.remote.connector import RemoteDevice
 from .base import TestRingBase
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager
@@ -101,27 +102,32 @@ class TestTransportRingManager(TransportRingManager):
     device_manager = DeviceManager
 
 
-class FakePexpectSession:
-    @staticmethod
-    def isalive():
-        return True
+class FakeTailSession(RemoteDevice):
+    vlans_on_port_args = []
+    port_vlans = ["4"]
 
+    @classmethod
+    def reset_class_data(cls):
+        cls.vlans_on_port_args = []
+        cls.port_vlans = ["4"]
 
-class TailSession:
-    def __init__(self):
-        self.session = FakePexpectSession()
-        self.vlans_on_port_args = []
-        self.port_vlans = ["4"]
-
-    def vlans_on_port(self, port, operation, vlans):
+    @classmethod
+    def vlans_on_port(
+        cls,
+        port: str,
+        operation,
+        vlans,
+        tagged: bool = True,
+    ):
         """Будет смотреть сколько раз вызывался данный метод и какие параметры были переданы"""
-        self.vlans_on_port_args.append([port, operation, vlans])
+        cls.vlans_on_port_args.append([port, operation, vlans])
         if operation == "add":
-            self.port_vlans += vlans
+            cls.port_vlans += vlans
         else:
-            self.port_vlans = ["4"]
+            cls.port_vlans = ["4"]
 
-    def get_vlans(self):
+    @classmethod
+    def get_vlans(cls):
         """
         Необходимо вернуть порт GE0/5/3 без VLAN {1, 2, 3}
         :return:
@@ -131,7 +137,7 @@ class TailSession:
                 "Interface": "GE0/5/3",
                 "Status": "up",  # ================ TO DEV4 - UP
                 "Description": "desc3_to_dev4",
-                "VLAN's": self.port_vlans,  # ============ NO VLANS
+                "VLAN's": cls.port_vlans,  # ============ NO VLANS
             },
             {
                 "Interface": "GE0/5/4",
@@ -142,21 +148,26 @@ class TailSession:
         ]
 
 
-class FakeDev3Session:
-    def __init__(self):
-        self.session = FakePexpectSession()
-        self.set_port_args = []
-        self.port_status = "admin down"
+class FakeTailAndDev3Session(FakeTailSession):
+    set_port_args = []
+    port_status = "admin down"
 
-    def set_port(self, port, status, save_config):
+    @classmethod
+    def reset_class_data(cls):
+        cls.set_port_args = []
+        cls.port_status = "admin down"
+
+    @classmethod
+    def set_port(cls, port, status, save_config=True):
         """Будет смотреть сколько раз вызывался данный метод и какие параметры были переданы"""
-        self.set_port_args.append([port, status, save_config])
+        cls.set_port_args.append([port, status, save_config])
         if status == "up":
-            self.port_status = "up"
+            cls.port_status = "up"
         else:
-            self.port_status = "admin down"
+            cls.port_status = "admin down"
 
-    def get_interfaces(self):
+    @classmethod
+    def get_interfaces(cls):
         return (
             [
                 {
@@ -166,7 +177,7 @@ class FakeDev3Session:
                 },
                 {
                     "Interface": "GE0/3/4",
-                    "Status": self.port_status,  # ==================
+                    "Status": cls.port_status,  # ==================
                     "Description": "desc4_to_dev4",
                 },
             ],
@@ -175,6 +186,10 @@ class FakeDev3Session:
 
 class TestRotateToNormalSolutions(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+
+    def setUp(self):
+        super(TestRotateToNormalSolutions, self).setUp()
+        FakeTailSession.reset_class_data()
 
     def test_rotate_to_normal_solutions(self):
         """
@@ -341,9 +356,7 @@ class TestRotateToNormalSolutions(TestRingBase):
         ring.save(update_fields=["solutions", "solution_time"])
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования
-        tail_fake_session = TailSession()
-        DEVICE_SESSIONS.add_connection(r.ring_devs[-1].device.ip, tail_fake_session)
-
+        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession")
         # Теперь `SolutionsPerformer` будет использовать для `tail` фальшивую сессию
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()
@@ -356,11 +369,11 @@ class TestRotateToNormalSolutions(TestRingBase):
         # Первое действие над Tail это удаление VLAN, затем неудачная попытка поменять состояние
         # порта на другом оборудовании и второе действие - добавление VLAN
         self.assertEqual(
-            tail_fake_session.vlans_on_port_args,
+            FakeTailSession.vlans_on_port_args,
             [["GE0/5/3", "delete", (1, 2, 3)], ["GE0/5/3", "add", (1, 2, 3)]],
         )
 
-        self.assertEqual(len(tail_fake_session.vlans_on_port_args), 2)
+        self.assertEqual(len(FakeTailSession.vlans_on_port_args), 2)
 
         # Решение 1 - NO STATUS
         self.assertDictEqual(
@@ -434,12 +447,8 @@ class TestRotateToNormalSolutions(TestRingBase):
         ring.save(update_fields=["solutions", "solution_time"])
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования
-        tail_fake_session = TailSession()
-        dev3_fake_session = FakeDev3Session()
-        DEVICE_SESSIONS.add_connection(r.ring_devs[-1].device.ip, tail_fake_session)
-        DEVICE_SESSIONS.add_connection(r.ring_devs[2].device.ip, dev3_fake_session)
-
         # Теперь `SolutionsPerformer` будет использовать для `tail` и `dev3` фальшивую сессию
+        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailAndDev3Session")
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()
 
@@ -450,12 +459,12 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         # Первое действие над Tail это удаление VLAN
         self.assertEqual(
-            tail_fake_session.vlans_on_port_args,
+            FakeTailAndDev3Session.vlans_on_port_args,
             [["GE0/5/3", "delete", (1, 2, 3)]],  # port, status, vlans
         )
         # Второе действие - это закрытие порта на `dev3`
         self.assertEqual(
-            dev3_fake_session.set_port_args,
+            FakeTailAndDev3Session.set_port_args,
             [["GE0/3/4", "up", True]],  # port, status, save_config
         )
 

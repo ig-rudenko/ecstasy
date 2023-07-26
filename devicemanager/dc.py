@@ -63,7 +63,7 @@ class SSHSpawn:
 
         return base
 
-    def get_session(self) -> pexpect.spawn:
+    def get_session(self):
         return pexpect.spawn(self.get_spawn_string(), timeout=15)
 
 
@@ -300,7 +300,7 @@ class DeviceFactory:
 
         return self.get_device(session)
 
-    def get_device(self, session: pexpect.spawn) -> BaseDevice:
+    def get_device(self, session) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
 
@@ -480,7 +480,7 @@ class DeviceFactory:
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
 
     def __login_to_by_telnet(
-        self, session: pexpect.spawn, login: str, password: str, timeout: int, pre_expect_index=None
+        self, session, login: str, password: str, timeout: int, pre_expect_index=None
     ) -> str:
 
         login_try = 1
@@ -538,7 +538,7 @@ class DeviceFactory:
             break
 
     @staticmethod
-    def send_command(session: pexpect.spawn, command: str) -> str:
+    def send_command(session, command: str) -> str:
         """
         # Простой метод для отправки команды с постраничной записью вывода результата
         """
