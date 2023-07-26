@@ -307,7 +307,7 @@ class IskratelMBan(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        output = self.send_command("show bridge mactable")
+        output = self.send_command("show bridge mactable", expect_command=False)
         parsed: List[Tuple[str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output
         )

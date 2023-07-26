@@ -147,12 +147,6 @@ class RemoteDevice(AbstractDevice):
     def search_mac(self, mac_address: str) -> list:
         return self._remote_call("search_mac", mac_address=mac_address)
 
-    def normalize_interface_name(self, intf: str) -> str:
-        return self._remote_call("normalize_interface_name", intf=intf)
-
-    def get_mac_table(self) -> T_MACTable:
-        return self._remote_call("get_mac_table")
-
     def vlans_on_port(
         self,
         port: str,

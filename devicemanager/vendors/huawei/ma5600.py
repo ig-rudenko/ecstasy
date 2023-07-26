@@ -760,7 +760,7 @@ class HuaweiMA5600T(BaseDevice):
 
         mac_table: T_MACTable = []
 
-        for interface in self.get_interfaces():
+        for interface in self.interfaces:
             port_macs = self.get_mac(interface[0])
             mac_table += [(int(vid), mac, "dynamic", interface[0]) for vid, mac in port_macs]
         return mac_table

@@ -59,6 +59,7 @@ def connector(ip: str, method: str):
 
     data = request.get_json(force=True)
     connection: ConnectionType = data.get("connection")
+    print(ip, method, data)
 
     try:
         with DeviceFactory(

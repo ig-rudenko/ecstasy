@@ -81,13 +81,19 @@ class SessionController:
         pool = self._sessions.get(device_ip, None)
         return pool is not None
 
-    def add_pool(self, device_ip: str, pool_size: int):
+    def create_pool(self, device_ip: str, pool_size: int) -> ConnectionPool:
         if not self._sessions.get(device_ip):
             self._sessions[device_ip] = ConnectionPool(max_size=pool_size)
+        return self._sessions[device_ip]
+
+    def delete_pool(self, device_ip: str):
+        self.clear_pool(device_ip)
+        if self._sessions.get(device_ip, None) is not None:
+            del self._sessions[device_ip]
 
     def pool_is_created(self, device_ip: str) -> bool:
         pool = self._sessions.get(device_ip, None)
-        if pool:
+        if pool is not None:
             return pool.is_created
         return False
 
@@ -96,9 +102,9 @@ class SessionController:
         if pool:
             pool.close_all()
 
-    def add_connections_to_pool(self, device_ip: str, connection: List[BaseDevice]):
-        pool = self._sessions[device_ip]
-        for conn in connection:
+    def add_connections_to_pool(self, device_ip: str, pool_size: int, connections: List[BaseDevice]):
+        pool = self.create_pool(device_ip, pool_size)
+        for conn in connections:
             pool.add(
                 GlobalSession(
                     connection=conn,

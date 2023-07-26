@@ -158,8 +158,6 @@ class DeviceFactory:
             print("GLOBAL")
             return DEVICE_SESSIONS.get_connection(self.ip)
 
-        DEVICE_SESSIONS.add_pool(device_ip=self.ip, pool_size=self.pool_size)
-
         connections: List[BaseDevice] = []
         threads = []
         for i in range(self.pool_size):
@@ -177,6 +175,7 @@ class DeviceFactory:
 
         # Проверяем наличие ошибок
         if all(isinstance(val, Exception) for val in connections):
+            DEVICE_SESSIONS.delete_pool(self.ip)
             raise connections[0]
         connections = [conn for conn in connections if not isinstance(conn, Exception)]
 
@@ -185,7 +184,9 @@ class DeviceFactory:
         # Сохраняем новые сессии, если было указано хранение глобально.
         # Но для начала очистим пул от возможных не сброшенных подключений.
         DEVICE_SESSIONS.clear_pool(self.ip)
-        DEVICE_SESSIONS.add_connections_to_pool(self.ip, connections)
+        DEVICE_SESSIONS.add_connections_to_pool(
+            self.ip, pool_size=self.pool_size, connections=connections
+        )
 
         return connections[0]
 

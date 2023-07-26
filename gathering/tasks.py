@@ -37,6 +37,8 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
 
     def thread_task(self, obj: Devices, **kwargs):
         try:
+            if not obj.available:
+                return
             gather = MacAddressTableGather(obj)
             gather.clear_old_records()
             print(f"{obj} bulk_create: {gather.bulk_create()}")
