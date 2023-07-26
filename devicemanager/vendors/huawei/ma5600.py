@@ -1,10 +1,10 @@
 import re
+from functools import lru_cache
 from time import sleep
 from typing import Tuple, List
-from functools import lru_cache
 
 import pexpect
-from django.template.loader import render_to_string
+from jinja2 import Environment, FileSystemLoader
 
 from devicemanager import snmp
 from ..base.device import BaseDevice
@@ -427,9 +427,12 @@ class HuaweiMA5600T(BaseDevice):
         # Смотрим ONT
         data = self._ont_port_info(indexes=i)
         self.send_command("quit")
+
+        env = Environment(autoescape=True, loader=FileSystemLoader("templates"))
+        template = env.get_template('check/ont_port_info.html')
         return {
             "type": "html",
-            "data": render_to_string("check/ont_port_info.html", {"ont_info": data}),
+            "data": template.render(ont_info=data),
         }
 
     @lru_cache()
@@ -803,7 +806,7 @@ class HuaweiMA5600T(BaseDevice):
         #   ---------------------------------------------------------------------
         macs1: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.send_command(f"display mac-address port {'/'.join(indexes)}", num_of_expect=6),
+            self.send_command(f"display mac-address port {'/'.join(indexes)}", expect_command=False),
         )
 
         # Попробуем еще одну команду -> display security bind mac
@@ -813,7 +816,7 @@ class HuaweiMA5600T(BaseDevice):
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
         macs2: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.send_command(f"display security bind mac {'/'.join(indexes)}", num_of_expect=6),
+            self.send_command(f"display security bind mac {'/'.join(indexes)}", expect_command=False),
         )
 
         res: T_MACList = []
