@@ -24,7 +24,7 @@ class JWTTestCase(TestCase):
         Подготавливаем тестовую базу данных.
         Создаем тестового пользователя.
         """
-        User.objects.create_user(**user_data)
+        cls.user = User.objects.create_user(**user_data)
 
     def test_token_obtain(self):
         """

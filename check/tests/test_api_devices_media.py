@@ -3,16 +3,16 @@ import shutil
 
 from django.core.files import File
 from django.urls import reverse
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from rest_framework import status
-from rest_framework.test import APIClient
+from rest_framework.test import APITestCase
 
 from ..api.serializers import DeviceMediaSerializer
 from ..models import User, DeviceGroup, Devices, DeviceMedia
 
 
 @override_settings(MEDIA_ROOT="/tmp/media")
-class DeviceMediaListCreateAPIViewTestCase(TestCase):
+class DeviceMediaListCreateAPIViewTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user: User = User.objects.create_user(username="test_user", password="password")
@@ -31,10 +31,10 @@ class DeviceMediaListCreateAPIViewTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        super().tearDownClass()
         shutil.rmtree(pathlib.Path("/tmp/media"), ignore_errors=True)
 
     def setUp(self):
-        self.client = APIClient()
         self.client.force_login(user=self.user)
 
     def test_get_device_media_list(self):

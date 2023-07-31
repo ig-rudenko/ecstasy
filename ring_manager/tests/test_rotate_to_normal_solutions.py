@@ -12,85 +12,85 @@ from ..solutions import SolutionsPerformer
 
 TEST_DEVICES = [
     {
-        "ip": "224.0.0.1",
-        "name": "dev1",
+        "ip": "224.0.5.1",
+        "name": "ring-dev51",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/1/3",
                 "Status": "up",  # ================= TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev53",
                 "VLAN's": ["1-4", "30 to 32"],
             },
             {
                 "Interface": "GE0/1/4",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc4_to_dev2",
+                "Description": "desc4_to_ring-dev52",
                 "VLAN's": ["1-4", "30 to 32"],
             },
         ],
     },
     {
-        "ip": "224.0.0.2",
-        "name": "dev2",
+        "ip": "224.0.5.2",
+        "name": "ring-dev52",
         "interfaces": [
             {
                 "Interface": "GE0/2/3",
                 "Status": "up",  # ================== TO DEV1 - UP
-                "Description": "desc3_to_dev1",
+                "Description": "desc3_to_ring-dev51",
             },
             {
                 "Interface": "GE0/2/4",
                 "Status": "up",  # ================== TO DEV3 - UP
-                "Description": "desc4_to_dev3",
+                "Description": "desc4_to_ring-dev53",
             },
         ],
     },
     {
-        "ip": "224.0.0.3",
-        "name": "dev3",
+        "ip": "224.0.5.3",
+        "name": "ring-dev53",
         "interfaces": [
             {
                 "Interface": "GE0/3/3",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc3_to_dev2",
+                "Description": "desc3_to_ring-dev52",
             },
             {
                 "Interface": "GE0/3/4",
                 "Status": "admin down",  # ================== TO DEV4 - ADMIN DOWN
-                "Description": "desc4_to_dev4",
+                "Description": "desc4_to_ring-dev54",
             },
         ],
     },
     {
-        "ip": "224.0.0.4",
-        "name": "dev4",
+        "ip": "224.0.5.4",
+        "name": "ring-dev54",
         "interfaces": [
             {
                 "Interface": "GE0/4/3",
                 "Status": "down",  # ================ TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev53",
             },
             {
                 "Interface": "GE0/4/4",
                 "Status": "up",  # ================ TO DEV5 - UP
-                "Description": "desc4_to_dev5",
+                "Description": "desc4_to_ring-dev55",
             },
         ],
     },
     {
-        "ip": "224.0.0.5",
-        "name": "dev5",
+        "ip": "224.0.5.5",
+        "name": "ring-dev55",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/5/3",
                 "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_dev4",
+                "Description": "desc3_to_ring-dev54",
                 "VLAN's": ["1-4", "30 to 32"],  # ============ HAS VLANS
             },
             {
                 "Interface": "GE0/5/4",
                 "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_dev1",
+                "Description": "desc4_to_ring-dev51",
                 "VLAN's": ["4", "30 to 32"],
             },
         ],
@@ -136,13 +136,13 @@ class FakeTailSession(RemoteDevice):
             {
                 "Interface": "GE0/5/3",
                 "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_dev4",
+                "Description": "desc3_to_ring-dev54",
                 "VLAN's": cls.port_vlans,  # ============ NO VLANS
             },
             {
                 "Interface": "GE0/5/4",
                 "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_dev1",
+                "Description": "desc4_to_ring-dev51",
                 "VLAN's": ["4", "30 to 32"],
             },
         ]
@@ -173,12 +173,12 @@ class FakeTailAndDev3Session(FakeTailSession):
                 {
                     "Interface": "GE0/3/3",
                     "Status": "up",  # ================== TO DEV2 - UP
-                    "Description": "desc3_to_dev2",
+                    "Description": "desc3_to_ring-dev52",
                 },
                 {
                     "Interface": "GE0/3/4",
                     "Status": cls.port_status,  # ==================
-                    "Description": "desc4_to_dev4",
+                    "Description": "desc4_to_ring-dev54",
                 },
             ],
         )
@@ -186,6 +186,7 @@ class FakeTailAndDev3Session(FakeTailSession):
 
 class TestRotateToNormalSolutions(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+    ring_name = "ring51"
 
     def setUp(self):
         super(TestRotateToNormalSolutions, self).setUp()
@@ -193,13 +194,13 @@ class TestRotateToNormalSolutions(TestRingBase):
 
     def test_rotate_to_normal_solutions(self):
         """
-        Кольцо уже было развернуто, на оборудовании dev3 порт выключен в сторону dev4.
-        На dev5 (tail) необходимые VLAN's добавлены.
+        Кольцо уже было развернуто, на оборудовании ring-dev53 порт выключен в сторону ring-dev54.
+        На ring-dev55 (tail) необходимые VLAN's добавлены.
         Необходимо проверить создание решений, для разворота в штатное состояние
         :return:
         """
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 
@@ -219,7 +220,7 @@ class TestRotateToNormalSolutions(TestRingBase):
             solutions[0],
             {
                 "info": {
-                    "message": "Транспортное кольцо в данный момент развернуто, со стороны dev5 "
+                    "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
                     "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо в штатное состояние"
                 }
             },
@@ -238,7 +239,7 @@ class TestRotateToNormalSolutions(TestRingBase):
                     },
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
-                    "на оборудовании dev5 (224.0.0.5) на порту GE0/5/3",
+                    "на оборудовании ring-dev55 (224.0.5.5) на порту GE0/5/3",
                 }
             },
         )
@@ -260,7 +261,7 @@ class TestRotateToNormalSolutions(TestRingBase):
         )
 
     def test_perform_solutions_fail_first(self):
-        ring = TransportRing.objects.get(name="ring1")
+        ring = TransportRing.objects.get(name=self.ring_name)
 
         r = TestTransportRingManager(ring=ring)
         r.collect_all_interfaces()  # Собираем из истории
@@ -289,7 +290,7 @@ class TestRotateToNormalSolutions(TestRingBase):
             performed_solutions[0],
             {
                 "info": {
-                    "message": "Транспортное кольцо в данный момент развернуто, со стороны dev5 "
+                    "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
                     "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо в штатное состояние"
                 }
             },
@@ -308,9 +309,9 @@ class TestRotateToNormalSolutions(TestRingBase):
                     },
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
-                    "на оборудовании dev5 (224.0.0.5) на порту GE0/5/3",
+                    "на оборудовании ring-dev55 (224.0.5.5) на порту GE0/5/3",
                     "perform_status": "fail",
-                    "error": "Оборудование dev5 (224.0.0.5) недоступно",
+                    "error": "Оборудование ring-dev55 (224.0.5.5) недоступно",
                 }
             },
         )
@@ -333,13 +334,13 @@ class TestRotateToNormalSolutions(TestRingBase):
 
     def test_perform_solutions_fail_last(self):
         # Меняем IP TAIL чтобы он был доступен
-        Devices.objects.filter(ip="224.0.0.5").update(
+        Devices.objects.filter(ip="224.0.5.5").update(
             ip="127.0.0.1",
             auth_group=AuthGroup.objects.create(login="admin", password="admin", name="test"),
         )
         # Также создаем группу авторизации для данного оборудования
 
-        ring = TransportRing.objects.get(name="ring1")
+        ring = TransportRing.objects.get(name=self.ring_name)
 
         r = TestTransportRingManager(ring=ring)
         r.collect_all_interfaces()  # Собираем из истории
@@ -356,7 +357,9 @@ class TestRotateToNormalSolutions(TestRingBase):
         ring.save(update_fields=["solutions", "solution_time"])
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования
-        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession")
+        remote_connector.set_connector(
+            "ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession"
+        )
         # Теперь `SolutionsPerformer` будет использовать для `tail` фальшивую сессию
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()
@@ -380,7 +383,7 @@ class TestRotateToNormalSolutions(TestRingBase):
             performed_solutions[0],
             {
                 "info": {
-                    "message": "Транспортное кольцо в данный момент развернуто, со стороны dev5 "
+                    "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
                     "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо в штатное состояние"
                 }
             },
@@ -399,7 +402,7 @@ class TestRotateToNormalSolutions(TestRingBase):
                     },
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
-                    "на оборудовании dev5 (127.0.0.1) на порту GE0/5/3",
+                    "на оборудовании ring-dev55 (127.0.0.1) на порту GE0/5/3",
                     "perform_status": "reversed",
                 }
             },
@@ -426,11 +429,11 @@ class TestRotateToNormalSolutions(TestRingBase):
     def test_perform_solutions_ok(self):
         # Меняем IP TAIL и Dev3 чтобы они были доступны
         auth = AuthGroup.objects.create(login="admin", password="admin", name="test")
-        Devices.objects.filter(ip="224.0.0.5").update(ip="127.0.0.1", auth_group=auth)
-        Devices.objects.filter(ip="224.0.0.3").update(ip="127.0.0.2", auth_group=auth)
+        Devices.objects.filter(ip="224.0.5.5").update(ip="127.0.0.1", auth_group=auth)
+        Devices.objects.filter(ip="224.0.5.3").update(ip="127.0.0.2", auth_group=auth)
         # Также создаем группу авторизации для данного оборудования
 
-        ring = TransportRing.objects.get(name="ring1")
+        ring = TransportRing.objects.get(name=self.ring_name)
 
         r = TestTransportRingManager(ring=ring)
         r.collect_all_interfaces()  # Собираем из истории
@@ -448,7 +451,9 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования
         # Теперь `SolutionsPerformer` будет использовать для `tail` и `dev3` фальшивую сессию
-        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailAndDev3Session")
+        remote_connector.set_connector(
+            "ring_manager.tests.test_rotate_to_normal_solutions.FakeTailAndDev3Session"
+        )
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()
 
@@ -473,7 +478,7 @@ class TestRotateToNormalSolutions(TestRingBase):
             performed_solutions[0],
             {
                 "info": {
-                    "message": "Транспортное кольцо в данный момент развернуто, со стороны dev5 "
+                    "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
                     "Убедитесь, что линия исправна, ведь дальнейшие действия развернут кольцо в штатное состояние"
                 }
             },
@@ -492,7 +497,7 @@ class TestRotateToNormalSolutions(TestRingBase):
                     },
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
-                    "на оборудовании dev5 (127.0.0.1) на порту GE0/5/3",
+                    "на оборудовании ring-dev55 (127.0.0.1) на порту GE0/5/3",
                     "perform_status": "done",
                 }
             },

@@ -225,67 +225,56 @@ class DeviceRelationsTest(TestCase):
 class BrasTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        Bras.objects.create(name="BRAS", ip="192.168.1.1", login="login", password="password")
+        cls.bras = Bras.objects.create(name="BRAS", ip="192.168.1.1", login="login", password="password")
 
     # NAME
     def test_name_label(self):
-        b = Bras.objects.get(id=1)
-        label = b._meta.get_field("name").verbose_name
+        label = self.bras._meta.get_field("name").verbose_name
         self.assertEqual(label, "Название")
 
     def test_name_max_length(self):
-        b = Bras.objects.get(id=1)
-        max_length = b._meta.get_field("name").max_length
+        max_length = self.bras._meta.get_field("name").max_length
         self.assertEqual(max_length, 10)
 
     # IP
     def test_ip_label(self):
-        b = Bras.objects.get(id=1)
-        label = b._meta.get_field("ip").verbose_name
+        label = self.bras._meta.get_field("ip").verbose_name
         self.assertEqual(label, "IP адрес")
 
     def test_ip_max_length(self):
-        b = Bras.objects.get(id=1)
-        max_length = b._meta.get_field("ip").max_length
+        max_length = self.bras._meta.get_field("ip").max_length
         self.assertEqual(max_length, 39)
 
     # LOGIN
     def test_login_label(self):
-        b = Bras.objects.get(id=1)
-        label = b._meta.get_field("login").verbose_name
+        label = self.bras._meta.get_field("login").verbose_name
         self.assertEqual(label, "Логин")
 
     def test_login_max_length(self):
-        b = Bras.objects.get(id=1)
-        max_length = b._meta.get_field("login").max_length
+        max_length = self.bras._meta.get_field("login").max_length
         self.assertEqual(max_length, 64)
 
     # LOGIN
     def test_password_label(self):
-        b = Bras.objects.get(id=1)
-        label = b._meta.get_field("password").verbose_name
+        label = self.bras._meta.get_field("password").verbose_name
         self.assertEqual(label, "Пароль")
 
     def test_password_max_length(self):
-        b = Bras.objects.get(id=1)
-        max_length = b._meta.get_field("password").max_length
+        max_length = self.bras._meta.get_field("password").max_length
         self.assertEqual(max_length, 64)
 
     # SECRET
     def test_secret_label(self):
-        b = Bras.objects.get(id=1)
-        label = b._meta.get_field("secret").verbose_name
+        label = self.bras._meta.get_field("secret").verbose_name
         self.assertEqual(label, "Пароль от привилегированного режима")
 
     def test_secret_max_length(self):
-        b = Bras.objects.get(id=1)
-        max_length = b._meta.get_field("secret").max_length
+        max_length = self.bras._meta.get_field("secret").max_length
         self.assertEqual(max_length, 64)
 
     # STR
     def test_str(self):
-        b = Bras.objects.get(id=1)
-        self.assertEqual(b.name, str(b))
+        self.assertEqual(self.bras.name, str(self.bras))
 
 
 class ProfileTest(TestCase):

@@ -5,69 +5,69 @@ from ..ring_manager import TransportRingManager
 
 TEST_DEVICES = [
     {
-        "ip": "224.0.0.1",
-        "name": "dev1",
+        "ip": "224.0.7.1",
+        "name": "ring-dev71",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/1/3",
                 "Status": "up",  # ================= TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev73",
                 "VLAN's": ["1-4", "30 to 32"],
             },
             {
                 "Interface": "GE0/1/4",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc4_to_dev2",
+                "Description": "desc4_to_ring-dev72",
                 "VLAN's": ["1-4", "30 to 32"],
             },
         ],
     },
     {
-        "ip": "224.0.0.2",
-        "name": "dev2",
+        "ip": "224.0.7.2",
+        "name": "ring-dev72",
         "interfaces": [
             {
                 "Interface": "GE0/2/3",
                 "Status": "up",  # ================== TO DEV1 - UP
-                "Description": "desc3_to_dev1",
+                "Description": "desc3_to_ring-dev71",
             },
             {
                 "Interface": "GE0/2/4",
                 "Status": "up",  # ================== TO DEV3 - UP
-                "Description": "desc4_to_dev3",
+                "Description": "desc4_to_ring-dev73",
             },
         ],
     },
     {
-        "ip": "224.0.0.3",
-        "name": "dev3",
+        "ip": "224.0.7.3",
+        "name": "ring-dev73",
         "interfaces": [
             {
                 "Interface": "GE0/3/3",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc3_to_dev2",
+                "Description": "desc3_to_ring-dev72",
             },
             {
                 "Interface": "GE0/3/4",
                 "Status": "up",  # ================== TO DEV4 - UP
-                "Description": "desc4_to_dev4",
+                "Description": "desc4_to_ring-dev74",
             },
         ],
     },
     {
-        "ip": "224.0.0.4",
-        "name": "dev4",
+        "ip": "224.0.7.4",
+        "name": "ring-dev74",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/4/3",
                 "Status": "up",  # ================ TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev73",
                 "VLAN's": ["4", "30 to 32"],
             },
             {
                 "Interface": "GE0/4/4",
                 "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_dev1",
+                "Description": "desc4_to_ring-dev71",
                 "VLAN's": ["4", "30 to 32"],
             },
         ],
@@ -77,12 +77,13 @@ TEST_DEVICES = [
 
 class TestDownSolutions1(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+    ring_name = "ring71"
 
     def test_down_solutions(self):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 
@@ -129,7 +130,7 @@ class TestDownSolutions1(TestRingBase):
                         "ip": r.ring_devs[-1].device.ip,
                     },
                     "port": r.ring_devs[-1].port_to_prev_dev.name,
-                    "message": "Прописываем VLANS (1, 2, 3) на dev4 (224.0.0.4) на порту GE0/4/3",
+                    "message": "Прописываем VLANS (1, 2, 3) на ring-dev74 (224.0.7.4) на порту GE0/4/3",
                 }
             },
         )
@@ -137,12 +138,13 @@ class TestDownSolutions1(TestRingBase):
 
 class TestDownSolutions2(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+    ring_name = "ring72"
 
     def test_head_down_solutions(self):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 
@@ -189,7 +191,7 @@ class TestDownSolutions2(TestRingBase):
                         "ip": r.ring_devs[-1].device.ip,
                     },
                     "port": r.ring_devs[-1].port_to_prev_dev.name,
-                    "message": "Прописываем VLANS (1, 2, 3) на dev4 (224.0.0.4) на порту GE0/4/3",
+                    "message": "Прописываем VLANS (1, 2, 3) на ring-dev74 (224.0.7.4) на порту GE0/4/3",
                 }
             },
         )

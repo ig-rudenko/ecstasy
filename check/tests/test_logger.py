@@ -6,7 +6,7 @@ from ..logging import log
 
 class TestLog(TestCase):
     def setUp(self):
-        self.user = User.objects.create(username="test_user")
+        self.user = User.objects.create(username="test_log_user")
         self.devices = Devices.objects.create(
             name="test_device",
             ip="192.168.0.1",
@@ -32,7 +32,7 @@ class TestLog(TestCase):
         device_log = UsersActions.objects.get(device=self.devices)
         self.assertEqual(device_log.action, "test_device_action")
         mock_logger_info.assert_called_with(
-            f"| test_user  | {self.devices.name} ({self.devices.ip}) | test_device_action"
+            f"| {self.user.username:<10} | {self.devices.name} ({self.devices.ip}) | test_device_action"
         )
 
     @patch("check.logger.django_actions_logger.info")
@@ -42,7 +42,9 @@ class TestLog(TestCase):
         log(self.user, self.bras, "test_bras_action")
         bras_log = UsersActions.objects.get(action__contains="test_bras_action")
         self.assertEqual(bras_log.action, f"{self.bras} | test_bras_action")
-        mock_logger_info.assert_called_with(f"| test_user  | {self.bras} | test_bras_action")
+        mock_logger_info.assert_called_with(
+            f"| {self.user.username:<10} | {self.bras} | test_bras_action"
+        )
 
     @patch("check.logger.django_actions_logger.info")
     def test_very_long_log_bras(self, mock_logger_info: Mock):
@@ -58,4 +60,4 @@ class TestLog(TestCase):
 
         bras_log = UsersActions.objects.get(action=log_str_in_db)
         self.assertEqual(bras_log.action, log_str_in_db)
-        mock_logger_info.assert_called_with(f"| test_user  | {self.bras} | {log_str}")
+        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.bras} | {log_str}")
