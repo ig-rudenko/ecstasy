@@ -182,15 +182,25 @@ PORT_GUARD_PATTERN = re.compile(
 
 # ================= CACHE ===================
 
-REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"redis://{REDIS_CACHE_URL}",
-        "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
     }
-}
+
+else:
+
+    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_CACHE_URL}",
+            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
+        }
+    }
 
 # ================ REST FRAMEWORK =================
 

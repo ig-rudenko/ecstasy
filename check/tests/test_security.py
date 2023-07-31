@@ -15,11 +15,11 @@ class NoAccessWithNoLogin(TestCase):
         )
 
     def test_show_bras_session_page(self):
-        resp = self.client.get(reverse("show-session"))
+        resp = self.client.get(reverse("devices-api:show-session"))
         self.assertEqual(resp.status_code, 403)
 
     def test_cut_session_bras_page(self):
-        resp = self.client.post(reverse("cut-session"))
+        resp = self.client.post(reverse("devices-api:cut-session"))
         self.assertEqual(resp.status_code, 403)
 
 
