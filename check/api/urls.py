@@ -44,7 +44,11 @@ urlpatterns = [
     # ===========================================
     #                Device Media
     # ===========================================
-    path("<device_name>/media", device_media.DeviceMediaListCreateAPIView.as_view()),
+    path(
+        "<device_name>/media",
+        device_media.DeviceMediaListCreateAPIView.as_view(),
+        name="device-media-list-create",
+    ),
     path(
         "<device_name>/media/<int:pk>",
         device_media.DeviceMediaRetrieveUpdateDestroyAPIView.as_view(),
