@@ -45,4 +45,4 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
             user=user, action=f"{model_device} | {operation}"[:operation_max_length]
         )
         # В файл
-        django_actions_logger.info(f"| {user.username:<10} |  | {model_device} | {operation}")
+        django_actions_logger.info(f"| {user.username:<10} | {model_device} | {operation}")
