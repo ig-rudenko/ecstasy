@@ -1,7 +1,7 @@
 import logging
 import time
 from threading import Thread
-from typing import List
+from typing import List, Any
 
 import pexpect
 
@@ -35,20 +35,21 @@ class DeviceSessionFactory:
         self.ip = ip
         self.connections: List[BaseDevice] = []
 
-    def perform_method(self, method: str, **params):
+    def perform_method(self, method: str, **params) -> Any:
         logger.debug(f'Начало выполнение метода "{method}", params={params}, ip={self.ip}')
         return self._perform(method, last_try=False, **params)
 
-    def _perform(self, method: str, last_try: bool, **params):
-        session = self._make_and_get_session()
-        logger.info(f"{self.ip} {method}, {session.__class__.__name__}")
+    def _perform(self, method: str, last_try: bool, **params) -> Any:
+        device_connection = self._get_connection_to_perform()
+
+        logger.info(f"{self.ip} {method}, {device_connection.__class__.__name__}")
 
         if method == "get_interfaces" and self.port_scan_protocol == "snmp":
             interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
             return interfaces
 
-        if hasattr(session, method):
-            session_method = getattr(session, method)
+        if hasattr(device_connection, method):
+            session_method = getattr(device_connection, method)
 
             try:
                 method_data = session_method(**params)
@@ -57,17 +58,18 @@ class DeviceSessionFactory:
                     f"Ошибка {exc.__class__.__name__} при выполнении метода {method}, ip={self.ip}",
                     exc_info=exc,
                 )
-                if session.session.isalive():
-                    session.session.close()
+                if device_connection.session.isalive():
+                    device_connection.session.close()
 
-                # Пересоздаем сессию
-                logger.info(f"Пересоздаем сессию {self.ip}")
-                Thread(
-                    target=self._create_and_append_new_connection,
-                    args=(self,),
-                    name=f"Create connection for {self.ip} - daemon",
-                    daemon=True,
-                ).start()
+                if self.make_session_global:
+                    # Пересоздаем сессию
+                    logger.info(f"Пересоздаем сессию {self.ip}")
+                    Thread(
+                        target=self._create_and_append_new_connection,
+                        args=(self,),
+                        name=f"Create connection for {self.ip} - daemon",
+                        daemon=True,
+                    ).start()
 
                 if not last_try:
                     # Пробуем в другой сессии пересоздать
@@ -77,17 +79,32 @@ class DeviceSessionFactory:
             else:
                 return method_data
 
+            finally:
+                if not self.make_session_global:
+                    device_connection.session.close()
+
         else:
             raise MethodError()
 
-    def _create_and_append_new_connection(self):
+    def _get_connection_to_perform(self) -> BaseDevice:
+        if self.make_session_global:
+            return self._make_and_get_connection()
+        else:
+            return DeviceFactory(
+                ip=self.ip,
+                protocol=self.protocol,
+                auth_obj=self.auth_obj,
+                snmp_community=self.snmp_community,
+            ).get_session()
+
+    def _create_and_append_new_connection(self) -> None:
         connections = []
         self._add_device_session(connections, append_exc=False)
         DEVICE_SESSIONS.add_connections_to_pool(
             self.ip, pool_size=self.pool_size, connections=connections
         )
 
-    def _make_and_get_session(self):
+    def _make_and_get_connection(self) -> BaseDevice:
 
         start_time = time.perf_counter()
 
@@ -139,7 +156,7 @@ class DeviceSessionFactory:
 
         return self.connections[0]
 
-    def _add_device_session(self, result_list: list, append_exc=True):
+    def _add_device_session(self, result_list: list, append_exc=True) -> None:
         tries = 3
         while tries > 0:
             try:
@@ -148,8 +165,6 @@ class DeviceSessionFactory:
                     ip=self.ip,
                     protocol=self.protocol,
                     auth_obj=self.auth_obj,
-                    make_session_global=self.make_session_global,
-                    pool_size=self.pool_size,
                     snmp_community=self.snmp_community,
                 ).get_session()
 
@@ -165,7 +180,7 @@ class DeviceSessionFactory:
             finally:
                 tries -= 1
 
-    def _check_and_expand_to_pool_size(self):
+    def _check_and_expand_to_pool_size(self) -> None:
         pool = DEVICE_SESSIONS.get_or_create_pool(self.ip, self.pool_size)
         for i in range(self.pool_size - len(pool)):
             self._create_and_append_new_connection()

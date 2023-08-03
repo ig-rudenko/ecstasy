@@ -40,7 +40,6 @@ class MacAddressTableGather:
                 protocol=self.device.port_scan_protocol,
                 auth_obj=self.device.auth_group,
                 snmp_community=self.device.snmp_community,
-                make_session_global=False,
             ) as session:
                 # Если в сеансе есть функция с именем normalize_interface_name,
                 # установите атрибут normalize_interface для этой функции.

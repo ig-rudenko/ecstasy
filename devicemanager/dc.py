@@ -98,19 +98,12 @@ class DeviceFactory:
         protocol: str,
         snmp_community: str,
         auth_obj,
-        make_session_global: bool = True,
-        pool_size: int = 1,
     ):
         self.ip = ip
         self.session = None
         self.snmp_community = snmp_community
         self.device_connection: Union[BaseDevice, None] = None
         self.protocol = protocol
-        self._session_global = make_session_global
-        if not make_session_global:
-            self.pool_size = 1
-        else:
-            self.pool_size = pool_size
 
         if isinstance(auth_obj, list):
             self.login = []

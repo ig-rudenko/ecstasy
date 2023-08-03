@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -6,22 +7,30 @@ from typing import Dict, List, Optional
 
 from devicemanager.vendors import BaseDevice
 
+logger = logging.Logger(__file__)
+
 
 @dataclass
 class GlobalSession:
     connection: BaseDevice
 
     @property
-    def alive(self):
-        return self.connection and self.connection.session and self.connection.session.isalive()
+    def alive(self) -> bool:
+        try:
+            return self.connection.session.isalive()
+        except Exception as exc:
+            logger.error('Ошибка во время проверки статуса сессии "isalive"', exc_info=exc)
+            return False
 
     @property
-    def non_locked(self):
+    def non_locked(self) -> bool:
         return not self.connection.lock
 
-    def close(self):
-        if self.alive:
+    def close(self) -> None:
+        try:
             self.connection.session.close()
+        except Exception as exc:
+            logger.error("Ошибка во время удаления сессии", exc_info=exc)
 
 
 class ConnectionPool:
@@ -38,17 +47,17 @@ class ConnectionPool:
         return len(self._pool)
 
     @property
-    def available(self):
+    def available(self) -> bool:
         return self.expired >= datetime.now()
 
     @property
-    def is_created(self):
+    def is_created(self) -> bool:
         return self._created
 
-    def set_created(self):
+    def set_created(self) -> None:
         self._created = True
 
-    def add(self, connection: GlobalSession):
+    def add(self, connection: GlobalSession) -> None:
         if len(self._pool) < self._size:
             self._pool.append(connection)
         else:
@@ -66,7 +75,7 @@ class ConnectionPool:
                     return conn
         return last_available
 
-    def close_all(self):
+    def close_all(self) -> None:
         for conn in self._pool:
             conn.close()
         self._pool = []
@@ -89,7 +98,7 @@ class SessionController:
             self._sessions[device_ip] = ConnectionPool(max_size=pool_size)
         return self._sessions[device_ip]
 
-    def delete_pool(self, device_ip: str):
+    def delete_pool(self, device_ip: str) -> None:
         self.clear_pool(device_ip)
         if self._sessions.get(device_ip, None) is not None:
             del self._sessions[device_ip]
@@ -100,14 +109,14 @@ class SessionController:
             return pool.is_created
         return False
 
-    def clear_pool(self, device_ip: str):
+    def clear_pool(self, device_ip: str) -> None:
         pool = self._sessions.get(device_ip)
         if pool:
             pool.close_all()
 
     def add_connections_to_pool(
         self, device_ip: str, pool_size: int, connections: List[BaseDevice]
-    ):
+    ) -> None:
         pool = self.get_or_create_pool(device_ip, pool_size)
 
         for conn in connections:
@@ -128,7 +137,7 @@ class SessionController:
         session = pool.get()
         return session.connection
 
-    def session_cleaner(self):
+    def session_cleaner(self) -> None:
         """
         Эта функция удаляет все сеансы старше текущего времени за вычетом переменной session_timeout.
         """
@@ -140,13 +149,13 @@ class SessionController:
 
             time.sleep(30)
 
-    def run_session_cleaner(self):
+    def run_session_cleaner(self) -> None:
         self.__cleaner_running = True
         threading.Thread(
             target=SessionController.session_cleaner,
             args=(self,),
             daemon=True,
-            name="Session Cleaner",
+            name="Devices connections cleaner",
         ).start()
 
 
