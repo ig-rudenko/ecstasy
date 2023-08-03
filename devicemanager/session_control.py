@@ -80,6 +80,13 @@ class ConnectionPool:
             conn.close()
         self._pool = []
 
+    def clean_unavailable(self) -> None:
+        active_pool = []
+        for conn in self._pool:
+            if conn.alive:
+                active_pool.append(conn)
+        self._pool = active_pool
+
     def __iter__(self):
         return iter(self._pool)
 
@@ -143,6 +150,7 @@ class SessionController:
         """
         while self.__cleaner_running:
             for ip, pool in tuple(self._sessions.items()):
+                pool.clean_unavailable()
                 if not pool.available:
                     pool.close_all()
                     del self._sessions[ip]

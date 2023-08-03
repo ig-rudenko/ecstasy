@@ -3,7 +3,6 @@
 """
 import re
 from dataclasses import dataclass
-from typing import Union
 
 import pexpect
 from .vendors import *
@@ -102,7 +101,6 @@ class DeviceFactory:
         self.ip = ip
         self.session = None
         self.snmp_community = snmp_community
-        self.device_connection: Union[BaseDevice, None] = None
         self.protocol = protocol
 
         if isinstance(auth_obj, list):
@@ -131,10 +129,10 @@ class DeviceFactory:
 
     def _get_device_session(self) -> BaseDevice:
         if self.protocol == "ssh":
-            session = self._connect_by_ssh()
+            self.session = self._connect_by_ssh()
         else:
-            session = self._connect_by_telnet()
-        return self.get_device(session)
+            self.session = self._connect_by_telnet()
+        return self.get_device(self.session)
 
     def get_device(self, session) -> BaseDevice:
         """
@@ -391,7 +389,7 @@ class DeviceFactory:
                     self.password = password
                     break
 
-            except (pexpect.EOF, pexpect.TIMEOUT) as exc:
+            except Exception as exc:
                 if session is not None and session.isalive():
                     session.close()
                 raise exc
@@ -423,7 +421,7 @@ class DeviceFactory:
                 session.close()
                 raise DeviceLoginError(status, ip=self.ip)
 
-        except (pexpect.EOF, pexpect.TIMEOUT) as exc:
+        except Exception as exc:
             if session is not None and session.isalive():
                 session.close()
             raise exc
@@ -522,6 +520,5 @@ class DeviceFactory:
         ## При выходе из контекстного менеджера завершаем сессию
         """
 
-        if not self._session_global and self.device_connection:
-            self.device_connection.session.close()
-            del self
+        if self.session and self.session.isalive():
+            self.session.close()

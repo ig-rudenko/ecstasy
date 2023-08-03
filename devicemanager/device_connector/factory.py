@@ -151,7 +151,7 @@ class DeviceSessionFactory:
         # Но для начала очистим пул от возможных не сброшенных подключений.
         DEVICE_SESSIONS.clear_pool(self.ip)
         DEVICE_SESSIONS.add_connections_to_pool(
-            self.ip, pool_size=self.pool_size, connections=connections
+            self.ip, pool_size=self.pool_size, connections=self.connections
         )
 
         return self.connections[0]
