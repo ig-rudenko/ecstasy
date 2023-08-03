@@ -3,14 +3,13 @@ import logging
 import os
 import pathlib
 from typing import TypedDict
-
 from flask import Flask, after_this_request
 from flask import request, jsonify, send_file
 
-from devicemanager.dc import DeviceFactory, SimpleAuthObject
-from devicemanager import snmp
+from devicemanager.dc import SimpleAuthObject
+from devicemanager.device_connector.exceptions import MethodError
+from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import BaseDeviceException
-
 
 app = Flask(__name__)
 TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN")
@@ -62,35 +61,25 @@ def connector(ip: str, method: str):
     print(ip, method, data)
 
     try:
-        with DeviceFactory(
+        factory = DeviceSessionFactory(
             ip=ip,
             protocol=connection.get("cmd_protocol"),
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
             pool_size=connection.get("pool_size", 3),
             snmp_community=connection.get("snmp_community"),
-        ) as session:
+            port_scan_protocol=connection.get("port_scan_protocol"),
+        )
+        params = data.get("params", {})
 
-            if method == "get_interfaces" and connection.get("port_scan_protocol") == "snmp":
-                return jsonify(
-                    {
-                        "data": snmp.get_interfaces(
-                            device_ip=ip, community=connection.get("snmp_community")
-                        )
-                    }
-                )
-            app.logger.info(f"{ip} {method}, {session.__class__.__name__}")
-            if hasattr(session, method):
-                session_method = getattr(session, method)
-                params = data.get("params", {})
-                method_data = session_method(**params)
+        try:
+            data = factory.perform_method(method, **params)
+            return handle_method_data(data)
 
-                return handle_method_data(method_data)
-
-            else:
-                resp = jsonify({"error": "no attr"})
-                resp.status_code = 400
-                return resp
+        except MethodError:
+            resp = jsonify({"error": "no attr"})
+            resp.status_code = 400
+            return resp
 
     except (BaseDeviceException, Exception) as err:
         app.logger.error(err.__class__.__name__, exc_info=err)

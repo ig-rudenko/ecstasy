@@ -57,7 +57,11 @@ urlpatterns = [
     #                Device Manager
     # ===========================================
     path("<device_name>/interface-info", device_manager.InterfaceInfoAPIView.as_view()),
-    path("<device_name>/port-status", device_manager.PortControlAPIView.as_view()),
+    path(
+        "<device_name>/port-status",
+        device_manager.PortControlAPIView.as_view(),
+        name="port-control",
+    ),
     path("<device_name>/macs", device_manager.MacListAPIView.as_view()),
     path("<device_name>/change-description", device_manager.ChangeDescription.as_view()),
     path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),

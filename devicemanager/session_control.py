@@ -2,7 +2,7 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from devicemanager.vendors import BaseDevice
 
@@ -10,19 +10,18 @@ from devicemanager.vendors import BaseDevice
 @dataclass
 class GlobalSession:
     connection: BaseDevice
-    expired: datetime
 
     @property
     def alive(self):
         return self.connection and self.connection.session and self.connection.session.isalive()
 
     @property
-    def available(self):
-        return self.expired >= datetime.now()
-
-    @property
     def non_locked(self):
         return not self.connection.lock
+
+    def close(self):
+        if self.alive:
+            self.connection.session.close()
 
 
 class ConnectionPool:
@@ -30,9 +29,17 @@ class ConnectionPool:
         self._size = max_size
         self._pool: List[GlobalSession] = []
         self._created = False
+        self.expired = datetime.now() + timedelta(minutes=2)
 
     def __bool__(self):
         return len(self._pool) > 0
+
+    def __len__(self):
+        return len(self._pool)
+
+    @property
+    def available(self):
+        return self.expired >= datetime.now()
 
     @property
     def is_created(self):
@@ -44,28 +51,24 @@ class ConnectionPool:
     def add(self, connection: GlobalSession):
         if len(self._pool) < self._size:
             self._pool.append(connection)
+        else:
+            connection.connection.session.close()
 
-    def get(self) -> GlobalSession:
+    def get(self) -> Optional[GlobalSession]:
+        if not self.available:
+            return None
+
         last_available = None
         for conn in self._pool:
-            if conn.available and conn.alive:
+            if conn.alive:
                 last_available = conn
                 if conn.non_locked:
                     return conn
         return last_available
 
-    def cleanup(self):
-        for conn in self._pool:
-            if not conn.available and conn.alive:
-                conn.connection.session.close()
-                self._pool.remove(conn)
-            elif not conn.available and not conn.alive:
-                self._pool.remove(conn)
-
     def close_all(self):
         for conn in self._pool:
-            if conn.alive:
-                conn.connection.session.close()
+            conn.close()
         self._pool = []
 
     def __iter__(self):
@@ -81,7 +84,7 @@ class SessionController:
         pool = self._sessions.get(device_ip, None)
         return pool is not None
 
-    def create_pool(self, device_ip: str, pool_size: int) -> ConnectionPool:
+    def get_or_create_pool(self, device_ip: str, pool_size: int) -> ConnectionPool:
         if not self._sessions.get(device_ip):
             self._sessions[device_ip] = ConnectionPool(max_size=pool_size)
         return self._sessions[device_ip]
@@ -102,26 +105,27 @@ class SessionController:
         if pool:
             pool.close_all()
 
-    def add_connections_to_pool(self, device_ip: str, pool_size: int, connections: List[BaseDevice]):
-        pool = self.create_pool(device_ip, pool_size)
+    def add_connections_to_pool(
+        self, device_ip: str, pool_size: int, connections: List[BaseDevice]
+    ):
+        pool = self.get_or_create_pool(device_ip, pool_size)
+
         for conn in connections:
-            pool.add(
-                GlobalSession(
-                    connection=conn,
-                    expired=datetime.now() + timedelta(minutes=2),
-                )
-            )
+            pool.add(GlobalSession(connection=conn))
+
         pool.set_created()
 
     def has_connection(self, device_ip) -> bool:
-        conn_pool = self._sessions.get(device_ip, [])
-        return any(conn.alive and conn.available for conn in conn_pool)
+        conn_pool = self._sessions.get(device_ip)
+        if conn_pool is not None:
+            return conn_pool.available and any(conn.alive for conn in conn_pool)
+        return False
 
     def get_connection(self, device_ip) -> BaseDevice:
         pool = self._sessions.get(device_ip)
+        # Продлеваем срок действия сессий еще на 2 минуты.
+        pool.expired = datetime.now() + timedelta(minutes=2)
         session = pool.get()
-        # Продлеваем срок действия сессии еще на 2 минуты.
-        session.expired = datetime.now() + timedelta(minutes=2)
         return session.connection
 
     def session_cleaner(self):
@@ -130,8 +134,8 @@ class SessionController:
         """
         while self.__cleaner_running:
             for ip, pool in tuple(self._sessions.items()):
-                pool.cleanup()
-                if not pool:
+                if not pool.available:
+                    pool.close_all()
                     del self._sessions[ip]
 
             time.sleep(30)

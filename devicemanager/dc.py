@@ -2,10 +2,8 @@
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
 import re
-import time
 from dataclasses import dataclass
-from threading import Thread
-from typing import List, Union
+from typing import Union
 
 import pexpect
 from .vendors import *
@@ -15,7 +13,6 @@ from .exceptions import (
     UnknownDeviceError,
     SSHConnectionError,
 )
-from .session_control import DEVICE_SESSIONS
 
 
 @dataclass
@@ -105,6 +102,7 @@ class DeviceFactory:
         pool_size: int = 1,
     ):
         self.ip = ip
+        self.session = None
         self.snmp_community = snmp_community
         self.device_connection: Union[BaseDevice, None] = None
         self.protocol = protocol
@@ -129,176 +127,20 @@ class DeviceFactory:
             self.password = [auth_obj.password]
             self.privilege_mode_password = auth_obj.secret
 
-    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30) -> BaseDevice:
+    def get_session(self) -> BaseDevice:
+        return self._get_device_session()
+
+    def __enter__(self) -> BaseDevice:
         """
         ## При входе в контекстный менеджер подключаемся к оборудованию.
         """
+        return self._get_device_session()
 
-        if not self._session_global:
-            return self._get_device_session(timeout=30)
-
-        start_time = time.perf_counter()
-
-        if DEVICE_SESSIONS.has_pool(device_ip=self.ip):
-            # Проверяем, что имеется пул, а если он еще создается, то необходимо подождать.
-            # Иначе будет множественное создание пулов.
-            # Ожидаем 30 сек.
-            while (
-                not DEVICE_SESSIONS.pool_is_created(self.ip)
-                and time.perf_counter() - start_time < 30.0
-            ):
-                # print("waiting for pool creation", time.perf_counter() - start_time)
-                time.sleep(0.3)
-            if time.perf_counter() - start_time > 30.0:
-                # Если не удалось дождаться пула более 30с, очищаем его и будем создавать заново
-                print(f"CLEAR POOL {self.ip}", time.perf_counter() - start_time)
-                DEVICE_SESSIONS.clear_pool(self.ip)
-
-        if DEVICE_SESSIONS.has_connection(self.ip):
-            print("GLOBAL")
-            return DEVICE_SESSIONS.get_connection(self.ip)
-
-        connections: List[BaseDevice] = []
-        threads = []
-        for i in range(self.pool_size):
-            print("START THREAD")
-            new_thread = Thread(
-                target=self._add_device_session,
-                args=(connections,),
-                name=f"Get session for ip {self.ip} - {i}",
-            )
-            threads.append(new_thread)
-            new_thread.start()
-
-        for i in range(len(threads)):
-            threads[i].join()
-
-        # Проверяем наличие ошибок
-        if all(isinstance(val, Exception) for val in connections):
-            DEVICE_SESSIONS.delete_pool(self.ip)
-            raise connections[0]
-        connections = [conn for conn in connections if not isinstance(conn, Exception)]
-
-        print("GOT CONNECTIONS")
-
-        # Сохраняем новые сессии, если было указано хранение глобально.
-        # Но для начала очистим пул от возможных не сброшенных подключений.
-        DEVICE_SESSIONS.clear_pool(self.ip)
-        DEVICE_SESSIONS.add_connections_to_pool(
-            self.ip, pool_size=self.pool_size, connections=connections
-        )
-
-        return connections[0]
-
-    def _add_device_session(self, result_list: list):
-        try:
-            result_list.append(self._get_device_session(timeout=30))
-        except Exception as exc:
-            result_list.append(exc)
-
-    def _get_device_session(self, timeout: int = 30) -> BaseDevice:
-        connected = False
-
+    def _get_device_session(self) -> BaseDevice:
         if self.protocol == "ssh":
-
-            for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
-
-                ssh_spawn = SSHSpawn(ip=self.ip, login=self.login[0])
-
-                session = ssh_spawn.get_session()
-
-                while not connected:
-                    expect_index = session.expect(
-                        [
-                            r"no matching key exchange method found",  # 0
-                            r"no matching host key type found",  # 1
-                            r"no matching cipher found|Unknown cipher",  # 2
-                            r"Are you sure you want to continue connecting",  # 3
-                            self.password_input_expect,  # 4
-                            self.prompt_expect,  # 5
-                            self.send_N_key,  # 6
-                            r"Connection closed",  # 7
-                            r"Incorrect login",  # 8
-                            pexpect.EOF,  # 9
-                        ],
-                        timeout=timeout,
-                    )
-
-                    print(expect_index)
-
-                    if expect_index == 0:
-                        # KexAlgorithms
-                        session.expect(pexpect.EOF)
-                        ssh_spawn.get_kex_algorithms(session.before.decode("utf-8"))
-                        session = ssh_spawn.get_session()
-
-                    elif expect_index == 1:
-                        # HostKeyAlgorithms
-                        session.expect(pexpect.EOF)
-                        ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
-                        session = ssh_spawn.get_session()
-
-                    elif expect_index == 2:
-                        # Cipher
-                        session.expect(pexpect.EOF)
-                        ssh_spawn.get_ciphers(session.before.decode("utf-8"))
-                        session = ssh_spawn.get_session()
-
-                    elif expect_index == 3:
-                        # Continue connection?
-                        session.sendline("yes")
-
-                    elif expect_index == 4:
-                        session.send(password + "\r")
-
-                    elif expect_index == 5:
-                        # Got prompt
-                        connected = True
-
-                    elif expect_index == 6:
-                        session.send("N\r")
-
-                    elif expect_index == 8:
-                        print(session.before)
-                        session.close()
-                        raise DeviceLoginError(
-                            "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
-                        )
-
-                    elif expect_index in {7, 9}:
-                        print(session.before)
-                        session.close()
-                        raise SSHConnectionError("SSH недоступен", ip=self.ip)
-
-                if connected:
-                    self.login = login
-                    self.password = password
-                    break
-
-        # TELNET
+            session = self._connect_by_ssh()
         else:
-            session = pexpect.spawn(f"telnet {self.ip}", timeout=10)
-
-            pre_set_index = None  # По умолчанию стартуем без начального индекса
-            status = "Не был передал логин/пароль"
-            for login, password in zip(self.login, self.password):
-
-                status = self.__login_to_by_telnet(session, login, password, timeout, pre_set_index)
-
-                if status == "Connected":
-                    # Сохраняем текущие введенные логин и пароль, они являются верными
-                    self.login = login
-                    self.password = password
-                    break
-
-                if "Неверный логин или пароль" in status:
-                    pre_set_index = 0  # Следующий ввод будет логином
-                    continue
-
-            else:
-                session.close()
-                raise DeviceLoginError(status, ip=self.ip)
-
+            session = self._connect_by_telnet()
         return self.get_device(session)
 
     def get_device(self, session) -> BaseDevice:
@@ -479,6 +321,121 @@ class DeviceFactory:
             return Juniper(session, self.ip, auth, snmp_community=self.snmp_community)
 
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
+
+    def _connect_by_ssh(self):
+        connected = False
+        session = None
+
+        for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
+
+            try:
+                ssh_spawn = SSHSpawn(ip=self.ip, login=self.login[0])
+                session = ssh_spawn.get_session()
+
+                while not connected:
+                    expect_index = session.expect(
+                        [
+                            r"no matching key exchange method found",  # 0
+                            r"no matching host key type found",  # 1
+                            r"no matching cipher found|Unknown cipher",  # 2
+                            r"Are you sure you want to continue connecting",  # 3
+                            self.password_input_expect,  # 4
+                            self.prompt_expect,  # 5
+                            self.send_N_key,  # 6
+                            r"Connection closed",  # 7
+                            r"Incorrect login",  # 8
+                            pexpect.EOF,  # 9
+                        ],
+                        timeout=30,
+                    )
+
+                    if expect_index == 0:
+                        # KexAlgorithms
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_kex_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
+
+                    elif expect_index == 1:
+                        # HostKeyAlgorithms
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
+
+                    elif expect_index == 2:
+                        # Cipher
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_ciphers(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
+
+                    elif expect_index == 3:
+                        # Continue connection?
+                        session.sendline("yes")
+
+                    elif expect_index == 4:
+                        session.send(password + "\r")
+
+                    elif expect_index == 5:
+                        # Got prompt
+                        connected = True
+
+                    elif expect_index == 6:
+                        session.send("N\r")
+
+                    elif expect_index == 8:
+                        print(session.before)
+                        session.close()
+                        raise DeviceLoginError(
+                            "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
+                        )
+
+                    elif expect_index in {7, 9}:
+                        print(session.before)
+                        session.close()
+                        raise SSHConnectionError("SSH недоступен", ip=self.ip)
+
+                if connected:
+                    self.login = login
+                    self.password = password
+                    break
+
+            except (pexpect.EOF, pexpect.TIMEOUT) as exc:
+                if session is not None and session.isalive():
+                    session.close()
+                raise exc
+
+        return session
+
+    def _connect_by_telnet(self):
+        session = None
+        try:
+            session = pexpect.spawn(f"telnet {self.ip}", timeout=30)
+
+            pre_set_index = None  # По умолчанию стартуем без начального индекса
+            status = "Не был передал логин/пароль"
+            for login, password in zip(self.login, self.password):
+
+                status = self.__login_to_by_telnet(session, login, password, 30, pre_set_index)
+
+                if status == "Connected":
+                    # Сохраняем текущие введенные логин и пароль, они являются верными
+                    self.login = login
+                    self.password = password
+                    break
+
+                if "Неверный логин или пароль" in status:
+                    pre_set_index = 0  # Следующий ввод будет логином
+                    continue
+
+            else:
+                session.close()
+                raise DeviceLoginError(status, ip=self.ip)
+
+        except (pexpect.EOF, pexpect.TIMEOUT) as exc:
+            if session is not None and session.isalive():
+                session.close()
+            raise exc
+
+        return session
 
     def __login_to_by_telnet(
         self, session, login: str, password: str, timeout: int, pre_expect_index=None
