@@ -104,7 +104,9 @@ class EltexLTP(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP", snmp_community: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model="LTP", snmp_community: str = ""
+    ):
         super().__init__(session, ip, auth, model, snmp_community)
 
         # Проверяем, является ли модель LTP-4X.
@@ -332,9 +334,7 @@ class EltexLTP(BaseDevice):
                 # Выбираем запись ONT по индексу ONT ID - int(mac_line[0])
                 # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
                 # и добавляем VLAN, MAC и описание VLAN
-                data["onts_lines"][int(ont_id)][6].append(
-                    [vlan_id, mac, ""]
-                )
+                data["onts_lines"][int(ont_id)][6].append([vlan_id, mac, ""])
 
             return {
                 "type": "eltex-gpon",
@@ -363,8 +363,8 @@ class EltexLTP(BaseDevice):
         return "Этот порт нельзя установить в " + status
 
     @BaseDevice.lock_session
-    @_validate_port()
-    def set_description(self, port: str, desc: str) -> str:
+    @_validate_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -394,6 +394,8 @@ class EltexLTP(BaseDevice):
         :return: Вывод команды смены описания
         """
 
+        desc = self.clear_description(desc)
+
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
@@ -415,11 +417,18 @@ class EltexLTP(BaseDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
-            # Возвращаем строку с результатом работы и сохраняем конфигурацию
-            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+            return {
+                "description": desc,
+                "port": port,
+                "status": "changed" if desc else "cleared",
+                "saved": self.save_config(),
+            }
 
-        return ""
+        return {
+            "port": port,
+            "status": "fail",
+            "error": "Неверный порт",
+        }
 
     @BaseDevice.lock_session
     @_validate_port()

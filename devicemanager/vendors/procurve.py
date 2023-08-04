@@ -75,8 +75,8 @@ class ProCurve(BaseDevice):
     def save_config(self):
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        return ""
+    def set_description(self, port: str, desc: str) -> dict:
+        return {"status": "fail", "error": "Изменение описания недоступно"}
 
     def get_port_info(self, port: str) -> dict:
         return {}

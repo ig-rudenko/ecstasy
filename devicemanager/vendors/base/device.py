@@ -53,7 +53,7 @@ class AbstractDevice(ABC):
         """Сохраняем конфигурацию оборудования"""
 
     @abstractmethod
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """Изменяем описание порта"""
 
     @abstractmethod

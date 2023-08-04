@@ -173,23 +173,28 @@ class ChangeDescription(APIView):
         session = dev.connect()
         set_description_status = session.set_description(port=port, desc=new_description)
 
-        if "Неверный порт" in set_description_status:
-            return Response({"detail": f"Неверный порт {port}"}, status=400)
-
-        # Проверяем результат изменения описания
-        if "Max length" in set_description_status:
-            # Описание слишком длинное.
-            # Находим в строке "Max length:32" число "32"
-            max_length = set_description_status.split(":")[1]
-            if max_length.isdigit():
-                max_length = int(max_length)
-            else:
-                max_length = 32
-            raise ValidationError(
-                {"detail": f"Слишком длинное описание! Укажите не более {max_length} символов."}
+        if set_description_status.error:
+            return Response(
+                {"detail": f"{set_description_status.error}, port={port}"},
+                status=400 if set_description_status.error == "Неверный порт" else 500,
             )
 
-        return Response({"description": new_description})
+        if set_description_status.max_length:
+            # Если есть данные, что описание слишком длинное.
+            raise ValidationError(
+                {
+                    "detail": "Слишком длинное описание! "
+                    f"Укажите не более {set_description_status.max_length} символов."
+                }
+            )
+
+        return Response(
+            {
+                "description": set_description_status.description,
+                "port": set_description_status.port,
+                "saved": set_description_status.saved,
+            }
+        )
 
 
 class MacListAPIView(APIView):

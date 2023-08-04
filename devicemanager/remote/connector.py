@@ -11,7 +11,7 @@ from devicemanager.vendors.base.types import (
     T_MACList,
     T_InterfaceVLANList,
     T_InterfaceList,
-    T_MACTable,
+    T_MACTable, SetDescriptionResult,
 )
 
 
@@ -105,8 +105,9 @@ class RemoteDevice(AbstractDevice):
     def save_config(self):
         return self._remote_call("save_config")
 
-    def set_description(self, port: str, desc: str) -> str:
-        return self._remote_call("set_description", port=port, desc=desc)
+    def set_description(self, port: str, desc: str) -> SetDescriptionResult:
+        result = self._remote_call("set_description", port=port, desc=desc)
+        return SetDescriptionResult(**result)
 
     def get_port_info(self, port: str) -> dict:
         return self._remote_call("get_port_info", port=port)

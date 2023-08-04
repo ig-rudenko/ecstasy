@@ -68,8 +68,8 @@ class IskratelControl(BaseDevice):
     def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        pass
+    def set_description(self, port: str, desc: str) -> dict:
+        return {}
 
     def get_port_info(self, port: str) -> dict:
         pass
@@ -494,7 +494,7 @@ class IskratelMBan(BaseDevice):
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -511,16 +511,30 @@ class IskratelMBan(BaseDevice):
 
         port_type, port_number = self.validate_port(port)
         if port_type is None:
-            return "Неверный порт!"
+            return {
+                "error": "Неверный порт",
+                "status": "fail",
+                "port": port,
+            }
 
         desc = self.clear_description(desc)
 
         if len(desc) > 32:
-            return "Max length:32"
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": 32,
+            }
 
         self.send_command(f"set dsl port {port_number} name {desc}", expect_command=False)
 
-        return f'Description has been {"changed" if desc else "cleared"}.'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": "no",
+        }
 
     @BaseDevice.lock_session
     def change_profile(self, port: str, profile_index: int) -> str:

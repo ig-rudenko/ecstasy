@@ -297,8 +297,10 @@ class MikroTik(BaseDevice):
         """Автоматическое сохранение на Mikrotik"""
 
     @BaseDevice.lock_session
-    @mikrotik_validate_and_format_port()
-    def set_description(self, port: str, desc: str) -> str:
+    @mikrotik_validate_and_format_port(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         # Очищаем описание от запрещенных символов
         desc = self.clear_description(desc)
 
@@ -310,7 +312,12 @@ class MikroTik(BaseDevice):
             # Устанавливаем описание
             self.send_command(f'interface comment "{port}" comment="{desc}"')
 
-        return f'Description has been {"changed" if desc else "cleared"}. {self.SAVED_OK}'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.SAVED_OK,
+        }
 
     @BaseDevice.lock_session
     @mikrotik_validate_and_format_port()

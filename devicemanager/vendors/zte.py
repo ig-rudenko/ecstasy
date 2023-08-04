@@ -348,8 +348,10 @@ class ZTE(BaseDevice):
         return self.send_command(f"show port {port} statistics")
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_only_digit(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -369,7 +371,10 @@ class ZTE(BaseDevice):
         """
 
         if not self.__privileged:
-            return "Не привилегированный. Операция отклонена!"
+            return {
+                "status": "fail",
+                "error": "Не привилегированный. Операция отклонена!",
+            }
 
         desc = self.clear_description(desc)
 
@@ -383,10 +388,20 @@ class ZTE(BaseDevice):
         if "Parameter too long" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command(f"set port {port} description ?")
-            return "Max length:" + self.find_or_empty(r"maxsize:(\d+)", output)
+            max_length = self.find_or_empty(r"maxsize:(\d+)", output)
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": max_length,
+            }
 
-        self.lock = False
-        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return={})

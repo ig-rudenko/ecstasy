@@ -437,7 +437,7 @@ class Dlink(BaseDevice):
         return self.session.before.decode()
 
     @BaseDevice.lock_session
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -465,7 +465,7 @@ class Dlink(BaseDevice):
 
         valid_port = validate_port(port)
         if valid_port is None:
-            return "Неверный порт"
+            return {"error": "Неверный порт", "status": "fail", "port": port}
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -484,18 +484,32 @@ class Dlink(BaseDevice):
                 before_catch="desc",
             )
 
-        self.lock = False
-
         if "Next possible completions" in status:
             # Если длина описания больше чем разрешено на оборудовании
-            return "Max length:" + self.find_or_empty(r"<desc (\d+)>", status)
+            max_length = int(self.find_or_empty(r"<desc (\d+)>", status) or "0")
+            return {
+                "max_length": max_length,
+                "error": "Too long",
+                "port": port,
+                "status": "fail",
+            }
 
         if "Success" in status:  # Успешно поменяли описание
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
-            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+            return {
+                "description": desc,
+                "port": port,
+                "status": "changed" if desc else "cleared",
+                "saved": self.save_config(),
+            }
 
         # Уникальный случай
-        return status
+        return {
+            "description": desc,
+            "port": port,
+            "status": "fail",
+            "error": status,
+        }
 
     @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return={})

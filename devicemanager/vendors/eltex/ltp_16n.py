@@ -99,7 +99,9 @@ class EltexLTP16N(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP-16N", snmp_community: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model="LTP-16N", snmp_community: str = ""
+    ):
         super().__init__(session, ip, auth, model, snmp_community)
 
     @BaseDevice.lock_session
@@ -294,8 +296,8 @@ class EltexLTP16N(BaseDevice):
         return ""
 
     @BaseDevice.lock_session
-    @_validate_port()
-    def set_description(self, port: str, desc: str) -> str:
+    @_validate_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -324,6 +326,7 @@ class EltexLTP16N(BaseDevice):
         :param desc: Описание, которое вы хотите установить для порта
         :return: Вывод команды смены описания
         """
+        desc = self.clear_description(desc)
 
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
@@ -346,12 +349,18 @@ class EltexLTP16N(BaseDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
+            return {
+                "description": desc,
+                "port": port,
+                "status": "changed" if desc else "cleared",
+                "info": self.save_config(),
+            }
 
-            # Возвращаем строку с результатом работы и сохраняем конфигурацию
-            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
-
-        return ""
+        return {
+            "port": port,
+            "status": "fail",
+            "error": "Неверный порт",
+        }
 
     @BaseDevice.lock_session
     @_validate_port()

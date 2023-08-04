@@ -462,8 +462,10 @@ class Cisco(BaseDevice):
         return formatted_result
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -509,12 +511,20 @@ class Cisco(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
-        if "Invalid input detected" in res:
-            return "Invalid input detected"
 
-        self.lock = False
-        # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        if "Invalid input detected" in res:
+            return {
+                "status": "fail",
+                "port": port,
+                "error": "Invalid input detected",
+            }
+
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:

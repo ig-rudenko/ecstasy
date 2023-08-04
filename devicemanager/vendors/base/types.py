@@ -1,6 +1,6 @@
 import pathlib
 from enum import Enum
-from typing import List, Tuple, Literal, TypedDict
+from typing import List, Tuple, Literal, TypedDict, NamedTuple
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"
@@ -70,3 +70,12 @@ class SystemInfo(TypedDict):
     vendor: str
     model: str
     serialno: str
+
+
+class SetDescriptionResult(NamedTuple):
+    status: Literal["changed", "cleared", "fail"]
+    description: str = ""
+    saved: str = ""
+    port: str = ""
+    error: str = ""
+    max_length: int = 0

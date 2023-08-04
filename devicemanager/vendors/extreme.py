@@ -289,8 +289,10 @@ class Extreme(BaseDevice):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_only_digit(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -320,8 +322,13 @@ class Extreme(BaseDevice):
             )
 
         self.lock = False
-        # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        # Возвращаем результат работы и сохраняем конфигурацию
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def get_port_info(self, port: str) -> dict:
         return {"type": "text", "data": ""}

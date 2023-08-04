@@ -484,8 +484,10 @@ class Huawei(BaseDevice):
         return config
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -532,14 +534,25 @@ class Huawei(BaseDevice):
         if "Wrong parameter found" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
-            return "Max length:" + self.find_or_empty(r"no more than (\d+) characters", output)
+            max_length = int(self.find_or_empty(r"no more than (\d+) characters", output) or "0")
+            return {
+                "max_length": max_length,
+                "error": "Too long",
+                "port": port,
+                "status": "fail",
+            }
 
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.lock = False
-        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def __parse_virtual_cable_test_data(self, data: str) -> dict:
         """
