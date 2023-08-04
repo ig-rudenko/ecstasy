@@ -347,10 +347,10 @@ export default {
           .then(response => response.json())
           .then(
             respData => {
-              if (respData.error) {
+              if (respData.detail) {
                   console.log("error", respData)
                   toastInfo.title= "ERROR"
-                  toastInfo.message = respData.error
+                  toastInfo.message = respData.detail
                   toastInfo.color = "#cb0707"
               } else {
                   toastInfo.title= `Порт: ${respData.port}`

@@ -93,6 +93,10 @@ class ADSLProfileSerializer(serializers.Serializer):
         pass
 
 
+class RequiredBooleanField(serializers.BooleanField):
+    default_empty_html = serializers.empty
+
+
 class PortControlSerializer(serializers.Serializer):
     """
     ## Cериализатор для изменения статуса порта
@@ -100,7 +104,7 @@ class PortControlSerializer(serializers.Serializer):
 
     port = serializers.CharField(max_length=50, required=True)
     status = serializers.ChoiceField(choices=["up", "down", "reload"], required=True)
-    save = serializers.BooleanField(required=True)
+    save = RequiredBooleanField(required=True)
 
     def update(self, instance, validated_data):
         pass

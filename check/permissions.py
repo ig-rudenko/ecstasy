@@ -1,6 +1,6 @@
 from functools import wraps
 
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 
 from . import models
 
@@ -31,7 +31,7 @@ def profile_permission(required_perm=models.Profile.READ):
         def _wrapper(request, *args, **kwargs):
             # Проверяем авторизацию пользователя
             if not request.user.is_authenticated:
-                return HttpResponseForbidden()  # Неавторизованный
+                return HttpResponse(status=401)  # Неавторизованный
 
             required_perm_idx = all_permissions.index(required_perm)
 

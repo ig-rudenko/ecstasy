@@ -4,6 +4,7 @@ import orjson
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -33,6 +34,10 @@ class PortControlAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PortControlSerializer
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.port_desc = ""
+
     @except_connection_errors
     def post(self, request, device_name: str):
         """
@@ -47,39 +52,10 @@ class PortControlAPIView(generics.GenericAPIView):
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
-        # Смотрим интерфейсы, которые сохранены в БД
-        interfaces_storage = get_object_or_404(DevicesInfo, dev__name=device_name)
-        # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
-        interfaces = Interfaces(orjson.loads(interfaces_storage.interfaces))
-
-        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        port_desc: str = interfaces[port_name].desc
-
-        # Если не суперпользователь, то нельзя изменять состояние определенных портов
-        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(port_desc):
-            return Response(
-                {"error": "Запрещено изменять состояние данного порта!"},
-                status=403,
-            )
-
         model_dev = get_object_or_404(models.Devices, name=device_name)
 
         # Есть ли у пользователя доступ к группе данного оборудования
         self.check_object_permissions(request, model_dev)
-
-        # Если недостаточно привилегий для изменения статуса порта
-        if request.user.profile.perm_level < 2 and port_status in ["up", "down"]:
-            # Логи
-            log(
-                request.user,
-                model_dev,
-                f'Tried to set port {port_name} ({serializer.validated_data["desc"]}) '
-                f"to the {port_status} state, but was refused \n",
-            )
-            return Response(
-                {"error": "У вас недостаточно прав, для изменения состояния порта!"},
-                status=403,
-            )
 
         # Если оборудование Недоступно
         if not model_dev.available:
@@ -102,14 +78,51 @@ class PortControlAPIView(generics.GenericAPIView):
                 save_config=save_config,
             )
 
+        if "Неверный порт" in port_change_status:
+            return Response({"error": port_change_status}, status=400)
+
         # Логи
         log(
             request.user,
             model_dev,
-            f"{port_status} port {port_name} ({port_desc}) \n{port_change_status}",
+            f"{port_status} port {port_name} ({self.port_desc}) \n{port_change_status}",
         )
 
         return Response(serializer.validated_data, status=200)
+
+    def check_object_permissions(self, request, device) -> None:
+        # Смотрим интерфейсы, которые сохранены в БД
+        dev_info, _ = DevicesInfo.objects.get_or_create(dev=device)
+
+        if dev_info.interfaces is None:
+            # Собираем интерфейсы с оборудования.
+            interfaces = Interfaces(device.connect().get_interfaces())
+        else:
+            # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
+            interfaces = Interfaces(orjson.loads(dev_info.interfaces))
+
+        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
+        self.port_desc: str = interfaces[self.request.data["port"]].desc
+
+        # Если не суперпользователь, то нельзя изменять состояние определенных портов
+        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(self.port_desc):
+            raise PermissionDenied(
+                detail="Запрещено изменять состояние данного порта!",
+            )
+
+        # Если недостаточно привилегий для изменения статуса порта
+        if request.user.profile.perm_level < 2 and request.data["status"] in ["up", "down"]:
+            # Логи
+            log(
+                request.user,
+                device,
+                f"Tried to set port {request.data['port']} ({self.port_desc}) "
+                f"to the {request.data['status']} state, but was refused \n",
+            )
+
+            raise PermissionDenied(
+                detail="У вас недостаточно прав, для изменения состояния порта!",
+            )
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
