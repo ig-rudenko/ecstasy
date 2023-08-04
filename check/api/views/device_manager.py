@@ -173,12 +173,6 @@ class ChangeDescription(APIView):
         session = dev.connect()
         set_description_status = session.set_description(port=port, desc=new_description)
 
-        if set_description_status.error:
-            return Response(
-                {"detail": f"{set_description_status.error}, port={port}"},
-                status=400 if set_description_status.error == "Неверный порт" else 500,
-            )
-
         if set_description_status.max_length:
             # Если есть данные, что описание слишком длинное.
             raise ValidationError(
@@ -186,6 +180,12 @@ class ChangeDescription(APIView):
                     "detail": "Слишком длинное описание! "
                     f"Укажите не более {set_description_status.max_length} символов."
                 }
+            )
+
+        if set_description_status.error:
+            return Response(
+                {"detail": f"{set_description_status.error}, port={port}"},
+                status=400 if set_description_status.error == "Неверный порт" else 500,
             )
 
         return Response(
