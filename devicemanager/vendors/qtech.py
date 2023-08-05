@@ -402,6 +402,7 @@ class Qtech(BaseDevice):
                 "max_length": max_length,
             }
 
+        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return {
             "description": desc,

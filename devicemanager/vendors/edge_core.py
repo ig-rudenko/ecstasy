@@ -418,6 +418,7 @@ class EdgeCore(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
+        self.lock = False
         if "Invalid parameter value/range" in res:
             # Длина описания больше допустимого у Edge-Core 64
             return {

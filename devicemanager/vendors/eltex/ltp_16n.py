@@ -349,6 +349,7 @@ class EltexLTP16N(BaseDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
+            self.lock = False
             return {
                 "description": desc,
                 "port": port,

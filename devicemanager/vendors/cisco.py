@@ -512,6 +512,8 @@ class Cisco(BaseDevice):
 
         self.session.sendline("end")  # Выходим из режима редактирования
 
+        self.lock = False
+
         if "Invalid input detected" in res:
             return {
                 "status": "fail",

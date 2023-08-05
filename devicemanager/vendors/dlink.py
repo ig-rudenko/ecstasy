@@ -494,6 +494,7 @@ class Dlink(BaseDevice):
                 "status": "fail",
             }
 
+        self.lock = False
         if "Success" in status:  # Успешно поменяли описание
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return {

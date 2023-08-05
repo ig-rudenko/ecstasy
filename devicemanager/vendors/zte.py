@@ -396,6 +396,7 @@ class ZTE(BaseDevice):
                 "max_length": max_length,
             }
 
+        self.lock = False
         return {
             "description": desc,
             "port": port,
