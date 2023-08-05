@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Literal
 
 import orjson
@@ -237,24 +238,25 @@ class MacListAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        session = device.connect()
         macs = []  # Итоговый список
-        vlan_passed = {}  # Словарь уникальных VLAN
-        for vid, mac in session.get_mac(port):  # Смотрим VLAN и MAC
-            # Если еще не искали такой VLAN
-            if vid not in vlan_passed:
-                # Ищем название VLAN'a
-                try:
-                    vlan_name = VlanName.objects.get(vid=int(vid)).name
-                except (ValueError, VlanName.DoesNotExist):
-                    vlan_name = ""
-                # Добавляем в множество вланов, которые участвовали в поиске имени
-                vlan_passed[vid] = vlan_name
-
-            # Обновляем
-            macs.append({"vlanID": vid, "mac": mac, "vlanName": vlan_passed[vid]})
+        for vid, mac in device.connect().get_mac(port):  # Смотрим VLAN и MAC
+            macs.append(
+                {
+                    "vlanID": vid,
+                    "mac": mac,
+                    "vlanName": self.get_vlan_name(vid),
+                }
+            )
 
         return Response({"count": len(macs), "result": macs})
+
+    @staticmethod
+    @lru_cache(maxsize=35)
+    def get_vlan_name(vlan_id: int) -> str:
+        try:
+            return VlanName.objects.get(vid=int(vlan_id)).name
+        except (ValueError, VlanName.DoesNotExist):
+            return ""
 
 
 class CableDiagAPIView(APIView):

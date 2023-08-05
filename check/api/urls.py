@@ -62,7 +62,7 @@ urlpatterns = [
         device_manager.PortControlAPIView.as_view(),
         name="port-control",
     ),
-    path("<device_name>/macs", device_manager.MacListAPIView.as_view()),
+    path("<device_name>/macs", device_manager.MacListAPIView.as_view(), name="mac-list"),
     path(
         "<device_name>/change-description",
         device_manager.ChangeDescriptionAPIView.as_view(),

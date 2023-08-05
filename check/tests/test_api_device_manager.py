@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 
 from devicemanager.vendors.base.types import SetDescriptionResult
 from devicemanager.vendors.base.device import BaseDevice
-from net_tools.models import DevicesInfo
+from net_tools.models import DevicesInfo, VlanName
 from ..models import Devices, DeviceGroup, User, UsersActions
 
 
@@ -397,3 +397,56 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             0,
             msg="Лишняя запись лога об слишком длинном запросе изменения описания на порту",
         )
+
+
+class MacListAPIViewTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user: User = User.objects.create_user(username="test_user", password="password")
+        cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.user.profile.devices_groups.add(cls.group)
+        cls.device: Devices = Devices.objects.create(
+            ip="172.31.176.21",
+            name="dev1",
+            group=cls.group,
+        )
+
+    @patch("check.models.Devices.connect")
+    def test_mac_list(self, device_connect: Mock):
+        self.client.force_login(user=self.user)
+
+        vlan_name = "some_vlan_name"
+        device_connect.return_value.get_mac.return_value = [
+            ("1051", "00-04-96-51-AD-3D"),
+            ("1051", "00-04-96-52-A5-FB"),
+            ("1051", "00-04-96-52-A5-5B"),
+        ]
+        # Добавляем название VLAN
+        VlanName.objects.create(vid=1051, name=vlan_name)
+
+        with self.assertNumQueries(6):
+            # 1. django_session
+            # 2. auth_user
+            # 3. devices
+            # 4. user_profile
+            # 5. devices_group
+            # 6. vlan_name (Только один раз, проверка кэша)
+            resp = self.client.get(
+                reverse("devices-api:mac-list", args=(self.device.name,)) + "?port=eth1"
+            )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertDictEqual(
+            resp.data,
+            {
+                "count": 3,
+                "result": [
+                    {"vlanID": "1051", "mac": "00-04-96-51-AD-3D", "vlanName": vlan_name},
+                    {"vlanID": "1051", "mac": "00-04-96-52-A5-FB", "vlanName": vlan_name},
+                    {"vlanID": "1051", "mac": "00-04-96-52-A5-5B", "vlanName": vlan_name},
+                ],
+            },
+        )
+
+        self.assertEqual(device_connect.call_count, 1)
+        device_connect.return_value.get_mac.assert_called_once_with("eth1")
