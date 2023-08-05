@@ -63,7 +63,11 @@ urlpatterns = [
         name="port-control",
     ),
     path("<device_name>/macs", device_manager.MacListAPIView.as_view()),
-    path("<device_name>/change-description", device_manager.ChangeDescription.as_view()),
+    path(
+        "<device_name>/change-description",
+        device_manager.ChangeDescriptionAPIView.as_view(),
+        name="set-description",
+    ),
     path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),
     path("<device_name>/set-poe-out", device_manager.SetPoEAPIView.as_view()),
     path("<device_name>/change-dsl-profile", device_manager.ChangeDSLProfileAPIView.as_view()),

@@ -5,7 +5,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -126,7 +126,7 @@ class PortControlAPIView(generics.GenericAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDescription(APIView):
+class ChangeDescriptionAPIView(APIView):
     """
     ## Изменяем описание на порту у оборудования
     """
@@ -167,11 +167,10 @@ class ChangeDescription(APIView):
         # Проверяем права доступа пользователя к оборудованию
         self.check_object_permissions(request, dev)
 
-        new_description = self.request.data.get("description")
+        new_description = self.request.data.get("description", "")
         port = self.request.data.get("port")
 
-        session = dev.connect()
-        set_description_status = session.set_description(port=port, desc=new_description)
+        set_description_status = dev.connect().set_description(port=port, desc=new_description)
 
         if set_description_status.max_length:
             # Если есть данные, что описание слишком длинное.
@@ -182,11 +181,14 @@ class ChangeDescription(APIView):
                 }
             )
 
+        log(request.user, dev, str(set_description_status))
+
         if set_description_status.error:
             return Response(
                 {"detail": f"{set_description_status.error}, port={port}"},
                 status=400 if set_description_status.error == "Неверный порт" else 500,
             )
+        # Логи
 
         return Response(
             {

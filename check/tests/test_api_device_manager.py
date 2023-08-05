@@ -5,6 +5,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from devicemanager.vendors.base.types import SetDescriptionResult
+from devicemanager.vendors.base.device import BaseDevice
 from net_tools.models import DevicesInfo
 from ..models import Devices, DeviceGroup, User, UsersActions
 
@@ -218,4 +220,180 @@ class PortControlAPIViewTestCase(APITestCase):
             ).count(),
             1,
             msg="Нет записи в логах смене состояния порта",
+        )
+
+
+class ChangeDescriptionAPIViewTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user: User = User.objects.create_user(username="test_user", password="password")
+        cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.user.profile.devices_groups.add(cls.group)
+        cls.device: Devices = Devices.objects.create(
+            ip="172.31.176.21",
+            name="dev1",
+            group=cls.group,
+        )
+
+    def setUp(self) -> None:
+        self.client.force_login(user=self.user)
+
+    def test_set_description_forbidden(self):
+        resp = self.client.post(
+            reverse("devices-api:set-description", args=(self.device.name,)),
+            data={"port": "eth1", "description": "new_desc"},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("check.models.Devices.connect")
+    def test_clear_description(self, device_connect: Mock):
+        # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
+        self.user.profile.permissions = self.user.profile.BRAS
+        self.user.profile.save()
+
+        # Подготовка данных.
+        set_description_result = SetDescriptionResult(
+            status="cleared",
+            description="",
+            saved="Saved OK",
+            port="eth1",
+        )
+        device_connect.return_value.set_description.return_value = set_description_result
+        data = {"port": "eth1"}
+
+        # Отправка запроса.
+        resp = self.client.post(
+            reverse("devices-api:set-description", args=(self.device.name,)),
+            data=data,
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        # Кол-во вызванных методов.
+        self.assertEqual(device_connect.call_count, 1)
+        # Правильность вызова `set_description`.
+        device_connect.return_value.set_description.assert_called_once_with(
+            port=data["port"],
+            desc="",  # Пустое описание.
+        )
+
+        self.assertDictEqual(
+            resp.data,
+            {
+                "description": set_description_result.description,
+                "port": set_description_result.port,
+                "saved": set_description_result.saved,
+            },
+            msg="В ответе API неверные данные",
+        )
+
+        # Имеется запись в логах.
+        self.assertEqual(
+            UsersActions.objects.filter(
+                device=self.device,
+                user=self.user,
+                action=str(set_description_result),
+            ).count(),
+            1,
+            msg="Нет записи лога об очищении описания на порту",
+        )
+
+    @patch("check.models.Devices.connect")
+    def test_set_description(self, device_connect: Mock):
+        # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
+        self.user.profile.permissions = self.user.profile.BRAS
+        self.user.profile.save()
+
+        # Подготовка данных.
+        description = "Новое описание"
+        formatted_description = BaseDevice.clear_description(description)
+        set_description_result = SetDescriptionResult(
+            status="cleared",
+            description=formatted_description,
+            saved="Saved OK",
+            port="eth1",
+        )
+        device_connect.return_value.set_description.return_value = set_description_result
+        data = {"port": "eth1", "description": description}
+
+        # Отправка запроса.
+        resp = self.client.post(
+            reverse("devices-api:set-description", args=(self.device.name,)),
+            data=data,
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        # Кол-во вызванных методов.
+        self.assertEqual(device_connect.call_count, 1)
+        # Правильность вызова `set_description`.
+        device_connect.return_value.set_description.assert_called_once_with(
+            port=data["port"],
+            desc=data["description"],
+        )
+
+        self.assertDictEqual(
+            resp.data,
+            {
+                "description": formatted_description,
+                "port": set_description_result.port,
+                "saved": set_description_result.saved,
+            },
+            msg="В ответе API неверные данные",
+        )
+
+        # Имеется запись в логах.
+        self.assertEqual(
+            UsersActions.objects.filter(
+                device=self.device,
+                user=self.user,
+                action=str(set_description_result),
+            ).count(),
+            1,
+            msg="Нет записи лога об изменении описания на порту",
+        )
+
+    @patch("check.models.Devices.connect")
+    def test_set_description_too_long(self, device_connect: Mock):
+        # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
+        self.user.profile.permissions = self.user.profile.BRAS
+        self.user.profile.save()
+
+        # Подготовка данных.
+        description = "Новое описание" * 100
+        set_description_result = SetDescriptionResult(
+            status="fail",
+            max_length=64,
+            port="eth1",
+        )
+        device_connect.return_value.set_description.return_value = set_description_result
+        data = {"port": "eth1", "description": description}
+
+        # Отправка запроса.
+        resp = self.client.post(
+            reverse("devices-api:set-description", args=(self.device.name,)),
+            data=data,
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(device_connect.call_count, 1)
+        device_connect.return_value.set_description.assert_called_once_with(
+            port=data["port"],
+            desc=data["description"],
+        )
+
+        self.assertDictEqual(
+            resp.data,
+            {
+                "detail": "Слишком длинное описание! "
+                f"Укажите не более {set_description_result.max_length} символов."
+            },
+            msg="В ответе API неверные данные",
+        )
+
+        # НЕ Имеется запись в логах.
+        self.assertEqual(
+            UsersActions.objects.count(),
+            0,
+            msg="Лишняя запись лога об слишком длинном запросе изменения описания на порту",
         )
