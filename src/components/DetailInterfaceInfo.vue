@@ -3,9 +3,16 @@
 
   <tr :style="interfaceStyles" :class="interfaceClasses">
 
-<!--       COMMENTS-->
     <td style="text-align: right">
-        <Comment :interface="interface" :register-comment-action="registerCommentAction" />
+
+      <div class="btn-group">
+        <!--       COMMENTS-->
+        <Comment :interface="interface" :register-comment-action="registerCommentAction"/>
+
+        <!-- Ссылка на графики в Zabbix -->
+        <GraphsLink :interface="interface"></GraphsLink>
+      </div>
+
     </td>
 
 <!--       ПОРТ-->
@@ -274,6 +281,7 @@ import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
+import GraphsLink from "./DeviceInfo/GraphsLink.vue";
 
 export default defineComponent({
   data() {
@@ -308,6 +316,7 @@ export default defineComponent({
     dynamicOpacity: {required: true, type: {"opacity": Number}},
   },
   components: {
+    GraphsLink,
     Pagination,
     ChangeDescription,
     PortControlButtons,

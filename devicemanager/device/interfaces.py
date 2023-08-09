@@ -4,8 +4,8 @@ from typing import List, Sequence, Optional
 
 import tabulate
 
-from ecstasy_project.settings import NON_ABON_INTERFACES_PATTERN
 from devicemanager.vendors.base.helpers import range_to_numbers
+from ecstasy_project.settings import NON_ABON_INTERFACES_PATTERN
 
 
 @dataclass
@@ -105,10 +105,17 @@ class Interfaces:
                 # Если был передан список, кортеж
                 elif isinstance(intf, (list, tuple)):
                     if len(intf) == 3:  # Без VLAN
-                        self.__interfaces.append(Interface(intf[0], intf[1], intf[2], []))
+                        self.__interfaces.append(
+                            Interface(intf[0].strip(), intf[1], intf[2].strip(), [])
+                        )
                     elif len(intf) == 4:  # + VLAN
                         self.__interfaces.append(
-                            Interface(intf[0], intf[1], intf[2], self._parse_vlans_line(intf[3]))
+                            Interface(
+                                intf[0].strip(),
+                                intf[1],
+                                intf[2].strip(),
+                                self._parse_vlans_line(intf[3]),
+                            )
                         )
 
                 # Если был передан объект Interface

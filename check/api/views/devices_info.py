@@ -1,27 +1,31 @@
-from django.urls import reverse
+import re
+
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
-from rest_framework.views import APIView
-from rest_framework import generics
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from requests import RequestException
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from check import models
 from app_settings.models import LogsElasticStackSettings
-from devicemanager.device import DeviceManager
-from devicemanager.device import ZabbixAPIConnection
-from net_tools.models import DevicesInfo as ModelDeviceInfo
+from check import models
 from check.interfaces_collector import (
     DeviceInterfacesCollectorMixin,
     DevicesInterfacesWorkloadCollector,
 )
+from check.logger import django_actions_logger
+from devicemanager.device import DeviceManager
+from devicemanager.device import ZabbixAPIConnection
+from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..decorators import except_connection_errors
-from ..permissions import DevicePermission
 from ..filters import DeviceFilter, DeviceInfoFilter
+from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer
 from ..swagger.schemas import (
     devices_interfaces_workload_list_api_doc,
@@ -187,6 +191,7 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
 
             self.add_comments(last_interfaces)
             self.add_devices_links(last_interfaces)
+            self.add_zabbix_graph_links(last_interfaces)
 
             return Response(
                 {
@@ -221,6 +226,7 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
         interfaces = self.device_collector.interfaces.json()
         self.add_devices_links(interfaces)
         self.add_comments(interfaces)
+        self.add_zabbix_graph_links(interfaces)
 
         return Response(
             {
@@ -294,6 +300,47 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
             ]
 
         return interfaces
+
+    def add_zabbix_graph_links(self, interfaces: list) -> list:
+        try:
+            with ZabbixAPIConnection().connect() as zbx:
+                host = zbx.host.get(output=["name"], filter={"name": self.device.name})
+                if not host:
+                    return interfaces
+
+                # Получаем все графики для данного узла сети.
+                host_id = host[0]["hostid"]
+                graphs = zbx.graph.get(hostids=[host_id])
+
+                for intf in interfaces:
+
+                    intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")
+                    intf_desc = intf["Description"]
+                    valid_graph_ids = []
+
+                    for g in graphs:
+                        # Ищем все графики, в которых упоминается description или название интерфейса.
+                        if (intf_desc and intf_desc in g["name"]) or intf_pattern.search(g["name"]):
+                            valid_graph_ids.append(g["graphid"])
+
+                    graphs_ids_params = ""
+                    # Создаем параметры URL для фильтрации только требуемых графиков.
+                    for graph_id in valid_graph_ids:
+                        graphs_ids_params += f"filter_graphids%5B%5D={graph_id}&"
+
+                    if graphs_ids_params:
+                        # Создаем ссылку на графики zabbix, если получилось их найти.
+                        intf["GraphsLink"] = (
+                            f"{ZabbixAPIConnection.ZABBIX_URL}/zabbix.php?"
+                            f"view_as=showgraph&action=charts.view&from=now-24h&to=now&"
+                            f"filter_hostids%5B%5D={host_id}&filter_search_type=0&"
+                            f"{graphs_ids_params}filter_set=1"
+                        )
+
+        except RequestException as exc:
+            django_actions_logger.error("Ошибка `add_zabbix_graph_links`", exc_info=exc)
+        finally:
+            return interfaces
 
 
 class DeviceInfoAPIView(APIView):
