@@ -6,7 +6,8 @@ on:
   pull_request:
     branches: [ "master" ]
 env:
-  DJANGO_SECRET_KEY: qwerty*!(#*JJSAJ_!@+uiop1234567890
+  DJANGO_SECRET_KEY: qwerty*!(#*JJSAJ_!@+uiop123sdasd12124567890
+  REDIS_CACHE_URL: localhost:6379/0
   DATABASES: |
       {
           "default": {
@@ -34,6 +35,10 @@ jobs:
           MYSQL_USER: "user"
           MYSQL_PASSWORD: "password"
           MYSQL_DATABASE: "ecstasy"
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
 
     strategy:
       max-parallel: 4
