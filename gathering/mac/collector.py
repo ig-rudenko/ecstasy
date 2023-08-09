@@ -8,6 +8,7 @@ from django.conf import settings
 
 from check.models import Devices
 from net_tools.models import DevicesInfo
+from devicemanager.dc import DeviceFactory
 from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
 from devicemanager.vendors.base.types import T_MACTable
 from app_settings.models import ZabbixConfig
@@ -26,7 +27,7 @@ class MacAddressTableGather:
 
         self.device: Devices = from_
 
-        # Установка атрибута normalize_interface для лямбда-функции, которая возвращает переданное ей значение.
+        # по умолчанию normalize_interface возвращает переданное ей значение.
         self.normalize_interface = lambda x: x
         self.table: T_MACTable = []
         self.interfaces: Interfaces = Interfaces()
@@ -34,7 +35,12 @@ class MacAddressTableGather:
 
         try:
             # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
-            with self.device.connect(make_session_global=False) as session:
+            with DeviceFactory(
+                ip=self.device.ip,
+                protocol=self.device.port_scan_protocol,
+                auth_obj=self.device.auth_group,
+                snmp_community=self.device.snmp_community,
+            ) as session:
                 # Если в сеансе есть функция с именем normalize_interface_name,
                 # установите атрибут normalize_interface для этой функции.
                 # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.

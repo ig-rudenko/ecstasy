@@ -7,13 +7,83 @@ from typing import Literal, Optional
 import pexpect
 from abc import ABC, abstractmethod
 
-from .types import DeviceAuthDict, T_InterfaceList, T_InterfaceVLANList, T_MACList
+from .types import DeviceAuthDict, T_InterfaceList, T_InterfaceVLANList, T_MACList, SystemInfo
 
 
-class BaseDevice(ABC):
+class AbstractDevice(ABC):
     """
-    Абстрактный базовый класс для устройств,
-    содержит обязательные методы и начальные параметры для выполнения удаленных команд
+    # Абстрактный класс для устройств.
+    Содержит обязательные методы для выполнения удаленных команд.
+    """
+
+    @abstractmethod
+    def get_interfaces(self) -> T_InterfaceList:
+        """
+        Интерфейсы на оборудовании
+
+        :return: ```[ ('name', 'status', 'desc'), ... ]```
+        """
+
+    @abstractmethod
+    def get_vlans(self) -> T_InterfaceVLANList:
+        """
+        Интерфейсы и VLAN на оборудовании
+
+        :return: ```[ ('name', 'status', 'desc', ['vlans', ...]), ... ]```
+        """
+
+    @abstractmethod
+    def get_mac(self, port: str) -> T_MACList:
+        """
+        Поиск маков на порту
+
+        :return: ```[ ('vid', 'mac'), ... ]```
+        """
+
+    @abstractmethod
+    def reload_port(self, port: str, save_config=True) -> str:
+        """Перезагрузка порта"""
+
+    @abstractmethod
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
+        """Изменение состояния порта"""
+
+    @abstractmethod
+    def save_config(self):
+        """Сохраняем конфигурацию оборудования"""
+
+    @abstractmethod
+    def set_description(self, port: str, desc: str) -> dict:
+        """Изменяем описание порта"""
+
+    @abstractmethod
+    def get_port_info(self, port: str) -> dict:
+        """Информация о порте"""
+
+    @abstractmethod
+    def get_port_type(self, port: str) -> str:
+        """Тип порта"""
+
+    @abstractmethod
+    def get_port_config(self, port: str) -> str:
+        """Конфигурация порта"""
+
+    @abstractmethod
+    def get_port_errors(self, port: str) -> str:
+        """Ошибки на порту"""
+
+    @abstractmethod
+    def get_device_info(self) -> dict:
+        """Словарь с информацией о нагрузке CPU, RAM, Flash, температуры и др."""
+
+    @abstractmethod
+    def get_system_info(self):
+        """Возвращает характеристики оборудования: MAC, Serial Number, Vendor, Model"""
+
+
+class BaseDevice(AbstractDevice, ABC):
+    """
+    # Базовый класс для устройств, все типы устройств должны наследоваться от него.
     """
 
     # Регулярное выражение, которое указывает на приглашение для ввода следующей команды
@@ -30,7 +100,7 @@ class BaseDevice(ABC):
     # Паттерн для управляющих последовательностей ANSI
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
         self.session: pexpect.spawn = session
         self.ip = ip
         self.model: str = model
@@ -39,7 +109,16 @@ class BaseDevice(ABC):
         self.serialno: str = ""
         self.os: str = ""
         self.os_version: str = ""
+        self.snmp_community = snmp_community
         self.lock = False
+
+    def get_system_info(self) -> SystemInfo:
+        return {
+            "mac": self.mac,
+            "vendor": self.vendor,
+            "model": self.model,
+            "serialno": self.serialno,
+        }
 
     @staticmethod
     def clear_description(desc: str) -> str:
@@ -266,63 +345,3 @@ class BaseDevice(ABC):
             # Убираем управляющие последовательности ANSI
             output += self.ansi_escape.sub("", self.session.before.decode(errors="ignore"))
         return output
-
-    @abstractmethod
-    def get_interfaces(self) -> T_InterfaceList:
-        """
-        Интерфейсы на оборудовании
-
-        :return: ```[ ('name', 'status', 'desc'), ... ]```
-        """
-
-    @abstractmethod
-    def get_vlans(self) -> T_InterfaceVLANList:
-        """
-        Интерфейсы и VLAN на оборудовании
-
-        :return: ```[ ('name', 'status', 'desc', ['vlans', ...]), ... ]```
-        """
-
-    @abstractmethod
-    def get_mac(self, port: str) -> T_MACList:
-        """
-        Поиск маков на порту
-
-        :return: ```[ ('vid', 'mac'), ... ]```
-        """
-
-    @abstractmethod
-    def reload_port(self, port: str, save_config=True) -> str:
-        """Перезагрузка порта"""
-
-    @abstractmethod
-    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
-        """Изменение состояния порта"""
-
-    @abstractmethod
-    def save_config(self):
-        """Сохраняем конфигурацию оборудования"""
-
-    @abstractmethod
-    def set_description(self, port: str, desc: str) -> str:
-        """Изменяем описание порта"""
-
-    @abstractmethod
-    def get_port_info(self, port: str) -> dict:
-        """Информация о порте"""
-
-    @abstractmethod
-    def get_port_type(self, port: str) -> str:
-        """Тип порта"""
-
-    @abstractmethod
-    def get_port_config(self, port: str) -> str:
-        """Конфигурация порта"""
-
-    @abstractmethod
-    def get_port_errors(self, port: str) -> str:
-        """Ошибки на порту"""
-
-    @abstractmethod
-    def get_device_info(self) -> dict:
-        """Словарь с информацией о нагрузке CPU, RAM, Flash, температуры и др."""

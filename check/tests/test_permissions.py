@@ -10,14 +10,10 @@ from check.api.permissions import DevicePermission
 class ReadPermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        u = User(username="test_user")
-        u.set_password("password")
-        u.save()
-
-    def setUp(self) -> None:
-        self.user = User.objects.get(username="test_user")
-        self.request = RequestFactory()
-        self.request.user = self.user
+        cls.request = RequestFactory()
+        cls.request.user = User.objects.create_user(
+            username="read_permission_user", password="password"
+        )
 
     def test_read_perms(self):
         @profile_permission(models.Profile.READ)
@@ -51,16 +47,11 @@ class ReadPermissionsDecoratorTest(TestCase):
 class RebootPermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        u = User(username="test_user")
-        u.set_password("password")
-        u.save()
-        u.profile.permissions = models.Profile.REBOOT
-        u.profile.save()
-
-    def setUp(self) -> None:
-        self.user = User.objects.get(username="test_user")
-        self.request = RequestFactory()
-        self.request.user = self.user
+        cls.request = RequestFactory()
+        user = User.objects.create_user(username="reboot_permission_user", password="password")
+        cls.request.user = user
+        user.profile.permissions = models.Profile.REBOOT
+        user.profile.save()
 
     def test_read_perms(self):
         @profile_permission(models.Profile.READ)
@@ -94,16 +85,11 @@ class RebootPermissionsDecoratorTest(TestCase):
 class UpDownPermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        u = User(username="test_user")
-        u.set_password("password")
-        u.save()
-        u.profile.permissions = models.Profile.UP_DOWN
-        u.profile.save()
-
-    def setUp(self) -> None:
-        self.user = User.objects.get(username="test_user")
-        self.request = RequestFactory()
-        self.request.user = self.user
+        cls.request = RequestFactory()
+        user = User.objects.create_user(username="up_down_permission_user", password="password")
+        cls.request.user = user
+        user.profile.permissions = models.Profile.UP_DOWN
+        user.profile.save()
 
     def test_read_perms(self):
         @profile_permission(models.Profile.READ)
@@ -137,16 +123,11 @@ class UpDownPermissionsDecoratorTest(TestCase):
 class BrasPermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        u = User(username="test_user")
-        u.set_password("password")
-        u.save()
-        u.profile.permissions = models.Profile.BRAS
-        u.profile.save()
-
-    def setUp(self) -> None:
-        self.user = User.objects.get(username="test_user")
-        self.request = RequestFactory()
-        self.request.user = self.user
+        cls.request = RequestFactory()
+        user = User.objects.create_user(username="bras_permission_user", password="password")
+        cls.request.user = user
+        user.profile.permissions = models.Profile.BRAS
+        user.profile.save()
 
     def test_read_perms(self):
         @profile_permission(models.Profile.READ)
@@ -190,7 +171,7 @@ class DevicePermissionTest(TestCase):
             name="test_device", ip="20.20.20.20", group=self.device_group
         )
         self.user = User(
-            username="testuser", email="testuser@example.com", password="secret"
+            username="device_permission_user", email="testuser@example.com", password="secret"
         )
         self.user.save()
 
@@ -219,7 +200,5 @@ class DevicePermissionTest(TestCase):
         )
 
         self.user.profile.devices_groups.add(self.device_group)
-        result = self.permission.has_object_permission(
-            Mock(user=self.user), None, other_device
-        )
+        result = self.permission.has_object_permission(Mock(user=self.user), None, other_device)
         self.assertFalse(result)

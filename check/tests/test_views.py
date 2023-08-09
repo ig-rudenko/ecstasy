@@ -14,13 +14,10 @@ class ShowDevicesNoAccessTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        test_user = User(username="test_user")
-        test_user.set_password("test_password")
-        test_user.save()
-
+        User.objects.create_user(username="show_devices_test_user", password="test_password")
         g = DeviceGroup.objects.create(name="test")
 
-        for i in range(1, 80):
+        for i in range(1, 4):
             Devices.objects.create(name=f"DeviceManager-{i}", ip=f"10.0.0.{i}", group=g)
 
     def test_redirect_if_not_logged_in(self):
@@ -28,8 +25,8 @@ class ShowDevicesNoAccessTest(TestCase):
         self.assertRedirects(resp, "/accounts/login/?next=/")
 
     def test_logged_in_uses_correct_template(self):
-        self.client.login(username="test_user", password="test_password")
+        self.client.login(username="show_devices_test_user", password="test_password")
         resp = self.client.get(reverse("home"))
 
-        self.assertEqual(resp.context["user"], User.objects.get(username="test_user"))
+        self.assertEqual(resp.context["user"], User.objects.get(username="show_devices_test_user"))
         self.assertTemplateUsed(resp, "home.html")

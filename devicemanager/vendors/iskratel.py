@@ -1,11 +1,12 @@
+import os
 import pathlib
 import re
+import shutil
 from functools import lru_cache
 from time import sleep
 from typing import Tuple, List, Optional
 
-from django.conf import settings as django_settings
-
+from gathering.ftp import FTPCollector
 from gathering.ftp.exceptions import NotFound
 from .base.device import BaseDevice
 from .base.types import (
@@ -67,8 +68,8 @@ class IskratelControl(BaseDevice):
     def set_port(self, port: str, status: str, save_config=True) -> str:
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        pass
+    def set_description(self, port: str, desc: str) -> dict:
+        return {}
 
     def get_port_info(self, port: str) -> dict:
         pass
@@ -99,8 +100,8 @@ class IskratelMBan(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Iskratel"
 
-    def __init__(self, session, ip: str, auth: dict, model):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
         self.dsl_profiles = self._get_dsl_profiles()
 
     def _get_dsl_profiles(self) -> list:
@@ -306,7 +307,7 @@ class IskratelMBan(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        output = self.send_command("show bridge mactable")
+        output = self.send_command("show bridge mactable", expect_command=False)
         parsed: List[Tuple[str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output
         )
@@ -493,7 +494,7 @@ class IskratelMBan(BaseDevice):
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -510,16 +511,30 @@ class IskratelMBan(BaseDevice):
 
         port_type, port_number = self.validate_port(port)
         if port_type is None:
-            return "Неверный порт!"
+            return {
+                "error": "Неверный порт",
+                "status": "fail",
+                "port": port,
+            }
 
         desc = self.clear_description(desc)
 
         if len(desc) > 32:
-            return "Max length:32"
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": 32,
+            }
 
         self.send_command(f"set dsl port {port_number} name {desc}", expect_command=False)
 
-        return f'Description has been {"changed" if desc else "cleared"}.'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": "no",
+        }
 
     @BaseDevice.lock_session
     def change_profile(self, port: str, profile_index: int) -> str:
@@ -567,20 +582,15 @@ class IskratelMBan(BaseDevice):
         # > show system info
         pass
 
-    def get_current_configuration(self, local_folder_path: pathlib.Path) -> pathlib.Path:
+    def get_current_configuration(self) -> pathlib.Path:
         """
-        Эта функция загружает с FTP-сервера папку конфигурации, соответствующую определенному шаблону,
-         и возвращает ее локальный путь.
-
-        :param local_folder_path: Параметр local_folder_path представляет собой объект pathlib.Path, представляющий
-         локальный каталог, в котором будет сохранена загруженная папка конфигурации
-        :return: объект `pathlib.Path`, представляющий локальный каталог, в который были загружены файлы конфигурации.
-         Если функция встречает исключение socket.timeout, она возвращает None.
+        Эта функция загружает с FTP-сервера папку конфигурации
         """
 
-        ftp_collector = django_settings.FTP_COLLECTOR_CLASS
+        local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))
+        local_folder_path.mkdir(parents=True, exist_ok=True)
 
-        ftp = ftp_collector(host=self.ip, timeout=30)
+        ftp = FTPCollector(host=self.ip, timeout=30)
         ftp.login(username=self.auth["login"], password=self.auth["password"])
         folder_pattern = re.compile(r"^MY\S+77$")
 
@@ -596,4 +606,9 @@ class IskratelMBan(BaseDevice):
                 folder_or_pattern=folder_pattern, local_dir=local_folder_path
             )
 
-        return config_folder
+        archive_path = config_folder
+
+        shutil.make_archive(archive_path, "zip", config_folder)  # Создаем архив
+        archive_path = archive_path.parent / f"{archive_path.name}.zip"
+        shutil.rmtree(config_folder, ignore_errors=True)  # Удаляем папку
+        return archive_path

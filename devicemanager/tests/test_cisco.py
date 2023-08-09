@@ -225,6 +225,7 @@ class TestCiscoInit(SimpleTestCase):
 class TestCiscoInterfaces(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls.TEMPLATE_DIR = pathlib.Path(__file__).parent.parent / "templates"
         # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
         fake_session = CiscoPexpectFaker()
@@ -346,6 +347,7 @@ Vl106                          up             up
 class TestCiscoGetMACAddress(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
         fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
@@ -374,6 +376,7 @@ class TestCiscoPortControl(SimpleTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
@@ -489,6 +492,7 @@ class TestCiscoInfo(SimpleTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
@@ -539,6 +543,7 @@ class TestCiscoFindAddress(SimpleTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 
@@ -587,6 +592,7 @@ class TestCiscoPortDescription(SimpleTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
         cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
 

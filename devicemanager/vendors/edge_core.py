@@ -4,12 +4,10 @@ from functools import lru_cache
 from typing import Literal, List, Tuple
 
 import pexpect
-import textfsm
 from .base.device import BaseDevice
 from .base.validators import validate_and_format_port_as_normal
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -43,9 +41,7 @@ class EdgeCore(BaseDevice):
 
         output = self.send_command("show interfaces status")
 
-        result: List[List[str]] = parse_by_template(
-            "interfaces/edge_core.template", output
-        )
+        result: List[List[str]] = parse_by_template("interfaces/edge_core.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
@@ -373,8 +369,10 @@ class EdgeCore(BaseDevice):
         return ""
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -420,12 +418,23 @@ class EdgeCore(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
-        if "Invalid parameter value/range" in res:
-            return "Max length:64"  # По умолчанию у Edge-Core 64
-
         self.lock = False
+        if "Invalid parameter value/range" in res:
+            # Длина описания больше допустимого у Edge-Core 64
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": 64,
+            }
+
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def get_device_info(self) -> dict:
         return {}

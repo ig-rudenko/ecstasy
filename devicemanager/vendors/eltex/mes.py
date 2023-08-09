@@ -1,15 +1,14 @@
+import io
 import re
 from time import sleep
 from typing import List, Tuple
 
 import pexpect
-import textfsm
 
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -40,7 +39,15 @@ class EltexMES(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="", mac=""):
+    def __init__(
+        self,
+        session: pexpect,
+        ip: str,
+        auth: dict,
+        model: str = "",
+        snmp_community: str = "",
+        mac: str = "",
+    ):
         """
         ## При инициализации смотрим характеристики устройства.
 
@@ -50,7 +57,7 @@ class EltexMES(BaseDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         self.mac = mac
         self._find_system_info()
 
@@ -405,8 +412,10 @@ class EltexMES(BaseDevice):
         return "\n".join(errors)
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -466,7 +475,18 @@ class EltexMES(BaseDevice):
 
         self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "info": self.save_config(),
+        }
 
     def get_device_info(self) -> dict:
         return {}
+
+    @BaseDevice.lock_session
+    def get_current_configuration(self) -> io.BytesIO:
+        config = self.send_command("show startup-config", expect_command=True)
+        config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        return io.BytesIO(config.encode())

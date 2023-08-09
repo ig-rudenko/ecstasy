@@ -5,85 +5,85 @@ from ..ring_manager import TransportRingManager
 
 TEST_DEVICES = [
     {
-        "ip": "224.0.0.1",
-        "name": "dev1",
+        "ip": "224.0.1.1",
+        "name": "ring-dev11",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/1/3",
                 "Status": "up",  # ================= TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev13",
                 "VLAN's": ["1-4", "30 to 32"],
             },
             {
                 "Interface": "GE0/1/4",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc4_to_dev2",
+                "Description": "desc4_to_ring-dev12",
                 "VLAN's": ["1-4", "30 to 32"],
             },
         ],
     },
     {
-        "ip": "224.0.0.2",
-        "name": "dev2",
+        "ip": "224.0.1.2",
+        "name": "ring-dev12",
         "interfaces": [
             {
                 "Interface": "GE0/2/3",
                 "Status": "up",  # ================== TO DEV1 - UP
-                "Description": "desc3_to_dev1",
+                "Description": "desc3_to_ring-dev11",
             },
             {
                 "Interface": "GE0/2/4",
                 "Status": "up",  # ================== TO DEV3 - UP
-                "Description": "desc4_to_dev3",
+                "Description": "desc4_to_ring-dev13",
             },
         ],
     },
     {
-        "ip": "224.0.0.3",
-        "name": "dev3",
+        "ip": "224.0.1.3",
+        "name": "ring-dev13",
         "interfaces": [
             {
                 "Interface": "GE0/3/3",
                 "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc3_to_dev2",
+                "Description": "desc3_to_ring-dev12",
             },
             {
                 "Interface": "GE0/3/4",
                 "Status": "up",  # ================== TO DEV4 - UP
-                "Description": "desc4_to_dev4",
+                "Description": "desc4_to_ring-dev14",
             },
         ],
     },
     {
-        "ip": "224.0.0.4",
-        "name": "dev4",
+        "ip": "224.0.1.4",
+        "name": "ring-dev14",
         "interfaces": [
             {
                 "Interface": "GE0/4/3",
                 "Status": "up",  # ================ TO DEV3 - UP
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev13",
             },
             {
                 "Interface": "GE0/4/4",
                 "Status": "up",  # ================ TO DEV5 - UP
-                "Description": "desc4_to_dev5",
+                "Description": "desc4_to_ring-dev15",
             },
         ],
     },
     {
-        "ip": "224.0.0.5",
-        "name": "dev5",
+        "ip": "224.0.1.5",
+        "name": "ring-dev15",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/5/3",
                 "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_dev4",
+                "Description": "desc3_to_ring-dev14",
                 "VLAN's": ["4", "30 to 32"],
             },
             {
                 "Interface": "GE0/5/4",
                 "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_dev1",
+                "Description": "desc4_to_ring-dev11",
                 "VLAN's": ["4", "30 to 32"],
             },
         ],
@@ -93,12 +93,13 @@ TEST_DEVICES = [
 
 class TestHeadDownSolutions(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+    ring_name = "ring11"
 
     def test_head_down_solutions(self):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
         r.collect_all_interfaces()  # Собираем из истории
         r.find_link_between_devices()  # Соединяем
 

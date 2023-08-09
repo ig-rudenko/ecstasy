@@ -3,11 +3,9 @@ from time import sleep
 from functools import partial
 from typing import Tuple, List, Literal, Optional
 
-import textfsm
 from .base.device import BaseDevice
 from .base.helpers import parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -53,8 +51,8 @@ class Qtech(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
-    def __init__(self, session, ip: str, auth: dict, model):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
         self.__cache_port_info = {}
 
     @BaseDevice.lock_session
@@ -344,8 +342,8 @@ class Qtech(BaseDevice):
         return self.send_command(f"show running-config interface ethernet {port}").strip()
 
     @BaseDevice.lock_session
-    @qtech_validate_and_format_port()
-    def set_description(self, port: str, desc: str) -> str:
+    @qtech_validate_and_format_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -396,11 +394,22 @@ class Qtech(BaseDevice):
         if "is too large" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
-            return "Max length:" + self.find_or_empty(r"<1-(\d+)>", output)
+            max_length = int(self.find_or_empty(r"<1-(\d+)>", output))
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": max_length,
+            }
 
         self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def get_device_info(self) -> dict:
         pass

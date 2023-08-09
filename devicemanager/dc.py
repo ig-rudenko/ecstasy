@@ -12,7 +12,6 @@ from .exceptions import (
     UnknownDeviceError,
     SSHConnectionError,
 )
-from .session_control import DEVICE_SESSIONS
 
 
 @dataclass
@@ -20,6 +19,48 @@ class SimpleAuthObject:
     login: str
     password: str
     secret: str = ""
+
+
+class SSHSpawn:
+    def __init__(self, ip, login):
+        self.ip = ip
+        self.login = login
+        self.kex_algorithms = ""
+        self.host_key_algorithms = ""
+        self.ciphers = ""
+
+    @staticmethod
+    def _get_algorithm(output: str) -> str:
+        algorithms = re.findall(r"Their offer: (\S+)", output)
+        if algorithms:
+            return algorithms[0]
+        return ""
+
+    def get_kex_algorithms(self, output: str):
+        self.kex_algorithms = self._get_algorithm(output)
+
+    def get_host_key_algorithms(self, output: str):
+        self.host_key_algorithms = self._get_algorithm(output)
+
+    def get_ciphers(self, output: str):
+        self.ciphers = self._get_algorithm(output)
+
+    def get_spawn_string(self) -> str:
+        base = f"ssh -p 22 {self.login}@{self.ip}"
+
+        if self.kex_algorithms:
+            base += f" -oKexAlgorithms=+{self.kex_algorithms}"
+
+        if self.host_key_algorithms:
+            base += f" -oHostKeyAlgorithms=+{self.host_key_algorithms}"
+
+        if self.ciphers:
+            base += f" -c {self.ciphers}"
+
+        return base
+
+    def get_session(self):
+        return pexpect.spawn(self.get_spawn_string(), timeout=15)
 
 
 class DeviceFactory:
@@ -50,11 +91,17 @@ class DeviceFactory:
         send_N_key,  # 6 Нажать `N`
     ]
 
-    def __init__(self, ip: str, protocol: str, auth_obj, make_session_global: bool = True):
+    def __init__(
+        self,
+        ip: str,
+        protocol: str,
+        snmp_community: str,
+        auth_obj,
+    ):
         self.ip = ip
-        self.session: pexpect.spawn
+        self.session = None
+        self.snmp_community = snmp_community
         self.protocol = protocol
-        self._session_global = make_session_global
 
         if isinstance(auth_obj, list):
             self.login = []
@@ -71,35 +118,23 @@ class DeviceFactory:
             self.password = [auth_obj.password]
             self.privilege_mode_password = auth_obj.secret
 
-    def send_command(self, command: str) -> str:
+    def get_session(self) -> BaseDevice:
+        return self._get_device_session()
+
+    def __enter__(self) -> BaseDevice:
         """
-        # Простой метод для отправки команды с постраничной записью вывода результата
+        ## При входе в контекстный менеджер подключаемся к оборудованию.
         """
+        return self._get_device_session()
 
-        self.session.send(command + "\r")
-        version = ""
-        while True:
-            match = self.session.expect(
-                [
-                    r"]$",  # 0
-                    r"-More-|-+\(more.*?\)-+",  # 1
-                    r">\s*$",  # 2
-                    r"#\s*",  # 3
-                    pexpect.TIMEOUT,  # 4
-                ],
-                timeout=3,
-            )
+    def _get_device_session(self) -> BaseDevice:
+        if self.protocol == "ssh":
+            self.session = self._connect_by_ssh()
+        else:
+            self.session = self._connect_by_telnet()
+        return self.get_device(self.session)
 
-            version += str(self.session.before.decode("utf-8"))
-            if match == 1:
-                self.session.send(" ")
-            elif match == 4:
-                self.session.sendcontrol("C")
-            else:
-                break
-        return version
-
-    def get_device(self) -> BaseDevice:
+    def get_device(self, session) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
 
@@ -130,64 +165,68 @@ class DeviceFactory:
             "privilege_mode_password": self.privilege_mode_password,
         }
 
-        version = self.send_command("show version")
+        version = self.send_command(session, "show version")
 
         if "bad command name show" in version:
-            version = self.send_command("system resource print")
+            version = self.send_command(session, "system resource print")
 
         # Mikrotik
         if "mikrotik" in version.lower():
-            return MikroTik(self.session, self.ip, auth)
+            return MikroTik(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # ProCurve
         if "Image stamp:" in version:
-            return ProCurve(self.session, self.ip, auth)
+            return ProCurve(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # ZTE
         if " ZTE Corporation:" in version:
             model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version)
-            return ZTE(self.session, self.ip, auth, model=model)
+            return ZTE(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # HUAWEI
         if "Unrecognized command" in version:
-            version = self.send_command("display version")
+            version = self.send_command(session, "display version")
             if "huawei" in version.lower():
                 if "CX600" in version:
                     model = BaseDevice.find_or_empty(
                         r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE
                     )
-                    return HuaweiCX600(self.session, self.ip, auth, model=model)
+                    return HuaweiCX600(session, self.ip, auth, model, self.snmp_community)
                 if "quidway" in version.lower():
-                    return Huawei(self.session, self.ip, auth)
+                    return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
             if "Unrecognized command" in version:
-                return Huawei(self.session, self.ip, auth)
+                return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # CISCO
         if "cisco" in version.lower():
             model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version)
-            return Cisco(self.session, self.ip, auth, model=model)
+            return Cisco(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # D-LINK
         if "Next possible completions:" in version:
-            return Dlink(self.session, self.ip, auth)
+            return Dlink(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # Edge Core
         if "Hardware version" in version:
-            return EdgeCore(self.session, self.ip, auth)
+            return EdgeCore(session, self.ip, auth, snmp_community=self.snmp_community)
 
         # Eltex LTP
         if "Eltex LTP" in version:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version)
             if re.match(r"LTP-[48]X", model):
-                return EltexLTP(self.session, self.ip, auth, model=model)
+                return EltexLTP(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
             if "LTP-16N" in model:
-                return EltexLTP16N(self.session, self.ip, auth, model=model)
+                return EltexLTP16N(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
 
         # Eltex MES, ESR
         if "Active-image:" in version or "Boot version:" in version:
-            eltex_device = EltexBase(self.session, self.ip, self.privilege_mode_password)
+            eltex_device = EltexBase(session, self.ip, self.privilege_mode_password)
             if "MES" in eltex_device.model:
                 return EltexMES(
                     eltex_device.session,
@@ -195,6 +234,7 @@ class DeviceFactory:
                     auth,
                     model=eltex_device.model,
                     mac=eltex_device.mac,
+                    snmp_community=self.snmp_community,
                 )
             if "ESR" in eltex_device.model:
                 return EltexESR(
@@ -207,212 +247,141 @@ class DeviceFactory:
 
         # Extreme
         if "ExtremeXOS" in version:
-            return Extreme(self.session, self.ip, auth)
+            return Extreme(session, self.ip, auth)
 
         # Q-Tech
         if "QTECH" in version:
             model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version)
-            return Qtech(self.session, self.ip, auth, model=model)
+            return Qtech(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
 
         # ISKRATEL CONTROL
         if "ISKRATEL" in version:
-            return IskratelControl(self.session, self.ip, auth, model="ISKRATEL Switching")
+            return IskratelControl(
+                session,
+                self.ip,
+                auth,
+                model="ISKRATEL Switching",
+                snmp_community=self.snmp_community,
+            )
 
         # ISKRATEL mBAN>
         if "IskraTEL" in version:
             model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version)
-            return IskratelMBan(self.session, self.ip, auth, model=model)
+            return IskratelMBan(
+                session, self.ip, auth, model=model, snmp_community=self.snmp_community
+            )
 
         if "JUNOS" in version:
             model = BaseDevice.find_or_empty(r"Model: (\S+)", version)
-            return Juniper(self.session, self.ip, auth, model)
+            return Juniper(session, self.ip, auth, model, snmp_community=self.snmp_community)
 
         if "% Unknown command" in version:
-            self.session.sendline("display version")
+            session.sendline("display version")
             while True:
-                match = self.session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
+                match = session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
                 if match == 5:
-                    self.session.expect(r"\}:")
-                    self.session.sendline("\n")
+                    session.expect(r"\}:")
+                    session.sendline("\n")
                     continue
-                version += str(self.session.before.decode("utf-8"))
+                version += str(session.before.decode("utf-8"))
                 if match == 1:
-                    self.session.sendline(" ")
+                    session.sendline(" ")
                 elif match == 4:
-                    self.session.sendcontrol("C")
+                    session.sendcontrol("C")
                 else:
                     break
             if re.findall(r"VERSION : MA5600", version):
                 model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version)
-                return HuaweiMA5600T(self.session, self.ip, auth, model=model)
+                return HuaweiMA5600T(
+                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
+                )
 
         if "show: invalid command, valid commands are" in version:
-            self.session.sendline("sys info show")
+            session.sendline("sys info show")
             while True:
-                match = self.session.expect(
-                    [r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT]
-                )
-                version += str(self.session.before.decode("utf-8"))
+                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
+                version += str(session.before.decode("utf-8"))
                 if match == 1:
-                    self.session.sendline(" ")
+                    session.sendline(" ")
                 if match == 4:
-                    self.session.sendcontrol("C")
+                    session.sendcontrol("C")
                 else:
                     break
 
         if "unknown keyword show" in version:
-            return Juniper(self.session, self.ip, auth)
+            return Juniper(session, self.ip, auth, snmp_community=self.snmp_community)
 
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
 
-    def __login_to_by_telnet(
-        self, login: str, password: str, timeout: int, pre_expect_index=None
-    ) -> str:
-
-        login_try = 1
-
-        while True:
-            # Ловим команды
-            if pre_expect_index is not None:
-                expect_index = pre_expect_index
-                pre_expect_index = None
-
-            else:
-                expect_index = self.session.expect(
-                    self.telnet_authentication_expect, timeout=timeout
-                )
-
-            # Login
-            if expect_index == 0:
-
-                if login_try > 1:
-                    # Если это вторая попытка ввода логина, то предыдущий был неверный
-                    return f"Неверный логин или пароль (подключение telnet)"
-
-                self.session.send(login + "\r")  # Вводим логин
-                login_try += 1
-                continue
-
-            # Password
-            if expect_index == 1:
-                self.session.send(password + "\r")  # Вводим пароль
-                continue
-
-            # PROMPT
-            if expect_index == 2:  # Если был поймал символ начала ввода команды
-                return "Connected"
-
-            # TELNET FAIL
-            if expect_index == 3:
-                raise TelnetConnectionError(f"Telnet недоступен", ip=self.ip)
-
-            # Press any key to continue
-            if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
-                self.session.send(" ")
-                self.session.send(login + "\r")  # Вводим логин
-                self.session.send(password + "\r")  # Вводим пароль
-                self.session.expect(r"[#>\]]\s*")
-
-            # Timeout or some unexpected error happened on server host' - Ошибка радиуса
-            elif expect_index == 5:
-                login_try = 1
-                continue  # Вводим те же данные еще раз
-
-            # The password needs to be changed
-            if expect_index == 6:
-                self.session.send("N\r")  # Не меняем пароль, когда спрашивает
-                continue
-
-            break
-
-    def __enter__(self, algorithm: str = "", cipher: str = "", timeout: int = 30) -> BaseDevice:
-        """
-        ## При входе в контекстный менеджер подключаемся к оборудованию.
-        """
-
-        if self._session_global and DEVICE_SESSIONS.has_connection(self.ip):
-            return DEVICE_SESSIONS.get_connection(self.ip)
-
+    def _connect_by_ssh(self):
         connected = False
-        if self.protocol == "ssh":
-            algorithm_str = f" -oKexAlgorithms=+{algorithm}" if algorithm else ""
-            cipher_str = f" -c {cipher}" if cipher else ""
-            last_cipher_index = -1
-            cipher_list = []
+        session = None
 
-            for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
+        for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
 
-                self.session = pexpect.spawn(
-                    f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}", timeout=15
-                )
+            try:
+                ssh_spawn = SSHSpawn(ip=self.ip, login=self.login[0])
+                session = ssh_spawn.get_session()
 
                 while not connected:
-                    expect_index = self.session.expect(
+                    expect_index = session.expect(
                         [
                             r"no matching key exchange method found",  # 0
-                            r"no matching cipher found|Unknown cipher",  # 1
-                            r"Are you sure you want to continue connecting",  # 2
-                            self.password_input_expect,  # 3
-                            self.prompt_expect,  # 4
-                            self.send_N_key,  # 5
-                            r"Connection closed",  # 6
-                            r"Incorrect login",  # 7
-                            pexpect.EOF,  # 8
+                            r"no matching host key type found",  # 1
+                            r"no matching cipher found|Unknown cipher",  # 2
+                            r"Are you sure you want to continue connecting",  # 3
+                            self.password_input_expect,  # 4
+                            self.prompt_expect,  # 5
+                            self.send_N_key,  # 6
+                            r"Connection closed",  # 7
+                            r"Incorrect login",  # 8
+                            pexpect.EOF,  # 9
                         ],
-                        timeout=timeout,
+                        timeout=30,
                     )
 
                     if expect_index == 0:
-                        self.session.expect(pexpect.EOF)
-                        algorithm = re.findall(
-                            r"Their offer: (\S+)", self.session.before.decode("utf-8")
-                        )
-                        if algorithm:
-                            algorithm_str = f" -oKexAlgorithms=+{algorithm[0]}"
-                            self.session = pexpect.spawn(
-                                f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
-                            )
+                        # KexAlgorithms
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_kex_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 1:
-                        self.session.expect(pexpect.EOF)
-                        if not cipher_list:
-                            cipher_output = re.findall(
-                                r"Their offer: (\S+)", self.session.before.decode("utf-8")
-                            )
-                            if cipher_output:
-                                cipher_list = cipher_output[0].split(",")
-
-                        if cipher_list:
-                            last_cipher_index += 1
-                            cipher_str = f" -c {cipher_list[last_cipher_index]}"
-                            self.session = pexpect.spawn(
-                                f"ssh {login}@{self.ip}{algorithm_str}{cipher_str}"
-                            )
+                        # HostKeyAlgorithms
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 2:
-                        self.session.sendline("yes")
+                        # Cipher
+                        session.expect(pexpect.EOF)
+                        ssh_spawn.get_ciphers(session.before.decode("utf-8"))
+                        session = ssh_spawn.get_session()
 
                     elif expect_index == 3:
-                        self.session.send(password + "\r")
-                        # if self.session.expect(["[Pp]assword:", r"[#>\]]\s*$"]):
-                        #     connected = True
-
-                        # break  # Пробуем новый логин/пароль
+                        # Continue connection?
+                        session.sendline("yes")
 
                     elif expect_index == 4:
-                        connected = True
+                        session.send(password + "\r")
 
                     elif expect_index == 5:
-                        self.session.send("N\r")
+                        # Got prompt
+                        connected = True
 
-                    elif expect_index == 7:
-                        print(self.session.before)
+                    elif expect_index == 6:
+                        session.send("N\r")
+
+                    elif expect_index == 8:
+                        print(session.before)
+                        session.close()
                         raise DeviceLoginError(
                             "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
                         )
 
-                    elif expect_index in {6, 8}:
-                        print(self.session.before)
+                    elif expect_index in {7, 9}:
+                        print(session.before)
+                        session.close()
                         raise SSHConnectionError("SSH недоступен", ip=self.ip)
 
                 if connected:
@@ -420,14 +389,23 @@ class DeviceFactory:
                     self.password = password
                     break
 
-        if self.protocol == "telnet":
-            self.session = pexpect.spawn(f"telnet {self.ip}", timeout=10)
+            except Exception as exc:
+                if session is not None and session.isalive():
+                    session.close()
+                raise exc
+
+        return session
+
+    def _connect_by_telnet(self):
+        session = None
+        try:
+            session = pexpect.spawn(f"telnet {self.ip}", timeout=30)
 
             pre_set_index = None  # По умолчанию стартуем без начального индекса
             status = "Не был передал логин/пароль"
             for login, password in zip(self.login, self.password):
 
-                status = self.__login_to_by_telnet(login, password, timeout, pre_set_index)
+                status = self.__login_to_by_telnet(session, login, password, 30, pre_set_index)
 
                 if status == "Connected":
                     # Сохраняем текущие введенные логин и пароль, они являются верными
@@ -440,21 +418,107 @@ class DeviceFactory:
                     continue
 
             else:
+                session.close()
                 raise DeviceLoginError(status, ip=self.ip)
 
-        device_session = self.get_device()
+        except Exception as exc:
+            if session is not None and session.isalive():
+                session.close()
+            raise exc
 
-        if self._session_global:
-            # Сохраняем новую сессию, если было указано хранение глобально
-            DEVICE_SESSIONS.add_connection(self.ip, device_session)
+        return session
 
-        return device_session
+    def __login_to_by_telnet(
+        self, session, login: str, password: str, timeout: int, pre_expect_index=None
+    ) -> str:
+
+        login_try = 1
+
+        while True:
+            # Ловим команды
+            if pre_expect_index is not None:
+                expect_index = pre_expect_index
+                pre_expect_index = None
+
+            else:
+                expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
+
+            # Login
+            if expect_index == 0:
+
+                if login_try > 1:
+                    # Если это вторая попытка ввода логина, то предыдущий был неверный
+                    return f"Неверный логин или пароль (подключение telnet)"
+
+                session.send(login + "\r")  # Вводим логин
+                login_try += 1
+                continue
+
+            # Password
+            if expect_index == 1:
+                session.send(password + "\r")  # Вводим пароль
+                continue
+
+            # PROMPT
+            if expect_index == 2:  # Если был поймал символ начала ввода команды
+                return "Connected"
+
+            # TELNET FAIL
+            if expect_index == 3:
+                raise TelnetConnectionError(f"Telnet недоступен", ip=self.ip)
+
+            # Press any key to continue
+            if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
+                session.send(" ")
+                session.send(login + "\r")  # Вводим логин
+                session.send(password + "\r")  # Вводим пароль
+                session.expect(r"[#>\]]\s*")
+
+            # Timeout or some unexpected error happened on server host' - Ошибка радиуса
+            elif expect_index == 5:
+                login_try = 1
+                continue  # Вводим те же данные еще раз
+
+            # The password needs to be changed
+            if expect_index == 6:
+                session.send("N\r")  # Не меняем пароль, когда спрашивает
+                continue
+
+            break
+
+    @staticmethod
+    def send_command(session, command: str) -> str:
+        """
+        # Простой метод для отправки команды с постраничной записью вывода результата
+        """
+
+        session.send(command + "\r")
+        version = ""
+        while True:
+            match = session.expect(
+                [
+                    r"]$",  # 0
+                    r"-More-|-+\(more.*?\)-+",  # 1
+                    r">\s*$",  # 2
+                    r"#\s*",  # 3
+                    pexpect.TIMEOUT,  # 4
+                ],
+                timeout=3,
+            )
+
+            version += str(session.before.decode("utf-8"))
+            if match == 1:
+                session.send(" ")
+            elif match == 4:
+                session.sendcontrol("C")
+            else:
+                break
+        return version
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         ## При выходе из контекстного менеджера завершаем сессию
         """
 
-        if not self._session_global:
+        if self.session and self.session.isalive():
             self.session.close()
-            del self

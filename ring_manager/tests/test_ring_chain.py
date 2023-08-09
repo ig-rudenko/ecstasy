@@ -14,8 +14,8 @@ from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructure
 
 TEST_DEVICES = [
     {
-        "ip": "224.0.0.1",
-        "name": "dev1",
+        "ip": "224.0.4.1",
+        "name": "ring-dev41",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/1/1",
@@ -32,20 +32,20 @@ TEST_DEVICES = [
             {
                 "Interface": "GE0/1/3",
                 "Status": "admin down",
-                "Description": "desc3_to_dev3",
+                "Description": "desc3_to_ring-dev43",
                 "VLAN's": ["1-4", "30 to 32"],
             },
             {
                 "Interface": "GE0/1/4",
                 "Status": "up",
-                "Description": "desc4_to_dev2",
+                "Description": "desc4_to_ring-dev42",
                 "VLAN's": ["1-4", "30 to 32"],
             },
         ],
     },
     {
-        "ip": "224.0.0.2",
-        "name": "dev2",
+        "ip": "224.0.4.2",
+        "name": "ring-dev42",
         "interfaces": [
             {
                 "Interface": "GE0/2/1",
@@ -60,18 +60,18 @@ TEST_DEVICES = [
             {
                 "Interface": "GE0/2/3",
                 "Status": "admin down",
-                "Description": "desc3_to_dev1",
+                "Description": "desc3_to_ring-dev41",
             },
             {
                 "Interface": "GE0/2/4",
                 "Status": "up",
-                "Description": "desc4_to_dev3",
+                "Description": "desc4_to_ring-dev43",
             },
         ],
     },
     {
-        "ip": "224.0.0.3",
-        "name": "dev3",
+        "ip": "224.0.4.3",
+        "name": "ring-dev43",
         "interfaces_vlans": [
             {
                 "Interface": "GE0/3/1",
@@ -88,13 +88,13 @@ TEST_DEVICES = [
             {
                 "Interface": "GE0/3/3",
                 "Status": "admin down",
-                "Description": "desc3_to_dev2",
+                "Description": "desc3_to_ring-dev42",
                 "VLAN's": ["4", "30 to 32"],
             },
             {
                 "Interface": "GE0/3/4",
                 "Status": "up",
-                "Description": "desc4_to_dev1",
+                "Description": "desc4_to_ring-dev41",
                 "VLAN's": ["4", "30 to 32"],
             },
         ],
@@ -104,6 +104,7 @@ TEST_DEVICES = [
 
 class TestRingChain(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
+    ring_name = "ring41"
 
     def test_invalid_init_ring(self):
         """
@@ -130,11 +131,13 @@ class TestRingChain(TestRingBase):
         """
         Проверяем инициализацию менеджера кольца
         """
-        point1 = RingDev.objects.get(device__name="dev1")
-        point2 = RingDev.objects.get(device__name="dev2")
-        point3 = RingDev.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="ring-dev41")
+        point2 = RingDev.objects.get(device__name="ring-dev42")
+        point3 = RingDev.objects.get(device__name="ring-dev43")
+        self.maxDiff = None
+        r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
-        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        print(r.ring_devs)
 
         self.assertEqual(
             r.ring_devs,
@@ -147,7 +150,7 @@ class TestRingChain(TestRingBase):
 
         # Проверяем преобразование из JSON строки в список
         self.assertEqual(
-            TransportRing.objects.get(name="ring1").vlans,
+            TransportRing.objects.get(name=self.ring_name).vlans,
             [1, 2, 3],
         )
 
@@ -155,11 +158,11 @@ class TestRingChain(TestRingBase):
         """
         Проверяем нормализацию менеджера кольца
         """
-        ring = TransportRing.objects.get(name="ring1")
+        ring = TransportRing.objects.get(name=self.ring_name)
 
-        point1 = RingDev.objects.get(device__name="dev1")
-        point2 = RingDev.objects.get(device__name="dev2")
-        point3 = RingDev.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="ring-dev41")
+        point2 = RingDev.objects.get(device__name="ring-dev42")
+        point3 = RingDev.objects.get(device__name="ring-dev43")
 
         # Проверяем отсутствие обратной связи
         self.assertEqual(point1.prev_dev, None)
@@ -180,9 +183,9 @@ class TestRingChain(TestRingBase):
         # ========= Выполняем нормализацию ===========
         r.normalize()
 
-        point1 = RingDev.objects.get(device__name="dev1")
-        point2 = RingDev.objects.get(device__name="dev2")
-        point3 = RingDev.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="ring-dev41")
+        point2 = RingDev.objects.get(device__name="ring-dev42")
+        point3 = RingDev.objects.get(device__name="ring-dev43")
 
         # Проверяем обратную связь
         self.assertEqual(point1.prev_dev, None)
@@ -203,11 +206,11 @@ class TestRingChain(TestRingBase):
         """
         Проверяем ping для менеджера кольца
         """
-        point1 = RingDev.objects.get(device__name="dev1")
-        point2 = RingDev.objects.get(device__name="dev2")
-        point3 = RingDev.objects.get(device__name="dev3")
+        point1 = RingDev.objects.get(device__name="ring-dev41")
+        point2 = RingDev.objects.get(device__name="ring-dev42")
+        point3 = RingDev.objects.get(device__name="ring-dev43")
 
-        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
         r.check_devices_availability()
 
@@ -222,9 +225,9 @@ class TestRingChain(TestRingBase):
 
         # Одно оборудование доступно
 
-        Devices.objects.filter(name="dev1").update(ip="127.0.0.1")
+        Devices.objects.filter(name="ring-dev41").update(ip="127.0.0.1")
 
-        r = TransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
         r.check_devices_availability()
 
@@ -245,7 +248,7 @@ class TestRingChain(TestRingBase):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
         # No ping, так что интерфейсы будут собраны из истории
         for p in r.ring_devs:
@@ -269,7 +272,7 @@ class TestRingChain(TestRingBase):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
         # No ping, так что интерфейсы будут собраны из истории
         for p in r.ring_devs:
@@ -301,7 +304,7 @@ class TestRingChain(TestRingBase):
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
-        r = TestTransportRingManager(ring=TransportRing.objects.get(name="ring1"))
+        r = TestTransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
         # No ping
         for p in r.ring_devs:
             p.ping = False

@@ -95,7 +95,7 @@ async function render_markers() {
                             points.set(feature.id, {
                                     point: L.circleMarker(latlng, feature.properties.style)
                                                         .bindTooltip(feature.properties.name)
-                                                        .bindPopup(feature.properties.description),
+                                                        .bindPopup(feature.properties.description, {maxWidth: 560}),
                                     layer: layer_control.overlays[render_data[i].name],
                                 }
                             )

@@ -133,6 +133,7 @@ class FTPCollector(AbstractFTPCollector):
          загрузить в локальный каталог.
         """
         for item in self._list_dir(path):
+            print(item)
             if not item.is_valid_item():
                 continue
 

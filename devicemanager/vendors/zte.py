@@ -38,7 +38,7 @@ class ZTE(BaseDevice):
     )
     vendor = "ZTE"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
         """
         ## При инициализации повышаем уровень привилегий:
 
@@ -53,7 +53,7 @@ class ZTE(BaseDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         version = self.send_command("show version")
         self.mac = self.find_or_empty(r"Mac Address: (\S+)", version)
 
@@ -194,7 +194,7 @@ class ZTE(BaseDevice):
             output_macs = self.send_command(f"show mac dynamic port {port}", expect_command=False)
 
         mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
-        return [(int(vid), mac) for vid, mac in mac_lines]
+        return [(int(vid), mac) for mac, vid in mac_lines]
 
     @BaseDevice.lock_session
     def save_config(self) -> str:
@@ -348,8 +348,10 @@ class ZTE(BaseDevice):
         return self.send_command(f"show port {port} statistics")
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_only_digit(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -369,7 +371,10 @@ class ZTE(BaseDevice):
         """
 
         if not self.__privileged:
-            return "Не привилегированный. Операция отклонена!"
+            return {
+                "status": "fail",
+                "error": "Не привилегированный. Операция отклонена!",
+            }
 
         desc = self.clear_description(desc)
 
@@ -383,10 +388,21 @@ class ZTE(BaseDevice):
         if "Parameter too long" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command(f"set port {port} description ?")
-            return "Max length:" + self.find_or_empty(r"maxsize:(\d+)", output)
+            max_length = self.find_or_empty(r"maxsize:(\d+)", output)
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": max_length,
+            }
 
         self.lock = False
-        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return={})

@@ -12,6 +12,7 @@ class ThreadUpdatedStatusTask(Task):
 
     name = None
     queryset = None
+    max_workers = None
 
     def __init__(self):
         """
@@ -48,7 +49,7 @@ class ThreadUpdatedStatusTask(Task):
         """
         Он создает исполнителя пула потоков и отправляет ему задачу.
         """
-        with ThreadPoolExecutor() as execute:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as execute:
             for obj in self.queryset.all():
                 execute.submit(self.__class__.thread_task, self, obj)
 

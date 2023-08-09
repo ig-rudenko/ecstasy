@@ -2,11 +2,9 @@ import re
 from typing import List
 
 import pexpect
-import textfsm
 from .base.device import BaseDevice
 from .base.helpers import parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
@@ -19,8 +17,8 @@ class ProCurve(BaseDevice):
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
     vendor = "ProCurve"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
-        super().__init__(session, ip, auth, model)
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
+        super().__init__(session, ip, auth, model, snmp_community)
         sys_info = self.send_command(
             "show system-information",
             before_catch="General System Information",
@@ -77,8 +75,8 @@ class ProCurve(BaseDevice):
     def save_config(self):
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        return ""
+    def set_description(self, port: str, desc: str) -> dict:
+        return {"status": "fail", "error": "Изменение описания недоступно"}
 
     def get_port_info(self, port: str) -> dict:
         return {}

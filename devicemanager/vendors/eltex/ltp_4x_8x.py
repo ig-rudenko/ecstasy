@@ -1,19 +1,12 @@
 import re
-from functools import lru_cache, wraps
+from functools import wraps
 from typing import List, Tuple, Dict, Any, Optional, TypedDict
 
 import pexpect
 
 from .extra import validate_ltp_interfaces_list
 from ..base.device import BaseDevice
-from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
-    MACType,
-    InterfaceStatus,
-)
+from ..base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType
 
 
 class _EltexLTPPortTypes(TypedDict):
@@ -111,9 +104,10 @@ class EltexLTP(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="LTP"):
-        super().__init__(session, ip, auth)
-        self.model = model
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model="LTP", snmp_community: str = ""
+    ):
+        super().__init__(session, ip, auth, model, snmp_community)
 
         # Проверяем, является ли модель LTP-4X.
         if "LTP-4X" in self.model:
@@ -285,18 +279,6 @@ class EltexLTP(BaseDevice):
         # Если неверный порт
         return []
 
-    @lru_cache
-    def get_vlan_name(self, vid: int):
-        from net_tools.models import VlanName
-
-        vlan_name = ""
-        try:
-            vlan_name = VlanName.objects.get(vid=int(vid)).name
-        except (ValueError, VlanName.DoesNotExist):
-            pass
-        finally:
-            return vlan_name
-
     @BaseDevice.lock_session
     @_validate_port()
     def get_port_info(self, port: str) -> dict:
@@ -352,9 +334,7 @@ class EltexLTP(BaseDevice):
                 # Выбираем запись ONT по индексу ONT ID - int(mac_line[0])
                 # Затем обращаемся к 6 элементу, в котором находится список VLAN/MAC
                 # и добавляем VLAN, MAC и описание VLAN
-                data["onts_lines"][int(ont_id)][6].append(
-                    [vlan_id, mac, self.get_vlan_name(vlan_id)]
-                )
+                data["onts_lines"][int(ont_id)][6].append([vlan_id, mac, ""])
 
             return {
                 "type": "eltex-gpon",
@@ -383,8 +363,8 @@ class EltexLTP(BaseDevice):
         return "Этот порт нельзя установить в " + status
 
     @BaseDevice.lock_session
-    @_validate_port()
-    def set_description(self, port: str, desc: str) -> str:
+    @_validate_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -414,6 +394,8 @@ class EltexLTP(BaseDevice):
         :return: Вывод команды смены описания
         """
 
+        desc = self.clear_description(desc)
+
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
@@ -436,10 +418,18 @@ class EltexLTP(BaseDevice):
             self.session.expect(self.prompt)
 
             self.lock = False
-            # Возвращаем строку с результатом работы и сохраняем конфигурацию
-            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+            return {
+                "description": desc,
+                "port": port,
+                "status": "changed" if desc else "cleared",
+                "saved": self.save_config(),
+            }
 
-        return ""
+        return {
+            "port": port,
+            "status": "fail",
+            "error": "Неверный порт",
+        }
 
     @BaseDevice.lock_session
     @_validate_port()

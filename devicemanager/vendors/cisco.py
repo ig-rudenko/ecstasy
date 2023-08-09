@@ -1,3 +1,4 @@
+import io
 import re
 from time import sleep
 from typing import Tuple, List, Dict
@@ -40,7 +41,9 @@ class Cisco(BaseDevice):
     mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"  # 0018.e7d3.1d43
     vendor = "Cisco"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         ## При инициализации смотрим характеристики устройства:
 
@@ -54,7 +57,7 @@ class Cisco(BaseDevice):
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
@@ -98,9 +101,7 @@ class Cisco(BaseDevice):
         output = self.send_command("show interfaces description")
         output = re.sub(".+\nInterface", "Interface", output)
 
-        result: List[List[str]] = parse_by_template(
-            "interfaces/cisco.template", output
-        )
+        result: List[List[str]] = parse_by_template("interfaces/cisco.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
@@ -461,8 +462,10 @@ class Cisco(BaseDevice):
         return formatted_result
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -508,12 +511,22 @@ class Cisco(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
-        if "Invalid input detected" in res:
-            return "Invalid input detected"
 
         self.lock = False
-        # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+
+        if "Invalid input detected" in res:
+            return {
+                "status": "fail",
+                "port": port,
+                "error": "Invalid input detected",
+            }
+
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
@@ -622,9 +635,10 @@ class Cisco(BaseDevice):
         return {"value": current_temp, "status": status}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
-        return self.send_command(
+    def get_current_configuration(self) -> io.BytesIO:
+        data = self.send_command(
             "show running-config",
             expect_command=True,
             before_catch=r"Building configuration\.\.\.",
         )
+        return io.BytesIO(data.encode())

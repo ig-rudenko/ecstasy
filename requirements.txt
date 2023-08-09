@@ -4,6 +4,8 @@ textfsm
 requests
 tabulate
 pyzabbix
+coreapi
+pyyaml
 alive-progress
 Django
 mysqlclient
@@ -27,3 +29,6 @@ django-celery-beat
 xlwt
 django-jazzmin
 urllib3
+flask
+gevent
+flower

@@ -28,20 +28,7 @@ def get_user_session(bras: models.Bras, mac: str, result: dict):
     result[bras.name] = {"session": None, "errors": []}
 
     try:
-        with bras.connect() as session:
-            bras_output = session.send_command(
-                f"display access-user mac-address {mac}", expect_command=False
-            )
-            if "No online user!" not in bras_output:
-                user_index = re.findall(r"User access index\s+:\s+(\d+)", bras_output)
-
-                if user_index:
-                    bras_output = session.send_command(
-                        f"display access-user user-id {user_index[0]} verbose",
-                    )
-
-            result[bras.name]["session"] = bras_output
-
+        result[bras.name]["session"] = bras.connect().get_access_user_data(mac)
     except BaseDeviceException as exc:
         result[bras.name]["errors"].append(exc.message)
 
@@ -125,33 +112,22 @@ class CutBrassSessionAPIView(APIView):
         result = {"errors": []}
 
         for bras in models.Bras.objects.all():
-            try:
-                with bras.connect() as session:
-                    session.send_command("system-view")
-                    session.send_command("aaa")
-                    # Срезаем сессию по MAC адресу
-                    session.send_command(f"cut access-user mac-address {mac}")
-                    # Логи
-                    log(request.user, device, f"cut access-user mac-address {mac}")
-
-            except pexpect.TIMEOUT:
-                result["errors"].append(f"{bras.name} - timeout")  # Был недоступен
+            bras.connect().cut_access_user_session(mac)
+            log(request.user, device, f"cut access-user mac-address {mac}")
 
         try:
-            with device.connect() as session:
-                # Перезагружаем порт без сохранения конфигурации
-                reload_port_status = session.reload_port(
-                    serializer.validated_data["port"], save_config=False
-                )
+            # Перезагружаем порт без сохранения конфигурации
+            reload_port_status = device.connect().reload_port(
+                serializer.validated_data["port"], save_config=False
+            )
+            result["portReloadStatus"] = reload_port_status  # Успех
 
-                result["portReloadStatus"] = reload_port_status  # Успех
-
-                # Логи
-                log(
-                    request.user,
-                    device,
-                    f"reload port {serializer.validated_data['port']} \n" f"{reload_port_status}",
-                )
+            # Логи
+            log(
+                request.user,
+                device,
+                f"reload port {serializer.validated_data['port']} \n" f"{reload_port_status}",
+            )
 
         except BaseDeviceException as e:
             result["errors"].append(f"Сессия сброшена, но порт не был перезагружен! {e}")

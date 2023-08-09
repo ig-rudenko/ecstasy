@@ -1,15 +1,14 @@
+import io
 import re
 from time import sleep
 from typing import Literal
 
 import pexpect
-import textfsm
 
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
-    TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
     T_InterfaceList,
@@ -35,7 +34,7 @@ class Huawei(BaseDevice):
     mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
     vendor = "Huawei"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
         """
         ## При инициализации заходим в привилегированный режим, но остаемся на уровне просмотра
 
@@ -53,7 +52,7 @@ class Huawei(BaseDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         # Заходим в привилегированный режим
         self.session.sendline("super")
         v = session.expect(
@@ -485,8 +484,10 @@ class Huawei(BaseDevice):
         return config
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -533,14 +534,25 @@ class Huawei(BaseDevice):
         if "Wrong parameter found" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
-            return "Max length:" + self.find_or_empty(r"no more than (\d+) characters", output)
+            max_length = int(self.find_or_empty(r"no more than (\d+) characters", output) or "0")
+            return {
+                "max_length": max_length,
+                "error": "Too long",
+                "port": port,
+                "status": "fail",
+            }
 
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
         self.lock = False
-        return f'Description has been {"changed" if desc else "cleared"}.' + self.save_config()
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def __parse_virtual_cable_test_data(self, data: str) -> dict:
         """
@@ -655,6 +667,7 @@ class Huawei(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("display current-configuration", expect_command=True)
-        return re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        return io.BytesIO(config.encode())

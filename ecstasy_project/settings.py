@@ -20,6 +20,7 @@ from datetime import timedelta, datetime
 from urllib3.exceptions import InsecureRequestWarning
 
 import orjson
+from pyzabbix.api import logger as zabbix_api_logger
 
 from gathering.ftp import FTPCollector
 
@@ -74,6 +75,9 @@ FTP_COLLECTOR_CLASS = FTPCollector
 # Он должен наследоваться от `AbstractFTPCollector`.
 
 
+REMOTE_DEVICE_CLASS = "devicemanager.remote.connector.RemoteDevice"
+
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
@@ -115,6 +119,9 @@ if not DATABASES:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": "db.sqlite3",
+            "OPTIONS": {
+                "timeout": 20,
+            }
         }
     }
 
@@ -178,15 +185,25 @@ PORT_GUARD_PATTERN = re.compile(
 
 # ================= CACHE ===================
 
-REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"redis://{REDIS_CACHE_URL}",
-        "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
     }
-}
+
+else:
+
+    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_CACHE_URL}",
+            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
+        }
+    }
 
 # ================ REST FRAMEWORK =================
 
@@ -241,34 +258,29 @@ else:
 
 # ================= LOGGING ==================
 
-django_actions_logger = logging.getLogger("django.actions")
-
 
 LOGGING_DIR = BASE_DIR / "logs"
 LOGGING_DIR.mkdir(parents=True, exist_ok=True)
 
+zabbix_api_logger.setLevel(logging.ERROR)
+
 if not DEBUG:
     LOGGING = {
         "version": 1,
+        "disable_existing_loggers": False,
         "formatters": {
             "verbose": {
-                "format": "{levelname} {asctime} {module} {message}",
+                "format": "{asctime} {levelname} {module} {message}",
                 "style": "{",
             },
             "simple": {
-                "format": "{levelname} {asctime} {message}",
+                "format": "{asctime} {levelname} {message}",
                 "style": "{",
-            },
-        },
-        "filters": {
-            "require_debug_true": {
-                "()": "django.utils.log.RequireDebugTrue",
             },
         },
         "handlers": {
             "console": {
                 "level": "DEBUG",
-                "filters": ["require_debug_true"],
                 "class": "logging.StreamHandler",
                 "formatter": "verbose",
             },
@@ -281,12 +293,18 @@ if not DEBUG:
                 "backupCount": 30,
             },
         },
-        "loggers": {
-            "django": {
-                "handlers": ["file", "console"],
-                "propagate": True,
-            }
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"],
+            "propagate": True,
         },
+        # "loggers": {
+        #     "django": {
+        #         "level": "INFO",
+        #         "handlers": ["file", "console"],
+        #         "propagate": True,
+        #     }
+        # },
     }
 
 # ================= JWT ===================

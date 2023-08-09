@@ -7,8 +7,7 @@ from geopy.geocoders import Nominatim
 
 from .interfaces import Interfaces
 from .zabbix_api import ZabbixAPIConnection
-from .. import snmp
-from ..dc import DeviceFactory
+from devicemanager.remote import remote_connector, RemoteDevice
 from ..exceptions import AuthException, BaseDeviceException
 from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostInfo,
@@ -135,25 +134,20 @@ class DeviceManager:
         current_status=False,
         auth_obj=None,
         raise_exception=False,
-        *args,
-        **kwargs,
+        make_session_global=True,
     ) -> None:
         """Собираем интерфейсы оборудования"""
 
         if not current_status:  # Смотрим из истории
             self._get_interfaces_from_history(with_vlans=vlans)
 
-        # Собираем интерфейсы в реальном времени с устройства
-        elif self.protocol == "snmp":
-            # SNMP
-            interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
-            self.interfaces = Interfaces(interfaces)
-
-        elif self.protocol in {"telnet", "ssh"}:
+        elif self.protocol in {"snmp", "telnet", "ssh"}:
             # CMD
             try:
                 self._get_interfaces_from_connection(
-                    with_vlans=vlans, auth_obj=auth_obj, *args, **kwargs
+                    with_vlans=vlans,
+                    auth_obj=auth_obj,
+                    make_session_global=make_session_global,
                 )
             except BaseDeviceException as exc:
                 if raise_exception:
@@ -170,34 +164,39 @@ class DeviceManager:
         except DevicesInfo.DoesNotExist:
             self.interfaces = Interfaces()
 
-    def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, *args, **kwargs):
+    def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, make_session_global=True):
         auth_obj = auth_obj or self.auth_obj
         if not auth_obj:
             raise AuthException("Не указан объект авторизации!", ip=self.ip)
 
-        with self.connect(
-            self.protocol, auth_obj=auth_obj or self.auth_obj, *args, **kwargs
-        ) as session:
-            if session.model:
-                self.zabbix_info.inventory.model = session.model
+        session = remote_connector.create(
+            ip=self.ip,
+            port_scan_protocol=self.protocol,
+            cmd_protocol=self.protocol if self.protocol != "snmp" else "telnet",
+            snmp_community=self.snmp_community,
+            auth_obj=auth_obj or self.auth_obj,
+            make_session_global=make_session_global,
+        )
 
-            if session.vendor:
-                self.zabbix_info.inventory.vendor = session.vendor
+        sys_info: dict = session.get_system_info()
 
-            if session.serialno:
-                self.zabbix_info.inventory.serialno_a = session.serialno
+        if sys_info.get("model"):
+            self.zabbix_info.inventory.model = sys_info["model"]
 
-            if session.mac:
-                self.zabbix_info.inventory.macaddress_a = session.mac
+        if sys_info.get("vendor"):
+            self.zabbix_info.inventory.vendor = sys_info["vendor"]
 
-            # Получаем верные логин/пароль
-            self.success_auth = session.auth
+        if sys_info.get("mac"):
+            self.zabbix_info.inventory.serialno_a = sys_info["serialno"]
 
-            if with_vlans:
-                # Если не получилось собрать vlan тогда собираем интерфейсы
-                self.interfaces = Interfaces(session.get_vlans() or session.get_interfaces())
-            else:
-                self.interfaces = Interfaces(session.get_interfaces())
+        if sys_info.get("mac"):
+            self.zabbix_info.inventory.macaddress_a = sys_info["mac"]
+
+        if with_vlans:
+            # Если не получилось собрать vlan тогда собираем интерфейсы
+            self.interfaces = Interfaces(session.get_vlans())
+        else:
+            self.interfaces = Interfaces(session.get_interfaces())
 
     def __str__(self):
         return f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
@@ -236,19 +235,18 @@ class DeviceManager:
                 self._location = Location(**location.raw["address"])
         return self._location
 
-    def connect(self, protocol: str = None, auth_obj: Any = None, *args, **kwargs) -> DeviceFactory:
+    def connect(
+        self, protocol: str = None, auth_obj: Any = None, make_session_global=True
+    ) -> RemoteDevice:
         """
         Устанавливаем подключение к оборудованию
-
-        :param protocol: Протокол подключения telnet/ssh
-        :param auth_obj: Объект профиля авторизации с атрибутами "login", "password", "privilege_mode_password"
-        :return: Экземпляр класса в зависимости от типа оборудования с установленным подключением
         """
 
-        return DeviceFactory(
+        return remote_connector.create(
             self.ip,
-            protocol=protocol or self.protocol,
+            cmd_protocol=protocol or self.protocol,
+            port_scan_protocol=protocol or self.protocol,
+            snmp_community="",
             auth_obj=auth_obj or self.auth_obj,
-            *args,
-            **kwargs,
+            make_session_global=make_session_global,
         )

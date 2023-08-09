@@ -151,7 +151,7 @@ class ZabbixConfig(SingletonModel):
         """
         super().save(*args, **kwargs)
         # Устанавливаем конфигурацию для работы с devicemanager
-        from devicemanager import ZabbixAPIConnection
+        from devicemanager.device import ZabbixAPIConnection
         ZabbixAPIConnection.set(self)
 
     class Meta:

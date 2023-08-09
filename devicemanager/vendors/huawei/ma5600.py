@@ -1,12 +1,12 @@
 import re
-import datetime
+from functools import lru_cache
 from time import sleep
 from typing import Tuple, List
-from functools import lru_cache
 
 import pexpect
-from django.template.loader import render_to_string
+from jinja2 import Environment, FileSystemLoader
 
+from devicemanager import snmp
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -28,7 +28,9 @@ class HuaweiMA5600T(BaseDevice):
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         При инициализации активируем режим пользователя командой:
 
@@ -40,7 +42,7 @@ class HuaweiMA5600T(BaseDevice):
         :param model: Модель коммутатора
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         self.session.sendline("enable")
         self.session.expect(r"\S+#")
 
@@ -425,9 +427,12 @@ class HuaweiMA5600T(BaseDevice):
         # Смотрим ONT
         data = self._ont_port_info(indexes=i)
         self.send_command("quit")
+
+        env = Environment(autoescape=True, loader=FileSystemLoader("templates"))
+        template = env.get_template("check/ont_port_info.html")
         return {
             "type": "html",
-            "data": render_to_string("check/ont_port_info.html", {"ont_info": data}),
+            "data": template.render(ont_info=data),
         }
 
     @lru_cache()
@@ -801,7 +806,9 @@ class HuaweiMA5600T(BaseDevice):
         #   ---------------------------------------------------------------------
         macs1: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.send_command(f"display mac-address port {'/'.join(indexes)}", num_of_expect=6),
+            self.send_command(
+                f"display mac-address port {'/'.join(indexes)}", expect_command=False
+            ),
         )
 
         # Попробуем еще одну команду -> display security bind mac
@@ -811,7 +818,9 @@ class HuaweiMA5600T(BaseDevice):
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
         macs2: List[Tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.send_command(f"display security bind mac {'/'.join(indexes)}", num_of_expect=6),
+            self.send_command(
+                f"display security bind mac {'/'.join(indexes)}", expect_command=False
+            ),
         )
 
         res: T_MACList = []
@@ -966,14 +975,14 @@ class HuaweiMA5600T(BaseDevice):
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
-        return []
+        return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
         return []
 
     @BaseDevice.lock_session
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -1002,14 +1011,23 @@ class HuaweiMA5600T(BaseDevice):
 
         port_type, indexes = self.split_port(port)
         if not port_type or len(indexes) != 3:
-            return f"Неверный порт! ({port})"
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Неверный порт",
+            }
 
         # Очищаем описание от лишних символов
         desc = self.clear_description(desc)
 
         if len(desc) > 32:
             # Длина описания больше допустимого
-            return "Max length:32"
+            return {
+                "port": port,
+                "status": "fail",
+                "error": "Too long",
+                "max_length": 32
+            }
 
         self.send_command("config")
 
@@ -1028,7 +1046,11 @@ class HuaweiMA5600T(BaseDevice):
 
         self.send_command("quit")
 
-        return f'Description has been {"changed" if desc else "cleared"}.'
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+        }
 
     @BaseDevice.lock_session
     def get_port_type(self, port: str) -> str:

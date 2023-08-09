@@ -125,3 +125,23 @@ class HuaweiCX600(BaseDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+    def get_access_user_data(self, mac: str) -> str:
+        bras_output = self.send_command(
+            f"display access-user mac-address {mac}", expect_command=False
+        )
+        if "No online user!" not in bras_output:
+            user_index = self.find_or_empty(r"User access index\s+:\s+(\d+)", bras_output)
+
+            if user_index:
+                bras_output = self.send_command(
+                    f"display access-user user-id {user_index} verbose",
+                )
+        return bras_output
+
+    def cut_access_user_session(self, mac: str) -> str:
+        self.send_command("system-view")
+        self.send_command("aaa")
+        # Срезаем сессию по MAC адресу
+        self.send_command(f"cut access-user mac-address {mac}")
+        return ""

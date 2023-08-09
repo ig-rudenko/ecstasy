@@ -1,17 +1,19 @@
 import json
 from datetime import datetime
 
-from django import test
+from django.test import TransactionTestCase
 
 from check.models import Devices
 from ring_manager.models import RingDev, TransportRing
 from net_tools.models import DevicesInfo
 
 
-class TestRingBase(test.TransactionTestCase):
+class TestRingBase(TransactionTestCase):
     TEST_DEVICES: list
     RING_VLANS = [1, 2, 3]
+    ring_name: str
 
+    # @classmethod
     def setUp(self):
         # Добавляем оборудования
 
@@ -50,7 +52,7 @@ class TestRingBase(test.TransactionTestCase):
             # элемента в списке (`len(model_devices_list) - 1`) и заканчивая индексом 0 (`-1`), с шагом -1 (`-1`).
             # Это означает, что цикл начнется с последнего элемента в списке и будет двигаться назад к первому элементу.
             first_ring_dev = RingDev.objects.create(
-                ring_name="ring1",
+                ring_name=self.ring_name,
                 device=model_devices_list[i],
                 next_dev=first_ring_dev,
             )
@@ -58,9 +60,12 @@ class TestRingBase(test.TransactionTestCase):
                 last_ring_dev = first_ring_dev
 
         # Создаем кольцо
-        TransportRing.objects.create(
-            name="ring1",
-            head=first_ring_dev,
-            tail=last_ring_dev,
-            vlans=self.RING_VLANS,
+        print(
+            "Создаем кольцо",
+            TransportRing.objects.create(
+                name=self.ring_name,
+                head=first_ring_dev,
+                tail=last_ring_dev,
+                vlans=self.RING_VLANS,
+            ),
         )

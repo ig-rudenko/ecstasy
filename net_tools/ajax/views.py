@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 from app_settings.models import VlanTracerouteConfig
 from check.models import Devices
 from devicemanager.device import ZabbixAPIConnection
+from devicemanager.exceptions import BaseDeviceException
 from ..finder import Finder, VlanTraceroute, VlanTracerouteResult
 from ..models import VlanName, DevicesForMacSearch
 from ..tasks import interfaces_scan, check_scanning_status
@@ -45,7 +46,7 @@ def get_vendor(request, mac: str) -> JsonResponse:
     resp = requests_lib.get("https://macvendors.com/query/" + mac, timeout=2)
     if resp.status_code == 200:
         return JsonResponse({"vendor": resp.text})
-    return JsonResponse({"vendor": ""})
+    return JsonResponse({"vendor": resp.status_code})
 
 
 @login_required
@@ -64,7 +65,7 @@ def find_as_str(request):
     )
 
 
-def get_ip_or_mac_from(model_dev, find_address: str, result: list, find_type: str) -> None:
+def get_ip_or_mac_from(model_dev: Devices, find_address: str, result: list, find_type: str) -> None:
     """
     ## Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result
 
@@ -74,19 +75,25 @@ def get_ip_or_mac_from(model_dev, find_address: str, result: list, find_type: st
     :param find_type: Тип поиска ```"IP"``` или ```"MAC"```
     """
 
-    with model_dev.connect() as session:
-        info = []
-        # Проверка, является ли find_type IP-адресом и имеет ли сеанс атрибут search_ip.
-        if find_type == "IP" and hasattr(session, "search_ip"):
+    session = model_dev.connect()
+    info = []
+    # Проверка, является ли find_type IP-адресом и имеет ли сеанс атрибут search_ip.
+    if find_type == "IP":
+        try:
             info: list = session.search_ip(find_address)
+        except BaseDeviceException:
+            pass
 
-        # Проверка того, является ли find_type MAC-адресом и имеет ли сеанс атрибут search_mac.
-        elif find_type == "MAC" and hasattr(session, "search_mac"):
+    # Проверка того, является ли find_type MAC-адресом и имеет ли сеанс атрибут search_mac.
+    elif find_type == "MAC":
+        try:
             info: list = session.search_mac(find_address)
+        except BaseDeviceException:
+            pass
 
-        if info:
-            info.append(model_dev.name)  # Добавляем имя оборудования к результату
-            result.append(info)
+    if info:
+        info.append(model_dev.name)  # Добавляем имя оборудования к результату
+        result.append(info)
 
 
 @login_required

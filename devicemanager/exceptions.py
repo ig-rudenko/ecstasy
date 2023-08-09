@@ -1,4 +1,4 @@
-from ecstasy_project.settings import django_actions_logger
+from check.logger import django_actions_logger
 
 
 class BaseDeviceException(Exception):

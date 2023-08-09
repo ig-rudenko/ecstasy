@@ -1,15 +1,12 @@
 import re
-from functools import partial
 from time import sleep
-from typing import Literal, Sequence, Tuple, List, Dict, Optional
+from typing import Literal, Sequence, Tuple, List, Dict
 
 import pexpect
-import textfsm
 from .base.device import BaseDevice
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
-    TEMPLATE_FOLDER,
     T_InterfaceVLANList,
     T_InterfaceList,
     T_MACList,
@@ -17,6 +14,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .. import DeviceException
 
 
 class Extreme(BaseDevice):
@@ -33,7 +31,9 @@ class Extreme(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Extreme"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model=""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         ## При инициализации смотрим характеристики устройства:
 
@@ -50,7 +50,7 @@ class Extreme(BaseDevice):
         :param model: Модель коммутатора
         """
 
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
         system = self.send_command("show switch")
         self.mac = self.find_or_empty(r"System MAC:\s+(\S+)", system)
         self.model = self.find_or_empty(r"System Type:\s+(\S+)", system)
@@ -289,8 +289,10 @@ class Extreme(BaseDevice):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit()
-    def set_description(self, port: str, desc: str) -> str:
+    @validate_and_format_port_only_digit(
+        if_invalid_return={"error": "Неверный порт", "status": "fail"}
+    )
+    def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -320,8 +322,13 @@ class Extreme(BaseDevice):
             )
 
         self.lock = False
-        # Возвращаем строку с результатом работы и сохраняем конфигурацию
-        return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+        # Возвращаем результат работы и сохраняем конфигурацию
+        return {
+            "description": desc,
+            "port": port,
+            "status": "changed" if desc else "cleared",
+            "saved": self.save_config(),
+        }
 
     def get_port_info(self, port: str) -> dict:
         return {"type": "text", "data": ""}
@@ -356,10 +363,16 @@ class Extreme(BaseDevice):
          VLAN, которые будут добавлены или удалены из указанного порта
         :param tagged: (optional) Параметр tagged представляет собой логический флаг, указывающий, следует ли добавлять
          или удалять VLAN как тегированные или нетегированные на указанном порту. Если `tagged` равно `True`,
-         VLAN будут добавлены или удалены как тегированные на порту
+         VLAN будут добавлены или удалены как тегированные на порту.
         """
 
         tagged_option = "tagged" if tagged else ""
+        if operation not in {"add", "delete"}:
+            raise DeviceException(
+                f"Параметр `operation` должен принимать значения `add` или `delete`,"
+                f" а было передано {operation}",
+                ip=self.ip,
+            )
 
         for vlan in vlans:
             self.send_command(f"configure vlan v{vlan} {operation} ports {port} {tagged_option}")

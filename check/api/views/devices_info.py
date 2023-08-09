@@ -395,6 +395,5 @@ class DeviceStatsInfoAPIView(APIView):
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=500)
 
-        with device.connect() as session:
-            device_stats: dict = session.get_device_info() or {}
-            return Response(device_stats)
+        device_stats: dict = device.connect().get_device_info() or {}
+        return Response(device_stats)

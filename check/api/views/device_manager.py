@@ -1,10 +1,12 @@
+from functools import lru_cache
 from typing import Literal
 
 import orjson
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
@@ -14,6 +16,7 @@ from check import models
 from check.logging import log
 from check.permissions import profile_permission
 from devicemanager.device import Interfaces
+from devicemanager.remote.exceptions import InvalidMethod
 from net_tools.models import VlanName, DevicesInfo
 from ..swagger import schemas
 from ..decorators import except_connection_errors
@@ -32,6 +35,10 @@ class PortControlAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PortControlSerializer
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.port_desc = ""
+
     @except_connection_errors
     def post(self, request, device_name: str):
         """
@@ -46,73 +53,81 @@ class PortControlAPIView(generics.GenericAPIView):
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
-        # Смотрим интерфейсы, которые сохранены в БД
-        interfaces_storage = get_object_or_404(DevicesInfo, dev__name=device_name)
-        # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
-        interfaces = Interfaces(orjson.loads(interfaces_storage.interfaces))
-
-        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        port_desc: str = interfaces[port_name].desc
-
-        # Если не суперпользователь, то нельзя изменять состояние определенных портов
-        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(port_desc):
-            return Response(
-                {"error": "Запрещено изменять состояние данного порта!"},
-                status=403,
-            )
-
         model_dev = get_object_or_404(models.Devices, name=device_name)
 
         # Есть ли у пользователя доступ к группе данного оборудования
         self.check_object_permissions(request, model_dev)
-
-        # Если недостаточно привилегий для изменения статуса порта
-        if request.user.profile.perm_level < 2 and port_status in ["up", "down"]:
-            # Логи
-            log(
-                request.user,
-                model_dev,
-                f'Tried to set port {port_name} ({serializer.validated_data["desc"]}) '
-                f"to the {port_status} state, but was refused \n",
-            )
-            return Response(
-                {"error": "У вас недостаточно прав, для изменения состояния порта!"},
-                status=403,
-            )
 
         # Если оборудование Недоступно
         if not model_dev.available:
             return Response({"error": "Оборудование недоступно!"}, status=500)
 
         # Теперь наконец можем подключиться к оборудованию :)
-        with model_dev.connect() as session:
-            # Перезагрузка порта
-            if port_status == "reload":
-                port_change_status = session.reload_port(
-                    port=port_name,
-                    save_config=save_config,
-                )
+        session = model_dev.connect()
+        # Перезагрузка порта
+        if port_status == "reload":
+            port_change_status = session.reload_port(
+                port=port_name,
+                save_config=save_config,
+            )
 
-            # UP and DOWN
-            else:
-                port_change_status = session.set_port(
-                    port=port_name,
-                    status=port_status,
-                    save_config=save_config,
-                )
+        # UP and DOWN
+        else:
+            port_change_status = session.set_port(
+                port=port_name,
+                status=port_status,
+                save_config=save_config,
+            )
+
+        if "Неверный порт" in port_change_status:
+            return Response({"error": port_change_status}, status=400)
 
         # Логи
         log(
             request.user,
             model_dev,
-            f"{port_status} port {port_name} ({port_desc}) \n{port_change_status}",
+            f"{port_status} port {port_name} ({self.port_desc}) \n{port_change_status}",
         )
 
         return Response(serializer.validated_data, status=200)
 
+    def check_object_permissions(self, request, device) -> None:
+        # Смотрим интерфейсы, которые сохранены в БД
+        dev_info, _ = DevicesInfo.objects.get_or_create(dev=device)
+
+        if dev_info.interfaces is None:
+            # Собираем интерфейсы с оборудования.
+            interfaces = Interfaces(device.connect().get_interfaces())
+        else:
+            # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
+            interfaces = Interfaces(orjson.loads(dev_info.interfaces))
+
+        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
+        self.port_desc: str = interfaces[self.request.data["port"]].desc
+
+        # Если не суперпользователь, то нельзя изменять состояние определенных портов
+        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(self.port_desc):
+            raise PermissionDenied(
+                detail="Запрещено изменять состояние данного порта!",
+            )
+
+        # Если недостаточно привилегий для изменения статуса порта
+        if request.user.profile.perm_level < 2 and request.data["status"] in ["up", "down"]:
+            # Логи
+            log(
+                request.user,
+                device,
+                f"Tried to set port {request.data['port']} ({self.port_desc}) "
+                f"to the {request.data['status']} state, but was refused \n",
+            )
+
+            raise PermissionDenied(
+                detail="У вас недостаточно прав, для изменения состояния порта!",
+            )
+
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDescription(APIView):
+class ChangeDescriptionAPIView(APIView):
     """
     ## Изменяем описание на порту у оборудования
     """
@@ -153,30 +168,36 @@ class ChangeDescription(APIView):
         # Проверяем права доступа пользователя к оборудованию
         self.check_object_permissions(request, dev)
 
-        new_description = self.request.data.get("description")
+        new_description = self.request.data.get("description", "")
         port = self.request.data.get("port")
 
-        with dev.connect() as session:
-            set_description_status = session.set_description(port=port, desc=new_description)
-            new_description = session.clear_description(new_description)
+        set_description_status = dev.connect().set_description(port=port, desc=new_description)
 
-        if "Неверный порт" in set_description_status:
-            return Response({"detail": f"Неверный порт {port}"}, status=400)
-
-        # Проверяем результат изменения описания
-        if "Max length" in set_description_status:
-            # Описание слишком длинное.
-            # Находим в строке "Max length:32" число "32"
-            max_length = set_description_status.split(":")[1]
-            if max_length.isdigit():
-                max_length = int(max_length)
-            else:
-                max_length = 32
+        if set_description_status.max_length:
+            # Если есть данные, что описание слишком длинное.
             raise ValidationError(
-                {"detail": f"Слишком длинное описание! Укажите не более {max_length} символов."}
+                {
+                    "detail": "Слишком длинное описание! "
+                    f"Укажите не более {set_description_status.max_length} символов."
+                }
             )
 
-        return Response({"description": new_description})
+        log(request.user, dev, str(set_description_status))
+
+        if set_description_status.error:
+            return Response(
+                {"detail": f"{set_description_status.error}, port={port}"},
+                status=400 if set_description_status.error == "Неверный порт" else 500,
+            )
+        # Логи
+
+        return Response(
+            {
+                "description": set_description_status.description,
+                "port": set_description_status.port,
+                "saved": set_description_status.saved,
+            }
+        )
 
 
 class MacListAPIView(APIView):
@@ -217,24 +238,25 @@ class MacListAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        with device.connect() as session:
-            macs = []  # Итоговый список
-            vlan_passed = {}  # Словарь уникальных VLAN
-            for vid, mac in session.get_mac(port):  # Смотрим VLAN и MAC
-                # Если еще не искали такой VLAN
-                if vid not in vlan_passed:
-                    # Ищем название VLAN'a
-                    try:
-                        vlan_name = VlanName.objects.get(vid=int(vid)).name
-                    except (ValueError, VlanName.DoesNotExist):
-                        vlan_name = ""
-                    # Добавляем в множество вланов, которые участвовали в поиске имени
-                    vlan_passed[vid] = vlan_name
-
-                # Обновляем
-                macs.append({"vlanID": vid, "mac": mac, "vlanName": vlan_passed[vid]})
+        macs = []  # Итоговый список
+        for vid, mac in device.connect().get_mac(port):  # Смотрим VLAN и MAC
+            macs.append(
+                {
+                    "vlanID": vid,
+                    "mac": mac,
+                    "vlanName": self.get_vlan_name(vid),
+                }
+            )
 
         return Response({"count": len(macs), "result": macs})
+
+    @staticmethod
+    @lru_cache(maxsize=35)
+    def get_vlan_name(vlan_id: int) -> str:
+        try:
+            return VlanName.objects.get(vid=int(vlan_id)).name
+        except (ValueError, VlanName.DoesNotExist):
+            return ""
 
 
 class CableDiagAPIView(APIView):
@@ -276,14 +298,12 @@ class CableDiagAPIView(APIView):
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=500)
 
-        with device.connect() as session:
-            if hasattr(session, "virtual_cable_test"):
-                cable_test = session.virtual_cable_test(request.GET["port"])
-                if cable_test:  # Если имеются данные
-                    return Response(cable_test)
-                return Response({})
-
+        try:
+            cable_test = device.connect().virtual_cable_test(request.GET["port"])
+        except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
+        else:
+            return Response(cable_test)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
@@ -311,18 +331,17 @@ class SetPoEAPIView(generics.GenericAPIView):
         poe_status = serializer.validated_data["status"]
         port_name = serializer.validated_data["port"]
 
-        with device.connect() as session:
-            if hasattr(session, "set_poe_out"):
-                # Меняем PoE
-                _, err = session.set_poe_out(port_name, poe_status)
-                if not err:
-                    return Response({"status": poe_status})
-                return Response(
-                    {"detail": f"Invalid data ({poe_status})"},
-                    status=400,
-                )
-
+        try:
+            _, err = device.connect().set_poe_out(port_name, poe_status)
+        except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
+        else:
+            if not err:
+                return Response({"status": poe_status})
+            return Response(
+                {"detail": f"Invalid data ({poe_status})"},
+                status=400,
+            )
 
 
 class InterfaceInfoAPIView(APIView):
@@ -363,12 +382,13 @@ class InterfaceInfoAPIView(APIView):
             return Response({"detail": "Device unavailable"}, status=500)
 
         result = {}
-        with device.connect() as session:
-            result["portDetailInfo"] = session.get_port_info(port)
-            result["portConfig"] = session.get_port_config(port)
-            result["portType"] = session.get_port_type(port)
-            result["portErrors"] = session.get_port_errors(port)
-            result["hasCableDiag"] = hasattr(session, "virtual_cable_test")
+        session = device.connect()
+
+        result["portDetailInfo"] = session.get_port_info(port)
+        result["portConfig"] = session.get_port_config(port)
+        result["portType"] = session.get_port_type(port)
+        result["portErrors"] = session.get_port_errors(port)
+        result["hasCableDiag"] = True
 
         return Response(result)
 
@@ -397,18 +417,17 @@ class ChangeDSLProfileAPIView(APIView):
             return Response({"detail": "Device unavailable"}, status=500)
 
         # Подключаемся к оборудованию
-        with device.connect() as session:
-            if hasattr(session, "change_profile"):
-                # Если можно поменять профиль
-                status = session.change_profile(
-                    serializer.validated_data["port"],
-                    serializer.validated_data["index"],
-                )
-
-                return Response({"status": status})
-
+        session = device.connect()
+        try:
+            status = session.change_profile(
+                serializer.validated_data["port"],
+                serializer.validated_data["index"],
+            )
+        except InvalidMethod:
             # Нельзя менять профиль для данного устройства
             return Response({"error": "Device can't change profile"}, status=400)
+        else:
+            return Response({"status": status})
 
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):

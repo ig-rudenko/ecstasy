@@ -12,6 +12,7 @@ from devicemanager.device import DeviceManager
 
 
 class InterfacesScanTask(ThreadUpdatedStatusTask):
+    max_workers = 80
     name = "interfaces_scan"
     queryset = ModelDevices.objects.all()
 
@@ -28,6 +29,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         try:
             print(f"Start collect interfaces --> {obj}")
             collector = DeviceInterfacesCollectorMixin()
+            collector.with_vlans = True
             collector.device = obj
             collector.device_collector = DeviceManager.from_model(obj)
             collector.collect_current_interfaces(make_session_global=False)

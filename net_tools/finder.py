@@ -162,6 +162,9 @@ class VlanTraceroute:
         if not self._desc_name_list:
             self._desc_name_list: List[DescNameFormat] = list(DescNameFormat.objects.all())
 
+        if device in self.passed_devices:
+            return
+
         self.passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
         try:
             dev = DevicesInfo.objects.get(dev__name=device)
@@ -169,6 +172,7 @@ class VlanTraceroute:
             return
 
         interfaces = Interfaces(orjson.loads(dev.vlans or "[]"))
+
         if not interfaces:
             return
 
@@ -177,10 +181,15 @@ class VlanTraceroute:
                 # Пропускаем несоответствующие порты
                 continue
 
+            print(vlan_to_find, interface.vlan)
+            print(interface)
+
             # Ищем в описании порта следующий узел сети
             next_device_find: List[str] = findall(
                 find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
             )
+
+            print(next_device_find)
             # Приводим к единому формату имя узла сети
             next_device = next_device_find[0] if next_device_find else ""
 
@@ -200,7 +209,7 @@ class VlanTraceroute:
             if double_check and next_device:  # Если есть следующее оборудование
                 try:
                     next_dev_intf_json: str = (
-                        DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
+                            DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
                     )
                 except DevicesInfo.DoesNotExist:
                     next_dev_intf_json = "[]"
@@ -209,7 +218,7 @@ class VlanTraceroute:
 
                 for next_dev_interface in next_dev_interfaces:
                     if vlan_to_find in next_dev_interface.vlan and findall(
-                        device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
+                            device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)

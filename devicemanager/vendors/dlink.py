@@ -1,3 +1,4 @@
+import io
 import re
 from functools import partial
 from time import sleep
@@ -72,7 +73,9 @@ class Dlink(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "D-Link"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         """
         При инициализации повышаем уровень привилегий до уровня администратора командой:
 
@@ -95,7 +98,7 @@ class Dlink(BaseDevice):
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
         :param model: Модель коммутатора
         """
-        super().__init__(session, ip, auth, model)
+        super().__init__(session, ip, auth, model, snmp_community)
 
         status = True
         # Повышает уровень привилегий до уровня администратора
@@ -177,9 +180,7 @@ class Dlink(BaseDevice):
 
         output = self.send_command("show ports des")
 
-        result: List[List[str]] = parse_by_template(
-            "interfaces/d-link.template", output
-        )
+        result: List[List[str]] = parse_by_template("interfaces/d-link.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
@@ -436,7 +437,7 @@ class Dlink(BaseDevice):
         return self.session.before.decode()
 
     @BaseDevice.lock_session
-    def set_description(self, port: str, desc: str) -> str:
+    def set_description(self, port: str, desc: str) -> dict:
         """
         Устанавливаем описание для порта предварительно очистив его от лишних символов
 
@@ -464,7 +465,7 @@ class Dlink(BaseDevice):
 
         valid_port = validate_port(port)
         if valid_port is None:
-            return "Неверный порт"
+            return {"error": "Неверный порт", "status": "fail", "port": port}
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -483,18 +484,33 @@ class Dlink(BaseDevice):
                 before_catch="desc",
             )
 
-        self.lock = False
-
         if "Next possible completions" in status:
             # Если длина описания больше чем разрешено на оборудовании
-            return "Max length:" + self.find_or_empty(r"<desc (\d+)>", status)
+            max_length = int(self.find_or_empty(r"<desc (\d+)>", status) or "0")
+            return {
+                "max_length": max_length,
+                "error": "Too long",
+                "port": port,
+                "status": "fail",
+            }
 
+        self.lock = False
         if "Success" in status:  # Успешно поменяли описание
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
-            return f'Description has been {"changed" if desc else "cleared"}. {self.save_config()}'
+            return {
+                "description": desc,
+                "port": port,
+                "status": "changed" if desc else "cleared",
+                "saved": self.save_config(),
+            }
 
         # Уникальный случай
-        return status
+        return {
+            "description": desc,
+            "port": port,
+            "status": "fail",
+            "error": status,
+        }
 
     @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return={})
@@ -623,10 +639,11 @@ class Dlink(BaseDevice):
         return ""
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command(
             "show config current_config",
             expect_command=False,
             before_catch="Command: show config current_config",
         )
-        return re.sub("[\r\n]{3}", "\n", config.strip())
+        config = re.sub("[\r\n]{3}", "\n", config.strip())
+        return io.BytesIO(config.encode())

@@ -16,7 +16,11 @@
               <div class="accordion-body">
 
                 <div class="alert alert-secondary text-center" role="alert">
-                  {{ service.mac|default:"no MAC" }}
+                    {% if service.mac %}
+                        {{ service.mac }}
+                    {% else %}
+                        no MAC
+                    {% endif %}
                 </div>
 
                 <div>

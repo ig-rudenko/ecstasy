@@ -133,6 +133,14 @@ class Interfaces:
             tablefmt="simple",
         )
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        if isinstance(other, Interfaces):
+            return self.__interfaces == other.__interfaces
+        raise TypeError(f"Нельзя сравнивать интерфейсы с типом `{type(other)}`")
+
     def __getitem__(self, item):
         """Обращение к интерфейсам"""
         if not self.__interfaces:
