@@ -14,6 +14,25 @@
     </a>
 </div>
 
+
+<div>
+    <div style="margin: 8px 0">
+        {% for interface in host.interfaces %}
+            {% if interface.ip != "127.0.0.1" %}
+                <span class="popup-ip">
+                    {{ interface.ip }}
+                </span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% if host.description %}
+        <div class="popup-host-description">
+            {{ host.description | safe | linebreaks }}
+        </div>
+    {% endif %}
+</div>
+
+
 <div style="margin: 10px 5px; text-align: right;">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
     class="bi bi-geo-fill" viewBox="0 0 16 16" style="vertical-align: middle;">

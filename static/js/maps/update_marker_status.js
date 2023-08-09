@@ -31,12 +31,13 @@ async function update_status() {
 
             // Перед тем как изменить точку, сохраняем её предыдущие настройки
             if (!origin_devices_point_format.get(host_id)) {
+                const origin_points_data = points.get(host_id)
                 origin_devices_point_format.set(
                     host_id,
                     {
-                        "fillColor": points.get(host_id).point.options.fillColor,
-                        "popupContent": points.get(host_id).point._popup._content,
-                        "layer": points.get(host_id).layer
+                        "fillColor": origin_points_data.point.options.fillColor,
+                        "popupContent": origin_points_data.point._popup._content,
+                        "layer": origin_points_data.layer
                     }
                 )
             }

@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 import orjson
@@ -121,8 +122,9 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
 
         hosts = zbx.host.get(
             groupids=group_id,
+            output=["description", "name", "status"],
             selectInterfaces=["ip"],
-            selectInventory=["location_lat", "location_lon"],
+            selectInventory="extend",
         )
 
         for host in hosts:
@@ -181,6 +183,13 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         }
 
     def _get_description_for_zbx_host(self, host: dict) -> str:
+        if host["description"]:
+            host["description"] = re.sub(
+                r"https?://\S+",
+                r'<a target="_blank" href="\g<0>">\g<0></a>',
+                host["description"],
+            )
+
         return render_to_string(
             "maps/zbx_popup.html",
             {
