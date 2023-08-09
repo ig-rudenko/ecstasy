@@ -4,6 +4,8 @@ textfsm
 requests
 tabulate
 pyzabbix
+coreapi
+pyyaml
 alive-progress
 Django
 mysqlclient
