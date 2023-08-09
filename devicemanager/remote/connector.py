@@ -4,7 +4,6 @@ from typing import Literal, Type, Union, Tuple, Sequence
 
 import requests
 
-from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 from devicemanager import exceptions
 from devicemanager.vendors.base.device import AbstractDevice
 from devicemanager.vendors.base.types import (
@@ -13,6 +12,7 @@ from devicemanager.vendors.base.types import (
     T_InterfaceList,
     T_MACTable, SetDescriptionResult,
 )
+from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
 
 class RemoteDevice(AbstractDevice):
@@ -134,7 +134,7 @@ class RemoteDevice(AbstractDevice):
         return self._remote_call("set_poe_out", port=port, status=status)
 
     def change_profile(self, port: str, port_index: int):
-        return self._remote_call("change_profile", port=port, port_index=port_index)
+        return self._remote_call("change_profile", port=port, profile_index=port_index)
 
     def get_access_user_data(self, mac: str) -> str:
         return self._remote_call("get_access_user_data", mac=mac)
