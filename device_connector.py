@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 from typing import TypedDict
+
 from flask import Flask, after_this_request
 from flask import request, jsonify, send_file
 
@@ -66,7 +67,7 @@ def connector(ip: str, method: str):
             protocol=connection.get("cmd_protocol"),
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
-            pool_size=connection.get("pool_size", 3),
+            pool_size=connection.get("pool_size", None),
             snmp_community=connection.get("snmp_community"),
             port_scan_protocol=connection.get("port_scan_protocol"),
         )

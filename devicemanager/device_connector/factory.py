@@ -1,7 +1,8 @@
 import logging
+import os
 import time
 from threading import Thread
-from typing import List, Any
+from typing import List, Any, Optional
 
 import pexpect
 
@@ -11,29 +12,43 @@ from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS
 from devicemanager.vendors import BaseDevice
 
-
 logger = logging.Logger(__file__)
+
+DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", 3))
 
 
 class DeviceSessionFactory:
     def __init__(
-        self,
-        ip: str,
-        protocol: str,
-        auth_obj,
-        make_session_global: bool,
-        pool_size: int,
-        snmp_community: str,
-        port_scan_protocol: str,
+            self,
+            ip: str,
+            protocol: str,
+            auth_obj,
+            make_session_global: bool,
+            pool_size: Optional[int],
+            snmp_community: str,
+            port_scan_protocol: str,
     ):
         self.port_scan_protocol = port_scan_protocol
         self.snmp_community = snmp_community
-        self.pool_size = pool_size
+        self.pool_size = self._validate_pool_size(pool_size)
+
         self.make_session_global = make_session_global
         self.auth_obj = auth_obj
         self.protocol = protocol
         self.ip = ip
         self.connections: List[BaseDevice] = []
+
+    @staticmethod
+    def _validate_pool_size(pool_size) -> int:
+        try:
+            pool_size = int(pool_size)
+        except (TypeError, ValueError):
+            pool_size = DEFAULT_POOL_SIZE
+        if pool_size < 1:
+            return 1
+        elif pool_size > 3:
+            return 3
+        return pool_size
 
     def perform_method(self, method: str, **params) -> Any:
         logger.debug(f'Начало выполнение метода "{method}", params={params}, ip={self.ip}')
