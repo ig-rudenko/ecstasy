@@ -76,7 +76,7 @@ class RemoteDevice(AbstractDevice):
     def _handle_response(resp):
         if "filename" in resp.headers.get("Content-Disposition", ""):
             file_name_match = re.findall(
-                r"filename=\"(\S+)\"", resp.headers.get("Content-Disposition")
+                r"filename=(\S+)", resp.headers.get("Content-Disposition")
             )
             file_name = file_name_match[0] if file_name_match else "file_name"
             return resp.content, file_name

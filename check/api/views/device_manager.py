@@ -5,12 +5,12 @@ import orjson
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.views import APIView
 from rest_framework import generics
-from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from check import models
 from check.logging import log
@@ -18,7 +18,6 @@ from check.permissions import profile_permission
 from devicemanager.device import Interfaces
 from devicemanager.remote.exceptions import InvalidMethod
 from net_tools.models import VlanName, DevicesInfo
-from ..swagger import schemas
 from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..serializers import (
@@ -27,6 +26,7 @@ from ..serializers import (
     PortControlSerializer,
     PoEPortStatusSerializer,
 )
+from ..swagger import schemas
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
