@@ -10,17 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-import re
-import os
 import _locale
 import logging
-import urllib3
-from pathlib import Path
+import os
+import re
 from datetime import timedelta, datetime
-from urllib3.exceptions import InsecureRequestWarning
+from pathlib import Path
 
 import orjson
+import urllib3
 from pyzabbix.api import logger as zabbix_api_logger
+from urllib3.exceptions import InsecureRequestWarning
 
 from gathering.ftp import FTPCollector
 
@@ -112,8 +112,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
-
-DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace(" ", "").replace("\n", ""))
+DATABASES = orjson.loads(
+    os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", "")
+)
 if not DATABASES:
     DATABASES = {
         "default": {
@@ -121,7 +122,7 @@ if not DATABASES:
             "NAME": "db.sqlite3",
             "OPTIONS": {
                 "timeout": 20,
-            }
+            },
         }
     }
 

@@ -1,5 +1,6 @@
 /* Строка, используемая для добавления на карту информации об авторских правах. */
-const copy = "© <a href='/'>Ecstasy</a> Игорь Руденко";
+const copy = "© <a href='https://www.openstreetmap.org/#map=11/44.5795/33.5272'>OpenStreetMap </a>" +
+    "<a href='/'>Ecstasy</a> Игорь Руденко";
 const url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const osm = L.tileLayer(url, { attribution: copy });
 
