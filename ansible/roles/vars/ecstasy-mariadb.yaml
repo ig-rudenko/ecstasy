@@ -1,0 +1,4 @@
+mysql_root_password: root-password
+mariadb_user: ecstasy
+mariadb_password: ecstasy-password
+mariadb_database: ecstasy

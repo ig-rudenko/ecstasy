@@ -1,0 +1,86 @@
+---
+- name: Клонирование проекта и его настройка
+  hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+    - ../../roles/vars/ecstasy-mariadb.yaml
+    - ../../roles/vars/ecstasy-services.yaml
+
+  tasks:
+    - name: Создание папки для проекта
+      file:
+        path: "{{ root_folder }}"
+        state: directory
+        mode: '0755'
+
+    - name: Клонирование проекта с GitHub
+      git:
+        repo: https://github.com/ig-rudenko/ecstasy.git
+        dest: "{{ root_folder }}"
+
+    - name: Создание виртуального окуружения и установка зависимостей
+      pip:
+        requirements: "{{ root_folder }}/requirements.txt"
+        virtualenv: "{{ root_folder }}/venv"
+        virtualenv_command: python{{python_version}} -m venv
+        state: present
+
+    - name: Сбор статических файлов Django
+      command: "{{ root_folder }}/venv/bin/python {{ root_folder }}/manage.py collectstatic --noinput"
+      environment:
+        DJANGO_SECRET_KEY: "{{DJANGO_SECRET_KEY}}"
+        DJANGO_COLLECT_STATIC: "1"
+        DATABASES: |
+          {'default': {
+          'ENGINE': 'django.db.backends.mysql',
+          'NAME': '{{mariadb_database}}',
+          'USER': '{{mariadb_user}}',
+          'PASSWORD': '{{mariadb_password}}',
+          'HOST': 'localhost', 'PORT': '3306' }}
+      register: result
+
+    - name: Результат cбора статических файлов
+      debug:
+        msg: "{{ result.stdout or result.stderr }}"
+
+    - name: Применение Django миграций
+      command: "{{ root_folder }}/venv/bin/python {{ root_folder }}/manage.py migrate"
+      environment:
+        DJANGO_SECRET_KEY: "{{DJANGO_SECRET_KEY}}"
+        DJANGO_DEBUG: "{{DJANGO_DEBUG}}"
+        DATABASES: |
+          {'default': {
+          'ENGINE': 'django.db.backends.mysql',
+          'NAME': '{{mariadb_database}}',
+          'USER': '{{mariadb_user}}',
+          'PASSWORD': '{{mariadb_password}}',
+          'HOST': 'localhost', 'PORT': '3306' }}
+      register: result
+
+    - name: Результат применения миграций
+      debug:
+        msg: "{{ result.stdout or result.stderr }}"
+
+    - name: Создание суперпользователя Django
+      command: "{{ root_folder }}/venv/bin/python {{ root_folder }}/manage.py createsuperuser --noinput"
+      environment:
+        DJANGO_SUPERUSER_PASSWORD: "{{django_superuser_password}}"
+        DJANGO_SUPERUSER_EMAIL: "irudenko@example.ru"
+        DJANGO_SUPERUSER_USERNAME: "{{django_superuser_username}}"
+        DJANGO_SECRET_KEY: "{{DJANGO_SECRET_KEY}}"
+        DJANGO_DEBUG: "{{DJANGO_DEBUG}}"
+        DATABASES: |
+          {'default': {
+          'ENGINE': 'django.db.backends.mysql',
+          'NAME': '{{mariadb_database}}',
+          'USER': '{{mariadb_user}}',
+          'PASSWORD': '{{mariadb_password}}',
+          'HOST': 'localhost', 'PORT': '3306' }}
+      register: superuser_output
+      failed_when: "superuser_output.stderr and 'already taken' not in superuser_output.stderr"
+
+    - name: Статус создания суперпользователя
+      debug:
+        msg: "{{ superuser_output.stdout or superuser_output.stderr }}"

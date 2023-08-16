@@ -1,0 +1,41 @@
+---
+- name: Установка и конфигурирование MariaDB
+  hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+    - ../../roles/vars/ecstasy-mariadb.yaml
+  tasks:
+    - name: Установка MariaDB
+      apt:
+        name: mariadb-server
+        update_cache: yes
+        autoclean: yes
+        autoremove: yes
+        state: latest
+
+    - name: Установка зависимости (python3-mysqldb)
+#      when: ansible_os_family == "Debian"
+      apt:
+        name: python3-mysqldb
+        state: present
+        autoclean: yes
+        autoremove: yes
+
+    - name: Создание базы данных
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mariadb_database }}"
+        state: present
+
+    - name: Создание пользователя и прав на базу
+      community.mysql.mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mariadb_user }}"
+        password: "{{ mariadb_password }}"
+        priv: "{{ mariadb_database }}.*:ALL,GRANT"
+        state: present
+

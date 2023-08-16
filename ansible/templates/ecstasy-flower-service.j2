@@ -1,0 +1,23 @@
+[Unit]
+Description=Flower - real-time web based monitor and administration tool for Celery
+After=syslog.target
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/sysconfig/ecstasy
+
+Type=simple
+
+PIDFile={{ root_folder }}/celery-flower.pid
+WorkingDirectory={{ root_folder }}
+
+#User=root
+#Group=root
+
+ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project flower --address {{ flower_address }} --port {{ flower_port }} --basic-auth={{ flower_username }}:{{ flower_password }}
+
+TimeoutSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

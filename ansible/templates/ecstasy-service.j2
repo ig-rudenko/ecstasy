@@ -1,0 +1,22 @@
+[Unit]
+Description=Ecstasy - Equipment Control System To Assist You
+After=syslog.target
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/sysconfig/ecstasy
+Type=simple
+
+PIDFile={{ root_folder }}/server.pid
+WorkingDirectory={{ root_folder }}
+
+#User=root
+#Group=root
+
+ExecStart={{ root_folder }}/venv/bin/gunicorn -w 4 -b {{gunicorn_socket}} ecstasy_project.wsgi:application --access-logfile /var/log/ecstasy/access.log --error-logfile /var/log/ecstasy/error.log
+
+TimeoutSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

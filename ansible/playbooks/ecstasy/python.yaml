@@ -1,0 +1,23 @@
+---
+- hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+  tasks:
+    - name: Обновление пакетов
+      apt:
+        update_cache: yes
+    - name: Установка python
+      apt:
+        name: "{{item}}"
+        state: latest
+      loop:
+        - "python{{python_version}}"
+        - "python{{python_version}}-venv"
+        - "python{{python_version}}-dev"
+        - "python3-pip"
+    - name: Очистка установочных файлов
+      apt:
+        autoremove: yes
+        autoclean: yes

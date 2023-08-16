@@ -1,0 +1,45 @@
+---
+- name: Установка и настройка nginx
+  hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+    - ../../roles/vars/ecstasy-services.yaml
+  tasks:
+    - name: Установка nginx
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+        autoclean: yes
+        autoremove: yes
+
+    - name: Создание самоподписного сертификата
+      include_tasks: create-certs.yaml
+      when: enable_https
+
+    - name: Копирование конфигурации {{ECSTASY_SERVICE_NAME}} в Nginx
+      template:
+        src: ../../templates/nginx-conf.j2
+        dest: /etc/nginx/sites-available/{{ECSTASY_SERVICE_NAME}}
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Создание ссылки конфигурации {{ECSTASY_SERVICE_NAME}} в Nginx
+      file:
+        src: /etc/nginx/sites-available/{{ECSTASY_SERVICE_NAME}}
+        dest: /etc/nginx/sites-enabled/{{ECSTASY_SERVICE_NAME}}
+        state: link
+
+    - name: Проверка синтаксиса конфигурации Nginx
+      command: nginx -t
+      register: nginx_check
+      failed_when: "nginx_check.rc != 0"
+
+    - name: Перезагружаем Nginx
+      service:
+        name: nginx
+        state: reloaded
+      when: "nginx_check.rc == 0"

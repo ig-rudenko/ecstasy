@@ -1,0 +1,19 @@
+---
+- name: Установка Python
+  import_playbook: ecstasy/python.yaml
+
+- name: Установка и настройка Redis
+  import_playbook: ecstasy/redis.yaml
+
+- name: Установка MariaDB и создание пользователя с базой данных
+  import_playbook: ecstasy/mariadb.yaml
+
+- name: Установка проекта с GitHub
+  import_playbook: ecstasy/install-project.yaml
+
+- name: Создание сервисов и запуск
+  import_playbook: ecstasy/start-services.yaml
+
+- name: Установка и настройка Nginx
+  import_playbook: ecstasy/nginx.yaml
+

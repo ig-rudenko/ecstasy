@@ -1,0 +1,100 @@
+---
+- name: Настройка сервисов
+  hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+    - ../../roles/vars/ecstasy-mariadb.yaml
+    - ../../roles/vars/ecstasy-services.yaml
+  tasks:
+    - name: Создание папки /etc/sysconfig
+      file:
+        path: /etc/sysconfig
+        state: directory
+        owner: root
+        group: root
+        mode: 0600
+    - name: Создание файла с переменными окружения для сервисов (/etc/sysconfig/ecstasy)
+      template:
+        dest: /etc/sysconfig/ecstasy
+        src: ../../templates/sysconfig.env.j2
+        owner: root
+        group: root
+        mode: 0600
+
+    # DEVICE CONNECTOR
+    - name: Создание сервиса {{ DEVICE_CONNECTOR_SERVICE_NAME }}.service
+      template:
+        src: ../../templates/ecstasy-device-connector-service.j2
+        dest: /etc/systemd/system/{{ DEVICE_CONNECTOR_SERVICE_NAME }}.service
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Перезагрузка сервиса {{ DEVICE_CONNECTOR_SERVICE_NAME }}.service
+      systemd:
+        daemon_reload: yes
+        name: "{{ DEVICE_CONNECTOR_SERVICE_NAME }}"
+        state: restarted
+    - name: Запуск и добавление в автозагрузку {{ DEVICE_CONNECTOR_SERVICE_NAME }}.service
+      systemd:
+        name: "{{ DEVICE_CONNECTOR_SERVICE_NAME }}"
+        enabled: yes
+        state: started
+
+    # DJANGO
+    - name: Создание сервиса {{ ECSTASY_SERVICE_NAME }}.service
+      template:
+        src: ../../templates/ecstasy-service.j2
+        dest: /etc/systemd/system/{{ ECSTASY_SERVICE_NAME }}.service
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Перезагрузка сервиса {{ ECSTASY_SERVICE_NAME }}.service
+      systemd:
+        daemon_reload: yes
+        name: "{{ ECSTASY_SERVICE_NAME }}"
+        state: restarted
+    - name: Запуск и добавление в автозагрузку {{ ECSTASY_SERVICE_NAME }}.service
+      systemd:
+        name: "{{ ECSTASY_SERVICE_NAME }}"
+        enabled: yes
+        state: started
+
+    # CELERY
+    - name: Создание сервиса {{ CELERY_SERVICE_NAME }}.service
+      template:
+        src: ../../templates/ecstasy-celery-service.j2
+        dest: /etc/systemd/system/{{ CELERY_SERVICE_NAME }}.service
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Перезагрузка сервиса {{ CELERY_SERVICE_NAME }}.service
+      systemd:
+        daemon_reload: yes
+        name: "{{ CELERY_SERVICE_NAME }}"
+        state: restarted
+    - name: Запуск и добавление в автозагрузку {{ CELERY_SERVICE_NAME }}.service
+      systemd:
+        name: "{{ CELERY_SERVICE_NAME }}"
+        enabled: yes
+        state: started
+
+    # FLOWER
+    - name: Создание сервиса {{ FLOWER_SERVICE_NAME }}.service
+      template:
+        src: ../../templates/ecstasy-flower-service.j2
+        dest: /etc/systemd/system/{{ FLOWER_SERVICE_NAME }}.service
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Перезагрузка сервиса {{ FLOWER_SERVICE_NAME }}.service
+      systemd:
+        daemon_reload: yes
+        name: "{{ FLOWER_SERVICE_NAME }}"
+        state: restarted
+    - name: Запуск и добавление в автозагрузку {{ FLOWER_SERVICE_NAME }}.service
+      systemd:
+        name: "{{ FLOWER_SERVICE_NAME }}"
+        enabled: yes
+        state: started

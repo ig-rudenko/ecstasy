@@ -1,0 +1,55 @@
+{% if enable_https %}
+server {
+    listen {{nginx_http_listen_port}} default_server;
+    listen [::]:{{nginx_http_listen_port}} default_server;
+    return 302 https://$server_name$request_uri;
+}
+{% endif %}
+
+server {
+
+{% if not enable_https %}
+    listen {{nginx_http_listen_port}} default_server;
+    listen [::]:{{nginx_http_listen_port}} default_server;
+{% endif %}
+
+{% if enable_https %}
+     listen 443 ssl http2 default_server;
+     listen [::]:443 ssl http2 default_server;
+     ssl_certificate /etc/ssl/{{ ECSTASY_SERVICE_NAME }}/cert.pem;
+     ssl_certificate_key /etc/ssl/{{ ECSTASY_SERVICE_NAME }}/privkey.pem;
+     ssl_dhparam /etc/ssl/{{ ECSTASY_SERVICE_NAME }}/dhparam.pem;
+     ssl_protocols TLSv1.3;
+     ssl_prefer_server_ciphers on;
+     ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+     ssl_ecdh_curve secp384r1;
+     ssl_session_cache shared:SSL:10m;
+     ssl_session_tickets off;
+     ssl_stapling on;
+     ssl_stapling_verify on;
+     resolver 8.8.8.8 8.8.4.4 valid=300s;
+     resolver_timeout 5s;
+{% endif %}
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    client_max_body_size 300M;
+
+    location = /basic_status {
+        stub_status;
+    }
+
+    location /static/ {
+        alias {{root_folder}}/static/;
+    }
+
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://{{gunicorn_socket}};
+    }
+}

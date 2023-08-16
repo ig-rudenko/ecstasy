@@ -1,0 +1,27 @@
+[Unit]
+Description=Celery for Ecstasy - Task manager
+After=syslog.target
+After=network.target
+
+[Service]
+# Увеличить лимит открытых файловых дескрипторов
+LimitNOFILE=16000
+LimitNOFILESoft=16000
+
+EnvironmentFile=/etc/sysconfig/ecstasy
+
+Type=simple
+
+PIDFile={{ root_folder }}/celery.pid
+WorkingDirectory={{ root_folder }}
+
+#User=root
+#Group=root
+
+ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project worker -B --scheduler django -l INFO -c {{celery_concurrent}} -n {{ celery_worker_name }}
+
+TimeoutSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

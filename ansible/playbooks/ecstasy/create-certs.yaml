@@ -1,0 +1,39 @@
+
+- name: Создаем папку для сертификата
+  file:
+    path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}"
+    state: directory
+    mode: 0644
+    owner: nginx
+    group: nginx
+
+- name: Генерируем приватный ключ
+  openssl_privatekey:
+    path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}/privkey.pem"
+    size: 2048
+    type: RSA
+
+- name: Генерируем самоподписный сертификат
+  community.crypto.x509_certificate:
+    path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}/cert.pem"
+    privatekey_path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}/privkey.pem"
+    provider: selfsigned
+    selfsigned_not_before: "+0d" # Измените на желаемую дату начала действия сертификата
+    selfsigned_not_after: "+365d" # Измените на желаемую дату окончания действия сертификата
+
+- name: Получение информации сертификата
+  community.crypto.x509_certificate_info:
+    path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}/cert.pem"
+  register: cert_info
+
+- name: Вывод информации сертификата
+  debug:
+    var: cert_info
+
+- name: Генерируем параметры Диффи-Хеллмана
+  community.crypto.openssl_dhparam:
+    path: "/etc/ssl/{{ ECSTASY_SERVICE_NAME }}/dhparam.pem"
+    size: 2048 # Измените на желаемый размер ключа
+    force: false # Измените на true, если хотите перегенерировать параметры при каждом запуске
+    state: present
+#    attributes: "u=rw,g=r,o=r" # Измените на желаемые атрибуты файла

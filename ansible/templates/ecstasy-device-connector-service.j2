@@ -1,0 +1,28 @@
+[Unit]
+Description=Device connector for Ecstasy - keep remote sessions
+After=syslog.target
+After=network.target
+
+[Service]
+# Увеличить лимит открытых файловых дескрипторов
+LimitNOFILE=16000
+LimitNOFILESoft=16000
+
+Environment="DEVICE_CONNECTOR_TOKEN={{DEVICE_CONNECTOR_TOKEN}}"
+Environment="DEFAULT_POOL_SIZE={{DEVICE_CONNECTOR_DEFAULT_POOL_SIZE}}"
+
+Type=simple
+
+PIDFile={{ root_folder }}/device-connector.pid
+WorkingDirectory={{ root_folder }}
+
+User=root
+Group=root
+
+ExecStart={{ root_folder }}/venv/bin/gunicorn -b {{device_connector_socket}} device_connector:app -k gevent -w 1
+
+TimeoutSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

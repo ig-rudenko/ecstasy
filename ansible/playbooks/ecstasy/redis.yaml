@@ -1,0 +1,31 @@
+- name: Установка и конфигурирование Redis
+  hosts: ecstasy_server
+  become: yes
+  gather_facts: no
+  vars_files:
+    - ../../roles/vars/ecstasy-main.yaml
+  tasks:
+    - name: Установка redis
+      apt:
+        name: redis-server
+        state: present
+        update_cache: yes
+
+    - name: Создание redis пароля
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^requirepass'
+        line: "requirepass {{ redis_password }}"
+      notify: restart redis
+
+    - name: Запуск и добавление в автозагрузку redis.service
+      systemd:
+        name: redis-server
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Перезагрузка redis.service
+      systemd:
+        name: redis-server
+        state: restarted
