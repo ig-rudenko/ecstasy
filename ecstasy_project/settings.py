@@ -160,10 +160,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-if DEBUG:
-    STATICFILES_DIRS = [BASE_DIR / "static"]
-else:
+if os.getenv("DJANGO_COLLECT_STATIC", "0") == "1":
     STATIC_ROOT = BASE_DIR / "static"
+else:
+    STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
