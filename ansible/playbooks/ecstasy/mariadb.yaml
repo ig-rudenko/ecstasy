@@ -9,19 +9,24 @@
   tasks:
     - name: Установка MariaDB
       apt:
-        name: mariadb-server
+        name: "{{ item }}"
         update_cache: yes
         autoclean: yes
         autoremove: yes
         state: latest
+      loop:
+        - mariadb-client
+        - mariadb-server
 
-    - name: Установка зависимости (python3-mysqldb)
-#      when: ansible_os_family == "Debian"
+    - name: Установка зависимостей
       apt:
-        name: python3-mysqldb
+        name: "{{ item }}"
         state: present
         autoclean: yes
         autoremove: yes
+      loop:
+        - python3-mysqldb
+        - pkg-config
 
     - name: Создание базы данных
       community.mysql.mysql_db:

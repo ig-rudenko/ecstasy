@@ -15,6 +15,21 @@
         state: directory
         mode: '0755'
 
+    - name: Создание папки для логов (/var/log/ecstasy)
+      file:
+        path: "/var/log/ecstasy"
+        state: directory
+        mode: '0755'
+
+    - name: Создание файлов логов
+      file:
+        path: "{{ item }}"
+        state: touch
+        mode: '0664'
+      loop:
+        - "/var/log/ecstasy/access.log"
+        - "/var/log/ecstasy/error.log"
+
     - name: Клонирование проекта с GitHub
       git:
         repo: https://github.com/ig-rudenko/ecstasy.git
