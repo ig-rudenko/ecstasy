@@ -16,7 +16,7 @@
         path: /etc/redis/redis.conf
         regexp: '^requirepass'
         line: "requirepass {{ redis_password }}"
-      notify: restart redis
+      notify: Перезагрузка redis.service
 
     - name: Запуск и добавление в автозагрузку redis.service
       systemd:
