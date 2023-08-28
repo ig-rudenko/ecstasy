@@ -13,6 +13,7 @@
     <table class="table" style="text-align: center">
       <thead>
         <tr>
+          <th scope="col"></th>
           <th scope="col">ONT ID</th>
           <th scope="col">Статус</th>
           <th scope="col">Последнее подключение</th>
@@ -31,6 +32,7 @@
               :line="line"
               :interface="interface"
               :permission-level="permissionLevel"
+              :register-comment-action="registerCommentAction"
               :register-interface-action="registerInterfaceAction"
           />
 
@@ -49,6 +51,7 @@ import ONTDetailInfo from "./ONTDetailInfo.vue";
 export default defineComponent({
   props: {
     permissionLevel: {required: true, type: Number},
+    registerCommentAction: {required: true, type: Function},
     registerInterfaceAction: {required: true, type: Function},
     data: {
       required: true,

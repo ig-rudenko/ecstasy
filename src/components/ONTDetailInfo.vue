@@ -1,12 +1,17 @@
 <template>
   <tr :style="lineStyle(line[1])" :class="lineClasses">
 
-      <td class="btn-fog" style="text-align: right">
+    <td>
+      <!--       COMMENTS-->
+      <Comment :interface="ontInterface" :register-comment-action="registerCommentAction"/>
+    </td>
 
-        <div class="btn-group" role="group">
+    <td class="btn-fog" style="text-align: right">
 
-  <!--        Название Интерфейса-->
-          <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
+      <div class="btn-group" role="group">
+
+        <!--        Название Интерфейса-->
+        <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
             <span class="position-relative">
                   {{ line[0] }}
             </span>
@@ -183,11 +188,13 @@
 <script>
 import {defineComponent} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
+import Comment from "./Comment.vue";
 
 export default defineComponent({
   props: {
     interface: {required: true, type: Object},
     line: {required: true, type: Object},
+    registerCommentAction: {required: true, type: Function},
     permissionLevel: {required: true, type: Number},
     registerInterfaceAction: {required: true, type: Function},
   },
@@ -206,13 +213,15 @@ export default defineComponent({
   },
   components: {
     PortControlButtons,
+    Comment,
   },
   computed: {
     ontInterface() {
       return {
         Interface: this.interface.Interface + "/" + this.ontID,
         Status: this.line[1],
-        Description: "ONT: " + this.ontID + " " + this.interface.Description
+        Description: "ONT: " + this.ontID + " " + this.interface.Description,
+        Comments: this.line[7]
       }
     },
     lineClasses() {

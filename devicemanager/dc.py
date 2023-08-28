@@ -5,13 +5,14 @@ import re
 from dataclasses import dataclass
 
 import pexpect
-from .vendors import *
+
 from .exceptions import (
     TelnetConnectionError,
     DeviceLoginError,
     UnknownDeviceError,
     SSHConnectionError,
 )
+from .vendors import *
 
 
 @dataclass
@@ -442,7 +443,8 @@ class DeviceFactory:
 
             else:
                 expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
-
+            print(expect_index)
+            print(session.before)
             # Login
             if expect_index == 0:
 
@@ -473,6 +475,7 @@ class DeviceFactory:
                 session.send(login + "\r")  # Вводим логин
                 session.send(password + "\r")  # Вводим пароль
                 session.expect(r"[#>\]]\s*")
+                return "Connected"
 
             # Timeout or some unexpected error happened on server host' - Ошибка радиуса
             elif expect_index == 5:
@@ -485,6 +488,8 @@ class DeviceFactory:
                 continue
 
             break
+
+        return ""
 
     @staticmethod
     def send_command(session, command: str) -> str:

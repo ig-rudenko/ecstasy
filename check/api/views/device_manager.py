@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Dict
 
 import orjson
 from django.conf import settings
@@ -390,7 +390,59 @@ class InterfaceInfoAPIView(APIView):
         result["portErrors"] = session.get_port_errors(port)
         result["hasCableDiag"] = True
 
+        if result["portDetailInfo"].get("type") == "gpon":
+            # Ищем возможные комментарии только для GPON типа
+            result["portDetailInfo"]["data"]["onts_lines"] = self.create_onts_lines_with_comments(
+                result["portDetailInfo"]["data"].get("onts_lines", []),
+                gpon_port=port,
+                device=device,
+            )
+
         return Response(result)
+
+    @staticmethod
+    def create_onts_lines_with_comments(
+            onts_lines: list, gpon_port: str, device: models.Devices
+    ) -> list:
+        """
+        Находит комментарии созданные на ONT для порта `gpon_port` оборудования `device`.
+
+        :param onts_lines: Текущий список данных ONT.
+        :param gpon_port: Основной GPON порт.
+        :param device: Оборудование, на котором надо искать комментарии.
+        :return: Список данных ONT с добавлением в конец списка возможных комментариев.
+        """
+        if not onts_lines:
+            return []
+
+        interfaces_comments = device.interfacescomments_set.select_related("user")
+
+        ont_interfaces_dict: Dict[str, list] = {}
+
+        for comment in interfaces_comments:
+            comment_data = {
+                "text": comment.comment,
+                "user": comment.user.username,
+                "id": comment.id,
+            }
+            if ont_interfaces_dict.get(comment.interface):
+                ont_interfaces_dict[comment.interface].append(comment_data)
+            else:
+                ont_interfaces_dict[comment.interface] = [comment_data]
+
+        new_onts_lines = []
+
+        for line in onts_lines:
+            # Соединяем порт GPON и ONTid
+            ont_full_port = f"{gpon_port}/{line[0]}"
+            # Добавляем комментарии либо пустой список в конец
+            new_onts_lines.append(
+                line
+                + [
+                    ont_interfaces_dict.get(ont_full_port, []),
+                ]
+            )
+        return new_onts_lines
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
