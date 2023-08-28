@@ -1,6 +1,6 @@
 from functools import lru_cache
-from typing import List, NamedTuple
 from re import findall, sub, IGNORECASE, compile, escape
+from typing import List, NamedTuple
 
 import orjson
 from django.contrib.auth.models import User
@@ -34,13 +34,32 @@ class Finder:
         :return: Список результатов поиска
         """
 
+        all_comments = list(
+            InterfacesComments.objects.filter(comment__iregex=escape(pattern)).select_related(
+                "user", "device"
+            )
+        )
+
+        comments_dict = {}
+        for comment in all_comments:
+            if not comments_dict.get(comment.device):
+                comments_dict[comment.device.name] = {}
+            if not comments_dict[comment.device.name].get(comment.interface):
+                comments_dict[comment.device.name][comment.interface] = []
+
+            comments_dict[comment.device.name][comment.interface].append(
+                {
+                    "user": comment.user.username,
+                    "text": comment.comment,
+                    "datetime": comment.datetime,
+                }
+            )
+
         pattern = compile(escape(pattern), flags=IGNORECASE)
 
         result = []
 
         user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
-
-        all_comments = list(InterfacesComments.objects.all().select_related("user"))
 
         # Производим поочередный поиск
         for device in DevicesInfo.objects.all().select_related("dev"):
@@ -64,32 +83,38 @@ class Finder:
                 if findall(pattern, line["Description"]):
                     find_on_desc = True
 
-                # Смотрим в комментариях этого интерфейса
-                comments = [
-                    {
-                        "user": comment.user.username,
-                        "text": comment.comment,
-                    }
-                    for comment in all_comments
-                    # Проверяем, что комментарий относится к интерфейсу и устройству,
-                    # которые мы проверяем и, если не было найдено совпадение в описании порта,
-                    # то в комментарии должно быть совпадение с паттерном.
-                    if comment.interface == line["Interface"]
-                    and comment.device.id == device.dev.id
-                    and (find_on_desc or findall(pattern, comment.comment))
-                ]
+                comments_dict_value = comments_dict.get(device.dev.name, {}).get(
+                    line["Interface"], []
+                )
 
-                # Формируем список найденных комментариев
-                # Если нашли совпадение в описании или в комментариях, то добавляем в итоговый список
-                if find_on_desc or comments:
+                if find_on_desc or comments_dict_value:
                     result.append(
                         {
                             "Device": device.dev.name,
                             "Interface": line["Interface"],
                             "Description": line["Description"],
-                            "Comments": comments,
+                            "Comments": comments_dict_value,
                             "SavedTime": device.interfaces_date.strftime("%d.%m.%Y %H:%M:%S"),
                         }
+                    )
+
+                    if comments_dict_value:
+                        del comments_dict[device.dev.name][line["Interface"]]
+
+        for dev_name in comments_dict:
+            if comments_dict[dev_name]:
+                for interface in comments_dict[dev_name]:
+                    result.append(
+                        *[
+                            {
+                                "Device": dev_name,
+                                "Interface": interface,
+                                "Description": comment["text"],
+                                "Comments": [comment],
+                                "SavedTime": comment["datetime"].strftime("%d.%m.%Y %H:%M:%S"),
+                            }
+                            for comment in comments_dict[dev_name][interface]
+                        ]
                     )
 
         return result
