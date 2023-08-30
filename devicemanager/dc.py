@@ -374,14 +374,12 @@ class DeviceFactory:
                         session.send("N\r")
 
                     elif expect_index == 8:
-                        print(session.before)
                         session.close()
                         raise DeviceLoginError(
                             "Неверный Логин/Пароль (подключение SSH)", ip=self.ip
                         )
 
                     elif expect_index in {7, 9}:
-                        print(session.before)
                         session.close()
                         raise SSHConnectionError("SSH недоступен", ip=self.ip)
 
@@ -443,8 +441,6 @@ class DeviceFactory:
 
             else:
                 expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
-            print(expect_index)
-            print(session.before)
             # Login
             if expect_index == 0:
 
