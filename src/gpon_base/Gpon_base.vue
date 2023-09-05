@@ -15,7 +15,7 @@ export default {
           id: 1,
           address: {region: "Севастополь", settlement: "", street: "Колобова", house: 18, block: 10},
           oltPort: "0/4/9",
-          deviceName: "MSAN_Gstal64_up",
+          deviceName: "MSAN_Gstal64_down",
           entrances: "1-8",
           customerLine: {
             type: "splitter",
@@ -294,6 +294,15 @@ export default {
           },
         }
       ]
+    }
+  },
+  computed: {
+    testTableData() {
+      let testData = Array()
+      for (let i = 0; i < 1000; i++) {
+        testData.push(...this.gponTechData)
+      }
+      return testData
     }
   }
 }
