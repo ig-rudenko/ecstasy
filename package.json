@@ -2,17 +2,20 @@
   "name": "ecstasy",
   "version": "0.8.1",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "dev": "vite"
   },
   "dependencies": {
     "chart.js": "^4.2.1",
     "glob-parent": "^6.0.2",
     "primevue": "^3.29.1",
+    "vite": "^4.4.9",
     "vue": "^3.2.45",
     "vue-chartjs": "^5.2.0",
     "vue-pdf": "^4.3.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^4.3.4",
     "chokidar": "^3.5.3",
     "css-loader": "^6.7.3",
     "primevue": "^3.29.1",
