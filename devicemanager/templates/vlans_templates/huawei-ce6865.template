@@ -1,0 +1,10 @@
+Value Required INTERFACE ((25|100)\S+\d)
+Value VLAN ([0-9 to]+)
+
+Start
+  ^interface -> Continue.Record
+  ^interface ${INTERFACE}
+  ^ (?<!undo )port\s+.*vlan\s+${VLAN} -> Record
+  ^ (?<!undo )encapsulation\s+.*vid\s+${VLAN} -> Record
+  ^ (?<!undo )encapsulation\s+.*vid\s+\d+\s+ce-vid\s+${VLAN} -> Record
+  ^ (?<!undo )port\s+default\s+vlan\s+${VLAN} -> Record

@@ -1,0 +1,7 @@
+Value INTF ((25|100)\S+\d)
+Value PHY ((up|down|\*down|\^down)(\([lsbedpc]+\))?)
+Value PROTOCOL ((up|down|\^down)(\([lsbedpc]+\)|--){0,1})
+Value DESCRIPTION (.*)
+
+Start
+  ^.*${INTF}\s+${PHY}\s+${PROTOCOL}\s*${DESCRIPTION} -> Record

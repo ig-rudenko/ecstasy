@@ -193,8 +193,15 @@ class DeviceFactory:
                         r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE
                     )
                     return HuaweiCX600(session, self.ip, auth, model, self.snmp_community)
-                if "quidway" in version.lower():
+
+                elif "quidway" in version.lower():
                     return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
+
+                elif "CE6865" in version.lower():
+                    model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime is", version)
+                    return HuaweiCE6865(
+                        session, self.ip, auth, snmp_community=self.snmp_community, model=model
+                    )
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
             if "Unrecognized command" in version:
