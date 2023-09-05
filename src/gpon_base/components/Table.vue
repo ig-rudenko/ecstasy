@@ -36,9 +36,9 @@
         </div>
 
         <div class="d-flex flex-wrap">
-          <div style="width: 400px" class="me-2">
+          <div style="width: 300px" class="me-2">
             <label for="filter-street" class="mx-2 form-check-label">Улица/проспект</label>
-            <input style="width: 400px" id="filter-street" v-model.trim="filter.address.street" type="text"
+            <input style="width: 300px" id="filter-street" v-model.trim="filter.address.street" type="text"
                    class="form-control">
           </div>
           <div style="width: 100px" class="me-2">
@@ -72,27 +72,29 @@
     </div>
 
     <!-- TABLE -->
-    <table :style="{opacity: show_filter?0.4:1}" class="table table-responsive-lg">
-      <thead>
-      <tr>
-        <th scope="col"></th>
-        <th scope="col">Адрес</th>
-        <th scope="col">Порт olt</th>
-        <th scope="col">Абонентская линия</th>
-        <th scope="col">Кол-во</th>
-        <th scope="col"></th>
-      </tr>
-      </thead>
+    <div class="table-responsive-lg">
+      <table :style="{opacity: show_filter?0.4:1}" class="table">
+        <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Адрес</th>
+          <th scope="col">Порт olt</th>
+          <th scope="col">Абонентская линия</th>
+          <th scope="col">Кол-во</th>
+          <th scope="col"></th>
+        </tr>
+        </thead>
+
       <tbody>
       <tr v-for="line in tableData">
-        <th></th>
+        <td></td>
 
         <!-- АДРЕС -->
-        <th>
+        <td style="font-weight: 650">
           {{ line.address.street }}, д. {{ line.address.house }}{{ line.address.block ? "/" + line.address.block : "" }}
           <br>
           <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
-        </th>
+        </td>
 
         <!-- ПОРТ OLT -->
         <td>
@@ -128,7 +130,8 @@
         </th>
       </tr>
       </tbody>
-    </table>
+      </table>
+    </div>
 
     <!-- TABLE FOOTER -->
     <div class="table-footer">
@@ -342,6 +345,10 @@ tbody {
   color: #25213B;
 }
 
+tr, tr * {
+  text-wrap: nowrap;
+}
+
 tr:hover {
   background-color: #F4F2FF;
 }
@@ -374,6 +381,20 @@ tr:hover {
   width: max-content;
   position: absolute;
   z-index: 10;
+}
+
+@media (max-width: 770px) {
+  .filter-plate {
+    width: 450px
+  }
+}
+
+@media (max-width: 500px) {
+  .filter-plate {
+    max-width: 450px;
+    width: min-content;
+    margin: 0;
+  }
 }
 
 .table-footer {
