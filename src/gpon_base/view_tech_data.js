@@ -1,4 +1,4 @@
 import {createApp} from 'vue'
-import App from './Gpon_base.vue'
+import App from './View_Tech_data.vue'
 
 createApp(App).mount('#app')

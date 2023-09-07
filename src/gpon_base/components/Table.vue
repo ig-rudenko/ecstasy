@@ -29,8 +29,9 @@
                    class="form-control">
           </div>
           <div style="width: 200px" class="me-2">
-            <label for="filter-CHT" class="mx-2 form-check-label">СНТ/ТСН</label>
-            <input style="width: 200px" id="filter-CHT" v-model.trim="filter.address.CHT" type="text"
+            <label for="filter-planStructure" class="mx-2 form-check-label">СНТ/ТСН</label>
+            <input style="width: 200px" id="filter-planStructure" v-model.trim="filter.address.planStructure"
+                   type="text"
                    class="form-control">
           </div>
         </div>
@@ -183,7 +184,7 @@ export default {
     return {
       max_pages: 0,
       pages: {
-        rows_per_page: 5
+        rows_per_page: 10
       },
       current_page: 1,
       show_filter: false,
@@ -192,7 +193,7 @@ export default {
         address: {
           region: "",
           settlement: "",
-          CHT: "",
+          planStructure: "",
           street: "",
           house: null,
           block: null,
@@ -249,7 +250,7 @@ export default {
             // Поиск по адресу
             const match_region = address_filter.region.length === 0 || elem.address.region.toLowerCase().indexOf(address_filter.region.toLowerCase()) > -1
             const match_settlement = address_filter.settlement.length === 0 || elem.address.settlement.toLowerCase().indexOf(address_filter.settlement.toLowerCase()) > -1
-            const match_CHT = address_filter.CHT.length === 0 || elem.address.CHT.toLowerCase().indexOf(address_filter.CHT.toLowerCase()) > -1
+            const match_planStructure = address_filter.planStructure.length === 0 || elem.address.planStructure.toLowerCase().indexOf(address_filter.planStructure.toLowerCase()) > -1
             const match_street = address_filter.street.length === 0 || elem.address.street.toLowerCase().indexOf(address_filter.street.toLowerCase()) > -1
             const match_house = !address_filter.house || address_filter.house === elem.address.house
             const match_block = !address_filter.block || address_filter.block === elem.address.block
@@ -258,7 +259,7 @@ export default {
             const match_oltPort = oltPort_filter.length === 0 || elem.oltPort.toLowerCase().indexOf(oltPort_filter.toLowerCase()) > -1
             const match_deviceName = deviceName_filter.length === 0 || elem.deviceName.toLowerCase().indexOf(deviceName_filter.toLowerCase()) > -1
 
-            return match_region && match_settlement && match_CHT && match_street && match_house && match_block && match_oltPort && match_deviceName
+            return match_region && match_settlement && match_planStructure && match_street && match_house && match_block && match_oltPort && match_deviceName
           }
       )
       this.show_filter = false
