@@ -183,7 +183,7 @@ class HuaweiCE6865(BaseDevice):
 
             > display mac-address interface {port}
 
-        :return: ```[ vid, 'mac'), ... ]```
+        :return: ```[ (vid, 'mac'), ... ]```
         """
 
         output = self.send_command(f"display mac-address interface {port}")
@@ -199,6 +199,7 @@ class HuaweiCE6865(BaseDevice):
             for mac, vid, interface_full_name, intf_speed_prefix, subinterface, mac_type in mac_table
         ]
 
+    @validate_huawei_ce6865_port(if_invalid_return={"type": "text", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> dict:
         return {
             "type": "text",
@@ -212,6 +213,7 @@ class HuaweiCE6865(BaseDevice):
         """
         return "SFP"
 
+    @validate_huawei_ce6865_port()
     def get_port_errors(self, port):
         """
         ## Выводим ошибки на порту

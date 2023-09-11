@@ -1,12 +1,11 @@
-from django import test
+from unittest.mock import Mock, patch
+
+from django.test import TestCase
 
 from devicemanager.vendors.base.helpers import parse_by_template
+from devicemanager.vendors.huawei.ce6865 import HuaweiCE6865
 
-
-class TestCE6865Template(test.TestCase):
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls.dis_int_desc_output = """
+dis_int_desc_output = """
 PHY: Physical
 *down: administratively down
 ^down: standby
@@ -44,8 +43,7 @@ Vlanif300                     up      up
 Vlanif301                     down    down
 Vlanif3995                    up      up
 """
-        cls.dis_cur_inter_output = """
-        #
+dis_cur_inter_output = """#
 interface 25GE1/0/1
  port link-type hybrid
  port hybrid pvid vlan 200
@@ -133,9 +131,12 @@ interface 100GE1/0/7
  device transceiver 100GBASE-FIBER
 #"""
 
+
+class TestCE6865Template(TestCase):
+
     def test_interfaces_find_template(self):
         parse_data = parse_by_template(
-            "interfaces/huawei-ce6865.template", self.dis_int_desc_output
+            "interfaces/huawei-ce6865.template", dis_int_desc_output
         )
         self.assertListEqual(
             [
@@ -158,7 +159,7 @@ interface 100GE1/0/7
 
     def test_vlans_find_template(self):
         parse_data = parse_by_template(
-            f"vlans_templates/huawei-ce6865.template", self.dis_cur_inter_output
+            f"vlans_templates/huawei-ce6865.template", dis_cur_inter_output
         )
 
         self.assertListEqual(
@@ -183,3 +184,122 @@ interface 100GE1/0/7
             ],
             parse_data,
         )
+
+
+class TestCE6865Methods(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.device = HuaweiCE6865(session=None, ip="", auth={})
+        cls.display_mac_address_output = """
+# display mac-address
+Flags: * - Backup
+       # - forwarding logical interface, operations cannot be performed based
+           on the interface.
+BD   : bridge-domain   Age : dynamic MAC learned time in seconds
+-------------------------------------------------------------------------------
+MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
+-------------------------------------------------------------------------------
+3aad-b223-d191 104/-/-       25GE1/0/2           dynamic                247
+5aa0-b220-729f 104/-/-       25GE1/0/2           dynamic                 51
+8aad-b22b-b194 104/-/-       25GE1/0/1           dynamic                144
+8aad-b22b-b194 300/-/-       25GE1/0/1           dynamic                363
+0aab-b226-0791 3995/-/-      25GE1/0/6           dynamic            1821961
+0aa3-b22b-5f91 3995/-/-      25GE1/0/5           dynamic            1561821
+0aab-b226-0791 -/bbn3991/13991 25GE1/0/6.3991      dynamic            2733593"""
+        cls.display_mac_address_port_output = """
+# display mac-address
+Flags: * - Backup
+       # - forwarding logical interface, operations cannot be performed based
+           on the interface.
+BD   : bridge-domain   Age : dynamic MAC learned time in seconds
+-------------------------------------------------------------------------------
+MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
+-------------------------------------------------------------------------------
+3aad-b223-d191 104/-/-       25GE1/0/1           dynamic                247
+5aa0-b220-729f 104/-/-       25GE1/0/1           dynamic                 51
+8aad-b22b-b194 104/-/-       25GE1/0/1           dynamic                144
+8aad-b22b-b194 300/-/-       25GE1/0/1           dynamic                363"""
+        cls.display_interface_errors_output = "CRC: 123\nErrors: 0"
+        cls.display_interface_output = f"some data\n{cls.display_interface_errors_output}\nnext data"
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_interfaces_method(self, send_command: Mock):
+        send_command.return_value = dis_int_desc_output
+
+        result = self.device.get_interfaces()
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_mac_table_method(self, send_command: Mock):
+        send_command.return_value = self.display_mac_address_output
+
+        result = self.device.get_mac_table()
+
+        self.assertListEqual(
+            result,
+            [
+                (104, "3aad-b223-d191", "dynamic", "25GE1/0/2"),
+                (104, "5aa0-b220-729f", "dynamic", "25GE1/0/2"),
+                (104, "8aad-b22b-b194", "dynamic", "25GE1/0/1"),
+                (300, "8aad-b22b-b194", "dynamic", "25GE1/0/1"),
+                (3995, "0aab-b226-0791", "dynamic", "25GE1/0/6"),
+                (3995, "0aa3-b22b-5f91", "dynamic", "25GE1/0/5"),
+            ],
+        )
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_mac_method(self, send_command: Mock):
+        send_command.return_value = self.display_mac_address_port_output
+
+        result = self.device.get_mac(port="25GE1/0/1")
+
+        self.assertListEqual(
+            result,
+            [
+                (104, "3aad-b223-d191"),
+                (104, "5aa0-b220-729f"),
+                (104, "8aad-b22b-b194"),
+                (300, "8aad-b22b-b194"),
+            ],
+        )
+
+    def test_get_port_type_method(self):
+        self.assertEqual(self.device.get_port_type(port="25GE1/0/1"), "SFP")
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_port_info_method_valid_port(self, send_command: Mock):
+        send_command.return_value = self.display_interface_output
+
+        self.assertEqual(
+            self.device.get_port_info(port="25GE1/0/1"),
+            {
+                "type": "text",
+                "data": self.display_interface_output,
+            },
+        )
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_port_info_method_invalid_port(self, send_command: Mock):
+        send_command.return_value = self.display_interface_output
+
+        self.assertDictEqual(
+            self.device.get_port_info(port="dsfas"),
+            {
+                "type": "text",
+                "data": "Неверный порт",
+            },
+        )
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_port_errors_method_valid_port(self, send_command: Mock):
+        send_command.return_value = self.display_interface_output
+
+        self.assertEqual(
+            self.device.get_port_errors(port="25GE1/0/1"),
+            self.display_interface_errors_output,
+        )
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    def test_get_port_errors_method_invalid_port(self, send_command: Mock):
+        send_command.return_value = self.display_interface_output
+
+        self.assertEqual(self.device.get_port_errors(port="dsfas"), "Неверный порт")
