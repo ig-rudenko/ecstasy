@@ -27,9 +27,8 @@
             <label for="address" class="ml-2">Использовать адрес дома</label>
           </div>
         </h6>
-        <InputText v-if="!sp.buildAddress && end3Type==='splitter'" v-model.trim="sp.address.input" type="text"
-                   placeholder="Укажите другой адрес"
-                   class="w-100"/>
+        <AddressGetCreate v-if="!sp.buildAddress && end3Type==='splitter'" :is-mobile="false" :data="sp">
+        </AddressGetCreate>
       </div>
 
       <div class="me-3 py-3">
@@ -57,10 +56,12 @@
 import InputText from "primevue/inputtext/InputText.vue"
 import Checkbox from "primevue/checkbox/Checkbox.vue"
 import Asterisk from "./Asterisk.vue"
+import AddressGetCreate from "./AddressGetCreate.vue";
 
 export default {
   name: "SplitterAddForm.vue",
   components: {
+    AddressGetCreate,
     Asterisk,
     Checkbox,
     InputText,
@@ -84,9 +85,7 @@ export default {
       this.initial.push(
           {
             buildAddress: true,
-            address: {
-              input: ""
-            },
+            address: null,
             location: ""
           }
       )

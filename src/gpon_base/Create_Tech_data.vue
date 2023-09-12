@@ -134,7 +134,8 @@
               <h6>Количество портов на сплиттере
                 <Asterisk/>
               </h6>
-              <Dropdown v-model="formData.end3.splitter.portCount" :options="[4, 8, 16]" class="w-full md:w-14rem"/>
+              <Dropdown v-model="formData.end3.splitter.portCount" :options="[4, 8, 12, 16, 24]"
+                        class="w-full md:w-14rem"/>
             </div>
           </div>
 
@@ -162,12 +163,12 @@
         </div>
 
         <div v-if="formData.houseB.buildType()==='building'">
-          <End3AddForm :initial="formData.end3.splitter.list" :end3-type="formData.end3.type"></End3AddForm>
+          <End3AddForm :initial="formData.end3.list" :end3-type="formData.end3.type"></End3AddForm>
         </div>
 
         <!-- В частном доме может быть только ОДИН сплиттер -->
         <div v-else>
-          <End3AddForm :initial="formData.end3.splitter.list" :max-limit="1" end3-type="splitter"></End3AddForm>
+          <End3AddForm :initial="formData.end3.list" :max-limit="1" end3-type="splitter"></End3AddForm>
         </div>
 
       </div>
@@ -282,7 +283,11 @@ export default {
           }
         },
         thirdStep: {
-          showRizerColors: false
+          showRizerColors: false,
+          end3Valid: false,
+          isValid() {
+            return this.end3Valid
+          }
         }
       },
 
@@ -303,9 +308,9 @@ export default {
         },
         end3: {
           type: "splitter",
+          list: [],
           splitter: {
-            portCount: 8,
-            list: []
+            portCount: 8
           }
         }
 
@@ -348,10 +353,19 @@ export default {
       } else if (this.current_step === 2) {
         this.formState.secondStep.address.valid = Boolean(this.formData.houseB.address)
         return this.formState.secondStep.isValid()
+
+      } else if (this.current_step === 3) {
+        let validCount = 0
+        for (let elem of this.formData.end3.list) {
+          if ((elem.buildAddress || elem.address) && elem.location.length) validCount++;
+        }
+        this.formState.thirdStep.end3Valid = validCount === this.formData.end3.list.length && validCount
+        return this.formState.thirdStep.isValid()
       }
     },
 
     nextStep() {
+      console.log("NEXT", this.stepIsValid())
       if (this.current_step < 4 && this.stepIsValid()) this.current_step++
     },
     prevStep() {

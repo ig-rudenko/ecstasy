@@ -26,12 +26,12 @@
     </div>
 
     <Button @click="show_new_address_form=true" severity="success" size="small">
-      Создать новый адрес
+      Редактировать
     </Button>
 
   </div>
 
-  <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового дома"
+  <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового адреса"
           :style="{ width: isMobile?'100vw':'50vw' }">
     <AddressForm @valid="validNewAddress" @dismiss="dismissNewAddress"
                  :address="data.address||getNewAddress()"></AddressForm>
