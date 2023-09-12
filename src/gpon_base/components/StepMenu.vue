@@ -1,7 +1,7 @@
 <template>
   <div class="container d-flex justify-content-around">
 
-    <div>
+    <div v-if="!isMobile || currentStep === 1">
       <svg v-if="currentStep <= 1" xmlns="http://www.w3.org/2000/svg" width="32" height="32"
            :fill="currentStep===1?'#633BBC':'#E1E1E6'" class="me-2" viewBox="0 0 16 16">
         <path
@@ -15,7 +15,7 @@
       <b>{{ stepsText[0] }}</b>
     </div>
 
-    <div>
+    <div v-if="!isMobile">
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-chevron-right"
            viewBox="0 0 16 16">
         <path fill-rule="evenodd"
@@ -23,7 +23,7 @@
       </svg>
     </div>
 
-    <div>
+    <div v-if="!isMobile || currentStep === 2">
       <svg v-if="currentStep <= 2" xmlns="http://www.w3.org/2000/svg" width="32" height="32"
            :fill="currentStep===2?'#633BBC':'#E1E1E6'" class="me-2" viewBox="0 0 16 16">
         <path
@@ -37,7 +37,7 @@
       <b>{{ stepsText[1] }}</b>
     </div>
 
-    <div>
+    <div v-if="!isMobile">
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-chevron-right"
            viewBox="0 0 16 16">
         <path fill-rule="evenodd"
@@ -45,7 +45,7 @@
       </svg>
     </div>
 
-    <div>
+    <div v-if="!isMobile || currentStep === 3">
       <svg v-if="currentStep <= 3" xmlns="http://www.w3.org/2000/svg" width="32" height="32"
            :fill="currentStep===3?'#633BBC':'#E1E1E6'" class="me-2" viewBox="0 0 16 16">
         <path
@@ -67,8 +67,9 @@ export default {
   name: "StepMenu.vue",
   props: {
     currentStep: {required: true},
-    stepsText: {required: true, type: Array}
-  }
+    stepsText: {required: true, type: Array},
+    isMobile: {required: false, default: false},
+  },
 }
 </script>
 

@@ -81,6 +81,9 @@
     </div>
 
     <div style="text-align: right" class="py-3">
+      <Button class="me-3" @click="dismiss" severity="secondary" size="small">
+        Не сохранять
+      </Button>
       <Button @click="validate" severity="success" size="small">
         Подтвердить
       </Button>
@@ -160,6 +163,11 @@ export default {
         this.$emit("valid")
       }
     },
+
+    dismiss() {
+      this.$emit("dismiss")
+    }
+
   },
 }
 </script>

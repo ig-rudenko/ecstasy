@@ -10,6 +10,7 @@
       <StepMenu
           class="p-2"
           :current-step="current_step"
+          :is-mobile="isMobile"
           :steps-text="['OLT State', 'Дом', 'Абонентская линия']">
       </StepMenu>
 
@@ -25,7 +26,7 @@
 
             <div class="shadow">
               <Dropdown v-model="formData.oltState.deviceName" :options="devicesList" filter
-                        :class="formState.firstStep.deviceName.valid?[]:['p-invalid']"
+                        :class="formState.firstStep.deviceName.valid?['flex-wrap']:['flex-wrap', 'p-invalid']"
                         optionLabel="name" placeholder="Выберите устройство">
                 <template #value="slotProps">
                   <div v-if="slotProps.value" class="flex align-items-center">
@@ -126,17 +127,19 @@
           </div>
 
           <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового дома"
-                  :style="{ width: '50vw' }">
-            <AddressForm @valid="validNewAddress" :address="formData.houseB.new_address"></AddressForm>
+                  :style="{ width: isMobile?'100vw':'50vw' }">
+            <AddressForm @valid="validNewAddress" @dismiss="dismissNewAddress"
+                         :address="formData.houseB.new_address"></AddressForm>
           </Dialog>
 
           <div v-if="!show_new_address_form && formState.secondStep.new_address.valid">
-            <h6>
+            <h6 class="form-control">
+              <BuildingIcon :type="formData.houseB.new_address.building_type" width="24" height="24"></BuildingIcon>
               {{ getFullAddress(formData.houseB.new_address) }}
               <br>
-              <template v-if="this.formData.houseB.new_address.apartment_building === 'true'">
-                Многоквартирный дом. Количество этажей: {{ this.formData.houseB.new_address.floors }} /
-                Количество подъездов: {{ this.formData.houseB.new_address.total_entrances }}
+              <template v-if="formData.houseB.new_address.building_type === 'building'">
+                Многоквартирный дом. Количество этажей: {{ formData.houseB.new_address.floors }} /
+                Количество подъездов: {{ formData.houseB.new_address.total_entrances }}
               </template>
               <template v-else>
                 Частный дом.
@@ -166,7 +169,7 @@
       <div v-else-if="current_step===3" class="p-4">
 
         <div class="w-100 d-flex">
-          <div v-if="this.formData.houseB.buildType()==='building'" class="py-3 me-4">
+          <div v-if="formData.houseB.buildType()==='building'" class="py-3 me-4">
             <div class="flex align-items-center py-1">
               <RadioButton v-model="formData.end3.type" inputId="splitter" value="splitter"/>
               <label for="splitter" class="ml-2"><span class="m-2">Сплиттер</span></label>
@@ -192,14 +195,21 @@
                 <Asterisk/>
               </h6>
               <Dropdown v-model="formData.end3.splitter.portCount" :options="[4, 8, 12, 16, 24]"
-                        class="w-full md:w-14rem"/>
+                        class="w-full md:w-14rem me-3"/>
+              <Button @click="formState.thirdStep.showRizerColors=true" severity="primary" outlined rounded
+                      size="small">
+                Посмотреть цвета
+              </Button>
             </div>
 
+            <Dialog v-model:visible="formState.thirdStep.showRizerColors">
+              <RizerFiberColorExample v-if="formData.end3.type==='rizer'" :count="formData.end3.splitter.portCount"/>
+            </Dialog>
 
           </div>
 
         </div>
-        <RizerFiberColorExample :count="formData.end3.splitter.portCount"/>
+
 
 
       </div>
@@ -213,7 +223,7 @@
             <path
                 d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
           </svg>
-          Отмена
+          {{ isMobile ? '' : 'Отмена' }}
         </Button>
 
 
@@ -225,7 +235,7 @@
               <path
                   d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
             </svg>
-            Назад
+            {{ isMobile ? '' : 'Назад' }}
           </Button>
 
           <Button v-if="current_step<4" @click="nextStep" severity="success" rounded>
@@ -234,7 +244,7 @@
               <path
                   d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
             </svg>
-            {{ current_step < 3 ? 'Далее' : 'Завершить' }}
+            {{ isMobile ? '' : current_step < 3 ? 'Далее' : 'Завершить' }}
           </Button>
 
           <Button v-if="current_step===4" @click="nextStep" severity="success" rounded>
@@ -286,8 +296,14 @@ export default {
     StepMenu,
     Textarea,
   },
+  mounted() {
+    window.addEventListener('resize', () => {
+      this.windowWidth = window.innerWidth
+    })
+  },
   data() {
     return {
+      windowWidth: window.innerWidth,
       current_step: 1,
       show_new_address_form: false,
       formState: {
@@ -305,6 +321,9 @@ export default {
             return this.address.valid || this.new_address.valid
           }
         },
+        thirdStep: {
+          showRizerColors: false
+        }
       },
 
       formData: {
@@ -353,6 +372,10 @@ export default {
         "MSAN_GStal64_upssssssssssssssssssss",
         "MSAN_GStal64_down",
       ]
+    },
+
+    isMobile() {
+      return this.windowWidth <= 768
     },
 
     devicePortList() {
@@ -441,6 +464,7 @@ export default {
       if (this.current_step > 1) this.current_step--
     },
 
+    // Принимает объект адреса в качестве параметра и возвращает отформатированную полную строку адреса.
     getFullAddress(address) {
       let str = ""
       if (address.region !== "Севастополь") str += ` ${address.region},`;
@@ -457,6 +481,14 @@ export default {
       this.formState.secondStep.new_address.valid = true
       this.formData.houseB.address = null
     },
+
+    dismissNewAddress() {
+      this.show_new_address_form = false
+      this.formState.secondStep.new_address.valid = false
+      this.formState.secondStep.address.valid = true
+      this.formData.houseB.new_address = null
+    }
+
   },
 }
 </script>
@@ -467,4 +499,19 @@ export default {
   border: 1px solid #A3A3A3;
 }
 
+@media (max-width: 500px) {
+  .container, .mx-5 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .w-75 {
+    width: 100% !important;
+  }
+
+  .p-4 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
 </style>
