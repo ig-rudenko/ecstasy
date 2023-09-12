@@ -19,19 +19,22 @@ PHY: Physical
 (c): CFM down
 (ed): error down
 Interface                     PHY     Protocol Description
-100GE1/0/1                    up      up       Desc1
-100GE1/0/2                    up      up       Desc2
-100GE1/0/3                    up      up       Desc3-long-long-long-long
-100GE1/0/4                    *down   down
-100GE1/0/5                    ^down   ^down
-100GE1/0/6                    ^down   down
-100GE1/0/7                    down    down
-100GE1/0/8                    down    down
-25GE1/0/1                     up(s)   up       Device2:Gi2/0/9
-25GE1/0/1.105                 up      up
-25GE1/0/1.106                 up(dl)  up
-25GE1/0/2                     up      up       This:25GE1/0/3
-25GE1/0/3                     up      down     This:25GE1/0/2
+25GE1/0/1                     up      up       Desc1
+25GE1/0/1.105                 up      up       Desc2
+25GE1/0/1.106                 up      up       Desc3-long-long-long-long
+25GE1/0/2                     *down   down
+25GE1/0/3.101                 ^down   ^down
+25GE1/0/3.102                 ^down   down
+25GE1/0/3.103                 down    down
+25GE1/0/3.104                 down    down
+25GE1/0/3.200                 up(s)   up       Device2:Gi2/0/9
+25GE1/0/4                     up(dl)  up
+25GE1/0/5                     up      up
+25GE1/0/6                     up      up
+25GE1/0/7                     up      up
+25GE1/0/8                     up      up
+100GE1/0/6                    up      up       This:25GE1/0/3
+100GE1/0/7                    up      down     This:25GE1/0/2
 Loop0                         up      up(s)
 MEth0/0/0                     up      up
 NULL0                         up      up(s)
@@ -124,35 +127,35 @@ interface 25GE1/0/8
  port mode 10G
 #
 interface 100GE1/0/6
- port default vlan 7
+ port default vlan 6
 #
 interface 100GE1/0/7
- port default vlan 8
+ port default vlan 7
  device transceiver 100GBASE-FIBER
 #"""
 
 
 class TestCE6865Template(TestCase):
-
     def test_interfaces_find_template(self):
-        parse_data = parse_by_template(
-            "interfaces/huawei-ce6865.template", dis_int_desc_output
-        )
+        parse_data = parse_by_template("interfaces/huawei-ce6865.template", dis_int_desc_output)
         self.assertListEqual(
             [
-                ["100GE1/0/1", "up", "up", "Desc1"],
-                ["100GE1/0/2", "up", "up", "Desc2"],
-                ["100GE1/0/3", "up", "up", "Desc3-long-long-long-long"],
-                ["100GE1/0/4", "*down", "down", ""],
-                ["100GE1/0/5", "^down", "^down", ""],
-                ["100GE1/0/6", "^down", "down", ""],
-                ["100GE1/0/7", "down", "down", ""],
-                ["100GE1/0/8", "down", "down", ""],
-                ["25GE1/0/1", "up(s)", "up", "Device2:Gi2/0/9"],
-                ["25GE1/0/1.105", "up", "up", ""],
-                ["25GE1/0/1.106", "up(dl)", "up", ""],
-                ["25GE1/0/2", "up", "up", "This:25GE1/0/3"],
-                ["25GE1/0/3", "up", "down", "This:25GE1/0/2"],
+                ["25GE1/0/1", "up", "up", "Desc1"],
+                ["25GE1/0/1.105", "up", "up", "Desc2"],
+                ["25GE1/0/1.106", "up", "up", "Desc3-long-long-long-long"],
+                ["25GE1/0/2", "*down", "down", ""],
+                ["25GE1/0/3.101", "^down", "^down", ""],
+                ["25GE1/0/3.102", "^down", "down", ""],
+                ["25GE1/0/3.103", "down", "down", ""],
+                ["25GE1/0/3.104", "down", "down", ""],
+                ["25GE1/0/3.200", "up(s)", "up", "Device2:Gi2/0/9"],
+                ["25GE1/0/4", "up(dl)", "up", ""],
+                ["25GE1/0/5", "up", "up", ""],
+                ["25GE1/0/6", "up", "up", ""],
+                ["25GE1/0/7", "up", "up", ""],
+                ["25GE1/0/8", "up", "up", ""],
+                ["100GE1/0/6", "up", "up", "This:25GE1/0/3"],
+                ["100GE1/0/7", "up", "down", "This:25GE1/0/2"],
             ],
             parse_data,
         )
@@ -179,8 +182,8 @@ class TestCE6865Template(TestCase):
                 ["25GE1/0/6", "3995"],
                 ["25GE1/0/7", ""],
                 ["25GE1/0/8", ""],
-                ["100GE1/0/6", "7"],
-                ["100GE1/0/7", "8"],
+                ["100GE1/0/6", "6"],
+                ["100GE1/0/7", "7"],
             ],
             parse_data,
         )
@@ -220,13 +223,62 @@ MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
 8aad-b22b-b194 104/-/-       25GE1/0/1           dynamic                144
 8aad-b22b-b194 300/-/-       25GE1/0/1           dynamic                363"""
         cls.display_interface_errors_output = "CRC: 123\nErrors: 0"
-        cls.display_interface_output = f"some data\n{cls.display_interface_errors_output}\nnext data"
+        cls.display_interface_output = (
+            f"some data\n{cls.display_interface_errors_output}\nnext data"
+        )
+        cls.valid_interfaces_list = [
+            ("25GE1/0/1", "up", "Desc1"),
+            ("25GE1/0/1.105", "up", "Desc2"),
+            ("25GE1/0/1.106", "up", "Desc3-long-long-long-long"),
+            ("25GE1/0/2", "admin down", ""),
+            ("25GE1/0/3.101", "down", ""),
+            ("25GE1/0/3.102", "down", ""),
+            ("25GE1/0/3.103", "down", ""),
+            ("25GE1/0/3.104", "down", ""),
+            ("25GE1/0/3.200", "up", "Device2:Gi2/0/9"),
+            ("25GE1/0/4", "up", ""),
+            ("25GE1/0/5", "up", ""),
+            ("25GE1/0/6", "up", ""),
+            ("25GE1/0/7", "up", ""),
+            ("25GE1/0/8", "up", ""),
+            ("100GE1/0/6", "up", "This:25GE1/0/3"),
+            ("100GE1/0/7", "down", "This:25GE1/0/2"),
+        ]
+        cls.valid_vlans_list = [
+            ("25GE1/0/1", "up", "Desc1", [200]),
+            ("25GE1/0/1.105", "up", "Desc2", [105]),
+            ("25GE1/0/1.106", "up", "Desc3-long-long-long-long", [500]),
+            ("25GE1/0/2", "admin down", "", [1, 2, 3, 4, 8, 101, 102, 103, 104, 200]),
+            ("25GE1/0/3.101", "down", "", [101]),
+            ("25GE1/0/3.102", "down", "", [102]),
+            ("25GE1/0/3.103", "down", "", [801]),
+            ("25GE1/0/3.104", "down", "", [104]),
+            ("25GE1/0/3.200", "up", "Device2:Gi2/0/9", [200]),
+            ("25GE1/0/4", "up", "", []),
+            ("25GE1/0/5", "up", "", [3995]),
+            ("25GE1/0/6", "up", "", [3995]),
+            ("25GE1/0/7", "up", "", []),
+            ("25GE1/0/8", "up", "", []),
+            ("100GE1/0/6", "up", "This:25GE1/0/3", [6]),
+            ("100GE1/0/7", "down", "This:25GE1/0/2", [7]),
+        ]
 
     @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
     def test_get_interfaces_method(self, send_command: Mock):
         send_command.return_value = dis_int_desc_output
 
         result = self.device.get_interfaces()
+        self.assertListEqual(result, self.valid_interfaces_list)
+
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
+    @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.get_interfaces")
+    def test_get_vlans_method(self, get_interfaces: Mock, send_command: Mock):
+        get_interfaces.return_value = self.valid_interfaces_list
+        send_command.return_value = dis_cur_inter_output
+
+        result = self.device.get_vlans()
+        print(result)
+        self.assertListEqual(result, self.valid_vlans_list)
 
     @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")
     def test_get_mac_table_method(self, send_command: Mock):
