@@ -94,62 +94,9 @@
       <div v-else-if="current_step===2" class="p-4">
 
         <div class="w-100">
-          <div v-if="!show_new_address_form && !formState.secondStep.new_address.valid">
-            <h6 class="px-2">Выберите существующий адрес дома
-              <Asterisk/>
-            </h6>
-            <div class="shadow">
-              <Dropdown v-model="formData.houseB.address" :options="addressesList" filter
-                        :class="formState.secondStep.address.valid?[]:['p-invalid']"
-                        :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
-                <template #value="slotProps">
-                  <div v-if="slotProps.value" class="flex align-items-center d-flex">
-                    <BuildingIcon :type="slotProps.value.building_type" width="24" height="24"></BuildingIcon>
-                    <div>{{ getFullAddress(slotProps.value) }}</div>
-                  </div>
-                  <span v-else>
-                      {{ slotProps.placeholder }}
-                  </span>
-                </template>
-                <template #option="slotProps">
-                  <div class="flex align-items-center d-flex">
-                    <BuildingIcon :type="slotProps.option.building_type" width="24" height="24"></BuildingIcon>
-                    <div>{{ getFullAddress(slotProps.option) }}</div>
-                  </div>
-                </template>
-              </Dropdown>
-            </div>
 
-            <Button @click="show_new_address_form=true" severity="success" size="small">
-              Создать новый адрес
-            </Button>
-
-          </div>
-
-          <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового дома"
-                  :style="{ width: isMobile?'100vw':'50vw' }">
-            <AddressForm @valid="validNewAddress" @dismiss="dismissNewAddress"
-                         :address="formData.houseB.new_address"></AddressForm>
-          </Dialog>
-
-          <div v-if="!show_new_address_form && formState.secondStep.new_address.valid">
-            <h6 class="form-control">
-              <BuildingIcon :type="formData.houseB.new_address.building_type" width="24" height="24"></BuildingIcon>
-              {{ getFullAddress(formData.houseB.new_address) }}
-              <br>
-              <template v-if="formData.houseB.new_address.building_type === 'building'">
-                Многоквартирный дом. Количество этажей: {{ formData.houseB.new_address.floors }} /
-                Количество подъездов: {{ formData.houseB.new_address.total_entrances }}
-              </template>
-              <template v-else>
-                Частный дом.
-              </template>
-            </h6>
-            <Button @click="show_new_address_form=true" severity="success" size="small">
-              Редактировать новый адрес
-            </Button>
-          </div>
-
+          <AddressGetCreate :is-mobile="isMobile" :data="formData.houseB">
+          </AddressGetCreate>
 
           <div class="w-100 py-3">
             <h6 class="px-2">Задействованные подъезды в доме для данного OLT порта</h6>
@@ -168,18 +115,20 @@
       <!-- THIRD STEP -->
       <div v-else-if="current_step===3" class="p-4">
 
+        <!-- Выбор сплиттера или райзера -->
         <div class="w-100 d-flex">
           <div v-if="formData.houseB.buildType()==='building'" class="py-3 me-4">
             <div class="flex align-items-center py-1">
-              <RadioButton v-model="formData.end3.type" inputId="splitter" value="splitter"/>
+              <RadioButton v-model="formData.end3.type" id="splitter" inputId="splitter" value="splitter"/>
               <label for="splitter" class="ml-2"><span class="m-2">Сплиттер</span></label>
             </div>
             <div class="flex align-items-center">
-              <RadioButton v-model="formData.end3.type" inputId="rizer" value="rizer"/>
+              <RadioButton v-model="formData.end3.type" id="rizer" inputId="rizer" value="rizer"/>
               <label for="rizer" class="ml-2"><span class="m-2">Райзер</span></label>
             </div>
           </div>
 
+          <!-- Кол-во портов -->
           <div v-if="formData.end3.type==='splitter'">
             <div>
               <h6>Количество портов на сплиттере
@@ -189,6 +138,7 @@
             </div>
           </div>
 
+          <!-- Кол-во волокон -->
           <div v-if="formData.end3.type==='rizer'">
             <div>
               <h6>Количество волокон на райзере
@@ -202,6 +152,7 @@
               </Button>
             </div>
 
+            <!-- Окно для отображения цветов волокон -->
             <Dialog v-model:visible="formState.thirdStep.showRizerColors">
               <RizerFiberColorExample v-if="formData.end3.type==='rizer'" :count="formData.end3.splitter.portCount"/>
             </Dialog>
@@ -210,7 +161,14 @@
 
         </div>
 
+        <div v-if="formData.houseB.buildType()==='building'">
+          <End3AddForm :initial="formData.end3.splitter.list" :end3-type="formData.end3.type"></End3AddForm>
+        </div>
 
+        <!-- В частном доме может быть только ОДИН сплиттер -->
+        <div v-else>
+          <End3AddForm :initial="formData.end3.splitter.list" :max-limit="1" end3-type="splitter"></End3AddForm>
+        </div>
 
       </div>
 
@@ -268,22 +226,25 @@
 </template>
 
 <script>
-import StepMenu from "./components/StepMenu.vue"
-import Dropdown from "primevue/dropdown/Dropdown.vue"
-import InputText from "primevue/inputtext/InputText.vue"
-import Textarea from "primevue/textarea/Textarea.vue"
-import Button from "primevue/button/Button.vue"
-import Dialog from "primevue/dialog/Dialog.vue"
-import RadioButton from "primevue/radiobutton/RadioButton.vue"
+import StepMenu from "./components/StepMenu.vue";
+import Dropdown from "primevue/dropdown/Dropdown.vue";
+import InputText from "primevue/inputtext/InputText.vue";
+import Textarea from "primevue/textarea/Textarea.vue";
+import Button from "primevue/button/Button.vue";
+import Dialog from "primevue/dialog/Dialog.vue";
+import RadioButton from "primevue/radiobutton/RadioButton.vue";
 
-import AddressForm from "./components/AddressForm.vue"
-import Asterisk from "./components/Asterisk.vue"
-import BuildingIcon from "./components/BuildingIcon.vue"
+import AddressForm from "./components/AddressForm.vue";
+import Asterisk from "./components/Asterisk.vue";
+import BuildingIcon from "./components/BuildingIcon.vue";
 import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
+import End3AddForm from "./components/End3AddForm.vue";
+import AddressGetCreate from "./components/AddressGetCreate.vue";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    AddressGetCreate,
     BuildingIcon,
     AddressForm,
     Asterisk,
@@ -293,6 +254,7 @@ export default {
     InputText,
     RadioButton,
     RizerFiberColorExample,
+    End3AddForm,
     StepMenu,
     Textarea,
   },
@@ -305,7 +267,6 @@ export default {
     return {
       windowWidth: window.innerWidth,
       current_step: 1,
-      show_new_address_form: false,
       formState: {
         firstStep: {
           deviceName: {valid: true},
@@ -316,9 +277,8 @@ export default {
         },
         secondStep: {
           address: {valid: true},
-          new_address: {valid: false},
           isValid() {
-            return this.address.valid || this.new_address.valid
+            return this.address.valid
           }
         },
         thirdStep: {
@@ -334,32 +294,18 @@ export default {
           description: "",
         },
         houseB: {
-          address: null,
           entrances: "",
           description: "",
-          new_address: {
-            region: "Севастополь",
-            settlement: "Севастополь",
-            planStructure: "",
-            street: "",
-            house: "",
-            block: null,
-            building_type: "building",
-            floors: 1,
-            total_entrances: 1
-          },
+          address: null,
           buildType() {
-            if (this.address) {
-              return this.address.building_type
-            } else {
-              return this.new_address.building_type
-            }
+            return this.address.building_type
           },
         },
         end3: {
           type: "splitter",
           splitter: {
-            portCount: 8
+            portCount: 8,
+            list: []
           }
         }
 
@@ -390,58 +336,6 @@ export default {
       ]
     },
 
-    addressesList() {
-      return [
-        {
-          id: 1,
-          region: "Севастополь",
-          settlement: "Сахарная головка",
-          planStructure: "",
-          street: "улица Тракторная",
-          house: "2",
-          block: null,
-          building_type: 'house',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 2,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "",
-          street: "улица Колобова",
-          house: "22",
-          block: null,
-          building_type: 'building',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 3,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "",
-          street: "проспект Генерала Острякова",
-          house: "222а",
-          block: 2,
-          building_type: 'building',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 4,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "Рыбак-7",
-          street: "",
-          house: "123",
-          block: null,
-          building_type: 'house',
-          floors: 1,
-          total_entrances: 1
-        },
-      ]
-    }
   },
   methods: {
 
@@ -464,31 +358,6 @@ export default {
       if (this.current_step > 1) this.current_step--
     },
 
-    // Принимает объект адреса в качестве параметра и возвращает отформатированную полную строку адреса.
-    getFullAddress(address) {
-      let str = ""
-      if (address.region !== "Севастополь") str += ` ${address.region},`;
-      if (address.settlement !== "Севастополь") str += ` ${address.settlement},`;
-      if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
-      if (address.street.length) str += ` ${address.street},`;
-      str += ` д. ${address.house}`;
-      if (address.block) str += `/${address.block}`;
-      return str
-    },
-
-    validNewAddress() {
-      this.show_new_address_form = false
-      this.formState.secondStep.new_address.valid = true
-      this.formData.houseB.address = null
-    },
-
-    dismissNewAddress() {
-      this.show_new_address_form = false
-      this.formState.secondStep.new_address.valid = false
-      this.formState.secondStep.address.valid = true
-      this.formData.houseB.new_address = null
-    }
-
   },
 }
 </script>
@@ -499,7 +368,7 @@ export default {
   border: 1px solid #A3A3A3;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 767px) {
   .container, .mx-5 {
     margin-left: 0 !important;
     margin-right: 0 !important;

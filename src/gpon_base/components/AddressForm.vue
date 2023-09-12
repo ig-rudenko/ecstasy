@@ -160,7 +160,7 @@ export default {
       this.house.valid = this.address.house.length > 0
 
       if (this.region.valid && this.settlement.valid && this.planStructure.valid && this.street.valid && this.house.valid) {
-        this.$emit("valid")
+        this.$emit("valid", this.address)
       }
     },
 
