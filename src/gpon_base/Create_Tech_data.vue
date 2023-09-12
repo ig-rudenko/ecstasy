@@ -134,7 +134,7 @@
               <h6>Количество портов на сплиттере
                 <Asterisk/>
               </h6>
-              <Dropdown v-model="formData.end3.splitter.portCount" :options="[4, 8, 12, 16, 24]"
+              <Dropdown v-model="formData.end3.portCount" :options="[4, 8, 12, 16, 24]"
                         class="w-full md:w-14rem"/>
             </div>
           </div>
@@ -145,7 +145,7 @@
               <h6>Количество волокон на райзере
                 <Asterisk/>
               </h6>
-              <Dropdown v-model="formData.end3.splitter.portCount" :options="[4, 8, 12, 16, 24]"
+              <Dropdown v-model="formData.end3.portCount" :options="[4, 8, 12, 16, 24]"
                         class="w-full md:w-14rem me-3"/>
               <Button @click="formState.thirdStep.showRizerColors=true" severity="primary" outlined rounded
                       size="small">
@@ -170,6 +170,89 @@
         <div v-else>
           <End3AddForm :initial="formData.end3.list" :max-limit="1" end3-type="splitter"></End3AddForm>
         </div>
+
+      </div>
+
+      <!-- LAST STEP -->
+      <div v-else-if="current_step===4" class="p-4">
+        <h4 class="text-center">Внимательно проверьте введенный данные</h4>
+
+        <h5 class="py-3">OLT State</h5>
+        <table class="table table-striped">
+          <tbody>
+          <tr>
+            <td>Оборудование</td>
+            <td>{{ formData.oltState.deviceName }}</td>
+          </tr>
+          <tr>
+            <td>OLT порт</td>
+            <td>{{ formData.oltState.devicePort }}</td>
+          </tr>
+          <tr>
+            <td>Волокно</td>
+            <td>{{ formData.oltState.fiber }}</td>
+          </tr>
+          <tr>
+            <td>Описание сплиттера 1го каскада</td>
+            <td>{{ formData.oltState.description }}</td>
+          </tr>
+          </tbody>
+        </table>
+
+        <h5 class="py-3">Дом</h5>
+        <table class="table table-striped">
+          <tbody>
+          <tr>
+            <td>Адрес</td>
+            <td>
+              <div>
+                <BuildingIcon :type="formData.houseB.address.building_type" width="24" height="24"></BuildingIcon>
+                {{ getFullAddress(formData.houseB.address) }}
+                <br>
+                <template v-if="formData.houseB.address.building_type === 'building'">
+                  Многоквартирный дом. Количество этажей: {{ formData.houseB.address.floors }} /
+                  Количество подъездов: {{ formData.houseB.address.total_entrances }}
+                </template>
+                <template v-else>
+                  Частный дом.
+                </template>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Задействованные подъезды в доме для данного OLT порта</td>
+            <td>{{ formData.houseB.entrances }}</td>
+          </tr>
+          <tr>
+            <td>Описание сплиттера 2го каскада</td>
+            <td>{{ formData.houseB.description }}</td>
+          </tr>
+          </tbody>
+        </table>
+
+        <h5 class="py-3">Абонентская линия</h5>
+        <table class="table table-striped">
+          <tbody>
+          <tr>
+            <td>Тип линии</td>
+            <td>{{ formData.end3.type }}</td>
+          </tr>
+          <tr>
+            <td>Количество портов</td>
+            <td>{{ formData.end3.portCount }}</td>
+          </tr>
+          <tr v-for="(sp, index) in formData.end3.list">
+            <td>{{ formData.end3.type }} {{ index + 1 }}</td>
+            <td>
+              Адрес:
+              <template v-if="!sp.buildAddress">{{ getFullAddress(sp.address) }}</template>
+              <template v-else>в этом же доме</template>
+              <br>
+              Местоположение: {{ sp.location }}
+            </td>
+          </tr>
+          </tbody>
+        </table>
 
       </div>
 
@@ -309,9 +392,7 @@ export default {
         end3: {
           type: "splitter",
           list: [],
-          splitter: {
-            portCount: 8
-          }
+          portCount: 8,
         }
 
       }
@@ -365,11 +446,22 @@ export default {
     },
 
     nextStep() {
-      console.log("NEXT", this.stepIsValid())
       if (this.current_step < 4 && this.stepIsValid()) this.current_step++
     },
     prevStep() {
       if (this.current_step > 1) this.current_step--
+    },
+
+    getFullAddress(address) {
+      if (!address) return "Выберите"
+      let str = ""
+      if (address.region !== "Севастополь") str += ` ${address.region},`;
+      if (address.settlement !== "Севастополь") str += ` ${address.settlement},`;
+      if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
+      if (address.street.length) str += ` ${address.street},`;
+      str += ` д. ${address.house}`;
+      if (address.block) str += `/${address.block}`;
+      return str
     },
 
   },
