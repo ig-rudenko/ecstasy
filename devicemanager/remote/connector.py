@@ -61,7 +61,7 @@ class RemoteDevice(AbstractDevice):
             headers={
                 "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", ""),
             },
-            timeout=60 * 10,
+            timeout=60 * 3,
         )
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
@@ -97,10 +97,10 @@ class RemoteDevice(AbstractDevice):
         return self._remote_call("get_mac", port=port)
 
     def reload_port(self, port: str, save_config=True) -> str:
-        return self._remote_call("reload_port", port=port, save_config=True)
+        return self._remote_call("reload_port", port=port, save_config=save_config)
 
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
-        return self._remote_call("set_port", port=port, status=status, save_config=True)
+        return self._remote_call("set_port", port=port, status=status, save_config=save_config)
 
     def save_config(self):
         return self._remote_call("save_config")
