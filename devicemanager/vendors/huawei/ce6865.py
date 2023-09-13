@@ -40,12 +40,16 @@ class HuaweiCE6865(BaseDevice):
     vendor = "Huawei"
 
     @BaseDevice.lock_session
-    def save_config(self):
+    def save_config(self) -> str:
         """
         ## Сохраняем конфигурацию оборудования командой:
 
+        ```
             > save
-              Are you sure [Y/N] Y
+            Warning: The current configuration will be written to the device. Continue? [Y/N]:Y
+            Now saving the current configuration to the slot 1 .....
+            Info: Save the configuration successfully.
+        ```
 
         Если конфигурация уже сохраняется, то будет выведено ```System is busy```,
         в таком случае ожидаем 2 секунды
@@ -57,9 +61,8 @@ class HuaweiCE6865(BaseDevice):
         n = 1
         while n <= 3:
             self.session.sendline("save")
-            self.session.expect(r"[Aa]re you sure.*\[Y\/N\]")
+            self.session.expect(r"The current configuration will be written to the device")
             self.session.sendline("Y")
-            self.session.sendline("\n")
             match = self.session.expect(
                 [self.prompt, r"successfully", r"[Ss]ystem is busy"], timeout=20
             )
@@ -214,7 +217,7 @@ class HuaweiCE6865(BaseDevice):
         return "SFP"
 
     @validate_huawei_ce6865_port()
-    def get_port_errors(self, port):
+    def get_port_errors(self, port) -> str:
         """
         ## Выводим ошибки на порту
 
@@ -228,7 +231,7 @@ class HuaweiCE6865(BaseDevice):
 
     @validate_huawei_ce6865_port()
     @BaseDevice.lock_session
-    def __port_info(self, port):
+    def __port_info(self, port) -> str:
         """
         ## Возвращаем полную информацию о порте.
 
@@ -269,15 +272,14 @@ class HuaweiCE6865(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        self.session.sendline("system-view")
-        self.session.sendline(f"interface {port}")
+        self._select_interface(port)
+
         self.session.sendline("shutdown")
         sleep(1)
         self.session.sendline("undo shutdown")
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
+
+        self._quit_from_interface_with_commit()
+
         r = self.session.before.decode(errors="ignore")
 
         self.lock = False
@@ -312,17 +314,16 @@ class HuaweiCE6865(BaseDevice):
         :param save_config: Если True, конфигурация будет сохранена на устройстве, defaults to True (optional)
         """
 
-        self.session.sendline("system-view")
-        self.session.sendline(f"interface {port}")
+        self._select_interface(port)
+
         if status == "up":
             self.session.sendline("undo shutdown")
         elif status == "down":
             self.session.sendline("shutdown")
         self.session.expect(r"\[\S+\]")
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
+
+        self._quit_from_interface_with_commit()
+
         r = self.session.before.decode(errors="ignore")
 
         self.lock = False
@@ -331,7 +332,7 @@ class HuaweiCE6865(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_huawei_ce6865_port()
-    def get_port_config(self, port):
+    def get_port_config(self, port) -> str:
         """
         ## Выводим конфигурацию порта
 
@@ -381,8 +382,7 @@ class HuaweiCE6865(BaseDevice):
         :return: Вывод команды смены описания
         """
 
-        self.session.sendline("system-view")
-        self.session.sendline(f"interface {port}")
+        self._select_interface(port)
 
         desc = self.clear_description(desc)  # Очищаем описание от лишних символов
 
@@ -404,10 +404,8 @@ class HuaweiCE6865(BaseDevice):
                 "status": "fail",
             }
 
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
+        self._quit_from_interface_with_commit()
+
         self.lock = False
         return {
             "description": desc,
@@ -417,7 +415,7 @@ class HuaweiCE6865(BaseDevice):
         }
 
     @BaseDevice.lock_session
-    def virtual_cable_test(self, port: str):
+    def virtual_cable_test(self, port: str) -> dict:
         return {}
 
     @BaseDevice.lock_session
@@ -429,3 +427,23 @@ class HuaweiCE6865(BaseDevice):
         config = self.send_command("display current-configuration", expect_command=True)
         config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
         return io.BytesIO(config.encode())
+
+    def _select_interface(self, interface: str) -> None:
+        """
+        Функция выбирает конкретный интерфейс в режиме системного просмотра.
+
+        :param interface: Параметр «interface» — это строка, представляющая имя сетевого интерфейса
+        """
+        self.session.sendline("system-view")
+        self.session.sendline(f"interface {interface}")
+        self.session.expect(rf"{interface}\]$")
+
+    def _quit_from_interface_with_commit(self) -> None:
+        """
+        Функция выходит из интерфейса и фиксирует все изменения, если есть какие-либо незафиксированные конфигурации.
+        """
+        self.session.sendline("quit")
+        self.session.expect(self.prompt)
+        self.session.sendline("quit")
+        if self.session.expect([self.prompt, "Uncommitted configurations found"]):
+            self.send_command("Y")

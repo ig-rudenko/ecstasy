@@ -197,7 +197,7 @@ class DeviceFactory:
                 elif "quidway" in version.lower():
                     return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
 
-                elif "CE6865" in version.lower():
+                elif "ce6865" in version.lower():
                     model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime is", version)
                     return HuaweiCE6865(
                         session, self.ip, auth, snmp_community=self.snmp_community, model=model
