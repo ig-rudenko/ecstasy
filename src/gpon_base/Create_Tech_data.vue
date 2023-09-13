@@ -115,6 +115,17 @@
       <!-- THIRD STEP -->
       <div v-else-if="current_step===3" class="p-4">
 
+
+        <div v-if="formData.houseB.buildType()==='house'">
+          <h4 class="text-center py-3">Возможно для данного частного дома уже имеется сплиттер</h4>
+          <SplittersFind :init-splitter="formData.end3.existingSplitter"
+                         @selected="(sp) => {formData.end3.existingSplitter = sp}">
+          </SplittersFind>
+
+          <h4 class="text-center py-3">Либо укажите новый сплиттер</h4>
+
+        </div>
+
         <!-- Выбор сплиттера или райзера -->
         <div class="w-100 d-flex">
           <div v-if="formData.houseB.buildType()==='building'" class="py-3 me-4">
@@ -155,7 +166,7 @@
 
             <!-- Окно для отображения цветов волокон -->
             <Dialog v-model:visible="formState.thirdStep.showRizerColors">
-              <RizerFiberColorExample v-if="formData.end3.type==='rizer'" :count="formData.end3.splitter.portCount"/>
+              <RizerFiberColorExample v-if="formData.end3.type==='rizer'" :count="formData.end3.portCount"/>
             </Dialog>
 
           </div>
@@ -241,6 +252,14 @@
             <td>Количество портов</td>
             <td>{{ formData.end3.portCount }}</td>
           </tr>
+          <tr v-if="formData.end3.existingSplitter">
+            <td>Выбран существующий сплиттер</td>
+            <td>
+              {{ getFullAddress(formData.end3.existingSplitter.address) }}
+              Локация: {{ formData.end3.existingSplitter.location }}.
+              Кол-во портов: {{ formData.end3.existingSplitter.capacity }}
+            </td>
+          </tr>
           <tr v-for="(sp, index) in formData.end3.list">
             <td>{{ formData.end3.type }} {{ index + 1 }}</td>
             <td>
@@ -289,7 +308,7 @@
             {{ isMobile ? '' : current_step < 3 ? 'Далее' : 'Завершить' }}
           </Button>
 
-          <Button v-if="current_step===4" @click="nextStep" severity="success" rounded>
+          <Button v-if="current_step===4" @click="submitForm" severity="success" rounded>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2"
                  viewBox="0 0 16 16">
               <path
@@ -324,6 +343,8 @@ import BuildingIcon from "./components/BuildingIcon.vue";
 import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 import End3AddForm from "./components/End3AddForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
+import SplittersFind from "./components/SplittersFind.vue"
+import formatAddress from "../helpers/address";
 
 export default {
   name: "Gpon_base.vue",
@@ -339,6 +360,7 @@ export default {
     RadioButton,
     RizerFiberColorExample,
     End3AddForm,
+    SplittersFind,
     StepMenu,
     Textarea,
   },
@@ -392,6 +414,7 @@ export default {
         end3: {
           type: "splitter",
           list: [],
+          existingSplitter: null,
           portCount: 8,
         }
 
@@ -437,10 +460,16 @@ export default {
 
       } else if (this.current_step === 3) {
         let validCount = 0
+        let totalEnd3Count = this.formData.end3.list.length
+        let hasExistingSplitterID = Boolean(this.formData.end3.existingSplitter)
+
         for (let elem of this.formData.end3.list) {
+          // Проверяем, что требуемы данные для сплиттер/райзер указаны
           if ((elem.buildAddress || elem.address) && elem.location.length) validCount++;
         }
-        this.formState.thirdStep.end3Valid = validCount === this.formData.end3.list.length && validCount
+        // Если выбран существующий сплиттер (только для частного дома) или имеются новые сплиттер/райзер
+        // А также кол-во валидных сплиттер/райзер равно их общему кол-ву
+        this.formState.thirdStep.end3Valid = (hasExistingSplitterID || validCount) && (validCount === totalEnd3Count)
         return this.formState.thirdStep.isValid()
       }
     },
@@ -453,16 +482,12 @@ export default {
     },
 
     getFullAddress(address) {
-      if (!address) return "Выберите"
-      let str = ""
-      if (address.region !== "Севастополь") str += ` ${address.region},`;
-      if (address.settlement !== "Севастополь") str += ` ${address.settlement},`;
-      if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
-      if (address.street.length) str += ` ${address.street},`;
-      str += ` д. ${address.house}`;
-      if (address.block) str += `/${address.block}`;
-      return str
+      return formatAddress(address)
     },
+
+    submitForm() {
+      // Отправка данных
+    }
 
   },
 }

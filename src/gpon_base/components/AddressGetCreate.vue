@@ -47,6 +47,7 @@ import Dropdown from "primevue/dropdown/Dropdown.vue"
 import AddressForm from "./AddressForm.vue"
 import Asterisk from "./Asterisk.vue"
 import BuildingIcon from "./BuildingIcon.vue"
+import formatAddress from "../../helpers/address";
 
 export default {
   name: "AddressGetCreate.vue",
@@ -77,17 +78,8 @@ export default {
   },
 
   methods: {
-    // Принимает объект адреса в качестве параметра и возвращает отформатированную полную строку адреса.
     getFullAddress(address) {
-      if (!address) return "Выберите"
-      let str = ""
-      if (address.region !== "Севастополь") str += ` ${address.region},`;
-      if (address.settlement !== "Севастополь") str += ` ${address.settlement},`;
-      if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
-      if (address.street.length) str += ` ${address.street},`;
-      str += ` д. ${address.house}`;
-      if (address.block) str += `/${address.block}`;
-      return str
+      return formatAddress(address)
     },
 
     validNewAddress(newAddress) {
