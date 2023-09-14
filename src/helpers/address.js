@@ -1,4 +1,17 @@
-// Принимает объект адреса в качестве параметра и возвращает отформатированную полную строку адреса.
+/** address: {
+ *    region: "Севастополь",
+ *    settlement: "Севастополь",
+ *    planStructure: "",
+ *    street: "Колобова",
+ *    house: "22",
+ *    block: 10,
+ *    building_type: "building",
+ *    floors: 9,
+ *    total_entrances: 12
+ *  }
+ *  @param { Object } address Принимает объект адреса в качестве параметра
+ *  @return {string} отформатированная полная строка адреса.
+ */
 function formatAddress(address) {
     if (!address) return "Выберите"
     let str = ""
