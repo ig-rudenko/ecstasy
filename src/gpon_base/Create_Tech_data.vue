@@ -98,13 +98,13 @@
           <AddressGetCreate :is-mobile="isMobile" :data="formData.houseB">
           </AddressGetCreate>
 
-          <div class="w-100 py-3">
+          <div v-if="formData.houseB.address.building_type === 'building'" class="w-100 py-2">
             <h6 class="px-2">Задействованные подъезды в доме для данного OLT порта</h6>
             <InputText class="w-100" v-model.trim="formData.houseB.entrances" type="text"
                        placeholder="Укажите подъезды"/>
           </div>
 
-          <div>
+          <div class="py-2">
             <h6 class="px-2">Описание сплиттера 2го каскада</h6>
             <Textarea class="shadow w-100" v-model="formData.houseB.description" rows="5"/>
           </div>
@@ -230,7 +230,7 @@
               </div>
             </td>
           </tr>
-          <tr>
+          <tr v-if="formData.houseB.address.building_type==='building'">
             <td>Задействованные подъезды в доме для данного OLT порта</td>
             <td>{{ formData.houseB.entrances }}</td>
           </tr>

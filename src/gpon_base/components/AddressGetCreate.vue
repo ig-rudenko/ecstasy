@@ -34,7 +34,7 @@
   <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового адреса"
           :style="{ width: isMobile?'100vw':'50vw' }">
     <AddressForm @valid="validNewAddress" @dismiss="dismissNewAddress"
-                 :address="data.address||getNewAddress()"></AddressForm>
+                 :init-address="data.address||getNewAddress()"></AddressForm>
   </Dialog>
 
 </template>

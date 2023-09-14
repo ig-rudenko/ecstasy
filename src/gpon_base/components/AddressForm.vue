@@ -112,10 +112,11 @@ export default {
     RadioButton,
   },
   props: {
-    address: {required: true, type: Object}
+    initAddress: {required: true, type: Object}
   },
   data() {
     return {
+      address: null,
       region: {valid: true},
       settlement: {valid: true},
       planStructure: {valid: true},
@@ -126,6 +127,9 @@ export default {
       floors: 1,
       total_entrances: 1
     }
+  },
+  beforeMount() {
+    this.address = this.initAddress
   },
   computed: {
     regionClasses() {
