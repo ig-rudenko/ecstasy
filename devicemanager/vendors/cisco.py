@@ -5,8 +5,9 @@ from typing import Tuple, List, Dict
 
 import pexpect
 import textfsm
+
 from .base.device import BaseDevice
-from .base.validators import validate_and_format_port_as_normal
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
     TEMPLATE_FOLDER,
@@ -19,6 +20,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port_as_normal
 
 
 class Cisco(BaseDevice):
@@ -642,3 +644,16 @@ class Cisco(BaseDevice):
             before_catch=r"Building configuration\.\.\.",
         )
         return io.BytesIO(data.encode())
+
+
+class CiscoFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "cisco" in str(version_output).lower()
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
+        return Cisco(session, ip, auth_obj, model=model, snmp_community=snmp_community)

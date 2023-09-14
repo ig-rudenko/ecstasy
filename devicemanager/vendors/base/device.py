@@ -1,11 +1,11 @@
 import re
 import string
 import time
+from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Literal, Optional
 
 import pexpect
-from abc import ABC, abstractmethod
 
 from .types import DeviceAuthDict, T_InterfaceList, T_InterfaceVLANList, T_MACList, SystemInfo
 
@@ -100,7 +100,9 @@ class BaseDevice(AbstractDevice, ABC):
     # Паттерн для управляющих последовательностей ANSI
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+    def __init__(
+        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+    ):
         self.session: pexpect.spawn = session
         self.ip = ip
         self.model: str = model

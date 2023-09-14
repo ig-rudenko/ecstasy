@@ -9,6 +9,7 @@ from typing import Tuple, List, Optional
 from gathering.ftp import FTPCollector
 from gathering.ftp.exceptions import NotFound
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
@@ -17,6 +18,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .. import UnknownDeviceError
 
 
 class IskratelControl(BaseDevice):
@@ -612,3 +614,30 @@ class IskratelMBan(BaseDevice):
         archive_path = archive_path.parent / f"{archive_path.name}.zip"
         shutil.rmtree(config_folder, ignore_errors=True)  # Удаляем папку
         return archive_path
+
+
+class IskratelFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and re.match(r"ISKRATEL|IskraTEL", str(version_output))
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        # ISKRATEL CONTROL
+        if "ISKRATEL" in version_output:
+            return IskratelControl(
+                session,
+                ip,
+                auth_obj,
+                model="ISKRATEL Switching",
+                snmp_community=snmp_community,
+            )
+
+        # ISKRATEL mBAN>
+        if "IskraTEL" in version_output:
+            model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version_output)
+            return IskratelMBan(session, ip, auth_obj, model=model, snmp_community=snmp_community)
+
+        raise UnknownDeviceError("IskratelFactory не удалось распознать модель оборудования", ip=ip)

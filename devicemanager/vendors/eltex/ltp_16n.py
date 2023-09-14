@@ -5,6 +5,7 @@ from typing import List, Tuple, Dict, Union
 import pexpect
 
 from .extra import validate_ltp_interfaces_list
+from .ltp_4x_8x import _EltexLTPPortTypes
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -12,7 +13,6 @@ from ..base.types import (
     T_MACList,
     T_MACTable,
 )
-from .ltp_4x_8x import _EltexLTPPortTypes
 
 
 def _validate_port(if_invalid_return=None):

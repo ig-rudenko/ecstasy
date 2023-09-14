@@ -3,16 +3,17 @@
 """
 import re
 from dataclasses import dataclass
+from typing import Union
 
 import pexpect
 
 from .exceptions import (
     TelnetConnectionError,
     DeviceLoginError,
-    UnknownDeviceError,
     SSHConnectionError,
 )
-from .vendors import *
+from vendors.base.device import BaseDevice
+from .multifactory import DeviceMultiFactory
 
 
 @dataclass
@@ -64,7 +65,7 @@ class SSHSpawn:
         return pexpect.spawn(self.get_spawn_string(), timeout=15)
 
 
-class DeviceFactory:
+class DeviceRemoteConnector:
     """
     # Подключение к оборудованию, определение вендора и возврат соответствующего экземпляра класса
     """
@@ -105,8 +106,8 @@ class DeviceFactory:
         self.protocol = protocol
 
         if isinstance(auth_obj, list):
-            self.login = []
-            self.password = []
+            self.login: Union[str, list] = []
+            self.password: Union[str, list] = []
             # Список объектов
             for auth in auth_obj:
                 self.login.append(auth.login)
@@ -115,8 +116,8 @@ class DeviceFactory:
 
         else:
             # Один объект
-            self.login = [auth_obj.login]
-            self.password = [auth_obj.password]
+            self.login: Union[str, list] = [auth_obj.login]
+            self.password: Union[str, list] = [auth_obj.password]
             self.privilege_mode_password = auth_obj.secret
 
     def get_session(self) -> BaseDevice:
@@ -133,200 +134,23 @@ class DeviceFactory:
             self.session = self._connect_by_ssh()
         else:
             self.session = self._connect_by_telnet()
-        return self.get_device(self.session)
 
-    def get_device(self, session) -> BaseDevice:
-        """
-        # После подключения динамически определяем вендора оборудования и его модель
-
-        Отправляем команду:
-
-            # show version
-
-        Ищем в выводе команды строчки, которые указывают на определенный вендор
-
-        |           Вендор            |     Строка для определения    |
-        |:----------------------------|:------------------------------|
-        |             ZTE             |      " ZTE Corporation:"      |
-        |           Huawei            |     "Unrecognized command"    |
-        |            Cisco            |           "cisco"             |
-        |          D-Link             |  "Next possible completions:" |
-        |          Edge-Core          |      "Hardware version"       |
-        |          Extreme            |          "ExtremeXOS"         |
-        |           Q-Tech            |            "QTECH"            |
-        |          Iskratel           |   "ISKRATEL" или "IskraTEL"   |
-        |           Juniper           |            "JUNOS"            |
-        |          ProCurve           |         "Image stamp:"        |
-
-        """
-
-        auth = {
-            "login": self.login,
-            "password": self.password,
-            "privilege_mode_password": self.privilege_mode_password,
-        }
-
-        version = self.send_command(session, "show version")
-
-        if "bad command name show" in version:
-            version = self.send_command(session, "system resource print")
-
-        # Mikrotik
-        if "mikrotik" in version.lower():
-            return MikroTik(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        # ProCurve
-        if "Image stamp:" in version:
-            return ProCurve(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        # ZTE
-        if " ZTE Corporation:" in version:
-            model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version)
-            return ZTE(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
-
-        # HUAWEI
-        if "Unrecognized command" in version:
-            version = self.send_command(session, "display version")
-            if "huawei" in version.lower():
-                if "CX600" in version:
-                    model = BaseDevice.find_or_empty(
-                        r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE
-                    )
-                    return HuaweiCX600(session, self.ip, auth, model, self.snmp_community)
-
-                elif "quidway" in version.lower():
-                    return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
-
-                elif "ce6865" in version.lower():
-                    model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime is", version)
-                    return HuaweiCE6865(
-                        session, self.ip, auth, snmp_community=self.snmp_community, model=model
-                    )
-
-            # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
-            if "Unrecognized command" in version:
-                return Huawei(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        # CISCO
-        if "cisco" in version.lower():
-            model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version)
-            return Cisco(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
-
-        # D-LINK
-        if "Next possible completions:" in version:
-            return Dlink(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        # Edge Core
-        if "Hardware version" in version:
-            return EdgeCore(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        # Eltex LTP
-        if "Eltex LTP" in version:
-            model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version)
-            if re.match(r"LTP-[48]X", model):
-                return EltexLTP(
-                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
-                )
-            if "LTP-16N" in model:
-                return EltexLTP16N(
-                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
-                )
-
-        # Eltex MES, ESR
-        if "Active-image:" in version or "Boot version:" in version:
-            eltex_device = EltexBase(session, self.ip, self.privilege_mode_password)
-            if "MES" in eltex_device.model:
-                return EltexMES(
-                    eltex_device.session,
-                    self.ip,
-                    auth,
-                    model=eltex_device.model,
-                    mac=eltex_device.mac,
-                    snmp_community=self.snmp_community,
-                )
-            if "ESR" in eltex_device.model:
-                return EltexESR(
-                    eltex_device.session,
-                    self.ip,
-                    auth,
-                    model=eltex_device.model,
-                    mac=eltex_device.mac,
-                )
-
-        # Extreme
-        if "ExtremeXOS" in version:
-            return Extreme(session, self.ip, auth)
-
-        # Q-Tech
-        if "QTECH" in version:
-            model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version)
-            return Qtech(session, self.ip, auth, model=model, snmp_community=self.snmp_community)
-
-        # ISKRATEL CONTROL
-        if "ISKRATEL" in version:
-            return IskratelControl(
-                session,
-                self.ip,
-                auth,
-                model="ISKRATEL Switching",
-                snmp_community=self.snmp_community,
-            )
-
-        # ISKRATEL mBAN>
-        if "IskraTEL" in version:
-            model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version)
-            return IskratelMBan(
-                session, self.ip, auth, model=model, snmp_community=self.snmp_community
-            )
-
-        if "JUNOS" in version:
-            model = BaseDevice.find_or_empty(r"Model: (\S+)", version)
-            return Juniper(session, self.ip, auth, model, snmp_community=self.snmp_community)
-
-        if "% Unknown command" in version:
-            session.sendline("display version")
-            while True:
-                match = session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
-                if match == 5:
-                    session.expect(r"\}:")
-                    session.sendline("\n")
-                    continue
-                version += str(session.before.decode("utf-8"))
-                if match == 1:
-                    session.sendline(" ")
-                elif match == 4:
-                    session.sendcontrol("C")
-                else:
-                    break
-            if re.findall(r"VERSION : MA5600", version):
-                model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version)
-                return HuaweiMA5600T(
-                    session, self.ip, auth, model=model, snmp_community=self.snmp_community
-                )
-
-        if "show: invalid command, valid commands are" in version:
-            session.sendline("sys info show")
-            while True:
-                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
-                version += str(session.before.decode("utf-8"))
-                if match == 1:
-                    session.sendline(" ")
-                if match == 4:
-                    session.sendcontrol("C")
-                else:
-                    break
-
-        if "unknown keyword show" in version:
-            return Juniper(session, self.ip, auth, snmp_community=self.snmp_community)
-
-        raise UnknownDeviceError("Модель оборудования не была распознана", ip=self.ip)
+        return DeviceMultiFactory.get_device(
+            self.session,
+            ip=self.ip,
+            auth_obj=SimpleAuthObject(
+                login=self.login,
+                password=self.password,
+                secret=self.privilege_mode_password,
+            ),
+            snmp_community=self.snmp_community,
+        )
 
     def _connect_by_ssh(self):
         connected = False
         session = None
 
         for login, password in zip(self.login + ["admin"], self.password + ["admin"]):
-
             try:
                 ssh_spawn = SSHSpawn(ip=self.ip, login=self.login[0])
                 session = ssh_spawn.get_session()
@@ -410,7 +234,6 @@ class DeviceFactory:
             pre_set_index = None  # По умолчанию стартуем без начального индекса
             status = "Не был передал логин/пароль"
             for login, password in zip(self.login, self.password):
-
                 status = self.__login_to_by_telnet(session, login, password, 30, pre_set_index)
 
                 if status == "Connected":
@@ -437,7 +260,6 @@ class DeviceFactory:
     def __login_to_by_telnet(
         self, session, login: str, password: str, timeout: int, pre_expect_index=None
     ) -> str:
-
         login_try = 1
 
         while True:
@@ -450,7 +272,6 @@ class DeviceFactory:
                 expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
             # Login
             if expect_index == 0:
-
                 if login_try > 1:
                     # Если это вторая попытка ввода логина, то предыдущий был неверный
                     return f"Неверный логин или пароль (подключение telnet)"
@@ -493,35 +314,6 @@ class DeviceFactory:
             break
 
         return ""
-
-    @staticmethod
-    def send_command(session, command: str) -> str:
-        """
-        # Простой метод для отправки команды с постраничной записью вывода результата
-        """
-
-        session.send(command + "\r")
-        version = ""
-        while True:
-            match = session.expect(
-                [
-                    r"]$",  # 0
-                    r"-More-|-+\(more.*?\)-+",  # 1
-                    r">\s*$",  # 2
-                    r"#\s*",  # 3
-                    pexpect.TIMEOUT,  # 4
-                ],
-                timeout=3,
-            )
-
-            version += str(session.before.decode("utf-8"))
-            if match == 1:
-                session.send(" ")
-            elif match == 4:
-                session.sendcontrol("C")
-            else:
-                break
-        return version
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """

@@ -7,7 +7,7 @@ from typing import List, Any, Optional
 import pexpect
 
 from devicemanager import snmp
-from devicemanager.dc import DeviceFactory
+from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS
 from devicemanager.vendors import BaseDevice
@@ -19,14 +19,14 @@ DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", 3))
 
 class DeviceSessionFactory:
     def __init__(
-            self,
-            ip: str,
-            protocol: str,
-            auth_obj,
-            make_session_global: bool,
-            pool_size: Optional[int],
-            snmp_community: str,
-            port_scan_protocol: str,
+        self,
+        ip: str,
+        protocol: str,
+        auth_obj,
+        make_session_global: bool,
+        pool_size: Optional[int],
+        snmp_community: str,
+        port_scan_protocol: str,
     ):
         self.port_scan_protocol = port_scan_protocol
         self.snmp_community = snmp_community
@@ -105,7 +105,7 @@ class DeviceSessionFactory:
         if self.make_session_global:
             return self._make_and_get_connection()
         else:
-            return DeviceFactory(
+            return DeviceRemoteConnector(
                 ip=self.ip,
                 protocol=self.protocol,
                 auth_obj=self.auth_obj,
@@ -120,7 +120,6 @@ class DeviceSessionFactory:
         )
 
     def _make_and_get_connection(self) -> BaseDevice:
-
         start_time = time.perf_counter()
 
         if DEVICE_SESSIONS.has_pool(device_ip=self.ip):
@@ -176,7 +175,7 @@ class DeviceSessionFactory:
         while tries > 0:
             try:
                 logger.debug(f"Создаем сессию для {self.ip}")
-                connection = DeviceFactory(
+                connection = DeviceRemoteConnector(
                     ip=self.ip,
                     protocol=self.protocol,
                     auth_obj=self.auth_obj,

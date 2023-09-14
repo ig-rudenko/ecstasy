@@ -4,9 +4,10 @@ from typing import List, Tuple, Literal
 
 import pexpect
 import textfsm
+
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
-from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
@@ -17,6 +18,7 @@ from .base.types import (
     T_MACTable,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port_only_digit
 
 
 class ZTE(BaseDevice):
@@ -489,3 +491,16 @@ class ZTE(BaseDevice):
 
     def get_device_info(self) -> dict:
         pass
+
+
+class ZTEFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and " ZTE Corporation:" in version_output
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version_output)
+        return ZTE(session, ip, auth_obj, model=model, snmp_community=snmp_community)

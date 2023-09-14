@@ -7,7 +7,6 @@ import pexpect
 
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
-from ..base.validators import validate_and_format_port_as_normal
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -18,6 +17,7 @@ from ..base.types import (
     MACType,
     InterfaceStatus,
 )
+from ..base.validators import validate_and_format_port_as_normal
 
 
 class Huawei(BaseDevice):

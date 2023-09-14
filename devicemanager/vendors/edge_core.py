@@ -1,11 +1,12 @@
 import re
-from time import sleep
 from functools import lru_cache
+from time import sleep
 from typing import Literal, List, Tuple
 
 import pexpect
+
 from .base.device import BaseDevice
-from .base.validators import validate_and_format_port_as_normal
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
     T_InterfaceList,
@@ -14,6 +15,7 @@ from .base.types import (
     T_MACTable,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port_as_normal
 
 
 # noinspection PyArgumentList
@@ -438,3 +440,15 @@ class EdgeCore(BaseDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+
+class EdgeCoreFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "Hardware version" in str(version_output)
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        return EdgeCore(session, ip, auth_obj, snmp_community=snmp_community)

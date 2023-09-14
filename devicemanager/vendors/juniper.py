@@ -1,10 +1,15 @@
 import binascii
+import re
 from re import findall, sub
 from typing import List
 
+import pexpect
 import textfsm
+
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.types import TEMPLATE_FOLDER
+from .. import UnknownDeviceError
 
 
 class Juniper(BaseDevice):
@@ -223,3 +228,37 @@ class Juniper(BaseDevice):
 
     def get_device_info(self) -> dict:
         pass
+
+
+class JuniperFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and re.match(
+            r"JUNOS|show: invalid command, valid commands are", str(version_output)
+        )
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        if "show: invalid command, valid commands are" in version_output:
+            session.sendline("sys info show")
+            while True:
+                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
+                version_output += str(session.before.decode("utf-8"))
+                if match == 1:
+                    session.sendline(" ")
+                if match == 4:
+                    session.sendcontrol("C")
+                else:
+                    break
+
+            if "unknown keyword show" in version_output:
+                return Juniper(session, ip, auth_obj, snmp_community=snmp_community)
+            else:
+                raise UnknownDeviceError(
+                    "JuniperFactory не удалось распознать модель оборудования", ip=ip
+                )
+
+        model = BaseDevice.find_or_empty(r"Model: (\S+)", version_output)
+        return Juniper(session, ip, auth_obj, model, snmp_community=snmp_community)

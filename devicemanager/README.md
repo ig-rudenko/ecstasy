@@ -13,28 +13,27 @@
 - объект для авторизации (любой объект у которого имеются атрибуты `login`, `password`, `secret`).
 
 ```python
-from devicemanager.dc import DeviceFactory, SimpleAuthObject
+from devicemanager.dc import DeviceRemoteConnector, SimpleAuthObject
 from devicemanager.vendors.cisco import Cisco
-
 
 # Создаем базовый объект авторизации к оборудованию.
 # Логин, пароль, пароль от привилегированного режима.
 auth = SimpleAuthObject("login", "password", "secret")
 
 # Подключаемся с помощью контекстного менеджера подключение.
-with DeviceFactory(ip="10.10.10.10", protocol="ssh", auth_obj=auth) as conn:
-	# В зависимостри от вендора оборудования при подключении класс возвращаемого
-	# объекта будет вычислен автоматически.
-	print(conn.__class__ == Cisco)  # True.
+with DeviceRemoteConnector(ip="10.10.10.10", protocol="ssh", auth_obj=auth) as conn:
+    # В зависимостри от вендора оборудования при подключении класс возвращаемого
+    # объекта будет вычислен автоматически.
+    print(conn.__class__ == Cisco)  # True.
 
-	# Можно выполнять удаленные команды
-	version = conn.send_command("show version")
+    # Можно выполнять удаленные команды
+    version = conn.send_command("show version")
 
-	# Получать данные по интерфейсам
-	interfaces = conn.get_interfaces()
+    # Получать данные по интерфейсам
+    interfaces = conn.get_interfaces()
 
-	# Изменять состояние портов и т.д.
-	conn.set_port("gi1/0/1", "up")
+    # Изменять состояние портов и т.д.
+    conn.set_port("gi1/0/1", "up")
 ```
 
 ## Глобальная сессия
@@ -42,7 +41,7 @@ with DeviceFactory(ip="10.10.10.10", protocol="ssh", auth_obj=auth) as conn:
 После подключения к оборудованию сессия удаленного подключения будет активна ещё `2 минуты`. Таким образом при выполнении кода
 
 ```python
-with DeviceFactory(ip="10.10.10.10", protocol="ssh", auth_obj=auth) as conn:
+with DeviceRemoteConnector(ip="10.10.10.10", protocol="ssh", auth_obj=auth) as conn:
 	interfaces = conn.get_interfaces()
 ```
 
@@ -78,6 +77,6 @@ interfaces = connection.get_interfaces()
 Чтобы подключиться к оборудованию без создания сессии и минуя существующую необходимо указать дополнительный параметр:
 
 ```python
-with DeviceFactory(ip="10.10.10.10", protocol="ssh", auth_obj=auth, make_session_global=False) as conn:
+with DeviceRemoteConnector(ip="10.10.10.10", protocol="ssh", auth_obj=auth, make_session_global=False) as conn:
 	interfaces = conn.get_interfaces()
 ```

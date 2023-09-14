@@ -2,7 +2,9 @@ import re
 from typing import List
 
 import pexpect
+
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
     T_InterfaceList,
@@ -92,3 +94,15 @@ class ProCurve(BaseDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+
+class ProCurveFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "Image stamp:" in str(version_output)
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        return ProCurve(session, ip, auth_obj, snmp_community=snmp_community)

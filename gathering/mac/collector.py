@@ -8,7 +8,7 @@ from django.conf import settings
 
 from check.models import Devices
 from net_tools.models import DevicesInfo
-from devicemanager.dc import DeviceFactory
+from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
 from devicemanager.vendors.base.types import T_MACTable
 from app_settings.models import ZabbixConfig
@@ -35,7 +35,7 @@ class MacAddressTableGather:
 
         try:
             # Создание сеанса с устройством. С закрытием сессии после выхода из `with`.
-            with DeviceFactory(
+            with DeviceRemoteConnector(
                 ip=self.device.ip,
                 protocol=self.device.port_scan_protocol,
                 auth_obj=self.device.auth_group,

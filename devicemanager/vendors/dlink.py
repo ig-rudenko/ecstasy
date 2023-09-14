@@ -6,9 +6,10 @@ from typing import Literal, Tuple, List, Optional, Dict, Any
 
 import pexpect
 import textfsm
+
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
-from .base.validators import validate_and_format_port
 from .base.types import (
     TEMPLATE_FOLDER,
     T_InterfaceVLANList,
@@ -18,6 +19,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port
 
 
 def validate_port(port: str) -> Optional[str]:
@@ -647,3 +649,15 @@ class Dlink(BaseDevice):
         )
         config = re.sub("[\r\n]{3}", "\n", config.strip())
         return io.BytesIO(config.encode())
+
+
+class DlinkFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "Next possible completions:" in str(version_output)
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        return Dlink(session, ip, auth_obj, snmp_community=snmp_community)

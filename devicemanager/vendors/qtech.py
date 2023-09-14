@@ -1,9 +1,10 @@
 import re
-from time import sleep
 from functools import partial
+from time import sleep
 from typing import Tuple, List, Literal, Optional
 
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
     T_InterfaceList,
@@ -413,3 +414,16 @@ class Qtech(BaseDevice):
 
     def get_device_info(self) -> dict:
         pass
+
+
+class QtechFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "QTECH" in str(version_output)
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version_output)
+        return Qtech(session, ip, auth_obj, model=model, snmp_community=snmp_community)

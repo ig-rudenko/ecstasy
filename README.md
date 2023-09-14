@@ -51,7 +51,7 @@
 - `MikroTik`
   - Проверено для: `RouterOS v6.* (v7.*)`
 - `Huawei`
-  - Проверено для: `S2403TP` `S2326TP` `CX600-X8`
+  - Проверено для: `S2403TP` `S2326TP` `CX600-X8` `CE6865`
 - `Huawei DSL (GPON)`
   - Проверено для: `MA5600T`
 - `Iskratel DSL`

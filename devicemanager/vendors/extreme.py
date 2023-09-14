@@ -3,9 +3,10 @@ from time import sleep
 from typing import Literal, Sequence, Tuple, List, Dict
 
 import pexpect
+
 from .base.device import BaseDevice
+from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
-from .base.validators import validate_and_format_port_only_digit
 from .base.types import (
     T_InterfaceVLANList,
     T_InterfaceList,
@@ -14,6 +15,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port_only_digit
 from .. import DeviceException
 
 
@@ -379,3 +381,15 @@ class Extreme(BaseDevice):
 
         self.lock = False
         self.save_config()
+
+
+class ExtremeFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "ExtremeXOS" in str(version_output)
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        return Extreme(session, ip, auth_obj, snmp_community=snmp_community)

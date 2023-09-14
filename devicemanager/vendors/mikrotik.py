@@ -1,15 +1,16 @@
 import os
-from datetime import datetime
 import pathlib
 import re
 import time
+from datetime import datetime
+from functools import partial
 from typing import Tuple, List, Literal, Optional, Dict
 
-import pysftp
 import pexpect
-from functools import partial
+import pysftp
+
 from .base.device import BaseDevice
-from .base.validators import validate_and_format_port
+from .base.factory import AbstractDeviceFactory
 from .base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
@@ -18,6 +19,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
 )
+from .base.validators import validate_and_format_port
 
 
 def validate_port(port: str) -> Optional[str]:
@@ -383,3 +385,15 @@ class MikroTik(BaseDevice):
         self.send_command(f"file remove {config_file_name}")
 
         return local_folder_path / config_file_name
+
+
+class MikrotikFactory(AbstractDeviceFactory):
+    @staticmethod
+    def is_can_use_this_factory(session=None, version_output=None) -> bool:
+        return version_output and "mikrotik" in str(version_output).lower()
+
+    @classmethod
+    def get_device(
+        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+    ) -> BaseDevice:
+        return MikroTik(session, ip, auth_obj, snmp_community=snmp_community)
