@@ -118,9 +118,10 @@
 
         <div v-if="formData.houseB.buildType()==='house'">
           <h4 class="text-center py-3">Возможно для данного частного дома уже имеется сплиттер</h4>
-          <SplittersFind :init-splitter="formData.end3.existingSplitter"
-                         @selected="(sp) => {formData.end3.existingSplitter = sp}">
-          </SplittersFind>
+          <SplittersRizersFind :init="formData.end3.existingSplitter"
+                               :type="formData.end3.type"
+                               @selected="(sp) => {formData.end3.existingSplitter = sp}">
+          </SplittersRizersFind>
 
           <h4 class="text-center py-3">Либо укажите новый сплиттер</h4>
 
@@ -343,7 +344,7 @@ import BuildingIcon from "./components/BuildingIcon.vue";
 import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 import End3AddForm from "./components/End3AddForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
-import SplittersFind from "./components/SplittersFind.vue"
+import SplittersRizersFind from "./components/SplittersRizersFind.vue"
 import formatAddress from "../helpers/address";
 
 export default {
@@ -360,7 +361,7 @@ export default {
     RadioButton,
     RizerFiberColorExample,
     End3AddForm,
-    SplittersFind,
+    SplittersRizersFind,
     StepMenu,
     Textarea,
   },

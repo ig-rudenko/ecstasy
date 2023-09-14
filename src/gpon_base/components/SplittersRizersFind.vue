@@ -1,13 +1,14 @@
 <template>
-  <h6 class="px-2">Выберите существующий сплиттер
+  <h6 class="px-2">Выберите существующий {{ verboseType }}
     <Asterisk/>
   </h6>
   <div class="shadow">
-    <Dropdown v-model="splitter" :options="availableSplitters" filter showClear
-              :optionLabel="getSplitterFullAddress" placeholder="Выберите" class="w-100">
+    <Dropdown v-model="connection" :options="availableList" filter showClear
+              @change="(e) => {this.$emit('change', e)}"
+              :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
       <template #value="slotProps">
         <div v-if="slotProps.value" class="flex align-items-center d-flex">
-          <div>{{ getSplitterFullAddress(slotProps.value) }}</div>
+          <div>{{ getFullAddress(slotProps.value) }}</div>
         </div>
         <span v-else>
           {{ slotProps.placeholder }}
@@ -15,7 +16,7 @@
       </template>
       <template #option="slotProps">
         <div v-if="slotProps.option" class="flex align-items-center d-flex">
-          <div>{{ getSplitterFullAddress(slotProps.option) }}</div>
+          <div>{{ getFullAddress(slotProps.option) }}</div>
         </div>
       </template>
     </Dropdown>
@@ -29,39 +30,38 @@ import Asterisk from "./Asterisk.vue"
 import formatAddress from "../../helpers/address";
 
 export default {
-  name: "SplittersFind.vue",
+  name: "SplittersRizersFind.vue",
   components: {
     Asterisk,
     Dropdown,
   },
   props: {
-    initSplitter: {required: false, default: null}
+    init: {required: false, default: null},
+    type: {required: false, type: String, default: "both"},
+    getFromHouseAddress: {required: false, default: null},
   },
   data() {
     return {
-      _splitter: null
+      connection: null
     }
   },
-  mounted() {
-    this._splitter = this.initSplitter
+  updated() {
+    this.connection = this.init
   },
   computed: {
-    splitter: {
-      set(value) {
-        this._splitter = value
-        this.$emit("selected", this._splitter)
-      },
-      get() {
-        return this._splitter
-      }
+    verboseType() {
+      if (this.type === 'both') return "сплиттер или райзер";
+      if (this.type === 'splitter') return "сплиттер";
+      if (this.type === 'rizer') return "райзер";
     },
 
-    availableSplitters() {
+    availableList() {
       return [
         {
           id: 1,
           location: "На столбе слева",
           capacity: 8,
+          type: "splitter",
           address: {
             id: 1,
             region: "Севастополь",
@@ -79,6 +79,7 @@ export default {
           id: 2,
           location: "На столбе справа",
           capacity: 8,
+          type: "splitter",
           address: {
             id: 1,
             region: "Севастополь",
@@ -96,6 +97,7 @@ export default {
           id: 3,
           location: "На чердаке",
           capacity: 8,
+          type: "splitter",
           address: {
             id: 1,
             region: "Севастополь",
@@ -113,6 +115,7 @@ export default {
           id: 4,
           location: "в колодце",
           capacity: 8,
+          type: "splitter",
           address: {
             id: 1,
             region: "Севастополь",
@@ -130,10 +133,10 @@ export default {
     }
   },
   methods: {
-    getSplitterFullAddress(sp) {
-      if (!sp.address) return "НЕТ АДРЕСА"
-      let address = formatAddress(sp.address)
-      address += ` Локация: ${sp.location}. Кол-во портов: ${sp.capacity}`
+    getFullAddress(sr) {
+      if (!sr.address) return "НЕТ АДРЕСА"
+      let address = formatAddress(sr.address)
+      address += ` Локация: ${sr.location}. Кол-во портов: ${sr.capacity}`
       return address
     }
   }

@@ -6,6 +6,7 @@
     <div class="shadow">
       <Dropdown v-model="data.address" :options="addressesList()" filter showClear
                 :class="formState.address.valid?[]:['p-invalid']"
+                @change="(e) => {this.$emit('change', e)}"
                 :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
         <template #value="slotProps">
           <div v-if="slotProps.value" class="flex align-items-center d-flex">
@@ -25,7 +26,7 @@
       </Dropdown>
     </div>
 
-    <Button @click="show_new_address_form=true" severity="success" size="small">
+    <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small">
       Редактировать
     </Button>
 
@@ -63,6 +64,8 @@ export default {
   props: {
     isMobile: {required: true, type: Boolean},
     data: {required: true, type: Object},
+    allowCreate: {required: false, default: true},
+    getFromDevicePort: {required: false, default: null},
   },
 
   data() {
@@ -144,9 +147,16 @@ export default {
           total_entrances: 1
         },
       ]
-      if (this.formState.isValid()) {
+      if (this.formState.isValid() && this.allowCreate) {
         allAddresses = [this.data.address, ...allAddresses]
       }
+
+      if (this.getFromDevicePort) {
+        for (let address of allAddresses) {
+          address.planStructure = this.getFromDevicePort.deviceName + this.getFromDevicePort.devicePort
+        }
+      }
+
       return allAddresses
     },
 
