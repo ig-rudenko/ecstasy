@@ -16,6 +16,7 @@ from ..base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -34,7 +35,9 @@ class Huawei(BaseDevice):
     mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
     vendor = "Huawei"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
+    def __init__(
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+    ):
         """
         ## При инициализации заходим в привилегированный режим, но остаемся на уровне просмотра
 

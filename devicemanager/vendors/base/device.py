@@ -101,7 +101,7 @@ class BaseDevice(AbstractDevice, ABC):
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
     ):
         self.session: pexpect.spawn = session
         self.ip = ip

@@ -1,6 +1,7 @@
 import pexpect
 
 from ..base.device import BaseDevice
+from ..base.types import DeviceAuthDict
 
 
 class EltexBase(BaseDevice):
@@ -17,7 +18,9 @@ class EltexBase(BaseDevice):
     )
     vendor = "Eltex"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
+    def __init__(
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+    ):
         """
         ## При инициализации смотрим характеристики устройства:
 

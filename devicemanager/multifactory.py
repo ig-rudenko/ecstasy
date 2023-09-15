@@ -1,6 +1,7 @@
 from . import UnknownDeviceError
 from .vendors.base.device import BaseDevice
 from .vendors.base.factory import AbstractDeviceFactory
+from .vendors.base.types import DeviceAuthDict
 from .vendors.cisco import CiscoFactory
 from .vendors.dlink import DlinkFactory
 from .vendors.edge_core import EdgeCoreFactory
@@ -22,7 +23,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
@@ -48,53 +49,36 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
         """
 
-        version = cls.send_command(session, "show version")
+        version_output += cls.send_command(session, "show version")
 
-        if "bad command name show" in version:
-            version = cls.send_command(session, "system resource print")
+        if "bad command name show" in version_output:
+            version_output = cls.send_command(session, "system resource print")
 
         factory_data = {
             "session": session,
             "ip": ip,
             "snmp_community": snmp_community,
-            "auth_obj": auth_obj,
-            "version_output": version,
+            "auth": auth,
+            "version_output": version_output,
         }
 
-        if MikrotikFactory.is_can_use_this_factory(version_output=version):
-            return MikrotikFactory.get_device(**factory_data)
+        factories = [
+            HuaweiFactory,
+            DlinkFactory,
+            EltexFactory,
+            CiscoFactory,
+            IskratelFactory,
+            ExtremeFactory,
+            MikrotikFactory,
+            QtechFactory,
+            ZTEFactory,
+            EdgeCoreFactory,
+            JuniperFactory,
+            ProCurveFactory,
+        ]
 
-        if ProCurveFactory.is_can_use_this_factory(version_output=version):
-            return ProCurveFactory.get_device(**factory_data)
-
-        if ZTEFactory.is_can_use_this_factory(version_output=version):
-            return ZTEFactory.get_device(**factory_data)
-
-        if HuaweiFactory.is_can_use_this_factory(version_output=version):
-            return HuaweiFactory.get_device(**factory_data)
-
-        if CiscoFactory.is_can_use_this_factory(version_output=version):
-            return CiscoFactory.get_device(**factory_data)
-
-        if DlinkFactory.is_can_use_this_factory(version_output=version):
-            return DlinkFactory.get_device(**factory_data)
-
-        if EdgeCoreFactory.is_can_use_this_factory(version_output=version):
-            return EdgeCoreFactory.get_device(**factory_data)
-
-        if EltexFactory.is_can_use_this_factory(version_output=version):
-            return EltexFactory.get_device(**factory_data)
-
-        if ExtremeFactory.is_can_use_this_factory(version_output=version):
-            return ExtremeFactory.get_device(**factory_data)
-
-        if QtechFactory.is_can_use_this_factory(version_output=version):
-            return QtechFactory.get_device(**factory_data)
-
-        if IskratelFactory.is_can_use_this_factory(version_output=version):
-            return IskratelFactory.get_device(**factory_data)
-
-        if JuniperFactory.is_can_use_this_factory(version_output=version):
-            return JuniperFactory.get_device(**factory_data)
+        for factory in factories:
+            if factory.is_can_use_this_factory(session=session, version_output=version_output):
+                return factory.get_device(**factory_data)
 
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=ip)

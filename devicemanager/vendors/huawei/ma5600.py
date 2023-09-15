@@ -14,6 +14,7 @@ from ..base.types import (
     T_MACList,
     T_MACTable,
     T_SplittedPort,
+    DeviceAuthDict,
 )
 
 
@@ -29,7 +30,12 @@ class HuaweiMA5600T(BaseDevice):
     vendor = "Huawei"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model: str = "",
+            snmp_community: str = "",
     ):
         """
         При инициализации активируем режим пользователя командой:
@@ -261,7 +267,7 @@ class HuaweiMA5600T(BaseDevice):
         # Нахождение типа порта.
         port_type = self.find_or_empty(r"^ethernet|^[av]dsl|^gpon", port)
         # Удаление букв в имени порта и последующее разделение строки на "/"
-        indexes = re.sub(r"^[a-z]+", "", port).split("/")
+        indexes = re.sub(r"^[a-z\s]+", "", port).split("/")
         if port_type == "ethernet":
             board_info = self.get_boards(indexes[0])
 
@@ -376,7 +382,7 @@ class HuaweiMA5600T(BaseDevice):
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
             return {
                 "type": "error",
-                "data": f'Неверный порт! (GPON {"/".join(indexes)})',
+                "text": f'Неверный порт! (GPON {"/".join(indexes)})',
             }
 
         self.send_command("config")  # Переходим в режим конфигурации
@@ -1022,12 +1028,7 @@ class HuaweiMA5600T(BaseDevice):
 
         if len(desc) > 32:
             # Длина описания больше допустимого
-            return {
-                "port": port,
-                "status": "fail",
-                "error": "Too long",
-                "max_length": 32
-            }
+            return {"port": port, "status": "fail", "error": "Too long", "max_length": 32}
 
         self.send_command("config")
 

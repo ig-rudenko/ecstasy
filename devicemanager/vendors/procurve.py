@@ -11,6 +11,7 @@ from .base.types import (
     T_InterfaceVLANList,
     T_MACList,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 
 
@@ -19,7 +20,9 @@ class ProCurve(BaseDevice):
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
     vendor = "ProCurve"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
+    def __init__(
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+    ):
         super().__init__(session, ip, auth, model, snmp_community)
         sys_info = self.send_command(
             "show system-information",
@@ -103,6 +106,6 @@ class ProCurveFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
-        return ProCurve(session, ip, auth_obj, snmp_community=snmp_community)
+        return ProCurve(session, ip, auth, snmp_community=snmp_community)

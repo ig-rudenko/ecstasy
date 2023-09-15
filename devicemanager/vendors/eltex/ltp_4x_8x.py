@@ -6,7 +6,14 @@ import pexpect
 
 from .extra import validate_ltp_interfaces_list
 from ..base.device import BaseDevice
-from ..base.types import T_InterfaceList, T_InterfaceVLANList, T_MACList, T_MACTable, MACType
+from ..base.types import (
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    T_MACTable,
+    MACType,
+    DeviceAuthDict,
+)
 
 
 class _EltexLTPPortTypes(TypedDict):
@@ -105,7 +112,7 @@ class EltexLTP(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model="LTP", snmp_community: str = ""
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="LTP", snmp_community: str = ""
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 

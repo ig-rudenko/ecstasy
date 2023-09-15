@@ -17,6 +17,7 @@ from .base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .. import UnknownDeviceError
 
@@ -102,7 +103,9 @@ class IskratelMBan(BaseDevice):
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Iskratel"
 
-    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+    def __init__(
+            self, session, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
+    ):
         super().__init__(session, ip, auth, model, snmp_community)
         self.dsl_profiles = self._get_dsl_profiles()
 
@@ -619,18 +622,18 @@ class IskratelMBan(BaseDevice):
 class IskratelFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and re.match(r"ISKRATEL|IskraTEL", str(version_output))
+        return version_output and re.search(r"ISKRATEL|IskraTEL", str(version_output))
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         # ISKRATEL CONTROL
         if "ISKRATEL" in version_output:
             return IskratelControl(
                 session,
                 ip,
-                auth_obj,
+                auth,
                 model="ISKRATEL Switching",
                 snmp_community=snmp_community,
             )
@@ -638,6 +641,6 @@ class IskratelFactory(AbstractDeviceFactory):
         # ISKRATEL mBAN>
         if "IskraTEL" in version_output:
             model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version_output)
-            return IskratelMBan(session, ip, auth_obj, model=model, snmp_community=snmp_community)
+            return IskratelMBan(session, ip, auth, model=model, snmp_community=snmp_community)
 
         raise UnknownDeviceError("IskratelFactory не удалось распознать модель оборудования", ip=ip)

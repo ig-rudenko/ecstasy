@@ -14,6 +14,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -449,6 +450,6 @@ class EdgeCoreFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
-        return EdgeCore(session, ip, auth_obj, snmp_community=snmp_community)
+        return EdgeCore(session, ip, auth, snmp_community=snmp_community)

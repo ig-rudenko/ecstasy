@@ -1,7 +1,24 @@
 import pathlib
+
 import textfsm
 from django.test import SimpleTestCase
+
 from devicemanager.vendors.cisco import Cisco
+from .base_factory_test import AbstractTestFactory
+
+
+class TestCiscoFactory(AbstractTestFactory):
+
+    @staticmethod
+    def get_device_class():
+        return Cisco
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return """
+Cisco IOS Software, C3560 Software (C3560-IPBASE-M), Version 12.2(25)SEB2, RELEASE SOFTWARE (fc1)
+Copyright (c) 1986-2005 by Cisco Systems, Inc.
+        """
 
 
 class CiscoPexpectFaker:
@@ -289,7 +306,7 @@ Vl106                          up             up
         )
 
     def test_get_interfaces(self):
-        # Получение интерфейсов от объекта dlink.
+        # Получение интерфейсов от объекта cisco.
         interfaces = self.cisco.get_interfaces()
         self.assertEqual(
             interfaces,

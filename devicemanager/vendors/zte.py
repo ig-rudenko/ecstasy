@@ -17,6 +17,7 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port_only_digit
 
@@ -36,11 +37,13 @@ class ZTE(BaseDevice):
     space_prompt = "----- more -----"
     # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
     mac_format = (
-        r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
+            r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
     )
     vendor = "ZTE"
 
-    def __init__(self, session: pexpect, ip: str, auth: dict, model="", snmp_community: str = ""):
+    def __init__(
+            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+    ):
         """
         ## При инициализации повышаем уровень привилегий:
 
@@ -500,7 +503,7 @@ class ZTEFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version_output)
-        return ZTE(session, ip, auth_obj, model=model, snmp_community=snmp_community)
+        return ZTE(session, ip, auth, model=model, snmp_community=snmp_community)

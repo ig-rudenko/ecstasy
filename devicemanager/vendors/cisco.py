@@ -19,6 +19,7 @@ from .base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -44,7 +45,12 @@ class Cisco(BaseDevice):
     vendor = "Cisco"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model: str = "",
+            snmp_community: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства:
@@ -653,7 +659,7 @@ class CiscoFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
-        return Cisco(session, ip, auth_obj, model=model, snmp_community=snmp_community)
+        return Cisco(session, ip, auth, model=model, snmp_community=snmp_community)

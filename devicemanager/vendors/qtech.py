@@ -13,6 +13,7 @@ from .base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port
 
@@ -52,7 +53,9 @@ class Qtech(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
-    def __init__(self, session, ip: str, auth: dict, model: str = "", snmp_community: str = ""):
+    def __init__(
+            self, session, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
+    ):
         super().__init__(session, ip, auth, model, snmp_community)
         self.__cache_port_info = {}
 
@@ -423,7 +426,7 @@ class QtechFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version_output)
-        return Qtech(session, ip, auth_obj, model=model, snmp_community=snmp_community)
+        return Qtech(session, ip, auth, model=model, snmp_community=snmp_community)

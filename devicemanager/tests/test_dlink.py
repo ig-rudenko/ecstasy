@@ -1,7 +1,25 @@
 import pathlib
+
 import textfsm
 from django.test import SimpleTestCase
-from devicemanager.vendors.dlink import Dlink, validate_port
+
+from devicemanager.vendors.dlink import validate_port, Dlink
+from .base_factory_test import AbstractTestFactory
+
+
+class TestDlinkFactory(AbstractTestFactory):
+
+    @staticmethod
+    def get_device_class():
+        return Dlink
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return """
+Command: show
+
+Next possible completions:
+802.1p              802.1x"""
 
 
 class DLinkPexpectFaker:

@@ -14,6 +14,7 @@ from .base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port_only_digit
 from .. import DeviceException
@@ -34,7 +35,12 @@ class Extreme(BaseDevice):
     vendor = "Extreme"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model: str = "",
+            snmp_community: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства:
@@ -390,6 +396,6 @@ class ExtremeFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
-        return Extreme(session, ip, auth_obj, snmp_community=snmp_community)
+        return Extreme(session, ip, auth, snmp_community=snmp_community)

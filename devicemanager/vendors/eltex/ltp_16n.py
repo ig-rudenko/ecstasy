@@ -12,6 +12,7 @@ from ..base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
+    DeviceAuthDict,
 )
 
 
@@ -100,7 +101,12 @@ class EltexLTP16N(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model="LTP-16N", snmp_community: str = ""
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model="LTP-16N",
+            snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 

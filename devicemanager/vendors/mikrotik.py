@@ -18,6 +18,7 @@ from .base.types import (
     T_MACTable,
     MACType,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port
 
@@ -48,7 +49,12 @@ class MikroTik(BaseDevice):
     vendor = "MikroTik"
 
     def __init__(
-        self, session: pexpect, ip: str, auth: dict, model: str = "", snmp_community: str = ""
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model: str = "",
+            snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
         routerboard = self.send_command("system routerboard print")
@@ -394,6 +400,6 @@ class MikrotikFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth_obj, version_output: str = ""
+            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
-        return MikroTik(session, ip, auth_obj, snmp_community=snmp_community)
+        return MikroTik(session, ip, auth, snmp_community=snmp_community)

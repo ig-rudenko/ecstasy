@@ -12,8 +12,8 @@ from .exceptions import (
     DeviceLoginError,
     SSHConnectionError,
 )
-from vendors.base.device import BaseDevice
 from .multifactory import DeviceMultiFactory
+from .vendors.base.device import BaseDevice
 
 
 @dataclass
@@ -138,11 +138,11 @@ class DeviceRemoteConnector:
         return DeviceMultiFactory.get_device(
             self.session,
             ip=self.ip,
-            auth_obj=SimpleAuthObject(
-                login=self.login,
-                password=self.password,
-                secret=self.privilege_mode_password,
-            ),
+            auth={
+                "login": self.login,
+                "password": self.password,
+                "privilege_mode_password": self.privilege_mode_password,
+            },
             snmp_community=self.snmp_community,
         )
 

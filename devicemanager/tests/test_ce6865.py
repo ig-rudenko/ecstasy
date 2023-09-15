@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from devicemanager.vendors.base.helpers import parse_by_template
 from devicemanager.vendors.huawei.ce6865 import HuaweiCE6865
+from .test_huawei import TestHuaweiFactory
 
 dis_int_desc_output = """
 PHY: Physical
@@ -133,6 +134,24 @@ interface 100GE1/0/7
  port default vlan 7
  device transceiver 100GBASE-FIBER
 #"""
+
+
+class TestCE6865HuaweiFactory(TestHuaweiFactory):
+    @staticmethod
+    def get_device_class():
+        return HuaweiCE6865
+
+    @staticmethod
+    def get_output_from_display_version_command():
+        """
+        HuaweiFactory вызывает еще одну команду `display version`, перехватываем её и возвращаем
+        данную строку для `CE6865`
+        """
+        return """
+Huawei Versatile Routing Platform Software
+VRP (R) software, Version 8.220 (CE6865EI V200R022C00SPC500)
+Copyright (C) 2012-2022 Huawei Technologies Co., Ltd.
+HUAWEI CE6865-48S8CQ-EI uptime is 70 days, 0 hour, 3 minutes"""
 
 
 class TestCE6865Template(TestCase):

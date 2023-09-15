@@ -13,6 +13,7 @@ from ..base.types import (
     T_MACList,
     T_MACTable,
     InterfaceStatus,
+    DeviceAuthDict,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -40,13 +41,13 @@ class EltexMES(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-        self,
-        session: pexpect,
-        ip: str,
-        auth: dict,
-        model: str = "",
-        snmp_community: str = "",
-        mac: str = "",
+            self,
+            session: pexpect,
+            ip: str,
+            auth: DeviceAuthDict,
+            model: str = "",
+            snmp_community: str = "",
+            mac: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства.
