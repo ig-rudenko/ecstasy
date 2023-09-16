@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from devicemanager.vendors.base.helpers import parse_by_template
 from devicemanager.vendors.huawei.ce6865 import HuaweiCE6865
-from .test_huawei import TestHuaweiFactory
+from .test_huawei import TestHuaweiS2326TPFactory
 
 dis_int_desc_output = """
 PHY: Physical
@@ -136,7 +136,7 @@ interface 100GE1/0/7
 #"""
 
 
-class TestCE6865HuaweiFactory(TestHuaweiFactory):
+class TestCE6865HuaweiFactory(TestHuaweiS2326TPFactory):
     @staticmethod
     def get_device_class():
         return HuaweiCE6865
