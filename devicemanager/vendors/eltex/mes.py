@@ -57,7 +57,6 @@ class EltexMES(BaseDevice):
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
-
         super().__init__(session, ip, auth, model, snmp_community)
         self.mac = mac
         self._find_system_info()

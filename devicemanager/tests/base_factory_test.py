@@ -6,6 +6,11 @@ from devicemanager.multifactory import DeviceMultiFactory
 
 
 class AbstractTestFactory(SimpleTestCase):
+    """
+    Класс представляет собой шаблон для тестирования абстрактных фабрик создания объектов устройств
+    и тестирования их атрибутов и поведения.
+    """
+
     def setUp(self) -> None:
         self.version_output = self.get_output_from_show_version_command()
         self.auth_dict = {
@@ -17,10 +22,16 @@ class AbstractTestFactory(SimpleTestCase):
 
     @staticmethod
     def get_device_class():
+        """
+        Возвращает класс, объект которого должен вернуться из фабрики
+        """
         pass
 
     @staticmethod
     def get_output_from_show_version_command() -> str:
+        """
+        Возвращает выходные данные от ввода на оборудовании команды «show version» в виде строки.
+        """
         pass
 
     @staticmethod
@@ -43,6 +54,12 @@ class AbstractTestFactory(SimpleTestCase):
 
     @patch("devicemanager.multifactory.DeviceMultiFactory.send_command")
     def test_factory_return_class(self, send_command: Mock):
+        """
+        Функция проверяет возвращаемый класс устройства, созданного с использованием фабричного метода.
+
+        :param send_command: Параметр send_command является объектом Mock.
+         Используется для имитации поведения метода send_command.
+        """
         if self._is_need_skip():
             return
 
@@ -58,6 +75,12 @@ class AbstractTestFactory(SimpleTestCase):
 
     @patch("devicemanager.multifactory.DeviceMultiFactory.send_command")
     def test_factory_device_attributes(self, send_command: Mock):
+        """
+        Функция проверяет атрибуты устройства, созданного с помощью класса DeviceMultiFactory.
+
+        :param send_command: Параметр send_command является объектом Mock.
+         Используется для имитации поведения метода send_command.
+        """
         if self._is_need_skip():
             return
 

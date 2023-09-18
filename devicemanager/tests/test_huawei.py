@@ -298,6 +298,22 @@ line3"""
   Maximum transmit rate upstream(Kbps)          : 2464
   ------------------------------------------------------------------------------
 """
+        elif "display mac-address port" in command:
+            self._output = b"""
+   SRV-P BUNDLE TYPE MAC            MAC TYPE F /S /P  VPI  VCI   VLAN ID
+   INDEX INDEX
+   ---------------------------------------------------------------------
+     689    -   adl  9afc-8d4c-1525 dynamic  0 /3 /27 1    33    1418
+     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
+     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
+   ---------------------------------------------------------------------
+"""
+        elif "display security bind mac" in command:
+            self._output = b"""
+   Index     MAC-Address FlowID  F/ S/ P   VLAN-ID  Vpi  Vci FlowType    FlowPara
+   ------------------------------------------------------------------------------
+       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
+       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -"""
 
 
 class TestHuaweiMA5600TFactory(AbstractTestFactory):
@@ -375,7 +391,7 @@ class TestHuaweiMA5600T(SimpleTestCase):
 
     def test_gpon_get_port_info(self):
         res = self.device.get_port_info("GPON 0/1/1")
-        self.assertEqual(
+        self.assertDictEqual(
             res,
             {
                 "type": "gpon",
@@ -427,7 +443,7 @@ class TestHuaweiMA5600T(SimpleTestCase):
 
     def test_vdsl_get_port_info(self):
         res = self.device.get_port_info("VDSL 0/17/17")
-        self.assertEqual(
+        self.assertDictEqual(
             res,
             {
                 "type": "adsl",
@@ -474,7 +490,7 @@ class TestHuaweiMA5600T(SimpleTestCase):
 
     def test_adsl_get_port_info(self):
         res = self.device.get_port_info("ADSL 0/1/4")
-        self.assertEqual(
+        self.assertDictEqual(
             res,
             {
                 "type": "adsl",
@@ -531,6 +547,19 @@ class TestHuaweiMA5600T(SimpleTestCase):
             },
         )
 
+    def test_get_mac(self):
+        res = self.device.get_mac("adsl 0/1/1")
+        self.assertEqual(
+            res,
+            [
+                (1418, "9afc-8d4c-1525"),
+                (1418, "e0cc-f85d-3818"),
+                (704, "bc76-706c-c671"),
+                (735, "0002-cf93-db80"),
+                (707, "0a31-92f7-1625"),
+            ],
+        )
+
     def test_invalid_get_port_info(self):
         invalid_res = {
             "type": "error",
@@ -541,4 +570,4 @@ class TestHuaweiMA5600T(SimpleTestCase):
             "type": "error",
             "text": "Неверный порт! (GPON 1/2)",
         }
-        self.assertEqual(self.device.get_port_info("GPON 1/2"), invalid_res)
+        self.assertDictEqual(self.device.get_port_info("GPON 1/2"), invalid_res)

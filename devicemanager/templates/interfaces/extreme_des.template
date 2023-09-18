@@ -1,4 +1,4 @@
 Value DES (\S*)
 
 Start
-  ^.*?(\d+)\s+${DES} -> Record
+  ^.*?(\d+)\s*${DES} -> Record

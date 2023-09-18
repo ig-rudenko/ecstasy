@@ -36,7 +36,7 @@ class EltexFactory(AbstractDeviceFactory):
                 return EltexLTP16N(session, ip, auth, model=model, snmp_community=snmp_community)
 
         # Eltex MES, ESR
-        if re.match(r"Active-image:|Boot version:", version_output):
+        if re.search(r"Active-image:|Boot version:", version_output):
             eltex_device = EltexBase(session, ip, auth)
             if "MES" in eltex_device.model:
                 return EltexMES(
@@ -54,6 +54,7 @@ class EltexFactory(AbstractDeviceFactory):
                     auth,
                     model=eltex_device.model,
                     mac=eltex_device.mac,
+                    snmp_community=snmp_community,
                 )
 
         raise UnknownDeviceError("EltexFactory не удалось распознать модель оборудования", ip=ip)

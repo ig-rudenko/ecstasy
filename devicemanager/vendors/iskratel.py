@@ -465,7 +465,7 @@ class IskratelMBan(BaseDevice):
         interfaces_list = []
         for line in output.split("\n"):
             interface: List[List[str]] = re.findall(
-                r"(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s+(Up|Down|)", line
+                r"(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s*(Up|Down|)", line
             )
 
             if interface:
@@ -575,17 +575,17 @@ class IskratelMBan(BaseDevice):
         return output
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return "COPPER"
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
         # > show system info
-        pass
+        return {}
 
     def get_current_configuration(self) -> pathlib.Path:
         """

@@ -1,5 +1,86 @@
+from unittest.mock import patch, Mock
+
 from django.test import SimpleTestCase
+
 from devicemanager.vendors.eltex import EltexMES, EltexESR
+from .base_factory_test import AbstractTestFactory
+
+
+class TestEltexMESFactory(AbstractTestFactory):
+    def setUp(self) -> None:
+        super().setUp()
+        self.show_system_output = """
+System Description:                       MES3324F 28-port 1G/10G Managed Switch
+System Up Time (days,hour:min:sec):       431,14:32:21
+System Contact:
+System Name:                              DeviceName
+System Location:                          DeviceLocation
+System MAC Address:                       e8:28:c1:11:22:33
+System Object ID:                         1.3.6.1.4.1.35265.1.81
+Reset-Button:                             enable"""
+
+    @staticmethod
+    def get_device_class():
+        return EltexMES
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return """
+Active-image: flash://system/images/mes3300-4016-5R1.ros
+  Version: 4.0.16.5
+  Commit: 4213e309
+  Build: 1 (master)
+  MD5 Digest: 272412312325ee77350902e4f0371b8a
+  Date: 12-Oct-2021
+  Time: 14:03:17
+Inactive-image: flash://system/images/mes3300-4014-R5.ros
+  Version: 4.0.14
+  Commit: ae3f55b3
+  Build: 5 (master)
+  MD5 Digest: 712c912374012374129f81212528a51908
+  Date: 08-Jul-2020
+  Time: 15:20:28"""
+
+    @patch("devicemanager.vendors.eltex.base.EltexBase.send_command")
+    def test_factory_return_class(self, show_system_command: Mock):
+        # Eltex Factory определяет тип Eltex по выводу команды `show system`
+        show_system_command.return_value = self.show_system_output
+        super().test_factory_return_class()
+
+    @patch("devicemanager.vendors.eltex.base.EltexBase.send_command")
+    def test_factory_device_attributes(self, show_system_command: Mock):
+        # Eltex Factory определяет тип Eltex по выводу команды `show system`
+        show_system_command.return_value = self.show_system_output
+        super().test_factory_device_attributes()
+
+
+class TestEltexESRFactory(TestEltexMESFactory):
+    def setUp(self) -> None:
+        super().setUp()
+        self.show_system_output = """
+System type:           Eltex ESR-12VF Service Router
+System name:           DeviceName
+Software version:      1.13.0 build 41[a6eb430ee2] (date 02/06/2021 time 13:25:01)
+Hardware version:      3v2
+System uptime:         346 days, 9 hours, 32 minutes and 45 seconds
+System MAC address:    A8:F9:4B:11:22:33
+System serial number:  NP0A341239"""
+
+    @staticmethod
+    def get_device_class():
+        return EltexESR
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return """
+Boot version:
+  1.8.1.4 (date 11/09/2019 time 09:39:34)
+SW version:
+  1.13.0 build 41[a6eb430ee2] (date 02/06/2021 time 13:25:01)
+HW version:
+  3v2
+VoIP version:
+  1.8.0.1"""
 
 
 class EltexMESPexpectFaker:

@@ -1,5 +1,37 @@
 from django.test import SimpleTestCase
-from devicemanager.vendors.eltex import EltexLTP
+
+from devicemanager.vendors.eltex import EltexLTP, EltexLTP16N
+from .base_factory_test import AbstractTestFactory
+
+
+class TestEltexLTP4XFactory(AbstractTestFactory):
+    @staticmethod
+    def get_device_class():
+        return EltexLTP
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return "Eltex LTP-4X-rev.B software version 3.44.0 build 292 on 16.11.2021 15:45"
+
+
+class TestEltexLTP8XFactory(AbstractTestFactory):
+    @staticmethod
+    def get_device_class():
+        return EltexLTP
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return "Eltex LTP-8X-rev.C software version 3.44.0 build 294 on 16.11.2021 15:48"
+
+
+class TestEltexLTP16NFactory(AbstractTestFactory):
+    @staticmethod
+    def get_device_class():
+        return EltexLTP16N
+
+    @staticmethod
+    def get_output_from_show_version_command() -> str:
+        return "    Eltex LTP-16N: software version 1.4.0 build 784 on 21.06.2022 07:38"
 
 
 class EltexLTP4XPexpectFaker:

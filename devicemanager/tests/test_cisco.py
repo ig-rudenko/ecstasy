@@ -35,7 +35,6 @@ class CiscoPexpectFaker:
         return self.sendline(command.strip())
 
     def sendline(self, command: str):
-        print(command)
         self.sent_commands.append(command)
 
         if command == "write":

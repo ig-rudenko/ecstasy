@@ -43,10 +43,10 @@ class EltexBase(BaseDevice):
         # Нахождение MAC-адреса устройства.
         self.mac = self.find_or_empty(r"System MAC [Aa]ddress:\s+(\S+)", system)
         # Регулярное выражение, которое ищет модель устройства.
-        self.model = self.find_or_empty(
+        model = self.find_or_empty(
             r"System Description:\s+(\S+)|System type:\s+Eltex (\S+)", system
         )
-        self.model = self.model[0] or self.model[1]
+        self.model = model[0] or model[1] if model else ""
 
     def save_config(self):
         pass

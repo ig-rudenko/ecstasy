@@ -21,6 +21,7 @@ from .base.types import (
     DeviceAuthDict,
 )
 from .base.validators import validate_and_format_port
+from ..exceptions import UnknownDeviceError
 
 
 def validate_port(port: str) -> Optional[str]:
@@ -396,10 +397,14 @@ class MikroTik(BaseDevice):
 class MikrotikFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and "mikrotik" in str(version_output).lower()
+        return version_output and "bad command name show" in str(version_output).lower()
 
     @classmethod
     def get_device(
             cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
-        return MikroTik(session, ip, auth, snmp_community=snmp_community)
+        version_output = cls.send_command(session, "system resource print")
+        if "mikrotik" in str(version_output).lower():
+            return MikroTik(session, ip, auth, snmp_community=snmp_community)
+
+        raise UnknownDeviceError("MikrotikFactory не удалось распознать модель оборудования", ip=ip)

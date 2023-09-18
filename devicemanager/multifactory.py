@@ -51,9 +51,6 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
         version_output += cls.send_command(session, "show version")
 
-        if "bad command name show" in version_output:
-            version_output = cls.send_command(session, "system resource print")
-
         factory_data = {
             "session": session,
             "ip": ip,
