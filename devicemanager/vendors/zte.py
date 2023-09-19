@@ -176,8 +176,19 @@ class ZTE(BaseDevice):
         """
 
         output = self.send_command("show fdb detail", expect_command=False)
-        parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
-        return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
+        if "Command not found" in output:
+            output = self.send_command("show mac", expect_command=False)
+            parsed: List[List[str]] = re.findall(
+                rf"({self.mac_format})\s+(\d+)\s+port-(\d+)\s+", output
+            )
+            mac_table: T_MACTable = []
+            type_: Literal["dynamic"] = "dynamic"
+            for mac, vid, port in parsed:
+                mac_table.append((int(vid), mac, type_, port))
+            return mac_table
+        else:
+            parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
+            return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])
