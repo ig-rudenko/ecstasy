@@ -28,7 +28,7 @@ class TestOLTStateSerializer(TestCase):
             ),
         )
 
-    def test_OLTStateSerializer(self):
+    def test_serializer(self):
         serializer = OLTStateSerializer(
             data={
                 "deviceName": "device1",
@@ -56,7 +56,7 @@ class TestOLTStateSerializer(TestCase):
         self.assertEqual(olt_state.fiber, serializer.validated_data["fiber"])
         self.assertEqual(olt_state.description, serializer.validated_data["description"])
 
-    def test_OLTStateSerializer_half_data(self):
+    def test_serializer_half_data(self):
         serializer = OLTStateSerializer(data={"deviceName": "device1", "devicePort": "0/1/3"})
         self.assertTrue(serializer.is_valid())
         self.assertDictEqual(
@@ -75,7 +75,7 @@ class TestOLTStateSerializer(TestCase):
         self.assertEqual(olt_state.fiber, None)
         self.assertEqual(olt_state.description, None)
 
-    def test_OLTStateSerializer_invalid_port(self):
+    def test_serializer_invalid_port(self):
         serializer = OLTStateSerializer(
             data={
                 "deviceName": "device1",
@@ -94,7 +94,7 @@ class TestOLTStateSerializer(TestCase):
             },
         )
 
-    def test_OLTStateSerializer_invalid_device_name(self):
+    def test_serializer_invalid_device_name(self):
         serializer = OLTStateSerializer(
             data={
                 "deviceName": "asdfasdf",
@@ -112,6 +112,29 @@ class TestOLTStateSerializer(TestCase):
                 ]
             },
         )
+
+
+class TestHouseOLTStateSerializer(TestCase):
+    def setUp(self) -> None:
+        self.device = Devices.objects.create(
+            auth_group=AuthGroup.objects.create(name="test", login="login", password="password"),
+            group=DeviceGroup.objects.create(name="test"),
+            ip="10.10.10.10",
+            name="device1",
+        )
+        DevicesInfo.objects.create(
+            dev=self.device,
+            interfaces=json.dumps(
+                [
+                    {"Interface": "0/1/1"},
+                    {"Interface": "0/1/2"},
+                    {"Interface": "0/1/3"},
+                ]
+            ),
+        )
+
+    def test_serializer(self):
+        pass
 
 
 data = {

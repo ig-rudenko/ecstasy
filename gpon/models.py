@@ -77,7 +77,7 @@ class HouseOLTState(models.Model):
     """
 
     house = models.ForeignKey("gpon.HouseB", on_delete=models.CASCADE, blank=False)
-    statement = models.ForeignKey("gpon.OLTState", on_delete=models.CASCADE, blank=False)
+    statement = models.ForeignKey("gpon.OLTState", on_delete=models.CASCADE, null=True)
     entrances = models.CharField(max_length=25, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
 
