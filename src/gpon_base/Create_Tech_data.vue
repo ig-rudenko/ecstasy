@@ -98,7 +98,8 @@
           <AddressGetCreate :is-mobile="isMobile" :data="formData.houseB">
           </AddressGetCreate>
 
-          <div v-if="formData.houseB.address.building_type === 'building'" class="w-100 py-2">
+          <div v-if="formData.houseB.address && formData.houseB.address.building_type === 'building'"
+               class="w-100 py-2">
             <h6 class="px-2">Задействованные подъезды в доме для данного OLT порта</h6>
             <InputText class="w-100" v-model.trim="formData.houseB.entrances" type="text"
                        placeholder="Укажите подъезды"/>

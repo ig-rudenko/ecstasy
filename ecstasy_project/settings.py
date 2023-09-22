@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "ring_manager",
     "dbbackup",
     "django_celery_beat",
+    "gpon",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
