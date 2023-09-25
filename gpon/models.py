@@ -30,7 +30,7 @@ class Address(models.Model):
     )
     house = models.CharField(
         max_length=16,
-        validators=[RegexValidator(r"^\d+[А-Я]$", message="Неверный формат дома")],
+        validators=[RegexValidator(r"^\d+[а-яА-Я]?$", message="Неверный формат дома")],
         verbose_name="Дом",
         help_text="Можно с буквой (русской)",
     )
@@ -51,6 +51,29 @@ class Address(models.Model):
 
     class Meta:
         db_table = "gpon_addresses"
+
+    def __str__(self):
+        string = ""
+        if self.region != "СЕВАСТОПОЛЬ":
+            string += f"{self.region}, "
+        if self.settlement != "СЕВАСТОПОЛЬ":
+            string += f"{self.settlement}, "
+        if self.plan_structure and len(self.plan_structure):
+            string += f"СНТ {self.plan_structure}, "
+        if self.street and len(self.street):
+            string += f"{self.street}, "
+        string += f"д. {self.house}"
+        if self.block:
+            string += f"/{self.block}"
+
+        if self.floor:
+            string += f" {self.floor} этаж"
+        if self.apartment:
+            string += f" кв. {self.apartment}"
+        return string
+
+    def __repr__(self):
+        return f"Address: ({self.__str__()})"
 
 
 class OLTState(models.Model):

@@ -8,10 +8,14 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from check.models import Devices
-from ..models import Address, OLTState, HouseOLTState
+from ..models import Address, OLTState, HouseOLTState, HouseB, End3
 
 
 class AddressSerializer(serializers.ModelSerializer):
+    planStructure = serializers.CharField(
+        source="plan_structure", required=False, allow_null=True, max_length=128
+    )
+
     class Meta:
         model = Address
         fields = "__all__"
@@ -20,45 +24,93 @@ class AddressSerializer(serializers.ModelSerializer):
     def validate_region(value: str):
         if len(value) < 5:
             raise ValidationError("Регион должен содержать более 4 символов")
-        return value.capitalize()
+        return value.upper()
 
     @staticmethod
     def validate_planStructure(value: str):
         if not value:  # Это не обязательное поле
             return value
-
-        if len(value) < 5:  # Но если указано, то должно быть более 4
-            raise ValidationError("Регион должен содержать более 4 символов")
-
-        return value.capitalize()
+        return value.upper()
 
     @staticmethod
     def validate_street(value: str):
         if not value:  # Это не обязательное поле
             return value
 
+        value = value.strip()
+
+        # Заменяем сокращение "ул." на полное слово "улица"
+        value = re.sub(r"ул\.|ул(?=\s)", "улица", value, flags=re.IGNORECASE)
+        value = re.sub(
+            r"пр-кт\.|пр-кт(?=\s)|просп\.|просп(?=\s)", "проспект", value, flags=re.IGNORECASE
+        )
+        value = re.sub(
+            r"пр-зд\.|пр-зд(?=\s)|пр-д\.|пр-д(?=\s)", "проезд", value, flags=re.IGNORECASE
+        )
+        value = re.sub(
+            r"б-р\.|б-р(?=\s)|бул[ьвар]*?\.|бул[ьвар]*?(?=\s)",
+            "бульвар",
+            value,
+            flags=re.IGNORECASE,
+        )
+        value = re.sub(
+            r"ш\.|ш(?=\s)|шосе(?=\s)|шос\.|шос(?=\s)", "шоссе", value, flags=re.IGNORECASE
+        )
+        value = re.sub(
+            r"пер\.|пер(?=\s)|п-к\.|п-к(?=\s)|пер-к\.|пер-к(?=\s)",
+            "переулок",
+            value,
+            flags=re.IGNORECASE,
+        )
+        value = re.sub(r"т\.", "тупик", value, flags=re.IGNORECASE)
+
+        # Добавляем пробел после слова "улица", если его нет
+        value = re.sub(
+            r"(улица|проспект|площадь|проезд|бульвар|шоссе|переулок|тупик)(\S.+)",
+            r"\1 \2",
+            value,
+            flags=re.IGNORECASE,
+        )
+
+        value = re.sub(r"\s+", " ", value, flags=re.IGNORECASE)
+
         # Но если указано, то проверяем правильность
-        if not re.search(r"улица|проспект|проезд|бульвар|шоссе|переулок|тупик", value):
+        if not re.search(
+                r"улица|проспект|площадь|проезд|бульвар|шоссе|переулок|тупик", value, re.IGNORECASE
+        ):
             raise ValidationError(
                 "Укажите полное название с указанием типа"
-                " (улица/проспект/проезд/бульвар/шоссе/переулок/тупик)"
+                " (улица/проспект/площадь/проезд/бульвар/шоссе/переулок/тупик)"
             )
 
         if len(value) < 10:
             raise ValidationError("Название улицы должно быть длиннее :)")
 
-        return value.capitalize()
+        return value.upper()
 
     @staticmethod
     def validate_settlement(value: str):
-        if len(value) < 5:
-            raise ValidationError("Регион должен содержать более 4 символов")
-        return value.capitalize()
+        if len(value) < 3:
+            raise ValidationError("Населенный пункт должен содержать более 4 символов")
+        return value.upper()
+
+    @staticmethod
+    def validate_house(value: str):
+        return value.upper()
 
     @staticmethod
     def validate(data):
-        if not data["planStructure"] and not data["street"]:
-            raise ValidationError("Необходимо указать либо СНТ ТСН, либо Улицу")
+        if not data.get("planStructure") and not data.get("street"):
+            raise ValidationError("Необходимо указать либо СНТ ТСН, либо улицу")
+        return data
+
+    @staticmethod
+    def create(validated_data) -> Address:
+        try:
+            address = Address.objects.get(**validated_data)
+        except Address.DoesNotExist:
+            return Address.objects.create(**validated_data)
+        return address
 
 
 class OLTStateSerializer(serializers.ModelSerializer):
@@ -97,12 +149,12 @@ class OLTStateSerializer(serializers.ModelSerializer):
 
         raise ValidationError(f"Данное оборудование не имеет порта `{value}`")
 
-    def create(self, validated_data) -> OLTState:
-        if self._device is None:
-            self._device: Devices = Devices.objects.get(name=validated_data["device"]["name"])
+    @staticmethod
+    def create(validated_data) -> OLTState:
+        device: Devices = Devices.objects.get(name=validated_data["device"]["name"])
 
         instance = OLTState.objects.create(
-            device=self._device,
+            device=device,
             olt_port=validated_data["olt_port"],
             fiber=validated_data.get("fiber"),
             description=validated_data.get("description"),
@@ -139,14 +191,33 @@ class HouseBAddressSerializer(AddressSerializer):
 
 
 class HouseOLTStateSerializer(serializers.ModelSerializer):
-    address = AddressSerializer(source="house.address")
+    address = HouseBAddressSerializer(source="house.address")
 
     class Meta:
         model = HouseOLTState
-        fields = ["entrances", "description"]
+        fields = ["address", "entrances", "description"]
 
-    def create(self, validated_data):
-        building_type = validated_data["address"]["building_type"]
+    @staticmethod
+    def create(validated_data) -> HouseOLTState:
+        building_type = validated_data["house"]["address"].pop("building_type")
+        floors = validated_data["house"]["address"].pop("floors")
+        total_entrances = validated_data["house"]["address"].pop("total_entrances")
+
+        address = AddressSerializer.create(validated_data.pop("house").pop("address"))
+
+        house, _ = HouseB.objects.update_or_create(
+            address=address,
+            defaults={
+                "apartment_building": building_type == "building",
+                "floors": floors,
+                "total_entrances": total_entrances,
+            },
+        )
+
+        house_olt_state, _ = HouseOLTState.objects.update_or_create(
+            house=house, defaults=validated_data
+        )
+        return house_olt_state
 
     def to_representation(self, instance: HouseOLTState):
         data = super().to_representation(instance)
@@ -159,18 +230,51 @@ class HouseOLTStateSerializer(serializers.ModelSerializer):
         return data
 
 
+class End3CreateSerializer(serializers.Serializer):
+    address = AddressSerializer(required=False, allow_null=True)
+    buildAddress = serializers.BooleanField()
+    location = serializers.CharField(max_length=255)
+
+
+class End3CreateListSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["splitter", "rizer"])
+    existingSplitter = serializers.IntegerField(required=False, allow_null=True)
+    portCount = serializers.ChoiceField(choices=[2, 4, 8, 16, 24])
+    list = End3CreateSerializer(many=True)
+
+
 class CreateTechDataSerializer(serializers.Serializer):
     oltState = OLTStateSerializer()
     houseB = HouseOLTStateSerializer()
+    end3 = End3CreateListSerializer()
 
     class Meta:
-        fields = ["oltState", "houseB"]
+        fields = ["oltState", "houseB", "end3"]
 
-    def validate(self, data):
-        pass
+    @staticmethod
+    def create(validated_data) -> OLTState:
+        olt_state = OLTStateSerializer.create(validated_data.pop("oltState"))
 
-    def validate_oltState(self):
-        pass
+        house_olt_state = HouseOLTStateSerializer.create(validated_data.pop("houseB"))
+        house_olt_state.statement = olt_state
+        house_olt_state.save(update_fields=["statement"])
 
-    def create(self, validated_data):
-        pass
+        end3_obj_list = []
+        for end3_unit in validated_data["end3"]["list"]:
+            if end3_unit["buildAddress"]:
+                end3_unit_address = house_olt_state.house.address
+            else:
+                end3_unit_address = AddressSerializer.create(end3_unit["address"])
+
+            end3_obj_list.append(
+                End3.objects.create(
+                    type=validated_data["end3"]["type"],
+                    capacity=validated_data["end3"]["portCount"],
+                    location=end3_unit["location"],
+                    address=end3_unit_address,
+                )
+            )
+
+        house_olt_state.house.end3_set.add(*end3_obj_list)
+
+        return olt_state
