@@ -34,6 +34,13 @@ class AddressSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def validate_street(value: str):
+        """
+        Функция validate_street принимает строковое значение, представляющее название улицы,
+        проверяет и форматирует его в соответствии с определенными правилами и возвращает
+        отформатированное название улицы в верхнем регистре.
+        :return: проверенное и отформатированное название улицы в верхнем регистре.
+        """
+
         if not value:  # Это не обязательное поле
             return value
 
@@ -126,6 +133,13 @@ class OLTStateSerializer(serializers.ModelSerializer):
         self._device: Optional[Devices] = None
 
     def validate_deviceName(self, value):
+        """
+        Функция validate_deviceName проверяет, существует ли устройство с данным именем в базе данных, и выдает ошибку
+        проверки, если его нет.
+
+        :param value: Параметр value представляет имя устройства, которое необходимо проверить
+        :return: значение параметра `value`.
+        """
         try:
             self._device: Devices = Devices.objects.get(name=value)
         except Devices.DoesNotExist:
@@ -133,6 +147,16 @@ class OLTStateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_devicePort(self, value):
+        """
+        Функция validate_devicePort проверяет, имеет ли данное устройство определенный порт,
+        и выдает ошибку проверки, если это не так.
+
+        :param value: Параметр value представляет порт устройства, который необходимо проверить
+        :return: Если `self._device` имеет значение None, то `value` возвращается как есть. В противном случае, если
+         «интерфейс» соответствует любому из интерфейсов в «self._device.devicesinfo.interfaces»,
+         то возвращается его значение. Если ни один из интерфейсов не соответствует значению,
+         то возникает ошибка ValidationError
+        """
         if self._device is None:
             return value
         try:
@@ -199,11 +223,22 @@ class HouseOLTStateSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def create(validated_data) -> HouseOLTState:
-        building_type = validated_data["house"]["address"].pop("building_type")
-        floors = validated_data["house"]["address"].pop("floors")
-        total_entrances = validated_data["house"]["address"].pop("total_entrances")
+        building_type = validated_data["house"]["address"]["building_type"]
+        floors = validated_data["house"]["address"]["floors"]
+        total_entrances = validated_data["house"]["address"]["total_entrances"]
 
-        address = AddressSerializer.create(validated_data.pop("house").pop("address"))
+        address = AddressSerializer.create(
+            {
+                "region": validated_data["house"]["address"]["region"],
+                "settlement": validated_data["house"]["address"]["settlement"],
+                "plan_structure": validated_data["house"]["address"].get("plan_structure"),
+                "street": validated_data["house"]["address"].get("street"),
+                "house": validated_data["house"]["address"]["house"],
+                "block": validated_data["house"]["address"].get("block"),
+                "floor": validated_data["house"]["address"].get("floor"),
+                "apartment": validated_data["house"]["address"].get("apartment"),
+            }
+        )
 
         house, _ = HouseB.objects.update_or_create(
             address=address,
@@ -215,19 +250,27 @@ class HouseOLTStateSerializer(serializers.ModelSerializer):
         )
 
         house_olt_state, _ = HouseOLTState.objects.update_or_create(
-            house=house, defaults=validated_data
+            house=house,
+            defaults={
+                "description": validated_data["description"],
+                "entrances": validated_data["entrances"],
+            },
         )
         return house_olt_state
 
-    def to_representation(self, instance: HouseOLTState):
-        data = super().to_representation(instance)
-        data["houseB"]["address"]["building_type"] = (
-            "building" if instance.house.apartment_building else "house"
-        )
-        data["houseB"]["address"]["total_entrances"] = instance.house.total_entrances
-        data["houseB"]["address"]["floors"] = instance.house.floors
-
-        return data
+    # def to_representation(self, instance: HouseOLTState):
+    #     data = {
+    #         "houseB": {
+    #             "address": AddressSerializer(instance=instance.house.address).data,
+    #         }
+    #     }
+    #     data["houseB"]["address"]["building_type"] = (
+    #         "building" if instance.house.apartment_building else "house"
+    #     )
+    #     data["houseB"]["address"]["total_entrances"] = instance.house.total_entrances
+    #     data["houseB"]["address"]["floors"] = instance.house.floors
+    #
+    #     return data
 
 
 class End3CreateSerializer(serializers.Serializer):
@@ -251,11 +294,16 @@ class CreateTechDataSerializer(serializers.Serializer):
     class Meta:
         fields = ["oltState", "houseB", "end3"]
 
-    @staticmethod
-    def create(validated_data) -> OLTState:
-        olt_state = OLTStateSerializer.create(validated_data.pop("oltState"))
+    def create(self, validated_data) -> OLTState:
+        """
+        Функция создает объект OLTState и связывает его с объектом HouseOLTState,
+        а также создает несколько объектов End3 и связывает их с объектом HouseOLTState.
 
-        house_olt_state = HouseOLTStateSerializer.create(validated_data.pop("houseB"))
+        :return: экземпляр класса OLState.
+        """
+        olt_state = OLTStateSerializer.create(validated_data["oltState"])
+
+        house_olt_state = HouseOLTStateSerializer.create(validated_data["houseB"])
         house_olt_state.statement = olt_state
         house_olt_state.save(update_fields=["statement"])
 
@@ -276,5 +324,18 @@ class CreateTechDataSerializer(serializers.Serializer):
             )
 
         house_olt_state.house.end3_set.add(*end3_obj_list)
-
         return olt_state
+
+        # self.instance = olt_state
+        # return self.instance
+
+    # def to_representation(self, instance: OLTState):
+    #     print(self.validated_data)
+    #     house_address = AddressSerializer.create(self.validated_data["houseB"]["house"]["address"])
+    #     data = {
+    #         "oltState": OLTStateSerializer(instance=instance).data,
+    #         "houseB": HouseOLTStateSerializer(
+    #             instance=instance.houseoltstate_set.get(house__address=house_address)
+    #         ).data,
+    #     }
+    #     return data
