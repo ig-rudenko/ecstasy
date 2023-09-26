@@ -27,14 +27,15 @@
             <div class="shadow">
               <Dropdown v-model="formData.oltState.deviceName" :options="devicesList" filter
                         :class="formState.firstStep.deviceName.valid?['flex-wrap']:['flex-wrap', 'p-invalid']"
-                        optionLabel="name" placeholder="Выберите устройство">
+                        :option-label="x => x"
+                        @change="deviceNameSelected" placeholder="Выберите устройство">
                 <template #value="slotProps">
                   <div v-if="slotProps.value" class="flex align-items-center">
                     <div>{{ slotProps.value }}</div>
                   </div>
                   <span v-else>
-                            {{ slotProps.placeholder }}
-                        </span>
+                      {{ slotProps.placeholder }}
+                  </span>
                 </template>
                 <template #option="slotProps">
                   <div class="flex align-items-center">
@@ -54,7 +55,7 @@
             <div class="shadow">
               <Dropdown v-model="formData.oltState.devicePort" :options="devicePortList" filter
                         :class="formState.firstStep.devicePort.valid?[]:['p-invalid']"
-                        optionLabel="name" placeholder="Выберите порт">
+                        :option-label="x => x" placeholder="Выберите порт">
                 <template #value="slotProps">
                   <div v-if="slotProps.value" class="flex align-items-center">
                     <div>{{ slotProps.value }}</div>
@@ -325,7 +326,7 @@
 
     </div>
 
-    {{ formData }}
+    <!--    {{ formData }}-->
 
   </div>
 </template>
@@ -347,6 +348,7 @@ import End3AddForm from "./components/End3AddForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue"
 import formatAddress from "../helpers/address";
+import api_request from "../api_request.js";
 
 export default {
   name: "Gpon_base.vue",
@@ -375,6 +377,8 @@ export default {
     return {
       windowWidth: window.innerWidth,
       current_step: 1,
+      _deviceNames: [],
+      _portsNames: [],
       formState: {
         firstStep: {
           deviceName: {valid: true},
@@ -424,31 +428,37 @@ export default {
     }
   },
   computed: {
-    devicesList() {
-      return [
-        "MSAN_GStal64_upssssssssssssssssssss",
-        "MSAN_GStal64_down",
-      ]
-    },
-
     isMobile() {
       return this.windowWidth <= 768
     },
 
+    devicesList() {
+      if (this._deviceNames.length === 0) this.getDeviceNames();
+      return this._deviceNames;
+    },
+
     devicePortList() {
       if (this.formData.oltState.deviceName.length === 0) return []
-      return [
-        "0/1/1",
-        "0/1/2",
-        "0/1/3",
-        "0/1/4",
-        "0/1/5",
-        "0/1/6",
-      ]
+      if (this._portsNames.length === 0) this.getPortsNames();
+      return this._portsNames;
     },
 
   },
   methods: {
+
+    deviceNameSelected() {
+      this.formData.oltState.devicePort = ""
+      this.getPortsNames()
+    },
+
+    getDeviceNames() {
+      api_request.get("/gpon/api/devices-names")
+          .then(res => this._deviceNames = Array.from(res.data))
+    },
+    getPortsNames() {
+      api_request.get("/gpon/api/ports-names/" + this.formData.oltState.deviceName)
+          .then(res => this._portsNames = Array.from(res.data))
+    },
 
     stepIsValid() {
       if (this.current_step === 1) {
@@ -488,7 +498,7 @@ export default {
     },
 
     submitForm() {
-      // Отправка данных
+      api_request.post("/gpon/api/tech-data", this.formData)
     }
 
   },

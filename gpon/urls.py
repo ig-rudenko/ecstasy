@@ -8,7 +8,7 @@ app_name = "gpon"
 
 urlpatterns = [
     path("", gpon_home, name="main"),
+    path("api/", include("gpon.api.urls")),
     path("tech-data/", gpon_tech_data, name="tech-data"),
     path("tech-data/create", gpon_create_tech_data, name="create-tech-data"),
-    path("api/", include("gpon.api.urls")),
 ]

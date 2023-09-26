@@ -8,6 +8,16 @@ app_name = "api"
 
 urlpatterns = [
     path("tech-data", views.TechDataListCreateAPIView.as_view(), name="tech-data"),
-    path("building/addresses", views.BuildingsAddressesListAPIView.as_view(), name="building-addresses"),
-    path("splitter/addresses", views.SplitterAddressesListAPIView.as_view(), name="splitter-addresses"),
+    path("devices-names", views.DevicesNamesListAPIView.as_view(), name="devices-names"),
+    path("ports-names/<str:device_name>", views.DevicePortsList.as_view(), name="ports-names"),
+    path(
+        "addresses/buildings",
+        views.BuildingsAddressesListAPIView.as_view(),
+        name="building-addresses",
+    ),
+    path(
+        "addresses/splitters",
+        views.SplitterAddressesListAPIView.as_view(),
+        name="splitter-addresses",
+    ),
 ]

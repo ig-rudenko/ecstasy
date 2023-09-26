@@ -42,16 +42,22 @@ class TestTechDataAPIView(APITestCase):
         self.assertEqual(resp.status_code, 201)
 
         self.data["oltState"]["devicePort"] = "0/1/2"
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
 
         with self.assertNumQueries(15):
             resp = self.client.get(path=reverse("gpon:api:tech-data"))
             self.assertEqual(resp.status_code, 200)
             pprint(resp.data)
+        #
+        # resp = self.client.get(
+        #     path=reverse("gpon:api:splitter-addresses"),
+        #     data={"port": "0/1/11", "device": "device1"},
+        # )
+        # print(resp.data)

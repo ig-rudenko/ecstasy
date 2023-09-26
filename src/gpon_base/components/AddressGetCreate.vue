@@ -49,6 +49,7 @@ import AddressForm from "./AddressForm.vue"
 import Asterisk from "./Asterisk.vue"
 import BuildingIcon from "./BuildingIcon.vue"
 import formatAddress from "../../helpers/address";
+import api_request from "../../api_request";
 
 export default {
   name: "AddressGetCreate.vue",
@@ -71,6 +72,7 @@ export default {
   data() {
     return {
       show_new_address_form: false,
+      _addresses: [],
       formState: {
         address: {valid: true},
         isValid() {
@@ -78,6 +80,10 @@ export default {
         }
       }
     }
+  },
+
+  mounted() {
+    this.getAddresses()
   },
 
   methods: {
@@ -96,65 +102,21 @@ export default {
       this.data.address = null
     },
 
-    addressesList() {
-      let allAddresses = [
-        {
-          id: 1,
-          region: "Севастополь",
-          settlement: "Сахарная головка",
-          planStructure: "",
-          street: "улица Тракторная",
-          house: "2",
-          block: null,
-          building_type: 'house',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 2,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "",
-          street: "улица Колобова",
-          house: "22",
-          block: null,
-          building_type: 'building',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 3,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "",
-          street: "проспект Генерала Острякова",
-          house: "222а",
-          block: 2,
-          building_type: 'building',
-          floors: 1,
-          total_entrances: 1
-        },
-        {
-          id: 4,
-          region: "Севастополь",
-          settlement: "Севастополь",
-          planStructure: "Рыбак-7",
-          street: "",
-          house: "123",
-          block: null,
-          building_type: 'house',
-          floors: 1,
-          total_entrances: 1
-        },
-      ]
-      if (this.formState.isValid() && this.allowCreate) {
-        allAddresses = [this.data.address, ...allAddresses]
-      }
-
+    getAddresses() {
+      let url
       if (this.getFromDevicePort) {
-        for (let address of allAddresses) {
-          address.planStructure = this.getFromDevicePort.deviceName + this.getFromDevicePort.devicePort
-        }
+        url = "/gpon/addresses/buildings"
+      } else {
+        let params = this.getFromDevicePort
+        url = `/gpon/addresses/splitters?device=${params.deviceName}&port=${params.devicePort}`
+      }
+      api_request.get(url).then(resp => this._addresses = resp.data)
+    },
+
+    addressesList() {
+      let allAddresses = this._addresses
+      if (this.formState.isValid() && this.allowCreate) {
+        allAddresses = [this.data.address, ...this._addresses]
       }
 
       return allAddresses

@@ -13,12 +13,21 @@ from ..models import Address, OLTState, HouseOLTState, HouseB, End3
 
 class AddressSerializer(serializers.ModelSerializer):
     planStructure = serializers.CharField(
-        source="plan_structure", required=False, allow_null=True, max_length=128
+        source="plan_structure", required=False, allow_blank=True, max_length=128
     )
 
     class Meta:
         model = Address
-        fields = "__all__"
+        fields = [
+            "region",
+            "settlement",
+            "planStructure",
+            "street",
+            "house",
+            "block",
+            "floor",
+            "apartment",
+        ]
 
     @staticmethod
     def validate_region(value: str):
@@ -118,6 +127,19 @@ class AddressSerializer(serializers.ModelSerializer):
         except Address.DoesNotExist:
             return Address.objects.create(**validated_data)
         return address
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        for key in data:
+            if isinstance(data[key], str):
+                data[key] = data[key].title()
+            if key == "street":
+                data[key] = re.sub(
+                    r"Улица|Проспект|площадь|Проезд|Бульвар|Шоссе|Переулок|Тупик",
+                    lambda x: x.group(0).lower(),
+                    data[key],
+                )
+        return data
 
 
 class OLTStateSerializer(serializers.ModelSerializer):

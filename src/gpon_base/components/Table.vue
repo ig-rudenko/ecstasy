@@ -61,8 +61,9 @@
                    class="form-control">
           </div>
           <div style="width: 200px" class="me-2">
-            <label for="filter-oltPort" class="mx-2 form-check-label">Порт OLT</label>
-            <input style="width: 200px" id="filter-oltPort" v-model="filter.oltPort" type="text" class="form-control">
+            <label for="filter-devicePort" class="mx-2 form-check-label">Порт OLT</label>
+            <input style="width: 200px" id="filter-devicePort" v-model="filter.devicePort" type="text"
+                   class="form-control">
           </div>
           <div class="me-2">
             <button class="search-button" @click="doFilter">Поиск</button>
@@ -100,7 +101,7 @@
         <!-- ПОРТ OLT -->
         <td>
           <div style="display: flex;align-items: center;">
-            <Pill :text="line.oltPort"></Pill>
+            <Pill :text="line.devicePort"></Pill>
             <span class="secondary-text">подъезды: {{ line.entrances }}</span>
           </div>
           <span class="secondary-text">{{ line.deviceName }}</span>
@@ -188,7 +189,7 @@ export default {
       },
       current_page: 1,
       show_filter: false,
-      filteredData: [],
+      filteredData: this.data,
       filter: {
         address: {
           region: "",
@@ -199,16 +200,17 @@ export default {
           block: null,
         },
         deviceName: "",
-        oltPort: ""
+        devicePort: ""
       }
     }
   },
 
   mounted() {
-    this.filteredData = this.data
+    // this.filteredData = this.data
     let urlObj = new URL(window.location.href);
     this.current_page = Number(urlObj.searchParams.get("page")) || 1
     this.calculateMaxPages()
+    this.doFilter()
   },
 
   computed: {
@@ -241,7 +243,7 @@ export default {
   methods: {
     doFilter() {
       let address_filter = this.filter.address
-      let oltPort_filter = this.filter.oltPort
+      let devicePort_filter = this.filter.devicePort
       let deviceName_filter = this.filter.deviceName
 
       this.filteredData = Array.from(this.data).filter(
@@ -252,21 +254,21 @@ export default {
             const match_settlement = address_filter.settlement.length === 0 || elem.address.settlement.toLowerCase().indexOf(address_filter.settlement.toLowerCase()) > -1
             const match_planStructure = address_filter.planStructure.length === 0 || elem.address.planStructure.toLowerCase().indexOf(address_filter.planStructure.toLowerCase()) > -1
             const match_street = address_filter.street.length === 0 || elem.address.street.toLowerCase().indexOf(address_filter.street.toLowerCase()) > -1
-            const match_house = !address_filter.house || address_filter.house === elem.address.house
+            const match_house = address_filter.house.length === 0 || elem.address.house.toLowerCase().indexOf(address_filter.house.toLowerCase()) > -1
             const match_block = !address_filter.block || address_filter.block === elem.address.block
 
             // Поиск по OLT порту
-            const match_oltPort = oltPort_filter.length === 0 || elem.oltPort.toLowerCase().indexOf(oltPort_filter.toLowerCase()) > -1
+            const match_devicePort = devicePort_filter.length === 0 || elem.devicePort.toLowerCase().indexOf(devicePort_filter.toLowerCase()) > -1
             const match_deviceName = deviceName_filter.length === 0 || elem.deviceName.toLowerCase().indexOf(deviceName_filter.toLowerCase()) > -1
 
-            return match_region && match_settlement && match_planStructure && match_street && match_house && match_block && match_oltPort && match_deviceName
+            return match_region && match_settlement && match_planStructure && match_street && match_house && match_block && match_devicePort && match_deviceName
           }
       )
       this.show_filter = false
     },
 
     calculateMaxPages() {
-      this.max_pages = Math.ceil(this.filteredData.length / this.rows_per_page)
+      this.max_pages = Math.ceil(this.filteredData.length / this.rows_per_page) || 1
     },
     nextPage() {
       if (this.current_page + 1 <= this.max_pages) this.current_page++
