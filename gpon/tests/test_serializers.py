@@ -262,7 +262,7 @@ class TestHouseOLTStateSerializer(TestCase):
         serializer.create(serializer.validated_data)
         self.assertEqual(HouseB.objects.count(), 1)  # Дом все еще один
         self.assertEqual(Address.objects.count(), 1)  # Адрес все еще один
-        self.assertEqual(HouseOLTState.objects.count(), 1)  # OLT State не изменился
+        self.assertEqual(HouseOLTState.objects.count(), 2)  # OLT State Изменился
 
 
 class TestCreateTechDataSerializer(TestCase):
@@ -369,7 +369,7 @@ class TestCreateTechDataSerializer(TestCase):
 
         # Проверяем сплиттера
         total_end3_records_count = 4
-        self.assertEqual(house.end3_set.count(), total_end3_records_count)
+        self.assertEqual(house.house_olt_states.first().end3_set.count(), total_end3_records_count)
         # Технической возможности должно быть столько, как указанных портов на каждом сплиттере
         self.assertEqual(
             TechCapability.objects.count(),

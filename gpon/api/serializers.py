@@ -309,7 +309,7 @@ class CreateTechDataSerializer(serializers.Serializer):
                 )
             )
 
-        house_olt_state.house.end3_set.add(*end3_obj_list)
+        house_olt_state.end3_set.add(*end3_obj_list)
         return olt_state
 
 

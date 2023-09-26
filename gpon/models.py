@@ -100,13 +100,14 @@ class HouseOLTState(models.Model):
     """
 
     house = models.ForeignKey(
-        "gpon.HouseB", on_delete=models.CASCADE, blank=False, related_name="house_olt_state"
+        "gpon.HouseB", on_delete=models.CASCADE, blank=False, related_name="house_olt_states"
     )
     statement = models.ForeignKey(
-        "gpon.OLTState", on_delete=models.CASCADE, null=True, related_name="house_olt_state"
+        "gpon.OLTState", on_delete=models.CASCADE, null=True, related_name="house_olt_states"
     )
     entrances = models.CharField(max_length=25, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
+    end3_set = models.ManyToManyField("gpon.End3", related_name="house_olt_states")
 
     class Meta:
         db_table = "gpon_house_olt_state"
@@ -139,7 +140,6 @@ class HouseB(models.Model):
         blank=False,
         help_text="Кол-во подъездов",
     )
-    end3_set = models.ManyToManyField("gpon.End3", related_name="house")
 
     class Meta:
         db_table = "gpon_houses_buildings"
