@@ -1,3 +1,4 @@
+import copy
 import json
 from pprint import pprint
 
@@ -30,7 +31,7 @@ class TestTechDataAPIView(APITestCase):
             ),
         )
 
-        self.data = CREATE_TECH_DATA
+        self.data = copy.deepcopy(CREATE_TECH_DATA)
 
     def test_api(self):
         self.client.force_login(self.user)
@@ -42,22 +43,10 @@ class TestTechDataAPIView(APITestCase):
         self.assertEqual(resp.status_code, 201)
 
         self.data["oltState"]["devicePort"] = "0/1/2"
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
-        self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        for _ in range(8):
+            self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
 
         with self.assertNumQueries(15):
             resp = self.client.get(path=reverse("gpon:api:tech-data"))
             self.assertEqual(resp.status_code, 200)
             pprint(resp.data)
-        #
-        # resp = self.client.get(
-        #     path=reverse("gpon:api:splitter-addresses"),
-        #     data={"port": "0/1/11", "device": "device1"},
-        # )
-        # print(resp.data)

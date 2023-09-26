@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Optional, List
 
 import orjson
 from django.core.exceptions import ObjectDoesNotExist
@@ -286,16 +286,40 @@ class End3CreateSerializer(serializers.Serializer):
 
 
 class End3CreateListSerializer(serializers.Serializer):
-    type = serializers.ChoiceField(choices=["splitter", "rizer"])
-    existingSplitter = serializers.IntegerField(required=False, allow_null=True)
-    portCount = serializers.ChoiceField(choices=[2, 4, 8, 16, 24])
-    list = End3CreateSerializer(many=True)
+    type = serializers.ChoiceField(
+        choices=["splitter", "rizer"],
+        error_messages={
+            "invalid_choice": "Абонентская линия должна быть либо splitter, либо rizer."
+        },
+    )
+    existingSplitter = serializers.DictField(
+        child=serializers.IntegerField(), required=False, allow_null=True
+    )
+    portCount = serializers.ChoiceField(
+        choices=[2, 4, 8, 16, 24],
+        error_messages={
+            "invalid_choice": "Кол-во портов на splitter, либо волокон на rizer должны быть (2, 4, 8, 16, 24)"
+        },
+    )
+    list = End3CreateSerializer(many=True, required=False, allow_null=True)
+
+    @staticmethod
+    def validate(data):
+        if not data.get("list") and not data.get("existingSplitter"):
+            raise ValidationError("Необходимо выбрать хотя бы один splitter/rizer")
+        return data
 
 
 class CreateTechDataSerializer(serializers.Serializer):
-    oltState = OLTStateSerializer()
-    houseB = HouseOLTStateSerializer()
-    end3 = End3CreateListSerializer()
+    oltState = OLTStateSerializer(
+        error_messages={"required": "Обязательный параметр для данных OLT состояния"}
+    )
+    houseB = HouseOLTStateSerializer(
+        error_messages={"required": "Обязательный параметр для данных строения"}
+    )
+    end3 = End3CreateListSerializer(
+        error_messages={"required": "Обязательный параметр для данных splitter/rizer"}
+    )
 
     class Meta:
         fields = ["oltState", "houseB", "end3"]
@@ -313,9 +337,29 @@ class CreateTechDataSerializer(serializers.Serializer):
         house_olt_state.statement = olt_state
         house_olt_state.save(update_fields=["statement"])
 
+        if validated_data["end3"].get("existingSplitter"):
+            # Если был выбран уже существующий сплиттер
+            end3_obj_list = [self._get_exiting_splitter(validated_data)]
+
+        else:  # Создаем НОВЫЕ splitter/rizer
+            end3_obj_list = self._create_new_end3(validated_data, house_olt_state)
+
+        house_olt_state.end3_set.add(*end3_obj_list)
+        return olt_state
+
+    @staticmethod
+    def _get_exiting_splitter(validated_data) -> End3:
+        try:
+            splitter_id = validated_data["end3"]["existingSplitter"]["id"]
+            return End3.objects.get(id=splitter_id)
+        except End3.DoesNotExist:
+            raise ValidationError("Выбранный вами сплиттер не существует.")
+
+    @staticmethod
+    def _create_new_end3(validated_data, house_olt_state: HouseOLTState) -> List[End3]:
+        # Создаем НОВЫЕ splitter/rizer
         end3_obj_list = []
-        # Создаем splitter/rizer
-        for end3_unit in validated_data["end3"]["list"]:
+        for end3_unit in validated_data["end3"].get("list", []):
             if end3_unit["buildAddress"]:
                 # Если адрес сплиттера/райзера такой же как и у дома
                 end3_unit_address = house_olt_state.house.address
@@ -330,9 +374,7 @@ class CreateTechDataSerializer(serializers.Serializer):
                     address=end3_unit_address,
                 )
             )
-
-        house_olt_state.end3_set.add(*end3_obj_list)
-        return olt_state
+        return end3_obj_list
 
 
 # ================= Для просмотра ===================

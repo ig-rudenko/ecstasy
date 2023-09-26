@@ -1,5 +1,6 @@
 import orjson
 from django.db.models import QuerySet
+from django.db.transaction import atomic
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.response import Response
 
@@ -55,11 +56,13 @@ class TechDataListCreateAPIView(GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.create(serializer.validated_data)
+        with atomic():
+            serializer.create(serializer.validated_data)
         return Response(serializer.data, status=201)
 
 
 class BuildingsAddressesListAPIView(ListAPIView):
+    # TODO: Надо возвращать не только адрес, но и тип дома
     serializer_class = AddressSerializer
     parent_class = HouseB
 

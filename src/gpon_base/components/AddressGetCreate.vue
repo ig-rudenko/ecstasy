@@ -104,11 +104,11 @@ export default {
 
     getAddresses() {
       let url
-      if (this.getFromDevicePort) {
-        url = "/gpon/addresses/buildings"
+      if (!this.getFromDevicePort) {
+        url = "/gpon/api/addresses/buildings"
       } else {
         let params = this.getFromDevicePort
-        url = `/gpon/addresses/splitters?device=${params.deviceName}&port=${params.devicePort}`
+        url = `/gpon/api/addresses/splitters?device=${params.deviceName}&port=${params.devicePort}`
       }
       api_request.get(url).then(resp => this._addresses = resp.data)
     },

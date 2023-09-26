@@ -1,3 +1,4 @@
+import copy
 import json
 
 from django.test import TestCase
@@ -283,7 +284,128 @@ class TestCreateTechDataSerializer(TestCase):
                 ]
             ),
         )
-        self.data = CREATE_TECH_DATA
+        self.data = copy.deepcopy(CREATE_TECH_DATA)
+
+    def test_serializer_no_end3(self):
+        data = copy.deepcopy(self.data)
+        del data["end3"]
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "end3": [
+                    ErrorDetail(
+                        string="Обязательный параметр для данных splitter/rizer", code="required"
+                    )
+                ]
+            },
+        )
+
+    def test_serializer_no_oltState(self):
+        data = copy.deepcopy(self.data)
+        del data["oltState"]
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "oltState": [
+                    ErrorDetail(
+                        string="Обязательный параметр для данных OLT состояния", code="required"
+                    )
+                ]
+            },
+        )
+
+    def test_serializer_no_houseB(self):
+        data = copy.deepcopy(self.data)
+        del data["houseB"]
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "houseB": [
+                    ErrorDetail(string="Обязательный параметр для данных строения", code="required")
+                ]
+            },
+        )
+
+    def test_serializer_empty_end3_list(self):
+        data = copy.deepcopy(self.data)
+        data["end3"]["list"] = []
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "end3": {
+                    "non_field_errors": [
+                        ErrorDetail(
+                            string="Необходимо выбрать хотя бы один splitter/rizer", code="invalid"
+                        )
+                    ]
+                }
+            },
+        )
+
+    def test_serializer_invalid_end3_type(self):
+        data = copy.deepcopy(self.data)
+        data["end3"]["type"] = "asdasd"
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "end3": {
+                    "type": [
+                        ErrorDetail(
+                            string="Абонентская линия должна быть либо splitter, либо rizer.",
+                            code="invalid_choice",
+                        )
+                    ]
+                }
+            },
+        )
+
+    def test_serializer_invalid_end3(self):
+        """
+        Проверяем, что для каждого splitter/rizer должно быть указано поле `location`
+        """
+        data = copy.deepcopy(self.data)
+        del data["end3"]["list"][2]["location"]
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "end3": {
+                    "list": [
+                        {},
+                        {},
+                        {"location": [ErrorDetail(string="Обязательное поле.", code="required")]},
+                        {},
+                    ]
+                }
+            },
+        )
 
     def test_serializer(self):
         serializer = CreateTechDataSerializer(data=self.data)
@@ -375,3 +497,51 @@ class TestCreateTechDataSerializer(TestCase):
             TechCapability.objects.count(),
             total_end3_records_count * self.data["end3"]["portCount"],  # 4 * 8
         )
+
+    def test_serializer_with_existing_splitter_field(self):
+        data = copy.deepcopy(self.data)
+        del data["end3"]["list"]
+        data["end3"]["existingSplitter"] = {"id": 1}
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertTrue(serializer.is_valid())
+        print("DATA", serializer.validated_data)
+        print("ERRORS", serializer.errors)
+        self.assertDictEqual(
+            serializer.validated_data,
+            {
+                "oltState": {
+                    "device": {"name": "device1"},
+                    "olt_port": "0/1/3",
+                    "fiber": "Волокно",
+                    "description": "Описание сплиттера 1го каскада",
+                },
+                "houseB": {
+                    "house": {
+                        "address": {
+                            "region": "СЕВАСТОПОЛЬ",
+                            "settlement": "СЕВАСТОПОЛЬ",
+                            "street": "УЛИЦА КОЛОБОВА",
+                            "house": "22",
+                            "block": None,
+                            "building_type": "building",
+                            "floors": 9,
+                            "total_entrances": 22,
+                        }
+                    },
+                    "entrances": "1-4",
+                    "description": "Описание сплиттера 2го каскада",
+                },
+                "end3": {
+                    "type": "splitter",
+                    "existingSplitter": {"id": 1},
+                    "portCount": 8,
+                },
+            },
+        )
+        with self.assertRaisesMessage(
+                ValidationError,
+                str([ErrorDetail(string="Выбранный вами сплиттер не существует.", code="invalid")]),
+        ):
+            serializer.create(serializer.validated_data)

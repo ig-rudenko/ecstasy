@@ -189,7 +189,7 @@
 
       <!-- LAST STEP -->
       <div v-else-if="current_step===4" class="p-4">
-        <h4 class="text-center">Внимательно проверьте введенный данные</h4>
+        <h4 class="text-center">Внимательно проверьте введенные данные</h4>
 
         <h5 class="py-3">OLT State</h5>
         <table class="table table-striped">
@@ -199,17 +199,47 @@
             <td>{{ formData.oltState.deviceName }}</td>
           </tr>
           <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">
+                {{ errorForm.oltState.deviceName.join('') }}
+              </div>
+            </td>
+          </tr>
+
+
+          <tr>
             <td>OLT порт</td>
             <td>{{ formData.oltState.devicePort }}</td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.oltState.devicePort.join('') }}</div>
+            </td>
+          </tr>
+
+
           <tr>
             <td>Волокно</td>
             <td>{{ formData.oltState.fiber }}</td>
           </tr>
           <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.oltState.fiber.join('') }}</div>
+            </td>
+          </tr>
+
+
+          <tr>
             <td>Описание сплиттера 1го каскада</td>
             <td>{{ formData.oltState.description }}</td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.oltState.description.join('') }}</div>
+            </td>
+          </tr>
+
+
           </tbody>
         </table>
 
@@ -233,14 +263,42 @@
               </div>
             </td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">
+                {{ errorForm.houseB.address.region.join('') }}
+                {{ errorForm.houseB.address.settlement.join('') }}
+                {{ errorForm.houseB.address.planStructure.join('') }}
+                {{ errorForm.houseB.address.street.join('') }}
+                {{ errorForm.houseB.address.house.join('') }}
+                {{ errorForm.houseB.address.block.join('') }}
+                {{ errorForm.houseB.address.floor.join('') }}
+                {{ errorForm.houseB.address.apartment.join('') }}
+              </div>
+            </td>
+          </tr>
+
           <tr v-if="formData.houseB.address.building_type==='building'">
             <td>Задействованные подъезды в доме для данного OLT порта</td>
             <td>{{ formData.houseB.entrances }}</td>
           </tr>
           <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.houseB.entrances.join('') }}</div>
+            </td>
+          </tr>
+
+
+          <tr>
             <td>Описание сплиттера 2го каскада</td>
             <td>{{ formData.houseB.description }}</td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.houseB.description.join('') }}</div>
+            </td>
+          </tr>
+
           </tbody>
         </table>
 
@@ -252,9 +310,21 @@
             <td>{{ formData.end3.type }}</td>
           </tr>
           <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.end3.type.join('') }}</div>
+            </td>
+          </tr>
+
+          <tr>
             <td>Количество портов</td>
             <td>{{ formData.end3.portCount }}</td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="alert alert-danger">{{ errorForm.end3.portCount.join('') }}</div>
+            </td>
+          </tr>
+
           <tr v-if="formData.end3.existingSplitter">
             <td>Выбран существующий сплиттер</td>
             <td>
@@ -424,7 +494,10 @@ export default {
           portCount: 8,
         }
 
-      }
+      },
+
+      errorForm: {}  // TODO: Прописать форму по умолчанию во избежания ошибок
+
     }
   },
   computed: {
@@ -499,6 +572,14 @@ export default {
 
     submitForm() {
       api_request.post("/gpon/api/tech-data", this.formData)
+          .then(resp => {
+                if (resp.status === 400) {
+                  this.errorForm = resp.data
+                } else if (resp.status >= 500) {
+                  this.errorForm = {totalError: `Ошибка на сервере. Код ${resp.status}`}
+                }
+              }
+          )
     }
 
   },
