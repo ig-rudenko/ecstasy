@@ -99,8 +99,12 @@ class HouseOLTState(models.Model):
     Представляет состояние дома по отношению к OLT (терминалу оптической линии) в системе GPON.
     """
 
-    house = models.ForeignKey("gpon.HouseB", on_delete=models.CASCADE, blank=False)
-    statement = models.ForeignKey("gpon.OLTState", on_delete=models.CASCADE, null=True)
+    house = models.ForeignKey(
+        "gpon.HouseB", on_delete=models.CASCADE, blank=False, related_name="house_olt_state"
+    )
+    statement = models.ForeignKey(
+        "gpon.OLTState", on_delete=models.CASCADE, null=True, related_name="house_olt_state"
+    )
     entrances = models.CharField(max_length=25, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
 

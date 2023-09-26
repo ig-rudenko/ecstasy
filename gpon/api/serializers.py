@@ -249,28 +249,12 @@ class HouseOLTStateSerializer(serializers.ModelSerializer):
             },
         )
 
-        house_olt_state, _ = HouseOLTState.objects.update_or_create(
+        house_olt_state = HouseOLTState.objects.create(
             house=house,
-            defaults={
-                "description": validated_data["description"],
-                "entrances": validated_data["entrances"],
-            },
+            description=validated_data["description"],
+            entrances=validated_data["entrances"],
         )
         return house_olt_state
-
-    # def to_representation(self, instance: HouseOLTState):
-    #     data = {
-    #         "houseB": {
-    #             "address": AddressSerializer(instance=instance.house.address).data,
-    #         }
-    #     }
-    #     data["houseB"]["address"]["building_type"] = (
-    #         "building" if instance.house.apartment_building else "house"
-    #     )
-    #     data["houseB"]["address"]["total_entrances"] = instance.house.total_entrances
-    #     data["houseB"]["address"]["floors"] = instance.house.floors
-    #
-    #     return data
 
 
 class End3CreateSerializer(serializers.Serializer):
@@ -308,8 +292,10 @@ class CreateTechDataSerializer(serializers.Serializer):
         house_olt_state.save(update_fields=["statement"])
 
         end3_obj_list = []
+        # Создаем splitter/rizer
         for end3_unit in validated_data["end3"]["list"]:
             if end3_unit["buildAddress"]:
+                # Если адрес сплиттера/райзера такой же как и у дома
                 end3_unit_address = house_olt_state.house.address
             else:
                 end3_unit_address = AddressSerializer.create(end3_unit["address"])
@@ -326,16 +312,37 @@ class CreateTechDataSerializer(serializers.Serializer):
         house_olt_state.house.end3_set.add(*end3_obj_list)
         return olt_state
 
-        # self.instance = olt_state
-        # return self.instance
 
-    # def to_representation(self, instance: OLTState):
-    #     print(self.validated_data)
-    #     house_address = AddressSerializer.create(self.validated_data["houseB"]["house"]["address"])
-    #     data = {
-    #         "oltState": OLTStateSerializer(instance=instance).data,
-    #         "houseB": HouseOLTStateSerializer(
-    #             instance=instance.houseoltstate_set.get(house__address=house_address)
-    #         ).data,
-    #     }
-    #     return data
+# ================= Для просмотра ===================
+
+
+class End3ListSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(read_only=True)
+
+    class Meta:
+        model = End3
+        fields = ["id", "address", "location", "type", "capacity"]
+
+
+class ListHouseOLTStateSerializer(HouseOLTStateSerializer):
+    end3 = End3ListSerializer(many=True, source="house.end3_set", read_only=True)
+
+    class Meta:
+        model = HouseOLTState
+        fields = ["address", "entrances", "description", "end3"]
+
+
+class ListTechDataSerializer(serializers.ModelSerializer):
+    deviceName = serializers.CharField(source="house_olt_state.device.name", read_only=True)
+    devicePort = serializers.CharField(source="house_olt_state.olt_port", read_only=True)
+    fiber = serializers.CharField(source="house_olt_state.fiber", read_only=True)
+    description = serializers.CharField(source="house_olt_state.description", read_only=True)
+
+    class Meta:
+        model = HouseB
+        fields = ["deviceName", "devicePort", "fiber", "description"]
+
+    def to_representation(self, instance: HouseB):
+        data = super().to_representation(instance)
+        data["entrances"] = instance.olt_states.all()
+        return data

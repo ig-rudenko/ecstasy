@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -9,7 +10,7 @@ from gpon.tests.data import CREATE_TECH_DATA
 from net_tools.models import DevicesInfo
 
 
-class TestCreateTechDataAPIView(APITestCase):
+class TestTechDataAPIView(APITestCase):
     def setUp(self) -> None:
         self.user = get_user_model().objects.create_user(username="test_user", password="password")
         self.device = Devices.objects.create(
@@ -35,4 +36,22 @@ class TestCreateTechDataAPIView(APITestCase):
         self.client.force_login(self.user)
         resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
         self.assertEqual(resp.status_code, 201)
-        print(resp.data)
+
+        self.data["oltState"]["devicePort"] = "0/1/1"
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        self.assertEqual(resp.status_code, 201)
+
+        self.data["oltState"]["devicePort"] = "0/1/2"
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
+
+        with self.assertNumQueries(15):
+            resp = self.client.get(path=reverse("gpon-api:tech-data"))
+            self.assertEqual(resp.status_code, 200)
+            pprint(resp.data)
