@@ -1,0 +1,15 @@
+.shadow-hover:hover {
+    box-shadow: 5px 5px 5px 5px gainsboro;
+
+}
+
+.grow:hover {
+    -webkit-transform: scale(1.05);
+    -ms-transform: scale(1.05);
+    transform: scale(1.05);
+}
+
+.pb600px {
+    padding-bottom: 600px !important;
+
+}

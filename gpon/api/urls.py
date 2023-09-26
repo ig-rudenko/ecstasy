@@ -4,7 +4,7 @@ from . import views
 
 # /gpon/api/
 
-app_name = "gpon-api"
+app_name = "api"
 
 urlpatterns = [
     path("tech-data", views.TechDataListCreateAPIView.as_view(), name="tech-data"),

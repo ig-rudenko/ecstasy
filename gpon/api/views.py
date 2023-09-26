@@ -34,12 +34,12 @@ class TechDataListCreateAPIView(GenericAPIView):
         for house in buildings:
             house: HouseB
             for house_olt_state in (
-                    house.house_olt_state.all()
+                    house.house_olt_states.all()
                             .select_related("statement", "statement__device")
-                            .prefetch_related("house__end3_set")
+                            .prefetch_related("end3_set")
             ):
                 house_olt_state: HouseOLTState
-                end3: End3 = house_olt_state.house.end3_set.first()
+                end3: End3 = house_olt_state.end3_set.first()
                 data.append(
                     {
                         **OLTStateSerializer(instance=house_olt_state.statement).data,
@@ -47,7 +47,7 @@ class TechDataListCreateAPIView(GenericAPIView):
                         "entrances": house_olt_state.entrances,
                         "customerLine": {
                             "type": end3.type,
-                            "count": house_olt_state.house.end3_set.count(),
+                            "count": house_olt_state.end3_set.count(),
                             "typeCount": end3.capacity,
                         },
                     }
