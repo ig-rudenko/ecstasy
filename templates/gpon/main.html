@@ -35,12 +35,14 @@
             </div>
 
             <div class="col-md-6 pl-2 ">
-                <div id="right" class=" pb600px p-5 rounded-3 border border-dark-subtle grow shadow-hover"
-                     style="background-image: url('{% static 'img/gpon/right.png' %}')" type="button">
-                    <h2>Технические данные</h2>
-                    <p>ТЕКСТ ТЕКСТ ТЕКСТ ТЕКСТ </p>
+                <a class="text-decoration-none text-dark" href="{% url 'gpon:tech-data' %}">
+                    <div id="right" class=" pb600px p-5 rounded-3 border border-dark-subtle grow shadow-hover"
+                         style="background-image: url('{% static 'img/gpon/right.png' %}')" type="button">
+                        <h2>Технические данные</h2>
+                        <p>ТЕКСТ ТЕКСТ ТЕКСТ ТЕКСТ </p>
 
-                </div>
+                    </div>
+                </a>
 
             </div>
 
