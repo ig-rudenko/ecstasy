@@ -5,7 +5,7 @@
       <h2>Добавление технических данных</h2>
     </div>
 
-    <div class="plate py-4 w-75 container">
+    <div class="plate shadow py-4 w-75 container">
 
       <StepMenu
           class="p-2"
@@ -368,7 +368,7 @@
       <!-- Кнопки -->
       <div v-if="!form_submitted_successfully" class="d-flex justify-content-between mx-5">
 
-        <Button severity="secondary" rounded>
+        <Button severity="secondary" rounded @click="goToTechDataURL">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
                viewBox="0 0 16 16">
             <path
@@ -411,6 +411,7 @@
 
       </div>
 
+      <!-- Успешно создано -->
       <div v-else class="alert alert-success p-2 text-center">
         <div class="py-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-3"
@@ -641,6 +642,10 @@ export default {
   },
   methods: {
 
+    goToTechDataURL() {
+      window.location.href = '/gpon/tech-data'
+    },
+
     deviceNameSelected() {
       this.formData.oltState.devicePort = ""
       this.getPortsNames()
@@ -716,7 +721,7 @@ export default {
 <style scoped>
 .plate {
   border-radius: 14px;
-  border: 1px solid #A3A3A3;
+  /*border: 1px solid #A3A3A3;*/
 }
 
 @media (max-width: 767px) {
