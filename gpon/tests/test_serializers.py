@@ -617,7 +617,7 @@ class TestEnd3Serializer(TestCase):
         self.assertEqual(data[0].keys(), data[3].keys())
         self.assertTupleEqual(
             tuple(data[0].keys()),
-            ("address", "capacity", "location", "type"),
+            ("id", "address", "capacity", "location", "type"),
         )
         self.assertTupleEqual(
             tuple(data[0]["address"].keys()),

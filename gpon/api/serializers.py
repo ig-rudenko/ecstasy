@@ -276,7 +276,7 @@ class End3Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = End3
-        fields = ["address", "capacity", "location", "type"]
+        fields = ["id", "address", "capacity", "location", "type"]
 
 
 class HouseOLTStateSerializer(serializers.ModelSerializer):
