@@ -10,8 +10,10 @@ from gpon.api.serializers import (
     AddressSerializer,
     HouseOLTStateSerializer,
     CreateTechDataSerializer,
+    BuildingAddressSerializer,
+    End3Serializer,
 )
-from gpon.models import OLTState, Address, HouseB, HouseOLTState, TechCapability
+from gpon.models import OLTState, Address, HouseB, HouseOLTState, TechCapability, End3
 from gpon.tests.data import CREATE_TECH_DATA
 from net_tools.models import DevicesInfo
 
@@ -545,3 +547,88 @@ class TestCreateTechDataSerializer(TestCase):
                 str([ErrorDetail(string="Выбранный вами сплиттер не существует.", code="invalid")]),
         ):
             serializer.create(serializer.validated_data)
+
+
+class TestBuildingAddressSerializer(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        HouseB.objects.create(
+            address=Address.objects.create(street="улица Колобова", house="22", block=10),
+            apartment_building=True,
+            floors=9,
+            total_entrances=10,
+        )
+        HouseB.objects.create(
+            address=Address.objects.create(street="улица Колобова", house="12", block=None),
+            apartment_building=True,
+            floors=9,
+            total_entrances=11,
+        )
+        HouseB.objects.create(
+            address=Address.objects.create(plan_structure="Вишня", house="11", block=1),
+            apartment_building=False,
+            floors=9,
+            total_entrances=12,
+        )
+        HouseB.objects.create(
+            address=Address.objects.create(
+                plan_structure="Вишня", street="улица Вишневая", house="9", block=None
+            ),
+            apartment_building=False,
+            floors=9,
+            total_entrances=13,
+        )
+
+    def test_serializer(self):
+        serializer = BuildingAddressSerializer(instance=HouseB.objects.all(), many=True)
+        data = serializer.data
+        self.assertEqual(len(data), 4)
+        self.assertEqual(data[0].keys(), data[3].keys())
+        self.assertTupleEqual(
+            tuple(data[0].keys()),
+            (
+                "id",
+                "region",
+                "settlement",
+                "planStructure",
+                "street",
+                "house",
+                "block",
+                "building_type",
+                "floors",
+                "total_entrances",
+            ),
+        )
+
+
+class TestEnd3Serializer(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        address = Address.objects.create(street="улица Колобова", house="22", block=10)
+        End3.objects.create(address=address, capacity=8, type="splitter", location="подъезд 1")
+        End3.objects.create(address=address, capacity=8, type="splitter", location="подъезд 2")
+        End3.objects.create(address=address, capacity=8, type="splitter", location="подъезд 3")
+        End3.objects.create(address=address, capacity=8, type="splitter", location="подъезд 4")
+
+    def test_serializer(self):
+        serializer = End3Serializer(instance=End3.objects.all(), many=True)
+        data = serializer.data
+        self.assertEqual(len(data), 4)
+        self.assertEqual(data[0].keys(), data[3].keys())
+        self.assertTupleEqual(
+            tuple(data[0].keys()),
+            ("address", "capacity", "location", "type"),
+        )
+        self.assertTupleEqual(
+            tuple(data[0]["address"].keys()),
+            (
+                "region",
+                "settlement",
+                "planStructure",
+                "street",
+                "house",
+                "block",
+                "floor",
+                "apartment",
+            ),
+        )

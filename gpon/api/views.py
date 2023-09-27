@@ -10,8 +10,10 @@ from .serializers import (
     AddressSerializer,
     ListTechDataSerializer,
     OLTStateSerializer,
+    BuildingAddressSerializer,
+    End3Serializer,
 )
-from ..models import End3, Address, HouseB, HouseOLTState, OLTState
+from ..models import End3, HouseB, HouseOLTState, OLTState
 
 
 class TechDataListCreateAPIView(GenericAPIView):
@@ -62,21 +64,13 @@ class TechDataListCreateAPIView(GenericAPIView):
 
 
 class BuildingsAddressesListAPIView(ListAPIView):
-    # TODO: Надо возвращать не только адрес, но и тип дома
-    serializer_class = AddressSerializer
-    parent_class = HouseB
-
-    def get_queryset(self):
-        addresses_ids = set(
-            self.parent_class.objects.all()
-                .select_related("address")
-                .values_list("address", flat=True)
-        )
-        return Address.objects.filter(id__in=addresses_ids)
+    serializer_class = BuildingAddressSerializer
+    queryset = HouseB.objects.all().select_related("address")
 
 
-class SplitterAddressesListAPIView(BuildingsAddressesListAPIView):
-    parent_class = End3
+class SplitterAddressesListAPIView(ListAPIView):
+    serializer_class = End3Serializer
+    queryset = End3.objects.select_related("address").filter(type="splitter")
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         port = self.request.GET.get("port")
@@ -97,7 +91,7 @@ class SplitterAddressesListAPIView(BuildingsAddressesListAPIView):
                     .values_list("address", flat=True)
             )
 
-        return Address.objects.filter(id__in=addresses_ids)
+        return queryset.filter(address_id__in=addresses_ids)
 
 
 class DevicesNamesListAPIView(GenericAPIView):

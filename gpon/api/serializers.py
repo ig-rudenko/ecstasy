@@ -209,7 +209,7 @@ class OLTStateSerializer(serializers.ModelSerializer):
         return instance
 
 
-class HouseBAddressSerializer(AddressSerializer):
+class WriteOnlyHouseBAddressSerializer(AddressSerializer):
     building_type = serializers.ChoiceField(
         choices=["building", "house"], required=True, write_only=True
     )
@@ -218,6 +218,9 @@ class HouseBAddressSerializer(AddressSerializer):
     )
     total_entrances = serializers.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(255)], required=True, write_only=True
+    )
+    planStructure = serializers.CharField(
+        source="plan_structure", required=False, allow_blank=True, max_length=128
     )
 
     class Meta:
@@ -236,8 +239,48 @@ class HouseBAddressSerializer(AddressSerializer):
         ]
 
 
+class BuildingAddressSerializer(serializers.ModelSerializer):
+    region = serializers.CharField(source="address.region")
+    settlement = serializers.CharField(source="address.settlement")
+    planStructure = serializers.CharField(source="address.plan_structure")
+    street = serializers.CharField(source="address.street")
+    house = serializers.CharField(source="address.house")
+    block = serializers.CharField(source="address.block")
+    building_type = serializers.ChoiceField(
+        source="apartment_building", choices=["building", "house"]
+    )
+
+    class Meta:
+        model = HouseB
+        fields = [
+            "id",
+            "region",
+            "settlement",
+            "planStructure",
+            "street",
+            "house",
+            "block",
+            "building_type",
+            "floors",
+            "total_entrances",
+        ]
+
+    def to_representation(self, instance: HouseB):
+        data = super().to_representation(instance)
+        data["building_type"] = "building" if instance.apartment_building else "house"
+        return data
+
+
+class End3Serializer(serializers.ModelSerializer):
+    address = AddressSerializer()
+
+    class Meta:
+        model = End3
+        fields = ["address", "capacity", "location", "type"]
+
+
 class HouseOLTStateSerializer(serializers.ModelSerializer):
-    address = HouseBAddressSerializer(source="house.address")
+    address = WriteOnlyHouseBAddressSerializer(source="house.address")
 
     class Meta:
         model = HouseOLTState
