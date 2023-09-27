@@ -75,7 +75,9 @@ class ViewOLTStateTechData(GenericAPIView):
         olt_port = self.request.GET.get("port")
 
         try:
-            return OLTState.objects.get(device__name=device_name, olt_port=olt_port)
+            return OLTState.objects.select_related("device").get(
+                device__name=device_name, olt_port=olt_port
+            )
         except OLTState.DoesNotExist:
             raise ValidationError(
                 f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
