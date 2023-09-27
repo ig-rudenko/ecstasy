@@ -109,7 +109,10 @@
         <!-- ПОРТ OLT -->
         <td>
           <div style="display: flex;align-items: center;">
-            <Pill :text="line.devicePort"></Pill>
+            <Pill style="cursor: pointer;"
+                  @click="goToOLTDetailView(line.deviceName, line.devicePort)"
+                  :text="line.devicePort">
+            </Pill>
             <span class="secondary-text">подъезды: {{ line.entrances }}</span>
           </div>
           <span class="secondary-text">{{ line.deviceName }}</span>
@@ -311,6 +314,10 @@ export default {
       } else {
         return "#d572ff"
       }
+    },
+
+    goToOLTDetailView(device_name, olt_port){
+      window.location.href = `/gpon/tech-data/${device_name}?port=${olt_port}`
     }
   }
 }
