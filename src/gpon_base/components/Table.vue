@@ -21,16 +21,19 @@
           <div style="width: 200px" class="me-2">
             <label for="filter-region" class="mx-2 form-check-label">Регион</label>
             <input style="width: 200px" id="filter-region" v-model.trim="filter.address.region" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div style="width: 200px" class="me-2">
             <label for="filter-settlement" class="mx-2 form-check-label">Населенный пункт</label>
             <input style="width: 200px" id="filter-settlement" v-model.trim="filter.address.settlement" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div style="width: 200px" class="me-2">
             <label for="filter-planStructure" class="mx-2 form-check-label">СНТ/ТСН</label>
             <input style="width: 200px" id="filter-planStructure" v-model.trim="filter.address.planStructure"
+                   @keypress.enter="doFilter"
                    type="text"
                    class="form-control">
           </div>
@@ -40,16 +43,19 @@
           <div style="width: 300px" class="me-2">
             <label for="filter-street" class="mx-2 form-check-label">Улица/проспект</label>
             <input style="width: 300px" id="filter-street" v-model.trim="filter.address.street" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div style="width: 100px" class="me-2">
             <label for="filter-house" class="mx-2 form-check-label">Дом</label>
-            <input style="width: 100px" id="filter-house" v-model.number="filter.address.house" type="text"
+            <input style="width: 100px" id="filter-house" v-model.trim="filter.address.house" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div style="width: 100px" class="me-2">
             <label for="filter-block" class="mx-2 form-check-label">Корпус</label>
             <input style="width: 100px" id="filter-block" v-model.number="filter.address.block" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
         </div>
@@ -58,11 +64,13 @@
           <div style="width: 300px" class="me-2">
             <label for="filter-deviceName" class="mx-2 form-check-label">Название оборудования</label>
             <input style="width: 300px" id="filter-deviceName" v-model.trim="filter.deviceName" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div style="width: 200px" class="me-2">
             <label for="filter-devicePort" class="mx-2 form-check-label">Порт OLT</label>
             <input style="width: 200px" id="filter-devicePort" v-model="filter.devicePort" type="text"
+                   @keypress.enter="doFilter"
                    class="form-control">
           </div>
           <div class="me-2">
@@ -196,7 +204,7 @@ export default {
           settlement: "",
           planStructure: "",
           street: "",
-          house: null,
+          house: "",
           block: null,
         },
         deviceName: "",
