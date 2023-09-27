@@ -5,13 +5,12 @@ from django.test import TestCase
 from rest_framework.exceptions import ErrorDetail, ValidationError
 
 from check.models import Devices, AuthGroup, DeviceGroup
-from gpon.api.serializers import (
+from gpon.api.serializers.address import AddressSerializer, BuildingAddressSerializer
+from gpon.api.serializers.common import End3Serializer
+from gpon.api.serializers.create_tech_data import (
     OLTStateSerializer,
-    AddressSerializer,
     HouseOLTStateSerializer,
     CreateTechDataSerializer,
-    BuildingAddressSerializer,
-    End3Serializer,
 )
 from gpon.models import OLTState, Address, HouseB, HouseOLTState, TechCapability, End3
 from gpon.tests.data import CREATE_TECH_DATA
@@ -355,7 +354,7 @@ class TestCreateTechDataSerializer(TestCase):
                         "street": [
                             ErrorDetail(
                                 string="Укажите полное название с указанием типа "
-                                       "(улица/проспект/площадь/проезд/бульвар/шоссе/переулок/тупик)",
+                                "(улица/проспект/площадь/проезд/бульвар/шоссе/переулок/тупик)",
                                 code="invalid",
                             )
                         ]
@@ -594,6 +593,7 @@ class TestBuildingAddressSerializer(TestCase):
     def test_serializer(self):
         serializer = BuildingAddressSerializer(instance=HouseB.objects.all(), many=True)
         data = serializer.data
+        print(data)
         self.assertEqual(len(data), 4)
         self.assertEqual(data[0].keys(), data[3].keys())
         self.assertTupleEqual(

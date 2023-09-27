@@ -6,14 +6,9 @@ from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.response import Response
 
 from check.models import Devices
-from .serializers import (
-    CreateTechDataSerializer,
-    AddressSerializer,
-    ListTechDataSerializer,
-    OLTStateSerializer,
-    BuildingAddressSerializer,
-    End3Serializer,
-)
+from .serializers.address import AddressSerializer, BuildingAddressSerializer
+from .serializers.common import End3Serializer
+from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
 
@@ -28,7 +23,6 @@ class TechDataListCreateAPIView(GenericAPIView):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateTechDataSerializer
-        return ListTechDataSerializer
 
     def get(self, request) -> Response:
         data = cache.get(self.cache_key, [])
