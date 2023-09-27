@@ -1,4 +1,5 @@
 import orjson
+from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from rest_framework.generics import GenericAPIView, ListAPIView
@@ -21,22 +22,27 @@ class TechDataListCreateAPIView(GenericAPIView):
     Предназначен для создания и просмотра технических данных
     """
 
+    cache_key = "gpon:api:TechDataListCreateAPIView:get"
+    cache_timeout = 60 * 2
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateTechDataSerializer
         return ListTechDataSerializer
 
     def get(self, request) -> Response:
-        data = []
+        data = cache.get(self.cache_key, [])
+        if data:
+            return Response(data)
 
         buildings = HouseB.objects.all().select_related("address")
 
         for house in buildings:
             house: HouseB
             for house_olt_state in (
-                    house.house_olt_states.all()
-                            .select_related("statement", "statement__device")
-                            .prefetch_related("end3_set")
+                house.house_olt_states.all()
+                .select_related("statement", "statement__device")
+                .prefetch_related("end3_set")
             ):
                 house_olt_state: HouseOLTState
                 end3: End3 = house_olt_state.end3_set.first()
@@ -52,6 +58,8 @@ class TechDataListCreateAPIView(GenericAPIView):
                         },
                     }
                 )
+
+        cache.set(self.cache_key, data, timeout=self.cache_timeout)
 
         return Response(data)
 
@@ -87,8 +95,8 @@ class SplitterAddressesListAPIView(ListAPIView):
             house_olt_state: HouseOLTState
             addresses_ids |= set(
                 house_olt_state.end3_set.all()
-                    .select_related("address")
-                    .values_list("address", flat=True)
+                .select_related("address")
+                .values_list("address", flat=True)
             )
 
         return queryset.filter(address_id__in=addresses_ids)
