@@ -295,7 +295,6 @@ class TestCreateTechDataSerializer(TestCase):
         serializer = CreateTechDataSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        print(serializer.errors)
         self.assertDictEqual(
             serializer.errors,
             {
@@ -314,7 +313,6 @@ class TestCreateTechDataSerializer(TestCase):
         serializer = CreateTechDataSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        print(serializer.errors)
         self.assertDictEqual(
             serializer.errors,
             {
@@ -333,13 +331,59 @@ class TestCreateTechDataSerializer(TestCase):
         serializer = CreateTechDataSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        print(serializer.errors)
         self.assertDictEqual(
             serializer.errors,
             {
                 "houseB": [
                     ErrorDetail(string="Обязательный параметр для данных строения", code="required")
                 ]
+            },
+        )
+
+    def test_serializer_invalid_street_address(self):
+        data = copy.deepcopy(self.data)
+        data["houseB"]["address"]["street"] = "123"
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "houseB": {
+                    "address": {
+                        "street": [
+                            ErrorDetail(
+                                string="Укажите полное название с указанием типа "
+                                       "(улица/проспект/площадь/проезд/бульвар/шоссе/переулок/тупик)",
+                                code="invalid",
+                            )
+                        ]
+                    }
+                }
+            },
+        )
+
+    def test_serializer_invalid_address(self):
+        data = copy.deepcopy(self.data)
+        del data["houseB"]["address"]["street"]
+
+        serializer = CreateTechDataSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+        self.assertDictEqual(
+            serializer.errors,
+            {
+                "houseB": {
+                    "address": {
+                        "non_field_errors": [
+                            ErrorDetail(
+                                string="Необходимо указать либо СНТ ТСН, либо улицу", code="invalid"
+                            )
+                        ]
+                    }
+                }
             },
         )
 
@@ -394,7 +438,6 @@ class TestCreateTechDataSerializer(TestCase):
         serializer = CreateTechDataSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        print(serializer.errors)
         self.assertDictEqual(
             serializer.errors,
             {
@@ -412,8 +455,6 @@ class TestCreateTechDataSerializer(TestCase):
     def test_serializer(self):
         serializer = CreateTechDataSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
-        print("DATA", serializer.validated_data)
-        print("ERRORS", serializer.errors)
         self.assertDictEqual(
             serializer.validated_data,
             {
@@ -503,50 +544,21 @@ class TestCreateTechDataSerializer(TestCase):
     def test_serializer_with_existing_splitter_field(self):
         data = copy.deepcopy(self.data)
         del data["end3"]["list"]
-        data["end3"]["existingSplitter"] = {"id": 1}
+        data["end3"]["existingSplitter"] = {"id": 55555}
 
         serializer = CreateTechDataSerializer(data=data)
 
-        self.assertTrue(serializer.is_valid())
-        print("DATA", serializer.validated_data)
-        print("ERRORS", serializer.errors)
+        self.assertFalse(serializer.is_valid())
         self.assertDictEqual(
-            serializer.validated_data,
+            serializer.errors,
             {
-                "oltState": {
-                    "device": {"name": "device1"},
-                    "olt_port": "0/1/3",
-                    "fiber": "Волокно",
-                    "description": "Описание сплиттера 1го каскада",
-                },
-                "houseB": {
-                    "house": {
-                        "address": {
-                            "region": "СЕВАСТОПОЛЬ",
-                            "settlement": "СЕВАСТОПОЛЬ",
-                            "street": "УЛИЦА КОЛОБОВА",
-                            "house": "22",
-                            "block": None,
-                            "building_type": "building",
-                            "floors": 9,
-                            "total_entrances": 22,
-                        }
-                    },
-                    "entrances": "1-4",
-                    "description": "Описание сплиттера 2го каскада",
-                },
                 "end3": {
-                    "type": "splitter",
-                    "existingSplitter": {"id": 1},
-                    "portCount": 8,
-                },
+                    "existingSplitter": [
+                        ErrorDetail(string="Сплиттер с id=55555 не существует", code="invalid")
+                    ]
+                }
             },
         )
-        with self.assertRaisesMessage(
-                ValidationError,
-                str([ErrorDetail(string="Выбранный вами сплиттер не существует.", code="invalid")]),
-        ):
-            serializer.create(serializer.validated_data)
 
 
 class TestBuildingAddressSerializer(TestCase):

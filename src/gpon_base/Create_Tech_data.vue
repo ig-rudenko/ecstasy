@@ -198,11 +198,9 @@
             <td>Оборудование</td>
             <td>{{ formData.oltState.deviceName }}</td>
           </tr>
-          <tr>
+          <tr v-if="deviceNameErrors">
             <td colspan="2">
-              <div class="alert alert-danger">
-                {{ errorForm.oltState.deviceName.join('') }}
-              </div>
+              <div class="alert alert-danger">{{ deviceNameErrors }}</div>
             </td>
           </tr>
 
@@ -211,9 +209,9 @@
             <td>OLT порт</td>
             <td>{{ formData.oltState.devicePort }}</td>
           </tr>
-          <tr>
+          <tr v-if="devicePortErrors">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.oltState.devicePort.join('') }}</div>
+              <div class="alert alert-danger">{{ devicePortErrors }}</div>
             </td>
           </tr>
 
@@ -222,9 +220,9 @@
             <td>Волокно</td>
             <td>{{ formData.oltState.fiber }}</td>
           </tr>
-          <tr>
+          <tr v-if="fiberErrors">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.oltState.fiber.join('') }}</div>
+              <div class="alert alert-danger">{{ fiberErrors }}</div>
             </td>
           </tr>
 
@@ -233,9 +231,9 @@
             <td>Описание сплиттера 1го каскада</td>
             <td>{{ formData.oltState.description }}</td>
           </tr>
-          <tr>
+          <tr v-if="oltDescriptionErrors">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.oltState.description.join('') }}</div>
+              <div class="alert alert-danger">{{ oltDescriptionErrors }}</div>
             </td>
           </tr>
 
@@ -263,18 +261,9 @@
               </div>
             </td>
           </tr>
-          <tr>
+          <tr v-if="addressError">
             <td colspan="2">
-              <div class="alert alert-danger">
-                {{ errorForm.houseB.address.region.join('') }}
-                {{ errorForm.houseB.address.settlement.join('') }}
-                {{ errorForm.houseB.address.planStructure.join('') }}
-                {{ errorForm.houseB.address.street.join('') }}
-                {{ errorForm.houseB.address.house.join('') }}
-                {{ errorForm.houseB.address.block.join('') }}
-                {{ errorForm.houseB.address.floor.join('') }}
-                {{ errorForm.houseB.address.apartment.join('') }}
-              </div>
+              <div class="alert alert-danger">{{ addressError }}</div>
             </td>
           </tr>
 
@@ -282,9 +271,9 @@
             <td>Задействованные подъезды в доме для данного OLT порта</td>
             <td>{{ formData.houseB.entrances }}</td>
           </tr>
-          <tr>
+          <tr v-if="entrancesError">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.houseB.entrances.join('') }}</div>
+              <div class="alert alert-danger">{{ entrancesError }}</div>
             </td>
           </tr>
 
@@ -293,9 +282,9 @@
             <td>Описание сплиттера 2го каскада</td>
             <td>{{ formData.houseB.description }}</td>
           </tr>
-          <tr>
+          <tr v-if="houseDescriptionError">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.houseB.description.join('') }}</div>
+              <div class="alert alert-danger">{{ houseDescriptionError }}</div>
             </td>
           </tr>
 
@@ -309,9 +298,9 @@
             <td>Тип линии</td>
             <td>{{ formData.end3.type }}</td>
           </tr>
-          <tr>
+          <tr v-if="end3TypeError">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.end3.type.join('') }}</div>
+              <div class="alert alert-danger">{{ end3TypeError }}</div>
             </td>
           </tr>
 
@@ -319,9 +308,9 @@
             <td>Количество портов</td>
             <td>{{ formData.end3.portCount }}</td>
           </tr>
-          <tr>
+          <tr v-if="end3PortCountError">
             <td colspan="2">
-              <div class="alert alert-danger">{{ errorForm.end3.portCount.join('') }}</div>
+              <div class="alert alert-danger">{{ end3PortCountError }}</div>
             </td>
           </tr>
 
@@ -333,23 +322,51 @@
               Кол-во портов: {{ formData.end3.existingSplitter.capacity }}
             </td>
           </tr>
-          <tr v-for="(sp, index) in formData.end3.list">
-            <td>{{ formData.end3.type }} {{ index + 1 }}</td>
-            <td>
-              Адрес:
-              <template v-if="!sp.buildAddress">{{ getFullAddress(sp.address) }}</template>
-              <template v-else>в этом же доме</template>
-              <br>
-              Местоположение: {{ sp.location }}
+          <tr v-if="end3ExistingSplitterError">
+            <td colspan="2">
+              <div class="alert alert-danger">{{ end3ExistingSplitterError }}</div>
             </td>
           </tr>
+
+
+          <template v-for="(sp, index) in formData.end3.list">
+            <tr>
+              <td>{{ formData.end3.type }} {{ index + 1 }}</td>
+              <td>
+                Адрес:
+                <template v-if="!sp.buildAddress">{{ getFullAddress(sp.address) }}</template>
+                <template v-else>в этом же доме</template>
+                <br>
+                Местоположение: {{ sp.location }}
+              </td>
+            </tr>
+            <tr v-if="end3ListErrors && Object.entries(end3ListErrors[index]).length">
+              <td colspan="2">
+                <div class="alert alert-danger">{{ end3ListErrors[index] }}</div>
+              </td>
+            </tr>
+          </template>
+
+
           </tbody>
         </table>
 
       </div>
 
+      <!-- Ошибки в форме -->
+      <div v-if="errors" class="alert alert-danger p-2 text-center">
+        <div class="py-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-3"
+               viewBox="0 0 16 16">
+            <path
+                d="M7.005 3.1a1 1 0 1 1 1.99 0l-.388 6.35a.61.61 0 0 1-1.214 0L7.005 3.1ZM7 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"/>
+          </svg>
+          <span>Были замечены ошибки. Проверьте правильность введенных данных</span>
+        </div>
+      </div>
+
       <!-- Кнопки -->
-      <div class="d-flex justify-content-between mx-5">
+      <div v-if="!form_submitted_successfully" class="d-flex justify-content-between mx-5">
 
         <Button severity="secondary" rounded>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
@@ -394,9 +411,24 @@
 
       </div>
 
-    </div>
+      <div v-else class="alert alert-success p-2 text-center">
+        <div class="py-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-3"
+               viewBox="0 0 16 16">
+            <path
+                d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514ZM8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1Z"></path>
+            <path
+                d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12.31 12.31 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7Zm6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.552 4.552 0 0 1 .23-2.002Zm-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.507 4.507 0 0 1-1.3-1.905Z"></path>
+          </svg>
+          <span>Данные добавлены</span>
 
-    <!--    {{ formData }}-->
+        </div>
+        <div class="text-center">
+          <a href="/gpon/tech-data" class="btn btn-outline-success">Вернуться к перечню</a>
+        </div>
+      </div>
+
+    </div>
 
   </div>
 </template>
@@ -449,6 +481,7 @@ export default {
       current_step: 1,
       _deviceNames: [],
       _portsNames: [],
+      form_submitted_successfully: false,
       formState: {
         firstStep: {
           deviceName: {valid: true},
@@ -496,11 +529,100 @@ export default {
 
       },
 
-      errorForm: {}  // TODO: Прописать форму по умолчанию во избежания ошибок
+      errors: null
 
     }
   },
   computed: {
+
+    deviceNameErrors() {
+      if (this.errors && this.errors.oltState && this.errors.oltState.deviceName) {
+        return this.errors.oltState.deviceName.join('')
+      }
+      return null
+    },
+    devicePortErrors() {
+      if (this.errors && this.errors.oltState && this.errors.oltState.devicePort) {
+        return this.errors.oltState.devicePort.join('')
+      }
+      return null
+    },
+    fiberErrors() {
+      if (this.errors && this.errors.oltState && this.errors.oltState.fiber) {
+        return this.errors.oltState.fiber.join('')
+      }
+      return null
+    },
+    oltDescriptionErrors() {
+      if (this.errors && this.errors.oltState && this.errors.oltState.description) {
+        return this.errors.oltState.description.join('')
+      }
+      return null
+    },
+
+    serverError() {
+      if (this.errors && this.errors.serverError) {
+        return this.errors.serverError
+      }
+    },
+    addressError() {
+      let msg = "";
+      if (this.errors && this.errors.houseB && this.errors.houseB.address) {
+        // Создаем массив с названиями полей и ошибками
+        let fields = [
+          {name: "non_field_errors", label: ""},
+          {name: "region", label: "Ошибка в поле региона"},
+          {name: "settlement", label: "Ошибка в поле населенного пункта"},
+          {name: "planStructure", label: "Ошибка в поле СНТ ТСН"},
+          {name: "street", label: "Ошибка в поле улицы"},
+          {name: "house", label: "Ошибка в поле дома"},
+          {name: "block", label: "Ошибка в поле корпуса"},
+          {name: "building_type", label: "Ошибка в поле типа строения"},
+          {name: "floors", label: "Ошибка в поле кол-ва этажей"},
+          {name: "total_entrances", label: "Ошибка в поле кол-ва подъездов"}
+        ];
+        // Проходим по массиву и добавляем сообщения об ошибках
+        for (let field of fields) {
+          if (this.errors.houseB.address[field.name]) {
+            msg = msg + field.label + " " + this.errors.houseB.address[field.name].join("") + ". ";
+          }
+        }
+      }
+      return msg;
+    },
+    entrancesError() {
+      if (this.errors && this.errors.houseB && this.errors.houseB.entrances) {
+        return this.errors.houseB.entrances.join('')
+      }
+    },
+    houseDescriptionError() {
+      if (this.errors && this.errors.houseB && this.errors.houseB.description) {
+        return this.errors.houseB.description.join('')
+      }
+    },
+
+    end3TypeError() {
+      if (this.errors && this.errors.end3 && this.errors.end3.type) {
+        return this.errors.end3.type.join("")
+      }
+    },
+    end3PortCountError() {
+      if (this.errors && this.errors.end3 && this.errors.end3.portCount) {
+        return this.errors.end3.portCount.join("")
+      }
+    },
+    end3ExistingSplitterError() {
+      if (this.errors && this.errors.end3 && this.errors.end3.existingSplitter) {
+        return this.errors.end3.existingSplitter.join("")
+      }
+    },
+    end3ListErrors() {
+      if (this.errors && this.errors.end3 && this.errors.end3.list) {
+        return this.errors.end3.list
+      }
+    },
+
+
     isMobile() {
       return this.windowWidth <= 768
     },
@@ -573,13 +695,18 @@ export default {
     submitForm() {
       api_request.post("/gpon/api/tech-data", this.formData)
           .then(resp => {
-                if (resp.status === 400) {
-                  this.errorForm = resp.data
-                } else if (resp.status >= 500) {
-                  this.errorForm = {totalError: `Ошибка на сервере. Код ${resp.status}`}
+                if (resp.status === 201) {
+                  this.form_submitted_successfully = true
+                  this.errors = null
                 }
               }
-          )
+          ).catch(reason => {
+        if (reason.response.status === 400) {
+          this.errors = reason.response.data
+        } else if (reason.response.status >= 500) {
+          this.errors = {serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}`}
+        }
+      })
     }
 
   },

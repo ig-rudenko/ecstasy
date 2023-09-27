@@ -11,6 +11,26 @@ from check.models import Devices
 from ..models import Address, OLTState, HouseOLTState, HouseB, End3
 
 
+def format_addresses_data(data):
+    """
+    Функция format_addresses_data принимает словарь data в качестве входных данных и изменяет значения в словаре,
+    чтобы они имели регистр заголовков для строк, и преобразует названия определенных улиц в нижний регистр.
+
+    :param data: Параметр data представляет собой словарь, содержащий данные адреса. Он может иметь такие ключи, как
+     «улица», «город», «штат» и т. д., где соответствующие значения представляют собой строки,
+     представляющие информацию об адресе.
+    """
+    for key in data:
+        if isinstance(data[key], str):
+            data[key] = data[key].title()
+        if key == "street":
+            data[key] = re.sub(
+                r"Улица|Проспект|площадь|Проезд|Бульвар|Шоссе|Переулок|Тупик",
+                lambda x: x.group(0).lower(),
+                data[key],
+            )
+
+
 class AddressSerializer(serializers.ModelSerializer):
     planStructure = serializers.CharField(
         source="plan_structure", required=False, allow_blank=True, max_length=128
@@ -130,15 +150,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        for key in data:
-            if isinstance(data[key], str):
-                data[key] = data[key].title()
-            if key == "street":
-                data[key] = re.sub(
-                    r"Улица|Проспект|площадь|Проезд|Бульвар|Шоссе|Переулок|Тупик",
-                    lambda x: x.group(0).lower(),
-                    data[key],
-                )
+        format_addresses_data(data)
         return data
 
 
@@ -265,8 +277,9 @@ class BuildingAddressSerializer(serializers.ModelSerializer):
             "total_entrances",
         ]
 
-    def to_representation(self, instance: HouseB):
+    def to_representation(self, instance):
         data = super().to_representation(instance)
+        format_addresses_data(data)
         data["building_type"] = "building" if instance.apartment_building else "house"
         return data
 
@@ -351,6 +364,17 @@ class End3CreateListSerializer(serializers.Serializer):
         if not data.get("list") and not data.get("existingSplitter"):
             raise ValidationError("Необходимо выбрать хотя бы один splitter/rizer")
         return data
+
+    def validate_existingSplitter(self, value):
+        if value is None:
+            return value
+        if not value.get("id"):
+            raise ValidationError("Необходимо передать `id` существующего сплиттера")
+        try:
+            End3.objects.get(id=value["id"])
+        except End3.DoesNotExist:
+            raise ValidationError(f"Сплиттер с id={value['id']} не существует")
+        return value
 
 
 class CreateTechDataSerializer(serializers.Serializer):
