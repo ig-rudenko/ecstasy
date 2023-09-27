@@ -7,8 +7,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from check.models import Devices
-from gpon.api.serializers.address import AddressSerializer
 from gpon.models import Address, OLTState, HouseOLTState, HouseB, End3
+from .address import AddressSerializer
 
 
 class OLTStateSerializer(serializers.ModelSerializer):
@@ -68,11 +68,13 @@ class OLTStateSerializer(serializers.ModelSerializer):
     def create(validated_data) -> OLTState:
         device: Devices = Devices.objects.get(name=validated_data["device"]["name"])
 
-        instance = OLTState.objects.create(
+        instance, _ = OLTState.objects.update_or_create(
             device=device,
             olt_port=validated_data["olt_port"],
-            fiber=validated_data.get("fiber"),
-            description=validated_data.get("description"),
+            defaults={
+                "fiber": validated_data.get("fiber"),
+                "description": validated_data.get("description"),
+            },
         )
 
         return instance

@@ -2,6 +2,7 @@ import orjson
 from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.response import Response
 
@@ -9,6 +10,7 @@ from check.models import Devices
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
+from .serializers.view_tech_data import ViewOLTStatesTechDataSerializer
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
 
@@ -63,6 +65,26 @@ class TechDataListCreateAPIView(GenericAPIView):
         with atomic():
             serializer.create(serializer.validated_data)
         return Response(serializer.data, status=201)
+
+
+class ViewOLTStateTechData(GenericAPIView):
+    serializer_class = ViewOLTStatesTechDataSerializer
+
+    def get_object(self):
+        device_name = self.kwargs["device_name"]
+        olt_port = self.request.GET.get("port")
+
+        try:
+            return OLTState.objects.get(device__name=device_name, olt_port=olt_port)
+        except OLTState.DoesNotExist:
+            raise ValidationError(
+                f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
+            )
+
+    def get(self, request, *args, **kwargs):
+        olt_state = self.get_object()
+        serializer = self.get_serializer(instance=olt_state)
+        return Response(serializer.data)
 
 
 class BuildingsAddressesListAPIView(ListAPIView):
