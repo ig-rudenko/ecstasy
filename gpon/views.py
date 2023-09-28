@@ -19,4 +19,8 @@ def gpon_create_tech_data(request):
 
 @login_required
 def gpon_view_olt_tech_data(request, device_name: str):
-    return render(request, "gpon/view-olt-tech-data.html", {"device_name": device_name})
+    return render(
+        request,
+        "gpon/view-olt-tech-data.html",
+        {"device_name": device_name, "disable_container": True},
+    )

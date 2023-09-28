@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="container w-75">
+  <div id="app" class="w-75" style="margin: auto;">
 
     <div class="header">
       <h2 class="py-3">Технические данные - просмотр</h2>
@@ -24,6 +24,7 @@
 
     <div v-if="detailData" id="tech-data-block" class="plate">
 
+      <!-- Станционные данные -->
       <div class="py-3">
 
         <div class="d-flex">
@@ -33,37 +34,48 @@
           <h4>Станционные данные</h4>
         </div>
 
-        <div style="margin-left: 40px;">
-          <table class="table table-striped" style="width: max-content; margin: 10px 0 0 0">
-            <tbody>
-            <tr>
-              <th scope="row">OLT оборудование</th>
-              <td>{{ detailData.deviceName }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Порт</th>
-              <td>
-                {{ detailData.devicePort }}
-                <button class="btn btn-outline-primary rounded-5 py-1">
-                  status
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">Волокно</th>
-              <td>{{ detailData.fiber }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Описание сплиттера 1го каскада</th>
-            </tr>
-            </tbody>
-          </table>
-          <div style="padding: 10px">{{ detailData.description }}</div>
+        <div class="ml-40">
+
+          <div class="py-2 row align-items-center">
+            <div class="col-4 fw-bold">OLT оборудование</div>
+            <div class="col-auto">
+              <span id="deviceName" class="badge fs-6" style="color: black">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                  <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
+                </svg>
+                {{detailData.deviceName}}
+              </span>
+            </div>
+          </div>
+
+          <div class="py-2 row align-items-center grey-back">
+            <div class="col-4 fw-bold">Порт</div>
+            <div class="col-auto">
+              {{ detailData.devicePort }}
+              <button class="btn btn-outline-primary rounded-5 py-1">
+                status
+              </button>
+            </div>
+          </div>
+
+          <div class="py-2 row align-items-center">
+            <div class="col-4 fw-bold">Волокно</div>
+            <div class="col-auto">{{ detailData.fiber }}</div>
+          </div>
+
+          <div class="py-2 row align-items-center grey-back">
+            <div class="col-4 fw-bold">Описание сплиттера 1го каскада</div>
+            <div class="col-auto">{{ detailData.description }}</div>
+          </div>
+
         </div>
 
       </div>
 
+
       <template v-for="building in detailData.structures">
+
+        <!-- АДРЕС -->
         <div class="py-3">
 
           <div class="d-flex">
@@ -72,58 +84,62 @@
             </svg>
             <h4>Адрес: {{ getFullAddress(building.address) }}</h4>
           </div>
-          <h6 class="px-5 p-2">
-            <template v-if="building.address.building_type === 'building'">
-              Многоквартирный дом. Количество этажей: {{ building.address.floors }} /
-              Количество подъездов: {{ building.address.total_entrances }}
-            </template>
-            <template v-else>
-              Частный дом.
-            </template>
-          </h6>
 
-          <div style="margin-left: 40px;">
-            <table class="table table-striped" style="width: max-content; margin: 10px 0 0 0">
-              <tbody>
-              <tr>
-                <th scope="row">Задействованные подъезды в доме для данного OLT порта</th>
-                <td>{{ building.entrances }}</td>
-              </tr>
-              <tr>
-                <th scope="row">Описание сплиттера 2го каскада</th>
-              </tr>
-              </tbody>
-            </table>
-            <div style="padding: 10px">{{ building.description }}</div>
+          <div class="ml-40">
+
+            <div class="row align-items-center">
+              <div class="col-auto">
+                <BuildingIcon class="m-3" :type="building.address.building_type" width="64" height="64"/>
+              </div>
+              <div class="col-8">
+                <template v-if="building.address.building_type === 'building'">
+                  Многоквартирный дом. Количество этажей: {{ building.address.floors }} /
+                  Количество подъездов: {{ building.address.total_entrances }}
+                </template>
+                <template v-else>
+                  Частный дом.
+                </template>
+              </div>
+            </div>
+            <div class="py-2 row align-items-center grey-back">
+              <div class="col-5 fw-bold">Задействованные подъезды в доме для данного OLT порта</div>
+              <div class="col-auto">{{ building.entrances }}</div>
+            </div>
+            <div class="py-2 row align-items-center">
+              <div class="col-5 fw-bold">Описание сплиттера 2го каскада</div>
+              <div class="col-auto">{{ building.description }}</div>
+            </div>
+
           </div>
 
         </div>
 
+        <!-- Абонентская линия -->
         <div class="py-3">
 
           <div class="d-flex">
             <h4 class="px-5">Абонентская линия</h4>
           </div>
 
-          <div style="margin-left: 40px;">
-            <table class="table table-striped" style="width: max-content; margin: 10px 0 0 0">
-              <tbody>
-              <tr v-for="(line, index) in building.customerLines">
-                <th scope="row">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</th>
-                <td>
+          <div class="ml-40">
+
+            <div v-for="(line, index) in building.customerLines"
+                 :class="getCustomerLineClasses(index)">
+
+              <div class="col-md-2 fw-bold">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</div>
+              <div class="col-auto">
                   {{ getFullAddress(line.address) }}
                   <br>
                   Локация: {{ line.location }}.
-                </td>
-                <td>{{ customerLineNumbers(line) }}</td>
-                <td>
+              </div>
+              <div class="col-auto">{{ customerLineNumbers(line) }}</div>
+              <div class="col-auto">
                   <button class="btn btn-outline-primary rounded-5 py-1">
                     detail
                   </button>
-                </td>
-              </tr>
-              </tbody>
-            </table>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -136,6 +152,7 @@
 </template>
 
 <script>
+import BuildingIcon from "./components/BuildingIcon.vue"
 import Table from "./components/Table.vue";
 
 import formatAddress from "../helpers/address";
@@ -144,6 +161,7 @@ import api_request from "../api_request";
 export default {
   name: "Gpon_base.vue",
   components: {
+    BuildingIcon,
     Table,
   },
   data() {
@@ -151,6 +169,7 @@ export default {
       detailData: null,
       errorStatus: null,
       errorMessage: null,
+      windowWidth: window.innerWidth,
     }
   },
   mounted() {
@@ -162,8 +181,24 @@ export default {
           this.errorStatus = reason.response.status
           this.errorMessage = reason.response.data
         })
+    window.addEventListener('resize', () => {
+      this.windowWidth = window.innerWidth
+    })
   },
+
+  computed: {
+    isMobile() {
+      return this.windowWidth <= 768
+    }
+  },
+
   methods: {
+
+    getCustomerLineClasses(index){
+      let class_list = ['py-2', 'row', 'align-items-center']
+      if (index % 2 === 0) class_list.push('grey-back');
+      return class_list
+    },
 
     getFullAddress(address) {
       return formatAddress(address)
@@ -221,12 +256,14 @@ export default {
 
 <style scoped>
 .header {
-  text-align: right;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.grey-back {
+  background-color: #ebebeb;
+}
 
 .print-button {
   margin: 15px;
@@ -246,4 +283,38 @@ export default {
   border-radius: 14px;
   border: 1px solid #A3A3A3;
 }
+
+.ml-40 {
+  margin-left: 40px;
+}
+
+@media (max-width: 835px) {
+  .container {
+    margin-left: 0!important;
+    margin-right: 0!important;
+    max-width: 100%!important;
+  }
+
+  .w-75, .col-5 {
+    width: 100% !important;
+  }
+
+  .header {
+    padding: 0 40px;
+  }
+
+  .plate {
+    border: none;
+  }
+
+  .ml-40 {
+    margin-left: 0;
+  }
+
+  .p-5 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
 </style>
