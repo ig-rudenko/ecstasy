@@ -465,7 +465,7 @@ class IskratelMBan(BaseDevice):
         interfaces_list = []
         for line in output.split("\n"):
             interface: List[List[str]] = re.findall(
-                r"(\d+)\s+(\S+)\s+\S+\s+(Equipped|Unequipped)\s*(Up|Down|)", line
+                r"(\d+)\s+(\S*?)\s+\S+\s+(Equipped|Unequipped)\s*(Up|Down|)", line
             )
 
             if interface:

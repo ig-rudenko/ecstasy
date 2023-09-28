@@ -64,9 +64,9 @@ Port   Name                   Profile Name             Equipment  Operational St
 -------------------------------------------------------------------------------------
  1   test                     N160-1856/608-6432Anne#  Equipped   Down/In service
  2   312312312312-536042      N320-2464/2464-12896An#  Equipped   Down/In service
- 3   635135_ADSL_Port3        N608-3008/4896-18720An#  Equipped   Up/In service
+ 3                            N608-3008/4896-18720An#  Equipped   Up/In service
  4   636033_ADSL_Port4        N320-2464/2464-12896An#  Equipped   Down/In service
- 5   635758                   N608-3008/4896-18720An#  Unequipped
+ 5                            N608-3008/4896-18720An#  Unequipped
  6   312311424435-1297399     N160-1856/608-6432Anne#  Equipped   Up/In service
  """
         elif "show bridge mactable interface dsl" in command:
@@ -137,9 +137,9 @@ class TestIskratelMBan(SimpleTestCase):
             [
                 ("1", "down", "test"),
                 ("2", "down", "312312312312-536042"),
-                ("3", "up", "635135_ADSL_Port3"),
+                ("3", "up", ""),
                 ("4", "down", "636033_ADSL_Port4"),
-                ("5", "admin down", "635758"),
+                ("5", "admin down", ""),
                 ("6", "up", "312311424435-1297399"),
             ],
         )
@@ -151,9 +151,9 @@ class TestIskratelMBan(SimpleTestCase):
             [
                 ("1", "down", "test", []),
                 ("2", "down", "312312312312-536042", []),
-                ("3", "up", "635135_ADSL_Port3", []),
+                ("3", "up", "", []),
                 ("4", "down", "636033_ADSL_Port4", []),
-                ("5", "admin down", "635758", []),
+                ("5", "admin down", "", []),
                 ("6", "up", "312311424435-1297399", []),
             ],
         )
