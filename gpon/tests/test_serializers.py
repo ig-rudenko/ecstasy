@@ -543,7 +543,22 @@ class TestCreateTechDataSerializer(TestCase):
     def test_serializer_with_existing_splitter_field(self):
         data = copy.deepcopy(self.data)
         del data["end3"]["list"]
-        data["end3"]["existingSplitter"] = {"id": 55555}
+        data["end3"]["existingSplitter"] = {
+            "id": 99999,
+            "address": {
+                "region": "Севастополь",
+                "settlement": "Севастополь",
+                "planStructure": "",
+                "street": "улица Колобова",
+                "house": "18",
+                "block": 10,
+                "floor": None,
+                "apartment": None,
+            },
+            "capacity": 8,
+            "location": "1 подъезд",
+            "type": "splitter",
+        }
 
         serializer = CreateTechDataSerializer(data=data)
 
@@ -553,7 +568,10 @@ class TestCreateTechDataSerializer(TestCase):
             {
                 "end3": {
                     "existingSplitter": [
-                        ErrorDetail(string="Сплиттер с id=55555 не существует", code="invalid")
+                        ErrorDetail(
+                            string=f"Сплиттер с id={data['end3']['existingSplitter']['id']} не существует",
+                            code="invalid",
+                        )
                     ]
                 }
             },

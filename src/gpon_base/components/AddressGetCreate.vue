@@ -126,9 +126,9 @@ export default {
       return {
         region: "Севастополь",
         settlement: "Севастополь",
-        planStructure: "",
-        street: "",
-        house: "",
+        planStructure: null,
+        street: null,
+        house: null,
         block: null,
         building_type: "building",
         floors: 1,

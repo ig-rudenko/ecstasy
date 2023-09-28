@@ -122,7 +122,8 @@
           <h4 class="text-center py-3">Возможно для данного частного дома уже имеется сплиттер</h4>
           <SplittersRizersFind :init="formData.end3.existingSplitter"
                                :type="formData.end3.type"
-                               @selected="(sp) => {formData.end3.existingSplitter = sp}">
+                               :getFromOLTState="formData.oltState"
+                               @change="(e) => {formData.end3.existingSplitter = e.value}">
           </SplittersRizersFind>
 
           <h4 class="text-center py-3">Либо укажите новый сплиттер</h4>

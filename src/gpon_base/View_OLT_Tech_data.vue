@@ -50,7 +50,7 @@
 
           <div class="py-2 row align-items-center grey-back">
             <div class="col-4 fw-bold">Порт</div>
-            <div class="col-auto">
+            <div class="col-auto fw-bold">
               {{ detailData.devicePort }}
               <button class="btn btn-outline-primary rounded-5 py-1">
                 status

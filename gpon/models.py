@@ -21,12 +21,14 @@ class Address(models.Model):
         verbose_name="ТСН СНТ, СТ",
         help_text="Рыбак-7",
         null=True,
+        blank=True,
     )
     street = models.CharField(
         max_length=128,
         verbose_name="Улица",
         help_text="Полное название с указанием типа (улица/проспект/проезд/бульвар/шоссе/переулок/тупик)",
         null=True,
+        blank=True,
     )
     house = models.CharField(
         max_length=16,
@@ -105,7 +107,7 @@ class HouseOLTState(models.Model):
     statement = models.ForeignKey(
         "gpon.OLTState", on_delete=models.CASCADE, null=True, related_name="house_olt_states"
     )
-    entrances = models.CharField(max_length=25, null=False, blank=False)
+    entrances = models.CharField(max_length=25, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     end3_set = models.ManyToManyField("gpon.End3", related_name="house_olt_states")
 
@@ -151,8 +153,8 @@ class End3(models.Model):
     """
 
     class Type(models.Choices):
-        splitter = "sp"
-        rizer = "rz"
+        splitter = "splitter"
+        rizer = "rizer"
 
     address = models.ForeignKey(
         "gpon.Address",
@@ -162,7 +164,7 @@ class End3(models.Model):
     )
     location = models.CharField(max_length=255)
     type = models.CharField(
-        choices=Type.choices, max_length=2, verbose_name="Тип оконечного оборудования"
+        choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования"
     )
     capacity = models.PositiveSmallIntegerField(
         choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)], help_text="Кол-во портов/волокон"

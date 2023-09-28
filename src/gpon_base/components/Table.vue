@@ -100,9 +100,7 @@
         <td></td>
 
         <!-- АДРЕС -->
-        <td style="font-weight: 650">
-          {{ line.address.street }}, д. {{ line.address.house }}{{ line.address.block ? "/" + line.address.block : "" }}
-          <br>
+        <td style="font-weight: 650">{{ getFullAddress(line.address) }}<br>
           <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
         </td>
 
@@ -217,7 +215,6 @@ export default {
   },
 
   mounted() {
-    // this.filteredData = this.data
     let urlObj = new URL(window.location.href);
     this.current_page = Number(urlObj.searchParams.get("page")) || 1
     this.calculateMaxPages()
@@ -252,6 +249,16 @@ export default {
   },
 
   methods: {
+
+    getFullAddress(address) {
+      let str = ""
+      if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
+      if (address.street.length) str += ` ${address.street},`;
+      str += ` д. ${address.house}`;
+      if (address.block) str += `/${address.block}`;
+      return str
+    },
+
     doFilter() {
       let address_filter = this.filter.address
       let devicePort_filter = this.filter.devicePort

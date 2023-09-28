@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from check.models import Devices
 from gpon.models import Address, OLTState, HouseOLTState, HouseB, End3
 from .address import AddressSerializer
+from .common import End3Serializer
 
 
 class OLTStateSerializer(serializers.ModelSerializer):
@@ -159,6 +160,10 @@ class End3CreateSerializer(serializers.Serializer):
     location = serializers.CharField(max_length=255)
 
 
+class End3WriterSerializer(End3Serializer):
+    id = serializers.IntegerField()
+
+
 class End3CreateListSerializer(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=["splitter", "rizer"],
@@ -166,9 +171,7 @@ class End3CreateListSerializer(serializers.Serializer):
             "invalid_choice": "Абонентская линия должна быть либо splitter, либо rizer."
         },
     )
-    existingSplitter = serializers.DictField(
-        child=serializers.IntegerField(), required=False, allow_null=True
-    )
+    existingSplitter = End3WriterSerializer(required=False, allow_null=True)
     portCount = serializers.ChoiceField(
         choices=[2, 4, 8, 16, 24],
         error_messages={
@@ -187,7 +190,7 @@ class End3CreateListSerializer(serializers.Serializer):
         if value is None:
             return value
         if not value.get("id"):
-            raise ValidationError("Необходимо передать `id` существующего сплиттера")
+            raise ValidationError("Не был передан `id` существующего сплиттера")
         try:
             End3.objects.get(id=value["id"])
         except End3.DoesNotExist:
