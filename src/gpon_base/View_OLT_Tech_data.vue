@@ -4,16 +4,22 @@
     <div class="header">
       <h2 class="py-3">Технические данные - просмотр</h2>
 
-      <button @click="printData" class="print-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2"
-             viewBox="0 0 16 16">
-          <path
-              d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
-          <path
-              d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-        </svg>
-        Печать
-      </button>
+      <div>
+        <button @click="goToTechDataURL" class="back-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+            <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
+          </svg>
+          <span class="me-2">Назад</span>
+        </button>
+
+        <button @click="printData" class="print-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+            <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
+            <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+          </svg>
+          Печать
+        </button>
+      </div>
     </div>
 
     <div v-if="errorStatus" class="alert alert-danger">
@@ -250,6 +256,10 @@ export default {
       WinPrint.focus();
       WinPrint.print();
     },
+
+    goToTechDataURL() {
+      window.location.href = "/gpon/tech-data"
+    }
   }
 }
 </script>
@@ -276,6 +286,19 @@ export default {
 
 .print-button:hover {
   box-shadow: 0 0 3px #6D5BD0;
+}
+
+.back-button {
+  margin: 15px;
+  padding: 7px 10px;
+  background: white;
+  border-radius: 12px;
+  color: #4a4a4a;
+  border: 1px #4a4a4a solid;
+}
+
+.back-button:hover {
+  box-shadow: 0 0 3px #4a4a4a;
 }
 
 .plate {
