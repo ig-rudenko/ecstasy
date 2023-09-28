@@ -27,7 +27,7 @@
     </div>
 
     <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small">
-      Редактировать
+      Добавить другой / Редактировать
     </Button>
 
   </div>
