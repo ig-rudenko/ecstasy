@@ -10,8 +10,15 @@ from check.models import Devices
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
-from .serializers.update_tech_data import UpdateRetrieveOLTStateSerializer
-from .serializers.view_tech_data import ViewOLTStatesTechDataSerializer, TechCapabilitySerializer
+from .serializers.update_tech_data import (
+    UpdateRetrieveOLTStateSerializer,
+    UpdateHouseOLTStateSerializer,
+)
+from .serializers.view_tech_data import (
+    ViewOLTStatesTechDataSerializer,
+    TechCapabilitySerializer,
+    StructuresHouseOLTStateSerializer,
+)
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
 
@@ -159,6 +166,15 @@ class End3TechCapabilitySerializer(GenericAPIView):
         return Response(serializer.data)
 
 
-class PatchOLTStateAPIView(RetrieveUpdateAPIView):
+class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):
     queryset = OLTState.objects.all()
     serializer_class = UpdateRetrieveOLTStateSerializer
+
+
+class RetrieveUpdateHouseOLTState(RetrieveUpdateAPIView):
+    queryset = HouseOLTState.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return StructuresHouseOLTStateSerializer
+        return UpdateHouseOLTStateSerializer

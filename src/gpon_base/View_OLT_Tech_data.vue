@@ -1,6 +1,8 @@
 <template>
   <div id="app" class="w-75" style="margin: auto;">
 
+    <Toast />
+
     <div class="header">
       <h2 class="py-3">Технические данные - просмотр</h2>
 
@@ -150,13 +152,12 @@
           </div>
 
           <!-- Сохранить изменения -->
-          <Toast />
           <div v-if="editMode">
             <button @click="updateOLTStateInfo" class="save-button">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
               </svg>
-              <span v-if="!isMobile" class="m-2">Сохранить изменения</span>
+              <span v-if="!isMobile" class="m-2">Сохранить станционные данные</span>
             </button>
           </div>
 
@@ -180,28 +181,54 @@
           <div class="ml-40">
 
             <div class="row align-items-center">
-              <div class="col-auto">
-                <BuildingIcon class="m-3" :type="building.address.building_type" width="64" height="64"/>
+
+              <!-- ПРОСМОТР ДОМА -->
+              <template v-if="!editMode">
+                <div class="col-auto">
+                  <BuildingIcon class="m-3" :type="building.address.building_type" width="64" height="64"/>
+                </div>
+                <div class="col-8">
+                  <template v-if="building.address.building_type === 'building'">
+                    Многоквартирный дом. Количество этажей: {{ building.address.floors }} /
+                    Количество подъездов: {{ building.address.total_entrances }}
+                  </template>
+                  <template v-else>
+                    Частный дом.
+                  </template>
+                </div>
+              </template>
+
+              <!-- РЕДАКТИРОВАНИЕ АДРЕСА ДОМА -->
+              <div v-else>
+                <AddressGetCreate :is-mobile="isMobile" :allow-create="true" :data="building"></AddressGetCreate>
               </div>
-              <div class="col-8">
-                <template v-if="building.address.building_type === 'building'">
-                  Многоквартирный дом. Количество этажей: {{ building.address.floors }} /
-                  Количество подъездов: {{ building.address.total_entrances }}
-                </template>
-                <template v-else>
-                  Частный дом.
-                </template>
-              </div>
-            </div>
-            <div class="py-2 row align-items-center grey-back">
-              <div class="col-5 fw-bold">Задействованные подъезды в доме для данного OLT порта</div>
-              <div class="col-auto">{{ building.entrances }}</div>
-            </div>
-            <div class="py-2 row align-items-center">
-              <div class="col-5 fw-bold">Описание сплиттера 2го каскада</div>
-              <div class="col-auto">{{ building.description }}</div>
+
             </div>
 
+            <!-- ПОДЪЕЗДЫ В ДОМЕ -->
+            <div class="py-2 row align-items-center grey-back">
+              <div class="col-5 fw-bold">Задействованные подъезды в доме для данного OLT порта</div>
+              <div v-if="!editMode" class="col-auto">{{ building.entrances }}</div>
+              <InputText v-else v-model.trim="building.entrances" class="w-100 my-1" type="text" placeholder="Укажите подъезды"/>
+            </div>
+
+            <!-- ОПИСАНИЕ -->
+            <div class="py-2 row align-items-center">
+              <div class="col-5 fw-bold">Описание сплиттера 2го каскада</div>
+              <div v-if="!editMode" class="col-auto">{{ building.description }}</div>
+              <Textarea v-else class="w-100 my-1" v-model="building.description" rows="5"/>
+            </div>
+
+          </div>
+
+          <!-- Сохранить изменения -->
+          <div v-if="editMode">
+            <button @click="updateBuildingInfo(building)" class="save-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+              </svg>
+              <span v-if="!isMobile" class="m-2">Сохранить дом</span>
+            </button>
           </div>
 
         </div>
@@ -282,10 +309,12 @@ import Toast from "primevue/toast/Toast.vue"
 
 import formatAddress from "../helpers/address";
 import api_request from "../api_request";
+import AddressGetCreate from "./components/AddressGetCreate.vue";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    AddressGetCreate,
     BuildingIcon,
     Dropdown,
     InlineMessage,
@@ -421,6 +450,19 @@ export default {
       api_request.put("/gpon/api/tech-data/olt-state/" + olt_id, data)
           .then(
             resp => this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Станционные данные были обновлены', life: 3000})
+          )
+          .catch(
+              reason => {
+                const status = reason.response.status
+                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000})
+              }
+          )
+    },
+
+    updateBuildingInfo(house_olt_state_data){
+      api_request.put("/gpon/api/tech-data/house-olt-state/" + house_olt_state_data.id, house_olt_state_data)
+          .then(
+            resp => this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Данные дома были обновлены', life: 3000})
           )
           .catch(
               reason => {

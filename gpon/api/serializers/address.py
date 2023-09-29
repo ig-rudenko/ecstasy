@@ -139,10 +139,9 @@ class AddressSerializer(serializers.ModelSerializer):
     @staticmethod
     def create(validated_data) -> Address:
         try:
-            address = Address.objects.get(**validated_data)
+            return Address.objects.get(**validated_data)
         except Address.DoesNotExist:
             return Address.objects.create(**validated_data)
-        return address
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
