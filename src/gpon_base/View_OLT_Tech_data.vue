@@ -58,11 +58,18 @@
       <!-- Станционные данные -->
       <div class="py-3">
 
-        <div class="d-flex">
+        <div class="d-flex align-items-center py-3">
           <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
             <circle cx="8" cy="8" r="8"/>
           </svg>
-          <h4>Станционные данные</h4>
+          <h4 class="m-0 me-3">Станционные данные</h4>
+          <!-- Сохранить изменения -->
+          <button v-if="editMode" @click="updateOLTStateInfo" class="save-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span v-if="!isMobile" class="m-2">Обновить</span>
+          </button>
         </div>
 
         <div class="ml-40">
@@ -151,16 +158,6 @@
             <Textarea v-else class="w-100 my-1" v-model="detailData.description" rows="5"/>
           </div>
 
-          <!-- Сохранить изменения -->
-          <div v-if="editMode">
-            <button @click="updateOLTStateInfo" class="save-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-              </svg>
-              <span v-if="!isMobile" class="m-2">Сохранить станционные данные</span>
-            </button>
-          </div>
-
         </div>
 
       </div>
@@ -171,11 +168,19 @@
         <!-- АДРЕС -->
         <div class="py-3">
 
-          <div class="d-flex">
+          <div class="d-flex align-items-center py-3">
             <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
               <circle cx="8" cy="8" r="8"/>
             </svg>
-            <h4>Адрес: {{ getFullAddress(building.address) }}</h4>
+            <h4 class="m-0 me-3">Адрес: {{ getFullAddress(building.address) }}</h4>
+
+            <!-- Сохранить изменения -->
+            <button v-if="editMode" @click="updateBuildingInfo(building)" class="save-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+              </svg>
+              <span v-if="!isMobile" class="m-2">Обновить</span>
+            </button>
           </div>
 
           <div class="ml-40">
@@ -219,16 +224,6 @@
               <Textarea v-else class="w-100 my-1" v-model="building.description" rows="5"/>
             </div>
 
-          </div>
-
-          <!-- Сохранить изменения -->
-          <div v-if="editMode">
-            <button @click="updateBuildingInfo(building)" class="save-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-              </svg>
-              <span v-if="!isMobile" class="m-2">Сохранить дом</span>
-            </button>
           </div>
 
         </div>
