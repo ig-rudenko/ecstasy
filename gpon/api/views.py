@@ -10,7 +10,7 @@ from check.models import Devices
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
-from .serializers.view_tech_data import ViewOLTStatesTechDataSerializer
+from .serializers.view_tech_data import ViewOLTStatesTechDataSerializer, TechCapabilitySerializer
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
 
@@ -146,3 +146,14 @@ class DevicePortsList(DevicesNamesListAPIView):
 
         interfaces_names = list(map(lambda x: x["Interface"], interfaces))
         return Response(interfaces_names)
+
+
+class End3TechCapabilitySerializer(GenericAPIView):
+    queryset = End3.objects.all()
+    serializer_class = TechCapabilitySerializer
+
+    def get(self, request, *args, **kwargs):
+        end3: End3 = self.get_object()
+        # end3.techcapability_set.get().subscriber_connection.get()
+        serializer = self.get_serializer(instance=end3.techcapability_set, many=True)
+        return Response(serializer.data)

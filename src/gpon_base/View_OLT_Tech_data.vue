@@ -79,7 +79,7 @@
       </div>
 
 
-      <template v-for="building in detailData.structures">
+      <template v-for="(building, BIndex) in detailData.structures">
 
         <!-- АДРЕС -->
         <div class="py-3">
@@ -129,22 +129,50 @@
 
           <div class="ml-40">
 
-            <div v-for="(line, index) in building.customerLines"
-                 :class="getCustomerLineClasses(index)">
+            <template v-for="(line, index) in building.customerLines">
 
-              <div class="col-md-2 fw-bold">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</div>
-              <div class="col-auto">
-                  {{ getFullAddress(line.address) }}
-                  <br>
-                  Локация: {{ line.location }}.
+              <div :class="getCustomerLineClasses(index)">
+
+                <div class="col-md-2 fw-bold">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</div>
+                <div class="col-auto">
+                    {{ getFullAddress(line.address) }}
+                    <br>
+                    Локация: {{ line.location }}.
+                </div>
+                <div class="col-auto">{{ customerLineNumbers(line) }}</div>
+                <div class="col-auto">
+                    <button v-if="line.detailInfo" @click="deleteEnd3DetailInfo(BIndex, index)" class="btn btn-outline-warning rounded-5 py-1">
+                      close
+                    </button>
+                    <button v-else @click="getEnd3DetailInfo(BIndex, index)" class="btn btn-outline-primary rounded-5 py-1">
+                      detail
+                    </button>
+                </div>
               </div>
-              <div class="col-auto">{{ customerLineNumbers(line) }}</div>
-              <div class="col-auto">
-                  <button class="btn btn-outline-primary rounded-5 py-1">
-                    detail
-                  </button>
+
+              <div v-if="line.errorStatus" class="alert alert-danger">Ошибка при загрузке данных.
+                <br> {{line.errorMessage||''}} <br> Статус: {{line.errorStatus}}
               </div>
-            </div>
+
+              <div v-if="line.detailInfo" class="card px-3 rounded-0" style="border-top: none; margin-bottom: 10px">
+                <div v-for="part in line.detailInfo" class="align-items-center row py-1">
+                  <div class="col-1">{{part.ending}}</div>
+                    <div class="col-2">
+                      <span class="badge bg-secondary">{{part.status}}</span>
+                    </div>
+                  <div class="col-auto">
+                    <div class="d-flex" v-for="subscriber in part.subscribers">
+                      <div class="me-2">{{subscriber.name}}</div>
+                      <div>{{ subscriber.transit }}</div>
+                    </div>
+                    <div class="text-muted" v-if="!part.subscribers.length">
+                      нет абонента
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </template>
 
           </div>
 
@@ -228,6 +256,20 @@ export default {
       } else {
         return line
       }
+    },
+
+    getEnd3DetailInfo(BIndex, end3Index) {
+      const end3ID = this.detailData.structures[BIndex].customerLines[end3Index].id
+      api_request.get("/gpon/api/tech-capability/" + end3ID)
+          .then(resp => this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = resp.data)
+          .catch(reason => {
+            this.detailData.structures[BIndex].customerLines[end3Index].errorStatus = reason.response.status
+            this.detailData.structures[BIndex].customerLines[end3Index].errorMessage = reason.response.data
+          })
+    },
+
+    deleteEnd3DetailInfo(BIndex, end3Index) {
+      this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = null
     },
 
     printData() {

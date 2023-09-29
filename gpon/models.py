@@ -277,6 +277,15 @@ class Customer(models.Model):
     class Meta:
         db_table = "gpon_customers"
 
+    @property
+    def full_name(self) -> str:
+        name = ""
+        if self.surname or self.first_name or self.last_name:
+            name += f"{self.surname} {self.first_name} {self.last_name} "
+        if self.company_name:
+            name += f"{self.company_name}"
+        return name.strip()
+
 
 class Service(models.Model):
     name = models.CharField(max_length=128)
@@ -295,7 +304,15 @@ class SubscriberConnection(models.Model):
     address = models.ForeignKey(
         "gpon.Address", on_delete=models.SET_NULL, null=True, related_name="subscribers"
     )
-    tech_capability = models.ForeignKey("gpon.TechCapability", on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(
+        "gpon.Customer", related_name="connections", on_delete=models.CASCADE
+    )
+    tech_capability = models.ForeignKey(
+        "gpon.TechCapability",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="subscriber_connection",
+    )
 
     ip = models.GenericIPAddressField(protocol="ipv4", null=True)
 
