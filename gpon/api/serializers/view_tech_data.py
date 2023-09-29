@@ -21,7 +21,7 @@ class ViewOLTStatesTechDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OLTState
-        fields = ["deviceName", "devicePort", "fiber", "description", "structures"]
+        fields = ["id", "deviceName", "devicePort", "fiber", "description", "structures"]
 
 
 class SubscriberConnectionSerializer(serializers.ModelSerializer):

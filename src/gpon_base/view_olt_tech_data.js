@@ -1,4 +1,10 @@
 import {createApp} from 'vue'
 import App from './View_OLT_Tech_data.vue'
+import PrimeVue from 'primevue/config';
+import ToastService from 'primevue/toastservice';
+import "primevue/resources/themes/lara-light-indigo/theme.css";
 
-createApp(App).mount('#app')
+createApp(App)
+    .use(PrimeVue)
+    .use(ToastService)
+    .mount('#app')

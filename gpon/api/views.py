@@ -3,13 +3,14 @@ from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import GenericAPIView, ListAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 
 from check.models import Devices
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
+from .serializers.update_tech_data import UpdateRetrieveOLTStateSerializer
 from .serializers.view_tech_data import ViewOLTStatesTechDataSerializer, TechCapabilitySerializer
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
@@ -20,7 +21,7 @@ class TechDataListCreateAPIView(GenericAPIView):
     """
 
     cache_key = "gpon:api:TechDataListCreateAPIView:get"
-    cache_timeout = 60 * 2
+    cache_timeout = 1
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -154,6 +155,10 @@ class End3TechCapabilitySerializer(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         end3: End3 = self.get_object()
-        # end3.techcapability_set.get().subscriber_connection.get()
         serializer = self.get_serializer(instance=end3.techcapability_set, many=True)
         return Response(serializer.data)
+
+
+class PatchOLTStateAPIView(RetrieveUpdateAPIView):
+    queryset = OLTState.objects.all()
+    serializer_class = UpdateRetrieveOLTStateSerializer

@@ -4,24 +4,47 @@
     <div class="header">
       <h2 class="py-3">Технические данные - просмотр</h2>
 
+      <!-- ДЕЙСТВИЯ -->
       <div class="d-flex">
         <button @click="goToTechDataURL" class="back-button me-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
           </svg>
-          <span class="me-2">Назад</span>
+          <span v-if="!isMobile" class="m-2">Назад</span>
         </button>
 
-        <button @click="printData" class="print-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-            <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
-            <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+        <!-- Режим редактирования -->
+        <button v-if="editMode" @click="editMode = false" class="view-button me-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+            <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
           </svg>
-          Печать
+          <span v-if="!isMobile" class="m-2">Просмотр</span>
         </button>
+
+        <!-- Режим просмотра -->
+        <template v-else>
+          <button @click="printData" class="print-button me-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
+              <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            </svg>
+            <span v-if="!isMobile" class="m-2">Печать</span>
+          </button>
+
+          <button @click="editMode = true" class="edit-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
+            </svg>
+            <span v-if="!isMobile" class="m-2">Редактировать</span>
+          </button>
+        </template>
+
+
       </div>
     </div>
 
+    <!-- ОШИБКА ЗАГРУЗКИ -->
     <div v-if="errorStatus" class="alert alert-danger">
       Ошибка при загрузке данных.
       <br> {{errorMessage||''}}
@@ -42,36 +65,99 @@
 
         <div class="ml-40">
 
+          <!-- ОБОРУДОВАНИЕ -->
           <div class="py-2 row align-items-center">
             <div class="col-4 fw-bold">OLT оборудование</div>
             <div class="col-auto">
-              <span id="deviceName" class="badge fs-6" style="color: black">
+
+              <!-- Device Name -->
+              <span v-if="!editMode" id="deviceName" class="badge fs-6" style="color: black">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
                   <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
                 </svg>
                 {{detailData.deviceName}}
               </span>
+
+              <!-- Редактирование имени оборудования -->
+              <div v-else>
+                    <Dropdown v-model="detailData.deviceName" :options="devicesList" filter
+                              :option-label="x => x"
+                              @change="deviceNameSelected" placeholder="Выберите устройство">
+                      <template #value="slotProps">
+                        <div v-if="slotProps.value" class="flex align-items-center"><div>{{ slotProps.value }}</div></div>
+                        <span v-else>{{ slotProps.placeholder }}</span>
+                      </template>
+                      <template #option="slotProps">
+                        <div class="flex align-items-center"><div>{{ slotProps.option }}</div></div>
+                      </template>
+                    </Dropdown>
+              </div>
             </div>
+
+            <InlineMessage class="my-2" v-if="editMode" severity="warn">
+              Будьте осторожны при выборе нового оборудования, данное действие необходимо только после физического
+              переключения линии на другое оборудование.
+            </InlineMessage>
+
           </div>
 
-          <div class="py-2 row align-items-center grey-back">
+          <!-- ПОРТ -->
+          <div class="py-2 row align-items-center ">
             <div class="col-4 fw-bold">Порт</div>
             <div class="col-auto fw-bold">
-              {{ detailData.devicePort }}
-              <button class="btn btn-outline-primary rounded-5 py-1">
-                status
-              </button>
+
+              <!-- Просмотр порта -->
+              <template v-if="!editMode">
+                {{ detailData.devicePort }} <button class="btn btn-outline-primary rounded-5 py-1">status</button>
+              </template>
+
+              <!-- Редактирование порта -->
+              <template v-else>
+                <div>
+                      <Dropdown v-model="detailData.devicePort" :options="devicePortList" filter
+                                :option-label="x => x" placeholder="Выберите порт">
+                        <template #value="slotProps">
+                          <div v-if="slotProps.value" class="flex align-items-center"> <div>{{ slotProps.value }}</div> </div>
+                          <span v-else> {{ slotProps.placeholder }} </span>
+                        </template>
+                        <template #option="slotProps">
+                          <div class="flex align-items-center"><div>{{ slotProps.option }}</div></div>
+                        </template>
+                      </Dropdown>
+                </div>
+              </template>
             </div>
+
+            <InlineMessage class="my-2" v-if="editMode" severity="warn">
+              Будьте осторожны при выборе нового порта, данное действие необходимо только после физического
+              переключения порта на оборудовании.
+            </InlineMessage>
+
           </div>
 
+          <!-- ВОЛОКНО -->
           <div class="py-2 row align-items-center">
             <div class="col-4 fw-bold">Волокно</div>
-            <div class="col-auto">{{ detailData.fiber }}</div>
+            <div v-if="!editMode" class="col-auto">{{ detailData.fiber }}</div>
+            <InputText v-else v-model.trim="detailData.fiber" class="w-100 my-1" type="text" placeholder="Название кабеля/номер волокна в кабеле"/>
           </div>
 
-          <div class="py-2 row align-items-center grey-back">
+          <!-- ОПИСАНИЕ -->
+          <div class="py-2 row align-items-center ">
             <div class="col-4 fw-bold">Описание сплиттера 1го каскада</div>
-            <div class="col-auto">{{ detailData.description }}</div>
+            <div v-if="!editMode" class="col-auto">{{ detailData.description }}</div>
+            <Textarea v-else class="w-100 my-1" v-model="detailData.description" rows="5"/>
+          </div>
+
+          <!-- Сохранить изменения -->
+          <Toast />
+          <div v-if="editMode">
+            <button @click="updateOLTStateInfo" class="save-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+              </svg>
+              <span v-if="!isMobile" class="m-2">Сохранить изменения</span>
+            </button>
           </div>
 
         </div>
@@ -187,7 +273,12 @@
 
 <script>
 import BuildingIcon from "./components/BuildingIcon.vue"
+import Dropdown from "primevue/dropdown/Dropdown.vue"
+import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
+import InputText from "primevue/inputtext/InputText.vue"
 import Table from "./components/Table.vue";
+import Textarea from "primevue/textarea/Textarea.vue";
+import Toast from "primevue/toast/Toast.vue"
 
 import formatAddress from "../helpers/address";
 import api_request from "../api_request";
@@ -196,7 +287,12 @@ export default {
   name: "Gpon_base.vue",
   components: {
     BuildingIcon,
+    Dropdown,
+    InlineMessage,
+    InputText,
     Table,
+    Textarea,
+    Toast,
   },
   data() {
     return {
@@ -204,6 +300,9 @@ export default {
       errorStatus: null,
       errorMessage: null,
       windowWidth: window.innerWidth,
+      editMode: false,
+      _deviceNames: [],
+      _devicesPorts: [],
     }
   },
   mounted() {
@@ -223,7 +322,18 @@ export default {
   computed: {
     isMobile() {
       return this.windowWidth <= 768
-    }
+    },
+
+    devicesList() {
+      if (this._deviceNames.length === 0) this.getDeviceNames();
+      return this._deviceNames;
+    },
+
+    devicePortList() {
+      if (this.detailData.devicePort.length === 0 || this._devicesPorts.length === 0) this.getPortsNames();
+      return this._devicesPorts;
+    },
+
   },
 
   methods: {
@@ -299,9 +409,45 @@ export default {
       WinPrint.print();
     },
 
+    updateOLTStateInfo(){
+      const data = {
+        deviceName: this.detailData.deviceName,
+        devicePort: this.detailData.devicePort,
+        fiber: this.detailData.fiber,
+        description: this.detailData.description,
+      }
+      const olt_id = this.detailData.id
+
+      api_request.put("/gpon/api/tech-data/olt-state/" + olt_id, data)
+          .then(
+            resp => this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Станционные данные были обновлены', life: 3000})
+          )
+          .catch(
+              reason => {
+                const status = reason.response.status
+                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000})
+              }
+          )
+    },
+
     goToTechDataURL() {
       window.location.href = "/gpon/tech-data"
-    }
+    },
+
+    getDeviceNames() {
+      api_request.get("/gpon/api/devices-names")
+          .then(res => this._deviceNames = Array.from(res.data))
+    },
+    getPortsNames() {
+      api_request.get("/gpon/api/ports-names/" + this.detailData.deviceName)
+          .then(res => this._devicesPorts = Array.from(res.data))
+    },
+
+    deviceNameSelected() {
+      this.detailData.devicePort = ""
+      this.getPortsNames()
+    },
+
   }
 }
 </script>
@@ -324,9 +470,41 @@ export default {
   color: #6D5BD0;
   border: 1px #6D5BD0 solid;
 }
-
 .print-button:hover {
   box-shadow: 0 0 3px #6D5BD0;
+}
+
+.edit-button {
+  padding: 7px 10px;
+  background: white;
+  border-radius: 12px;
+  color: #ff802a;
+  border: 1px #ff802a solid;
+}
+.edit-button:hover {
+  box-shadow: 0 0 3px #ff802a;
+}
+
+.view-button {
+  padding: 7px 10px;
+  background: white;
+  border-radius: 12px;
+  color: #2a4dff;
+  border: 1px #2a4dff solid;
+}
+.view-button:hover {
+  box-shadow: 0 0 3px #2a4dff;
+}
+
+.save-button {
+  padding: 7px 10px;
+  background: white;
+  border-radius: 12px;
+  color: #008b1e;
+  border: 1px #008b1e solid;
+}
+.save-button:hover {
+  box-shadow: 0 0 3px #008b1e;
 }
 
 .back-button {
@@ -336,7 +514,6 @@ export default {
   color: #4a4a4a;
   border: 1px #4a4a4a solid;
 }
-
 .back-button:hover {
   box-shadow: 0 0 3px #4a4a4a;
 }
@@ -356,6 +533,11 @@ export default {
     margin-left: 0!important;
     margin-right: 0!important;
     max-width: 100%!important;
+  }
+
+  .header {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .w-75, .col-5 {
