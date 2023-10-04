@@ -90,7 +90,6 @@
           <th scope="col">Адрес</th>
           <th scope="col">Порт olt</th>
           <th scope="col">Абонентская линия</th>
-          <th scope="col">Кол-во</th>
           <th scope="col"></th>
         </tr>
         </thead>
@@ -124,21 +123,15 @@
 
         <!-- АБОНЕНТСКАЯ ЛИНИЯ -->
         <td>
-          <Pill :text="customerLineTypeName(line.customerLine.type)"
+          <Pill :text="customerLineTypeName(line.customerLine.type) + ' x' + line.customerLine.typeCount"
                 :color="customerLineTypeColor(line.customerLine.type)"
                 :back-color="customerLineTypeBackColor(line.customerLine.type)">
           </Pill>
           <span class="secondary-text">
-          <span v-if="line.customerLine.type === 'splitter'">Количество портов: {{ line.customerLine.typeCount }}</span>
-          <span v-else-if="line.customerLine.type === 'rizer'">Количество волокон: {{ line.customerLine.typeCount }}</span>
-          <span v-else>Неизвестный тип: "{{ line.customerLine.type }}"</span>
+          <span>Количество: {{ line.customerLine.count }}</span>
         </span>
         </td>
 
-        <!-- КОЛИЧЕСТВО -->
-        <td>
-          {{ line.customerLine.count }}
-        </td>
       </tr>
       </tbody>
       </table>

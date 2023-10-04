@@ -4,7 +4,7 @@
     <Toast />
 
     <div class="header">
-      <h2 class="py-3">Технические данные - просмотр</h2>
+      <h2 class="py-3">Технические данные - OLT</h2>
 
       <!-- ДЕЙСТВИЯ -->
       <div class="d-flex">
