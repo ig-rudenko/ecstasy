@@ -112,8 +112,7 @@
         <!-- ПОРТ OLT -->
         <td>
           <div class="align-items-center d-flex">
-            <Pill class="olt-port-badge"
-                  @click="goToOLTDetailView(line.deviceName, line.devicePort)"
+            <Pill @click="goToOLTDetailView(line.deviceName, line.devicePort)" :hover="true"
                   :text="line.devicePort">
             </Pill>
             <span class="secondary-text">подъезды: {{ line.entrances }}</span>
