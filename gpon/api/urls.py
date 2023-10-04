@@ -10,8 +10,13 @@ urlpatterns = [
     path("tech-data", views.TechDataListCreateAPIView.as_view(), name="tech-data"),
     path(
         "tech-data/<device_name>",
-        views.ViewOLTStateTechData.as_view(),
+        views.ViewOLTStateTechDataAPIView.as_view(),
         name="view-olt-state-tech-data",
+    ),
+    path(
+        "tech-data/building/<int:pk>",
+        views.ViewBuildingTechDataAPIView.as_view(),
+        name="view-building-tech-data",
     ),
     path(
         "tech-data/olt-state/<int:pk>",

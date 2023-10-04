@@ -1,3 +1,5 @@
+import re
+
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
 from django.db.models.signals import post_save
@@ -54,16 +56,22 @@ class Address(models.Model):
     class Meta:
         db_table = "gpon_addresses"
 
-    def __str__(self):
+    @property
+    def verbose(self) -> str:
         string = ""
         if self.region != "СЕВАСТОПОЛЬ":
-            string += f"{self.region}, "
+            string += f"{self.region.lower()}, "
         if self.settlement != "СЕВАСТОПОЛЬ":
-            string += f"{self.settlement}, "
+            string += f"{self.settlement.lower()}, "
         if self.plan_structure and len(self.plan_structure):
-            string += f"СНТ {self.plan_structure}, "
+            string += f"СНТ {self.plan_structure.title()}, "
         if self.street and len(self.street):
-            string += f"{self.street}, "
+            street = re.sub(
+                r"Улица|Проспект|площадь|Проезд|Бульвар|Шоссе|Переулок|Тупик",
+                lambda x: x.group(0).lower(),
+                self.street.title(),
+            )
+            string += f"{street}, "
         string += f"д. {self.house}"
         if self.block:
             string += f"/{self.block}"
@@ -73,6 +81,9 @@ class Address(models.Model):
         if self.apartment:
             string += f" кв. {self.apartment}"
         return string
+
+    def __str__(self):
+        return self.verbose
 
     def __repr__(self):
         return f"Address: ({self.__str__()})"

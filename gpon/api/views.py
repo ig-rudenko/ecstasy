@@ -3,7 +3,7 @@ from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveUpdateAPIView, RetrieveAPIView
 from rest_framework.response import Response
 
 from check.models import Devices
@@ -17,7 +17,7 @@ from .serializers.update_tech_data import (
 from .serializers.view_tech_data import (
     ViewOLTStatesTechDataSerializer,
     TechCapabilitySerializer,
-    StructuresHouseOLTStateSerializer,
+    StructuresHouseOLTStateSerializer, ViewHouseBTechDataSerializer,
 )
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
@@ -75,7 +75,7 @@ class TechDataListCreateAPIView(GenericAPIView):
         return Response(serializer.data, status=201)
 
 
-class ViewOLTStateTechData(GenericAPIView):
+class ViewOLTStateTechDataAPIView(GenericAPIView):
     serializer_class = ViewOLTStatesTechDataSerializer
 
     def get_object(self):
@@ -95,6 +95,11 @@ class ViewOLTStateTechData(GenericAPIView):
         olt_state = self.get_object()
         serializer = self.get_serializer(instance=olt_state)
         return Response(serializer.data)
+
+
+class ViewBuildingTechDataAPIView(RetrieveAPIView):
+    serializer_class = ViewHouseBTechDataSerializer
+    queryset = HouseB.objects.all()
 
 
 class BuildingsAddressesListAPIView(ListAPIView):

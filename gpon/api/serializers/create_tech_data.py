@@ -18,7 +18,7 @@ class OLTStateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OLTState
-        fields = ["deviceName", "devicePort", "fiber", "description"]
+        fields = ["id", "deviceName", "devicePort", "fiber", "description"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -112,7 +112,7 @@ class WriteOnlyHouseBAddressSerializer(AddressSerializer):
 
 
 class HouseOLTStateSerializer(serializers.ModelSerializer):
-    address = WriteOnlyHouseBAddressSerializer(source="house.address")
+    address = WriteOnlyHouseBAddressSerializer(source="house.address", write_only=True)
 
     class Meta:
         model = HouseOLTState

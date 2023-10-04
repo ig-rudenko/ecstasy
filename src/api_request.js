@@ -1,6 +1,8 @@
 import axios from "axios"
 
-const token = document.querySelector("input[name=csrfmiddlewaretoken]").value
+const tokenItem = document.querySelector("input[name=csrfmiddlewaretoken]")
+
+const token = tokenItem?tokenItem.value:""
 
 const api_request = axios.create({
   headers: {

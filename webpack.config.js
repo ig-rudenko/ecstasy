@@ -11,7 +11,8 @@ module.exports = {
         access_rings: './src/access_rings.js',
         gpon_tech_data: './src/gpon_base/tech_data.js',
         gpon_create_tech_data: './src/gpon_base/create_tech_data.js',
-        gpon_view_olt_tech_data: './src/gpon_base/view_olt_tech_data.js'
+        gpon_view_olt_tech_data: './src/gpon_base/view_olt_tech_data.js',
+        gpon_view_building_tech_data: './src/gpon_base/view_building_tech_data.js'
     },
     mode: "production",
     output: {
