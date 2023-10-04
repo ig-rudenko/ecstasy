@@ -54,6 +54,8 @@ class TechDataListCreateAPIView(GenericAPIView):
                     {
                         **OLTStateSerializer(instance=house_olt_state.statement).data,
                         "address": AddressSerializer(instance=house.address).data,
+                        "building_type": house.type,
+                        "building_id": house.id,
                         "entrances": house_olt_state.entrances,
                         "customerLine": {
                             "type": end3.type,

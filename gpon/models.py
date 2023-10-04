@@ -157,6 +157,10 @@ class HouseB(models.Model):
     class Meta:
         db_table = "gpon_houses_buildings"
 
+    @property
+    def type(self) -> str:
+        return "building" if self.apartment_building else "house"
+
 
 class End3(models.Model):
     """

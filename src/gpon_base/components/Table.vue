@@ -100,14 +100,20 @@
         <td></td>
 
         <!-- АДРЕС -->
-        <td style="font-weight: 650">{{ getFullAddress(line.address) }}<br>
-          <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
+        <td class="align-items-center d-flex fw-bold">
+          <BuildingIcon :type="line.building_type" width="32" height="32"></BuildingIcon>
+          <div>
+            <span @click="goToBuildingDetailView(line.building_id)"
+                  class="address-name">{{ getFullAddress(line.address) }}</span>
+            <br>
+            <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
+          </div>
         </td>
 
         <!-- ПОРТ OLT -->
         <td>
-          <div style="display: flex;align-items: center;">
-            <Pill style="cursor: pointer;"
+          <div class="align-items-center d-flex">
+            <Pill class="olt-port-badge"
                   @click="goToOLTDetailView(line.deviceName, line.devicePort)"
                   :text="line.devicePort">
             </Pill>
@@ -124,8 +130,7 @@
           </Pill>
           <span class="secondary-text">
           <span v-if="line.customerLine.type === 'splitter'">Количество портов: {{ line.customerLine.typeCount }}</span>
-          <span
-              v-else-if="line.customerLine.type === 'rizer'">Количество волокон: {{ line.customerLine.typeCount }}</span>
+          <span v-else-if="line.customerLine.type === 'rizer'">Количество волокон: {{ line.customerLine.typeCount }}</span>
           <span v-else>Неизвестный тип: "{{ line.customerLine.type }}"</span>
         </span>
         </td>
@@ -134,11 +139,6 @@
         <td>
           {{ line.customerLine.count }}
         </td>
-        <th>
-          <a href="/" class="text-decoration-none">
-            <span class="secondary-text">Редактировать</span>
-          </a>
-        </th>
       </tr>
       </tbody>
       </table>
@@ -183,10 +183,14 @@
 
 <script>
 import Pill from "./Pill.vue";
+import BuildingIcon from "./BuildingIcon.vue";
 
 export default {
   name: "Table",
-  components: {Pill},
+  components: {
+    BuildingIcon,
+    Pill
+  },
   props: {
     data: {required: true}
   },
@@ -325,12 +329,30 @@ export default {
 
     goToOLTDetailView(device_name, olt_port){
       window.location.href = `/gpon/tech-data/${device_name}?port=${olt_port}`
+    },
+
+    goToBuildingDetailView(houseID){
+      window.location.href = `/gpon/tech-data/building/${houseID}`
     }
   }
 }
 </script>
 
 <style scoped>
+
+.address-name {
+  cursor: pointer;
+}
+
+.address-name:hover {
+  color: #2198ff;
+}
+
+.olt-port-badge:hover {
+  cursor: pointer;
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+  border: 1px solid #a48eff;
+}
 
 .search-button {
   font-size: 14px;

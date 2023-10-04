@@ -1,7 +1,7 @@
 <template>
-  <div class="olt-port-badge me-2" :style="{'background-color': backColor}">
+  <div class="pill-badge me-2" :style="{'background-color': backColor}">
     <span :style="{color: color}">{{ text }}</span>
-    <div :style="{background: color}" class="olt-port-badge-point"></div>
+    <div :style="{background: color}" class="pill-badge-point"></div>
   </div>
 </template>
 
@@ -17,7 +17,7 @@ export default {
 </script>
 
 <style scoped>
-.olt-port-badge {
+.pill-badge {
   height: 24px;
   padding: 0 10px 0 3px;
   background-color: #E6E6F2;
@@ -27,11 +27,11 @@ export default {
   border-radius: 19px;
 }
 
-.olt-port-badge span {
+.pill-badge span {
   margin-left: 16px;
 }
 
-.olt-port-badge-point {
+.pill-badge-point {
   width: 6px;
   height: 6px;
   left: 6px;
