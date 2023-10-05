@@ -285,8 +285,8 @@ export default {
 
     getEnd3DetailInfo(oltID, end3Index) {
       const end3ID = this.detailData.oltStates[oltID].customerLines[end3Index].id
-      api_request.get("/gpon/api/tech-capability/" + end3ID)
-          .then(resp => this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = resp.data)
+      api_request.get("/gpon/api/tech-data/end3/" + end3ID)
+          .then(resp => this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = resp.data.capability)
           .catch(reason => {
             this.detailData.oltStates[oltID].customerLines[end3Index].errorStatus = reason.response.status
             this.detailData.oltStates[oltID].customerLines[end3Index].errorMessage = reason.response.data

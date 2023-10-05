@@ -29,9 +29,9 @@ urlpatterns = [
         name="tech-data-house-olt-state",
     ),
     path(
-        "tech-capability/<int:pk>",
-        views.End3TechCapabilitySerializer.as_view(),
-        name="tech-capability-end3",
+        "tech-data/end3/<int:pk>",
+        views.End3TechCapabilityAPIView.as_view(),
+        name="tech-data-end3-capability",
     ),
     path(
         "devices-names",

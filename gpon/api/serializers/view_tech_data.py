@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from gpon.models import OLTState, HouseOLTState, TechCapability, SubscriberConnection, HouseB
+from gpon.models import OLTState, HouseOLTState, TechCapability, SubscriberConnection, HouseB, End3
 from .address import BuildingAddressSerializer
 from .common import End3Serializer
 from .create_tech_data import OLTStateSerializer
@@ -71,3 +71,11 @@ class TechCapabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = TechCapability
         fields = ["id", "status", "ending", "subscribers"]
+
+
+class End3TechCapabilitySerializer(End3Serializer):
+    capability = TechCapabilitySerializer(source="techcapability_set", many=True)
+
+    class Meta:
+        model = End3
+        fields = ["id", "address", "capacity", "location", "type", "capability"]

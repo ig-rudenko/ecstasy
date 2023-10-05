@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 
-from gpon.models import HouseB
+from gpon.models import HouseB, End3
 
 
 @login_required
@@ -35,4 +35,12 @@ def gpon_view_building_tech_data(request, building_id: int):
         request,
         "gpon/view-building-tech-data.html",
         {"address": house.address.verbose, "disable_container": True},
+    )
+
+
+@login_required
+def gpon_view_tech_capability_data(request, end3_id: int):
+    end3 = get_object_or_404(End3, id=end3_id)
+    return render(
+        request, "gpon/view-tech-capability-data.html", {"end3": end3, "disable_container": True}
     )

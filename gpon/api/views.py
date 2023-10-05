@@ -3,7 +3,12 @@ from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveUpdateAPIView, RetrieveAPIView
+from rest_framework.generics import (
+    GenericAPIView,
+    ListAPIView,
+    RetrieveUpdateAPIView,
+    RetrieveAPIView,
+)
 from rest_framework.response import Response
 
 from check.models import Devices
@@ -16,8 +21,8 @@ from .serializers.update_tech_data import (
 )
 from .serializers.view_tech_data import (
     ViewOLTStatesTechDataSerializer,
-    TechCapabilitySerializer,
-    StructuresHouseOLTStateSerializer, ViewHouseBTechDataSerializer,
+    StructuresHouseOLTStateSerializer,
+    ViewHouseBTechDataSerializer, End3TechCapabilitySerializer,
 )
 from ..models import End3, HouseB, HouseOLTState, OLTState
 
@@ -163,14 +168,9 @@ class DevicePortsList(DevicesNamesListAPIView):
         return Response(interfaces_names)
 
 
-class End3TechCapabilitySerializer(GenericAPIView):
+class End3TechCapabilityAPIView(RetrieveAPIView):
     queryset = End3.objects.all()
-    serializer_class = TechCapabilitySerializer
-
-    def get(self, request, *args, **kwargs):
-        end3: End3 = self.get_object()
-        serializer = self.get_serializer(instance=end3.techcapability_set, many=True)
-        return Response(serializer.data)
+    serializer_class = End3TechCapabilitySerializer
 
 
 class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):

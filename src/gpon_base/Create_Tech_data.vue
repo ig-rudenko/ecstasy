@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-
-    <div class="w-75 container py-2">
+    <div class="header">
+      <img class="header-image" src="/static/img/gpon/tech-data-2.svg" alt="create-tech-data-image">
       <h2>Добавление технических данных</h2>
     </div>
 
@@ -725,10 +725,32 @@ export default {
   /*border: 1px solid #A3A3A3;*/
 }
 
+.header {
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 75%!important;
+  position: relative;
+  top: -25px;
+}
+
+.header-image {
+  height: 300px;
+}
+
 @media (max-width: 767px) {
   .container, .mx-5 {
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .header-image {
+    height: auto;
   }
 
   .w-75 {
