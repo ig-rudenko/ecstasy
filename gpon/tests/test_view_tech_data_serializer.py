@@ -4,13 +4,13 @@ from django.test import TestCase
 
 from check.models import DeviceGroup, Devices, AuthGroup
 from gpon.api.serializers.create_tech_data import CreateTechDataSerializer
-from gpon.api.serializers.view_tech_data import ViewTechDataSerializer
+from gpon.api.serializers.view_tech_data import ViewOLTStatesTechDataSerializer
 from net_tools.models import DevicesInfo
 from .data import CREATE_TECH_DATA
 from ..models import OLTState
 
 
-class TestViewTechDataSerializer(TestCase):
+class TestViewOLTStatesTechDataSerializer(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         device = Devices.objects.create(
@@ -34,6 +34,5 @@ class TestViewTechDataSerializer(TestCase):
         serializer.create(serializer.validated_data)
 
     def test_serializer(self):
-        serializer = ViewTechDataSerializer(instance=OLTState.objects.all(), many=True)
-        serializer.is_valid()
-        print(serializer.errors)
+        serializer = ViewOLTStatesTechDataSerializer(instance=OLTState.objects.all(), many=True)
+        print(serializer.data)

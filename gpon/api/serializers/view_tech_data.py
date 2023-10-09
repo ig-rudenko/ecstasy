@@ -70,7 +70,7 @@ class TechCapabilitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TechCapability
-        fields = ["id", "status", "ending", "subscribers"]
+        fields = ["id", "status", "number", "subscribers"]
 
 
 class End3TechCapabilitySerializer(End3Serializer):

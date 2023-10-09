@@ -232,11 +232,8 @@ def create_tech_capabilities(sender, instance: End3, created: bool, **kwargs):
 
     tech_capability = []
 
-    for i in range(instance.capacity):
-        if instance.type == instance.Type.rizer:
-            tech_capability.append(TechCapability(end3=instance, rizer_fiber=End3.RizerColors[i]))
-        else:
-            tech_capability.append(TechCapability(end3=instance, splitter_port=i + 1))
+    for i in range(0, instance.capacity):
+        tech_capability.append(TechCapability(end3=instance, number=i+1))
 
     TechCapability.objects.bulk_create(tech_capability)
 
@@ -256,21 +253,13 @@ class TechCapability(models.Model):
 
     end3 = models.ForeignKey("gpon.End3", on_delete=models.CASCADE)
     status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)
-    splitter_port = models.PositiveSmallIntegerField(
+    number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(24)],
-        null=True,
-        verbose_name="Порт на сплиттере",
-    )
-    rizer_fiber = models.CharField(
-        max_length=128, null=True, verbose_name="Цвет волокна на райзере"
+        verbose_name="Номер порта/волокна",
     )
 
     class Meta:
         db_table = "gpon_tech_capabilities"
-
-    @property
-    def ending(self) -> str:
-        return str(self.splitter_port or self.rizer_fiber)
 
 
 class Customer(models.Model):
