@@ -1,6 +1,7 @@
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, get_object_or_404
 
+from gpon.api.permissions import TechDataPermission
 from gpon.models import HouseB, End3
 
 
@@ -15,6 +16,7 @@ def gpon_tech_data(request):
 
 
 @login_required
+@permission_required(TechDataPermission.create_permissions_list, raise_exception=True)
 def gpon_create_tech_data(request):
     return render(request, "gpon/create-tech-data.html")
 

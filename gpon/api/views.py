@@ -12,6 +12,7 @@ from rest_framework.generics import (
 from rest_framework.response import Response
 
 from check.models import Devices
+from .permissions import TechDataPermission
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
@@ -29,10 +30,20 @@ from .serializers.view_tech_data import (
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 
 
+class ListUserPermissions(GenericAPIView):
+    def get(self, *args, **kwargs):
+        permissions = filter(
+            lambda x: x.startswith("gpon"), self.request.user.get_all_permissions()
+        )
+        return Response(permissions)
+
+
 class TechDataListCreateAPIView(GenericAPIView):
     """
     Предназначен для создания и просмотра технических данных
     """
+
+    permission_classes = [TechDataPermission]
 
     cache_key = "gpon:api:TechDataListCreateAPIView:get"
     cache_timeout = 1

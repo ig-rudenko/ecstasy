@@ -7,6 +7,7 @@ from . import views
 app_name = "api"
 
 urlpatterns = [
+    path("permissions", views.ListUserPermissions.as_view(), name="user-permissions"),
     path("tech-data", views.TechDataListCreateAPIView.as_view(), name="tech-data"),
     path(
         "tech-data/<device_name>",

@@ -15,6 +15,13 @@
       </a>
     </div>
 
+    <!-- ОШИБКА ЗАГРУЗКИ -->
+    <div v-if="errorStatus" class="alert alert-danger">
+      Ошибка при загрузке данных.
+      <br> {{errorMessage||''}}
+      <br> Статус: {{errorStatus}}
+    </div>
+
     <Table v-if="tableData" :data="tableData"></Table>
 
   </div>
@@ -31,11 +38,22 @@ export default {
   },
   data() {
     return {
-      gponTechData: null
+      gponTechData: null,
+      errorStatus: null,
+      errorMessage: null,
     }
   },
   mounted() {
-    api_request.get("/gpon/api/tech-data").then(resp => this.gponTechData = resp.data)
+    api_request.get("/gpon/api/tech-data")
+        .then(resp => this.gponTechData = resp.data)
+        .catch(reason => {
+          this.errorStatus = reason.response.status
+          if (this.errorStatus === 403){
+            this.errorMessage = reason.response.data.detail
+          } else {
+            this.errorMessage = reason.response.data
+          }
+        })
   },
   computed: {
     tableData() {
