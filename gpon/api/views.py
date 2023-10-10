@@ -22,9 +22,11 @@ from .serializers.update_tech_data import (
 from .serializers.view_tech_data import (
     ViewOLTStatesTechDataSerializer,
     StructuresHouseOLTStateSerializer,
-    ViewHouseBTechDataSerializer, End3TechCapabilitySerializer,
+    ViewHouseBTechDataSerializer,
+    End3TechCapabilitySerializer,
+    TechCapabilitySerializer,
 )
-from ..models import End3, HouseB, HouseOLTState, OLTState
+from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 
 
 class TechDataListCreateAPIView(GenericAPIView):
@@ -168,9 +170,14 @@ class DevicePortsList(DevicesNamesListAPIView):
         return Response(interfaces_names)
 
 
-class End3TechCapabilityAPIView(RetrieveAPIView):
+class End3TechCapabilityAPIView(RetrieveUpdateAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
+
+
+class TechCapabilityAPIView(RetrieveUpdateAPIView):
+    queryset = TechCapability.objects.all()
+    serializer_class = TechCapabilitySerializer
 
 
 class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):

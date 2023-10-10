@@ -12,7 +12,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
           </svg>
-          <span v-if="!isMobile" class="m-2">Назад</span>
+          <span v-if="!isMobile" class="m-2">Выйти</span>
         </button>
 
         <!-- Режим редактирования -->
@@ -172,7 +172,9 @@
             <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
               <circle cx="8" cy="8" r="8"/>
             </svg>
-            <h4 class="m-0 me-3">Адрес: {{ getFullAddress(building.address) }}</h4>
+            <h4 class="m-0 me-3">
+              Адрес: <a :href="'/gpon/tech-data/building/'+building.id">{{ getFullAddress(building.address) }}</a>
+            </h4>
 
             <!-- Сохранить изменения -->
             <button v-if="editMode" @click="updateBuildingInfo(building)" class="save-button">
@@ -241,7 +243,11 @@
 
               <div :class="getCustomerLineClasses(index)">
 
-                <div class="col-md-2 fw-bold">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</div>
+                <div class="col-md-2 fw-bold">
+                  <a :href="'/gpon/tech-data/end3/' + line.id">
+                    {{ customerLineTypeName(line.type) }} {{ index + 1 }}
+                  </a>
+                </div>
                 <div class="col-auto">
                     {{ getFullAddress(line.address) }}
                     <br>
@@ -264,9 +270,9 @@
 
               <div v-if="line.detailInfo" class="card px-3 rounded-0" style="border-top: none; margin-bottom: 10px">
                 <div v-for="part in line.detailInfo" class="align-items-center row py-1">
-                  <div class="col-1">{{part.ending}}</div>
+                  <div class="col-1">{{part.number}}</div>
                     <div class="col-2">
-                      <span class="badge bg-secondary">{{part.status}}</span>
+                      <TechCapabilityBadge v-if="!editMode" :status="part.status"/>
                     </div>
                   <div class="col-auto">
                     <div class="d-flex" v-for="subscriber in part.subscribers">
@@ -300,6 +306,7 @@ import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
 import Table from "./components/Table.vue";
 import Textarea from "primevue/textarea/Textarea.vue";
+import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import Toast from "primevue/toast/Toast.vue"
 
 import formatAddress from "../helpers/address";
@@ -315,6 +322,7 @@ export default {
     InlineMessage,
     InputText,
     Table,
+    TechCapabilityBadge,
     Textarea,
     Toast,
   },

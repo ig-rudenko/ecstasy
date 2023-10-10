@@ -6,23 +6,35 @@
     <div class="header">
       <h2 class="py-3">Техническая возможность</h2>
 
-      <!-- ДЕЙСТВИЯ -->
       <div class="d-flex">
         <button @click="goToTechDataURL" class="back-button me-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
           </svg>
-          <span v-if="!isMobile" class="m-2">Назад</span>
+          <span v-if="!isMobile" class="m-2">Выйти</span>
         </button>
 
         <!-- Режим редактирования -->
-        <button v-if="editMode" @click="editMode = false" class="view-button me-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-            <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-          </svg>
-          <span v-if="!isMobile" class="m-2">Просмотр</span>
-        </button>
+        <template v-if="editMode">
+
+          <!-- Сохранить изменения -->
+          <button @click="updateEnd3Info" class="save-button me-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span v-if="!isMobile" class="m-2">Сохранить</span>
+          </button>
+
+          <button @click="editMode = false" class="view-button me-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+              <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            </svg>
+            <span v-if="!isMobile" class="m-2">Просмотр</span>
+          </button>
+
+        </template>
+
 
         <!-- Режим просмотра -->
         <template v-else>
@@ -56,13 +68,18 @@
 
     <div v-if="detailData" id="tech-data-block" class="plate">
 
-        <div class="d-flex align-items-center">
-          <div class="px-5 fs-5 d-flex flex-column">
+       <div class="d-flex align-items-center flex-wrap">
+
+          <div class="ml-40 fs-5 d-flex flex-column">
             <span>{{detailData.type}}</span>
-            <span>{{end3Address}}</span>
-            <span class="fw-bold">{{detailData.location}}</span>
+            <span v-if="!editMode">{{end3Address}}</span>
+            <AddressGetCreate v-else :is-mobile="isMobile" :allow-create="true" :data="detailData"></AddressGetCreate>
+
+            <span v-if="!editMode" class="fw-bold">{{detailData.location}}</span>
+            <InputText v-else v-model.trim="detailData.location" class="w-100 my-1" type="text" placeholder="Локация"/>
+
           </div>
-          <div>
+          <div class="mx-2">
             <svg v-if="detailData.type === 'rizer'" style="transform: rotate(300grad);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 32" width="128" height="128">
               <path fill="#e6e6e6" d="M23 0H3a1 1 0 0 0-1 1v20a1 1 0 0 0 1 1h20a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1z" class="colore6e6e6 svgShape"></path>
               <path fill="#cccccc" d="M25 10H1a1 1 0 1 0 0 2h24a1 1 0 1 0 0-2z" class="colorccc svgShape"></path>
@@ -70,13 +87,7 @@
               <path fill="#88c057" d="M12 22h2v10h-2z" class="color88c057 svgShape"></path><path fill="#48a0dc" d="M16 22h2v10h-2z" class="color48a0dc svgShape"></path>
               <path fill="#9b7cab" d="M20 22h2v10h-2z" class="color9b7cab svgShape"></path>
             </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="128" height="128">
-              <path fill="#aad2e2" d="M58.363 21.543 51.87 10.481A3 3 0 0 0 49.282 9H10.718a3 3 0 0 0-2.588 1.481L1.637 21.543Z" class="coloraad2e2 svgShape"></path>
-              <path fill="#92c0d7" d="M4 46h8v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3zm44 0h8v3a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-3z" class="color92c0d7 svgShape"></path>
-              <rect width="58" height="26" x="1" y="21" fill="#dbeffa" rx="2" class="colordbeffa svgShape"></rect>
-              <path fill="#6a85a0" d="M13 28v3a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1 1 1 0 0 0 1-1 1 1 0 0 1 1-1h2a1 1 0 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 1 1 1zm14 0v3a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1 1 1 0 0 0 1-1 1 1 0 0 1 1-1h2a1 1 0 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 1 1 1zm14 0v3a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1 1 1 0 0 0 1-1 1 1 0 0 1 1-1h2a1 1 0 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 1 1 1zm14 0v3a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1 1 1 0 0 0 1-1 1 1 0 0 1 1-1h2a1 1 0 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 1 1 1zM13 40v-3a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1 1 1 0 0 1 1 1 1 1 0 0 0 1 1h2a1 1 0 0 0 1-1 1 1 0 0 1 1-1 1 1 0 0 0 1-1zm14 0v-3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1 1 1 0 0 1 1 1 1 1 0 0 0 1 1h2a1 1 0 0 0 1-1 1 1 0 0 1 1-1 1 1 0 0 0 1-1zm14 0v-3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1 1 1 0 0 1 1 1 1 1 0 0 0 1 1h2a1 1 0 0 0 1-1 1 1 0 0 1 1-1 1 1 0 0 0 1-1zm14 0v-3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1 1 1 0 0 1 1 1 1 1 0 0 0 1 1h2a1 1 0 0 0 1-1 1 1 0 0 1 1-1 1 1 0 0 0 1-1z" class="color6a85a0 svgShape"></path>
-              <path fill="#92c0d7" d="M14 14h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm-1 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm7-4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm-1 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm9-4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm0 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm6-4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm0 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm8-4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm1 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm5-4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm1 4h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2z" class="color92c0d7 svgShape"></path>
-            </svg>
+            <img height="150" v-else src="/static/img/gpon/splitter.svg" alt="splitter">
           </div>
 
         </div>
@@ -91,7 +102,7 @@
               <Dropdown v-model.number="detailData.capacity" @change="changeCapacity" :options="[4, 8, 12, 16, 24]"
                         class="w-full md:w-14rem me-2"/>
 
-              <InlineMessage class="my-2" v-if="capacityWarning" severity="warn">
+              <InlineMessage class="my-2" v-if="capacityWarning" :severity="errorSeverity">
                 {{capacityWarning}}
               </InlineMessage>
 
@@ -104,19 +115,16 @@
 
 
             <div v-if="detailData" class="px-3 rounded-0">
-              <div v-for="part in detailData.capability" class="align-items-center row py-1">
-                <div class="col-1">{{part.ending}}</div>
-                  <div class="col-2">
-                    <span v-if="!editMode" :class="getStatusClasses(part.status)">{{part.status}}</span>
-                    <Dropdown v-else v-model="part.status" :options="['empty', 'active', 'paused', 'reserved', 'bad']"
+              <div v-for="(part, index) in detailData.capability" class="align-items-center row py-1">
+                <div class="col-1">{{part.number}}</div>
+                  <div :class="editMode?['col-auto']:['col-3']">
+                    <TechCapabilityBadge v-if="!editMode" :status="part.status"/>
+                    <Dropdown v-else v-model="part.status" :options="['empty', 'active', 'pause', 'reserved', 'bad']"
                               scroll-height="300px" :input-style="{padding: '0.2rem 1rem'}"
+                              @change="updateTechCapability(index)"
                               placeholder="Выберите статус порта" class="me-2">
-                          <template #value="slotProps">
-                              <span :class="getStatusClasses(slotProps.value)">{{ slotProps.value }}</span>
-                          </template>
-                          <template #option="slotProps">
-                            <span :class="getStatusClasses(slotProps.option)">{{ slotProps.option }}</span>
-                          </template>
+                          <template #value="slotProps"><TechCapabilityBadge :status="slotProps.value"/></template>
+                          <template #option="slotProps"><TechCapabilityBadge :status="slotProps.option"/></template>
                     </Dropdown>
                   </div>
                 <div class="col-auto">
@@ -147,12 +155,17 @@ import Dropdown from "primevue/dropdown/Dropdown.vue"
 import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
 import Toast from "primevue/toast/Toast.vue"
+import AddressGetCreate from "./components/AddressGetCreate.vue";
 
 import formatAddress from "../helpers/address";
+import api_request from "../api_request";
+import TechCapabilityBadge from "./components/TechCapabilityBadge.vue"
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    TechCapabilityBadge,
+    AddressGetCreate,
     Button,
     Dropdown,
     InlineMessage,
@@ -161,35 +174,7 @@ export default {
   },
   data() {
     return {
-      detailData: null,
-      errorStatus: null,
-      errorMessage: null,
-
-      originalCapacity: null,
-      capacityWarning: null,
-
-      windowWidth: window.innerWidth,
-      editMode: false,
-      lineStatuses: [
-        {name: "empty", classes: ["badge", "bg-secondary"]},
-        {name: "active", classes: ["badge", "bg-success"]},
-        {name: "paused", classes: ["badge", "bg-warning"]},
-        {name: "reserved", classes: ["badge", "bg-primary"]},
-        {name: "bad", classes: ["badge", "bg-danger"]},
-      ]
-    }
-  },
-  mounted() {
-    let url = window.location.href
-    // /gpon/api/tech-data/{device_name}?port={olt_port}
-    // api_request.get("/gpon/api/" + url.match(/tech-capability\S+/)[0])
-    //     .then(resp => this.detailData = resp.data)
-    //     .catch(reason => {
-    //       this.errorStatus = reason.response.status
-    //       this.errorMessage = reason.response.data
-    //     })
-
-    this.detailData = {
+      detailData: {
         "id": 1,
         "address": {
             "region": "Севастополь",
@@ -205,62 +190,40 @@ export default {
         "location": "1 подъезд 5 этаж",
         "type": "splitter",
         "capability": [
-            {
-                "id": 1,
-                "status": "empty",
-                "ending": "1",
-                "subscribers": [
-                    {
-                        "id": 1,
-                        "name": "Руденко Игорь Константинович",
-                        "transit": 602545
-                    }
-                ]
-            },
-            {
-                "id": 2,
-                "status": "empty",
-                "ending": "2",
-                "subscribers": []
-            },
-            {
-                "id": 3,
-                "status": "empty",
-                "ending": "3",
-                "subscribers": []
-            },
-            {
-                "id": 4,
-                "status": "empty",
-                "ending": "4",
-                "subscribers": []
-            },
-            {
-                "id": 5,
-                "status": "empty",
-                "ending": "5",
-                "subscribers": []
-            },
-            {
-                "id": 6,
-                "status": "empty",
-                "ending": "6",
-                "subscribers": []
-            },
-            {
-                "id": 7,
-                "status": "empty",
-                "ending": "7",
-                "subscribers": []
-            },
-            {
-                "id": 8,
-                "status": "empty",
-                "ending": "8",
-                "subscribers": []
-            }
-        ]
+              {
+                  "id": 8,
+                  "status": "empty",
+                  "number": "8",
+                  "subscribers": [
+                      {
+                          "id": 1,
+                          "name": "ФИО",
+                          "transit": 1234567890
+                      }
+                  ]
+              }
+          ]
+      },
+      errorStatus: null,
+      errorMessage: null,
+      errorSeverity: null,
+
+      originalCapacity: null,
+      capacityWarning: null,
+
+      windowWidth: window.innerWidth,
+      editMode: false,
     }
+  },
+  mounted() {
+    let url = window.location.href
+
+    api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+        .then(resp => this.detailData = resp.data)
+        .catch(reason => {
+          this.errorStatus = reason.response.status
+          this.errorMessage = reason.response.data
+        })
 
     this.originalCapacity = this.detailData.capacity
     window.addEventListener('resize', () => {
@@ -281,27 +244,70 @@ export default {
 
   methods: {
 
-    getStatusClasses(value){
-      for (let lineStatus of this.lineStatuses) {
-        if (lineStatus.name === value) return lineStatus.classes
-      }
-    },
-
     getCustomerLineClasses(index){
       let class_list = ['py-2', 'row', 'align-items-center']
       if (index % 2 === 0) class_list.push('grey-back');
       return class_list
     },
 
-    changeCapacity(event){
-      const value = event.value
+    changeCapacity(){
       if (this.detailData.capacity < this.originalCapacity){
-        this.capacityWarning = "Внимание, вы указали ёмкость меньше, чем была изначально!"
+        if (this.deletionUsersAffected()) {
+          this.errorSeverity = "error"
+          this.capacityWarning = "Изменение затронет существующие подключения абонентов. " +
+              "Необходимо их перенести на другую линию, а затем изменить ёмкость."
+        } else {
+          this.errorSeverity = "warn"
+          this.capacityWarning = "Внимание, вы указали ёмкость меньше, чем была изначально! Будут удалены последние записи"
+        }
       } else if (this.detailData.capacity > this.originalCapacity) {
-        this.capacityWarning = "Будут добавлены новые "
+        this.errorSeverity = "info"
+        this.capacityWarning = "Будут добавлены новые"
       } else {
         this.capacityWarning = null
       }
+    },
+
+    /** @param {Integer} index */
+    updateTechCapability(index){
+      const capability = this.detailData.capability[index]
+      const data = {status: capability.status}
+      this.handleRequest(
+          api_request.patch("/gpon/api/tech-data/tech-capability/"+capability.id, data)
+      )
+    },
+
+    updateEnd3Info(){
+      this.handleRequest(
+          api_request.patch("/gpon/api/tech-data/end3/"+this.detailData.id, this.detailData)
+      )
+      this.editMode = false
+    },
+
+    /**
+     * Обработчик запроса
+     * @param {Promise} request
+     */
+    handleRequest(request){
+      request.then(
+            resp => this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Статус был изменён', life: 3000})
+          )
+          .catch(
+              reason => {
+                const status = reason.response.status
+                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000})
+              }
+          )
+    },
+
+    deletionUsersAffected() {
+      const shift = this.originalCapacity - this.detailData.capacity
+      for (let i = shift - 1; i < this.detailData.capability.length; i++) {
+          if (this.detailData.capability[i].subscribers.length) {
+            return true
+          }
+        }
+      return false
     },
 
     customerLineTypeName(type) {

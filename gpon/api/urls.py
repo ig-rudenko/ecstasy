@@ -34,6 +34,11 @@ urlpatterns = [
         name="tech-data-end3-capability",
     ),
     path(
+        "tech-data/tech-capability/<int:pk>",
+        views.TechCapabilityAPIView.as_view(),
+        name="tech-data-tech-capability",
+    ),
+    path(
         "devices-names",
         views.DevicesNamesListAPIView.as_view(),
         name="devices-names",

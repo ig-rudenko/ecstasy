@@ -131,7 +131,6 @@ class AddressSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def validate(data):
-        print(data)
         if not data.get("plan_structure") and not data.get("street"):
             raise ValidationError("Необходимо указать либо СНТ ТСН, либо улицу")
         return data

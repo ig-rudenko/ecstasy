@@ -1,7 +1,10 @@
+from typing import List
+
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from gpon.models import OLTState, HouseOLTState, TechCapability, SubscriberConnection, HouseB, End3
-from .address import BuildingAddressSerializer
+from .address import BuildingAddressSerializer, AddressSerializer
 from .common import End3Serializer
 from .create_tech_data import OLTStateSerializer
 
@@ -66,16 +69,77 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
 
 
 class TechCapabilitySerializer(serializers.ModelSerializer):
-    subscribers = SubscriberConnectionSerializer(source="subscriber_connection", many=True)
+    subscribers = SubscriberConnectionSerializer(source="subscriber_connection", many=True, read_only=True)
 
     class Meta:
         model = TechCapability
         fields = ["id", "status", "number", "subscribers"]
+        read_only_fields = ["id", "number", "subscribers"]
 
 
 class End3TechCapabilitySerializer(End3Serializer):
-    capability = TechCapabilitySerializer(source="techcapability_set", many=True)
+    capability = TechCapabilitySerializer(source="techcapability_set", many=True, read_only=True)
+    address = AddressSerializer()
 
     class Meta:
         model = End3
         fields = ["id", "address", "capacity", "location", "type", "capability"]
+        read_only_fields = ["id", "type", "capability"]
+
+    def validate_capacity(self, value: int):
+        self.instance: End3
+        if value < self.instance.capacity:
+            tech_capability = self.instance.techcapability_set.all().order_by("number")
+            self._get_affected_tech_capability(value, tech_capability)
+        return value
+
+    def update(self, instance: End3, validated_data):
+        if validated_data.get("capacity"):
+            tech_capability = self.instance.techcapability_set.all().order_by("number")
+            if validated_data["capacity"] < instance.capacity:
+                to_delete = self._get_affected_tech_capability(
+                    validated_data["capacity"], tech_capability
+                )
+                for tech in to_delete:
+                    tech.delete()
+
+            if validated_data["capacity"] > instance.capacity:
+                last_tech_capacity: TechCapability = tech_capability.last()
+                additional_capacity = validated_data["capacity"] - instance.capacity
+                for i in range(
+                    last_tech_capacity.number + 1,
+                    last_tech_capacity.number + additional_capacity + 1,
+                ):
+                    TechCapability.objects.create(end3=instance, number=i)
+
+        update_fields = []
+        for key, value in validated_data.items():
+            if key == "address":
+                value = AddressSerializer.create(validated_data["address"])
+            setattr(instance, key, value)
+            update_fields.append(key)
+
+        instance.save(update_fields=update_fields)
+
+        return instance
+
+    @staticmethod
+    def _get_affected_tech_capability(new_capacity: int, tech_capability) -> List[TechCapability]:
+        """
+        Функция _get_affected_tech_capability возвращает список объектов TechCapability, которые необходимо удалить, на
+        основе нового значения ёмкости и списка существующих объектов TechCapability.
+
+        :param new_capacity: Параметр new_capacity — это целое число, которое представляет новое значение емкости.
+         Он используется для определения того, какие объекты TechCapability следует удалить из списка tech_capability
+        :param tech_capability: Параметр tech_capability представляет собой список объектов типа TechCapability
+        :return: список объектов TechCapability, которые необходимо удалить.
+        """
+        to_delete = []
+        for i, line in enumerate(tech_capability, 1):
+            if i <= new_capacity:
+                continue
+            line: TechCapability
+            if line.subscriber_connection.count():
+                raise ValidationError("Нельзя, есть абоненты")
+            to_delete.append(line)
+        return to_delete

@@ -136,7 +136,11 @@
 
               <div :class="getCustomerLineClasses(index)">
 
-                <div class="col-md-2 fw-bold">{{ customerLineTypeName(line.type) }} {{ index + 1 }}</div>
+                <div class="col-md-2 fw-bold">
+                  <a :href="'/gpon/tech-data/end3/' + line.id">
+                    {{ customerLineTypeName(line.type) }} {{ index + 1 }}
+                  </a>
+                </div>
                 <div class="col-auto">
                     {{ getFullAddress(line.address) }}
                     <br>
@@ -159,10 +163,8 @@
 
               <div v-if="line.detailInfo" class="card px-3 rounded-0" style="border-top: none; margin-bottom: 10px">
                 <div v-for="part in line.detailInfo" class="align-items-center row py-1">
-                  <div class="col-1">{{part.ending}}</div>
-                    <div class="col-2">
-                      <span class="badge bg-secondary">{{part.status}}</span>
-                    </div>
+                  <div class="col-1">{{part.number}}</div>
+                    <div class="col-2"><TechCapabilityBadge :status="part.status" /></div>
                   <div class="col-auto">
                     <div class="d-flex" v-for="subscriber in part.subscribers">
                       <div class="me-2">{{subscriber.name}}</div>
@@ -195,6 +197,7 @@ import Dropdown from "primevue/dropdown/Dropdown.vue"
 import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
 import Table from "./components/Table.vue";
+import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import Textarea from "primevue/textarea/Textarea.vue";
 import Toast from "primevue/toast/Toast.vue"
 
@@ -211,6 +214,7 @@ export default {
     InlineMessage,
     InputText,
     Table,
+    TechCapabilityBadge,
     Textarea,
     Toast,
   },

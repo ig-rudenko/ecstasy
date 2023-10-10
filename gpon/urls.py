@@ -6,7 +6,7 @@ from gpon.views import (
     gpon_create_tech_data,
     gpon_view_olt_tech_data,
     gpon_view_building_tech_data,
-    gpon_view_tech_capability_data,
+    gpon_view_end3_tech_data,
 )
 
 # /gpon/
@@ -19,7 +19,7 @@ urlpatterns = [
     path("tech-data/", gpon_tech_data, name="tech-data"),
     path("tech-data/create", gpon_create_tech_data, name="create-tech-data"),
     path("tech-data/<device_name>", gpon_view_olt_tech_data, name="view-olt-tech-data"),
-    path("tech-capability/<int:pk>", gpon_view_tech_capability_data, name="view-tech-capability-data"),
+    path("tech-data/end3/<int:pk>", gpon_view_end3_tech_data, name="view-tech-capability-data"),
     path(
         "tech-data/building/<int:building_id>",
         gpon_view_building_tech_data,

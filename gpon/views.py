@@ -39,8 +39,8 @@ def gpon_view_building_tech_data(request, building_id: int):
 
 
 @login_required
-def gpon_view_tech_capability_data(request, end3_id: int):
-    end3 = get_object_or_404(End3, id=end3_id)
+def gpon_view_end3_tech_data(request, pk: int):
+    end3 = get_object_or_404(End3, pk=pk)
     return render(
-        request, "gpon/view-tech-capability-data.html", {"end3": end3, "disable_container": True}
+        request, "gpon/view-end3-tech-data.html", {"end3": end3, "disable_container": True}
     )

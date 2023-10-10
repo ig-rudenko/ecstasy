@@ -1,5 +1,5 @@
 import {createApp} from 'vue'
-import App from './View_Tech_capability_data.vue'
+import App from './View_end3_tech_data.vue'
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
