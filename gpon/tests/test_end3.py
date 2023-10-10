@@ -1,6 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APITestCase
 
-from gpon.api.serializers.view_tech_data import End3TechCapabilitySerializer
+from gpon.api.serializers.update_tech_data import End3TechCapabilitySerializer
 from gpon.models import End3, TechCapability, Address
 
 
@@ -77,3 +80,20 @@ class TestEnd3TechCapabilitySerializer(TestCase):
         serializer.save()
 
         self.assertEqual(Address.objects.first(), end3.address)
+
+
+class TestEnd3TechCapabilityAPIView(APITestCase):
+    def setUp(self) -> None:
+        self.user = get_user_model().objects.create_user(username="test_user", password="password")
+        self.end3 = End3.objects.create(location="Местоположение", type="splitter", capacity=8)
+
+    def test_retrieve_end3_data(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            path=reverse("gpon:api:tech-data-end3-capability", kwargs={"pk": self.end3.id})
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["capacity"], self.end3.capacity)
+        self.assertEqual(resp.data["location"], self.end3.location)
+        self.assertEqual(resp.data["type"], self.end3.type)
+        self.assertEqual(len(resp.data["capability"]), self.end3.techcapability_set.count())

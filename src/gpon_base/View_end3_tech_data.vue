@@ -97,7 +97,7 @@
 
           <div class="ml-40">
 
-            <div v-if="editMode" class="d-flex align-items-center">
+            <div v-if="editMode" class="d-flex align-items-center flex-wrap">
               <div class="me-2">Изменение ёмкости</div>
               <Dropdown v-model.number="detailData.capacity" @change="changeCapacity" :options="[4, 8, 12, 16, 24]"
                         class="w-full md:w-14rem me-2"/>
@@ -160,6 +160,7 @@ import AddressGetCreate from "./components/AddressGetCreate.vue";
 import formatAddress from "../helpers/address";
 import api_request from "../api_request";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue"
+import printElementById from "../helpers/print";
 
 export default {
   name: "Gpon_base.vue",
@@ -281,16 +282,18 @@ export default {
       this.handleRequest(
           api_request.patch("/gpon/api/tech-data/end3/"+this.detailData.id, this.detailData)
       )
-      this.editMode = false
     },
 
     /**
-     * Обработчик запроса
+     * Обрабатывает запрос и отображает всплывающее окно с результатом ответа
      * @param {Promise} request
      */
     handleRequest(request){
       request.then(
-            resp => this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Статус был изменён', life: 3000})
+            resp => {
+              this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Статус был изменён', life: 3000})
+              this.editMode = false
+            }
           )
           .catch(
               reason => {
@@ -330,32 +333,7 @@ export default {
       }
     },
 
-    printData() {
-      let prtHtml = document.getElementById('tech-data-block').innerHTML
-      // remove all buttons
-      prtHtml = prtHtml.replace(/<button.*?>.*?<\/button>/g, "")
-
-      // Get all stylesheets HTML
-      let stylesHtml = '';
-      for (const node of [...document.querySelectorAll('link[rel="stylesheet"], style')]) {
-        stylesHtml += node.outerHTML;
-      }
-      // Open the print window
-      const WinPrint = window.open('', '', 'width=1200,height=900,toolbar=0,scrollbars=0,status=0');
-      WinPrint.document.write(`<!DOCTYPE html>
-      <html lang="ru">
-        <head>
-          ${stylesHtml}
-          <title></title>
-        </head>
-        <body>
-          ${prtHtml}
-        </body>
-      </html>`);
-      WinPrint.document.close();
-      WinPrint.focus();
-      WinPrint.print();
-    },
+    printData() {printElementById('tech-data-block')},
 
     goToTechDataURL() {
       window.location.href = "/gpon/tech-data"

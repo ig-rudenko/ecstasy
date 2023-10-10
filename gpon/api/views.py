@@ -18,12 +18,12 @@ from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSeri
 from .serializers.update_tech_data import (
     UpdateRetrieveOLTStateSerializer,
     UpdateHouseOLTStateSerializer,
+    End3TechCapabilitySerializer,
 )
 from .serializers.view_tech_data import (
     ViewOLTStatesTechDataSerializer,
     StructuresHouseOLTStateSerializer,
     ViewHouseBTechDataSerializer,
-    End3TechCapabilitySerializer,
     TechCapabilitySerializer,
 )
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
@@ -117,10 +117,16 @@ class BuildingsAddressesListAPIView(ListAPIView):
 
 
 class SplitterAddressesListAPIView(ListAPIView):
+    """Возвращает список сплиттеров вместе с их адресами"""
+
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address").filter(type="splitter")
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
+        """
+        Если были переданы оборудование и порт, то отфильтровывает сплиттера,
+        которые имеются только у данного порта.
+        """
         port = self.request.GET.get("port")
         device = self.request.GET.get("device")
         if not port and not device:

@@ -204,6 +204,7 @@ import Toast from "primevue/toast/Toast.vue"
 import formatAddress from "../helpers/address";
 import api_request from "../api_request";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
+import printElementById from "../helpers/print";
 
 export default {
   name: "Gpon_base.vue",
@@ -301,32 +302,7 @@ export default {
       this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = null
     },
 
-    printData() {
-      let prtHtml = document.getElementById('tech-data-block').innerHTML
-      // remove all buttons
-      prtHtml = prtHtml.replace(/<button.*?>.*?<\/button>/g, "")
-
-      // Get all stylesheets HTML
-      let stylesHtml = '';
-      for (const node of [...document.querySelectorAll('link[rel="stylesheet"], style')]) {
-        stylesHtml += node.outerHTML;
-      }
-      // Open the print window
-      const WinPrint = window.open('', '', 'width=1200,height=900,toolbar=0,scrollbars=0,status=0');
-      WinPrint.document.write(`<!DOCTYPE html>
-      <html lang="ru">
-        <head>
-          ${stylesHtml}
-          <title></title>
-        </head>
-        <body>
-          ${prtHtml}
-        </body>
-      </html>`);
-      WinPrint.document.close();
-      WinPrint.focus();
-      WinPrint.print();
-    },
+    printData() {printElementById('tech-data-block')},
 
   }
 }
