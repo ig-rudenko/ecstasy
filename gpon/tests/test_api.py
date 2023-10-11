@@ -13,7 +13,7 @@ from net_tools.models import DevicesInfo
 
 class TestTechDataAPIView(APITestCase):
     def setUp(self) -> None:
-        self.user = get_user_model().objects.create_user(username="test_user", password="password")
+        self.user = get_user_model().objects.create_superuser(username="test_user", password="password")
         self.device = Devices.objects.create(
             auth_group=AuthGroup.objects.create(name="test", login="login", password="password"),
             group=DeviceGroup.objects.create(name="test"),

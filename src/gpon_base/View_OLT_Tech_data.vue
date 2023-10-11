@@ -34,7 +34,7 @@
             <span v-if="!isMobile" class="m-2">Печать</span>
           </button>
 
-          <button @click="editMode = true" class="edit-button">
+          <button v-if="hasAnyPermissionToUpdate" @click="editMode = true" class="edit-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
               <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
             </svg>
@@ -64,7 +64,7 @@
           </svg>
           <h4 class="m-0 me-3">Станционные данные</h4>
           <!-- Сохранить изменения -->
-          <button v-if="editMode" @click="updateOLTStateInfo" class="save-button">
+          <button v-if="editMode && hasPermissionToUpdateOLTState" @click="updateOLTStateInfo" class="save-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
               <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
             </svg>
@@ -79,16 +79,8 @@
             <div class="col-4 fw-bold">OLT оборудование</div>
             <div class="col-auto">
 
-              <!-- Device Name -->
-              <span v-if="!editMode" id="deviceName" class="badge fs-6" style="color: black">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                  <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
-                </svg>
-                {{detailData.deviceName}}
-              </span>
-
               <!-- Редактирование имени оборудования -->
-              <div v-else>
+              <div v-if="editMode && hasPermissionToUpdateOLTState">
                     <Dropdown v-model="detailData.deviceName" :options="devicesList" filter
                               :option-label="x => x"
                               @change="deviceNameSelected" placeholder="Выберите устройство">
@@ -101,9 +93,18 @@
                       </template>
                     </Dropdown>
               </div>
+
+              <!-- Device Name -->
+              <span v-else id="deviceName" class="badge fs-6" style="color: black">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                  <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
+                </svg>
+                {{detailData.deviceName}}
+              </span>
+
             </div>
 
-            <InlineMessage class="my-2" v-if="editMode" severity="warn">
+            <InlineMessage class="my-2" v-if="editMode && hasPermissionToUpdateOLTState" severity="warn">
               Будьте осторожны при выборе нового оборудования, данное действие необходимо только после физического
               переключения линии на другое оборудование.
             </InlineMessage>
@@ -115,29 +116,28 @@
             <div class="col-4 fw-bold">Порт</div>
             <div class="col-auto fw-bold">
 
+              <!-- Редактирование порта -->
+              <div v-if="editMode && hasPermissionToUpdateOLTState">
+                    <Dropdown v-model="detailData.devicePort" :options="devicePortList" filter
+                              :option-label="x => x" placeholder="Выберите порт">
+                      <template #value="slotProps">
+                        <div v-if="slotProps.value" class="flex align-items-center"> <div>{{ slotProps.value }}</div> </div>
+                        <span v-else> {{ slotProps.placeholder }} </span>
+                      </template>
+                      <template #option="slotProps">
+                        <div class="flex align-items-center"><div>{{ slotProps.option }}</div></div>
+                      </template>
+                    </Dropdown>
+              </div>
+
               <!-- Просмотр порта -->
-              <template v-if="!editMode">
+              <template v-else>
                 {{ detailData.devicePort }} <button class="btn btn-outline-primary rounded-5 py-1">status</button>
               </template>
 
-              <!-- Редактирование порта -->
-              <template v-else>
-                <div>
-                      <Dropdown v-model="detailData.devicePort" :options="devicePortList" filter
-                                :option-label="x => x" placeholder="Выберите порт">
-                        <template #value="slotProps">
-                          <div v-if="slotProps.value" class="flex align-items-center"> <div>{{ slotProps.value }}</div> </div>
-                          <span v-else> {{ slotProps.placeholder }} </span>
-                        </template>
-                        <template #option="slotProps">
-                          <div class="flex align-items-center"><div>{{ slotProps.option }}</div></div>
-                        </template>
-                      </Dropdown>
-                </div>
-              </template>
             </div>
 
-            <InlineMessage class="my-2" v-if="editMode" severity="warn">
+            <InlineMessage v-if="editMode && hasPermissionToUpdateOLTState" class="my-2" severity="warn">
               Будьте осторожны при выборе нового порта, данное действие необходимо только после физического
               переключения порта на оборудовании.
             </InlineMessage>
@@ -147,15 +147,17 @@
           <!-- ВОЛОКНО -->
           <div class="py-2 row align-items-center">
             <div class="col-4 fw-bold">Волокно</div>
-            <div v-if="!editMode" class="col-auto">{{ detailData.fiber }}</div>
-            <InputText v-else v-model.trim="detailData.fiber" class="w-100 my-1" type="text" placeholder="Название кабеля/номер волокна в кабеле"/>
+            <InputText v-if="editMode && hasPermissionToUpdateOLTState"
+                       v-model.trim="detailData.fiber" class="w-100 my-1" type="text" placeholder="Название кабеля/номер волокна в кабеле"/>
+            <div v-else class="col-auto">{{ detailData.fiber }}</div>
           </div>
 
           <!-- ОПИСАНИЕ -->
           <div class="py-2 row align-items-center ">
             <div class="col-4 fw-bold">Описание сплиттера 1го каскада</div>
-            <div v-if="!editMode" class="col-auto">{{ detailData.description }}</div>
-            <Textarea v-else class="w-100 my-1" v-model="detailData.description" rows="5"/>
+            <Textarea v-if="editMode && hasPermissionToUpdateOLTState"
+                      class="w-100 my-1" v-model="detailData.description" rows="5"/>
+            <div v-else class="col-auto">{{ detailData.description }}</div>
           </div>
 
         </div>
@@ -177,7 +179,8 @@
             </h4>
 
             <!-- Сохранить изменения -->
-            <button v-if="editMode" @click="updateBuildingInfo(building)" class="save-button">
+            <button v-if="editMode && (hasPermissionToUpdateHouseB || hasPermissionToUpdateHouseOLTState)"
+                    @click="updateBuildingInfo(building)" class="save-button">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
               </svg>
@@ -189,8 +192,13 @@
 
             <div class="row align-items-center">
 
+              <!-- РЕДАКТИРОВАНИЕ АДРЕСА ДОМА -->
+              <div v-if="editMode && hasPermissionToUpdateHouseB">
+                <AddressGetCreate :is-mobile="isMobile" :allow-create="true" :data="building"></AddressGetCreate>
+              </div>
+
               <!-- ПРОСМОТР ДОМА -->
-              <template v-if="!editMode">
+              <template v-else>
                 <div class="col-auto">
                   <BuildingIcon class="m-3" :type="building.address.building_type" width="64" height="64"/>
                 </div>
@@ -205,25 +213,22 @@
                 </div>
               </template>
 
-              <!-- РЕДАКТИРОВАНИЕ АДРЕСА ДОМА -->
-              <div v-else>
-                <AddressGetCreate :is-mobile="isMobile" :allow-create="true" :data="building"></AddressGetCreate>
-              </div>
-
             </div>
 
             <!-- ПОДЪЕЗДЫ В ДОМЕ -->
             <div class="py-2 row align-items-center grey-back">
               <div class="col-5 fw-bold">Задействованные подъезды в доме для данного OLT порта</div>
-              <div v-if="!editMode" class="col-auto">{{ building.entrances }}</div>
-              <InputText v-else v-model.trim="building.entrances" class="w-100 my-1" type="text" placeholder="Укажите подъезды"/>
+              <InputText v-if="editMode && hasPermissionToUpdateHouseOLTState"
+                         v-model.trim="building.entrances" class="w-100 my-1" type="text" placeholder="Укажите подъезды"/>
+              <div v-else class="col-auto">{{ building.entrances }}</div>
             </div>
 
             <!-- ОПИСАНИЕ -->
             <div class="py-2 row align-items-center">
               <div class="col-5 fw-bold">Описание сплиттера 2го каскада</div>
-              <div v-if="!editMode" class="col-auto">{{ building.description }}</div>
-              <Textarea v-else class="w-100 my-1" v-model="building.description" rows="5"/>
+              <Textarea v-if="editMode && hasPermissionToUpdateHouseOLTState"
+                        class="w-100 my-1" v-model="building.description" rows="5"/>
+              <div v-else class="col-auto">{{ building.description }}</div>
             </div>
 
           </div>
@@ -332,6 +337,7 @@ export default {
       detailData: null,
       errorStatus: null,
       errorMessage: null,
+      userPermissions: [],
       windowWidth: window.innerWidth,
       editMode: false,
       _deviceNames: [],
@@ -339,6 +345,8 @@ export default {
     }
   },
   mounted() {
+    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
+
     let url = window.location.href
     // /gpon/api/tech-data/{device_name}?port={olt_port}
     api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
@@ -365,6 +373,22 @@ export default {
     devicePortList() {
       if (this.detailData.devicePort.length === 0 || this._devicesPorts.length === 0) this.getPortsNames();
       return this._devicesPorts;
+    },
+
+    hasPermissionToUpdateOLTState(){
+      return this.userPermissions.includes("gpon.change_oltstate")
+    },
+
+    hasPermissionToUpdateHouseOLTState(){
+      return this.userPermissions.includes("gpon.change_houseoltstate")
+    },
+
+    hasPermissionToUpdateHouseB(){
+      return this.userPermissions.includes("gpon.change_houseb")
+    },
+
+    hasAnyPermissionToUpdate(){
+      return this.hasPermissionToUpdateOLTState || this.hasPermissionToUpdateHouseOLTState || this.hasPermissionToUpdateHouseB
     },
 
   },

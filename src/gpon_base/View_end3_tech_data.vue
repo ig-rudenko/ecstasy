@@ -46,7 +46,7 @@
             <span v-if="!isMobile" class="m-2">Печать</span>
           </button>
 
-          <button @click="editMode = true" class="edit-button">
+          <button v-if="hasAnyPermissionToUpdate" @click="editMode = true" class="edit-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
               <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
             </svg>
@@ -66,17 +66,17 @@
       <br> Статус: {{errorStatus}}
     </div>
 
-    <div v-if="detailData" id="tech-data-block" class="plate">
+    <div v-else id="tech-data-block" class="plate">
 
        <div class="d-flex align-items-center flex-wrap">
 
           <div class="ml-40 fs-5 d-flex flex-column">
             <span>{{detailData.type}}</span>
-            <span v-if="!editMode">{{end3Address}}</span>
-            <AddressGetCreate v-else :is-mobile="isMobile" :allow-create="true" :data="detailData"></AddressGetCreate>
+            <AddressGetCreate v-if="editMode && hasPermissionToUpdateEnd3" :is-mobile="isMobile" :allow-create="true" :data="detailData"></AddressGetCreate>
+            <span v-else>{{end3Address}}</span>
 
-            <span v-if="!editMode" class="fw-bold">{{detailData.location}}</span>
-            <InputText v-else v-model.trim="detailData.location" class="w-100 my-1" type="text" placeholder="Локация"/>
+            <InputText v-if="editMode && hasPermissionToUpdateEnd3" v-model.trim="detailData.location" class="w-100 my-1" type="text" placeholder="Локация"/>
+            <span v-else class="fw-bold">{{detailData.location}}</span>
 
           </div>
           <div class="mx-2">
@@ -97,36 +97,41 @@
 
           <div class="ml-40">
 
-            <div v-if="editMode" class="d-flex align-items-center flex-wrap">
-              <div class="me-2">Изменение ёмкости</div>
-              <Dropdown v-model.number="detailData.capacity" @change="changeCapacity" :options="[4, 8, 12, 16, 24]"
-                        class="w-full md:w-14rem me-2"/>
+            <template v-if="editMode && (hasPermissionToUpdateEnd3 && hasPermissionToUpdateTechCapability)">
+                <div class="d-flex align-items-center flex-wrap">
+                  <div class="me-2">Изменение ёмкости</div>
+                  <Dropdown v-model.number="detailData.capacity" @change="changeCapacity" :options="[4, 8, 12, 16, 24]"
+                            class="w-full md:w-14rem me-2"/>
 
-              <InlineMessage class="my-2" v-if="capacityWarning" :severity="errorSeverity">
-                {{capacityWarning}}
-              </InlineMessage>
+                  <InlineMessage class="my-2" v-if="capacityWarning" :severity="errorSeverity">
+                    {{capacityWarning}}
+                  </InlineMessage>
 
-            </div>
+                </div>
 
-            <InlineMessage class="my-2" v-if="editMode" severity="warn">
-              Будьте осторожны при выборе новой ёмкости! Данное действие необходимо только после физического
-              переключения линии либо в случае ошибки.
-            </InlineMessage>
+                <InlineMessage class="my-2" severity="warn">
+                  Будьте осторожны при выборе новой ёмкости! Данное действие необходимо только после физического
+                  переключения линии либо в случае ошибки.
+                </InlineMessage>
+            </template>
 
 
             <div v-if="detailData" class="px-3 rounded-0">
               <div v-for="(part, index) in detailData.capability" class="align-items-center row py-1">
                 <div class="col-1">{{part.number}}</div>
-                  <div :class="editMode?['col-auto']:['col-3']">
-                    <TechCapabilityBadge v-if="!editMode" :status="part.status"/>
-                    <Dropdown v-else v-model="part.status" :options="['empty', 'active', 'pause', 'reserved', 'bad']"
-                              scroll-height="300px" :input-style="{padding: '0.2rem 1rem'}"
-                              @change="updateTechCapability(index)"
-                              placeholder="Выберите статус порта" class="me-2">
-                          <template #value="slotProps"><TechCapabilityBadge :status="slotProps.value"/></template>
-                          <template #option="slotProps"><TechCapabilityBadge :status="slotProps.option"/></template>
-                    </Dropdown>
-                  </div>
+
+                <div :class="editMode?['col-auto']:['col-3']">
+                  <Dropdown v-if="editMode && hasPermissionToUpdateTechCapability"
+                            v-model="part.status" :options="['empty', 'active', 'pause', 'reserved', 'bad']"
+                            scroll-height="300px" :input-style="{padding: '0.2rem 1rem'}"
+                            @change="updateTechCapability(index)"
+                            placeholder="Выберите статус порта" class="me-2">
+                    <template #value="slotProps"><TechCapabilityBadge :status="slotProps.value"/></template>
+                    <template #option="slotProps"><TechCapabilityBadge :status="slotProps.option"/></template>
+                  </Dropdown>
+                  <TechCapabilityBadge v-else :status="part.status"/>
+                </div>
+
                 <div class="col-auto">
                   <div class="d-flex" v-for="subscriber in part.subscribers">
                     <div class="me-2">{{subscriber.name}}</div>
@@ -192,9 +197,9 @@ export default {
         "type": "splitter",
         "capability": [
               {
-                  "id": 8,
+                  "id": 1,
                   "status": "empty",
-                  "number": "8",
+                  "number": "1",
                   "subscribers": [
                       {
                           "id": 1,
@@ -209,6 +214,7 @@ export default {
       errorMessage: null,
       errorSeverity: null,
 
+      userPermissions: [],
       originalCapacity: null,
       capacityWarning: null,
 
@@ -217,8 +223,9 @@ export default {
     }
   },
   mounted() {
-    let url = window.location.href
+    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
 
+    let url = window.location.href
     api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
         .then(resp => this.detailData = resp.data)
         .catch(reason => {
@@ -233,6 +240,19 @@ export default {
   },
 
   computed: {
+
+    hasPermissionToUpdateEnd3(){
+      return this.userPermissions.includes("gpon.change_end3")
+    },
+
+    hasPermissionToUpdateTechCapability(){
+      return this.userPermissions.includes("gpon.change_techcapability")
+    },
+
+    hasAnyPermissionToUpdate(){
+      return this.hasPermissionToUpdateEnd3 || this.hasPermissionToUpdateTechCapability
+    },
+
     isMobile() {
       return this.windowWidth <= 768
     },

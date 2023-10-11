@@ -84,7 +84,7 @@ class TestEnd3TechCapabilitySerializer(TestCase):
 
 class TestEnd3TechCapabilityAPIView(APITestCase):
     def setUp(self) -> None:
-        self.user = get_user_model().objects.create_user(username="test_user", password="password")
+        self.user = get_user_model().objects.create_superuser(username="test_user", password="password")
         self.end3 = End3.objects.create(location="Местоположение", type="splitter", capacity=8)
 
     def test_retrieve_end3_data(self):

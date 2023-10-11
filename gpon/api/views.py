@@ -12,7 +12,13 @@ from rest_framework.generics import (
 from rest_framework.response import Response
 
 from check.models import Devices
-from .permissions import TechDataPermission
+from .permissions import (
+    TechDataPermission,
+    End3Permission,
+    OLTStatePermission,
+    HouseOLTStatePermission,
+    TechCapabilityPermission,
+)
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
@@ -97,6 +103,7 @@ class TechDataListCreateAPIView(GenericAPIView):
 
 class ViewOLTStateTechDataAPIView(GenericAPIView):
     serializer_class = ViewOLTStatesTechDataSerializer
+    permission_classes = [TechDataPermission]
 
     def get_object(self):
         device_name = self.kwargs["device_name"]
@@ -120,6 +127,7 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
 class ViewBuildingTechDataAPIView(RetrieveAPIView):
     serializer_class = ViewHouseBTechDataSerializer
     queryset = HouseB.objects.all()
+    permission_classes = [TechDataPermission]
 
 
 class BuildingsAddressesListAPIView(ListAPIView):
@@ -164,8 +172,6 @@ class DevicesNamesListAPIView(GenericAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-
-        # Фильтруем запрос
         group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         return Devices.objects.filter(group_id__in=group_ids).select_related("group")
 
@@ -190,20 +196,24 @@ class DevicePortsList(DevicesNamesListAPIView):
 class End3TechCapabilityAPIView(RetrieveUpdateAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
+    permission_classes = [End3Permission]
 
 
 class TechCapabilityAPIView(RetrieveUpdateAPIView):
     queryset = TechCapability.objects.all()
     serializer_class = TechCapabilitySerializer
+    permission_classes = [TechCapabilityPermission]
 
 
 class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):
     queryset = OLTState.objects.all()
     serializer_class = UpdateRetrieveOLTStateSerializer
+    permission_classes = [OLTStatePermission]
 
 
 class RetrieveUpdateHouseOLTState(RetrieveUpdateAPIView):
     queryset = HouseOLTState.objects.all()
+    permission_classes = [HouseOLTStatePermission]
 
     def get_serializer_class(self):
         if self.request.method == "GET":
