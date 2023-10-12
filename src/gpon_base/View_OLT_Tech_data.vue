@@ -277,7 +277,7 @@
                 <div v-for="part in line.detailInfo" class="align-items-center row py-1">
                   <div class="col-1">{{part.number}}</div>
                     <div class="col-2">
-                      <TechCapabilityBadge v-if="!editMode" :status="part.status"/>
+                      <TechCapabilityBadge :status="part.status"/>
                     </div>
                   <div class="col-auto">
                     <div class="d-flex" v-for="subscriber in part.subscribers">

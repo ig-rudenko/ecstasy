@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, get_object_or_404
 
-from gpon.api.permissions import TechDataPermission
+from gpon.api.permissions import TechDataPermission, End3Permission
 from gpon.models import HouseB, End3
 
 
@@ -11,6 +11,7 @@ def gpon_home(request):
 
 
 @login_required
+@permission_required(TechDataPermission.safe_permissions_list, raise_exception=True)
 def gpon_tech_data(request):
     return render(request, "gpon/tech-data.html")
 
@@ -22,6 +23,7 @@ def gpon_create_tech_data(request):
 
 
 @login_required
+@permission_required(TechDataPermission.safe_permissions_list, raise_exception=True)
 def gpon_view_olt_tech_data(request, device_name: str):
     return render(
         request,
@@ -31,6 +33,7 @@ def gpon_view_olt_tech_data(request, device_name: str):
 
 
 @login_required
+@permission_required(TechDataPermission.safe_permissions_list, raise_exception=True)
 def gpon_view_building_tech_data(request, building_id: int):
     house = get_object_or_404(HouseB, id=building_id)
     return render(
@@ -41,6 +44,7 @@ def gpon_view_building_tech_data(request, building_id: int):
 
 
 @login_required
+@permission_required(End3Permission.create_permissions_list, raise_exception=True)
 def gpon_view_end3_tech_data(request, pk: int):
     end3 = get_object_or_404(End3, pk=pk)
     return render(
