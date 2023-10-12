@@ -45,7 +45,7 @@ export default {
   props: {
     init: {required: false, default: null},
     type: {required: false, type: String, default: "both"},
-    getFromOLTState: {required: false, default: null},
+    fromAddressID: {required: false, default: null},
   },
   data() {
     return {
@@ -58,9 +58,9 @@ export default {
     }
   },
   mounted() {
-    let url = "/gpon/api/addresses/splitters"
-    if (this.getFromOLTState){
-      url += `?device=${this.getFromOLTState.deviceName}&port=${this.getFromOLTState.devicePort}`
+    let url = "/gpon/api/addresses/end3"
+    if (this.fromAddressID){
+      url += "?address_id=" + this.fromAddressID
     }
     api_request.get(url)
         .then(
@@ -72,10 +72,9 @@ export default {
             this.error.message = reason.response.data;
           }
         )
-  },
-  updated() {
     this.connection = this.init
   },
+
   computed: {
     verboseType() {
       if (this.type === 'both') return "сплиттер или райзер";

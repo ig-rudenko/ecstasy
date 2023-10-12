@@ -78,12 +78,22 @@ export default {
         isValid() {
           return this.address.valid
         }
-      }
+      },
+      _initData: null
     }
   },
 
   mounted() {
     this.getAddresses()
+    this._initData = this.getFromDevicePort
+  },
+
+  updated() {
+    // Если поменялись входные данные фильтра по названию оборудования и порта, то ищем адреса еще раз
+    if (this._initData.deviceName !== this.getFromDevicePort.deviceName || this._initData.devicePort !== this.getFromDevicePort.devicePort){
+      this.getAddresses()
+      this._initData = this.getFromDevicePort
+    }
   },
 
   methods: {
@@ -103,12 +113,9 @@ export default {
     },
 
     getAddresses() {
-      let url
-      if (!this.getFromDevicePort) {
-        url = "/gpon/api/addresses/buildings"
-      } else {
-        let params = this.getFromDevicePort
-        url = `/gpon/api/addresses/splitters?device=${params.deviceName}&port=${params.devicePort}`
+      let url = "/gpon/api/addresses/buildings"
+      if (this.getFromDevicePort){
+        url += `?device=${this.getFromDevicePort.deviceName}&port=${this.getFromDevicePort.devicePort}`
       }
       api_request.get(url).then(resp => this._addresses = resp.data)
     },

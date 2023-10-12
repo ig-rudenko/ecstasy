@@ -14,7 +14,6 @@ from rest_framework.response import Response
 from check.models import Devices
 from .permissions import (
     TechDataPermission,
-    End3Permission,
     OLTStatePermission,
     HouseOLTStatePermission,
     TechCapabilityPermission,
@@ -134,13 +133,6 @@ class BuildingsAddressesListAPIView(ListAPIView):
     serializer_class = BuildingAddressSerializer
     queryset = HouseB.objects.all().select_related("address")
 
-
-class SplitterAddressesListAPIView(ListAPIView):
-    """Возвращает список сплиттеров вместе с их адресами"""
-
-    serializer_class = End3Serializer
-    queryset = End3.objects.select_related("address").filter(type="splitter")
-
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
         Если были переданы оборудование и порт, то отфильтровывает сплиттера,
@@ -167,12 +159,28 @@ class SplitterAddressesListAPIView(ListAPIView):
         return queryset.filter(address_id__in=addresses_ids)
 
 
+class End3AddressesListAPIView(ListAPIView):
+    """Возвращает список сплиттеров/райзеров вместе с их адресами"""
+
+    serializer_class = End3Serializer
+    queryset = End3.objects.select_related("address")
+
+    def filter_queryset(self, queryset: QuerySet) -> QuerySet:
+        address_id: str = self.request.GET.get("address_id", "")
+        if address_id.isdigit():
+            queryset = queryset.filter(address_id=int(address_id))
+        return queryset
+
+
 class DevicesNamesListAPIView(GenericAPIView):
     def get_queryset(self):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+        if self.request.user.is_authenticated:
+            group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+        else:
+            group_ids = []
         return Devices.objects.filter(group_id__in=group_ids).select_related("group")
 
     def get(self, request, *args, **kwargs) -> Response:
@@ -196,7 +204,7 @@ class DevicePortsList(DevicesNamesListAPIView):
 class End3TechCapabilityAPIView(RetrieveUpdateAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
-    permission_classes = [End3Permission]
+    # permission_classes = [End3Permission]
 
 
 class TechCapabilityAPIView(RetrieveUpdateAPIView):

@@ -55,8 +55,8 @@ urlpatterns = [
         name="building-addresses",
     ),
     path(
-        "addresses/splitters",
-        views.SplitterAddressesListAPIView.as_view(),
+        "addresses/end3",
+        views.End3AddressesListAPIView.as_view(),
         name="splitter-addresses",
     ),
 ]
