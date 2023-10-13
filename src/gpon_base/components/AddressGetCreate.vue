@@ -1,9 +1,8 @@
 <template>
   <div v-if="!show_new_address_form">
-    <h6 class="px-2">Выберите существующий адрес дома
-      <Asterisk/>
-    </h6>
-    <div class="shadow">
+    <h6 class="px-2">Выберите существующий адрес дома <Asterisk/></h6>
+
+    <div class="p-inputgroup flex-1">
       <Dropdown v-model="data.address" :options="addressesList()" filter showClear
                 :class="formState.address.valid?[]:['p-invalid']"
                 @change="(e) => {this.$emit('change', e)}"
@@ -24,11 +23,12 @@
           </div>
         </template>
       </Dropdown>
-    </div>
 
-    <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small">
-      Добавить другой / Редактировать
-    </Button>
+      <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small">
+        Добавить/Редактировать
+      </Button>
+
+    </div>
 
   </div>
 

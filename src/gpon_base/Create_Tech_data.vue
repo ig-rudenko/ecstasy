@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class="header">
-      <img class="header-image" src="/static/img/gpon/tech-data-2.svg" alt="create-tech-data-image">
+      <img class="header-image" src="/static/img/gpon/tech-data.svg" alt="create-tech-data-image">
       <h2>Добавление технических данных</h2>
     </div>
 
@@ -19,58 +19,30 @@
 
         <div class="d-flex align-items-center flex-wrap">
           <div class="me-3">
-
-            <h6 class="px-2">OLT оборудование
-              <Asterisk/>
-            </h6>
-
-            <div class="shadow">
-              <Dropdown v-model="formData.oltState.deviceName" :options="devicesList" filter
-                        :class="formState.firstStep.deviceName.valid?['flex-wrap']:['flex-wrap', 'p-invalid']"
-                        :option-label="x => x"
-                        @change="deviceNameSelected" placeholder="Выберите устройство">
-                <template #value="slotProps">
-                  <div v-if="slotProps.value" class="flex align-items-center">
-                    <div>{{ slotProps.value }}</div>
-                  </div>
-                  <span v-else>
-                      {{ slotProps.placeholder }}
-                  </span>
-                </template>
-                <template #option="slotProps">
-                  <div class="flex align-items-center">
-                    <div>{{ slotProps.option }}</div>
-                  </div>
-                </template>
-              </Dropdown>
-            </div>
+            <h6 class="px-2">OLT оборудование <Asterisk/></h6>
+            <Dropdown v-model="formData.oltState.deviceName" :options="devicesList" filter
+                      :class="formState.firstStep.deviceName.valid?['flex-wrap']:['flex-wrap', 'p-invalid']"
+                      :option-label="x => x"
+                      @change="deviceNameSelected" placeholder="Выберите устройство">
+              <template #value="slotProps">
+                <div v-if="slotProps.value">{{ slotProps.value }}</div>
+                <span v-else>{{ slotProps.placeholder }}</span>
+              </template>
+              <template #option="slotProps"><div>{{ slotProps.option }}</div></template>
+            </Dropdown>
           </div>
 
           <div class="me-3">
-
-            <h6 class="px-2">Порт
-              <Asterisk/>
-            </h6>
-
-            <div class="shadow">
+            <h6 class="px-2">Порт <Asterisk/></h6>
               <Dropdown v-model="formData.oltState.devicePort" :options="devicePortList" filter
                         :class="formState.firstStep.devicePort.valid?[]:['p-invalid']"
                         :option-label="x => x" placeholder="Выберите порт">
                 <template #value="slotProps">
-                  <div v-if="slotProps.value" class="flex align-items-center">
-                    <div>{{ slotProps.value }}</div>
-                  </div>
-                  <span v-else>
-                            {{ slotProps.placeholder }}
-                        </span>
+                  <div v-if="slotProps.value">{{ slotProps.value }}</div>
+                  <span v-else>{{ slotProps.placeholder }}</span>
                 </template>
-                <template #option="slotProps">
-                  <div class="flex align-items-center">
-                    <div>{{ slotProps.option }}</div>
-                  </div>
-                </template>
+                <template #option="slotProps"><div>{{ slotProps.option }}</div></template>
               </Dropdown>
-            </div>
           </div>
         </div>
 
@@ -78,15 +50,14 @@
 
         <div class="w-100">
           <h6 class="px-2">Волокно</h6>
-          <InputText v-model.trim="formData.oltState.fiber" class="shadow w-100" type="text"
-                     placeholder="Название кабеля/номер волокна в кабеле"/>
+          <InputText v-model.trim="formData.oltState.fiber" class="w-100" type="text" placeholder="Название кабеля/номер волокна в кабеле"/>
         </div>
 
         <br>
 
         <div>
           <h6 class="px-2">Описание сплиттера 1го каскада</h6>
-          <Textarea class="shadow w-100" v-model="formData.oltState.description" rows="5"/>
+          <Textarea class="w-100" v-model="formData.oltState.description" rows="5"/>
         </div>
 
       </div>
@@ -99,16 +70,14 @@
           <AddressGetCreate :is-mobile="isMobile" :data="formData.houseB">
           </AddressGetCreate>
 
-          <div v-if="formData.houseB.address && formData.houseB.address.building_type === 'building'"
-               class="w-100 py-2">
+          <div v-if="formData.houseB.address && formData.houseB.address.building_type === 'building'" class="w-100 py-2">
             <h6 class="px-2">Задействованные подъезды в доме для данного OLT порта</h6>
-            <InputText class="w-100" v-model.trim="formData.houseB.entrances" type="text"
-                       placeholder="Укажите подъезды"/>
+            <InputText class="w-100" v-model.trim="formData.houseB.entrances" type="text" placeholder="Укажите подъезды"/>
           </div>
 
           <div class="py-2">
             <h6 class="px-2">Описание сплиттера 2го каскада</h6>
-            <Textarea class="shadow w-100" v-model="formData.houseB.description" rows="5"/>
+            <Textarea class="w-100" v-model="formData.houseB.description" rows="5"/>
           </div>
 
         </div>
@@ -146,20 +115,15 @@
           <!-- Кол-во портов -->
           <div v-if="formData.end3.type==='splitter'">
             <div>
-              <h6>Количество портов на сплиттере
-                <Asterisk/>
-              </h6>
-              <Dropdown v-model="formData.end3.portCount" :options="[4, 8, 12, 16, 24]"
-                        class="w-full md:w-14rem"/>
+              <h6>Количество портов на сплиттере <Asterisk/></h6>
+              <Dropdown v-model="formData.end3.portCount" :options="[4, 8, 12, 16, 24]" class="w-full md:w-14rem"/>
             </div>
           </div>
 
           <!-- Кол-во волокон -->
           <div v-if="formData.end3.type==='rizer'">
             <div>
-              <h6>Количество волокон на райзере
-                <Asterisk/>
-              </h6>
+              <h6>Количество волокон на райзере <Asterisk/></h6>
               <Dropdown v-model="formData.end3.portCount" :options="[4, 8, 12, 16, 24]"
                         class="w-full md:w-14rem me-3"/>
               <Button @click="formState.thirdStep.showRizerColors=true" severity="primary" outlined rounded
@@ -722,7 +686,6 @@ export default {
 <style scoped>
 .plate {
   border-radius: 14px;
-  /*border: 1px solid #A3A3A3;*/
 }
 
 .header {
@@ -747,6 +710,10 @@ export default {
 
   .header {
     flex-wrap: wrap;
+  }
+
+  .plate {
+    box-shadow: none!important;
   }
 
   .header-image {

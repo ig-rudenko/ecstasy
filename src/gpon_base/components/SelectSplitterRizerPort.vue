@@ -2,25 +2,23 @@
   <h6 class="px-2">Выберите {{ verboseType }}
     <Asterisk/>
   </h6>
-  <div class="shadow">
-    <Dropdown v-model="selectedPort" :options="capability" filter showClear
-              @change="(e) => {this.$emit('change', e)}"
-              optionLabel="port" placeholder="Выберите" class="w-100">
-      <template #value="slotProps">
-        <div v-if="slotProps.value" class="flex align-items-center d-flex">
-          <div>{{ slotProps.value.number }} <TechCapabilityBadge :status="slotProps.value.status" /></div>
-        </div>
-        <span v-else>
-          {{ slotProps.placeholder }}
-      </span>
-      </template>
-      <template #option="slotProps">
-        <div v-if="slotProps.option" class="flex align-items-center d-flex">
-          <div>{{ slotProps.option.number }} <TechCapabilityBadge :status="slotProps.option.status" /></div>
-        </div>
-      </template>
-    </Dropdown>
-  </div>
+  <Dropdown v-model="selectedPort" :options="capability" filter showClear
+            @change="(e) => {this.$emit('change', e)}"
+            optionLabel="port" placeholder="Выберите" class="w-100">
+    <template #value="slotProps">
+      <div v-if="slotProps.value" class="flex align-items-center d-flex">
+        <div>{{ slotProps.value.number }} <TechCapabilityBadge :status="slotProps.value.status" /></div>
+      </div>
+      <span v-else>
+        {{ slotProps.placeholder }}
+    </span>
+    </template>
+    <template #option="slotProps">
+      <div v-if="slotProps.option" class="flex align-items-center d-flex">
+        <div>{{ slotProps.option.number }} <TechCapabilityBadge :status="slotProps.option.status" /></div>
+      </div>
+    </template>
+  </Dropdown>
 </template>
 
 <script>

@@ -2,26 +2,25 @@
   <h6 class="px-2">Выберите существующий {{ verboseType }}
     <Asterisk/>
   </h6>
-  <div v-if="!error.status" class="shadow">
-    <Dropdown v-if="availableList !== null"
-              v-model="connection" :options="availableList" filter showClear
-              @change="(e) => {this.$emit('change', e); console.log(e);}"
-              :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
-      <template #value="slotProps">
-        <div v-if="slotProps.value" class="flex align-items-center d-flex">
-          <div>{{ getFullAddress(slotProps.value) }}</div>
-        </div>
-        <span v-else>
-          {{ slotProps.placeholder }}
-      </span>
-      </template>
-      <template #option="slotProps">
-        <div v-if="slotProps.option" class="flex align-items-center d-flex">
-          <div>{{ getFullAddress(slotProps.option) }}</div>
-        </div>
-      </template>
-    </Dropdown>
-  </div>
+
+  <Dropdown v-if="!error.status && availableList !== null"
+            v-model="connection" :options="availableList" filter showClear
+            @change="(e) => {this.$emit('change', e); console.log(e);}"
+            :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
+    <template #value="slotProps">
+      <div v-if="slotProps.value" class="flex align-items-center d-flex">
+        <div>{{ getFullAddress(slotProps.value) }}</div>
+      </div>
+      <span v-else>
+        {{ slotProps.placeholder }}
+    </span>
+    </template>
+    <template #option="slotProps">
+      <div v-if="slotProps.option" class="flex align-items-center d-flex">
+        <div>{{ getFullAddress(slotProps.option) }}</div>
+      </div>
+    </template>
+  </Dropdown>
 
   <!-- ERROR -->
   <div v-else class="alert alert-danger">

@@ -1,11 +1,11 @@
 <template>
   <div id="app">
-
-    <div class="w-75 container py-2">
-      <h2>Добавление абонента</h2>
+    <div class="header">
+      <img class="header-image" src="/static/img/gpon/subscriber-data.svg" alt="create-tech-data-image">
+      <h2>Добавление абонентского подключения</h2>
     </div>
 
-    <div class="plate py-4 w-75 container">
+    <div class="plate shadow py-4 w-75 container">
 
       <StepMenu
           class="p-2"
@@ -19,49 +19,35 @@
 
         <!-- ВЫБИРАЕМ -->
         <div class="d-flex align-items-center flex-wrap">
-          <div class="me-3">
-            <h6 class="px-2">OLT оборудование
-              <Asterisk/>
-            </h6>
-            <div class="shadow">
-              <Dropdown v-model="formData.techData.deviceName" :options="devicesList" filter
-                        :class="formState.firstStep.deviceName.valid?['flex-wrap']:['flex-wrap', 'p-invalid']"
-                        :option-label="x => x"
-                        @change="deviceHasChanged" placeholder="Выберите устройство">
+          <div class="py-2 w-100">
+            <h6 class="px-2">OLT оборудование <Asterisk/></h6>
+            <Dropdown v-model="formData.techData.deviceName" :options="devicesList" filter
+                      :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
+                      :option-label="x => x"
+                      @change="deviceHasChanged" placeholder="Выберите устройство">
+              <template #value="slotProps">
+                <div v-if="slotProps.value">{{ slotProps.value }}</div>
+                <span v-else>{{ slotProps.placeholder }}</span>
+              </template>
+              <template #option="slotProps">{{ slotProps.option }}</template>
+            </Dropdown>
+          </div>
+
+          <!-- ПОИСК ПОРТОВ У ВЫБРАННОГО ОБОРУДОВАНИЯ -->
+          <div v-if="formData.techData.deviceName" class="w-100">
+            <h6 class="px-2">Порт <Asterisk/></h6>
+            <Dropdown v-model="formData.techData.devicePort" :options="devicePortList" filter
+                      :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
+                      @change="portHasChanged"
+                      optionLabel="name" placeholder="Выберите порт">
                 <template #value="slotProps">
                   <div v-if="slotProps.value">{{ slotProps.value }}</div>
                   <span v-else>{{ slotProps.placeholder }}</span>
                 </template>
-                <template #option="slotProps">{{ slotProps.option }}</template>
-              </Dropdown>
-            </div>
-          </div>
-
-          <!-- ПОИСК ПОРТОВ У ВЫБРАННОГО ОБОРУДОВАНИЯ -->
-          <div v-if="formData.techData.deviceName" class="me-3">
-            <h6 class="px-2">Порт
-              <Asterisk/>
-            </h6>
-            <div class="shadow">
-              <Dropdown v-model="formData.techData.devicePort" :options="devicePortList" filter
-                        :class="formState.firstStep.devicePort.valid?[]:['p-invalid']"
-                        @change="portHasChanged"
-                        optionLabel="name" placeholder="Выберите порт">
-                <template #value="slotProps">
-                  <div v-if="slotProps.value" class="flex align-items-center">
-                    <div>{{ slotProps.value }}</div>
-                  </div>
-                  <span v-else>
-                            {{ slotProps.placeholder }}
-                        </span>
-                </template>
                 <template #option="slotProps">
-                  <div class="flex align-items-center">
                     <div>{{ slotProps.option }}</div>
-                  </div>
                 </template>
-              </Dropdown>
-            </div>
+            </Dropdown>
           </div>
         </div>
 
@@ -105,8 +91,8 @@
       <!-- SECOND STEP -->
       <div v-else-if="current_step===2" class="p-4">
 
-        <div class="py-2">
-          <Dropdown v-model="formData.customer.type" :options="['person','company','contract']"
+        <div class="p-2">
+          <Dropdown v-model="formData.customer.type" :options="['person','company','contract']" style="width: 100%"
                     placeholder="Выберите тип абонента" class="w-full md:w-14rem">
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex align-items-center"
@@ -120,55 +106,55 @@
         </div>
 
         <div v-if="formData.customer.type==='person'" class="d-flex flex-wrap py-2">
-          <div class="me-2">
-            <h6 class="px-2">Фамилия<Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.surname" type="text"
-                       :class="formState.secondStep.person.surname.valid?['shadow']:['shadow', 'p-invalid']"/>
+          <div class="input-part">
+            <h6 class="px-2">Фамилия <Asterisk/></h6>
+            <InputText v-model.trim="formData.customer.surname" type="text" style="width: 100%"
+                       :class="!formState.secondStep.person.surname.valid?['p-invalid']:[]"/>
           </div>
-          <div class="me-2">
-            <h6 class="px-2">Имя<Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.firstName" type="text"
-                       :class="formState.secondStep.person.firstName.valid?['shadow']:['shadow', 'p-invalid']"/>
+          <div class="input-part">
+            <h6 class="px-2">Имя <Asterisk/></h6>
+            <InputText v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
+                       :class="!formState.secondStep.person.firstName.valid?['p-invalid']:[]"/>
           </div>
-          <div class="me-2">
-            <h6 class="px-2">Отчество<Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.lastName" type="text"
-                       :class="formState.secondStep.person.lastName.valid?['shadow']:['shadow', 'p-invalid']"/>
+          <div class="input-part">
+            <h6 class="px-2">Отчество <Asterisk/></h6>
+            <InputText v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
+                       :class="!formState.secondStep.person.lastName.valid?['p-invalid']:[]"/>
           </div>
         </div>
 
-        <div v-else class="d-flex flex-wrap py-2">
-          <div class="me-2">
-            <h6 class="px-2">Название кампании<Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.companyName" type="text"
-                       :class="formState.secondStep.companyName.valid?['shadow']:['shadow', 'p-invalid']"/>
+        <div v-else class="d-flex py-2">
+          <div>
+            <h6 class="input-part">Название кампании <Asterisk/></h6>
+            <InputText v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
+                       :class="!formState.secondStep.companyName.valid?['p-invalid']:[]"/>
           </div>
         </div>
 
         <div class="d-flex flex-wrap py-2">
-          <div class="me-2">
-            <h6 class="px-2">Лицевой счет<Asterisk/></h6>
-            <InputText v-model.number="formData.customer.contract" type="number"
-                       :class="formState.secondStep.contract.valid?['shadow']:['shadow', 'p-invalid']"/>
+          <div class="input-part">
+            <h6 class="px-2">Лицевой счет <Asterisk/></h6>
+            <InputText v-model.number="formData.customer.contract" type="number" style="width: 100%"
+                       :class="!formState.secondStep.contract.valid?['p-invalid']:[]"/>
           </div>
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">Транзит</h6>
-            <InputText v-model.number="formData.transit" type="number"/>
+            <InputText v-model.number="formData.transit" style="width: 100%" type="number"/>
           </div>
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">Контактный номер</h6>
             <div class="flex-auto">
-              <InputMask v-model="formData.customer.phone" date="phone" mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
+              <InputMask v-model="formData.customer.phone" date="phone" style="width: 100%"
+                         mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
             </div>
           </div>
         </div>
 
 
         <h6 class="p-2">Выберите услуги</h6>
-        <div class="d-flex flex-wrap">
+        <div class="d-flex flex-wrap p-2">
           <div class="me-2 d-flex align-items-center">
-            <Checkbox class="me-2" v-model="formData.services" inputId="service-internet"
-                      value="internet"/>
+            <Checkbox class="me-2" v-model="formData.services" inputId="service-internet" value="internet"/>
             <label for="service-internet" class="ml-2"> Интернет </label>
           </div>
           <div class="me-2 d-flex align-items-center">
@@ -191,29 +177,29 @@
       <div v-else-if="current_step===3" class="p-4">
 
         <div class="d-flex flex-wrap py-2">
-          <div class="me-2">
-            <h6 class="px-2">ONT ID<Asterisk/></h6>
-            <InputText v-model.number="formData.ont_id" type="number"
-                       :class="formState.thirdStep.ont_id.valid?['shadow']:['shadow', 'p-invalid']"/>
+          <div class="input-part">
+            <h6 class="px-2">ONT ID <Asterisk/></h6>
+            <InputText v-model.number="formData.ont_id" type="number" style="width: 100%"
+                       :class="formState.thirdStep.ont_id.valid?[]:['p-invalid']"/>
           </div>
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">Серийный номер ONT</h6>
-            <InputText v-model.trim="formData.ont_serial" type="text"/>
+            <InputText v-model.trim="formData.ont_serial" type="text" style="width: 100%"/>
           </div>
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">MAC адрес ONT</h6>
-            <InputText v-model.trim="formData.ont_mac" type="text"/>
+            <InputText v-model.trim="formData.ont_mac" type="text" style="width: 100%"/>
           </div>
         </div>
 
         <div class="d-flex flex-wrap py-2">
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">Номер наряда</h6>
-            <InputText v-model.number="formData.order" type="number" />
+            <InputText v-model.number="formData.order" type="number" style="width: 100%"/>
           </div>
-          <div class="me-2">
+          <div class="input-part">
             <h6 class="px-2">Дата подключения</h6>
-            <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24"/>
+            <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24" style="width: 100%"/>
           </div>
         </div>
 
@@ -670,7 +656,7 @@ export default {
 
     submitForm() {
       // Отправка данных
-    }
+    },
 
   },
 }
@@ -679,10 +665,38 @@ export default {
 <style scoped>
 .plate {
   border-radius: 14px;
-  border: 1px solid #A3A3A3;
 }
 
-@media (max-width: 767px) {
+.input-part {
+  padding: 0.5rem;
+  width: 33.33333333%;
+}
+
+.header {
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 75%!important;
+  position: relative;
+  top: -25px;
+}
+
+.header-image {
+  height: 300px;
+}
+
+
+@media (max-width: 768px) {
+  .input-part {
+    width: 100%;
+  }
+  .plate {
+    box-shadow: none!important;
+  }
+}
+
+@media (max-width: 992px) {
   .container, .mx-5 {
     margin-left: 0 !important;
     margin-right: 0 !important;
