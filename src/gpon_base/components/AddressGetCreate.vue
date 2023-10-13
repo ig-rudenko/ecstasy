@@ -1,6 +1,7 @@
 <template>
   <div v-if="!show_new_address_form">
-    <h6 class="px-2">Выберите существующий адрес дома <Asterisk/></h6>
+    <h6 v-if="isSubscriberAddress" class="px-2">Укажите адрес подключения <Asterisk/></h6>
+    <h6 v-else class="px-2">Выберите существующий адрес дома <Asterisk/></h6>
 
     <div class="p-inputgroup flex-1">
       <Dropdown v-model="data.address" :options="addressesList()" filter showClear
@@ -35,6 +36,7 @@
   <Dialog v-model:visible="show_new_address_form" modal header="Добавление нового адреса"
           :style="{ width: isMobile?'100vw':'50vw' }">
     <AddressForm @valid="validNewAddress" @dismiss="dismissNewAddress"
+                 :subscriber-address="isSubscriberAddress"
                  :init-address="data.address||getNewAddress()"></AddressForm>
   </Dialog>
 
@@ -67,6 +69,7 @@ export default {
     data: {required: true, type: Object},
     allowCreate: {required: false, default: true},
     getFromDevicePort: {required: false, default: null},
+    isSubscriberAddress: {required: false, default: false},
   },
 
   data() {
@@ -90,7 +93,11 @@ export default {
 
   updated() {
     // Если поменялись входные данные фильтра по названию оборудования и порта, то ищем адреса еще раз
-    if (this._initData.deviceName !== this.getFromDevicePort.deviceName || this._initData.devicePort !== this.getFromDevicePort.devicePort){
+    if (
+        this.getFromDevicePort &&
+        (this._initData.deviceName !== this.getFromDevicePort.deviceName
+            || this._initData.devicePort !== this.getFromDevicePort.devicePort)
+    ){
       this.getAddresses()
       this._initData = this.getFromDevicePort
     }
@@ -98,7 +105,11 @@ export default {
 
   methods: {
     getFullAddress(address) {
-      return formatAddress(address)
+      let address_string = formatAddress(address)
+      if (this.isSubscriberAddress && address.building_type === "building") {
+        address_string += ` (${address.floor} этаж) кв. ${address.apartment}`
+      }
+      return address_string
     },
 
     validNewAddress(newAddress) {

@@ -9,17 +9,13 @@
       </div>
 
       <div class="w-75">
-        <h6 class="px-2">Регион
-          <Asterisk/>
-        </h6>
+        <h6 class="px-2">Регион <Asterisk/></h6>
         <InputText v-model.trim="address.region" :class="regionClasses" type="text"
                    placeholder="Регион"/>
 
         <br><br>
 
-        <h6 class="px-2">Населенный пункт
-          <Asterisk/>
-        </h6>
+        <h6 class="px-2">Населенный пункт <Asterisk/></h6>
         <InputText v-model.trim="address.settlement" :class="settlementClasses" type="text"
                    placeholder="Севастополь/Балаклава/Любимовка/Верхнесадовое"/>
       </div>
@@ -34,9 +30,7 @@
     <br>
 
     <div class="w-100">
-      <h6 class="px-2">Улица
-        <Asterisk/>
-      </h6>
+      <h6 class="px-2">Улица</h6>
       <InputText v-model.trim="address.street" :class="streetClasses" type="text"
                  placeholder="Полное название с указанием типа (улица/проспект/проезд/бульвар/шоссе/переулок/тупик)"/>
     </div>
@@ -55,9 +49,7 @@
 
     <div class="d-flex flex-wrap">
       <div class="me-3" style="width: 100px">
-        <h6 class="px-2">Дом
-          <Asterisk/>
-        </h6>
+        <h6 class="px-2">Дом <Asterisk/></h6>
         <InputText v-model.trim="address.house" :class="houseClasses" type="text"/>
       </div>
 
@@ -67,15 +59,29 @@
       </div>
 
       <template v-if="address.building_type === 'building'">
-        <div class="me-3">
-          <h6 class="px-2">Этажность</h6>
-          <InputNumber :input-style="{width: '100px'}" :min="1" :max="200" v-model.number="address.floors"/>
-        </div>
 
-        <div class="me-3">
-          <h6 class="px-2">Количество подъездов</h6>
-          <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.total_entrances"/>
-        </div>
+        <template v-if="subscriberAddress">
+          <div class="me-3">
+            <h6 class="px-2">Номер этажа</h6>
+            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.floor"/>
+          </div>
+          <div class="me-3">
+            <h6 class="px-2">Квартира</h6>
+            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.apartment"/>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="me-3">
+            <h6 class="px-2">Этажность</h6>
+            <InputNumber :input-style="{width: '100px'}" :min="1" :max="200" v-model.number="address.floors"/>
+          </div>
+          <div class="me-3">
+            <h6 class="px-2">Количество подъездов</h6>
+            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.total_entrances"/>
+          </div>
+        </template>
+
       </template>
 
     </div>
@@ -112,7 +118,8 @@ export default {
     RadioButton,
   },
   props: {
-    initAddress: {required: true, type: Object}
+    initAddress: {required: true, type: Object},
+    subscriberAddress: {required: false, default: false},
   },
   data() {
     return {

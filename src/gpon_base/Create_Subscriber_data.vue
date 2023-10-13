@@ -91,8 +91,14 @@
       <!-- SECOND STEP -->
       <div v-else-if="current_step===2" class="p-4">
 
+        <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile" />
+
+        <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber">Указать вручную</Button>
+
         <div class="p-2">
-          <Dropdown v-model="formData.customer.type" :options="['person','company','contract']" style="width: 100%"
+          <Dropdown v-if="!formState.secondStep.selected"
+                    v-model="formData.customer.type"
+                    :options="['person','company','contract']" style="width: 100%"
                     placeholder="Выберите тип абонента" class="w-full md:w-14rem">
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex align-items-center"
@@ -103,39 +109,54 @@
               <div class="flex align-items-center" v-html="subscriberVerbose(slotProps.option)"></div>
             </template>
           </Dropdown>
+          <div v-else>
+            <div class="p-3 border rounded" v-html="subscriberVerbose(formData.customer.type)"></div>
+          </div>
         </div>
 
         <div v-if="formData.customer.type==='person'" class="d-flex flex-wrap py-2">
           <div class="input-part">
             <h6 class="px-2">Фамилия <Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.surname" type="text" style="width: 100%"
+            <InputText v-if="!formState.secondStep.selected"
+                       v-model.trim="formData.customer.surname" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.surname.valid?['p-invalid']:[]"/>
+            <div v-else class="p-3 border rounded-2">{{formData.customer.surname}}</div>
           </div>
+
           <div class="input-part">
             <h6 class="px-2">Имя <Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
+            <InputText v-if="!formState.secondStep.selected"
+                       v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.firstName.valid?['p-invalid']:[]"/>
+            <div v-else class="p-3 border rounded-2">{{formData.customer.firstName}}</div>
           </div>
+
           <div class="input-part">
             <h6 class="px-2">Отчество <Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
+            <InputText v-if="!formState.secondStep.selected"
+                       v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.lastName.valid?['p-invalid']:[]"/>
+            <div v-else class="p-3 border rounded-2">{{formData.customer.lastName}}</div>
           </div>
         </div>
 
         <div v-else class="d-flex py-2">
-          <div>
-            <h6 class="input-part">Название кампании <Asterisk/></h6>
-            <InputText v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
+          <div class="p-2 w-100">
+            <h6 class="px-2">Название кампании <Asterisk/></h6>
+            <InputText v-if="!formState.secondStep.selected"
+                       v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
                        :class="!formState.secondStep.companyName.valid?['p-invalid']:[]"/>
+            <div v-else class="w-100 p-3 border rounded-2">{{formData.customer.companyName}}</div>
           </div>
         </div>
 
         <div class="d-flex flex-wrap py-2">
           <div class="input-part">
             <h6 class="px-2">Лицевой счет <Asterisk/></h6>
-            <InputText v-model.number="formData.customer.contract" type="number" style="width: 100%"
+            <InputText v-if="!formState.secondStep.selected"
+                       v-model.number="formData.customer.contract" type="number" style="width: 100%"
                        :class="!formState.secondStep.contract.valid?['p-invalid']:[]"/>
+            <div v-else class="p-3 border rounded-2">{{formData.customer.contract}}</div>
           </div>
           <div class="input-part">
             <h6 class="px-2">Транзит</h6>
@@ -144,8 +165,10 @@
           <div class="input-part">
             <h6 class="px-2">Контактный номер</h6>
             <div class="flex-auto">
-              <InputMask v-model="formData.customer.phone" date="phone" style="width: 100%"
+              <InputMask v-if="!formState.secondStep.selected"
+                       v-model="formData.customer.phone" date="phone" style="width: 100%"
                          mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
+            <div v-else class="p-3 border rounded-2">{{formData.customer.phone}}</div>
             </div>
           </div>
         </div>
@@ -175,6 +198,10 @@
 
       <!-- THIRD STEP -->
       <div v-else-if="current_step===3" class="p-4">
+
+        <div class="px-2">
+          <AddressGetCreate :is-subscriber-address="true" :data="formData" :allow-create="true" :is-mobile="isMobile" />
+        </div>
 
         <div class="d-flex flex-wrap py-2">
           <div class="input-part">
@@ -207,7 +234,7 @@
 
       <!-- LAST STEP -->
       <div v-else-if="current_step===4" class="p-4">
-        <h4 class="text-center">Внимательно проверьте введенный данные</h4>
+        <h4 class="text-center">Внимательно проверьте введенные данные</h4>
 
         <h5 class="py-3">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
@@ -304,6 +331,18 @@
         </h5>
         <table class="table table-striped">
           <tbody>
+            <tr>
+              <td>Адрес подключения</td>
+              <td>
+                  <BuildingIcon :type="formData.address.building_type" width="24" height="24"></BuildingIcon>
+                  {{ getFullAddress(formData.address) }}
+                  <br>
+                  <template v-if="formData.address.building_type === 'building'">
+                    {{ formData.address.floor }} этаж. Квартира: {{ formData.address.apartment }}
+                  </template>
+                  <template v-else>Частный дом.</template>
+              </td>
+            </tr>
 
             <tr>
               <td class="col-md-3">ONT ID</td>
@@ -425,14 +464,15 @@ import Dialog from "primevue/dialog/Dialog.vue";
 import RadioButton from "primevue/radiobutton/RadioButton.vue";
 import AddressForm from "./components/AddressForm.vue";
 
-import StepMenu from "./components/StepMenu.vue";
+import AddressGetCreate from "./components/AddressGetCreate.vue";
 import Asterisk from "./components/Asterisk.vue";
 import BuildingIcon from "./components/BuildingIcon.vue";
-import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
+import CustomerSearch from "./components/CustomerSearch.vue";
 import End3AddForm from "./components/End3AddForm.vue";
-import AddressGetCreate from "./components/AddressGetCreate.vue";
-import SplittersRizersFind from "./components/SplittersRizersFind.vue";
+import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 import SelectSplitterRizerPort from "./components/SelectSplitterRizerPort.vue";
+import SplittersRizersFind from "./components/SplittersRizersFind.vue";
+import StepMenu from "./components/StepMenu.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import formatAddress from "../helpers/address";
 import api_request from "../api_request";
@@ -447,6 +487,7 @@ export default {
     Button,
     Checkbox,
     Calendar,
+    CustomerSearch,
     Dialog,
     Dropdown,
     InputMask,
@@ -485,6 +526,7 @@ export default {
           }
         },
         secondStep: {
+          selected: false,
           person: {
             firstName: {valid: true}, surname: {valid: true}, lastName: {valid: true}
           },
@@ -526,6 +568,7 @@ export default {
           end3Port: null,
         },
         customer: {
+          id: null,
           type: "person", // person, company, state
           firstName: "", 
           surname: "",
@@ -593,6 +636,21 @@ export default {
       this.getPortsNames()
     },
 
+    selectedSubscriber(value) {
+      this.formData.customer = value;
+      this.formState.secondStep.selected = true;
+    },
+
+    unselectSubscriber(){
+      this.formState.secondStep.selected = false;
+      this.formData.customer.id = null
+      this.formData.customer.type = "person"
+      this.formData.customer.firstName = ""
+      this.formData.customer.surname = ""
+      this.formData.customer.lastName = ""
+      this.formData.customer.companyName = ""
+      this.formData.customer.phone = ""
+    },
 
     subscriberVerbose(type) {
       if (type === 'person') {
@@ -655,7 +713,35 @@ export default {
     },
 
     submitForm() {
-      // Отправка данных
+      const data = {
+        customer: this.formData.customer,
+        tech_capability: this.formData.techData.end3Port.id,
+        transit: this.formData.transit,
+        order: this.formData.order,
+        services: this.formData.services,
+        ip: this.formData.ip,
+        ont_id: this.formData.ont_id,
+        ont_serial: this.formData.ont_serial,
+        ont_mac: this.formData.ont_mac,
+        connected_at: this.formData.connected_at,
+      }
+
+      api_request.post("/gpon/api/subscriber-data", data)
+          .then(resp => {
+                if (resp.status === 201) {
+                  this.form_submitted_successfully = true
+                  this.errors = null
+                }
+              }
+          )
+          .catch(reason => {
+            if (reason.response.status === 400) {
+                this.errors = reason.response.data
+              } else {
+                this.errors = {serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}`}
+              }
+            }
+          )
     },
 
   },
