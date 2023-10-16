@@ -22,23 +22,21 @@
       <br> Статус: {{errorStatus}}
     </div>
 
-    <Table v-if="tableData" :data="tableData"></Table>
+    <TechDataTable v-if="tableData" :data="tableData" />
 
   </div>
 </template>
 
 <script>
-import Table from "./components/Table.vue";
+import TechDataTable from "./components/TechDataTable.vue";
 import api_request from "../api_request.js";
 
 export default {
   name: "Gpon_base.vue",
-  components: {
-    Table
-  },
+  components: {TechDataTable},
   data() {
     return {
-      gponTechData: null,
+      _gponTechData: null,
       errorStatus: null,
       errorMessage: null,
       userPermissions: [],
@@ -48,7 +46,7 @@ export default {
     api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
 
     api_request.get("/gpon/api/tech-data")
-        .then(resp => this.gponTechData = resp.data)
+        .then(resp => this._gponTechData = resp.data)
         .catch(reason => {
           this.errorStatus = reason.response.status
           if (this.errorStatus === 403){
@@ -60,7 +58,7 @@ export default {
   },
   computed: {
     tableData() {
-      return this.gponTechData
+      return this._gponTechData
     },
     hasPermissionsToCreate(){
       return [
