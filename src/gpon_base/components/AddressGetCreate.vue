@@ -5,8 +5,8 @@
 
     <div class="p-inputgroup flex-1">
       <Dropdown v-model="data.address" :options="addressesList()" filter showClear
-                :class="formState.address.valid?[]:['p-invalid']"
-                @change="(e) => {this.$emit('change', e)}"
+                :class="valid?[]:['p-invalid']"
+                @change="e => $emit('change', e)"
                 :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
         <template #value="slotProps">
           <div v-if="slotProps.value" class="flex align-items-center d-flex">
@@ -70,6 +70,7 @@ export default {
     allowCreate: {required: false, default: true},
     getFromDevicePort: {required: false, default: null},
     isSubscriberAddress: {required: false, default: false},
+    valid: {required: false, type: Boolean, default: true},
   },
 
   data() {

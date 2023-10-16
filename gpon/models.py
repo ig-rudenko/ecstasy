@@ -297,6 +297,9 @@ class Service(models.Model):
     class Meta:
         db_table = "gpon_services"
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class SubscriberConnection(models.Model):
     """

@@ -3,7 +3,8 @@
     <Asterisk/>
   </h6>
   <Dropdown v-model="selectedPort" :options="capability" filter showClear
-            @change="(e) => {this.$emit('change', e)}"
+            @change="e => $emit('change', e)"
+            :class="valid?['w-100']:['p-invalid', 'w-100']"
             optionLabel="port" placeholder="Выберите" class="w-100">
     <template #value="slotProps">
       <div v-if="slotProps.value" class="flex align-items-center d-flex">
@@ -41,6 +42,7 @@ export default {
     end3ID: {required: true, type: Number},
     init: {required: false, default: null},
     onlyUnusedPorts: {required: false, type: Boolean, default: false},
+    valid: {required: false, type: Boolean, default: true},
   },
 
   data() {
@@ -87,7 +89,7 @@ export default {
   },
   methods: {
     getPorts() {
-      api_request.get("gpon/api/tech-data/end3/"+this.end3ID)
+      api_request.get("/gpon/api/tech-data/end3/"+this.end3ID)
         .then(
           resp => this._capability = Array.from(resp.data.capability)
         )

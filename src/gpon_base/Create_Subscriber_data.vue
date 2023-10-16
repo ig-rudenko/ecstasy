@@ -22,8 +22,8 @@
           <div class="py-2 w-100">
             <h6 class="px-2">OLT оборудование <Asterisk/></h6>
             <Dropdown v-model="formData.techData.deviceName" :options="devicesList" filter
-                      :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
                       :option-label="x => x"
+                      :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
                       @change="deviceHasChanged" placeholder="Выберите устройство">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
@@ -38,6 +38,7 @@
             <h6 class="px-2">Порт <Asterisk/></h6>
             <Dropdown v-model="formData.techData.devicePort" :options="devicePortList" filter
                       :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
+                      :option-label="x => x"
                       @change="portHasChanged"
                       optionLabel="name" placeholder="Выберите порт">
                 <template #value="slotProps">
@@ -56,6 +57,7 @@
         <div v-if="formData.techData.devicePort" class="w-100">
           <!-- ПОИСК ВСЕХ ДОМОВ ДЛЯ ВЫБРАННОГО OLT ПОРТА -->
           <AddressGetCreate @change="addressHasChanged" :is-mobile="isMobile" :allow-create="false"
+                            :valid="formState.firstStep.address.valid"
                             :data="formData.techData"
                             :get-from-device-port="{
                               deviceName: formData.techData.deviceName,
@@ -69,6 +71,7 @@
         <div v-if="formData.techData.address">
           <!-- ПОИСК СПЛИТТЕРОВ/РАЙЗЕРОВ В ВЫБРАННОМ ДОМЕ -->
           <SplittersRizersFind @change="(e) => {formData.techData.end3 = e.value; end3HasChanged()}"
+                               :valid="formState.firstStep.end3.valid"
                                :init="formData.techData.end3"
                                :fromAddressID="formData.techData.address.id">
           </SplittersRizersFind>
@@ -79,8 +82,9 @@
         <div v-if="formData.techData.end3 && formData.techData.address">
           <!-- ПОИСК СВОБОДНОГО ПОДКЛЮЧЕНИЯ У ВЫБРАННОГО СПЛИТТЕРА/РАЙЗЕРА -->
           <SelectSplitterRizerPort :init="formData.techData.end3Port"
+                                   :valid="formState.firstStep.end3Port.valid"
                                    :end3ID="formData.techData.end3.id"
-                                   @change="(e) => {formData.techData.end3Port = e.value}"
+                                   @change="(e) => {formData.techData.end3Port = e.value; formState.firstStep.end3Port.valid = true}"
                                    :get-from="formData.techData.end3" :type="formData.techData.end3.type"
                                    :only-unused-ports="true">
           </SelectSplitterRizerPort>
@@ -121,6 +125,7 @@
                        v-model.trim="formData.customer.surname" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.surname.valid?['p-invalid']:[]"/>
             <div v-else class="p-3 border rounded-2">{{formData.customer.surname}}</div>
+            <InlineMessage v-if="customerFirstNameError" severity="error">{{ customerFirstNameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
@@ -129,6 +134,7 @@
                        v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.firstName.valid?['p-invalid']:[]"/>
             <div v-else class="p-3 border rounded-2">{{formData.customer.firstName}}</div>
+            <InlineMessage v-if="customerSurnameError" severity="error">{{ customerSurnameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
@@ -137,6 +143,7 @@
                        v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.lastName.valid?['p-invalid']:[]"/>
             <div v-else class="p-3 border rounded-2">{{formData.customer.lastName}}</div>
+            <InlineMessage v-if="customerLastNameError" severity="error">{{ customerLastNameError }}</InlineMessage>
           </div>
         </div>
 
@@ -147,6 +154,7 @@
                        v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
                        :class="!formState.secondStep.companyName.valid?['p-invalid']:[]"/>
             <div v-else class="w-100 p-3 border rounded-2">{{formData.customer.companyName}}</div>
+            <InlineMessage v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</InlineMessage>
           </div>
         </div>
 
@@ -157,24 +165,33 @@
                        v-model.number="formData.customer.contract" type="number" style="width: 100%"
                        :class="!formState.secondStep.contract.valid?['p-invalid']:[]"/>
             <div v-else class="p-3 border rounded-2">{{formData.customer.contract}}</div>
+            <InlineMessage v-if="customerContractError" severity="error">{{ customerContractError }}</InlineMessage>
           </div>
           <div class="input-part">
             <h6 class="px-2">Транзит</h6>
-            <InputText v-model.number="formData.transit" style="width: 100%" type="number"/>
+            <InputText v-model.number="formData.transit"
+                       @change="() => formState.secondStep.transit.valid = true"
+                       :class="formState.secondStep.transit.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
+                       style="width: 100%" type="number"/>
+            <InlineMessage v-if="transitError" severity="error">{{ transitError }}</InlineMessage>
           </div>
           <div class="input-part">
             <h6 class="px-2">Контактный номер</h6>
             <div class="flex-auto">
               <InputMask v-if="!formState.secondStep.selected"
-                       v-model="formData.customer.phone" date="phone" style="width: 100%"
+                         v-model="formData.customer.phone" date="phone" style="width: 100%"
+                         :class="!formState.secondStep.phone.valid?['p-invalid']:[]"
                          mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
             <div v-else class="p-3 border rounded-2">{{formData.customer.phone}}</div>
+            <InlineMessage v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</InlineMessage>
             </div>
           </div>
         </div>
 
 
         <h6 class="p-2">Выберите услуги</h6>
+
+        <InlineMessage v-if="servicesError" severity="error">{{ servicesError }}</InlineMessage>
         <div class="d-flex flex-wrap p-2">
           <div class="me-2 d-flex align-items-center">
             <Checkbox class="me-2" v-model="formData.services" inputId="service-internet" value="internet"/>
@@ -200,7 +217,9 @@
       <div v-else-if="current_step===3" class="p-4">
 
         <div class="px-2">
-          <AddressGetCreate :is-subscriber-address="true" :data="formData" :allow-create="true" :is-mobile="isMobile" />
+          <AddressGetCreate :data="formData" :valid="formState.thirdStep.address.valid"
+                            :is-subscriber-address="true" :allow-create="true" :is-mobile="isMobile" />
+            <InlineMessage v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</InlineMessage>
         </div>
 
         <div class="d-flex flex-wrap py-2">
@@ -208,25 +227,35 @@
             <h6 class="px-2">ONT ID <Asterisk/></h6>
             <InputText v-model.number="formData.ont_id" type="number" style="width: 100%"
                        :class="formState.thirdStep.ont_id.valid?[]:['p-invalid']"/>
+            <InlineMessage v-if="ontIDError" severity="error">{{ ontIDError }}</InlineMessage>
           </div>
           <div class="input-part">
             <h6 class="px-2">Серийный номер ONT</h6>
             <InputText v-model.trim="formData.ont_serial" type="text" style="width: 100%"/>
+            <InlineMessage v-if="ontSerialError" severity="error">{{ ontSerialError }}</InlineMessage>
           </div>
           <div class="input-part">
             <h6 class="px-2">MAC адрес ONT</h6>
             <InputText v-model.trim="formData.ont_mac" type="text" style="width: 100%"/>
+            <InlineMessage v-if="ontMACError" severity="error">{{ ontMACError }}</InlineMessage>
           </div>
         </div>
 
         <div class="d-flex flex-wrap py-2">
           <div class="input-part">
+            <h6 class="px-2">IP Адрес</h6>
+            <InputText v-model.trim="formData.ip" type="text" style="width: 100%"/>
+            <InlineMessage v-if="ontIPError" severity="error">{{ ontIPError }}</InlineMessage>
+          </div>
+          <div class="input-part">
             <h6 class="px-2">Номер наряда</h6>
             <InputText v-model.number="formData.order" type="number" style="width: 100%"/>
+            <InlineMessage v-if="orderError" severity="error">{{ orderError }}</InlineMessage>
           </div>
           <div class="input-part">
             <h6 class="px-2">Дата подключения</h6>
             <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24" style="width: 100%"/>
+            <InlineMessage v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</InlineMessage>
           </div>
         </div>
 
@@ -282,7 +311,10 @@
 
           <tr>
             <td>{{formData.techData.end3.type==='splitter'?"Порт сплиттера":"Волокно райзера"}}</td>
-            <td>{{formData.techData.end3Port.number}} <TechCapabilityBadge :status="formData.techData.end3Port.status" /></td>
+            <td>
+              {{ formData.techData.end3Port.number }} <TechCapabilityBadge :status="formData.techData.end3Port.status" />
+              <Message v-if="techCapabilityError" severity="error">{{ techCapabilityError }}</Message>
+            </td>
           </tr>
           </tbody>
         </table>
@@ -293,28 +325,51 @@
 
             <tr v-if="formData.customer.type==='person'">
               <td class="col-md-3">ФИО</td>
-              <td>{{ formData.customer.firstName }} {{ formData.customer.surname }} {{ formData.customer.lastName }}</td>
+              <td>
+                {{ formData.customer.firstName }} {{ formData.customer.surname }} {{ formData.customer.lastName }}
+                <Message v-if="customerFirstNameError || customerSurnameError || customerLastNameError" severity="error">
+                  {{ customerFirstNameError }} {{ customerSurnameError }} {{ customerLastNameError }}
+                </Message>
+              </td>
             </tr>
             <tr v-else>
               <td class="col-md-3">Название кампании</td>
-              <td>{{ formData.customer.companyName }}</td>
+              <td>
+                {{ formData.customer.companyName }}
+                <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
+              </td>
             </tr>
 
             <tr>
               <td class="col-md-3">Лицевой счет</td>
-              <td>{{ formData.customer.contract }}</td>
+              <td>
+                {{ formData.customer.contract }}
+                <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
+              </td>
             </tr>
+
             <tr>
               <td class="col-md-3">Транзит</td>
-              <td>{{ formData.transit }}</td>
+              <td>
+                {{ formData.transit }}
+                <Message v-if="transitError" severity="error">{{ transitError }}</Message>
+              </td>
             </tr>
+
             <tr>
               <td class="col-md-3">Контактный номер</td>
-              <td>{{ formData.customer.phone }}</td>
+              <td>
+                {{ formData.customer.phone }}
+                <Message v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</Message>
+              </td>
             </tr>
+
             <tr>
               <td class="col-md-3">Услуги</td>
-              <td>{{ formData.services.join(", ") }}</td>
+              <td>
+                {{ formData.services.join(", ") }}
+                <Message v-if="servicesError" severity="error">{{ servicesError }}</Message>
+              </td>
             </tr>
 
           </tbody>
@@ -341,28 +396,51 @@
                     {{ formData.address.floor }} этаж. Квартира: {{ formData.address.apartment }}
                   </template>
                   <template v-else>Частный дом.</template>
+                  <Message v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</Message>
               </td>
             </tr>
 
             <tr>
               <td class="col-md-3">ONT ID</td>
-              <td>{{formData.ont_id}}</td>
+              <td>
+                {{formData.ont_id}}
+                <Message v-if="ontIDError" severity="error">{{ ontIDError }}</Message>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-3">IP адрес</td>
+              <td>
+                {{formData.ip}}
+                <Message v-if="ontIPError" severity="error">{{ ontIPError }}</Message>
+              </td>
             </tr>
             <tr>
               <td class="col-md-3">Серийный номер ONT</td>
-              <td>{{ formData.ont_serial }}</td>
+              <td>
+                {{ formData.ont_serial }}
+                <Message v-if="ontSerialError" severity="error">{{ ontSerialError }}</Message>
+              </td>
             </tr>
             <tr>
               <td class="col-md-3">MAC адрес ONT</td>
-              <td>{{ formData.ont_mac }}</td>
+              <td>
+                {{ formData.ont_mac }}
+                <Message v-if="ontMACError" severity="error">{{ ontMACError }}</Message>
+              </td>
             </tr>
             <tr>
               <td class="col-md-3">Номер наряда</td>
-              <td>{{ formData.order }}</td>
+              <td>
+                {{ formData.order }}
+                <Message v-if="orderError" severity="error">{{ orderError }}</Message>
+              </td>
             </tr>
             <tr>
               <td class="col-md-3">Дата подключения</td>
-              <td>{{ formData.connected_at }}</td>
+              <td>
+                {{ formData.connected_at }}
+                <Message v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</Message>
+              </td>
             </tr>
 
           </tbody>
@@ -378,7 +456,8 @@
             <path
                 d="M7.005 3.1a1 1 0 1 1 1.99 0l-.388 6.35a.61.61 0 0 1-1.214 0L7.005 3.1ZM7 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"/>
           </svg>
-          <span>Были замечены ошибки. Проверьте правильность введенных данных</span>
+          <span v-if="errors.serverError">{{ errors.serverError }}</span>
+          <span v-else>Были замечены ошибки. Проверьте правильность введенных данных</span> <br>
         </div>
       </div>
 
@@ -447,23 +526,23 @@
       </div>
     </div>
 
-    {{ formData }}
-
   </div>
 </template>
 
 <script>
+import Button from "primevue/button/Button.vue";
 import Calendar from "primevue/calendar/Calendar.vue";
 import Checkbox from "primevue/checkbox/Checkbox.vue";
+import Dialog from "primevue/dialog/Dialog.vue";
 import Dropdown from "primevue/dropdown/Dropdown.vue";
 import InputText from "primevue/inputtext/InputText.vue";
 import InputMask from "primevue/inputmask/InputMask.vue";
-import Textarea from "primevue/textarea/Textarea.vue";
-import Button from "primevue/button/Button.vue";
-import Dialog from "primevue/dialog/Dialog.vue";
+import InlineMessage from "primevue/inlinemessage/InlineMessage.vue";
+import Message from "primevue/message/Message.vue";
 import RadioButton from "primevue/radiobutton/RadioButton.vue";
-import AddressForm from "./components/AddressForm.vue";
+import Textarea from "primevue/textarea/Textarea.vue";
 
+import AddressForm from "./components/AddressForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import Asterisk from "./components/Asterisk.vue";
 import BuildingIcon from "./components/BuildingIcon.vue";
@@ -490,8 +569,10 @@ export default {
     CustomerSearch,
     Dialog,
     Dropdown,
+    InlineMessage,
     InputMask,
     InputText,
+    Message,
     RadioButton,
     RizerFiberColorExample,
     TechCapabilityBadge,
@@ -539,9 +620,10 @@ export default {
           isValid() {
             return (
                 (
-                    this.subscriberType === "person"
-                    &&
-                    (this.person.firstName.valid && this.person.surname.valid && this.person.lastName.valid)
+                    (
+                        this.subscriberType === "person"
+                        && this.person.firstName.valid && this.person.surname.valid && this.person.lastName.valid
+                    )
                     ||
                     (this.subscriberType !== "person" && this.companyName.valid)
                 )
@@ -552,18 +634,23 @@ export default {
         },
         thirdStep: {
           ont_id: {valid: true},
+          order: {valid: true},
+          ip: {valid: true},
+          ont_serial: {valid: true},
+          ont_mac: {valid: true},
+          connected_at: {valid: true},
+          address: {valid: true},
           isValid() {
-            return this.ont_id.valid
+            return this.ont_id.valid && this.address.valid
           }
         }
       },
 
       formData: {
         techData: {
-          deviceName: "",
-          devicePort: "",
+          deviceName: null,
+          devicePort: null,
           address: null,
-          description: "",
           end3: null,
           end3Port: null,
         },
@@ -577,6 +664,7 @@ export default {
           contract: null,
           phone: null,
         },
+        address: null,
         transit: null,
         order: null,
         services: [],
@@ -604,6 +692,96 @@ export default {
       return this._portsNames;
     },
 
+    ontIDError() {
+      if (this.errors && this.errors.ont_id) {
+        this.formState.thirdStep.ont_id.valid = false
+        return this.errors.ont_id.join(' ')
+      }
+    },
+    ontMACError() {
+      if (this.errors && this.errors.ont_mac) {
+        return this.errors.ont_mac.join(' ')
+      }
+    },
+    ontSerialError() {
+      if (this.errors && this.errors.ont_serial) {
+        return this.errors.ont_serial.join(' ')
+      }
+    },
+    transitError() {
+      if (this.errors && this.errors.transit) {
+        return this.errors.transit.join(' ')
+      }
+    },
+    orderError() {
+      if (this.errors && this.errors.order) {
+        return this.errors.order.join(' ')
+      }
+    },
+    ontIPError() {
+      if (this.errors && this.errors.ip) {
+        return this.errors.ip.join(' ')
+      }
+    },
+    connectedDatetimeError() {
+      if (this.errors && this.errors.connected_at) {
+        return this.errors.connected_at.join(' ')
+      }
+    },
+    connectionAddressError() {
+      if (this.errors && this.errors.address) {
+        return this.errors.address
+      }
+    },
+    servicesError() {
+      if (this.errors && this.errors.services) {
+        return this.errors.services
+      }
+    },
+    techCapabilityError() {
+      this.formState.firstStep.end3Port.valid = false
+      if (this.errors && this.errors.tech_capability) {
+        return this.errors.tech_capability
+      }
+    },
+
+
+    customerFirstNameError() {
+      if (this.errors && this.errors.customer && this.errors.customer.firstName) {
+        return this.errors.customer.firstName.join(' ')
+      }
+    },
+    customerSurnameError() {
+      if (this.errors && this.errors.customer && this.errors.customer.surname) {
+        return this.errors.customer.surname.join(' ')
+      }
+    },
+    customerLastNameError() {
+      if (this.errors && this.errors.customer && this.errors.customer.lastName) {
+        return this.errors.customer.lastName.join(' ')
+      }
+    },
+    customerCompanyNameError() {
+      if (this.errors && this.errors.customer && this.errors.customer.companyName) {
+        return this.errors.customer.companyName.join(' ')
+      }
+    },
+    customerContractError() {
+      if (this.errors && this.errors.customer && this.errors.customer.contract) {
+        return this.errors.customer.contract.join(' ')
+      }
+    },
+    customerPhoneError() {
+      if (this.errors && this.errors.customer && this.errors.customer.phone) {
+        return this.errors.customer.phone.join(' ')
+      }
+    },
+    customerTypeError() {
+      if (this.errors && this.errors.customer && this.errors.customer.type) {
+        return this.errors.customer.type.join(' ')
+      }
+    },
+
   },
   methods: {
 
@@ -618,20 +796,24 @@ export default {
 
     end3HasChanged() {
       this.formData.techData.end3Port = null
+      this.formState.firstStep.end3.valid = true
     },
 
     addressHasChanged() {
       this.formData.techData.end3 = null
+      this.formState.firstStep.address.valid = true
       this.end3HasChanged()
     },
 
     portHasChanged() {
       this.formData.techData.address = null
+      this.formState.firstStep.devicePort.valid = true
       this.addressHasChanged()
     },
 
     deviceHasChanged() {
       this.formData.techData.devicePort = null
+      this.formState.firstStep.deviceName.valid = true
       this.portHasChanged()
       this.getPortsNames()
     },
@@ -674,29 +856,30 @@ export default {
 
     stepIsValid() {
       if (this.current_step === 1) {
-        this.formState.firstStep.deviceName.valid = this.formData.techData.deviceName.length > 0
-        this.formState.firstStep.devicePort.valid = this.formData.techData.devicePort.length > 0
-        this.formState.firstStep.address.valid = this.formData.techData.address !== null
-        this.formState.firstStep.end3.valid = this.formData.techData.end3 !== null
-        this.formState.firstStep.end3Port.valid = this.formData.techData.end3Port !== null
+        this.formState.firstStep.deviceName.valid = this.formData.techData.deviceName != null
+        this.formState.firstStep.devicePort.valid = this.formData.techData.devicePort != null
+        this.formState.firstStep.address.valid = this.formData.techData.address != null
+        this.formState.firstStep.end3.valid = this.formData.techData.end3 != null
+        this.formState.firstStep.end3Port.valid = this.formData.techData.end3Port != null
         return this.formState.firstStep.isValid()
 
       } else if (this.current_step === 2) {
         let data = this.formData.customer
         this.formState.secondStep.subscriberType = data.type
 
-        this.formState.secondStep.person.firstName.valid = data.firstName.length > 2
-        this.formState.secondStep.person.surname.valid = data.surname.length > 2
-        this.formState.secondStep.person.lastName.valid = data.lastName.length > 2
+        this.formState.secondStep.person.firstName.valid = data.firstName != null && data.firstName.length > 2
+        this.formState.secondStep.person.surname.valid = data.surname != null && data.surname.length > 2
+        this.formState.secondStep.person.lastName.valid = data.lastName != null && data.lastName.length > 2
 
-        this.formState.secondStep.companyName.valid = data.companyName.length > 4
+        this.formState.secondStep.companyName.valid = data.companyName != null && data.companyName.length > 2
         this.formState.secondStep.contract.valid = data.contract != null
         this.formState.secondStep.transit.valid = this.formData.transit != null
-        this.formState.secondStep.phone.valid = data.phone != null && data.phone.match(/\d/g).length === 11
+        this.formState.secondStep.phone.valid = data.phone != null && data.phone.match(/\d/g) && data.phone.match(/\d/g).length === 11
         return this.formState.secondStep.isValid()
 
       } else if (this.current_step === 3) {
         this.formState.thirdStep.ont_id.valid = this.formData.ont_id !== null
+        this.formState.thirdStep.address.valid = this.formData.address !== null
         return this.formState.thirdStep.isValid()
       }
     },
@@ -715,6 +898,7 @@ export default {
     submitForm() {
       const data = {
         customer: this.formData.customer,
+        address: this.formData.address,
         tech_capability: this.formData.techData.end3Port.id,
         transit: this.formData.transit,
         order: this.formData.order,
@@ -761,6 +945,7 @@ export default {
 .header {
   margin: auto;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 75%!important;

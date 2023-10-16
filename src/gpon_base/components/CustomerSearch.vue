@@ -13,6 +13,11 @@
         <InputText v-model.trim="search" class="w-100" placeholder="Введите ФИО/кампанию или номер контракта" />
     </span>
 
+    <Message v-if="error.message" severity="error">
+      Ошибка загрузки данных {{ error.message }}<br>
+      Статус: {{ error.status }}
+    </Message>
+
     <div v-for="s in subscribers" class="d-flex text-body-secondary pt-3 border-bottom ">
       <div class="bd-placeholder-img flex-shrink-0 me-2">
           <template v-if="s.type === 'person'">
@@ -60,6 +65,8 @@
 import Button from "primevue/button/Button.vue"
 import Dialog from "primevue/dialog/Dialog.vue"
 import InputText from "primevue/inputtext/InputText.vue";
+import Message from "primevue/message/Message.vue"
+import api_request from "../../api_request";
 
 export default {
   name: "CustomerSearch",
@@ -67,6 +74,7 @@ export default {
     Button,
     Dialog,
     InputText,
+    Message,
   },
   props: {
     isMobile: {required: true, type: Boolean},
@@ -75,59 +83,39 @@ export default {
     return {
       showDialog: false,
       search: '',
-      subscribers: [
-          {
-            "id": 1,
-            "type": "person",
-            "firstName": "Игорь",
-            "surname": "Руденко",
-            "lastName": "Константинович",
-            "companyName": "",
-            "contract": 12312,
-            "phone": "+7 (312) 368-45-62",
-          },
-          {
-            "id": 2,
-            "type": "person",
-            "firstName": "Семен",
-            "surname": "Янковский",
-            "lastName": "Игоревич",
-            "companyName": "",
-            "contract": 12312,
-            "phone": "+7 (312) 368-45-62",
-          },
-          {
-            "id": 3,
-            "type": "person",
-            "firstName": "Алексей",
-            "surname": "Темных",
-            "lastName": "Николаевич",
-            "companyName": "",
-            "contract": 12312,
-            "phone": "+7 (312) 368-45-62",
-          },
-          {
-            "id": 4,
-            "type": "company",
-            "firstName": "",
-            "surname": "",
-            "lastName": "",
-            "companyName": "ООО \"Строй Юг\"",
-            "contract": 12312,
-            "phone": "+7 (312) 368-45-62",
-          },
-          {
-            "id": 5,
-            "type": "contract",
-            "firstName": "",
-            "surname": "",
-            "lastName": "",
-            "companyName": "ДЦР",
-            "contract": 12312,
-            "phone": "+7 (312) 368-45-62",
-          },
-      ],
+      _subscribers: [],
+      error: {
+        message: null,
+        status: null,
+      }
     }
+  },
+  computed: {
+    subscribers() {
+      if (this.search.length < 2) return this._subscribers
+      const search = this.search.toLowerCase()
+      return this._subscribers.filter(
+        value => {
+          if (value.firstName && value.firstName.toLowerCase().indexOf(search) >= 0) return true;
+          if (value.surname && value.surname.toLowerCase().indexOf(search) >= 0) return true;
+          if (value.lastName && value.lastName.toLowerCase().indexOf(search) >= 0) return true;
+          if (value.companyName && value.companyName.toLowerCase().indexOf(search) >= 0) return true;
+          if (value.contract && value.contract.toLowerCase().indexOf(search) >= 0) return true;
+          return value.phone.toLowerCase().indexOf(search) >= 0;
+
+        }
+      )
+    },
+  },
+  mounted() {
+    api_request.get("/gpon/api/customers")
+      .then(resp => this._subscribers = resp.data)
+      .catch(
+        reason => {
+          this.error.message = reason.response.data;
+          this.error.status = reason.response.status;
+        }
+      )
   },
   methods: {
     selected(value) {

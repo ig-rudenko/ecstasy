@@ -67,6 +67,25 @@ class TechDataPermission(UserBasePermission):
     ]
 
 
+class SubscriberDataPermission(UserBasePermission):
+    safe_permissions_list = [
+        "gpon.view_customer",
+        "gpon.view_subscriberconnection",
+    ]
+    create_permissions_list = [
+        "gpon.add_customer",
+        "gpon.add_subscriberconnection",
+    ]
+    update_permissions_list = [
+        "gpon.change_customer",
+        "gpon.change_subscriberconnection",
+    ]
+    delete_permissions_list = [
+        "gpon.delete_customer",
+        "gpon.delete_subscriberconnection",
+    ]
+
+
 class OLTStatePermission(UserBasePermission):
     safe_permissions_list = ["gpon.view_oltstate"]
     create_permissions_list = ["gpon.add_oltstate"]

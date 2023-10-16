@@ -5,7 +5,8 @@
 
   <Dropdown v-if="!error.status && availableList !== null"
             v-model="connection" :options="availableList" filter showClear
-            @change="(e) => {this.$emit('change', e); console.log(e);}"
+            :class="valid?['w-100']:['p-invalid', 'w-100']"
+            @change="e => $emit('change', e)"
             :optionLabel="getFullAddress" placeholder="Выберите" class="w-100">
     <template #value="slotProps">
       <div v-if="slotProps.value" class="flex align-items-center d-flex">
@@ -45,6 +46,7 @@ export default {
     init: {required: false, default: null},
     type: {required: false, type: String, default: "both"},
     fromAddressID: {required: false, default: null},
+    valid: {required: false, type: Boolean, default: true},
   },
   data() {
     return {

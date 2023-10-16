@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import subscriber_view
 from . import views
 
 # /gpon/api/
@@ -58,5 +59,16 @@ urlpatterns = [
         "addresses/end3",
         views.End3AddressesListAPIView.as_view(),
         name="splitter-addresses",
+    ),
+]
+
+# ========== SUBSCRIBER DATA =============
+
+urlpatterns += [
+    path("customers", subscriber_view.CustomerRetrieveAPIView.as_view(), name="customers-list"),
+    path(
+        "subscriber-data",
+        subscriber_view.SubscriberDataListCreateAPIView.as_view(),
+        name="subscribers-data-list-create",
     ),
 ]

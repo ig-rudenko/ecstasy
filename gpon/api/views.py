@@ -181,7 +181,7 @@ class DevicesNamesListAPIView(GenericAPIView):
             group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         else:
             group_ids = []
-        return Devices.objects.filter(group_id__in=group_ids).select_related("group")
+        return Devices.objects.all()
 
     def get(self, request, *args, **kwargs) -> Response:
         device_names = self.get_queryset().values_list("name", flat=True)
