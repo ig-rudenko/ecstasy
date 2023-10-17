@@ -464,7 +464,7 @@
       <!-- Кнопки -->
       <div v-if="!form_submitted_successfully" class="d-flex justify-content-between mx-5">
 
-        <Button severity="secondary" rounded>
+        <Button @click="goToSubscriberDataURL" severity="secondary" rounded>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
                viewBox="0 0 16 16">
             <path
@@ -878,6 +878,10 @@ export default {
 
     getFullAddress(address) {
       return formatAddress(address)
+    },
+
+    goToSubscriberDataURL() {
+      window.location.href = "/gpon/subscriber-data/"
     },
 
     submitForm() {
