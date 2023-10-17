@@ -1,8 +1,8 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, get_object_or_404
 
-from gpon.api.permissions import TechDataPermission, End3Permission, SubscriberDataPermission
-from gpon.models import HouseB, End3
+from gpon.api.permissions import TechDataPermission, End3Permission, SubscriberDataPermission, CustomerPermission
+from gpon.models import HouseB, End3, Customer
 
 
 @login_required
@@ -52,6 +52,9 @@ def gpon_view_end3_tech_data(request, pk: int):
     )
 
 
+# =================== АБОНЕНТСКИЕ ДАННЫЕ ====================
+
+
 @login_required
 @permission_required(SubscriberDataPermission.safe_permissions_list, raise_exception=True)
 def gpon_subscriber_data(request):
@@ -62,3 +65,14 @@ def gpon_subscriber_data(request):
 @permission_required(SubscriberDataPermission.create_permissions_list, raise_exception=True)
 def gpon_create_subscriber_data(request):
     return render(request, "gpon/create-subscriber-data.html")
+
+
+@login_required
+@permission_required(CustomerPermission.safe_permissions_list, raise_exception=True)
+def gpon_customer_view(request, customer_id: int):
+    customer = get_object_or_404(Customer, id=customer_id)
+    return render(
+        request,
+        "gpon/customer-view.html",
+        {"full_name": customer.full_name, "disable_container": True},
+    )

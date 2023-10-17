@@ -119,3 +119,10 @@ class TechCapabilityPermission(UserBasePermission):
     create_permissions_list = ["gpon.add_techcapability"]
     update_permissions_list = ["gpon.change_techcapability"]
     delete_permissions_list = ["gpon.delete_techcapability"]
+
+
+class CustomerPermission(UserBasePermission):
+    safe_permissions_list = ["gpon.view_customer"]
+    create_permissions_list = ["gpon.add_SubscriberDataPermission"]
+    update_permissions_list = ["gpon.change_SubscriberDataPermission"]
+    delete_permissions_list = ["gpon.delete_SubscriberDataPermission"]

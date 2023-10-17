@@ -108,10 +108,10 @@
 
         <!-- АБОНЕНТ -->
         <td class="fw-bold">
-          <span>
+          <a class="text-decoration-none text-dark active-hover" :href="'/gpon/subscriber-data/customers/'+line.customer.id">
             {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
             {{ line.customer.companyName }}
-          </span>
+          </a>
           <br>
           <div class="secondary-text d-flex">
             <div class="d-flex align-items-center me-4">
@@ -132,7 +132,7 @@
 
         <!-- АДРЕС -->
         <td class="fw-bold">
-          <div class="address-name ">
+          <div class="active-hover">
             <span class="me-2">{{ getFullAddress(line.address) }}</span>
             <span v-if="line.address.apartment">кв. {{ line.address.apartment }}</span>
             <br>
@@ -315,12 +315,12 @@ export default {
 
 <style scoped>
 
-.address-name {
+.active-hover {
   cursor: pointer;
 }
 
-.address-name:hover {
-  color: #2198ff;
+.active-hover:hover {
+  color: #2198ff!important;
 }
 
 .olt-port-badge:hover {

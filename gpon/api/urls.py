@@ -67,10 +67,11 @@ urlpatterns = [
 # /gpon/api/
 
 urlpatterns += [
-    path("customers", subscriber_view.CustomerRetrieveAPIView.as_view(), name="customers-list"),
+    path("customers", subscriber_view.CustomersListAPIView.as_view(), name="customers-list"),
+    path("customers/<int:pk>", subscriber_view.CustomerDetailAPIView.as_view(), name="customer-detail"),
     path(
         "subscriber-data",
-        subscriber_view.SubscriberDataListCreateAPIView.as_view(),
+        subscriber_view.SubscriberConnectionListCreateAPIView.as_view(),
         name="subscribers-data-list-create",
     ),
 ]
