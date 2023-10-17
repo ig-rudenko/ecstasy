@@ -2,9 +2,9 @@
   <div id="app">
 
     <div class="header">
-      <h2>Технические данные</h2>
+      <h2>Абонентские данные</h2>
 
-      <a v-if="hasPermissionsToCreate" href="/gpon/tech-data/create" class="add-button text-decoration-none">
+      <a v-if="hasPermissionsToCreate" href="/gpon/subscriber-data/create" class="add-button text-decoration-none">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#6D5BD0" class="me-2" viewBox="0 0 16 16">
           <path fill-rule="evenodd"
                 d="M8 5.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V10a.5.5 0 0 1-1 0V8.5H6a.5.5 0 0 1 0-1h1.5V6a.5.5 0 0 1 .5-.5z"/>
@@ -22,21 +22,21 @@
       <br> Статус: {{errorStatus}}
     </div>
 
-    <TechDataTable v-if="gponTechData" :data="gponTechData" />
+    <SubscriberDataTable v-if="gponSubscriberData" :data="gponSubscriberData"/>
 
   </div>
 </template>
 
 <script>
-import TechDataTable from "./components/TechDataTable.vue";
 import api_request from "../api_request.js";
+import SubscriberDataTable from "./components/SubscriberDataTable.vue";
 
 export default {
   name: "Gpon_base.vue",
-  components: {TechDataTable},
+  components: {SubscriberDataTable},
   data() {
     return {
-      gponTechData: null,
+      gponSubscriberData: null,
       errorStatus: null,
       errorMessage: null,
       userPermissions: [],
@@ -45,8 +45,8 @@ export default {
   mounted() {
     api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
 
-    api_request.get("/gpon/api/tech-data")
-        .then(resp => this.gponTechData = resp.data)
+    api_request.get("/gpon/api/subscriber-data")
+        .then(resp => this.gponSubscriberData = resp.data)
         .catch(reason => {
           this.errorStatus = reason.response.status
           if (this.errorStatus === 403){
@@ -55,14 +55,13 @@ export default {
             this.errorMessage = reason.response.data
           }
         })
+
   },
   computed: {
     hasPermissionsToCreate(){
       return [
-          "gpon.add_oltstate",
-          "gpon.add_houseoltstate",
-          "gpon.add_houseb",
-          "gpon.add_end3",
+          "gpon.add_customer",
+          "gpon.add_subscriberconnection",
       ].every(elem => {return this.userPermissions.includes(elem)})
     }
   }

@@ -64,6 +64,8 @@ urlpatterns = [
 
 # ========== SUBSCRIBER DATA =============
 
+# /gpon/api/
+
 urlpatterns += [
     path("customers", subscriber_view.CustomerRetrieveAPIView.as_view(), name="customers-list"),
     path(

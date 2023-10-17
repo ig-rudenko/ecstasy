@@ -53,6 +53,12 @@ def gpon_view_end3_tech_data(request, pk: int):
 
 
 @login_required
+@permission_required(SubscriberDataPermission.safe_permissions_list, raise_exception=True)
+def gpon_subscriber_data(request):
+    return render(request, "gpon/subscriber-data.html")
+
+
+@login_required
 @permission_required(SubscriberDataPermission.create_permissions_list, raise_exception=True)
 def gpon_create_subscriber_data(request):
     return render(request, "gpon/create-subscriber-data.html")

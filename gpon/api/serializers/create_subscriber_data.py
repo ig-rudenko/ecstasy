@@ -34,10 +34,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         ]
 
 
-class CreateSubscriberDataSerializer(serializers.ModelSerializer):
+class SubscriberDataSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
     customer = CustomerSerializer()
     services = serializers.ListSerializer(child=serializers.CharField())
+    ip = serializers.IPAddressField(required=False, allow_null=True, allow_blank=True)
     ont_mac = serializers.CharField(max_length=20, allow_null=True, allow_blank=True, required=False)
 
     class Meta:

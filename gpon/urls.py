@@ -24,7 +24,12 @@ urlpatterns = [
 
 # Subscriber Data
 
+# /gpon/
+
 urlpatterns += [
+    path(
+        "subscriber-data/", views.gpon_subscriber_data, name="subscriber-data"
+    ),
     path(
         "subscriber-data/create", views.gpon_create_subscriber_data, name="create-subscriber-data"
     ),
