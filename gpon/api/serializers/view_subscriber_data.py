@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from gpon.models import Customer, SubscriberConnection, HouseOLTState, Service
 from .address import AddressSerializer
-from .common import CustomerSerializer
+from .common import CustomerSerializer, End3Serializer
 
 
 class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):
@@ -27,8 +27,8 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
     services = serializers.ListSerializer(child=serializers.CharField())
     status = serializers.CharField(source="tech_capability.status")
-    end3ID = serializers.IntegerField(source="tech_capability.end3.id")
-    end3Type = serializers.CharField(source="tech_capability.end3.type")
+    end3Port = serializers.IntegerField(source="tech_capability.number")
+    end3 = End3Serializer(source="tech_capability.end3")
 
     class Meta:
         model = SubscriberConnection
@@ -45,8 +45,8 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             "services",
             "status",
             "houseOLTState",
-            "end3ID",
-            "end3Type",
+            "end3",
+            "end3Port",
         ]
 
     def validate_ont_mac(self, value: str) -> str:

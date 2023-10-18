@@ -153,11 +153,24 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                 <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
               </svg>
-              <div>{{ connection.houseOLTState.deviceName }}</div>
-              <div>{{ connection.houseOLTState.devicePort }}</div>
+              <div class="fw-bold">{{ connection.houseOLTState.deviceName }}</div>
+              <a :href="'/gpon/tech-data/'+connection.houseOLTState.deviceName + '?port=' + connection.houseOLTState.devicePort"
+                 class="text-decoration-none fw-bold">
+                {{ connection.houseOLTState.devicePort }}
+              </a>
             </div>
 
-            <div class="p-2">
+            <div class="p-3">
+              <a :href="'/gpon/tech-data/end3/'+connection.end3.id">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" style="transform: rotate(270deg)" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/>
+                </svg>
+              </a>
+              <div>{{ connection.end3.location }}</div>
+              <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
+            </div>
+
+            <div class="p-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                 <path d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707Z"/>
                 <path d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"/>
@@ -172,11 +185,11 @@
               </div>
               <div class="p-1">
                 <span class="fw-bold me-2">Серийный номер ONT:</span><br>
-                <span>{{connection.ont_serial || '-'}}</span>
+                <span>{{connection.ont_serial}}</span>
               </div>
             </div>
 
-            <div class="p-2 d-flex">
+            <div class="p-3 d-flex">
               <div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                   <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
