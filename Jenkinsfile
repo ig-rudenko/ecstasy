@@ -87,7 +87,28 @@ pipeline {
             }
         }
 
-        // Конец определения шагов
+    }
+
+    // Post-секция выполняется независимо от результата стадий основного пайплайна
+    post {
+        success {
+            withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
+            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='✅ *${env.JOB_NAME}* \n*Branch*: ${env.GIT_BRANCH}\n*Build* : OK ' """)
+            }
+        }
+
+        aborted {
+            withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
+            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='⛔️ *${env.JOB_NAME}* \n*Branch*: ${env.GIT_BRANCH}\n*Build* : Aborted ' """)
+            }
+        }
+
+        failure {
+            withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
+            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='❌ *${env.JOB_NAME}* \n*Branch*: ${env.GIT_BRANCH}\n*Build* : Failed' """)
+            }
+        }
 
     }
+
 }
