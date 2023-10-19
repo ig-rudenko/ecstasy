@@ -14,7 +14,7 @@ WorkingDirectory={{ root_folder }}
 #User=root
 #Group=root
 
-ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project flower --address {{ flower_address }} --port {{ flower_port }} --basic-auth={{ flower_username }}:{{ flower_password }}
+ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project flower --address={{ flower_address }} --port={{ flower_port }} --basic-auth={{ flower_username }}:{{ flower_password }}
 
 TimeoutSec=10
 Restart=always
