@@ -32,6 +32,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2")
@@ -350,10 +351,23 @@ SIMPLE_JWT = {
 }
 
 JAZZMIN_SETTINGS = {
+    "site_title": "Панель администратора",
+    "site_header": "Ecstasy",
+    "site_brand": "Ecstasy",
     "site_icon": "flavico.ico",
     "site_logo": "flavico.ico",
     "welcome_sign": "Добро пожаловать в панель администратора",
-    "copyright": "Ecstasy",
+    "copyright": "ig-rudenko",
+
+    "topmenu_links": [
+        {"name": "Вернуться на сайт", "url": "/"},
+        {"name": "Документация API", "url": "swagger-ui", "new_window": True},
+        {"model": "auth.User"},
+    ],
+
+    "related_modal_active": True,
+    "navigation_expanded": False,
+
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -375,6 +389,9 @@ JAZZMIN_SETTINGS = {
         "net_tools.DevicesForMacSearch": "fas fa-server",
     },
 }
-
+JAZZMIN_UI_TWEAKS = {
+    "theme": "litera",
+    "dark_mode_theme": "darkly",
+}
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
