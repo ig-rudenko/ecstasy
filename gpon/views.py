@@ -44,7 +44,7 @@ def gpon_view_building_tech_data(request, building_id: int):
 
 
 @login_required
-@permission_required(End3Permission.create_permissions_list, raise_exception=True)
+@permission_required(End3Permission.safe_permissions_list, raise_exception=True)
 def gpon_view_end3_tech_data(request, pk: int):
     end3 = get_object_or_404(End3, pk=pk)
     return render(

@@ -1,0 +1,120 @@
+html * {
+    font-family: 'Inter', sans-serif;
+}
+.nowrap {
+    white-space:nowrap;
+}
+.shadow {
+    box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 30%);
+}
+
+.logo {
+    border: none;
+    height: 70px;
+    width: 70px;
+    animation: 3.75s linear infinite spinner-border;
+}
+
+.search-string {
+    text-align: center;
+    width: 100%;
+    height: 20px;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-size: 24px;
+    color: #4ac1f7;
+    border: 0;
+    outline: 0;
+    background: transparent;
+}
+
+.bd-placeholder-img {
+    font-size: 1.125rem;
+    text-anchor: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+@media (min-width: 768px) {
+    .bd-placeholder-img-lg {
+      font-size: 3.5rem;
+    }
+}
+
+.b-example-divider {
+    height: 3rem;
+    background-color: rgba(0, 0, 0, .1);
+    border: solid rgba(0, 0, 0, .15);
+    border-width: 1px 0;
+    box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
+}
+
+.b-example-vr {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 100vh;
+}
+
+.bi {
+    vertical-align: -.125em;
+    fill: currentColor;
+}
+
+.nav-scroller {
+    position: relative;
+    z-index: 2;
+    height: 2.75rem;
+    overflow-y: hidden;
+}
+
+.nav-scroller .nav {
+    display: flex;
+    flex-wrap: nowrap;
+    padding-bottom: 1rem;
+    margin-top: -1px;
+    overflow-x: auto;
+    text-align: center;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+
+.gradient-border {
+  --border-width: 3px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #222;
+  border-radius: 20px!important;
+
+  &::after {
+    position: absolute;
+    content: "";
+    top: calc(-1 * var(--border-width));
+    left: calc(-1 * var(--border-width));
+    z-index: -1;
+    width: calc(100% + var(--border-width) * 2);
+    height: calc(100% + var(--border-width) * 2);
+    background: linear-gradient(
+      60deg,
+      hsl(224, 85%, 66%),
+      hsl(269, 85%, 66%),
+      hsl(314, 85%, 66%),
+      /*hsl(359, 85%, 66%),*/
+      /*hsl(44, 85%, 66%),*/
+      /*hsl(89, 85%, 66%),*/
+      /*hsl(134, 85%, 66%),*/
+      hsl(179, 85%, 66%)
+    );
+    background-size: 300% 300%;
+    background-position: 0 50%;
+    border-radius: 20px!important;
+    animation: moveGradient 1s alternate infinite;
+  }
+}
+
+@keyframes moveGradient {
+  50% {
+    background-position: 100% 50%;
+  }
+}

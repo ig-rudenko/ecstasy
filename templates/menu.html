@@ -1,4 +1,5 @@
 {% load static %}
+{% load gpon_perms %}
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
   <div class="container">
 
@@ -80,6 +81,7 @@
               </a>
             </li>
     {#              GPON Base #}
+          {% if request.user|has_any_gpon_permissions %}
             <li class="nav-item active">
               <a href="{% url 'gpon:main' %}" class="nav-link text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
@@ -88,6 +90,7 @@
                 GPON
               </a>
             </li>
+          {% endif %}
 
     {#              LOGOUT #}
             <li class="nav-item active">
