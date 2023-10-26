@@ -16,7 +16,7 @@ from .permissions import (
     TechDataPermission,
     OLTStatePermission,
     HouseOLTStatePermission,
-    TechCapabilityPermission,
+    TechCapabilityPermission, End3Permission,
 )
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
@@ -204,7 +204,7 @@ class DevicePortsList(DevicesNamesListAPIView):
 class End3TechCapabilityAPIView(RetrieveUpdateAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
-    # permission_classes = [End3Permission]
+    permission_classes = [End3Permission]
 
 
 class TechCapabilityAPIView(RetrieveUpdateAPIView):

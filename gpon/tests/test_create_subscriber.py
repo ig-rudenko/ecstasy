@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from gpon.api.serializers.create_subscriber_data import CreateSubscriberDataSerializer
+from gpon.api.serializers.create_subscriber_data import SubscriberDataSerializer
 from gpon.models import Service, End3, Customer, SubscriberConnection, Address, TechCapability
 
 
@@ -60,7 +60,7 @@ class TestSubscriberDataCreation(APITestCase):
         }
 
     def test_create_serializer(self):
-        serializer = CreateSubscriberDataSerializer(data=self.data)
+        serializer = SubscriberDataSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
         # serializer.is_valid()
         print(serializer.errors)

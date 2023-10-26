@@ -10,6 +10,7 @@ from .serializers.view_subscriber_data import CustomerDetailSerializer
 
 class CustomersListAPIView(ListAPIView):
     queryset = Customer.objects
+    permission_classes = [CustomerPermission]
     serializer_class = CustomerSerializer
 
 
