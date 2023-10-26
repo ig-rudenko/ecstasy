@@ -26,7 +26,7 @@ class NoAccessWithNoLogin(TestCase):
 class ResponseHeadersTest(TestCase):
     def test_security_headers(self):
         resp = self.client.get("/")
-        self.assertEqual(resp.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(resp.headers["X-Frame-Options"], "SAMEORIGIN")
         self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
         self.assertEqual(resp.headers["Referrer-Policy"], "same-origin")
         self.assertEqual(resp.headers["Cross-Origin-Opener-Policy"], "same-origin")
