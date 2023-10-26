@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}GPON{% endblock %}
+
+{% block links %}
+    <link rel="stylesheet" href="{% static 'css/gpon/main.css' %}"/>
+{% endblock %}
+
+
+{% block content %}
+
+    <div>
+        <div class="px-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"></path>
+            </svg>
+            <span class="fs-3">База GPON</span>
+        </div>
+
+
+        <div class="d-flex justify-content-center">
+            <div class="m-3" style="width: 40%;">
+                <a class="text-decoration-none text-dark" href="/gpon/subscriber-data/">
+                    <div id="left" class="pb-500 p-5 rounded-3 grow shadow-hover image-block" style="background-image: url('/static/img/gpon/left.png')" type="button">
+                        <h2>Абонентские данные</h2>
+                    </div>
+                </a>
+            </div>
+
+            <div class="m-3 pl-2" style="width: 40%;">
+                <a class="text-decoration-none text-dark" href="/gpon/tech-data/">
+                    <div id="right" class="pb-500 p-5 rounded-3 grow shadow-hover image-block" style="background-image: url('/static/img/gpon/right.png')" type="button">
+                        <h2 class="text-light">Технические данные</h2>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+
+
+    </div>
+
+{% endblock %}

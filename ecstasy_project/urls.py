@@ -13,12 +13,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
-
-from check import views
-from django.conf import settings
 from django.views.static import serve
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -26,10 +24,10 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from .swagger import schema_view
-from .protected_serve import protected_serve, LoginRequiredLimitation
+from check import views
 from maps.protected_serve import MapMediaServeLimitation
-
+from .protected_serve import protected_serve, LoginRequiredLimitation
+from .swagger import schema_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -41,6 +39,7 @@ urlpatterns = [
     path("tools/", include("net_tools.urls")),
     path("maps/", include("maps.urls")),
     path("gather/", include("gathering.urls")),
+    path("gpon/", include("gpon.urls")),
     path("ring-manager/", include("ring_manager.urls")),
     path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),

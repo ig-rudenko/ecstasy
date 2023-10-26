@@ -43,7 +43,7 @@
 
 
 {# CONTENT #}
-<section class="container py-5" style="flex-grow: 1!important;">
+<section class="{% if not disable_container %}container{% endif %} py-5" style="flex-grow: 1!important;">
     {% block content %}{% endblock %}
 </section>
 

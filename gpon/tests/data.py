@@ -1,0 +1,62 @@
+CREATE_TECH_DATA = {
+    "oltState": {
+        "deviceName": "device1",
+        "devicePort": "0/1/3",
+        "fiber": "Волокно",
+        "description": "Описание сплиттера 1го каскада\n",
+    },
+    "houseB": {
+        "entrances": "1-4",
+        "description": "Описание сплиттера 2го каскада",
+        "address": {
+            "id": 2,
+            "region": "Севастополь",
+            "settlement": "Севастополь",
+            "street": "улица Колобова",
+            "house": "22",
+            "block": None,
+            "building_type": "building",
+            "floors": 9,
+            "total_entrances": 22,
+        },
+    },
+    "end3": {
+        "type": "splitter",
+        "list": [
+            {
+                "buildAddress": False,
+                "address": {
+                    "id": 2,
+                    "region": "Севастополь",
+                    "settlement": "Севастополь",
+                    "street": "улица Колобова",
+                    "house": "22",
+                    "block": 10,
+                    "building_type": "building",
+                    "floors": 1,
+                    "total_entrances": 1,
+                },
+                "location": "3 этаж 1 подъезд",
+            },
+            {
+                "buildAddress": False,
+                "address": {
+                    "id": 2,
+                    "region": "Севастополь",
+                    "settlement": "Севастополь",
+                    "street": "улица Колобова",
+                    "house": "22",
+                    "block": 10,
+                    "building_type": "building",
+                    "floors": 1,
+                    "total_entrances": 1,
+                },
+                "location": "3 этаж 2 подъезд",
+            },
+            {"buildAddress": True, "address": None, "location": "3 этаж 3 подъезд"},
+            {"buildAddress": True, "address": None, "location": "3 этаж 4 подъезд"},
+        ],
+        "existingSplitter": None,
+        "portCount": 8,
+    },
+}

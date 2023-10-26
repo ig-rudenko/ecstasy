@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Абонент {{ full_name }}
+{% endblock %}
+
+{% block content %}
+    <div id="app"></div>
+{% endblock %}
+
+{% block js %}
+    {% csrf_token %}
+    <script src="{% static 'js/gpon_customer_view.js' %}"></script>
+{% endblock %}

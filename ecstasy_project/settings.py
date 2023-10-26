@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "ring_manager",
     "dbbackup",
     "django_celery_beat",
+    "gpon",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -106,6 +107,9 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            'libraries': {
+                'gpon_perms': 'gpon.templatetags.gpon_perms',
+            }
         },
     },
 ]

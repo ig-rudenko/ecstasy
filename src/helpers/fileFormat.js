@@ -1,8 +1,8 @@
 /**
  * Функция getFileEarmarkClass принимает имя файла в качестве входных данных и возвращает соответствующий класс значков
  * Bootstrap на основе расширения файла.
- * @param file_name - Параметр `file_name` представляет собой строку, представляющую имя файла, включая его расширение.
- * @returns Функция getFileEarmarkClass возвращает строку, представляющую имя класса CSS для данного имени файла.
+ * @param {string} file_name - Параметр `file_name` представляет собой строку, представляющую имя файла, включая его расширение.
+ * @returns {string} Функция getFileEarmarkClass возвращает строку, представляющую имя класса CSS для данного имени файла.
  */
 function getFileEarmarkClass(file_name) {
   const parts = file_name.split(".")

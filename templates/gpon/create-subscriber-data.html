@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Добавление абонента
+{% endblock %}
+
+{% block content %}
+    <div id="app"></div>
+{% endblock %}
+
+{% block js %}
+    {% csrf_token %}
+    <script src="{% static 'js/gpon_create_subscriber_data.js' %}"></script>
+{% endblock %}

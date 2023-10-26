@@ -1,0 +1,20 @@
+.shadow-hover:hover {
+    box-shadow: -2px 2px 10px 5px #d5d5d5;
+
+}
+
+.grow:hover {
+    -webkit-transform: scale(1.02);
+    -ms-transform: scale(1.02);
+    transform: scale(1.02);
+}
+
+.pb-500 {
+    padding-bottom: 400px !important;
+
+}
+
+.image-block {
+    background-size: cover;
+    background-position: center;
+}
