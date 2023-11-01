@@ -8,7 +8,7 @@ function get_vendor(mac_value) {
         type: 'get',
         url: '/tools/ajax/mac_vendor/' + mac_value,
         success: function (response) {
-            vendor.innerHTML = response.vendor;
+            vendor.innerHTML = `${response.vendor} <br> Адрес: ${response.address}`;
         }
     })
 }

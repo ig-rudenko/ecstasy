@@ -1,17 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
+from re import findall
 from typing import List
 
 import orjson
-from re import findall
-from concurrent.futures import ThreadPoolExecutor
-
 import requests as requests_lib
-from requests import RequestException
-from pyvis.network import Network
-
-from django.core.cache import cache
-from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render
+from pyvis.network import Network
+from requests import RequestException
 
 from app_settings.models import VlanTracerouteConfig
 from check.models import Devices
@@ -43,9 +41,15 @@ def check_periodically_scan(request):
 def get_vendor(request, mac: str) -> JsonResponse:
     """Определяет производителя по MAC адресу"""
 
-    resp = requests_lib.get("https://macvendors.com/query/" + mac, timeout=2)
+    resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2)
     if resp.status_code == 200:
-        return JsonResponse({"vendor": resp.text})
+        data = resp.json()
+        return JsonResponse(
+            {
+                "vendor": data["company"],
+                "address": data["address"],
+            }
+        )
     return JsonResponse({"vendor": resp.status_code})
 
 
@@ -65,7 +69,9 @@ def find_as_str(request):
     )
 
 
-def get_ip_or_mac_from(model_dev: Devices, find_address: str, result: list, find_type: str) -> None:
+def get_ip_or_mac_from(
+    model_dev: Devices, find_address: str, result: list, find_type: str
+) -> None:
     """
     ## Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result
 
@@ -130,7 +136,9 @@ def ip_mac_info(request, ip_or_mac):
         # Проходит через каждое устройство в списке устройств.
         for dev in devices_for_search:
             # Отправка задачи в пул потоков.
-            execute.submit(get_ip_or_mac_from, dev.device, find_address, match, find_type)
+            execute.submit(
+                get_ip_or_mac_from, dev.device, find_address, match, find_type
+            )
 
     names = []  # Список имен оборудования и его hostid из Zabbix
 
@@ -151,7 +159,9 @@ def ip_mac_info(request, ip_or_mac):
         except RequestException:
             pass
 
-    return render(request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names})
+    return render(
+        request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names}
+    )
 
 
 @login_required
@@ -173,7 +183,9 @@ def get_vlan_desc(request) -> JsonResponse:
         return JsonResponse({})
 
 
-def create_nodes(result: List[VlanTracerouteResult], net: Network, show_admin_down_ports: bool):
+def create_nodes(
+    result: List[VlanTracerouteResult], net: Network, show_admin_down_ports: bool
+):
     """
     ## Создает элементы и связи между ними для карты VLAN
     """
@@ -255,10 +267,14 @@ def create_nodes(result: List[VlanTracerouteResult], net: Network, show_admin_do
         all_nodes = net.get_nodes()
         # Создаем узлы, если их не было
         if e.node not in all_nodes:
-            net.add_node(e.node, src_label, title=src_label, group=src_gr, shape=src_shape)
+            net.add_node(
+                e.node, src_label, title=src_label, group=src_gr, shape=src_shape
+            )
 
         if e.next_node not in all_nodes:
-            net.add_node(e.next_node, dst_label, title=dst_label, group=dst_gr, shape=dst_shape)
+            net.add_node(
+                e.next_node, dst_label, title=dst_label, group=dst_gr, shape=dst_shape
+            )
 
         # Добавление ребра между двумя узлами.
         net.add_edge(e.node, e.next_node, value=line_width, title=e.line_description)
