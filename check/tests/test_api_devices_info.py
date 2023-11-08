@@ -9,16 +9,18 @@ from rest_framework.test import APITestCase
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Interfaces, ZabbixAPIConnection
 from net_tools.models import DevicesInfo
+from ..api.serializers import DevicesSerializer
 from ..api.views.devices_info import AllDevicesInterfacesWorkLoadAPIView
 from ..models import Devices, DeviceGroup, User, InterfacesComments
-from ..api.serializers import DevicesSerializer
 
 
 class DevicesListAPIViewTestCase(APITestCase):
     def setUp(self):
         cache.clear()
         self.url = reverse("devices-api:devices-list")
-        self.user: User = User.objects.create_user(username="test_user", password="password")
+        self.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
@@ -59,7 +61,9 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
     def setUp(self):
         cache.clear()
         self.url = reverse("devices-api:all-devices-interfaces-workload")
-        self.user: User = User.objects.create_user(username="test_user", password="password")
+        self.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         self.group = DeviceGroup.objects.create(name="ASW")
 
         self.user.profile.devices_groups.add(self.group)
@@ -83,7 +87,11 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
                     {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1"},
                     {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2"},
                     {"Interface": "Fa1/0/3", "Status": "down", "Description": "desc3"},
-                    {"Interface": "Fa1/0/4", "Status": "admin down", "Description": "desc4"},
+                    {
+                        "Interface": "Fa1/0/4",
+                        "Status": "admin down",
+                        "Description": "desc4",
+                    },
                     {"Interface": "Fa1/0/5", "Status": "down", "Description": "desc5"},
                     {"Interface": "Fa1/0/6", "Status": "up", "Description": "CORE"},
                     {"Interface": "Fa1/0/7", "Status": "down", "Description": ""},
@@ -126,7 +134,9 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, cache_value)
 
-    def test_get_all_device_interfaces_workload_with_cache_and_with_unavailable_group(self):
+    def test_get_all_device_interfaces_workload_with_cache_and_with_unavailable_group(
+        self,
+    ):
         cache_value = {
             "devices_count": 2,
             "devices": [
@@ -182,7 +192,9 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
         # Test with device that has no interface
         device = DevicesInfo()
-        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(device)
+        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(
+            device
+        )
         self.assertEqual(interfaces_load["count"], 0)
         self.assertEqual(interfaces_load["abons"], 0)
         self.assertEqual(interfaces_load["abons_up"], 0)
@@ -191,11 +203,17 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
 class DeviceInterfacesAPIViewTestCase(APITestCase):
     def setUp(self):
-        self.user: User = User.objects.create_user(username="test_user", password="password")
+        self.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
-            ip="127.0.0.1", name="dev1", group=self.group, model="model", vendor="vendor"
+            ip="127.0.0.1",
+            name="dev1",
+            group=self.group,
+            model="model",
+            vendor="vendor",
         )
         self.comment = InterfacesComments.objects.create(
             device=self.device, interface="Fa1/0/1", comment="comment", user=self.user
@@ -207,8 +225,18 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
     @patch("devicemanager.device.DeviceManager.from_model")
     def test_get_current_interfaces_not_snmp_with_vlans(self, mock_connect: Mock):
         interfaces = [
-            {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1", "VLAN's": [1, 2]},
-            {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2", "VLAN's": [3, 4]},
+            {
+                "Interface": "Fa1/0/1",
+                "Status": "up",
+                "Description": "desc1",
+                "VLAN's": [1, 2],
+            },
+            {
+                "Interface": "Fa1/0/2",
+                "Status": "up",
+                "Description": "desc2",
+                "VLAN's": [3, 4],
+            },
         ]
 
         device_manager_mock = MagicMock()
@@ -265,7 +293,10 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         self.assertEqual(mock_connect.call_count, 1)
         device_manager_mock.collect_interfaces.assert_called_once_with(
-            vlans=True, current_status=True, raise_exception=True, make_session_global=True
+            vlans=True,
+            current_status=True,
+            raise_exception=True,
+            make_session_global=True,
         )
         device_manager_mock.push_zabbix_inventory.assert_called_once()
 
@@ -317,7 +348,10 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         # При SNMP протоколе опроса интерфейсов параметр `vlans=False`
         device_manager_mock.collect_interfaces.assert_called_once_with(
-            vlans=False, current_status=True, raise_exception=True, make_session_global=True
+            vlans=False,
+            current_status=True,
+            raise_exception=True,
+            make_session_global=True,
         )
         device_manager_mock.push_zabbix_inventory.assert_called_once()
 
@@ -340,11 +374,17 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
 class DeviceInfoAPIViewTestCase(APITestCase):
     def setUp(self):
-        self.user: User = User.objects.create_user(username="test_user", password="password")
+        self.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
-            ip="10.100.0.10", name="dev1", group=self.group, model="model", vendor="vendor"
+            ip="10.100.0.10",
+            name="dev1",
+            group=self.group,
+            model="model",
+            vendor="vendor",
         )
         self.url = reverse("devices-api:device-info", args=[self.device.name])
 
@@ -380,11 +420,17 @@ class DeviceInfoAPIViewTestCase(APITestCase):
 
 class TestDeviceStatsInfoAPIView(APITestCase):
     def setUp(self):
-        self.user: User = User.objects.create_user(username="test_user", password="password")
+        self.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
-            ip="10.20.0.20", name="dev1", group=self.group, model="model", vendor="vendor"
+            ip="10.20.0.20",
+            name="dev1",
+            group=self.group,
+            model="model",
+            vendor="vendor",
         )
         self.url = reverse("devices-api:device-stats-info", args=[self.device.name])
 
@@ -446,7 +492,9 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         self.client.force_authenticate(user=user)
 
         # DevicePermission разрешает только владельцу устройства доступ
-        url = reverse("devices-api:device-stats-info", kwargs={"device_name": self.device.name})
+        url = reverse(
+            "devices-api:device-stats-info", kwargs={"device_name": self.device.name}
+        )
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

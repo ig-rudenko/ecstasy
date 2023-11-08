@@ -50,7 +50,7 @@ urlpatterns = [
     path(
         "<device_name>/actions",
         user_actions.UserDeviceActionsAPIView.as_view(),
-        name="device-stats-info",
+        name="device-user-actions",
     ),
     # ===========================================
     #                Config files
