@@ -3,7 +3,7 @@ from re import findall
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from ..models import Devices, InterfacesComments, DeviceMedia
+from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions
 
 
 class DevicesSerializer(serializers.ModelSerializer):
@@ -26,7 +26,16 @@ class DeviceMediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DeviceMedia
-        fields = ["id", "file", "name", "file_type", "is_image", "description", "mod_time", "url"]
+        fields = [
+            "id",
+            "file",
+            "name",
+            "file_type",
+            "is_image",
+            "description",
+            "mod_time",
+            "url",
+        ]
         read_only_fields = ["id", "mod_time", "file_type"]
 
 
@@ -115,7 +124,9 @@ class PortControlSerializer(serializers.Serializer):
 
 class PoEPortStatusSerializer(serializers.Serializer):
     port = serializers.CharField(max_length=50, required=True)
-    status = serializers.ChoiceField(choices=["auto-on", "forced-on", "off"], required=True)
+    status = serializers.ChoiceField(
+        choices=["auto-on", "forced-on", "off"], required=True
+    )
 
     def update(self, instance, validated_data):
         pass
@@ -134,3 +145,11 @@ class ConfigFileSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         pass
+
+
+class UserDeviceActionSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source="user.username")
+
+    class Meta:
+        model = UsersActions
+        fields = ["time", "user", "action"]

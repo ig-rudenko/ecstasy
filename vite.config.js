@@ -13,7 +13,8 @@ export default defineConfig({
     server: {
         proxy: {
             '/gpon/api': 'http://127.0.0.1:8000',
-            '^/static/.*': 'http://127.0.0.1:8000'
+            '^/static/.*': 'http://127.0.0.1:8000',
+            '/device': 'http://127.0.0.1:8000'
         }
     }
 })

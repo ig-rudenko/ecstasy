@@ -19,6 +19,7 @@ import BrasSession from "./components/BrasSession.vue";
 import ConfigFiles from "./components/ConfigFiles.vue";
 import ConfigFilesSwitchButton from "./components/ConfigFilesSwitchButton.vue";
 import DeviceImages from "./components/DeviceInfo/DeviceImages.vue";
+import UserActionsButton from "./components/DeviceInfo/UserActionsButton.vue";
 
 export default {
   name: 'device',
@@ -455,6 +456,7 @@ export default {
 
   },
   components: {
+    UserActionsButton,
     DeviceImages,
     DeviceWorkloadBar,
     DetailInterfaceInfo,

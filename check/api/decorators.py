@@ -2,7 +2,9 @@ from functools import wraps
 
 import pexpect
 from django.conf import settings
+from requests import exceptions
 from rest_framework.response import Response
+
 from devicemanager.exceptions import BaseDeviceException
 
 
@@ -14,9 +16,7 @@ def except_connection_errors(handler):
 
     @wraps(handler)
     def wrapper(*args, **kwargs):
-        contact = (
-            f'Пишите на почту: <br><span class="badge bg-success">{settings.CONTACT_EMAIL}</span>'
-        )
+        contact = f'Пишите на почту: <br><span class="badge bg-success">{settings.CONTACT_EMAIL}</span>'
         try:
             return handler(*args, **kwargs)
         except pexpect.EOF:
@@ -30,6 +30,11 @@ def except_connection_errors(handler):
                 status=500,
             )
         except BaseDeviceException as exc:
+            return Response(
+                {"error": f"{exc}. {contact}"},
+                status=500,
+            )
+        except exceptions.ConnectionError as exc:
             return Response(
                 {"error": f"{exc}. {contact}"},
                 status=500,
