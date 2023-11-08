@@ -1,8 +1,8 @@
+import re
 from functools import lru_cache
-from typing import Literal, Dict
+from typing import Literal, Dict, Optional
 
 import orjson
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import generics
@@ -27,17 +27,51 @@ from ..serializers import (
     PoEPortStatusSerializer,
 )
 from ..swagger import schemas
+from ...models import Profile
+
+
+class PortGuardCheckMixin:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.port_desc = ""
+        self.profile: Optional[Profile] = None
+
+    def check_object_permissions(self, request, obj):
+        # Смотрим интерфейсы, которые сохранены в БД
+        dev_info, _ = DevicesInfo.objects.get_or_create(dev=obj)
+
+        if dev_info.interfaces is None:
+            # Собираем интерфейсы с оборудования.
+            interfaces = Interfaces(obj.connect().get_interfaces())
+        else:
+            # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
+            interfaces = Interfaces(orjson.loads(dev_info.interfaces))
+
+        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
+        self.port_desc: str = interfaces[self.request.data["port"]].desc
+
+        # Если не суперпользователь, то нельзя изменять состояние определенных портов
+        try:
+            self.profile: Profile = Profile.objects.get(user=self.request.user)
+        except Profile.DoesNotExist:
+            raise PermissionDenied(
+                detail="У вас нет профиля для выполнения данного действия!",
+            )
+
+        # Если в профиле пользователя стоит ограничение на определенные порты
+        if self.profile.port_guard_pattern and re.search(
+            self.profile.port_guard_pattern, self.port_desc, flags=re.IGNORECASE
+        ):
+            raise PermissionDenied(
+                detail="Запрещено изменять состояние данного порта!",
+            )
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
 @method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
-class PortControlAPIView(generics.GenericAPIView):
+class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PortControlSerializer
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.port_desc = ""
 
     @except_connection_errors
     def post(self, request, device_name: str):
@@ -49,7 +83,9 @@ class PortControlAPIView(generics.GenericAPIView):
         serializer: PortControlSerializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        port_status: Literal["up", "down", "reload"] = serializer.validated_data["status"]
+        port_status: Literal["up", "down", "reload"] = serializer.validated_data[
+            "status"
+        ]
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
@@ -92,27 +128,14 @@ class PortControlAPIView(generics.GenericAPIView):
         return Response(serializer.validated_data, status=200)
 
     def check_object_permissions(self, request, device) -> None:
-        # Смотрим интерфейсы, которые сохранены в БД
-        dev_info, _ = DevicesInfo.objects.get_or_create(dev=device)
-
-        if dev_info.interfaces is None:
-            # Собираем интерфейсы с оборудования.
-            interfaces = Interfaces(device.connect().get_interfaces())
-        else:
-            # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
-            interfaces = Interfaces(orjson.loads(dev_info.interfaces))
-
-        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        self.port_desc: str = interfaces[self.request.data["port"]].desc
-
-        # Если не суперпользователь, то нельзя изменять состояние определенных портов
-        if not request.user.is_superuser and settings.PORT_GUARD_PATTERN.search(self.port_desc):
-            raise PermissionDenied(
-                detail="Запрещено изменять состояние данного порта!",
-            )
+        super().check_object_permissions(request, device)
 
         # Если недостаточно привилегий для изменения статуса порта
-        if request.user.profile.perm_level < 2 and request.data["status"] in ["up", "down"]:
+        if (
+            self.profile
+            and self.profile.perm_level < 2
+            and request.data["status"] in ["up", "down"]
+        ):
             # Логи
             log(
                 request.user,
@@ -127,7 +150,7 @@ class PortControlAPIView(generics.GenericAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDescriptionAPIView(APIView):
+class ChangeDescriptionAPIView(PortGuardCheckMixin, APIView):
     """
     ## Изменяем описание на порту у оборудования
     """
@@ -171,7 +194,9 @@ class ChangeDescriptionAPIView(APIView):
         new_description = self.request.data.get("description", "")
         port = self.request.data.get("port")
 
-        set_description_status = dev.connect().set_description(port=port, desc=new_description)
+        set_description_status = dev.connect().set_description(
+            port=port, desc=new_description
+        )
 
         if set_description_status.max_length:
             # Если есть данные, что описание слишком длинное.
@@ -392,7 +417,9 @@ class InterfaceInfoAPIView(APIView):
 
         if result["portDetailInfo"].get("type") == "gpon":
             # Ищем возможные комментарии только для GPON типа
-            result["portDetailInfo"]["data"]["onts_lines"] = self.create_onts_lines_with_comments(
+            result["portDetailInfo"]["data"][
+                "onts_lines"
+            ] = self.create_onts_lines_with_comments(
                 result["portDetailInfo"]["data"].get("onts_lines", []),
                 gpon_port=port,
                 device=device,
@@ -402,7 +429,7 @@ class InterfaceInfoAPIView(APIView):
 
     @staticmethod
     def create_onts_lines_with_comments(
-            onts_lines: list, gpon_port: str, device: models.Devices
+        onts_lines: list, gpon_port: str, device: models.Devices
     ) -> list:
         """
         Находит комментарии созданные на ONT для порта `gpon_port` оборудования `device`.

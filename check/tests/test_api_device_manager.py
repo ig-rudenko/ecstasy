@@ -5,8 +5,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from devicemanager.vendors.base.types import SetDescriptionResult
 from devicemanager.vendors.base.device import BaseDevice
+from devicemanager.vendors.base.types import SetDescriptionResult
 from net_tools.models import DevicesInfo, VlanName
 from ..models import Devices, DeviceGroup, User, UsersActions
 
@@ -14,7 +14,9 @@ from ..models import Devices, DeviceGroup, User, UsersActions
 class PortControlAPIViewTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(username="test_user", password="password")
+        cls.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
         cls.device: Devices = Devices.objects.create(
@@ -35,7 +37,7 @@ class PortControlAPIViewTestCase(APITestCase):
                     {
                         "Interface": "Gi0/1",
                         "Status": "up",
-                        "Description": "CORE",
+                        "Description": "CORE-1",
                         "VLAN's": [3, 4],
                     },
                 ]
@@ -135,7 +137,8 @@ class PortControlAPIViewTestCase(APITestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
-            resp.data["detail"], "У вас недостаточно прав, для изменения состояния порта!"
+            resp.data["detail"],
+            "У вас недостаточно прав, для изменения состояния порта!",
         )
 
         # Имеется запись в логах.
@@ -151,19 +154,24 @@ class PortControlAPIViewTestCase(APITestCase):
 
     def test_port_down_no_access_to_change_core_port_by_desc(self):
         self.user.profile.permissions = self.user.profile.UP_DOWN
+        self.user.profile.port_guard_pattern = r"core-\d"
         self.user.profile.save()
         self.client.force_login(user=self.user)
 
-        # Данный порт имеет описание `CORE`, изменять его состояние может только суперпользователь.
+        # Данный порт имеет описание `CORE`, Теперь его состояние нельзя менять.
         resp = self.client.post(
             self.url,
             data={"port": "Gi0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(resp.data["detail"], "Запрещено изменять состояние данного порта!")
+        self.assertEqual(
+            resp.data["detail"], "Запрещено изменять состояние данного порта!"
+        )
 
     @patch("check.models.Devices.connect")
-    def test_port_down_superuser_access_to_change_core_port_by_desc(self, device_connection: Mock):
+    def test_port_down_superuser_access_to_change_core_port_by_desc(
+        self, device_connection: Mock
+    ):
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)
@@ -226,7 +234,9 @@ class PortControlAPIViewTestCase(APITestCase):
 class ChangeDescriptionAPIViewTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(username="test_user", password="password")
+        cls.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
         cls.device: Devices = Devices.objects.create(
@@ -258,7 +268,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             saved="Saved OK",
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = set_description_result
+        device_connect.return_value.set_description.return_value = (
+            set_description_result
+        )
         data = {"port": "eth1"}
 
         # Отправка запроса.
@@ -270,7 +282,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
         # Кол-во вызванных методов.
-        self.assertEqual(device_connect.call_count, 1)
+        # Первый на поиск интерфейсов, чтобы проверить описание
+        # Второй на изменение описания
+        self.assertEqual(device_connect.call_count, 2)
         # Правильность вызова `set_description`.
         device_connect.return_value.set_description.assert_called_once_with(
             port=data["port"],
@@ -313,7 +327,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             saved="Saved OK",
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = set_description_result
+        device_connect.return_value.set_description.return_value = (
+            set_description_result
+        )
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.
@@ -324,7 +340,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
         # Кол-во вызванных методов.
-        self.assertEqual(device_connect.call_count, 1)
+        # Первый на поиск интерфейсов, чтобы проверить описание
+        # Второй на изменение описания
+        self.assertEqual(device_connect.call_count, 2)
         # Правильность вызова `set_description`.
         device_connect.return_value.set_description.assert_called_once_with(
             port=data["port"],
@@ -365,7 +383,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             max_length=64,
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = set_description_result
+        device_connect.return_value.set_description.return_value = (
+            set_description_result
+        )
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.
@@ -376,7 +396,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertEqual(device_connect.call_count, 1)
+        self.assertEqual(device_connect.call_count, 2)
         device_connect.return_value.set_description.assert_called_once_with(
             port=data["port"],
             desc=data["description"],
@@ -402,7 +422,9 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
 class MacListAPIViewTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(username="test_user", password="password")
+        cls.user: User = User.objects.create_user(
+            username="test_user", password="password"
+        )
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
         cls.device: Devices = Devices.objects.create(
@@ -441,9 +463,21 @@ class MacListAPIViewTestCase(APITestCase):
             {
                 "count": 3,
                 "result": [
-                    {"vlanID": "1051", "mac": "00-04-96-51-AD-3D", "vlanName": vlan_name},
-                    {"vlanID": "1051", "mac": "00-04-96-52-A5-FB", "vlanName": vlan_name},
-                    {"vlanID": "1051", "mac": "00-04-96-52-A5-5B", "vlanName": vlan_name},
+                    {
+                        "vlanID": "1051",
+                        "mac": "00-04-96-51-AD-3D",
+                        "vlanName": vlan_name,
+                    },
+                    {
+                        "vlanID": "1051",
+                        "mac": "00-04-96-52-A5-FB",
+                        "vlanName": vlan_name,
+                    },
+                    {
+                        "vlanID": "1051",
+                        "mac": "00-04-96-52-A5-5B",
+                        "vlanName": vlan_name,
+                    },
                 ],
             },
         )

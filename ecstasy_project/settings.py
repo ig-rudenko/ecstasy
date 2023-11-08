@@ -32,7 +32,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2")
@@ -108,9 +108,9 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
-            'libraries': {
-                'gpon_perms': 'gpon.templatetags.gpon_perms',
-            }
+            "libraries": {
+                "gpon_perms": "gpon.templatetags.gpon_perms",
+            },
         },
     },
 ]
@@ -184,10 +184,6 @@ LOGOUT_REDIRECT_URL = "/"
 NON_ABON_INTERFACES_PATTERN = re.compile(
     r"power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras|voip|fttb|honet",
     re.IGNORECASE,
-)
-
-PORT_GUARD_PATTERN = re.compile(
-    r"svsl|power_monitoring|[as]sw\d|dsl|co[pr]m|msan|core|cr\d|nat|mx-\d|dns|bras", re.IGNORECASE
 )
 
 # ================= CACHE ===================
@@ -358,16 +354,13 @@ JAZZMIN_SETTINGS = {
     "site_logo": "flavico.ico",
     "welcome_sign": "Добро пожаловать в панель администратора",
     "copyright": "ig-rudenko",
-
     "topmenu_links": [
         {"name": "Вернуться на сайт", "url": "/"},
         {"name": "Документация API", "url": "swagger-ui", "new_window": True},
         {"model": "auth.User"},
     ],
-
     "related_modal_active": True,
     "navigation_expanded": False,
-
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",

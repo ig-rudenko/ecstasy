@@ -3,16 +3,15 @@
 # Модели для оборудования
 
 """
+from django.contrib.auth.models import User
+from django.db import models
+from django.db.models.signals import post_save, pre_delete
+from django.dispatch import receiver
 from django.utils.text import slugify
 from ping3 import ping
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_delete
-
-from devicemanager.remote import remote_connector
 from devicemanager.dc import SimpleAuthObject
+from devicemanager.remote import remote_connector
 from devicemanager.remote.connector import RemoteDevice
 
 
@@ -20,7 +19,9 @@ class DeviceGroup(models.Model):
     """Группа для оборудования"""
 
     name = models.CharField(max_length=100, verbose_name="Название")
-    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
+    description = models.TextField(
+        max_length=255, null=True, blank=True, verbose_name="Описание"
+    )
 
     def __str__(self):
         return f"[ {self.name} ]"
@@ -44,7 +45,9 @@ class AuthGroup(models.Model):
         blank=True,
         verbose_name="Пароль от привилегированного режима",
     )
-    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
+    description = models.TextField(
+        max_length=255, null=True, blank=True, verbose_name="Описание"
+    )
 
     def __str__(self):
         return f"< {self.name} >"
@@ -265,6 +268,14 @@ class Profile(models.Model):
     devices_groups = models.ManyToManyField(
         DeviceGroup, verbose_name="Доступные группы оборудования"
     )
+    port_guard_pattern = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Защитный RegExp для описания порта",
+        help_text="Регулярное выражение, совпадение которого с описанием"
+        " порта будет запрещать определенные действия с ним",
+    )
 
     @property
     def perm_level(self) -> int:
@@ -284,7 +295,9 @@ class UsersActions(models.Model):
     """Логирование действий пользователя"""
 
     time = models.DateTimeField(auto_now_add=True, verbose_name="Дата/время")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name="Пользователь"
+    )
     device = models.ForeignKey(
         Devices, on_delete=models.CASCADE, null=True, verbose_name="Оборудование"
     )
