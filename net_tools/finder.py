@@ -4,6 +4,7 @@ from typing import List, NamedTuple
 
 import orjson
 from django.contrib.auth.models import User
+from django.db.models import QuerySet
 
 from check.models import Devices, InterfacesComments
 from devicemanager.device import Interfaces
@@ -35,9 +36,9 @@ class Finder:
         """
 
         all_comments = list(
-            InterfacesComments.objects.filter(comment__iregex=escape(pattern)).select_related(
-                "user", "device"
-            )
+            InterfacesComments.objects.filter(
+                comment__iregex=escape(pattern)
+            ).select_related("user", "device")
         )
 
         comments_dict = {}
@@ -94,7 +95,9 @@ class Finder:
                             "Interface": line["Interface"],
                             "Description": line["Description"],
                             "Comments": comments_dict_value,
-                            "SavedTime": device.interfaces_date.strftime("%d.%m.%Y %H:%M:%S"),
+                            "SavedTime": device.interfaces_date.strftime(
+                                "%d.%m.%Y %H:%M:%S"
+                            ),
                         }
                     )
 
@@ -111,7 +114,9 @@ class Finder:
                                 "Interface": interface,
                                 "Description": comment["text"],
                                 "Comments": [comment],
-                                "SavedTime": comment["datetime"].strftime("%d.%m.%Y %H:%M:%S"),
+                                "SavedTime": comment["datetime"].strftime(
+                                    "%d.%m.%Y %H:%M:%S"
+                                ),
                             }
                             for comment in comments_dict[dev_name][interface]
                         ]
@@ -185,12 +190,16 @@ class VlanTraceroute:
         :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
         """
         if not self._desc_name_list:
-            self._desc_name_list: List[DescNameFormat] = list(DescNameFormat.objects.all())
+            self._desc_name_list: List[DescNameFormat] = list(
+                DescNameFormat.objects.all()
+            )
 
         if device in self.passed_devices:
             return
 
-        self.passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
+        self.passed_devices.add(
+            device
+        )  # Добавляем узел в список уже пройденных устройств
         try:
             dev = DevicesInfo.objects.get(dev__name=device)
         except DevicesInfo.DoesNotExist:
@@ -206,15 +215,11 @@ class VlanTraceroute:
                 # Пропускаем несоответствующие порты
                 continue
 
-            print(vlan_to_find, interface.vlan)
-            print(interface)
-
             # Ищем в описании порта следующий узел сети
             next_device_find: List[str] = findall(
                 find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
             )
 
-            print(next_device_find)
             # Приводим к единому формату имя узла сети
             next_device = next_device_find[0] if next_device_find else ""
 
@@ -234,7 +239,7 @@ class VlanTraceroute:
             if double_check and next_device:  # Если есть следующее оборудование
                 try:
                     next_dev_intf_json: str = (
-                            DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
+                        DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
                     )
                 except DevicesInfo.DoesNotExist:
                     next_dev_intf_json = "[]"
@@ -243,7 +248,9 @@ class VlanTraceroute:
 
                 for next_dev_interface in next_dev_interfaces:
                     if vlan_to_find in next_dev_interface.vlan and findall(
-                            device, self.reformatting(next_dev_interface.desc), flags=IGNORECASE
+                        device,
+                        self.reformatting(next_dev_interface.desc),
+                        flags=IGNORECASE,
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)
@@ -310,3 +317,37 @@ class VlanTraceroute:
                     find_device_pattern=find_device_pattern,
                     double_check=double_check,
                 )
+
+
+class MultipleVlanTraceroute:
+    def __init__(self, finder: VlanTraceroute, devices_queryset: QuerySet[Devices]):
+        self._finder: VlanTraceroute = finder
+        self._devices_queryset: QuerySet[Devices] = devices_queryset
+
+    def execute_traceroute(
+        self,
+        vlan: int,
+        empty_ports: bool,
+        only_admin_up: bool,
+        find_device_pattern: str,
+        double_check: bool,
+        graph_min_length: int,
+    ) -> List[VlanTracerouteResult]:
+
+        result: List[VlanTracerouteResult] = []
+        # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
+        for start_dev in self._devices_queryset:
+            # Трассировка vlan
+            finder = VlanTraceroute()
+            finder.find_vlan(
+                device=start_dev.name,
+                vlan_to_find=vlan,
+                empty_ports=empty_ports,
+                only_admin_up=only_admin_up,
+                find_device_pattern=find_device_pattern,
+                double_check=double_check,
+            )
+            if not graph_min_length or len(finder.result) >= graph_min_length:
+                result.extend(finder.result)
+
+        return result

@@ -40,8 +40,22 @@
             </div>
         </div>
 
-        <div class="col-md-2">
-          <input @keyup.enter="load_vlan_traceroute" v-model.trim="inputVlan" style="text-align: center; width: 70px" type="text" class="form-control rounded-5" autofocus placeholder="vlan">
+        <div class="my-3 d-flex align-items-center">
+            <div>
+              <input @keyup.enter="load_vlan_traceroute"
+                     @input="getInputVlanInfo"
+                     v-model.trim="inputVlan"
+                     style="text-align: center; width: 120px; height: 45px" type="text" class="form-control rounded-5 me-2"
+                     autofocus placeholder="vlan">
+            </div>
+            <button v-if="!vlanTracerouteStarted" @click="load_vlan_traceroute" class="btn text-light">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bezier2" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M1 2.5A1.5 1.5 0 0 1 2.5 1h1A1.5 1.5 0 0 1 5 2.5h4.134a1 1 0 1 1 0 1h-2.01c.18.18.34.381.484.605.638.992.892 2.354.892 3.895 0 1.993.257 3.092.713 3.7.356.476.895.721 1.787.784A1.5 1.5 0 0 1 12.5 11h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5H6.866a1 1 0 1 1 0-1h1.711a2.839 2.839 0 0 1-.165-.2C7.743 11.407 7.5 10.007 7.5 8c0-1.46-.246-2.597-.733-3.355-.39-.605-.952-1-1.767-1.112A1.5 1.5 0 0 1 3.5 5h-1A1.5 1.5 0 0 1 1 3.5v-1zM2.5 2a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10 10a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+                </svg>
+            </button>
+            <div v-if="inputVlanInfo.name" class="text-light fs-4">
+                {{ inputVlanInfo.name }} ({{ inputVlanInfo.description }})
+            </div>
         </div>
         <div class="col-md-auto">
             <h3>
@@ -52,8 +66,7 @@
 
     <div class="form-check form-switch">
       <input v-model="vlanTracerouteOptions.adminDownPorts"
-             class="form-check-input" type="checkbox" role="switch" id="only-admin-up"
-      >
+             class="form-check-input" type="checkbox" role="switch" id="only-admin-up">
       <label class="form-check-label text-light" for="only-admin-up">
           Указывать выключенные порты
       </label>
@@ -61,8 +74,7 @@
 
     <div class="form-check form-switch py-1">
       <input v-model="vlanTracerouteOptions.showEmptyPorts"
-             class="form-check-input" type="checkbox" role="switch" id="empty-ports"
-      >
+             class="form-check-input" type="checkbox" role="switch" id="empty-ports">
       <label class="form-check-label text-light" for="empty-ports">
           Показывать пустые порты
       </label>
@@ -70,11 +82,33 @@
 
     <div class="form-check form-switch py-1">
       <input v-model="vlanTracerouteOptions.doubleCheckVlan"
-             class="form-check-input" type="checkbox" role="switch" id="double-check-vlan"
-      >
-      <label class="form-check-label text-light" for="empty-ports">
+             class="form-check-input" type="checkbox" role="switch" id="double-check-vlan">
+      <label class="form-check-label text-light" for="double-check-vlan">
           Двухстороннее соответствие VLAN на соседних портах
       </label>
+    </div>
+
+    <div class="py-1 text-center d-flex align-items-center">
+        <div style="width: 130px" class="me-2">
+            <div class="input-group py-3">
+              <span @click="vlanTracerouteOptions.graphMinLength>1?vlanTracerouteOptions.graphMinLength--:null"
+                    class="input-group-text noselect cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash-lg" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8Z"/>
+                    </svg>
+              </span>
+              <input disabled v-model.number="vlanTracerouteOptions.graphMinLength" id="min-graph-length"
+                     type="text" class="form-control text-center">
+              <span @click="vlanTracerouteOptions.graphMinLength++" class="input-group-text noselect cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+                  </svg>
+              </span>
+            </div>
+        </div>
+        <div class="form-label text-light col-3 noselect">
+            Минимальное количество узлов в одном графе
+        </div>
     </div>
 
 </div>
@@ -113,9 +147,17 @@
             </div>
         </div>
 
-        <div class="col-md-2">
-          <input @keyup.enter="load_mac_traceroute" v-model.trim="inputMac" style="text-align: center" type="text"
-                 class="form-control rounded-5" autofocus placeholder="mac">
+        <div class="my-3 d-flex align-items-center">
+            <div>
+              <input @keyup.enter="load_mac_traceroute" v-model.trim="inputMac"
+                     style="text-align: center; width: 200px; height: 45px;" type="text"
+                     class="form-control rounded-5" autofocus placeholder="mac">
+            </div>
+            <button v-if="!macTracerouteStarted" @click="load_mac_traceroute" class="btn text-light">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bezier2" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M1 2.5A1.5 1.5 0 0 1 2.5 1h1A1.5 1.5 0 0 1 5 2.5h4.134a1 1 0 1 1 0 1h-2.01c.18.18.34.381.484.605.638.992.892 2.354.892 3.895 0 1.993.257 3.092.713 3.7.356.476.895.721 1.787.784A1.5 1.5 0 0 1 12.5 11h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5H6.866a1 1 0 1 1 0-1h1.711a2.839 2.839 0 0 1-.165-.2C7.743 11.407 7.5 10.007 7.5 8c0-1.46-.246-2.597-.733-3.355-.39-.605-.952-1-1.767-1.112A1.5 1.5 0 0 1 3.5 5h-1A1.5 1.5 0 0 1 1 3.5v-1zM2.5 2a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10 10a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+                </svg>
+            </button>
         </div>
     </div>
 </div>

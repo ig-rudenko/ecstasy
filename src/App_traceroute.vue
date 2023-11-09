@@ -1,6 +1,8 @@
 <template src="./App_traceroute.html"></template>
 
 <script>
+import api_request from "./api_request.js";
+
 export default {
   name: 'app',
   data() {
@@ -22,9 +24,6 @@ export default {
       vlanTracerouteStarted: false,
       macTracerouteStarted: false,
 
-      // Токен Django CSRF.
-      CSRF_TOKEN: $('input[name=csrfmiddlewaretoken]')[0].value,
-
       // Установка значения по умолчанию для свойства tracerouteMode.
       tracerouteMode: 'vlan',
 
@@ -32,11 +31,17 @@ export default {
       inputVlan: "",
       inputMac: "",
 
+      inputVlanInfo: {
+        name: "",
+        description: ""
+      },
+
       // Свойство данных, которое используется для хранения состояния флажков.
       vlanTracerouteOptions: {
         adminDownPorts: false,
         showEmptyPorts: false,
         doubleCheckVlan: true,
+        graphMinLength: 3,
       },
 
       // Базовая конфигурация для сети vis.js.
@@ -102,6 +107,11 @@ export default {
 
   methods: {
 
+    getInputVlanInfo() {
+      api_request.get("/tools/ajax/vlan_desc?vlan="+this.inputVlan)
+          .then(resp => {this.inputVlanInfo = resp.data})
+    },
+
     // Метод, который переключает значение свойства `tracerouteMode` между `vlan` и `mac`.
     toggleMode() {
       if (this.tracerouteMode === 'vlan') {
@@ -113,112 +123,82 @@ export default {
     },
 
     // Проверяем, запущено ли сканирование vlan.
-    async check_vlans_scan_status() {
-
-      try {
-        let resp = await fetch(
-            '/tools/ajax/vlans-scan/check',
-            {
-              method: "GET",
-              headers: {"X-CSRFToken": this.CSRF_TOKEN}
-            }
-        )
-        let data = await resp.json()
-        if (!data.status) {
-          this.vlanScanStatus = { available: true, running: false, progress: null }
-
-        } else {
-          this.vlanScanStatus = { available: false, running: true, progress: data.progress }
-        }
-
-      } catch (error) {
-        console.log(error)
-        this.vlanScanStatus = { available: false, running: false, progress: null }
-      }
+    check_vlans_scan_status() {
+      api_request.get("/tools/ajax/vlans-scan/check")
+          .then(
+              resp => {
+                if (!resp.data.status) {
+                  this.vlanScanStatus = { available: true, running: false, progress: null }
+                } else {
+                  this.vlanScanStatus = { available: false, running: true, progress: data.progress }
+                }
+              }
+          )
+          .catch(
+              reason => {
+                this.vlanScanStatus = { available: false, running: false, progress: null }
+              }
+          )
 
       setTimeout(this.check_vlans_scan_status, 5000);
     },
 
     // Метод, который отправляет POST-запрос на сервер для запуска сканирования vlan.
-    async run_vlans_scan() {
+    run_vlans_scan() {
       if (!this.vlanScanStatus.available) return;
 
-      try {
-        let resp = await fetch(
-            '/tools/ajax/vlans-scan/run',
-            {
-              method: "POST",
-              headers: {"X-CSRFToken": this.CSRF_TOKEN}
-            }
-        )
-        if (resp.status === 200) {
-          this.vlanScanStatus.available = false
-          this.vlanScanStatus.running = true
-        } else {
-          this.vlanScanStatus.available = false
-          this.vlanScanStatus.running = false
-        }
+      api_request.post("/tools/ajax/vlans-scan/run")
+          .then(
+              resp => {
+                this.vlanScanStatus.available = false;
+                this.vlanScanStatus.running = true;
+              }
+          )
+          .catch(
+              reason => {
+                this.vlanScanStatus.available = false
+                this.vlanScanStatus.running = false
+              }
+          )
 
-      } catch (error) {
-        console.log(error)
-        this.vlanScanStatus.available = false
-        this.vlanScanStatus.running = false
-      }
     },
 
 
     // Проверяем, запущено ли сканирование vlan.
-    async check_mac_scan_status() {
-
-      try {
-        let resp = await fetch(
-            '/gather/mac-scan/check',
-            {
-              method: "GET",
-              headers: {"X-CSRFToken": this.CSRF_TOKEN}
-            }
-        )
-        let data = await resp.json()
-        if (!data.status) {
-          this.macScanStatus = { available: true, running: false, progress: null }
-
-        } else {
-          this.macScanStatus = { available: false, running: true, progress: data.progress }
-        }
-
-      } catch (error) {
-        console.log(error)
-        this.macScanStatus = { available: false, running: true, progress: null }
-      }
+    check_mac_scan_status() {
+      api_request.get("/gather/mac-scan/check")
+          .then(
+              resp => {
+                if (!data.status) {
+                  this.macScanStatus = { available: true, running: false, progress: null }
+                } else {
+                  this.macScanStatus = { available: false, running: true, progress: data.progress }
+                }
+              }
+          )
+          .catch(reason => {this.macScanStatus = { available: false, running: true, progress: null }})
 
       setTimeout(this.check_mac_scan_status, 5000);
     },
 
     // Метод, который отправляет POST-запрос на сервер для запуска сканирования mac.
-    async run_mac_scan() {
+    run_mac_scan() {
       // Проверка доступности macScanStatus.
       if (!this.macScanStatus.available) return;
-      try {
-        let resp = await fetch(
-            '/gather/mac-scan/run',
-            {
-              method: "POST",
-              headers: {"X-CSRFToken": this.CSRF_TOKEN}
-            }
-        )
-        if (resp.status === 200) {
-          this.macScanStatus.available = false
-          this.macScanStatus.running = true
-        } else {
-          this.macScanStatus.available = false
-          this.macScanStatus.running = false
-        }
 
-      } catch (error) {
-        console.log(error)
-        this.macScanStatus.available = false
-        this.macScanStatus.running = false
-      }
+      api_request.post("/gather/mac-scan/run")
+          .then(
+              resp => {
+                this.macScanStatus.available = false
+                this.macScanStatus.running = true
+              }
+          ).catch(
+              reason => {
+                this.macScanStatus.available = false;
+                this.macScanStatus.running = false
+              }
+          )
+
     },
 
     /**
@@ -281,25 +261,23 @@ export default {
       if (valid_vlan === 0) return;
 
       this.vlanTracerouteStarted = true
-      try {
-        let url = '/tools/ajax/vlantraceroute?vlan=' + this.inputVlan +
-            '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
-            '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
-            '&double-check=' + this.vlanTracerouteOptions.doubleCheckVlan
-        let resp = await fetch(
-          url,
-          {
-            method: "GET",
-            headers: {"X-CSRFToken": this.CSRF_TOKEN}
-          }
-        )
-        let data = await resp.json()
 
-        // Отрисовка данных в div `vlan-network`.
-        this.render_visual_data(data.nodes, data.edges, "vlan-network", data.options.physics)
+      let url = '/tools/ajax/vlantraceroute?vlan=' + this.inputVlan +
+          '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
+          '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
+          '&double-check=' + this.vlanTracerouteOptions.doubleCheckVlan +
+          '&graph-min-length=' + this.vlanTracerouteOptions.graphMinLength
 
-      } catch (error) { console.log(error) }
-      this.vlanTracerouteStarted = false
+      api_request.get(url)
+          .then(
+              resp => {
+                this.render_visual_data(resp.data.nodes, resp.data.edges, "vlan-network", resp.data.options.physics);
+                this.vlanTracerouteStarted = false;
+              }
+          ).catch(
+              reason => {this.vlanTracerouteStarted = false}
+          )
+
     },
 
     // Удаляет из MAC адреса все символы, не являющиеся шестнадцатеричными.
@@ -318,23 +296,18 @@ export default {
       if (!valid_mac.length) return
 
       this.macTracerouteStarted = true
-      try {
-        // Отправка запроса GET на сервер с MAC-адресом, введенным пользователем.
-        let resp = await fetch(
-          '/gather/api/traceroute/mac-address/' + valid_mac + "/",
-          {
-            method: "GET",
-            headers: {"X-CSRFToken": this.CSRF_TOKEN}
-          }
-        )
-        // Преобразование ответа в JSON.
-        let data = await resp.json()
+      const url = '/gather/api/traceroute/mac-address/' + valid_mac + "/"
 
-        // Рендеринг данных в div `mac-network`.
-        this.render_visual_data(data.nodes, data.edges, "mac-network")
-
-      } catch (error) { console.log(error) }
-      this.macTracerouteStarted = false
+      api_request.get(url)
+          .then(
+              resp => {
+                this.render_visual_data(resp.data.nodes, resp.data.edges, "mac-network");
+                this.macTracerouteStarted = false;
+              }
+          )
+          .catch(
+              reason => {this.macTracerouteStarted = false}
+          )
     },
 
   }
@@ -363,5 +336,17 @@ export default {
   border-bottom: 1px solid;
   width: fit-content;
   cursor: pointer;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.noselect {
+  -webkit-touch-callout: none!important; /* iOS Safari */
+    -webkit-user-select: none!important; /* Safari */
+     -khtml-user-select: none!important; /* Konqueror HTML */
+       -moz-user-select: none!important; /* Old versions of Firefox */
+        -ms-user-select: none!important; /* Internet Explorer/Edge */
+            user-select: none!important; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
 }
 </style>
