@@ -1,5 +1,9 @@
 {% load static %}
+{% load maps_perms %}
 {% load gpon_perms %}
+{% load net_tools_perms %}
+{% load ring_manager_perms %}
+
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
   <div class="container">
 
@@ -38,6 +42,7 @@
         {% endif %}
 
     {#              MAPS   #}
+          {% if request.user|has_map_view_permission %}
             <li class="nav-item active">
               <a href="{% url 'map-home' %}" class="nav-link text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
@@ -46,32 +51,40 @@
                 Maps
               </a>
             </li>
+          {% endif %}
 
     {#              Search Desc #}
+          {% if request.user|has_desc_search_permission %}
             <li class="nav-item active">
               <a href="{% url 'find-descr' %}" class="nav-link text-white">
                 <img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/search-description-icon.svg' %}">
                 Search Desc
               </a>
             </li>
+          {% endif %}
 
     {#              VLAN Traceroute #}
+          {% if request.user|has_traceroute_permission %}
             <li class="nav-item active">
               <a href="{% url 'traceroute' %}" class="nav-link text-white">
                 <div><img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/vlan-traceroute-icon.svg' %}"></div>
                 Trace
               </a>
             </li>
+          {% endif %}
 
     {#              WTF Search #}
+          {% if request.user|has_wft_search_permission %}
             <li class="nav-item active">
               <a href="{% url 'search-wtf' %}" class="nav-link text-white">
                 <img class="bi d-block mx-auto mb-1" height="25" src="{% static 'img/mac-icon.svg' %}">
                 WTF search
               </a>
             </li>
+          {% endif %}
 
     {#              Ring Manager #}
+          {% if request.user|has_any_ring_permission %}
             <li class="nav-item active">
               <a href="{% url 'ring-manager' %}" class="nav-link text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
@@ -80,6 +93,8 @@
                 Rings
               </a>
             </li>
+          {% endif %}
+
     {#              GPON Base #}
           {% if request.user|has_any_gpon_permissions %}
             <li class="nav-item active">

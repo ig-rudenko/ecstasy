@@ -110,6 +110,9 @@ TEMPLATES = [
             ],
             "libraries": {
                 "gpon_perms": "gpon.templatetags.gpon_perms",
+                "net_tools_perms": "net_tools.templatetags.net_tools_perms",
+                "ring_manager_perms": "ring_manager.templatetags.ring_manager_perms",
+                "masp_perms": "maps.templatetags.maps_perms",
             },
         },
     },

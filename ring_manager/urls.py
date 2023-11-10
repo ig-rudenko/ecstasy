@@ -1,19 +1,12 @@
 from django.urls import path, include
-from django.views.generic import TemplateView
+
+from . import views
 
 # /ring-manager/
 
 urlpatterns = [
     path("api/", include("ring_manager.api.urls")),
-    path("", TemplateView.as_view(template_name="ring-manager/index.html"), name="ring-manager"),
-    path(
-        "transport-rings/",
-        TemplateView.as_view(template_name="ring-manager/transport_rings.html"),
-        name="transport-rings",
-    ),
-    path(
-        "access-rings/",
-        TemplateView.as_view(template_name="ring-manager/access_rings.html"),
-        name="access-rings",
-    ),
+    path("", views.main_rings_view, name="ring-manager"),
+    path("transport-rings/", views.transport_rings_view, name="transport-rings"),
+    path("access-rings/", views.access_rings_view, name="access-rings"),
 ]

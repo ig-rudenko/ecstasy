@@ -3,7 +3,7 @@ from re import findall
 
 import orjson
 import requests as requests_lib
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.cache import cache
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
@@ -25,6 +25,7 @@ from ..tasks import interfaces_scan, check_scanning_status
 
 
 @login_required
+@permission_required(perm="auth.access_run_interfaces_gather", raise_exception=True)
 def run_periodically_scan(request):
     if request.method == "POST":
         task_id = cache.get("periodically_scan_id")
@@ -58,6 +59,7 @@ def get_vendor(request, mac: str) -> JsonResponse:
 
 
 @login_required
+@permission_required(perm="auth.access_desc_search", raise_exception=True)
 def find_as_str(request):
     """
     ## Вывод результата поиска портов по описанию
@@ -107,6 +109,7 @@ def get_ip_or_mac_from(
 
 
 @login_required
+@permission_required(perm="auth.access_wtf_search", raise_exception=True)
 def ip_mac_info(request, ip_or_mac):
     """
     Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
@@ -169,6 +172,7 @@ def ip_mac_info(request, ip_or_mac):
 
 
 @login_required
+@permission_required(perm="auth.access_traceroute", raise_exception=True)
 def get_vlan_desc(request) -> JsonResponse:
     """
     ## Возвращаем имя VLAN, который был передан в HTTP запросе
@@ -186,6 +190,7 @@ def get_vlan_desc(request) -> JsonResponse:
 
 
 @login_required
+@permission_required(perm="auth.access_traceroute", raise_exception=True)
 def get_vlan(request):
     """
     ## Трассировка VLAN и отправка карты

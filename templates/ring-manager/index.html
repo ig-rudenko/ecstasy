@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load ring_manager_perms %}
 
 {% block title %}
 Кольца
@@ -20,7 +21,7 @@
 
 <div class="align-items-md-stretch justify-content-center row">
 
-{% if request.user.transportring_set.count %}
+{% if request.user|has_transport_ring_permission %}
   <div class="col-md-5">
     <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
     style="background-image: url('{% static 'img/ring_manager/background/transport_ring.jpg' %}');
@@ -38,6 +39,7 @@
   </div>
 {% endif %}
 
+{% if request.user|has_access_ring_permission %}
   <div class="col-md-5">
     <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
     style="background-image: url('{% static 'img/ring_manager/background/access_ring.jpg' %}');
@@ -53,7 +55,7 @@
       </p>
     </div>
   </div>
-
+{% endif %}
 </div>
 
 {% endblock %}

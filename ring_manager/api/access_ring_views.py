@@ -1,9 +1,10 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from check.api.permissions import DevicePermission
 from check.models import Devices
+from .permissions import AccessRingPermission
 from .serializers import AccessRingSerializer, PointRingSerializer
 from ..base.helpers import thread_ping, collect_current_interfaces
 from ..ring_finder import AggregationRingFinder
@@ -12,10 +13,11 @@ from ..ring_finder import AggregationRingFinder
 class ListAccessRingsAPIView(generics.ListAPIView):
     pagination_class = None
     serializer_class = AccessRingSerializer
+    permission_classes = [IsAuthenticated, AccessRingPermission]
 
     def get_queryset(self):
-        user_available_groups = self.request.user.profile.devices_groups.all().values_list(
-            "id", flat=True
+        user_available_groups = (
+            self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         )
         return Devices.objects.filter(
             group__name="SSW", group_id__in=user_available_groups
@@ -34,7 +36,7 @@ class ListAccessRingsAPIView(generics.ListAPIView):
 
 
 class AccessRingDetailAPIView(generics.GenericAPIView):
-    permission_classes = [DevicePermission]
+    permission_classes = [IsAuthenticated, AccessRingPermission]
 
     def get(self, request, head_name: str, *args, **kwargs):
         """
@@ -60,7 +62,8 @@ class AccessRingDetailAPIView(generics.GenericAPIView):
                 break
         else:
             return Response(
-                {"error": f"Не удалось найти кольцо на портах {request_ports}"}, status=400
+                {"error": f"Не удалось найти кольцо на портах {request_ports}"},
+                status=400,
             )
 
         return Response({"points": points})

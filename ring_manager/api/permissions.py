@@ -1,10 +1,14 @@
 from rest_framework.permissions import BasePermission
+from rest_framework.request import Request
+from rest_framework.views import APIView
 
 from ring_manager.models import TransportRing
 
 
 class RingPermission(BasePermission):
-    def has_object_permission(self, request, view, obj: TransportRing) -> bool:
+    def has_object_permission(
+        self, request: Request, view: APIView, obj: TransportRing
+    ) -> bool:
         """
         Эта функция проверяет, есть ли у пользователя, делающего запрос, разрешение на доступ к определенному объекту на
         основе того, находится ли его идентификатор пользователя в списке пользователей, связанных с этим объектом.
@@ -21,4 +25,12 @@ class RingPermission(BasePermission):
         :return: логическое значение, указывающее, имеет ли пользователь, делающий запрос, разрешение на доступ к
          указанному объекту TransportRing.
         """
-        return request.user.id in obj.users.all().values_list("id", flat=True) and obj.status != obj.DEACTIVATED
+        return (
+            request.user.id in obj.users.all().values_list("id", flat=True)
+            and obj.status != obj.DEACTIVATED
+        )
+
+
+class AccessRingPermission(BasePermission):
+    def has_permission(self, request: Request, view: APIView):
+        return request.user.has_perm("auth.access_rings")
