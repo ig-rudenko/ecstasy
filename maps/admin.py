@@ -303,7 +303,10 @@ class LayersAdmin(admin.ModelAdmin):
                 continue
 
             total_count += 1
-            feature_geometry = feature.get("geometry", {})
+            feature_geometry = feature.get("geometry")
+            if feature_geometry is None:
+                continue
+
             feature_type = feature_geometry.get("type", "None")
 
             feature_types.setdefault(feature_type, {"count": 0, "colours": Counter()})
