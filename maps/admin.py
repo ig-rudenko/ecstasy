@@ -299,6 +299,9 @@ class LayersAdmin(admin.ModelAdmin):
         feature_types: dict = {}
         total_count = 0
         for feature in data["features"]:
+            if not isinstance(feature, dict):
+                continue
+
             total_count += 1
             feature_geometry = feature.get("geometry", {})
             feature_type = feature_geometry.get("type", "None")
