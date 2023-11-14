@@ -190,8 +190,8 @@ class LayersAdmin(admin.ModelAdmin):
 
         return ""
 
-    @admin.display(description="Типы геометрий")
-    def icon(self, instance: Layers):
+    @admin.display(description="Структура файла")
+    def icon(self, instance: Layers) -> str:
         """
         Эта функция генерирует HTML-код для значков на основе типа предоставленного слоя:
         либо из файла, либо из экземпляра Zabbix.
@@ -215,7 +215,11 @@ class LayersAdmin(admin.ModelAdmin):
 
         else:
             # Слой из файла
-            file_info = self.parse_layer_file(instance.from_file.path)
+            try:
+                file_info = self.parse_layer_file(instance.from_file.path)
+            except Exception as exc:
+                return format_html(f"<div style=\"color: red\">{exc}</div>")
+
             html = ""
             icon_name = instance.marker_icon_name
             if file_info.get("Point"):
