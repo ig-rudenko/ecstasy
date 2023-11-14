@@ -290,6 +290,9 @@ class Customer(models.Model):
             name += f"{self.company_name}"
         return name.strip()
 
+    def __str__(self):
+        return self.full_name
+
 
 class Service(models.Model):
     name = models.CharField(max_length=128)

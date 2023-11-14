@@ -20,7 +20,9 @@
         <!-- ВЫБИРАЕМ -->
         <div class="d-flex align-items-center flex-wrap">
           <div class="py-2 w-100">
-            <h6 class="px-2">OLT оборудование <Asterisk/></h6>
+            <h6 class="px-2">OLT оборудование
+              <Asterisk/>
+            </h6>
             <Dropdown v-model="formData.techData.deviceName" :options="devicesList" filter
                       :option-label="x => x"
                       :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
@@ -35,19 +37,21 @@
 
           <!-- ПОИСК ПОРТОВ У ВЫБРАННОГО ОБОРУДОВАНИЯ -->
           <div v-if="formData.techData.deviceName" class="w-100">
-            <h6 class="px-2">Порт <Asterisk/></h6>
+            <h6 class="px-2">Порт
+              <Asterisk/>
+            </h6>
             <Dropdown v-model="formData.techData.devicePort" :options="devicePortList" filter
                       :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
                       :option-label="x => x"
                       @change="portHasChanged"
                       optionLabel="name" placeholder="Выберите порт">
-                <template #value="slotProps">
-                  <div v-if="slotProps.value">{{ slotProps.value }}</div>
-                  <span v-else>{{ slotProps.placeholder }}</span>
-                </template>
-                <template #option="slotProps">
-                    <div>{{ slotProps.option }}</div>
-                </template>
+              <template #value="slotProps">
+                <div v-if="slotProps.value">{{ slotProps.value }}</div>
+                <span v-else>{{ slotProps.placeholder }}</span>
+              </template>
+              <template #option="slotProps">
+                <div>{{ slotProps.option }}</div>
+              </template>
             </Dropdown>
           </div>
         </div>
@@ -95,7 +99,7 @@
       <!-- SECOND STEP -->
       <div v-else-if="current_step===2" class="p-4">
 
-        <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile" />
+        <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile"/>
 
         <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber">Указать вручную</Button>
 
@@ -120,51 +124,64 @@
 
         <div v-if="formData.customer.type==='person'" class="d-flex flex-wrap py-2">
           <div class="input-part">
-            <h6 class="px-2">Фамилия <Asterisk/></h6>
+            <h6 class="px-2">Фамилия
+              <Asterisk/>
+            </h6>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.surname" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.surname.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{formData.customer.surname}}</div>
+            <div v-else class="p-3 border rounded-2">{{ formData.customer.surname }}</div>
             <InlineMessage v-if="customerFirstNameError" severity="error">{{ customerFirstNameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
-            <h6 class="px-2">Имя <Asterisk/></h6>
+            <h6 class="px-2">Имя
+              <Asterisk/>
+            </h6>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.firstName.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{formData.customer.firstName}}</div>
+            <div v-else class="p-3 border rounded-2">{{ formData.customer.firstName }}</div>
             <InlineMessage v-if="customerSurnameError" severity="error">{{ customerSurnameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
-            <h6 class="px-2">Отчество <Asterisk/></h6>
+            <h6 class="px-2">Отчество
+              <Asterisk/>
+            </h6>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
                        :class="!formState.secondStep.person.lastName.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{formData.customer.lastName}}</div>
+            <div v-else class="p-3 border rounded-2">{{ formData.customer.lastName }}</div>
             <InlineMessage v-if="customerLastNameError" severity="error">{{ customerLastNameError }}</InlineMessage>
           </div>
         </div>
 
         <div v-else class="d-flex py-2">
           <div class="p-2 w-100">
-            <h6 class="px-2">Название кампании <Asterisk/></h6>
+            <h6 class="px-2">Название кампании
+              <Asterisk/>
+            </h6>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
                        :class="!formState.secondStep.companyName.valid?['p-invalid']:[]"/>
-            <div v-else class="w-100 p-3 border rounded-2">{{formData.customer.companyName}}</div>
-            <InlineMessage v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</InlineMessage>
+            <div v-else class="w-100 p-3 border rounded-2">{{ formData.customer.companyName }}</div>
+            <InlineMessage v-if="customerCompanyNameError" severity="error">{{
+                customerCompanyNameError
+              }}
+            </InlineMessage>
           </div>
         </div>
 
         <div class="d-flex flex-wrap py-2">
           <div class="input-part">
-            <h6 class="px-2">Лицевой счет <Asterisk/></h6>
+            <h6 class="px-2">Лицевой счет
+              <Asterisk/>
+            </h6>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.number="formData.customer.contract" type="number" style="width: 100%"
                        :class="!formState.secondStep.contract.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{formData.customer.contract}}</div>
+            <div v-else class="p-3 border rounded-2">{{ formData.customer.contract }}</div>
             <InlineMessage v-if="customerContractError" severity="error">{{ customerContractError }}</InlineMessage>
           </div>
           <div class="input-part">
@@ -182,8 +199,8 @@
                          v-model="formData.customer.phone" date="phone" style="width: 100%"
                          :class="!formState.secondStep.phone.valid?['p-invalid']:[]"
                          mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
-            <div v-else class="p-3 border rounded-2">{{formData.customer.phone}}</div>
-            <InlineMessage v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</InlineMessage>
+              <div v-else class="p-3 border rounded-2">{{ formData.customer.phone }}</div>
+              <InlineMessage v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</InlineMessage>
             </div>
           </div>
         </div>
@@ -218,13 +235,15 @@
 
         <div class="px-2">
           <AddressGetCreate :data="formData" :valid="formState.thirdStep.address.valid"
-                            :is-subscriber-address="true" :allow-create="true" :is-mobile="isMobile" />
-            <InlineMessage v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</InlineMessage>
+                            :is-subscriber-address="true" :allow-create="true" :is-mobile="isMobile"/>
+          <InlineMessage v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</InlineMessage>
         </div>
 
         <div class="d-flex flex-wrap py-2">
           <div class="input-part">
-            <h6 class="px-2">ONT ID <Asterisk/></h6>
+            <h6 class="px-2">ONT ID
+              <Asterisk/>
+            </h6>
             <InputText v-model.number="formData.ont_id" type="number" style="width: 100%"
                        :class="formState.thirdStep.ont_id.valid?[]:['p-invalid']"/>
             <InlineMessage v-if="ontIDError" severity="error">{{ ontIDError }}</InlineMessage>
@@ -254,7 +273,8 @@
           </div>
           <div class="input-part">
             <h6 class="px-2">Дата подключения</h6>
-            <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24" style="width: 100%"/>
+            <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24"
+                      style="width: 100%"/>
             <InlineMessage v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</InlineMessage>
           </div>
         </div>
@@ -266,8 +286,10 @@
         <h4 class="text-center">Внимательно проверьте введенные данные</h4>
 
         <h5 class="py-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-            <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2"
+               viewBox="0 0 16 16">
+            <path
+                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
           </svg>
           Технические данные
         </h5>
@@ -287,21 +309,21 @@
           <tr>
             <td>Дом</td>
             <td>
-                <BuildingIcon :type="formData.techData.address.building_type" width="24" height="24"></BuildingIcon>
-                {{ getFullAddress(formData.techData.address) }}
-                <br>
-                <template v-if="formData.techData.address.building_type === 'building'">
-                  Многоквартирный дом. Количество этажей: {{ formData.techData.address.floors }} /
-                  Количество подъездов: {{ formData.techData.address.total_entrances }}
-                </template>
-                <template v-else>
-                  Частный дом.
-                </template>
+              <BuildingIcon :type="formData.techData.address.building_type" width="24" height="24"></BuildingIcon>
+              {{ getFullAddress(formData.techData.address) }}
+              <br>
+              <template v-if="formData.techData.address.building_type === 'building'">
+                Многоквартирный дом. Количество этажей: {{ formData.techData.address.floors }} /
+                Количество подъездов: {{ formData.techData.address.total_entrances }}
+              </template>
+              <template v-else>
+                Частный дом.
+              </template>
             </td>
           </tr>
 
           <tr>
-            <td>Существующий {{formData.techData.end3.type}}</td>
+            <td>Существующий {{ formData.techData.end3.type }}</td>
             <td>
               {{ getFullAddress(formData.techData.end3.address) }} <br>
               Локация: {{ formData.techData.end3.location }}. <br>
@@ -310,9 +332,10 @@
           </tr>
 
           <tr>
-            <td>{{formData.techData.end3.type==='splitter'?"Порт сплиттера":"Волокно райзера"}}</td>
+            <td>{{ formData.techData.end3.type === 'splitter' ? "Порт сплиттера" : "Волокно райзера" }}</td>
             <td>
-              {{ formData.techData.end3Port.number }} <TechCapabilityBadge :status="formData.techData.end3Port.status" />
+              {{ formData.techData.end3Port.number }}
+              <TechCapabilityBadge :status="formData.techData.end3Port.status"/>
               <Message v-if="techCapabilityError" severity="error">{{ techCapabilityError }}</Message>
             </td>
           </tr>
@@ -323,125 +346,128 @@
         <table class="table table-striped">
           <tbody>
 
-            <tr v-if="formData.customer.type==='person'">
-              <td class="col-md-3">ФИО</td>
-              <td>
-                {{ formData.customer.firstName }} {{ formData.customer.surname }} {{ formData.customer.lastName }}
-                <Message v-if="customerFirstNameError || customerSurnameError || customerLastNameError" severity="error">
-                  {{ customerFirstNameError }} {{ customerSurnameError }} {{ customerLastNameError }}
-                </Message>
-              </td>
-            </tr>
-            <tr v-else>
-              <td class="col-md-3">Название кампании</td>
-              <td>
-                {{ formData.customer.companyName }}
-                <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
-              </td>
-            </tr>
+          <tr v-if="formData.customer.type==='person'">
+            <td class="col-md-3">ФИО</td>
+            <td>
+              {{ formData.customer.firstName }} {{ formData.customer.surname }} {{ formData.customer.lastName }}
+              <Message v-if="customerFirstNameError || customerSurnameError || customerLastNameError" severity="error">
+                {{ customerFirstNameError }} {{ customerSurnameError }} {{ customerLastNameError }}
+              </Message>
+            </td>
+          </tr>
+          <tr v-else>
+            <td class="col-md-3">Название кампании</td>
+            <td>
+              {{ formData.customer.companyName }}
+              <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
+            </td>
+          </tr>
 
-            <tr>
-              <td class="col-md-3">Лицевой счет</td>
-              <td>
-                {{ formData.customer.contract }}
-                <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td class="col-md-3">Лицевой счет</td>
+            <td>
+              {{ formData.customer.contract }}
+              <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
+            </td>
+          </tr>
 
-            <tr>
-              <td class="col-md-3">Транзит</td>
-              <td>
-                {{ formData.transit }}
-                <Message v-if="transitError" severity="error">{{ transitError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td class="col-md-3">Транзит</td>
+            <td>
+              {{ formData.transit }}
+              <Message v-if="transitError" severity="error">{{ transitError }}</Message>
+            </td>
+          </tr>
 
-            <tr>
-              <td class="col-md-3">Контактный номер</td>
-              <td>
-                {{ formData.customer.phone }}
-                <Message v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td class="col-md-3">Контактный номер</td>
+            <td>
+              {{ formData.customer.phone }}
+              <Message v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</Message>
+            </td>
+          </tr>
 
-            <tr>
-              <td class="col-md-3">Услуги</td>
-              <td>
-                {{ formData.services.join(", ") }}
-                <Message v-if="servicesError" severity="error">{{ servicesError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td class="col-md-3">Услуги</td>
+            <td>
+              {{ formData.services.join(", ") }}
+              <Message v-if="servicesError" severity="error">{{ servicesError }}</Message>
+            </td>
+          </tr>
 
           </tbody>
         </table>
 
         <h5 class="py-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-            <path d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707Z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2"
+               viewBox="0 0 16 16">
+            <path
+                d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707Z"/>
             <path d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"/>
-            <path d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86L2.974 2.342ZM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Z"/>
+            <path
+                d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86L2.974 2.342ZM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Z"/>
             <path d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
           </svg>
           Подключение
         </h5>
         <table class="table table-striped">
           <tbody>
-            <tr>
-              <td>Адрес подключения</td>
-              <td>
-                  <BuildingIcon :type="formData.address.building_type" width="24" height="24"></BuildingIcon>
-                  {{ getFullAddress(formData.address) }}
-                  <br>
-                  <template v-if="formData.address.building_type === 'building'">
-                    {{ formData.address.floor }} этаж. Квартира: {{ formData.address.apartment }}
-                  </template>
-                  <template v-else>Частный дом.</template>
-                  <Message v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td>Адрес подключения</td>
+            <td>
+              <BuildingIcon :type="formData.address.building_type" width="24" height="24"></BuildingIcon>
+              {{ getFullAddress(formData.address) }}
+              <br>
+              <template v-if="formData.address.building_type === 'building'">
+                {{ formData.address.floor }} этаж. Квартира: {{ formData.address.apartment }}
+              </template>
+              <template v-else>Частный дом.</template>
+              <Message v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</Message>
+            </td>
+          </tr>
 
-            <tr>
-              <td class="col-md-3">ONT ID</td>
-              <td>
-                {{formData.ont_id}}
-                <Message v-if="ontIDError" severity="error">{{ ontIDError }}</Message>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-md-3">IP адрес</td>
-              <td>
-                {{formData.ip}}
-                <Message v-if="ontIPError" severity="error">{{ ontIPError }}</Message>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-md-3">Серийный номер ONT</td>
-              <td>
-                {{ formData.ont_serial }}
-                <Message v-if="ontSerialError" severity="error">{{ ontSerialError }}</Message>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-md-3">MAC адрес ONT</td>
-              <td>
-                {{ formData.ont_mac }}
-                <Message v-if="ontMACError" severity="error">{{ ontMACError }}</Message>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-md-3">Номер наряда</td>
-              <td>
-                {{ formData.order }}
-                <Message v-if="orderError" severity="error">{{ orderError }}</Message>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-md-3">Дата подключения</td>
-              <td>
-                {{ formData.connected_at }}
-                <Message v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</Message>
-              </td>
-            </tr>
+          <tr>
+            <td class="col-md-3">ONT ID</td>
+            <td>
+              {{ formData.ont_id }}
+              <Message v-if="ontIDError" severity="error">{{ ontIDError }}</Message>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-md-3">IP адрес</td>
+            <td>
+              {{ formData.ip }}
+              <Message v-if="ontIPError" severity="error">{{ ontIPError }}</Message>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-md-3">Серийный номер ONT</td>
+            <td>
+              {{ formData.ont_serial }}
+              <Message v-if="ontSerialError" severity="error">{{ ontSerialError }}</Message>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-md-3">MAC адрес ONT</td>
+            <td>
+              {{ formData.ont_mac }}
+              <Message v-if="ontMACError" severity="error">{{ ontMACError }}</Message>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-md-3">Номер наряда</td>
+            <td>
+              {{ formData.order }}
+              <Message v-if="orderError" severity="error">{{ orderError }}</Message>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-md-3">Дата подключения</td>
+            <td>
+              {{ formData.connected_at }}
+              <Message v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</Message>
+            </td>
+          </tr>
 
           </tbody>
         </table>
@@ -629,7 +655,7 @@ export default {
                     (this.subscriberType !== "person" && this.companyName.valid)
                 )
                 &&
-                this.contract.valid && this.transit.valid && this.phone.valid
+                this.contract.valid && this.transit.valid
             )
           }
         },
@@ -658,7 +684,7 @@ export default {
         customer: {
           id: null,
           type: "person", // person, company, state
-          firstName: "", 
+          firstName: "",
           surname: "",
           lastName: "",
           companyName: "",
@@ -824,7 +850,7 @@ export default {
       this.formState.secondStep.selected = true;
     },
 
-    unselectSubscriber(){
+    unselectSubscriber() {
       this.formState.secondStep.selected = false;
       this.formData.customer.id = null
       this.formData.customer.type = "person"
@@ -859,7 +885,7 @@ export default {
         this.formState.secondStep.companyName.valid = data.companyName != null && data.companyName.length > 2
         this.formState.secondStep.contract.valid = data.contract != null
         this.formState.secondStep.transit.valid = this.formData.transit != null
-        this.formState.secondStep.phone.valid = data.phone != null && data.phone.match(/\d/g) && data.phone.match(/\d/g).length === 11
+        this.formState.secondStep.phone.valid = !data.phone || data.phone.match(/\d/g) && data.phone.match(/\d/g).length === 11
         return this.formState.secondStep.isValid()
 
       } else if (this.current_step === 3) {
@@ -908,12 +934,12 @@ export default {
               }
           )
           .catch(reason => {
-            if (reason.response.status === 400) {
-                this.errors = reason.response.data
-              } else {
-                this.errors = {serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}`}
+                if (reason.response.status === 400) {
+                  this.errors = reason.response.data
+                } else {
+                  this.errors = {serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}`}
+                }
               }
-            }
           )
     },
 
@@ -937,7 +963,7 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 75%!important;
+  width: 75% !important;
   position: relative;
   top: -25px;
 }
@@ -951,8 +977,9 @@ export default {
   .input-part {
     width: 100%;
   }
+
   .plate {
-    box-shadow: none!important;
+    box-shadow: none !important;
   }
 }
 
