@@ -26,9 +26,15 @@ class RingPermission(BasePermission):
          указанному объекту TransportRing.
         """
         return (
-            request.user.id in obj.users.all().values_list("id", flat=True)
+            request.user.is_superuser
+            or request.user.id in obj.users.all().values_list("id", flat=True)
             and obj.status != obj.DEACTIVATED
         )
+
+
+class TransportRingPermission(BasePermission):
+    def has_permission(self, request: Request, view: APIView):
+        return request.user.has_perm("auth.access_transport_rings")
 
 
 class AccessRingPermission(BasePermission):

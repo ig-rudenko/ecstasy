@@ -2,14 +2,14 @@ from datetime import datetime
 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .decorators import ring_valid
-from .permissions import RingPermission
+from .permissions import RingPermission, TransportRingPermission
 from .serializers import TransportRingSerializer, PointRingSerializer
-
-from ..ring_manager import TransportRingManager
 from ..models import TransportRing
+from ..ring_manager import TransportRingManager
 from ..solutions import SolutionsPerformer, Solutions, SolutionsPerformerError
 
 
@@ -21,6 +21,7 @@ class ListTransportRingsAPIView(generics.ListAPIView):
 
     pagination_class = None
     serializer_class = TransportRingSerializer
+    permission_classes = [IsAuthenticated, TransportRingPermission]
 
     def get_queryset(self):
         """
@@ -31,7 +32,7 @@ class ListTransportRingsAPIView(generics.ListAPIView):
 
 
 class TransportRingStatusAPIView(generics.GenericAPIView):
-    permission_classes = [RingPermission]
+    permission_classes = [IsAuthenticated, RingPermission]
 
     @ring_valid
     def get(self, request, ring_name: str, *args, **kwargs):
@@ -43,12 +44,15 @@ class TransportRingStatusAPIView(generics.GenericAPIView):
         ring = get_object_or_404(TransportRing, name=ring_name)
         self.check_object_permissions(request, ring)
         return Response(
-            {"active": ring.status != ring.DEACTIVATED, "rotating": ring.status == ring.IN_PROCESS}
+            {
+                "active": ring.status != ring.DEACTIVATED,
+                "rotating": ring.status == ring.IN_PROCESS,
+            }
         )
 
 
 class TransportRingDetailAPIView(generics.GenericAPIView):
-    permission_classes = [RingPermission]
+    permission_classes = [IsAuthenticated, RingPermission]
 
     @ring_valid
     def get(self, request, ring_name: str, *args, **kwargs):
@@ -83,7 +87,7 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
 
 
 class GetLastSolutionsAPIView(generics.GenericAPIView):
-    permission_classes = [RingPermission]
+    permission_classes = [IsAuthenticated, RingPermission]
 
     @ring_valid
     def get(self, request, ring_name: str):
@@ -94,7 +98,9 @@ class GetLastSolutionsAPIView(generics.GenericAPIView):
         solutions = Solutions()
 
         # Есть ли какие-либо решения и не истек ли срок действия последнего решения.
-        if ring.solutions and not SolutionsPerformer.is_solution_expired(ring.solution_time):
+        if ring.solutions and not SolutionsPerformer.is_solution_expired(
+            ring.solution_time
+        ):
             solutions = Solutions.from_ring_history(ring)
             last_solutions_time = ring.solution_time.timestamp()
 
@@ -109,7 +115,7 @@ class GetLastSolutionsAPIView(generics.GenericAPIView):
 
 
 class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
-    permission_classes = [RingPermission]
+    permission_classes = [IsAuthenticated, RingPermission]
 
     @ring_valid
     def get(self, request, ring_name: str):
@@ -158,7 +164,9 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         self.check_object_permissions(request, ring)
 
         if ring.status == ring.IN_PROCESS:
-            return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
+            return Response(
+                {"error": "Кольцо уже разворачивается в данный момент"}, status=400
+            )
 
         ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
         try:

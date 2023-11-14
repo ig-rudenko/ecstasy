@@ -1,14 +1,13 @@
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import List, Tuple, Set, Optional
 
-from devicemanager.device import Interfaces, DeviceManager
-from .solutions import Solutions
-from .models import RingDev, TransportRing
-from .base.types import BaseRingPoint
-from .base.helpers import thread_ping, collect_current_interfaces
-from .base.finder import find_links_between_points
+from devicemanager.device import DeviceManager
 from .base.exceptions import InvalidRingStructureError, RingStatusError
+from .base.finder import find_links_between_points
+from .base.helpers import thread_ping, collect_current_interfaces
+from .base.types import BaseRingPoint
+from .models import RingDev, TransportRing
+from .solutions import Solutions
 
 
 @dataclass
