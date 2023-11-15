@@ -115,35 +115,13 @@
                 </InlineMessage>
             </template>
 
-
-            <div v-if="detailData" class="px-3 rounded-0">
-              <div v-for="(part, index) in detailData.capability" class="align-items-center row py-1">
-                <div class="col-1">{{part.number}}</div>
-
-                <div :class="editMode?['col-auto']:['col-3']">
-                  <Dropdown v-if="editMode && hasPermissionToUpdateTechCapability"
-                            v-model="part.status" :options="['empty', 'active', 'pause', 'reserved', 'bad']"
-                            scroll-height="300px" :input-style="{padding: '0.2rem 1rem'}"
-                            @change="updateTechCapability(index)"
-                            placeholder="Выберите статус порта" class="me-2">
-                    <template #value="slotProps"><TechCapabilityBadge :status="slotProps.value"/></template>
-                    <template #option="slotProps"><TechCapabilityBadge :status="slotProps.option"/></template>
-                  </Dropdown>
-                  <TechCapabilityBadge v-else :status="part.status"/>
-                </div>
-
-                <div class="col-auto">
-                  <div class="d-flex" v-for="subscriber in part.subscribers">
-                    <div class="me-2">{{subscriber.name}}</div>
-                    <div>{{ subscriber.transit }}</div>
-                  </div>
-                  <div class="text-muted" v-if="!part.subscribers.length">
-                    нет абонента
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            <End3PortsViewEdit
+                @getInfo="updateEnd3Info"
+                :user-permissions="userPermissions"
+                :end3-ports-array="detailData.capability"
+                :end3-object="detailData"
+                :edit-mode="editMode"
+            />
 
           </div>
 
@@ -152,6 +130,9 @@
     </div>
 
   </div>
+
+  <ScrollTop />
+
 </template>
 
 <script>
@@ -159,23 +140,27 @@ import Button from "primevue/button/Button.vue"
 import Dropdown from "primevue/dropdown/Dropdown.vue"
 import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
+import ScrollTop from "primevue/scrolltop";
 import Toast from "primevue/toast/Toast.vue"
-import AddressGetCreate from "./components/AddressGetCreate.vue";
 
-import formatAddress from "../helpers/address";
-import api_request from "../api_request";
+import AddressGetCreate from "./components/AddressGetCreate.vue";
+import End3PortsViewEdit from "./components/End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue"
+import api_request from "../api_request";
+import formatAddress from "../helpers/address";
 import printElementById from "../helpers/print";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    End3PortsViewEdit,
     TechCapabilityBadge,
     AddressGetCreate,
     Button,
     Dropdown,
     InlineMessage,
     InputText,
+    ScrollTop,
     Toast,
   },
   data() {
@@ -265,12 +250,6 @@ export default {
 
   methods: {
 
-    getCustomerLineClasses(index){
-      let class_list = ['py-2', 'row', 'align-items-center']
-      if (index % 2 === 0) class_list.push('grey-back');
-      return class_list
-    },
-
     changeCapacity(){
       if (this.detailData.capacity < this.originalCapacity){
         if (this.deletionUsersAffected()) {
@@ -287,15 +266,6 @@ export default {
       } else {
         this.capacityWarning = null
       }
-    },
-
-    /** @param {Integer} index */
-    updateTechCapability(index){
-      const capability = this.detailData.capability[index]
-      const data = {status: capability.status}
-      this.handleRequest(
-          api_request.patch("/gpon/api/tech-data/tech-capability/"+capability.id, data)
-      )
     },
 
     updateEnd3Info(){
@@ -331,26 +301,6 @@ export default {
           }
         }
       return false
-    },
-
-    customerLineTypeName(type) {
-      if (type === "splitter") {
-        return "Сплиттер"
-      } else if (type === "rizer") {
-        return "Райзер"
-      } else {
-        return type
-      }
-    },
-
-    customerLineNumbers(line) {
-      if (line.type === "splitter") {
-        return `${line.capacity} портов`
-      } else if (line.type === "rizer") {
-        return `${line.capacity} волокон`
-      } else {
-        return line
-      }
     },
 
     printData() {printElementById('tech-data-block')},

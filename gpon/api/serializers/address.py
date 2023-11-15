@@ -136,7 +136,12 @@ class AddressSerializer(serializers.ModelSerializer):
         return data
 
     @staticmethod
-    def create(validated_data) -> Address:
+    def create(validated_data: dict) -> Address:
+        validated_data.setdefault("plan_structure", None)
+        validated_data.setdefault("street", None)
+        validated_data.setdefault("block", None)
+        validated_data.setdefault("floor", None)
+        validated_data.setdefault("apartment", None)
         try:
             return Address.objects.get(**validated_data)
         except Address.DoesNotExist:

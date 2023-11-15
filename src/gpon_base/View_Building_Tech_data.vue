@@ -135,12 +135,15 @@
     </div>
 
   </div>
+
+  <ScrollTop />
 </template>
 
 <script>
 import Dropdown from "primevue/dropdown/Dropdown.vue"
 import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
+import ScrollTop from "primevue/scrolltop";
 import Textarea from "primevue/textarea/Textarea.vue";
 import Toast from "primevue/toast/Toast.vue"
 
@@ -163,6 +166,7 @@ export default {
     Dropdown,
     InlineMessage,
     InputText,
+    ScrollTop,
     TechCapabilityBadge,
     Textarea,
     Toast,
