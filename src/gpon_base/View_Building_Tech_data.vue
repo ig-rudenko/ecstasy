@@ -135,6 +135,7 @@
                 @getInfo="index => getEnd3DetailInfo(oltID, index)"
                 @deleteInfo="index => deleteEnd3DetailInfo(oltID, index)"
                 :customer-lines="oltState.customerLines"
+                :user-permissions="userPermissions"
                 :device-name="oltState.statement.deviceName"
                 :device-port="oltState.statement.devicePort"
                 :building-address="detailDataAddress"
@@ -185,9 +186,12 @@ export default {
       errorStatus: null,
       errorMessage: null,
       windowWidth: window.innerWidth,
+      userPermissions: [],
     }
   },
   mounted() {
+    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
+
     let url = window.location.href
     // /gpon/api/tech-data/building/{device_name}?port={olt_port}
     api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
