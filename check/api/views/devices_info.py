@@ -294,6 +294,7 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
                     "text": comment.comment,
                     "user": comment.user.username,
                     "id": comment.id,
+                    "createdTime": comment.datetime.isoformat(),
                 }
                 for comment in interfaces_comments
                 if comment.interface == intf["Interface"]

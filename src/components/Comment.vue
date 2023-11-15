@@ -64,6 +64,8 @@
                   <div class="col-11">
                   <!--Пользователь комментария-->
                       <span>@{{comment.user}}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mx-2" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"></path></svg>
+                      <span>{{ formatDatetime(comment.createdTime) }}</span>
 
                   <!--ТЕКСТ комментария-->
                       <strong style="white-space: break-spaces;" class="d-block text-gray-dark">
@@ -108,6 +110,23 @@ export default defineComponent({
               { "text": String, "user": String ,"id": Number }
           ]
       }
+    }
+  },
+  methods: {
+    formatDatetime(datetime) {
+      return new Date(datetime)
+          .toLocaleString(
+            "ru",
+            {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              timezone: 'UTC'
+            }
+          )
     }
   }
 })
