@@ -3,28 +3,13 @@
 
     <Toast />
 
-    <div class="header">
-      <h2 class="py-3">Технические данные - дом</h2>
-
-      <!-- ДЕЙСТВИЯ -->
-      <div class="d-flex">
-        <button @click="goToTechDataURL" class="back-button me-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
-          </svg>
-          <span v-if="!isMobile" class="m-2">Назад</span>
-        </button>
-
-        <button @click="printData" class="print-button me-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
-            <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-          </svg>
-          <span v-if="!isMobile" class="m-2">Печать</span>
-        </button>
-
-      </div>
-    </div>
+    <ViewPrintEditButtons
+        @print="printData"
+        @changeMode="mode => editMode = mode"
+        exitButtonURL="/gpon/tech-data"
+        :has-permission-to-edit="hasAnyPermissionToUpdate"
+        :is-mobile="isMobile"
+    />
 
     <!-- ОШИБКА ЗАГРУЗКИ -->
     <div v-if="errorStatus" class="alert alert-danger">
@@ -163,6 +148,7 @@ import AddressGetCreate from "./components/AddressGetCreate.vue";
 import BuildingIcon from "./components/BuildingIcon.vue"
 import End3CollapsedView from "./components/End3CollapsedView.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
+import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api_request from "../api_request";
 import formatAddress from "../helpers/address";
 import printElementById from "../helpers/print";
@@ -170,6 +156,7 @@ import printElementById from "../helpers/print";
 export default {
   name: "Gpon_base.vue",
   components: {
+    ViewPrintEditButtons,
     End3CollapsedView,
     AddressGetCreate,
     BuildingIcon,
@@ -187,6 +174,7 @@ export default {
       errorMessage: null,
       windowWidth: window.innerWidth,
       userPermissions: [],
+      editMode: false,
     }
   },
   mounted() {
@@ -223,7 +211,23 @@ export default {
         floors: this.detailData.floors,
         total_entrances: this.detailData.total_entrances,
       }
-    }
+    },
+
+    hasPermissionToUpdateOLTState(){
+      return this.userPermissions.includes("gpon.change_oltstate")
+    },
+
+    hasPermissionToUpdateHouseOLTState(){
+      return this.userPermissions.includes("gpon.change_houseoltstate")
+    },
+
+    hasPermissionToUpdateHouseB(){
+      return this.userPermissions.includes("gpon.change_houseb")
+    },
+
+    hasAnyPermissionToUpdate(){
+      return this.hasPermissionToUpdateOLTState || this.hasPermissionToUpdateHouseOLTState || this.hasPermissionToUpdateHouseB
+    },
 
   },
 
@@ -231,10 +235,6 @@ export default {
 
     getFullAddress(address) {
       return formatAddress(address)
-    },
-
-    goToTechDataURL() {
-      window.location.href = "/gpon/tech-data"
     },
 
     getOLTTechDataURL(statement){
@@ -272,28 +272,6 @@ export default {
   background-color: #ebebeb;
 }
 
-.print-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #6D5BD0;
-  border: 1px #6D5BD0 solid;
-}
-.print-button:hover {
-  box-shadow: 0 0 3px #6D5BD0;
-}
-
-.back-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #4a4a4a;
-  border: 1px #4a4a4a solid;
-}
-.back-button:hover {
-  box-shadow: 0 0 3px #4a4a4a;
-}
-
 .plate {
   padding: 40px;
   border-radius: 14px;
@@ -311,17 +289,8 @@ export default {
     max-width: 100%!important;
   }
 
-  .header {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
   .w-75, .col-5 {
     width: 100% !important;
-  }
-
-  .header {
-    padding: 0 40px;
   }
 
   .plate {
