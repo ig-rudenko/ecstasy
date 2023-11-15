@@ -17,7 +17,10 @@
 
     <div class="col-auto">
       <div class="d-flex" v-for="subscriber in port.subscribers">
-        <div class="me-2">{{subscriber.name}}</div>
+        <a v-if="hasPermissionsToViewSubscriber"
+           :href="'/gpon/subscriber-data/customers/'+subscriber.customerID" class="me-2">{{subscriber.customerName}}</a>
+        <div v-else class="me-2">{{subscriber.customerName}}</div>
+
         <div>{{ subscriber.transit }}</div>
       </div>
       <div class="text-muted flex-row" v-if="!port.subscribers.length">
@@ -90,6 +93,12 @@ export default {
       return [
           "gpon.add_customer",
           "gpon.add_subscriberconnection",
+      ].every(elem => {return this.userPermissions.includes(elem)})
+    },
+    hasPermissionsToViewSubscriber(){
+      return [
+          "gpon.view_customer",
+          "gpon.view_subscriberconnection",
       ].every(elem => {return this.userPermissions.includes(elem)})
     },
 
