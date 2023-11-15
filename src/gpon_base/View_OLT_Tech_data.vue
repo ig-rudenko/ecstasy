@@ -246,7 +246,11 @@
             <End3CollapsedView
                 @getInfo="index => getEnd3DetailInfo(BIndex, index)"
                 @deleteInfo="index => deleteEnd3DetailInfo(BIndex, index)"
-                :customer-lines="building.customerLines" />
+                :customer-lines="building.customerLines"
+                :device-name="detailData.deviceName"
+                :device-port="detailData.devicePort"
+                :building-address="building.address"
+            />
           </div>
 
         </div>

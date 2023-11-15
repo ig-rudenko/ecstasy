@@ -490,7 +490,7 @@
       <!-- Кнопки -->
       <div v-if="!form_submitted_successfully" class="d-flex justify-content-between mx-5">
 
-        <Button @click="goToSubscriberDataURL" severity="secondary" rounded>
+        <Button v-if="!isModalView" @click="goToSubscriberDataURL" severity="secondary" rounded>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
                viewBox="0 0 16 16">
             <path
@@ -546,7 +546,7 @@
           <span>Данные добавлены</span>
 
         </div>
-        <div class="text-center">
+        <div v-if="!isModalView" class="text-center">
           <a href="/gpon/subscriber-data" class="btn btn-outline-success">Вернуться к перечню</a>
         </div>
       </div>
@@ -609,10 +609,19 @@ export default {
     StepMenu,
     Textarea,
   },
+  props: {
+    initDeviceName: {required: false, default: null},
+    initDevicePort: {required: false, default: null},
+    initBuildingAddress: {required: false, default: null},
+    initEnd3: {required: false, default: null},
+    initEnd3Port: {required: false, default: null},
+    isModalView: {required: false, default: false},
+  },
   mounted() {
     window.addEventListener('resize', () => {
       this.windowWidth = window.innerWidth
     })
+    console.log("this.initEnd3Port", this.initEnd3Port)
   },
   data() {
     return {
@@ -675,11 +684,11 @@ export default {
 
       formData: {
         techData: {
-          deviceName: null,
-          devicePort: null,
-          address: null,
-          end3: null,
-          end3Port: null,
+          deviceName: this.initDeviceName,
+          devicePort: this.initDevicePort,
+          address: this.initBuildingAddress,
+          end3: this.initEnd3,
+          end3Port: this.initEnd3Port,
         },
         customer: {
           id: null,
@@ -930,6 +939,7 @@ export default {
                 if (resp.status === 201) {
                   this.form_submitted_successfully = true
                   this.errors = null
+                  this.$emit("successfullyCreated")
                 }
               }
           )
@@ -938,6 +948,7 @@ export default {
                   this.errors = reason.response.data
                 } else {
                   this.errors = {serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}`}
+                  this.$emit("failedCreated")
                 }
               }
           )

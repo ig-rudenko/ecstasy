@@ -42,7 +42,7 @@
           <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
             <circle cx="8" cy="8" r="8"/>
           </svg>
-          <h4 class="m-0 me-3">Адрес: {{ getFullAddress(detailData) }}</h4>
+          <h4 class="m-0 me-3">Адрес: {{ getFullAddress(detailDataAddress) }}</h4>
         </div>
 
         <div class="ml-40 row align-items-center">
@@ -134,7 +134,11 @@
             <End3CollapsedView
                 @getInfo="index => getEnd3DetailInfo(oltID, index)"
                 @deleteInfo="index => deleteEnd3DetailInfo(oltID, index)"
-                :customer-lines="oltState.customerLines" />
+                :customer-lines="oltState.customerLines"
+                :device-name="oltState.statement.deviceName"
+                :device-port="oltState.statement.devicePort"
+                :building-address="detailDataAddress"
+            />
           </div>
 
         </div>
@@ -201,6 +205,21 @@ export default {
     isMobile() {
       return this.windowWidth <= 768
     },
+
+    detailDataAddress() {
+      return {
+        id: this.detailData.id,
+        region: this.detailData.region,
+        settlement: this.detailData.settlement,
+        planStructure: this.detailData.planStructure,
+        street: this.detailData.street,
+        house: this.detailData.house,
+        block: this.detailData.block,
+        building_type: this.detailData.building_type,
+        floors: this.detailData.floors,
+        total_entrances: this.detailData.total_entrances,
+      }
+    }
 
   },
 
