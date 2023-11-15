@@ -131,54 +131,10 @@
           </div>
 
           <div class="ml-40">
-
-            <template v-for="(line, index) in oltState.customerLines">
-
-              <div :class="getCustomerLineClasses(index)">
-
-                <div class="col-md-2 fw-bold">
-                  <a :href="'/gpon/tech-data/end3/' + line.id">
-                    {{ customerLineTypeName(line.type) }} {{ index + 1 }}
-                  </a>
-                </div>
-                <div class="col-auto">
-                    {{ getFullAddress(line.address) }}
-                    <br>
-                    Локация: {{ line.location }}.
-                </div>
-                <div class="col-auto">{{ customerLineNumbers(line) }}</div>
-                <div class="col-auto">
-                    <button v-if="line.detailInfo" @click="deleteEnd3DetailInfo(oltID, index)" class="btn btn-outline-warning rounded-5 py-1">
-                      close
-                    </button>
-                    <button v-else @click="getEnd3DetailInfo(oltID, index)" class="btn btn-outline-primary rounded-5 py-1">
-                      detail
-                    </button>
-                </div>
-              </div>
-
-              <div v-if="line.errorStatus" class="alert alert-danger">Ошибка при загрузке данных.
-                <br> {{line.errorMessage||''}} <br> Статус: {{line.errorStatus}}
-              </div>
-
-              <div v-if="line.detailInfo" class="card px-3 rounded-0" style="border-top: none; margin-bottom: 10px">
-                <div v-for="part in line.detailInfo" class="align-items-center row py-1">
-                  <div class="col-1">{{part.number}}</div>
-                    <div class="col-2"><TechCapabilityBadge :status="part.status" /></div>
-                  <div class="col-auto">
-                    <div class="d-flex" v-for="subscriber in part.subscribers">
-                      <div class="me-2">{{subscriber.name}}</div>
-                      <div>{{ subscriber.transit }}</div>
-                    </div>
-                    <div class="text-muted" v-if="!part.subscribers.length">
-                      нет абонента
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </template>
-
+            <End3CollapsedView
+                @getInfo="index => getEnd3DetailInfo(oltID, index)"
+                @deleteInfo="index => deleteEnd3DetailInfo(oltID, index)"
+                :customer-lines="oltState.customerLines" />
           </div>
 
         </div>
@@ -192,29 +148,29 @@
 </template>
 
 <script>
-import BuildingIcon from "./components/BuildingIcon.vue"
 import Dropdown from "primevue/dropdown/Dropdown.vue"
 import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
 import InputText from "primevue/inputtext/InputText.vue"
-import Table from "./components/Table.vue";
-import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import Textarea from "primevue/textarea/Textarea.vue";
 import Toast from "primevue/toast/Toast.vue"
 
-import formatAddress from "../helpers/address";
-import api_request from "../api_request";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
+import BuildingIcon from "./components/BuildingIcon.vue"
+import End3CollapsedView from "./components/End3CollapsedView.vue";
+import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
+import api_request from "../api_request";
+import formatAddress from "../helpers/address";
 import printElementById from "../helpers/print";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    End3CollapsedView,
     AddressGetCreate,
     BuildingIcon,
     Dropdown,
     InlineMessage,
     InputText,
-    Table,
     TechCapabilityBadge,
     Textarea,
     Toast,
@@ -250,12 +206,6 @@ export default {
 
   methods: {
 
-    getCustomerLineClasses(index){
-      let class_list = ['py-2', 'row', 'align-items-center']
-      if (index % 2 === 0) class_list.push('grey-back');
-      return class_list
-    },
-
     getFullAddress(address) {
       return formatAddress(address)
     },
@@ -266,26 +216,6 @@ export default {
 
     getOLTTechDataURL(statement){
       return "/gpon/tech-data/" + statement.deviceName + "?port=" + statement.devicePort
-    },
-
-    customerLineTypeName(type) {
-      if (type === "splitter") {
-        return "Сплиттер"
-      } else if (type === "rizer") {
-        return "Райзер"
-      } else {
-        return type
-      }
-    },
-
-    customerLineNumbers(line) {
-      if (line.type === "splitter") {
-        return `${line.capacity} портов`
-      } else if (line.type === "rizer") {
-        return `${line.capacity} волокон`
-      } else {
-        return line
-      }
     },
 
     getEnd3DetailInfo(oltID, end3Index) {
