@@ -276,6 +276,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
                                 "text": self.comment.comment,
                                 "user": self.comment.user.username,
                                 "id": self.comment.id,
+                                "createdTime": self.comment.datetime.isoformat(),
                             }
                         ],
                     },
