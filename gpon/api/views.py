@@ -165,11 +165,11 @@ class End3AddressesListAPIView(ListAPIView):
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address")
 
-    def filter_queryset(self, queryset: QuerySet) -> QuerySet:
-        address_id: str = self.request.GET.get("address_id", "")
-        if address_id.isdigit():
-            queryset = queryset.filter(address_id=int(address_id))
-        return queryset
+    # def filter_queryset(self, queryset: QuerySet) -> QuerySet:
+    #     address_id: str = self.request.GET.get("address_id", "")
+    #     if address_id.isdigit():
+    #         queryset = queryset.filter(address_id=int(address_id))
+    #     return queryset
 
 
 class DevicesNamesListAPIView(GenericAPIView):
