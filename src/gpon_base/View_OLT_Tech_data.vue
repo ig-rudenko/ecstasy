@@ -155,6 +155,7 @@
             <End3CollapsedView
                 @getInfo="index => getEnd3DetailInfo(BIndex, index)"
                 @deleteInfo="index => deleteEnd3DetailInfo(BIndex, index)"
+                @deletedEnd3="(end3, end3Index) => deleteEnd3(BIndex, end3Index)"
                 :customer-lines="building.customerLines"
                 :user-permissions="userPermissions"
                 :edit-mode="editMode"
@@ -291,6 +292,10 @@ export default {
 
     deleteEnd3DetailInfo(BIndex, end3Index) {
       this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = null
+    },
+
+    deleteEnd3(BIndex, end3Index) {
+      this.detailData.structures[BIndex].customerLines.splice(end3Index, 1)
     },
 
     printData() {printElementById('tech-data-block')},
