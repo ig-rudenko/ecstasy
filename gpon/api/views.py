@@ -7,6 +7,7 @@ from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
     RetrieveUpdateAPIView,
+    RetrieveUpdateDestroyAPIView,
     RetrieveAPIView,
 )
 from rest_framework.response import Response
@@ -201,7 +202,7 @@ class DevicePortsList(DevicesNamesListAPIView):
         return Response(interfaces_names)
 
 
-class End3TechCapabilityAPIView(RetrieveUpdateAPIView):
+class End3TechCapabilityAPIView(RetrieveUpdateDestroyAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
     permission_classes = [End3Permission]

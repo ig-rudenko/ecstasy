@@ -1,5 +1,7 @@
 <template>
 
+  <ConfirmPopup/>
+
 <template v-for="(line, index) in customerLines">
 
   <div :class="getCustomerLineClasses(index)">
@@ -23,6 +25,13 @@
           detail
         </button>
     </div>
+
+    <div v-if="editMode && hasPermissionToDeleteEnd3" class="col-auto">
+        <button v-if="line.detailInfo" @click="deleteEnd3($event, line, index)" class="btn btn-outline-danger rounded-5 py-1">
+          delete
+        </button>
+    </div>
+
   </div>
 
   <div v-if="line.errorStatus" class="alert alert-danger">Ошибка при загрузке данных.
@@ -50,20 +59,25 @@
 <script>
 import Dialog from "primevue/dialog/Dialog.vue";
 import Dropdown from "primevue/dropdown/Dropdown.vue"
+import ConfirmPopup from "primevue/confirmpopup";
+import Toast from "primevue/toast";
 
 import End3PortsViewEdit from "./End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import Create_Subscriber_data from "../Create_Subscriber_data.vue";
 import formatAddress from "../../helpers/address";
+import api_request from "../../api_request";
 
 export default {
   name: "End3CollapsedView",
   components: {
+    ConfirmPopup,
     End3PortsViewEdit,
     TechCapabilityBadge,
     Dialog,
     Dropdown,
     CreateSubscriberData: Create_Subscriber_data,
+    Toast,
   },
   props: {
     customerLines: {required: true, type: Array},
@@ -72,6 +86,12 @@ export default {
     devicePort: {required: false, default: null, type: String},
     buildingAddress: {required: false, default: null, type: Object},
     editMode: {required: false, default: false, type: Boolean},
+  },
+
+  computed: {
+    hasPermissionToDeleteEnd3(){
+      return this.userPermissions.includes("gpon.delete_end3")
+    },
   },
 
   methods: {
@@ -105,6 +125,43 @@ export default {
     getFullAddress(address) {
       return formatAddress(address)
     },
+
+    deleteEnd3(event, end3, end3Index) {
+      const end3VerboseType = this.customerLineTypeName(end3.type)
+      for (const end3Port of end3.detailInfo) {
+        if (end3Port.subscribers.length > 0) {
+          this.$toast.add({ severity: 'warn', summary: 'Warning', detail: end3VerboseType+' содержит абонентов', life: 3000 });
+          return
+        }
+      }
+
+      this.$confirm.require({
+          target: event.currentTarget,
+          message: 'Вы уверены, что хотите удалить данный '+end3VerboseType+"?",
+          icon: 'pi pi-info-circle',
+          acceptLabel: "Да",
+          rejectLabel: "Нет",
+          acceptClass: 'p-button-danger p-button-sm',
+          defaultFocus: "reject",
+          accept: () => {
+              api_request.delete("/gpon/api/tech-data/end3/"+end3.id).then(
+                  () => {
+                    this.$toast.add({
+                      severity: 'error',
+                      summary: 'Confirmed',
+                      detail: end3VerboseType + ' был удален',
+                      life: 3000
+                    });
+                    this.$emit("deletedEnd3", end3, end3Index)
+                  }
+              ).catch(
+                  reason => this.$toast.add({ severity: 'error', summary: reason.response.status, detail: reason.response.data, life: 3000 })
+              )
+          },
+          reject: () => {}
+      });
+    }
+
   }
 }
 </script>
