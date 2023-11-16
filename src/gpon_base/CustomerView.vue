@@ -1,47 +1,16 @@
 <template>
 <div id="app" style="margin: auto;">
 
-  <Toast />
+  <Toast/>
+  <ConfirmPopup/>
 
   <div class="header w-75" style="margin: auto;">
-    <!-- ДЕЙСТВИЯ -->
-    <div class="d-flex">
-    <button @click="goToSubscribersDataURL" class="back-button me-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-        <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
-      </svg>
-      <span v-if="!isMobile" class="m-2">Выйти</span>
-    </button>
-
-    <!-- Режим редактирования -->
-    <button v-if="editMode" @click="editMode = false" class="view-button me-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-        <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-      </svg>
-      <span v-if="!isMobile" class="m-2">Просмотр</span>
-    </button>
-
-    <!-- Режим просмотра -->
-    <template v-else>
-      <button @click="printData" class="print-button me-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
-          <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-        </svg>
-        <span v-if="!isMobile" class="m-2">Печать</span>
-      </button>
-
-      <button v-if="hasPermissionToUpdate" @click="editMode = true" class="edit-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-        </svg>
-        <span v-if="!isMobile" class="m-2">Редактировать</span>
-      </button>
-    </template>
-
-
-  </div>
+    <ViewPrintEditButtons
+        @print="printData"
+        @changeMode="mode => editMode = mode"
+        exitButtonURL="/gpon/subscriber-data"
+        :has-permission-to-edit="hasPermissionToUpdate"
+        :is-mobile="isMobile"/>
   </div>
 
   <!-- ОШИБКА ЗАГРУЗКИ -->
@@ -142,6 +111,12 @@
 
         <div v-for="connection in customer.connections" class="border rounded-4 shadow mb-4">
 
+          <div v-if="editMode && hasPermissionToDeleteConnection" style="position: absolute;">
+              <Button @click="deleteConnection($event, connection)" severity="danger" rounded style="position: relative; top: 15px; left: 15px;">
+                X
+              </Button>
+          </div>
+
           <div class="fs-4 p-3 text-center">
             <div class="me-3">{{getFullAddress(connection.address)}}</div>
             <div>Статус подключения: <TechCapabilityBadge :status="connection.status"/></div>
@@ -223,6 +198,8 @@
 </template>
 
 <script>
+import Button from "primevue/button/Button.vue";
+import ConfirmPopup from "primevue/confirmpopup";
 import Dropdown from "primevue/dropdown/Dropdown.vue";
 import InputMask from "primevue/inputmask/InputMask.vue";
 import InputText from "primevue/inputtext/InputText.vue";
@@ -230,20 +207,24 @@ import Toast from "primevue/toast/Toast.vue"
 
 import Asterisk from "./components/Asterisk.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
+import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api_request from "../api_request";
-import printElementById from "../helpers/print";
 import formatAddress from "../helpers/address";
 import getSubscriberTypeVerbose from "../helpers/subscribers";
+import printElementById from "../helpers/print";
 
 export default {
   name: "CustomerView.vue",
   components: {
     Asterisk,
+    Button,
+    ConfirmPopup,
     Dropdown,
     InputMask,
     InputText,
     TechCapabilityBadge,
     Toast,
+    ViewPrintEditButtons,
   },
   data() {
     return {
@@ -259,20 +240,9 @@ export default {
   },
 
   mounted() {
-    window.addEventListener('resize', () => {
-      this.windowWidth = window.innerWidth
-    })
-    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
-
-    let url = window.location.href
-    // /gpon/api/customer/{id}
-    api_request.get("/gpon/api/" + url.match(/customers\S+/)[0])
-        .then(resp => this.customer = resp.data)
-        .catch(reason => {
-          this.error.status = reason.response.status
-          this.error.message = reason.response.data
-        })
-
+    window.addEventListener('resize', () => { this.windowWidth = window.innerWidth});
+    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data});
+    this.getSubscriberData();
   },
 
   computed: {
@@ -304,6 +274,10 @@ export default {
       ].every(elem => {return this.userPermissions.includes(elem)})
     },
 
+    hasPermissionToDeleteConnection() {
+      return this.userPermissions.includes("gpon.delete_subscriberconnection")
+    },
+
     isMobile() {
       return this.windowWidth <= 768
     },
@@ -312,9 +286,18 @@ export default {
   },
 
   methods: {
-    goToSubscribersDataURL() {
-      window.location.href = "/gpon/subscriber-data"
+
+    getSubscriberData() {
+      let url = window.location.href
+      // /gpon/api/customer/{id}
+      api_request.get("/gpon/api/" + url.match(/customers\S+/)[0])
+          .then(resp => this.customer = resp.data)
+          .catch(reason => {
+            this.error.status = reason.response.status
+            this.error.message = reason.response.data
+          })
     },
+
     printData() {printElementById('subscriber-data-block')},
 
     getFullAddress(address) {
@@ -342,6 +325,29 @@ export default {
           api_request.put("/gpon/api/customers/"+this.customer.id, data),
           "Данные абонента были успешно обновлены"
       )
+    },
+
+    deleteConnection(event, connection) {
+      this.$confirm.require({
+          target: event.currentTarget,
+          message: 'Вы уверены, что хотите удалить данное подключение?',
+          icon: 'pi pi-info-circle',
+          acceptLabel: "Да",
+          rejectLabel: "Нет",
+          acceptClass: 'p-button-danger p-button-sm',
+          defaultFocus: "reject",
+          accept: () => {
+              api_request.delete("/gpon/api/subscriber-connection/"+connection.id).then(
+                  () => {
+                    this.$toast.add({severity: 'error', summary: 'Confirmed', detail: 'Подключение было удалено', life: 3000});
+                    this.getSubscriberData();  // Обновляем данные абонента
+                  }
+              ).catch(
+                  reason => this.$toast.add({ severity: 'error', summary: reason.response.status, detail: reason.response.data, life: 3000 })
+              )
+          },
+          reject: () => {}
+      });
     },
 
     subscriberVerbose(type){ return getSubscriberTypeVerbose(type) },

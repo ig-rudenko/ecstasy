@@ -87,4 +87,9 @@ urlpatterns += [
         subscriber_view.SubscriberConnectionListCreateAPIView.as_view(),
         name="subscribers-data-list-create",
     ),
+    path(
+        "subscriber-connection/<int:pk>",
+        subscriber_view.SubscriberConnectionDetailAPIView.as_view(),
+        name="subscribers-data-detail",
+    ),
 ]

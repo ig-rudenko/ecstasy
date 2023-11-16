@@ -1,10 +1,12 @@
 import {createApp} from 'vue'
+import App from './CustomerView.vue'
 import PrimeVue from 'primevue/config';
 import ToastService from "primevue/toastservice";
-import App from './CustomerView.vue'
+import ConfirmationService from "primevue/confirmationservice";
 import "primevue/resources/themes/lara-light-indigo/theme.css";
 
-createApp(App)
-    .use(PrimeVue)
-    .use(ToastService)
-    .mount('#app')
+const app = createApp(App);
+app.use(PrimeVue);
+app.use(ToastService);
+app.use(ConfirmationService);
+app.mount('#app');
