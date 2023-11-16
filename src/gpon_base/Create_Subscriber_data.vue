@@ -273,7 +273,7 @@
           </div>
           <div class="input-part">
             <h6 class="px-2">Дата подключения</h6>
-            <Calendar id="calendar-24h" v-model="formData.connected_at" showTime show-icon hourFormat="24"
+            <Calendar id="calendar-24h" dateFormat="dd/mm/yy" v-model="formData.connected_at" showTime show-icon hourFormat="24"
                       style="width: 100%"/>
             <InlineMessage v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</InlineMessage>
           </div>
