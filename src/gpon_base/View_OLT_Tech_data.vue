@@ -155,7 +155,8 @@
             <End3CollapsedView
                 @getInfo="index => getEnd3DetailInfo(BIndex, index)"
                 @deleteInfo="index => deleteEnd3DetailInfo(BIndex, index)"
-                @deletedEnd3="(end3, end3Index) => deleteEnd3(BIndex, end3Index)"
+                @deletedEnd3="(end3, end3Index) => deleteEnd3FromList(BIndex, end3Index)"
+                @createNewEnd3="newEnd3List => createNewEnd3(BIndex, newEnd3List)"
                 :customer-lines="building.customerLines"
                 :user-permissions="userPermissions"
                 :edit-mode="editMode"
@@ -227,14 +228,7 @@ export default {
   mounted() {
     api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
 
-    let url = window.location.href
-    // /gpon/api/tech-data/{device_name}?port={olt_port}
-    api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
-        .then(resp => this.detailData = resp.data)
-        .catch(reason => {
-          this.errorStatus = reason.response.status
-          this.errorMessage = reason.response.data
-        })
+    this.getTechData()
     window.addEventListener('resize', () => {
       this.windowWidth = window.innerWidth
     })
@@ -275,11 +269,26 @@ export default {
 
   methods: {
 
+    getTechData() {
+      let url = window.location.href
+      // /gpon/api/tech-data/{device_name}?port={olt_port}
+      api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+          .then(resp => this.detailData = resp.data)
+          .catch(reason => {
+            this.errorStatus = reason.response.status
+            this.errorMessage = reason.response.data
+          })
+    },
 
     getFullAddress(address) {
       return formatAddress(address)
     },
 
+    /**
+     * Получаем подробные данные для конкретного сплиттера/райзера
+     * @param {Number} BIndex Индекс в списке домов текущего OTL State
+     * @param {Number} end3Index Индекс в списке end3 текущего end3
+     */
     getEnd3DetailInfo(BIndex, end3Index) {
       const end3ID = this.detailData.structures[BIndex].customerLines[end3Index].id
       api_request.get("/gpon/api/tech-data/end3/" + end3ID)
@@ -294,8 +303,28 @@ export default {
       this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = null
     },
 
-    deleteEnd3(BIndex, end3Index) {
+    deleteEnd3FromList(BIndex, end3Index) {
       this.detailData.structures[BIndex].customerLines.splice(end3Index, 1)
+    },
+
+    /**
+     * Создаем новый сплиттер/райзер
+     * @param {Number} BIndex Индекс House OTL State в списке домов
+     * @param {Object} newEnd3 Объект с новыми данными End3
+     */
+    createNewEnd3(BIndex, newEnd3) {
+      const data = {
+        houseOltStateID: this.detailData.structures[BIndex].id,
+        end3: newEnd3,
+      }
+      this.handleRequest(
+          api_request.post("/gpon/api/tech-data/end3", data), "Успешно создано"
+      ).then(() => {
+        // Обновляем все данные, чтобы загрузить новый перечень End3
+        this.getTechData();
+        // Очищаем список только что созданных End3
+        newEnd3.list = []
+      })
     },
 
     printData() {printElementById('tech-data-block')},
@@ -321,7 +350,7 @@ export default {
      * @param {String} successInfo
      */
     handleRequest(request, successInfo){
-      request.then(
+      return request.then(
             resp => {
               this.$toast.add({
                 severity: 'success',

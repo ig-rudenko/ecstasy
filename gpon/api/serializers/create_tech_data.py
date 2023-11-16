@@ -86,10 +86,14 @@ class WriteOnlyHouseBAddressSerializer(AddressSerializer):
         choices=["building", "house"], required=True, write_only=True
     )
     floors = serializers.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(100)], required=True, write_only=True
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        required=True,
+        write_only=True,
     )
     total_entrances = serializers.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(255)], required=True, write_only=True
+        validators=[MinValueValidator(1), MaxValueValidator(255)],
+        required=True,
+        write_only=True,
     )
     planStructure = serializers.CharField(
         source="plan_structure", required=False, allow_blank=True, max_length=128
@@ -128,7 +132,9 @@ class HouseOLTStateSerializer(serializers.ModelSerializer):
             {
                 "region": validated_data["house"]["address"]["region"],
                 "settlement": validated_data["house"]["address"]["settlement"],
-                "plan_structure": validated_data["house"]["address"].get("plan_structure"),
+                "plan_structure": validated_data["house"]["address"].get(
+                    "plan_structure"
+                ),
                 "street": validated_data["house"]["address"].get("street"),
                 "house": validated_data["house"]["address"]["house"],
                 "block": validated_data["house"]["address"].get("block"),
@@ -227,16 +233,16 @@ class CreateTechDataSerializer(serializers.Serializer):
 
         if validated_data["end3"].get("existingSplitter"):
             # Если был выбран уже существующий сплиттер
-            end3_obj_list = [self._get_exiting_splitter(validated_data)]
+            end3_obj_list = [self.get_exiting_splitter(validated_data)]
 
         else:  # Создаем НОВЫЕ splitter/rizer
-            end3_obj_list = self._create_new_end3(validated_data, house_olt_state)
+            end3_obj_list = self.create_new_end3(validated_data, house_olt_state)
 
         house_olt_state.end3_set.add(*end3_obj_list)
         return olt_state
 
     @staticmethod
-    def _get_exiting_splitter(validated_data) -> End3:
+    def get_exiting_splitter(validated_data) -> End3:
         try:
             splitter_id = validated_data["end3"]["existingSplitter"]["id"]
             return End3.objects.get(id=splitter_id)
@@ -244,7 +250,7 @@ class CreateTechDataSerializer(serializers.Serializer):
             raise ValidationError("Выбранный вами сплиттер не существует.")
 
     @staticmethod
-    def _create_new_end3(validated_data, house_olt_state: HouseOLTState) -> List[End3]:
+    def create_new_end3(validated_data, house_olt_state: HouseOLTState) -> List[End3]:
         # Создаем НОВЫЕ splitter/rizer
         end3_obj_list = []
         for end3_unit in validated_data["end3"].get("list", []):
@@ -263,3 +269,20 @@ class CreateTechDataSerializer(serializers.Serializer):
                 )
             )
         return end3_obj_list
+
+
+class AddEnd3ToHouseOLTStateSerializer(serializers.Serializer):
+    end3 = End3CreateListSerializer(
+        error_messages={"required": "Обязательный параметр для данных splitter/rizer"}
+    )
+
+    houseOltStateID = serializers.PrimaryKeyRelatedField(queryset=HouseOLTState.objects)
+
+    class Meta:
+        fields = ["end3", "houseOltStateID"]
+
+    def create(self, validated_data: dict) -> list[End3]:
+        house_olt_state: HouseOLTState = validated_data["houseOltStateID"]
+        end3 = CreateTechDataSerializer.create_new_end3(validated_data, house_olt_state)
+        house_olt_state.end3_set.add(*end3)
+        return end3

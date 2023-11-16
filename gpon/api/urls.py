@@ -11,11 +11,6 @@ urlpatterns = [
     path("permissions", views.ListUserPermissions.as_view(), name="user-permissions"),
     path("tech-data", views.TechDataListCreateAPIView.as_view(), name="tech-data"),
     path(
-        "tech-data/<device_name>",
-        views.ViewOLTStateTechDataAPIView.as_view(),
-        name="view-olt-state-tech-data",
-    ),
-    path(
         "tech-data/building/<int:pk>",
         views.ViewBuildingTechDataAPIView.as_view(),
         name="view-building-tech-data",
@@ -31,6 +26,11 @@ urlpatterns = [
         name="tech-data-house-olt-state",
     ),
     path(
+        "tech-data/end3",
+        views.End3CreateAPIView.as_view(),
+        name="tech-data-end3-create",
+    ),
+    path(
         "tech-data/end3/<int:pk>",
         views.End3TechCapabilityAPIView.as_view(),
         name="tech-data-end3-capability",
@@ -39,6 +39,11 @@ urlpatterns = [
         "tech-data/tech-capability/<int:pk>",
         views.TechCapabilityAPIView.as_view(),
         name="tech-data-tech-capability",
+    ),
+    path(
+        "tech-data/<device_name>",
+        views.ViewOLTStateTechDataAPIView.as_view(),
+        name="view-olt-state-tech-data",
     ),
     path(
         "devices-names",
@@ -67,8 +72,16 @@ urlpatterns = [
 # /gpon/api/
 
 urlpatterns += [
-    path("customers", subscriber_view.CustomersListAPIView.as_view(), name="customers-list"),
-    path("customers/<int:pk>", subscriber_view.CustomerDetailAPIView.as_view(), name="customer-detail"),
+    path(
+        "customers",
+        subscriber_view.CustomersListAPIView.as_view(),
+        name="customers-list",
+    ),
+    path(
+        "customers/<int:pk>",
+        subscriber_view.CustomerDetailAPIView.as_view(),
+        name="customer-detail",
+    ),
     path(
         "subscriber-data",
         subscriber_view.SubscriberConnectionListCreateAPIView.as_view(),

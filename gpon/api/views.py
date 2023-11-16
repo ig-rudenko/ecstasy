@@ -17,11 +17,16 @@ from .permissions import (
     TechDataPermission,
     OLTStatePermission,
     HouseOLTStatePermission,
-    TechCapabilityPermission, End3Permission,
+    TechCapabilityPermission,
+    End3Permission,
 )
 from .serializers.address import AddressSerializer, BuildingAddressSerializer
 from .serializers.common import End3Serializer
-from .serializers.create_tech_data import CreateTechDataSerializer, OLTStateSerializer
+from .serializers.create_tech_data import (
+    CreateTechDataSerializer,
+    OLTStateSerializer,
+    AddEnd3ToHouseOLTStateSerializer,
+)
 from .serializers.update_tech_data import (
     UpdateRetrieveOLTStateSerializer,
     UpdateHouseOLTStateSerializer,
@@ -145,7 +150,9 @@ class BuildingsAddressesListAPIView(ListAPIView):
             return queryset
 
         try:
-            olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
+            olt_state: OLTState = OLTState.objects.get(
+                olt_port=port, device__name=device
+            )
         except OLTState.DoesNotExist:
             return queryset.none()
         addresses_ids = set()
@@ -179,7 +186,9 @@ class DevicesNamesListAPIView(GenericAPIView):
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
         if self.request.user.is_authenticated:
-            group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+            group_ids = self.request.user.profile.devices_groups.all().values_list(
+                "id", flat=True
+            )
         else:
             group_ids = []
         return Devices.objects.all()
@@ -206,6 +215,18 @@ class End3TechCapabilityAPIView(RetrieveUpdateDestroyAPIView):
     queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
     permission_classes = [End3Permission]
+
+
+class End3CreateAPIView(GenericAPIView):
+    queryset = End3.objects.all()
+    serializer_class = AddEnd3ToHouseOLTStateSerializer
+    permission_classes = [End3Permission]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.serializer_class(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        end3_list: list[End3] = serializer.save()
+        return Response(End3Serializer(end3_list, many=True).data, status=201)
 
 
 class TechCapabilityAPIView(RetrieveUpdateAPIView):
