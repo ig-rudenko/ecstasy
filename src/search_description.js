@@ -1,4 +1,7 @@
-import { createApp } from 'vue'
+import {createApp} from 'vue'
 import App from './App_description_search.vue'
+import PrimeVue from "primevue/config";
 
-createApp(App).mount('#description-search')
+const app = createApp(App);
+app.use(PrimeVue);
+app.mount('#description-search')

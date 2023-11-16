@@ -52,7 +52,7 @@ class Finder:
                 {
                     "user": comment.user.username,
                     "text": comment.comment,
-                    "datetime": comment.datetime,
+                    "createdTime": comment.datetime.isoformat(),
                 }
             )
 
