@@ -3,61 +3,13 @@
 
     <Toast />
 
-    <div class="header">
-      <h2 class="py-3">Техническая возможность</h2>
-
-      <div class="d-flex">
-        <button @click="goToTechDataURL" class="back-button me-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
-          </svg>
-          <span v-if="!isMobile" class="m-2">Выйти</span>
-        </button>
-
-        <!-- Режим редактирования -->
-        <template v-if="editMode">
-
-          <!-- Сохранить изменения -->
-          <button @click="updateEnd3Info" class="save-button me-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-            </svg>
-            <span v-if="!isMobile" class="m-2">Сохранить</span>
-          </button>
-
-          <button @click="editMode = false" class="view-button me-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-              <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-            </svg>
-            <span v-if="!isMobile" class="m-2">Просмотр</span>
-          </button>
-
-        </template>
-
-
-        <!-- Режим просмотра -->
-        <template v-else>
-          <button @click="printData" class="print-button me-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
-              <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-            </svg>
-            <span v-if="!isMobile" class="m-2">Печать</span>
-          </button>
-
-          <button v-if="hasAnyPermissionToUpdate" @click="editMode = true" class="edit-button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-            </svg>
-            <span v-if="!isMobile" class="m-2">Редактировать</span>
-          </button>
-        </template>
-
-
-      </div>
-
-    </div>
+    <ViewPrintEditButtons
+        @print="printData"
+        @changeMode="mode => editMode = mode"
+        title="Техническая возможность"
+        exitButtonURL="/gpon/tech-data"
+        :has-permission-to-edit="hasAnyPermissionToUpdate"
+        :is-mobile="isMobile"/>
 
     <!-- ОШИБКА ЗАГРУЗКИ -->
     <div v-if="errorStatus" class="alert alert-danger">
@@ -146,6 +98,7 @@ import Toast from "primevue/toast/Toast.vue"
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import End3PortsViewEdit from "./components/End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue"
+import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api_request from "../api_request";
 import formatAddress from "../helpers/address";
 import printElementById from "../helpers/print";
@@ -153,6 +106,7 @@ import printElementById from "../helpers/print";
 export default {
   name: "Gpon_base.vue",
   components: {
+    ViewPrintEditButtons,
     End3PortsViewEdit,
     TechCapabilityBadge,
     AddressGetCreate,
@@ -280,7 +234,7 @@ export default {
      */
     handleRequest(request){
       request.then(
-            resp => {
+          () => {
               this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Статус был изменён', life: 3000})
               this.editMode = false
             }
@@ -314,70 +268,6 @@ export default {
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.grey-back {
-  background-color: #ebebeb;
-}
-
-.print-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #6D5BD0;
-  border: 1px #6D5BD0 solid;
-}
-.print-button:hover {
-  box-shadow: 0 0 3px #6D5BD0;
-}
-
-.edit-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #ff802a;
-  border: 1px #ff802a solid;
-}
-.edit-button:hover {
-  box-shadow: 0 0 3px #ff802a;
-}
-
-.view-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #2a4dff;
-  border: 1px #2a4dff solid;
-}
-.view-button:hover {
-  box-shadow: 0 0 3px #2a4dff;
-}
-
-.save-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #008b1e;
-  border: 1px #008b1e solid;
-}
-.save-button:hover {
-  box-shadow: 0 0 3px #008b1e;
-}
-
-.back-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #4a4a4a;
-  border: 1px #4a4a4a solid;
-}
-.back-button:hover {
-  box-shadow: 0 0 3px #4a4a4a;
-}
 
 .plate {
   padding: 40px;
@@ -396,17 +286,8 @@ export default {
     max-width: 100%!important;
   }
 
-  .header {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
   .w-75, .col-5 {
     width: 100% !important;
-  }
-
-  .header {
-    padding: 0 40px;
   }
 
   .plate {

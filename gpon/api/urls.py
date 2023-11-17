@@ -92,4 +92,9 @@ urlpatterns += [
         subscriber_view.SubscriberConnectionDetailAPIView.as_view(),
         name="subscribers-data-detail",
     ),
+    path(
+        "subscribers-on-device/<device_name>",
+        subscriber_view.SubscribersOnDevicePort.as_view(),
+        name="subscribers-data-list-create",
+    ),
 ]

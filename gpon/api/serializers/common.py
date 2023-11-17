@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from gpon.api.serializers.address import AddressSerializer
-from gpon.models import End3, Customer
+from gpon.models import End3, Customer, SubscriberConnection
 
 
 class End3Serializer(serializers.ModelSerializer):
@@ -14,9 +14,15 @@ class End3Serializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    firstName = serializers.CharField(source="first_name", allow_null=True, allow_blank=True)
-    lastName = serializers.CharField(source="last_name", allow_null=True, allow_blank=True)
-    companyName = serializers.CharField(source="company_name", allow_null=True, allow_blank=True)
+    firstName = serializers.CharField(
+        source="first_name", allow_null=True, allow_blank=True
+    )
+    lastName = serializers.CharField(
+        source="last_name", allow_null=True, allow_blank=True
+    )
+    companyName = serializers.CharField(
+        source="company_name", allow_null=True, allow_blank=True
+    )
 
     class Meta:
         model = Customer
@@ -44,3 +50,29 @@ class CustomerSerializer(serializers.ModelSerializer):
                 raise ValidationError("Вы должны указать название компании")
 
         return validated_data
+
+
+class SubscriberConnectionSerializer(serializers.ModelSerializer):
+    address = AddressSerializer()
+    services = serializers.ListSerializer(child=serializers.CharField())
+    status = serializers.CharField(source="tech_capability.status")
+    end3Port = serializers.IntegerField(source="tech_capability.number")
+    customer = CustomerSerializer()
+
+    class Meta:
+        model = SubscriberConnection
+        fields = [
+            "id",
+            "address",
+            "ip",
+            "ont_id",
+            "ont_serial",
+            "ont_mac",
+            "order",
+            "transit",
+            "connected_at",
+            "services",
+            "status",
+            "end3Port",
+            "customer",
+        ]

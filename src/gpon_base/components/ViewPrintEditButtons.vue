@@ -1,6 +1,6 @@
 <template>
 <div class="header">
-  <h2 class="py-3">Технические данные - OLT</h2>
+  <h2 class="py-3">{{title}}</h2>
 
   <!-- ДЕЙСТВИЯ -->
   <div class="d-flex">
@@ -47,6 +47,7 @@
 export default {
   name: "ViewPrintEditButtons",
   props: {
+    title: {required: true, type: String},
     isMobile: {required: true, type: Boolean},
     hasPermissionToEdit: {required: true, type: Boolean},
     exitButtonURL: {required: true, type: String},

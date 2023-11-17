@@ -8,6 +8,7 @@
     <ViewPrintEditButtons
         @print="printData"
         @changeMode="mode => editMode = mode"
+        title=""
         exitButtonURL="/gpon/subscriber-data"
         :has-permission-to-edit="hasPermissionToUpdate"
         :is-mobile="isMobile"/>

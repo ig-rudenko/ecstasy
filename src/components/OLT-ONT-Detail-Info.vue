@@ -34,17 +34,21 @@
            {{ line[1] }}
         </td>
 
-<!--            Equipment ID -->
-        <td>{{ line[2] }}</td>
+<!--            Equipment ID или АБОНЕНТ -->
+        <td v-if="showSubscribersData"><a v-for="line in getCustomersIDAndFullNameList(line[0])" :href="'/gpon/subscriber-data/customers/'+line.id" target="_blank">{{line.fullName}}</a></td>
+        <td v-else>{{ line[2] }}</td>
 
-<!--            RSSI [dBm] -->
-        <td>{{ line[3] }}</td>
+<!--            RSSI [dBm] или АДРЕС -->
+        <td v-if="showSubscribersData"><div v-for="address in getCustomersAddressList(line[0])">{{address}}</div></td>
+        <td v-else>{{ line[3] }}</td>
 
-<!--            Serial -->
-        <td>{{ line[4] }}</td>
+<!--            Serial или УСЛУГИ -->
+        <td v-if="showSubscribersData"><div v-for="services in getCustomersServicesList(line[0])">{{services}}</div></td>
+        <td v-else>{{ line[4] }}</td>
 
-<!--            Description -->
-        <td style="text-align: left">{{ line[5] }}</td>
+<!--            Description или ТРАНЗИТ -->
+        <td v-if="showSubscribersData"><div v-for="transit in getCustomersTransitList(line[0])">{{transit}}</div></td>
+        <td v-else style="text-align: left">{{ line[5] }}</td>
 
     </tr>
 
@@ -184,6 +188,7 @@
 <script>
 import {defineComponent} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
+import formatAddress from "../helpers/address";
 
 export default defineComponent({
   props: {
@@ -191,6 +196,27 @@ export default defineComponent({
     line: {required: true, type: Object},
     permissionLevel: {required: true, type: Number},
     registerInterfaceAction: {required: true, type: Function},
+    showSubscribersData: {required: false, type: Boolean},
+    subscribersData: {
+      required: false,
+      type: {
+        Number: [
+            {
+              id: Number,
+              address:{
+                region:String,settlement:String,planStructure:String,street:String,house:String,block:Number,floor:Number,apartment:Number
+              },
+              ont_id: Number, ip:String, ont_serial: String, ont_mac: String, order: String, transit: Number, connected_at: String,
+              services: [String],
+              status:String, end3Port: Number,
+              customer:{
+                id:Number, type:String, firstName:String, surname:String, lastName:String, companyName:String, contract:String, phone:String
+              }
+            }
+        ]
+      },
+      default: {}
+    },
   },
 
   data() {
@@ -229,6 +255,56 @@ export default defineComponent({
   },
 
   methods: {
+
+    getCustomersIDAndFullNameList(ontID) {
+      let result = []
+      if (this.subscribersData[String(ontID)]) {
+        for (const subscriberData of this.subscribersData[String(ontID)]) {
+          const c = subscriberData.customer
+          if (c.companyName) {
+            result.push({id: c.id, fullName: c.companyName})
+          }
+          else {
+            result.push({id: c.id, fullName: c.surname + " " + c.firstName + " " + c.lastName})
+          }
+        }
+      }
+      return result
+    },
+
+    getCustomersAddressList(ontID) {
+      let result = []
+      if (this.subscribersData[String(ontID)]) {
+        for (const subscriberData of this.subscribersData[String(ontID)]) {
+          const address = subscriberData.address
+          let address_string = formatAddress(address)
+          if (address.apartment){ address_string += ` кв. ${address.apartment}` }
+          if (address.floor){ address_string += ` (${address.floor} этаж)` }
+          result.push(address_string)
+        }
+      }
+      return result
+    },
+
+    getCustomersServicesList(ontID) {
+      let result = []
+      if (this.subscribersData[String(ontID)]) {
+        for (const subscriberData of this.subscribersData[String(ontID)]) {
+          result.push(subscriberData.services.join(", "))
+        }
+      }
+      return result
+    },
+
+    getCustomersTransitList(ontID) {
+      let result = []
+      if (this.subscribersData[String(ontID)]) {
+        for (const subscriberData of this.subscribersData[String(ontID)]) {
+          result.push(subscriberData.transit)
+        }
+      }
+      return result
+    },
 
     findMacEvent: function (mac) {
       this.$emit("find-mac", mac)

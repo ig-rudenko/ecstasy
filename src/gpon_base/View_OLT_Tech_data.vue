@@ -6,6 +6,7 @@
     <ViewPrintEditButtons
         @print="printData"
         @changeMode="mode => editMode = mode"
+        title="Технические данные - OLT"
         exitButtonURL="/gpon/tech-data"
         :has-permission-to-edit="hasAnyPermissionToUpdate"
         :is-mobile="isMobile"
