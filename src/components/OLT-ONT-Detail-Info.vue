@@ -35,7 +35,9 @@
         </td>
 
 <!--            Equipment ID или АБОНЕНТ -->
-        <td v-if="showSubscribersData"><a v-for="line in getCustomersIDAndFullNameList(line[0])" :href="'/gpon/subscriber-data/customers/'+line.id" target="_blank">{{line.fullName}}</a></td>
+        <td v-if="showSubscribersData">
+          <div v-for="line in getCustomersIDAndFullNameList(line[0])" ><a :href="'/gpon/subscriber-data/customers/'+line.id" target="_blank">{{line.fullName}}</a></div>
+        </td>
         <td v-else>{{ line[2] }}</td>
 
 <!--            RSSI [dBm] или АДРЕС -->

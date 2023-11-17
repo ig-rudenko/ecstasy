@@ -11,7 +11,10 @@ from rest_framework.response import Response
 from gpon.models import Customer, SubscriberConnection, OLTState
 from .permissions import SubscriberDataPermission, CustomerPermission
 from .serializers.common import CustomerSerializer, SubscriberConnectionSerializer
-from .serializers.create_subscriber_data import SubscriberDataSerializer
+from .serializers.create_subscriber_data import (
+    SubscriberDataSerializer,
+    UpdateSubscriberDataSerializer,
+)
 from .serializers.view_subscriber_data import CustomerDetailSerializer
 
 
@@ -30,7 +33,7 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
 class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects
-    serializer_class = SubscriberDataSerializer
+    serializer_class = UpdateSubscriberDataSerializer
 
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):

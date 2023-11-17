@@ -137,6 +137,9 @@ export default {
   },
   beforeMount() {
     this.address = this.initAddress
+    if (!this.address.building_type) {
+      this.address.building_type = "building"
+    }
   },
   computed: {
     regionClasses() {

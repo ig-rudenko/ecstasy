@@ -233,10 +233,9 @@ export default {
      * @param {Promise} request
      */
     handleRequest(request){
-      request.then(
+      return request.then(
           () => {
               this.$toast.add({severity: 'success', summary: 'Обновлено', detail: 'Статус был изменён', life: 3000})
-              this.editMode = false
             }
           )
           .catch(

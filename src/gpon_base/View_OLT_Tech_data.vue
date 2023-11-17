@@ -352,14 +352,8 @@ export default {
      */
     handleRequest(request, successInfo){
       return request.then(
-            resp => {
-              this.$toast.add({
-                severity: 'success',
-                summary: 'Обновлено',
-                detail: successInfo,
-                life: 3000
-              });
-              this.editMode = false;
+            () => {
+              this.$toast.add({ severity: 'success', summary: 'Обновлено', detail: successInfo, life: 3000 });
             }
           )
           .catch(

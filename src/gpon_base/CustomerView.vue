@@ -106,25 +106,36 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-center">
+    <div :class="isMobile?['']:['d-flex', 'justify-content-center']">
       <div v-if="customer">
         <h3 class="mb-4">Подключения:</h3>
 
         <div v-for="connection in customer.connections" class="border rounded-4 shadow mb-4">
 
-          <div v-if="editMode && hasPermissionToDeleteConnection" style="position: absolute;">
+          <!-- УДАЛЕНИЕ ПОДКЛЮЧЕНИЯ -->
+          <div v-if="editMode && hasPermissionToDeleteConnection">
               <Button @click="deleteConnection($event, connection)" severity="danger" rounded style="position: relative; top: 15px; left: 15px;">
                 X
               </Button>
           </div>
 
+          <!-- АДРЕС ПОДКЛЮЧЕНИЯ -->
           <div class="fs-4 p-3 text-center">
-            <div class="me-3">{{getFullAddress(connection.address)}}</div>
+            <AddressGetCreate
+                v-if="editMode && hasPermissionToUpdateConnection"
+                :is-mobile="isMobile"
+                :allow-create="true"
+                :data="connection"
+                :is-subscriber-address="true"
+            />
+            <div v-else class="me-3">{{getFullAddress(connection.address)}}</div>
+
             <div>Статус подключения: <TechCapabilityBadge :status="connection.status"/></div>
           </div>
 
           <div class="d-flex flex-wrap p-3">
 
+            <!-- ОБОРУДОВАНИЕ И ПОРТ -->
             <div class="p-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                 <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
@@ -136,6 +147,7 @@
               </a>
             </div>
 
+            <!-- ТЕХНИЧЕСКИЕ ДАННЫЕ -->
             <div class="p-3">
               <a :href="'/gpon/tech-data/end3/'+connection.end3.id">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" style="transform: rotate(270deg)" viewBox="0 0 16 16">
@@ -146,6 +158,7 @@
               <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
             </div>
 
+<!--        ДАННЫЕ ONT -->
             <div class="p-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                 <path d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707Z"/>
@@ -153,43 +166,115 @@
                 <path d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86L2.974 2.342ZM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1Zm1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Zm2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0Z"/>
                 <path d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
               </svg>
-              <span class="me-3 badge bg-primary fs-6">{{connection.ip}}</span>
-              <span class="badge bg-secondary fs-6">{{connection.ont_mac}}</span>
-              <div class="p-1">
-                <span class="fw-bold me-2">ONT ID:</span>
-                <span>{{connection.ont_id}}</span>
-              </div>
-              <div class="p-1">
-                <span class="fw-bold me-2">Серийный номер ONT:</span><br>
-                <span>{{connection.ont_serial}}</span>
-              </div>
-            </div>
 
-            <div class="p-3 d-flex">
+              <!-- РЕДАКТИРОВАНИЕ ДАННЫХ ONT -->
+              <template v-if="editMode && hasPermissionToUpdateConnection">
+                  <div class="d-flex flex-wrap py-2">
+                    <div class="input-part">
+                      <h6 class="px-2">ONT ID <Asterisk/></h6>
+                      <InputText v-model.number="connection.ont_id" type="number" style="width: 100%"/>
+                    </div>
+                    <div class="input-part">
+                      <h6 class="px-2">Серийный номер ONT</h6>
+                      <InputText v-model.trim="connection.ont_serial" type="text" style="width: 100%"/>
+                    </div>
+                    <div class="input-part">
+                      <h6 class="px-2">MAC адрес ONT</h6>
+                      <InputText v-model.trim="connection.ont_mac" type="text" style="width: 100%"/>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap py-2">
+                    <div class="input-part">
+                      <h6 class="px-2">IP Адрес</h6>
+                      <InputText v-model.trim="connection.ip" type="text" style="width: 100%"/>
+                    </div>
+                    <div class="input-part">
+                      <h6 class="px-2">Номер наряда</h6>
+                      <InputText v-model.number="connection.order" type="number" style="width: 100%"/>
+                    </div>
+                    <div class="input-part">
+                      <h6 class="px-2">Дата подключения</h6>
+                      <Calendar id="calendar-24h" dateFormat="dd/mm/yy" v-model="connection.connected_at" showTime show-icon hourFormat="24" style="width: 100%"/>
+                    </div>
+                  </div>
+              </template>
+
+              <template v-else>
+                <span class="me-3 badge bg-primary fs-6">{{connection.ip}}</span>
+                <span class="badge bg-secondary fs-6">{{connection.ont_mac}}</span>
+                <div class="p-1">
+                  <span class="fw-bold me-2">ONT ID:</span>
+                  <span>{{connection.ont_id}}</span>
+                </div>
+                <div class="p-1">
+                  <span class="fw-bold me-2">Серийный номер ONT:</span><br>
+                  <span>{{connection.ont_serial}}</span>
+                </div>
+              </template>
+            </div>
+<!------------------->
+
+            <!-- ТРАНЗИТ и НАРЯД -->
+            <div :class="editMode && hasPermissionToUpdateConnection?['p-3', 'd-flex', 'flex-column']:['p-3', 'd-flex']">
               <div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                   <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
                   <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
                 </svg>
               </div>
-              <div class="">
-                <div class="p-1">
-                  <span class="fw-bold me-2">Транзит </span>
-                  <span>{{connection.transit}}</span>
-                </div>
-                <div class="p-1">
-                  <span class="fw-bold me-4">Наряд</span>
-                  <span>{{connection.order}}</span>
-                </div>
+              <div>
+                <template v-if="editMode && hasPermissionToUpdateConnection">
+                  <div class="p-3">
+                    <h6 class="px-2">Транзит <Asterisk/></h6>
+                    <InputText v-model.number="connection.transit" type="number"/>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="p-1"><span class="fw-bold me-2">Транзит </span><span>{{connection.transit}}</span></div>
+                  <div class="p-1"><span class="fw-bold me-4">Наряд</span><span>{{connection.order}}</span></div>
+                </template>
               </div>
             </div>
           </div>
 
 
-
+        <div v-if="editMode && hasPermissionToUpdateConnection" class="p-3">
+          <h6 class="p-2">Выберите услуги</h6>
+          <div class="d-flex flex-wrap p-2">
+            <div class="me-2 d-flex align-items-center">
+              <Checkbox class="me-2" v-model="connection.services" inputId="service-internet" value="internet"/>
+              <label for="service-internet" class="ml-2"> Интернет </label>
+            </div>
+            <div class="me-2 d-flex align-items-center">
+              <Checkbox class="me-2" v-model="connection.services" inputId="service-tv" value="tv"/>
+              <label for="service-tv" class="ml-2"> Телевидение </label>
+            </div>
+            <div class="me-2 d-flex align-items-center">
+              <Checkbox class="me-2" v-model="connection.services" inputId="service-voip" value="voip"/>
+              <label for="service-voip" class="ml-2"> VOIP </label>
+            </div>
+            <div class="me-2 d-flex align-items-center">
+              <Checkbox class="me-2" v-model="connection.services" inputId="service-static" value="static"/>
+              <label for="service-static" class="ml-2"> Статический IP </label>
+            </div>
+          </div>
         </div>
 
-      </div>
+          <!-- Сохранить изменения -->
+          <div class="p-3">
+            <button v-if="editMode" @click="updateCustomerConnection(connection)" class="save-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+              </svg>
+              <span v-if="!isMobile" class="m-2">Обновить</span>
+            </button>
+          </div>
+
+        </div> <!-- end for -->
+
+      </div><!-- end if -->
+
     </div>
 
 
@@ -199,6 +284,8 @@
 </template>
 
 <script>
+import Calendar from "primevue/calendar/Calendar.vue";
+import Checkbox from "primevue/checkbox/Checkbox.vue";
 import Button from "primevue/button/Button.vue";
 import ConfirmPopup from "primevue/confirmpopup";
 import Dropdown from "primevue/dropdown/Dropdown.vue";
@@ -213,11 +300,15 @@ import api_request from "../api_request";
 import formatAddress from "../helpers/address";
 import getSubscriberTypeVerbose from "../helpers/subscribers";
 import printElementById from "../helpers/print";
+import AddressGetCreate from "./components/AddressGetCreate.vue";
 
 export default {
   name: "CustomerView.vue",
   components: {
+    AddressGetCreate,
     Asterisk,
+    Calendar,
+    Checkbox,
     Button,
     ConfirmPopup,
     Dropdown,
@@ -279,6 +370,10 @@ export default {
       return this.userPermissions.includes("gpon.delete_subscriberconnection")
     },
 
+    hasPermissionToUpdateConnection() {
+      return this.userPermissions.includes("gpon.change_subscriberconnection")
+    },
+
     isMobile() {
       return this.windowWidth <= 768
     },
@@ -328,6 +423,14 @@ export default {
       )
     },
 
+    updateCustomerConnection(connection){
+      connection.customer = this.customer.id
+      this.handleRequest(
+          api_request.put("/gpon/api/subscriber-connection/"+connection.id, connection),
+          "Данные абонентского подключения были успешно обновлены"
+      )
+    },
+
     deleteConnection(event, connection) {
       this.$confirm.require({
           target: event.currentTarget,
@@ -359,10 +462,9 @@ export default {
      * @param {String} successInfo
      */
     handleRequest(request, successInfo){
-      request.then(
-            resp => {
+      return request.then(
+            () => {
               this.$toast.add({severity: 'success',summary: 'Обновлено',detail: successInfo,life: 3000});
-              this.editMode = false;
             }
           )
           .catch(
@@ -386,39 +488,6 @@ export default {
   align-items: center;
 }
 
-.print-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #6D5BD0;
-  border: 1px #6D5BD0 solid;
-}
-.print-button:hover {
-  box-shadow: 0 0 3px #6D5BD0;
-}
-
-.edit-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #ff802a;
-  border: 1px #ff802a solid;
-}
-.edit-button:hover {
-  box-shadow: 0 0 3px #ff802a;
-}
-
-.view-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #2a4dff;
-  border: 1px #2a4dff solid;
-}
-.view-button:hover {
-  box-shadow: 0 0 3px #2a4dff;
-}
-
 .save-button {
   padding: 7px 10px;
   background: white;
@@ -430,19 +499,9 @@ export default {
   box-shadow: 0 0 3px #008b1e;
 }
 
-.back-button {
-  padding: 7px 10px;
-  background: white;
-  border-radius: 12px;
-  color: #4a4a4a;
-  border: 1px #4a4a4a solid;
-}
-.back-button:hover {
-  box-shadow: 0 0 3px #4a4a4a;
-}
-
-.grey-back {
-  background-color: #ebebeb;
+.input-part {
+  padding: 0.5rem;
+  width: 33.33333333%;
 }
 
 @media (max-width: 835px) {

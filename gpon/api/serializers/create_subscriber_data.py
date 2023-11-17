@@ -11,13 +11,25 @@ from gpon.models import SubscriberConnection, Customer, Service, TechCapability
 class CustomerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(allow_null=True)
     firstName = serializers.CharField(
-        max_length=256, source="first_name", required=False, allow_blank=True, allow_null=True
+        max_length=256,
+        source="first_name",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
     lastName = serializers.CharField(
-        max_length=256, source="last_name", required=False, allow_blank=True, allow_null=True
+        max_length=256,
+        source="last_name",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
     companyName = serializers.CharField(
-        max_length=256, source="company_name", required=False, allow_blank=True, allow_null=True
+        max_length=256,
+        source="company_name",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
 
     class Meta:
@@ -39,7 +51,9 @@ class SubscriberDataSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
     services = serializers.ListSerializer(child=serializers.CharField())
     ip = serializers.IPAddressField(required=False, allow_null=True, allow_blank=True)
-    ont_mac = serializers.CharField(max_length=20, allow_null=True, allow_blank=True, required=False)
+    ont_mac = serializers.CharField(
+        max_length=20, allow_null=True, allow_blank=True, required=False
+    )
 
     class Meta:
         model = SubscriberConnection
@@ -107,3 +121,36 @@ class SubscriberDataSerializer(serializers.ModelSerializer):
 
         connection.services.add(*services)
         return connection
+
+
+class UpdateSubscriberDataSerializer(SubscriberDataSerializer):
+    class Meta:
+        model = SubscriberConnection
+        fields = [
+            "address",
+            "ip",
+            "ont_id",
+            "ont_serial",
+            "ont_mac",
+            "order",
+            "transit",
+            "connected_at",
+            "services",
+        ]
+
+    def update(self, instance: SubscriberConnection, validated_data):
+        updated_fields = []
+        for attr, value in validated_data.items():
+            if attr == "address":
+                address = AddressSerializer.create(validated_data.get("address"))
+                instance.address = address
+                updated_fields.append("address")
+            elif attr == "services":
+                services = Service.objects.filter(name__in=validated_data["services"])
+                instance.services.clear()
+                instance.services.add(*services)
+            else:
+                setattr(instance, attr, value)
+                updated_fields.append(attr)
+        instance.save(update_fields=updated_fields)
+        return instance

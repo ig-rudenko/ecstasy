@@ -73,6 +73,12 @@ export default {
     valid: {required: false, type: Boolean, default: true},
   },
 
+  beforeMount() {
+    if (!this.data.address.building_type) {
+      this.data.address.building_type = "building"
+    }
+  },
+
   data() {
     return {
       show_new_address_form: false,

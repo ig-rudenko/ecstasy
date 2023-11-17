@@ -2,7 +2,7 @@ import re
 
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 
@@ -113,10 +113,16 @@ class HouseOLTState(models.Model):
     """
 
     house = models.ForeignKey(
-        "gpon.HouseB", on_delete=models.CASCADE, blank=False, related_name="house_olt_states"
+        "gpon.HouseB",
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="house_olt_states",
     )
     statement = models.ForeignKey(
-        "gpon.OLTState", on_delete=models.CASCADE, null=True, related_name="house_olt_states"
+        "gpon.OLTState",
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="house_olt_states",
     )
     entrances = models.CharField(max_length=25, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -182,7 +188,8 @@ class End3(models.Model):
         choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования"
     )
     capacity = models.PositiveSmallIntegerField(
-        choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)], help_text="Кол-во портов/волокон"
+        choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)],
+        help_text="Кол-во портов/волокон",
     )
 
     class Meta:
@@ -233,7 +240,7 @@ def create_tech_capabilities(sender, instance: End3, created: bool, **kwargs):
     tech_capability = []
 
     for i in range(0, instance.capacity):
-        tech_capability.append(TechCapability(end3=instance, number=i+1))
+        tech_capability.append(TechCapability(end3=instance, number=i + 1))
 
     TechCapability.objects.bulk_create(tech_capability)
 
@@ -252,7 +259,9 @@ class TechCapability(models.Model):
         bad = "bad"
 
     end3 = models.ForeignKey("gpon.End3", on_delete=models.CASCADE)
-    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)
+    status = models.CharField(
+        choices=Status.choices, default=Status.empty.value, max_length=16
+    )
     number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(24)],
         verbose_name="Номер порта/волокна",
@@ -270,7 +279,9 @@ class Customer(models.Model):
         company = "company"
         contract = "contract"
 
-    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)
+    type = models.CharField(
+        choices=Type.choices, max_length=128, null=False, blank=False
+    )
     company_name = models.CharField(max_length=256, null=True, blank=True)
     first_name = models.CharField(max_length=256, null=True, blank=True)
     surname = models.CharField(max_length=256, null=True, blank=True)
@@ -334,3 +345,10 @@ class SubscriberConnection(models.Model):
     transit = models.PositiveIntegerField(null=True)
     connected_at = models.DateTimeField(null=True)
     services = models.ManyToManyField("gpon.Service", related_name="subscribers")
+
+
+@receiver(post_delete, sender=SubscriberConnection)
+def delete_file(sender, instance: SubscriberConnection, *args, **kwargs):
+    """Освобождаем техническую возможность после удаления абонентского подключения"""
+    instance.tech_capability.status = TechCapability.Status.empty.value
+    instance.tech_capability.save()

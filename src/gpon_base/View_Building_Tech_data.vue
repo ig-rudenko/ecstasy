@@ -300,20 +300,12 @@ export default {
      */
     handleRequest(request, successInfo){
       return request.then(
-            resp => {
-              this.$toast.add({
-                severity: 'success',
-                summary: 'Обновлено',
-                detail: successInfo,
-                life: 3000
-              });
-              this.editMode = false;
-            }
+           () => { this.$toast.add({severity: 'success', summary: 'Обновлено', detail: successInfo, life: 3000}); }
           )
           .catch(
               reason => {
-                const status = reason.response.status
-                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000})
+                const status = reason.response.status;
+                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000});
               }
           )
     },
