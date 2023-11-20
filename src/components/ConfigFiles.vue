@@ -135,7 +135,11 @@
 </div>
 
 <Dialog v-model:visible="showDiffDialog" modal header="Сравнение конфигураций">
-  <ConfigFileDiff :config-files="files" :device-name="deviceName"/>
+  <ConfigFileDiff
+      :config-files="files"
+      :device-name="deviceName"
+      :formatted-config-function="formatConfigFile"
+  />
 </Dialog>
 
 </template>
@@ -154,7 +158,7 @@ export default defineComponent({
   },
   data() {
     return {
-      files: [{name: String, size: Number, modTime: String, content: String}],
+      files: [{name: "", size: 0, modTime: "", content: ""}],
       selectedFile: null,
       deviceName: decodeURI(window.location.pathname).split('/').slice(-1).join(""),
       collectNew: {
@@ -181,13 +185,13 @@ export default defineComponent({
   methods: {
 
     fileIcon(file_name) {
-      if (file_name.endsWith(".txt")) {
+      if (file_name && file_name.endsWith(".txt")) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-text me-1" viewBox="0 0 16 16" style="cursor: pointer;">
                   <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"></path>
                   <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"></path>
                 </svg>`
       }
-      if (file_name.endsWith(".zip")) {
+      if (file_name && file_name.endsWith(".zip")) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-zip me-1" viewBox="0 0 16 16">
                   <path d="M5 7.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v.938l.4 1.599a1 1 0 0 1-.416 1.074l-.93.62a1 1 0 0 1-1.11 0l-.929-.62a1 1 0 0 1-.415-1.074L5 8.438V7.5zm2 0H6v.938a1 1 0 0 1-.03.243l-.4 1.598.93.62.929-.62-.4-1.598A1 1 0 0 1 7 8.438V7.5z"/>
                   <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1h-2v1h-1v1h1v1h-1v1h1v1H6V5H5V4h1V3H5V2h1V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
@@ -323,9 +327,19 @@ export default defineComponent({
         let content = await this.getFile(file)
         if (!content) return
 
-        file.content = await content.text()
+        file.content = this.formatConfigFile(await content.text())
       }
       file.display = !file.display;
+    },
+
+    formatConfigFile(content) {
+      let formattedContent = ""
+      for (const line of content.split("\n")) {
+        const formattedLine = line.replace(/^\s+|\s+$|(\r\n|\n|\r)/gm, "");
+        if (!formattedLine.length) continue;
+        formattedContent += formattedLine + "\n";
+      }
+      return formattedContent
     },
 
     async downloadFile(file){

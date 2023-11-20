@@ -57,6 +57,7 @@ export default {
   props: {
     configFiles: {required: true, type: Array},
     deviceName: {required: true, type: String},
+    formattedConfigFunction: {required: true, type: Function},
   },
   data() {
     return {
@@ -82,10 +83,9 @@ export default {
       }
     },
     getConfigContent(config) {
-      console.log(config)
       if (!config.content) {
         api_request.get("/device/api/" + this.deviceName + "/config/" + config.name).then(
-            resp => config.content = resp.data
+            resp => config.content = this.formattedConfigFunction(resp.data)
         )
       }
       return config.content
