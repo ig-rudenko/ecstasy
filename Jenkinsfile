@@ -97,7 +97,7 @@ pipeline {
             curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage \
             -d chat_id=${CHAT_ID} \
             -d parse_mode=markdown \
-            -d text='✅ *${env.JOB_NAME}* \n*Deployment* : OK \n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            -d text='✅ *${env.JOB_NAME}* \n*Deployment* : OK \n*Git branch*: ${env.GIT_BRANCH}\n*Сборка*: ${BUILD_NUMBER}\n\n${REPO_URL}/commit/${env.GIT_COMMIT}'
             """)
             }
         }
@@ -108,7 +108,7 @@ pipeline {
             curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage \
             -d chat_id=${CHAT_ID} \
             -d parse_mode=markdown \
-            -d text='⛔️ *${env.JOB_NAME}* \n*Deployment* : Aborted \n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            -d text='⛔️ *${env.JOB_NAME}* \n*Deployment* : Aborted \n*Git branch*: ${env.GIT_BRANCH}\n*Сборка* ${BUILD_NUMBER}\n\n${REPO_URL}/commit/${env.GIT_COMMIT}'
             """)
             }
         }
@@ -119,7 +119,7 @@ pipeline {
             curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage \
             -d chat_id=${CHAT_ID} \
             -d parse_mode=markdown \
-            -d text='❌ *${env.JOB_NAME}* \n*Deployment* : Failed\n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            -d text='❌ *${env.JOB_NAME}* \n*Deployment* : Failed\n*Git branch*: ${env.GIT_BRANCH}\n*Сборка* ${BUILD_NUMBER}\n\n${REPO_URL}/commit/${env.GIT_COMMIT}'
             """)
             }
         }
