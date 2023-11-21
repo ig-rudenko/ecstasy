@@ -93,19 +93,34 @@ pipeline {
     post {
         success {
             withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
-            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='✅ *${env.JOB_NAME}* \n*Deployment* : OK \n*Git branch*: ${env.GIT_BRANCH}' """)
+            sh  ("""
+            curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage
+            -d chat_id=${CHAT_ID}
+            -d parse_mode=markdown
+            -d text='✅ *${env.JOB_NAME}* \n*Deployment* : OK \n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            """)
             }
         }
 
         aborted {
             withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
-            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='⛔️ *${env.JOB_NAME}* \n*Deployment* : Aborted \n*Git branch*: ${env.GIT_BRANCH}' """)
+            sh  ("""
+            curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage
+            -d chat_id=${CHAT_ID}
+            -d parse_mode=markdown
+            -d text='⛔️ *${env.JOB_NAME}* \n*Deployment* : Aborted \n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            """)
             }
         }
 
         failure {
             withCredentials([string(credentialsId: 'tg_notification_bot_token', variable: 'TOKEN'), string(credentialsId: 'tg_notification_chat_id', variable: 'CHAT_ID')]) {
-            sh  (""" curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='❌ *${env.JOB_NAME}* \n*Deployment* : Failed\n*Git branch*: ${env.GIT_BRANCH}' """)
+            sh  ("""
+            curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage
+            -d chat_id=${CHAT_ID}
+            -d parse_mode=markdown
+            -d text='❌ *${env.JOB_NAME}* \n*Deployment* : Failed\n*Git branch*: ${env.GIT_BRANCH}\n\n${env.GIT_COMMIT}'
+            """)
             }
         }
 
