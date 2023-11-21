@@ -130,12 +130,12 @@ export default {
                 if (!resp.data.status) {
                   this.vlanScanStatus = { available: true, running: false, progress: null }
                 } else {
-                  this.vlanScanStatus = { available: false, running: true, progress: data.progress }
+                  this.vlanScanStatus = { available: false, running: true, progress: resp.data.progress }
                 }
               }
           )
           .catch(
-              reason => {
+              () => {
                 this.vlanScanStatus = { available: false, running: false, progress: null }
               }
           )
@@ -149,13 +149,13 @@ export default {
 
       api_request.post("/tools/ajax/vlans-scan/run")
           .then(
-              resp => {
+              () => {
                 this.vlanScanStatus.available = false;
                 this.vlanScanStatus.running = true;
               }
           )
           .catch(
-              reason => {
+              () => {
                 this.vlanScanStatus.available = false
                 this.vlanScanStatus.running = false
               }
@@ -169,14 +169,14 @@ export default {
       api_request.get("/gather/mac-scan/check")
           .then(
               resp => {
-                if (!data.status) {
+                if (!resp.data.status) {
                   this.macScanStatus = { available: true, running: false, progress: null }
                 } else {
-                  this.macScanStatus = { available: false, running: true, progress: data.progress }
+                  this.macScanStatus = { available: false, running: true, progress: resp.data.progress }
                 }
               }
           )
-          .catch(reason => {this.macScanStatus = { available: false, running: true, progress: null }})
+          .catch(() => {this.macScanStatus = { available: false, running: true, progress: null }})
 
       setTimeout(this.check_mac_scan_status, 5000);
     },
@@ -188,12 +188,12 @@ export default {
 
       api_request.post("/gather/mac-scan/run")
           .then(
-              resp => {
+              () => {
                 this.macScanStatus.available = false
                 this.macScanStatus.running = true
               }
           ).catch(
-              reason => {
+              () => {
                 this.macScanStatus.available = false;
                 this.macScanStatus.running = false
               }
