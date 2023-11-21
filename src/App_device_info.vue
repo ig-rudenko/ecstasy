@@ -248,6 +248,32 @@ export default {
       setTimeout(this.getInterfaces, 4000)
     },
 
+    async toggleInterfacesWithVlans() {
+      this.withVlans = !this.withVlans
+
+      if (!this.withVlans) {
+        for (let i = 0; i < this.interfaces.length; i++) {
+            this.interfaces[i]["VLAN's"] = null
+          }
+        return
+      }
+
+      // URL для получения последнего списка VLAN на портах.
+      let url = "/device/api/" + this.deviceName + "/interfaces?vlans=1";
+      try {
+        let response = await fetch(url, {method: "GET", credentials: "same-origin"});
+        let data = await response.json()
+
+        if (response.ok) {
+          for (let i = 0; i < data.interfaces.length; i++) {
+            // Меняем только VLAN
+            this.interfaces[i]["VLAN's"] = data.interfaces[i]["VLAN's"]
+          }
+        }
+
+      } catch (e) { console.log(e) }
+    },
+
     /**
      * Регистрируем новое действие над комментариями.
      * Обновляем объект `commentObject`

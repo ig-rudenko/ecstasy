@@ -61,7 +61,7 @@
     </td>
 
 <!--          VLANS-->
-    <td v-if="interface['VLAN\'s']">{{ interface["VLAN's"].join(", ") }}</td>
+    <td v-if="interface['VLAN\'s']">{{ compressVlanRange(interface["VLAN's"]) }}</td>
     <td v-else></td>
 
   </tr>
@@ -479,6 +479,36 @@ export default defineComponent({
       }
       return Object.assign({}, this.dynamicOpacity, base_style)
     },
+
+    compressVlanRange(list) {
+      if (!list || !list.length) return "";
+
+      // сортируем список по возрастанию
+      list.sort((a, b) => a - b);
+      // инициализируем пустую строку для результата
+      let result = "";
+      // инициализируем начальное и конечное значение диапазона
+      let start = list[0];
+      let end = list[0];
+      // проходим по списку, начиная со второго элемента
+      for (let i = 1; i < list.length; i++) {
+        // если текущий элемент на единицу больше предыдущего, то продолжаем диапазон
+        if (list[i] === end + 1) {
+          end = list[i];
+        } else {
+          // иначе, добавляем текущий диапазон к результату
+          result += start === end ? start + ", " : start + "-" + end + ", ";
+          // и обновляем начальное и конечное значение диапазона
+          start = list[i];
+          end = list[i];
+        }
+      }
+      // добавляем последний диапазон к результату
+      result += start === end ? start : start + "-" + end;
+      // возвращаем результат
+      return result;
+    }
+
 
   }
 })
