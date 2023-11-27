@@ -20,16 +20,24 @@
         }} из {{ dataLength }}
   </span>
 
-  <svg @click="prevPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24"
-       fill="#6E6893" class="me-3" viewBox="0 0 16 16">
-    <path fill-rule="evenodd"
-          d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+  <!-- first -->
+  <svg @click="firstPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24" fill="#6E6893" class="me-3" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M11.854 3.646a.5.5 0 0 1 0 .708L8.207 8l3.647 3.646a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708 0zM4.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 1 0v-13a.5.5 0 0 0-.5-.5"/>
   </svg>
 
-  <svg @click="nextPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24"
-       fill="#6E6893" class="bi bi-chevron-right" viewBox="0 0 16 16">
-    <path fill-rule="evenodd"
-          d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+  <!-- prev -->
+  <svg @click="prevPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24" fill="#6E6893" class="me-3" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+  </svg>
+
+  <!-- next -->
+  <svg @click="nextPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24" fill="#6E6893" class="me-3" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+  </svg>
+
+  <!-- last -->
+  <svg @click="lastPage" xmlns="http://www.w3.org/2000/svg" style="cursor: pointer" width="24" height="24" fill="#6E6893" class="me-3" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M4.146 3.646a.5.5 0 0 0 0 .708L7.793 8l-3.647 3.646a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708 0zM11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5"/>
   </svg>
 
 </div>
@@ -82,6 +90,10 @@ export default {
     calculateOffset() {
       this.paginator.limit_offset = (this.paginator.current_page - 1) * this.rows_per_page
     },
+    firstPage() {
+      this.paginator.current_page = 1
+      this.calculateOffset()
+    },
     nextPage() {
       if (this.paginator.current_page + 1 <= this.paginator.max_pages) {
         this.paginator.current_page++
@@ -93,6 +105,10 @@ export default {
         this.paginator.current_page--
         this.calculateOffset()
       }
+    },
+    lastPage() {
+      this.paginator.current_page = this.paginator.max_pages
+      this.calculateOffset()
     },
   }
 }
