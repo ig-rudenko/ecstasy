@@ -1,5 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
-from re import findall
+from functools import reduce
 
 import orjson
 import requests as requests_lib
@@ -10,16 +9,16 @@ from django.shortcuts import render
 from pyvis.network import Network
 from requests import RequestException
 
-from app_settings.models import VlanTracerouteConfig
+from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
 from devicemanager.device import ZabbixAPIConnection
-from devicemanager.exceptions import BaseDeviceException
+from ..arp_find import find_mac_or_ip
 from ..finder import (
     Finder,
     VlanTraceroute,
     MultipleVlanTraceroute,
 )
-from ..models import VlanName, DevicesForMacSearch
+from ..models import VlanName
 from ..network import VlanNetwork
 from ..tasks import interfaces_scan, check_scanning_status
 
@@ -75,91 +74,33 @@ def find_as_str(request):
     )
 
 
-def get_ip_or_mac_from(
-    model_dev: Devices, find_address: str, result: list, find_type: str
-) -> None:
-    """
-    ## Подключается к оборудованию, смотрит MAC адрес в таблице arp и записывает результат в список result
-
-    :param model_dev: Оборудование, на котором надо искать
-    :param find_address: Адрес который надо искать (IP или MAC)
-    :param result: Список в который будет добавлен результат
-    :param find_type: Тип поиска ```"IP"``` или ```"MAC"```
-    """
-
-    session = model_dev.connect()
-    info = []
-    # Проверка, является ли find_type IP-адресом и имеет ли сеанс атрибут search_ip.
-    if find_type == "IP":
-        try:
-            info: list = session.search_ip(find_address)
-        except BaseDeviceException:
-            pass
-
-    # Проверка того, является ли find_type MAC-адресом и имеет ли сеанс атрибут search_mac.
-    elif find_type == "MAC":
-        try:
-            info: list = session.search_mac(find_address)
-        except BaseDeviceException:
-            pass
-
-    if info:
-        info.append(model_dev.name)  # Добавляем имя оборудования к результату
-        result.append(info)
-
-
 @login_required
 @permission_required(perm="auth.access_wtf_search", raise_exception=True)
-def ip_mac_info(request, ip_or_mac):
+def ip_mac_info(request, ip_or_mac: str):
     """
     Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
 
     В многопоточном режиме собирает данные ip, mac, vlan, agent-remote-id, agent-circuit-id из оборудования
      и проверяет, есть ли в Zabbix узел сети с таким IP и добавляет имя и hostid
     """
+    arp_info = find_mac_or_ip(ip_or_mac)
 
-    # Получение устройств из базы данных, которые используются в поиске MAC/IP адресов
-    devices_for_search = DevicesForMacSearch.objects.all()
-
-    # Поиск IP-адреса в строке.
-    find_address = findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip_or_mac)
-    if find_address:
-        # Нашли IP адрес
-        find_type: str = "IP"
-        find_address = find_address[0]
-
-    else:
-        # Поиск всех шестнадцатеричных символов из входной строки.
-        find_address = "".join(findall(r"[a-fA-F\d]", ip_or_mac)).lower()
-        # Нашли MAC адрес
-        find_type: str = "MAC"
-        # Проверка правильности MAC-адреса.
-        if not find_address or len(find_address) < 6 or len(find_address) > 12:
-            return []
-
-    match = []
-    # Менеджер контекста, который создает пул потоков и выполняет код внутри блока with.
-    with ThreadPoolExecutor() as execute:
-        # Проходит через каждое устройство в списке устройств.
-        for dev in devices_for_search:
-            # Отправка задачи в пул потоков.
-            execute.submit(
-                get_ip_or_mac_from, dev.device, find_address, match, find_type
-            )
+    zabbix_url = ZabbixConfig.load().url
 
     names = []  # Список имен оборудования и его hostid из Zabbix
-
-    if len(match) > 0:
+    if len(arp_info) > 0:
         # Если получили совпадение
         # Поиск всех IP-адресов в списке совпадений.
-        ip = findall(r"\d+\.\d+\.\d+\.\d+", str(match))
+        ips = reduce(
+            lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info)
+        )
 
         try:
             with ZabbixAPIConnection().connect() as zbx:
                 # Ищем хост по IP
                 hosts = zbx.host.get(
                     output=["name", "status"],
-                    filter={"ip": ip},
+                    filter={"ip": ips},
                     selectInterfaces=["ip"],
                 )
             names = [[h["name"], h["hostid"]] for h in hosts if h["status"] == "0"]
@@ -167,7 +108,9 @@ def ip_mac_info(request, ip_or_mac):
             pass
 
     return render(
-        request, "tools/mac_result_for_modal.html", {"info": match, "zabbix": names}
+        request,
+        "tools/mac_result_for_modal.html",
+        {"info": arp_info, "zabbix": names, "zabbix_url": zabbix_url},
     )
 
 

@@ -1,3 +1,5 @@
+from typing import List
+
 import textfsm
 
 from ..base.device import BaseDevice
@@ -6,6 +8,7 @@ from ..base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
+    ArpInfoResult,
 )
 
 
@@ -21,7 +24,7 @@ class HuaweiCX600(BaseDevice):
     vendor = "Huawei"
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> list:
+    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
         """
         ## Возвращаем данные абонента по его MAC адресу
 
@@ -36,29 +39,11 @@ class HuaweiCX600(BaseDevice):
         :param mac_address: MAC-адрес
         :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
         """
-
         formatted_mac = "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_address)
-
-        match = self.send_command(
-            f"display access-user mac-address {formatted_mac}",
-            expect_command=False,
-        )
-
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            return formatted_result[0]
-
-        return []
+        return self._search_ip_or_mac(address=formatted_mac, address_type="mac")
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> list:
+    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
         """
         ## Ищем абонента по его IP адресу
 
@@ -71,9 +56,15 @@ class HuaweiCX600(BaseDevice):
         :param ip_address: IP-адрес
         :return: ```['IP', 'MAC', 'VLAN', 'Agent-Circuit-Id', 'Agent-Remote-Id']```
         """
+        return self._search_ip_or_mac(address=ip_address, address_type="ip")
+
+    def _search_ip_or_mac(self, address: str, address_type: str) -> List[ArpInfoResult]:
+        search_option = "mac-address"
+        if address_type == "mac":
+            search_option = "ip-address"
 
         match = self.send_command(
-            f"display access-user ip-address {ip_address}",
+            f"display access-user {search_option} {address}",
             expect_command=False,
         )
 
@@ -83,12 +74,9 @@ class HuaweiCX600(BaseDevice):
             encoding="utf-8",
         ) as template_file:
             template = textfsm.TextFSM(template_file)
+        result = template.ParseText(match)
 
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            return formatted_result[0]
-
-        return []
+        return list(map(lambda r: ArpInfoResult(*r), result[0])) if result else []
 
     def get_interfaces(self) -> T_InterfaceList:
         return []
@@ -131,7 +119,9 @@ class HuaweiCX600(BaseDevice):
             f"display access-user mac-address {mac}", expect_command=False
         )
         if "No online user!" not in bras_output:
-            user_index = self.find_or_empty(r"User access index\s+:\s+(\d+)", bras_output)
+            user_index = self.find_or_empty(
+                r"User access index\s+:\s+(\d+)", bras_output
+            )
 
             if user_index:
                 bras_output = self.send_command(

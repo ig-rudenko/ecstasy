@@ -8,7 +8,7 @@ import textfsm
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.types import TEMPLATE_FOLDER, DeviceAuthDict
+from .base.types import TEMPLATE_FOLDER, DeviceAuthDict, ArpInfoResult
 from .. import UnknownDeviceError
 
 
@@ -23,7 +23,7 @@ class Juniper(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> list:
+    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
         """
         ## Ищем MAC адрес среди subscribers и в таблице ARP оборудования
 
@@ -40,37 +40,10 @@ class Juniper(BaseDevice):
         :param mac_address: MAC-адрес, который вы хотите найти
         :return: ```['ip', 'mac' 'vlan_id', 'device_name', 'port']``` или ```['ip', 'mac' 'vlan_id']```
         """
-
-        formatted_mac = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*mac_address)
-
-        # >> Ищем среди subscribers <<
-        subscribers_output = self.send_command(
-            f"show subscribers mac-address {formatted_mac} detail", expect_command=False
-        )
-        # Разбор вывода команды `show subscribers mac-address`
-        formatted_result = self._parse_subscribers(subscribers_output)
-        if formatted_result:
-            # Нашли среди subscribers
-            return formatted_result
-
-        # >> Ищем в таблице ARP <<
-        match = self.send_command(f"show arp | match {formatted_mac}", expect_command=False)
-
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}-{self.model.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            # Нашли в таблице ARP
-            return formatted_result[0]
-
-        return []
+        return self._search_ip_or_mac_address(mac_address, "mac")
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> list:
+    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
         """
         ## Ищем IP адрес среди subscribers и в таблице ARP оборудования
 
@@ -79,23 +52,34 @@ class Juniper(BaseDevice):
             # show subscribers address {ip_address} detail
             # show arp | match {ip_address}
 
-        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим IP-адресом.
 
         :param ip_address: IP-адрес, который вы хотите найти
         :return: ```['ip', 'mac' 'vlan_id', 'device_name', 'port']``` или ```['ip', 'mac' 'vlan_id']```
         """
+        return self._search_ip_or_mac_address(ip_address, "ip")
+
+    def _search_ip_or_mac_address(
+        self, address: str, search_type: str
+    ) -> List[ArpInfoResult]:
+        subscriber_search = "address"
+        if search_type == "mac":
+            address = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*address)
+            subscriber_search = "mac-address"
 
         # >> Ищем среди subscribers <<
         subscribers_output = self.send_command(
-            f"show subscribers address {ip_address} detail", expect_command=False
+            f"show subscribers {subscriber_search} {address} detail",
+            expect_command=False,
         )
-        formatted_result = self._parse_subscribers(subscribers_output)
-        if formatted_result:
+        # Разбор вывода команды `show subscribers mac-address`
+        result = self._parse_subscribers(subscribers_output)
+        if result:
             # Нашли среди subscribers
-            return formatted_result
+            return list(map(lambda r: ArpInfoResult(*r), result))
 
         # >> Ищем в таблице ARP <<
-        match = self.send_command(f"show arp | match {ip_address}", expect_command=False)
+        match = self.send_command(f"show arp | match {address}", expect_command=False)
 
         # Форматируем вывод
         with open(
@@ -103,15 +87,15 @@ class Juniper(BaseDevice):
             encoding="utf-8",
         ) as template_file:
             template = textfsm.TextFSM(template_file)
-
-        formatted_result = template.ParseText(match)
-        if formatted_result:
-            return formatted_result[0]
+        result = template.ParseText(match)
+        if result:
+            # Нашли в таблице ARP
+            return list(map(lambda r: ArpInfoResult(*r), result[0]))
 
         return []
 
     @staticmethod
-    def convert_hex_to_ascii(hex_string: str) -> str:
+    def _convert_hex_to_ascii(hex_string: str) -> str:
         """
         ## Принимает строку состоящую из шестнадцатеричных символов и преобразовывает её в строку из ASCII символов
         """
@@ -125,7 +109,9 @@ class Juniper(BaseDevice):
             # в байтовый объект, затем используем метод `decode()` для преобразования bytes в строку
             # с использованием кодировки ASCII. Аргумент `errors="replace"` указывает, что любые символы,
             # отличные от ASCII, во входной строке должны быть заменены символом замены Unicode (U+FFFD) в строке.
-            return binascii.unhexlify(unknown_format_str).decode("ascii", errors="replace")
+            return binascii.unhexlify(unknown_format_str).decode(
+                "ascii", errors="replace"
+            )
 
         # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
         # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
@@ -175,7 +161,7 @@ class Juniper(BaseDevice):
             # Часть кода `"".join(agent_remote[0])` объединяет строки в списке `agent_remote`, чтобы
             # сформировать единую строку, которая затем передается в качестве аргумента методу `convert_hex_to_ascii`.
             # Результирующая строка ASCII затем добавляется к списку `info`.
-            info.append(self.convert_hex_to_ascii("".join(agent_remote[0])))
+            info.append(self._convert_hex_to_ascii("".join(agent_remote[0])))
 
         # Agent Circuit ID
         agent_circuit = findall(
@@ -189,7 +175,7 @@ class Juniper(BaseDevice):
             # Часть кода `"".join(agent_circuit[0])` объединяет элементы списка `agent_circuit` в единую строку, которая
             # затем передается в качестве аргумента методу `convert_hex_to_ascii`.
             # Результирующая строка ASCII затем добавляется к списку `info`.
-            info.append(self.convert_hex_to_ascii("".join(agent_circuit[0])))
+            info.append(self._convert_hex_to_ascii("".join(agent_circuit[0])))
 
         return info
 
@@ -239,12 +225,19 @@ class JuniperFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         if "show: invalid command, valid commands are" in version_output:
             session.sendline("sys info show")
             while True:
-                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
+                match = session.expect(
+                    [r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT]
+                )
                 version_output += str(session.before.decode("utf-8"))
                 if match == 1:
                     session.sendline(" ")

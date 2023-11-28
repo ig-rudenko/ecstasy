@@ -20,6 +20,7 @@ from .base.types import (
     MACType,
     InterfaceStatus,
     DeviceAuthDict,
+    ArpInfoResult,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -45,12 +46,12 @@ class Cisco(BaseDevice):
     vendor = "Cisco"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
+        self,
+        session: pexpect,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства:
@@ -213,7 +214,10 @@ class Cisco(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
+        return [
+            (int(vid), mac, mac_type(type_), port)
+            for vid, mac, type_, port in mac_table
+        ]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()
@@ -362,7 +366,9 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
+            "data", ""
+        )
         # Ищем тип порта.
         port_type = "".join(
             self.find_or_empty(
@@ -386,9 +392,13 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
+            "data", ""
+        )
 
-        media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
+        media_type = [
+            line.strip() for line in port_info.split("\n") if "errors" in line
+        ]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
@@ -409,7 +419,7 @@ class Cisco(BaseDevice):
         return config
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> list:
+    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
         """
         ## Ищем MAC адрес в таблице ARP оборудования
 
@@ -429,21 +439,10 @@ class Cisco(BaseDevice):
             return []
 
         formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
-
-        match = self.send_command(f"show arp | include {formatted_mac}")
-
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-        formatted_result = template.ParseText(match)
-
-        return formatted_result
+        return self._search_in_arp(address=formatted_mac)
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> list:
+    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
         """
         ## Ищем IP адрес в таблице ARP оборудования
 
@@ -456,18 +455,18 @@ class Cisco(BaseDevice):
         :param ip_address: IP-адрес, который вы хотите найти
         :return: ```['IP', 'MAC', 'VLAN']```
         """
+        return self._search_in_arp(address=ip_address)
 
-        match = self.send_command(f"show arp | include {ip_address}")
-
+    def _search_in_arp(self, address: str) -> List[ArpInfoResult]:
+        match = self.send_command(f"show arp | include {address}")
         # Форматируем вывод
         with open(
             f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template",
             encoding="utf-8",
         ) as template_file:
             template = textfsm.TextFSM(template_file)
-        formatted_result = template.ParseText(match)
-
-        return formatted_result
+        result = template.ParseText(match)
+        return list(map(lambda r: ArpInfoResult(*r), result))
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(
@@ -551,7 +550,9 @@ class Cisco(BaseDevice):
 
         cpu_percent = re.findall(
             r"one minute: (\d+)%",
-            self.send_command("show processes cpu | include minute", expect_command=False),
+            self.send_command(
+                "show processes cpu | include minute", expect_command=False
+            ),
             flags=re.IGNORECASE,
         )
 
@@ -568,7 +569,9 @@ class Cisco(BaseDevice):
             flags=re.IGNORECASE,
         )
 
-        flash_percent = int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
+        flash_percent = (
+            int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
+        )
         return flash_percent
 
     def get_ram_utilization(self) -> int:
@@ -659,7 +662,12 @@ class CiscoFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
         return Cisco(session, ip, auth, model=model, snmp_community=snmp_community)

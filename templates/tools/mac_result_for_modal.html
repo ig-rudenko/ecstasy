@@ -1,38 +1,38 @@
 <div class="accordion" id="accordionPanelsStayOpenExample">
-{% for line in info %}
+{% for device_info in info %}
       <div class="accordion-item">
         <h2 class="accordion-header" id="panelsStayOpen-headingOne">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-{{ line|last }}" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-              Найдено на {{ line|last }}
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-{{ device_info.device.name }}" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+              Найдено на {{ device_info.device.name }}
           </button>
         </h2>
 
-        <div id="#panelsStayOpen-{{ line|last }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+        <div id="#panelsStayOpen-{{ device_info.device.name }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
           <div class="accordion-body">
 
                 {% for zabbix_data in zabbix %}
                     <div class="fs-5">
                         <a class="badge text-decoration-none text-bg-danger" target="_blank"
-                           href="http://10.100.0.50/zabbix/hostinventories.php?hostid={{ zabbix_data.1 }}">
+                           href="{{ zabbix_url }}/hostinventories.php?hostid={{ zabbix_data.1 }}">
                             {{ zabbix_data.0 }}
                         </a>
                     </div>
                 {% endfor %}
 
-                <h4 class="fs-5" style="margin-top: 10px;"
-                    >IP - <span id="modal-mac-ip">{{ line.0 }}</span></h4>
+            {% for res in device_info.results %}
+                <h4 class="fs-5 mt-1">IP - {{ res.ip }}</h4>
+                <h4 class="fs-5 mt-1">MAC - {{ res.mac }}</h4>
+                <h4 class="fs-5 mt-1">VLAN - {{ res.vlan }}</h4>
 
-                <h4 class="fs-5"
-                    >VLAN - <span id="modal-mac-vlan">{{ line.2 }}</span></h4>
-
-                {#  ДЛЯ BRAS  #}
-                {% if line|length >= 5 %}
-                    <h4 class="fs-5" style="margin-top: 10px;"
-                        >Device - <span id="modal-mac-ip">{{ line.3 }}</span></h4>
-
-                    <h4 class="fs-5" style="margin-top: 10px;"
-                        > <span id="modal-mac-ip">{{ line.4 }}</span></h4>
+                {% if res.device_name %}
+                    <h4 class="fs-5 mt-1">Device - {{ res.device_name }}</h4>
                 {% endif %}
+
+                {% if res.port %}
+                    <h4 class="fs-5 mt-1">{{ res.port }}</h4>
+                {% endif %}
+
+            {% endfor %}
 
           </div>
         </div>

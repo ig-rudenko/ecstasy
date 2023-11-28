@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Literal, Type, Union, Tuple, Sequence
+from typing import Literal, Type, Union, Tuple, Sequence, List
 
 import requests
 
@@ -10,7 +10,9 @@ from devicemanager.vendors.base.types import (
     T_MACList,
     T_InterfaceVLANList,
     T_InterfaceList,
-    T_MACTable, SetDescriptionResult,
+    T_MACTable,
+    SetDescriptionResult,
+    ArpInfoResult,
 )
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
@@ -39,7 +41,9 @@ class RemoteDevice(AbstractDevice):
 
     def _handle_error(self, error: dict):
         if hasattr(exceptions, error["type"]):
-            SomeException: Type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
+            SomeException: Type[exceptions.BaseDeviceException] = getattr(
+                exceptions, error["type"]
+            )
             raise SomeException(error["message"], ip=self.ip)
         else:
             raise exceptions.DeviceException(error["message"], ip=self.ip)
@@ -99,8 +103,12 @@ class RemoteDevice(AbstractDevice):
     def reload_port(self, port: str, save_config=True) -> str:
         return self._remote_call("reload_port", port=port, save_config=save_config)
 
-    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
-        return self._remote_call("set_port", port=port, status=status, save_config=save_config)
+    def set_port(
+        self, port: str, status: Literal["up", "down"], save_config=True
+    ) -> str:
+        return self._remote_call(
+            "set_port", port=port, status=status, save_config=save_config
+        )
 
     def save_config(self):
         return self._remote_call("save_config")
@@ -142,11 +150,14 @@ class RemoteDevice(AbstractDevice):
     def cut_access_user_session(self, mac: str):
         return self._remote_call("cut_access_user_session", mac=mac)
 
-    def search_ip(self, ip_address: str) -> list:
-        return self._remote_call("search_ip", ip_address=ip_address)
+    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
+        result = self._remote_call("search_ip", ip_address=ip_address)
+        return list(map(lambda r: ArpInfoResult(*r), result))
 
-    def search_mac(self, mac_address: str) -> list:
-        return self._remote_call("search_mac", mac_address=mac_address)
+    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
+        print(mac_address)
+        result = self._remote_call("search_mac", mac_address=mac_address)
+        return list(map(lambda r: ArpInfoResult(*r), result))
 
     def vlans_on_port(
         self,

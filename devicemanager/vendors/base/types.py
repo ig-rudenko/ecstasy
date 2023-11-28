@@ -79,3 +79,11 @@ class SetDescriptionResult(NamedTuple):
     port: str = ""
     error: str = ""
     max_length: int = 0
+
+
+class ArpInfoResult(NamedTuple):
+    ip: str
+    mac: str
+    vlan: str
+    device_name: str = ""
+    port: str = ""
