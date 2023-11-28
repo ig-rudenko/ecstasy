@@ -5,10 +5,12 @@ from django.test import SimpleTestCase
 
 from devicemanager.vendors.cisco import Cisco
 from .base_factory_test import AbstractTestFactory
+from ..vendors.base.types import ArpInfoResult
+
+fake_auth = {"login": "test", "password": "password", "privilege_mode_password": ""}
 
 
 class TestCiscoFactory(AbstractTestFactory):
-
     @staticmethod
     def get_device_class():
         return Cisco
@@ -232,7 +234,7 @@ Total Mac Addresses for this criterion: 4
 
 class TestCiscoInit(SimpleTestCase):
     def test_initial_data(self):
-        cisco = Cisco(session=CiscoPexpectFaker(), ip="10.10.10.10", auth={})
+        cisco = Cisco(session=CiscoPexpectFaker(), ip="10.10.10.10", auth=fake_auth)
 
         self.assertEqual(cisco.mac, "F4:1F:C2:71:49:10")
         self.assertEqual(cisco.serialno, "FOC6734Z6AH")
@@ -245,9 +247,8 @@ class TestCiscoInterfaces(SimpleTestCase):
         cls.TEMPLATE_DIR = pathlib.Path(__file__).parent.parent / "templates"
         # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
         fake_session = CiscoPexpectFaker()
-        auth = {"privilege_mode_password": ""}
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(fake_session, "10.10.10.10", auth=auth)
+        cls.cisco = Cisco(fake_session, "10.10.10.10", auth=fake_auth)
 
     def test_interfaces_regexp(self):
         """
@@ -367,7 +368,7 @@ class TestCiscoGetMACAddress(SimpleTestCase):
         # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
         fake_session = CiscoPexpectFaker()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(fake_session, "10.10.10.10", auth={})
+        cls.cisco = Cisco(fake_session, "10.10.10.10", auth=fake_auth)
 
     def test_get_mac(self):
         mac_list = self.cisco.get_mac("Gi0/1")
@@ -394,7 +395,7 @@ class TestCiscoPortControl(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
+        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth=fake_auth)
 
     def setUp(self) -> None:
         self.fake_session.sent_commands = []
@@ -510,7 +511,7 @@ class TestCiscoInfo(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
+        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth=fake_auth)
 
     def setUp(self) -> None:
         self.fake_session.sent_commands = []
@@ -561,13 +562,13 @@ class TestCiscoFindAddress(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
+        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth=fake_auth)
 
     def test_search_mac_address(self):
         result = self.cisco.search_mac("0000aaaa0000")
         self.assertEqual(
             result,
-            [["10.100.10.100", "0000.aaaa.0000", "25"]],
+            [ArpInfoResult("10.100.10.100", "0000.aaaa.0000", "25")],
         )
 
         result = self.cisco.search_mac("0000ffff0000")
@@ -592,7 +593,7 @@ class TestCiscoFindAddress(SimpleTestCase):
         result = self.cisco.search_ip("10.100.10.100")
         self.assertEqual(
             result,
-            [["10.100.10.100", "0000.aaaa.0000", "25"]],
+            [ArpInfoResult("10.100.10.100", "0000.aaaa.0000", "25")],
         )
 
         result = self.cisco.search_ip("127.0.0.1")
@@ -610,7 +611,7 @@ class TestCiscoPortDescription(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
-        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth={})
+        cls.cisco = Cisco(cls.fake_session, "10.10.10.10", auth=fake_auth)
 
     def setUp(self) -> None:
         self.fake_session.sent_commands = []
