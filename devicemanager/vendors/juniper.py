@@ -1,7 +1,7 @@
 import binascii
 import re
 from re import findall, sub
-from typing import List
+from typing import List, Literal
 
 import pexpect
 import textfsm
@@ -60,7 +60,7 @@ class Juniper(BaseDevice):
         return self._search_ip_or_mac_address(ip_address, "ip")
 
     def _search_ip_or_mac_address(
-        self, address: str, search_type: str
+        self, address: str, search_type: Literal["ip", "mac"]
     ) -> List[ArpInfoResult]:
         subscriber_search = "address"
         if search_type == "mac":
@@ -89,7 +89,6 @@ class Juniper(BaseDevice):
             template = textfsm.TextFSM(template_file)
         result = template.ParseText(match)
         if result:
-            print(result)
             # Нашли в таблице ARP
             return list(map(lambda r: ArpInfoResult(*r), result))
 

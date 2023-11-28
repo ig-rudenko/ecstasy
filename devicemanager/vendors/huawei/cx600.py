@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 import textfsm
 
@@ -58,13 +58,11 @@ class HuaweiCX600(BaseDevice):
         """
         return self._search_ip_or_mac(address=ip_address, address_type="ip")
 
-    def _search_ip_or_mac(self, address: str, address_type: str) -> List[ArpInfoResult]:
-        search_option = "mac-address"
-        if address_type == "mac":
-            search_option = "ip-address"
-
+    def _search_ip_or_mac(
+        self, address: str, address_type: Literal["ip", "mac"]
+    ) -> List[ArpInfoResult]:
         match = self.send_command(
-            f"display access-user {search_option} {address}",
+            f"display access-user {address_type}-address {address}",
             expect_command=False,
         )
 
