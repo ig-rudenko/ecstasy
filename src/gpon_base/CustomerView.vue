@@ -136,8 +136,8 @@
 
           <div class="d-flex flex-wrap p-3">
 
+<!-- ОБОРУДОВАНИЕ И ПОРТ -->
             <template v-if="!(editMode && hasPermissionToUpdateConnection)">
-              <!-- ОБОРУДОВАНИЕ И ПОРТ -->
               <div class="p-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" viewBox="0 0 16 16">
                   <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
@@ -160,6 +160,30 @@
                 <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
               </div>
             </template>
+
+<!-- Редактируем точку подключения -->
+            <div v-else class="p-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="me-3" style="transform: rotate(270deg)" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/>
+              </svg>
+
+              <div class="py-2" v-if="connection.address">
+                <!-- ПОИСК СПЛИТТЕРОВ/РАЙЗЕРОВ В ВЫБРАННОМ ДОМЕ -->
+                <SplittersRizersFind @change="e => connection.end3 = e.value" :init="connection.end3"/>
+              </div>
+              <br>
+              <div v-if="connection.end3 && connection.address">
+                <!-- ПОИСК СВОБОДНОГО ПОДКЛЮЧЕНИЯ У ВЫБРАННОГО СПЛИТТЕРА/РАЙЗЕРА -->
+                <SelectSplitterRizerPort :init="{number: connection.end3Port, status: connection.status}"
+                                         :end3ID="connection.end3.id"
+                                         @change="e => {connection.end3Port = e.value.number; connection.tech_capability_id = e.value.id}"
+                                         :get-from="connection.end3" :type="connection.end3.type"
+                                         :only-unused-ports="false">
+                </SelectSplitterRizerPort>
+              </div>
+
+            </div>
+
 
 <!--        ДАННЫЕ ONT -->
             <div class="p-3">
@@ -304,10 +328,14 @@ import formatAddress from "../helpers/address";
 import getSubscriberTypeVerbose from "../helpers/subscribers";
 import printElementById from "../helpers/print";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
+import SelectSplitterRizerPort from "./components/SelectSplitterRizerPort.vue";
+import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 
 export default {
   name: "CustomerView.vue",
   components: {
+    SplittersRizersFind,
+    SelectSplitterRizerPort,
     AddressGetCreate,
     Asterisk,
     Calendar,
@@ -431,7 +459,7 @@ export default {
       this.handleRequest(
           api_request.put("/gpon/api/subscriber-connection/"+connection.id, connection),
           "Данные абонентского подключения были успешно обновлены"
-      )
+      ).then(value => connection = value)
     },
 
     deleteConnection(event, connection) {

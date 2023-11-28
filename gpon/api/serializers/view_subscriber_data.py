@@ -4,7 +4,13 @@ from typing import List
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from gpon.models import Customer, SubscriberConnection, HouseOLTState, Service
+from gpon.models import (
+    Customer,
+    SubscriberConnection,
+    HouseOLTState,
+    Service,
+    TechCapability,
+)
 from .address import AddressSerializer
 from .common import CustomerSerializer, End3Serializer
 
@@ -27,6 +33,9 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
     services = serializers.ListSerializer(child=serializers.CharField())
     status = serializers.CharField(source="tech_capability.status")
+    tech_capability_id = serializers.PrimaryKeyRelatedField(
+        source="tech_capability", queryset=TechCapability.objects.all()
+    )
     end3Port = serializers.IntegerField(source="tech_capability.number")
     end3 = End3Serializer(source="tech_capability.end3")
 
@@ -44,6 +53,7 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             "connected_at",
             "services",
             "status",
+            "tech_capability_id",
             "houseOLTState",
             "end3",
             "end3Port",

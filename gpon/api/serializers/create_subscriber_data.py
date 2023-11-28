@@ -124,11 +124,16 @@ class SubscriberDataSerializer(serializers.ModelSerializer):
 
 
 class UpdateSubscriberDataSerializer(SubscriberDataSerializer):
+    tech_capability_id = serializers.PrimaryKeyRelatedField(
+        source="tech_capability", queryset=TechCapability.objects, required=False
+    )
+
     class Meta:
         model = SubscriberConnection
         fields = [
             "address",
             "ip",
+            "tech_capability_id",
             "ont_id",
             "ont_serial",
             "ont_mac",
@@ -149,6 +154,14 @@ class UpdateSubscriberDataSerializer(SubscriberDataSerializer):
                 services = Service.objects.filter(name__in=validated_data["services"])
                 instance.services.clear()
                 instance.services.add(*services)
+            elif attr == "tech_capability":
+                if instance.tech_capability.id != value.id:
+                    instance.tech_capability.status = TechCapability.Status.empty.value
+                    instance.tech_capability.save(update_fields=["status"])
+                    instance.tech_capability = value
+                    value.status = TechCapability.Status.active.value
+                    value.save()
+                    updated_fields.append(attr)
             else:
                 setattr(instance, attr, value)
                 updated_fields.append(attr)
