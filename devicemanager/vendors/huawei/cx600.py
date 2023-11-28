@@ -76,7 +76,7 @@ class HuaweiCX600(BaseDevice):
             template = textfsm.TextFSM(template_file)
         result = template.ParseText(match)
 
-        return list(map(lambda r: ArpInfoResult(*r), result[0])) if result else []
+        return list(map(lambda r: ArpInfoResult(*r), result)) if result else []
 
     def get_interfaces(self) -> T_InterfaceList:
         return []

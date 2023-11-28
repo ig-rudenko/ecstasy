@@ -89,8 +89,9 @@ class Juniper(BaseDevice):
             template = textfsm.TextFSM(template_file)
         result = template.ParseText(match)
         if result:
+            print(result)
             # Нашли в таблице ARP
-            return list(map(lambda r: ArpInfoResult(*r), result[0]))
+            return list(map(lambda r: ArpInfoResult(*r), result))
 
         return []
 
