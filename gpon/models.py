@@ -334,6 +334,7 @@ class SubscriberConnection(models.Model):
         null=True,
         related_name="subscriber_connection",
     )
+    description = models.CharField(max_length=2048, null=True, blank=True)
 
     ip = models.GenericIPAddressField(protocol="ipv4", null=True)
 

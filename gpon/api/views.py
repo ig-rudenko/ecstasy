@@ -185,7 +185,7 @@ class DevicesNamesListAPIView(GenericAPIView):
             )
         else:
             group_ids = []
-        return Devices.objects.all()
+        return Devices.objects.filter(group_id__in=group_ids)
 
     def get(self, request, *args, **kwargs) -> Response:
         device_names = self.get_queryset().values_list("name", flat=True)

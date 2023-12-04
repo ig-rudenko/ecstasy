@@ -279,6 +279,13 @@
           </div>
         </div>
 
+        <div class="d-flex flex-wrap py-2">
+          <h6 class="px-2">Описание подключения</h6>
+          <div class="px-2" style="width: 100%;">
+            <textarea v-model.trim="formData.description" class="p-component p-inputtext px-2" style="height: 94px; width: 100%;"></textarea>
+          </div>
+        </div>
+
       </div>
 
       <!-- LAST STEP -->
@@ -708,6 +715,7 @@ export default {
         ont_serial: null,
         ont_mac: null,
         connected_at: null,
+        description: null,
       }
     }
   },
@@ -923,6 +931,7 @@ export default {
         customer: this.formData.customer,
         address: this.formData.address,
         tech_capability: this.formData.techData.end3Port.id,
+        description: this.formData.description,
         transit: this.formData.transit,
         order: this.formData.order,
         services: this.formData.services,

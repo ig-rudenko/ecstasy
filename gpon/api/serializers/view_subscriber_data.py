@@ -50,6 +50,7 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             "ont_mac",
             "order",
             "transit",
+            "description",
             "connected_at",
             "services",
             "status",

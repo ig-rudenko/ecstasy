@@ -101,8 +101,7 @@ export default {
           if (value.lastName && value.lastName.toLowerCase().indexOf(search) >= 0) return true;
           if (value.companyName && value.companyName.toLowerCase().indexOf(search) >= 0) return true;
           if (value.contract && value.contract.toLowerCase().indexOf(search) >= 0) return true;
-          return value.phone.toLowerCase().indexOf(search) >= 0;
-
+          return value.phone && value.phone.toLowerCase().indexOf(search) >= 0;
         }
       )
     },

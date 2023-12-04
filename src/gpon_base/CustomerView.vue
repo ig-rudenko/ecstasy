@@ -134,6 +134,15 @@
             </template>
           </div>
 
+          <!-- Описание подключения -->
+          <div v-if="editMode && hasPermissionToUpdateConnection" class="d-flex flex-wrap py-2">
+            <h6 class="px-2">Описание подключения</h6>
+            <div class="px-2" style="width: 100%;">
+              <textarea v-model.trim="connection.description" class="p-component p-inputtext px-2" style="height: 94px; width: 100%;"></textarea>
+            </div>
+          </div>
+          <div v-else-if="connection.description" class="mx-4 card p-3">{{connection.description}}</div>
+
           <div class="d-flex flex-wrap p-3">
 
 <!-- ОБОРУДОВАНИЕ И ПОРТ -->
