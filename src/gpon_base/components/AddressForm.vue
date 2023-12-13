@@ -63,22 +63,22 @@
         <template v-if="subscriberAddress">
           <div class="me-3">
             <h6 class="px-2">Номер этажа</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.floor"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.floor"/>
           </div>
           <div class="me-3">
             <h6 class="px-2">Квартира</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.apartment"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.apartment"/>
           </div>
         </template>
 
         <template v-else>
           <div class="me-3">
             <h6 class="px-2">Этажность</h6>
-            <InputNumber :input-style="{width: '100px'}" :min="1" :max="200" v-model.number="address.floors"/>
+            <InputNumber :input-style="{width: '100px'}" :min="1" v-model.number="address.floors"/>
           </div>
           <div class="me-3">
             <h6 class="px-2">Количество подъездов</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" :max="200" v-model.number="address.total_entrances"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.total_entrances"/>
           </div>
         </template>
 
