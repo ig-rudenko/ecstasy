@@ -68,8 +68,9 @@ INSTALLED_APPS = [
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
-DBBACKUP_STORAGE_OPTIONS = {"location": "./db-backup"}
-
+DBBACKUP_STORAGE_OPTIONS = {"location": BASE_DIR / "db-backup"}
+DBBACKUP_CLEANUP_KEEP = 1
+DBBACKUP_CLEANUP_KEEP_MEDIA = 1
 
 # Эта переменная используется, чтобы определить, какой класс сборщика FTP использовать для сбора данных с FTP-серверов.
 FTP_COLLECTOR_CLASS = FTPCollector
