@@ -87,9 +87,9 @@ class TechDataListCreateAPIView(GenericAPIView):
                         "building_id": house.id,
                         "entrances": house_olt_state.entrances,
                         "customerLine": {
-                            "type": end3.type,
+                            "type": end3.type if end3 else None,
                             "count": house_olt_state.end3_set.count(),
-                            "typeCount": end3.capacity,
+                            "typeCount": end3.capacity if end3 else None,
                         },
                     }
                 )
