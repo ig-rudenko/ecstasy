@@ -175,7 +175,7 @@ export default {
     return {
       showAddNewEnd3Dialog: false,
       newEnd3: {
-        type: this.customerLines[0].type || "splitter",
+        type: this.customerLines.length?this.customerLines[0].type:"splitter",
         existingSplitter: null,
         portCount: 4,
         list: [],
