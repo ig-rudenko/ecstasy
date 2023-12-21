@@ -12,7 +12,7 @@
 </template>
 
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
 
 export default defineComponent({
@@ -21,14 +21,15 @@ export default defineComponent({
     update_search: { required: true, type: Function },
     active_mode: { required: false, type: Boolean, default: false }
   },
+  emits: ["submit_input"],
   computed: {
-    form_classes: function () {
+    form_classes: function (): Array<string> {
       if (this.active_mode) {
         return ['search-form', 'shadow']
       }
       return ['search-form']
     },
-    form_styles: function () {
+    form_styles: function (): Object {
       if (this.active_mode) {
         return {"color": "#9f9f9f", "border": "2px solid"}
       }

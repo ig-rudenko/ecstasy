@@ -1,10 +1,10 @@
 <template>
 <!--Посмотреть комментарии-->
-  <div v-if="interface.Comments && interface.Comments.length">
-    <button @click="$refs.comment.toggle($event)" class="btn" style="border-color: white;">
+  <div v-if="interface.comments && interface.comments.length">
+    <button @click="(<OverlayPanel>$refs.comment).toggle($event)" class="btn" style="border-color: white;">
         <span style="position: absolute; text-align: center; font-size: 14px;"
-              :style="{padding: '0 ' + (3 - String(interface.Comments.length).length) * 5 + 'px'}">
-            {{interface.Comments.length}}
+              :style="{padding: '0 ' + (3 - String(interface.comments.length).length) * 5 + 'px'}">
+            {{interface.comments.length}}
         </span>
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffc107" class="comment-active bi bi-chat-right-text" viewBox="0 0 16 16">
           <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
@@ -20,7 +20,7 @@
               <div style="text-align: right">
                 <svg
                      v-if="registerCommentAction"
-                     @click="registerCommentAction('add', null, interface.Interface)"
+                     @click="registerCommentAction('add', null, interface.name)"
                      data-bs-toggle="modal" data-bs-target="#modal-comment"
                      xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754"
                      class="bi bi-plus-circle" viewBox="0 0 16 16"
@@ -31,14 +31,14 @@
               </div>
 
           <!--Комментарии-->
-              <div v-for="comment in interface.Comments"
+              <div v-for="comment in interface.comments"
                    class="d-flex row" style="margin: 10px 15px;">
 
                   <div class="col-1"
                        v-if="registerCommentAction">
 
                   <!--Изменить-->
-                      <div @click="registerCommentAction('update', comment, interface.Interface)"
+                      <div @click="registerCommentAction('update', comment, interface.name)"
                            data-bs-toggle="modal" data-bs-target="#modal-comment"
                            style="cursor: pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#0d6efd" class="bi bi-pencil-square" viewBox="0 0 16 16">
@@ -48,7 +48,7 @@
                       </div>
 
                   <!--Удалить-->
-                      <div @click="registerCommentAction('delete', comment, interface.Interface)"
+                      <div @click="registerCommentAction('delete', comment, interface.name)"
                            data-bs-toggle="modal" data-bs-target="#modal-comment"
                            style="cursor: pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#dc3545" class="bi bi-x-lg" viewBox="0 0 16 16">
@@ -78,7 +78,7 @@
 <!--Создание комментария-->
   <button class="btn btn-fog"
           v-else-if="registerCommentAction"
-          @click="registerCommentAction('add', interface.comment, interface.Interface)"
+          @click="registerCommentAction('add', interface.comments, interface.name)"
           data-bs-toggle="modal" data-bs-target="#modal-comment">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#e5e5e5" class="bi bi-chat-right-text" viewBox="0 0 16 16">
         <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
@@ -87,9 +87,11 @@
   </button>
 </template>
 
-<script>
-import OverlayPanel from "primevue/overlaypanel";
+<script lang="ts">
 import {defineComponent} from "vue";
+import OverlayPanel from "primevue/overlaypanel";
+
+import Interface from "../types/interfaces"
 
 export default defineComponent({
   components: {
@@ -101,20 +103,10 @@ export default defineComponent({
       type: Function,
       default: null
     },
-    interface: {
-      required: true,
-      type: {
-          Interface: String,
-          Status: String,
-          Description: String,
-          Comments: [
-              { "text": String, "user": String ,"id": Number }
-          ]
-      }
-    }
+    interface: { required: true, type: Interface }
   },
   methods: {
-    formatDatetime(datetime) {
+    formatDatetime(datetime: string): string {
       return new Date(datetime)
           .toLocaleString(
             "ru",
@@ -125,11 +117,9 @@ export default defineComponent({
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
-              timezone: 'UTC'
             }
           )
     },
-    // toggleCommentBlock(event) { this.$refs.comment.toggle(event) }
   }
 })
 </script>

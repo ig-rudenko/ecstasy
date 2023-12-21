@@ -1,10 +1,10 @@
 <template id="description-search">
 
-<search-desc
+<SearchInput
         :update_search="updateSearch"
-        v-on:submit_input="searchDescription"
+        @submit_input="searchDescription"
         placeholder="Введите строку для поиска">
-</search-desc>
+</SearchInput>
 
 
 <div v-show="interfaces !== null" class="py-4">
@@ -12,11 +12,11 @@
   <!--Нашли по паттерну-->
   <div v-if="interfaces !== null && interfaces.length && !waitResult">
       <div>
-          <h4 class="text-center py-2">Поиск по паттерну: "{{ last_pattern }}"</h4>
+          <h4 class="text-center py-2">Поиск по паттерну: "{{ lastPattern }}"</h4>
           <h6 class="py-2" style="margin-left: 20px;">Найдено: {{ interfaces.length }}</h6>
       </div>
 
-      <pagination v-bind:p-object="pagination"></pagination>
+      <Pagination :p-object="paginator"></Pagination>
 
       <div class="table-responsive-lg">
       <table class="table">
@@ -41,34 +41,34 @@
                         <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
                         <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
                       </svg>
-                    <a class="text-decoration-none" target="_blank" :href="'/device/'+intf.Device">
-                        {{ intf.Device }}
+                    <a class="text-decoration-none" target="_blank" :href="'/device/'+intf.device">
+                        {{ intf.device }}
                     </a>
                 </span>
             </td>
 
   <!--      INTERFACE-->
             <td class="nowrap">
-              {{ intf.Interface }}
+              {{ intf.interfaceName }}
             </td>
 
   <!--      DESCRIPTION-->
-            <td style="text-align: left" v-html="markDescription(intf.Description)"></td>
+            <td style="text-align: left" v-html="markDescription(intf.description)"></td>
 
   <!--      COMMENT-->
             <td>
-                <comment v-if="intf.Comments.length" :interface="intf"></comment>
+                <Comment v-if="intf.comments.length" :interface="intf"></Comment>
             </td>
 
   <!--      SAVED TIME-->
-            <td>{{ intf.SavedTime }}</td>
+            <td>{{ intf.savedTime }}</td>
 
           </tr>
         </tbody>
       </table>
       </div>
 
-      <pagination v-bind:p-object="pagination"></pagination>
+      <Pagination :p-object="paginator"></Pagination>
 
   </div>
 
@@ -92,41 +92,44 @@
 <!--Выполняется поиск-->
 <div v-show="waitResult" class="text-center">
     <h4 class="text-center py-2">Поиск по паттерну: "{{ pattern }}"</h4>
-    <img height="200" src="/static/img/load_desc.gif">
+    <img height="200" src="/static/img/load_desc.gif" alt="load-desc">
 </div>
 
 </template>
 
 <script lang="ts">
-import Comment from "./components/Comment.vue";
-import Pagination from "./components/Pagination.vue";
-import SearchInput from "./components/SearchInput.vue";
-import api_request from "./api_request";
+import Comment from "../components/Comment.vue";
+import Pagination from "../components/Pagination.vue";
+import SearchInput from "../components/SearchInput.vue";
+import api_request from "../api_request";
+import {newSearchMatchList, SearchMatch} from "./type";
+import Paginator from "../types/paginator";
 
 export default {
+  components: {
+    Comment,
+    Pagination,
+    SearchInput,
+  },
+
   data() {
     return {
-      interfaces: null as Array<any>,
-      pattern: "",
-      last_pattern: "",
-      waitResult: false,
-      pagination: {
-        count: 0,
-        page: 0,
-        rows_per_page: 50
-      },
+      interfaces: null as Array<SearchMatch>,
+      pattern: "" as string,
+      lastPattern: "" as string,
+      waitResult: false as boolean,
+      paginator: new Paginator(),
     }
   },
   methods: {
-    async searchDescription() {
+    searchDescription() {
       if (this.pattern.length < 2) return;
       this.waitResult = true
       api_request.get("/tools/ajax/find?pattern="+this.pattern).then(
           (value: any) => {
-            this.interfaces = value.data.interfaces
-            this.last_pattern = this.pattern
-            this.pagination.count = value.data.interfaces.length
-            this.pagination.page = 0
+            this.interfaces = newSearchMatchList(value.data.interfaces)
+            this.lastPattern = this.pattern
+            this.paginator = new Paginator(this.interfaces.length)
             this.waitResult = false
           },
           () => this.waitResult = false
@@ -140,26 +143,20 @@ export default {
      * @param {String} desc
      */
     markDescription(desc: string): string {
-      return desc.replace(
-          new RegExp(this.last_pattern, 'ig'),
-          s => '<mark>'+s+'</mark>'
-      )
+      return desc.replace(new RegExp(this.lastPattern, 'ig'), s => '<mark>'+s+'</mark>')
     }
   },
   computed: {
-    paginatedInterfaces: function () {
+    paginatedInterfaces(): Array<SearchMatch> {
+      if (!this.interfaces) return [];
       // Обрезаем по размеру страницы
       return this.interfaces.slice(
-          this.pagination.page * this.pagination.rows_per_page,
-          (this.pagination.page + 1) * this.pagination.rows_per_page
+          this.paginator.page * this.paginator.rowsPerPage,
+          (this.paginator.page + 1) * this.paginator.rowsPerPage
       )
     }
   },
-  components: {
-    "comment": Comment,
-    "pagination": Pagination,
-    "search-desc": SearchInput,
-  }
+
 }
 
 </script>
