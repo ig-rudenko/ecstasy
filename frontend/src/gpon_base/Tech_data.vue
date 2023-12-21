@@ -29,7 +29,7 @@
 
 <script>
 import TechDataTable from "./components/TechDataTable.vue";
-import api_request from "../api_request.js";
+import api_request from "../api_request.ts";
 
 export default {
   name: "Gpon_base.vue",

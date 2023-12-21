@@ -416,7 +416,7 @@ import End3AddForm from "./components/End3AddForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue"
 import formatAddress from "../helpers/address";
-import api_request from "../api_request.js";
+import api_request from "../api_request.ts";
 
 export default {
   name: "Gpon_base.vue",

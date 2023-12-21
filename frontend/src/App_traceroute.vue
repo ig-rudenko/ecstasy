@@ -1,7 +1,7 @@
 <template src="./App_traceroute.html"></template>
 
 <script>
-import api_request from "./api_request.js";
+import api_request from "./api_request.ts";
 
 export default {
   name: 'app',

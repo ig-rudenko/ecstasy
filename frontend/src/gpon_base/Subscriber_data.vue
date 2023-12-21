@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import api_request from "../api_request.js";
+import api_request from "../api_request.ts";
 import SubscriberDataTable from "./components/SubscriberDataTable.vue";
 
 export default {
