@@ -57,7 +57,7 @@
 
   <!--      COMMENT-->
             <td>
-                <Comment v-if="intf.comments.length" :interface="intf"></Comment>
+                <Comment v-if="intf.comments.length" :interface="getInterface(intf)"></Comment>
             </td>
 
   <!--      SAVED TIME-->
@@ -103,6 +103,7 @@ import Pagination from "../components/Pagination.vue";
 import SearchInput from "../components/SearchInput.vue";
 import api_request from "../api_request";
 import {newSearchMatchList, SearchMatch} from "./type";
+import Interface from "../types/interfaces";
 import Paginator from "../types/paginator";
 
 export default {
@@ -134,6 +135,10 @@ export default {
           },
           () => this.waitResult = false
       )
+    },
+
+    getInterface(match: SearchMatch): Interface {
+      return new Interface(match.interfaceName, "", match.description, [], match.comments)
     },
 
     /** Обновляем паттерн поиска */

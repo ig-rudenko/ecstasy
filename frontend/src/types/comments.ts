@@ -7,7 +7,6 @@ class InterfaceComment {
 }
 
 
-
 function newInterfaceCommentsList(commentsData: Array<any>): Array<InterfaceComment> {
     let res: Array<InterfaceComment> = []
     for (const comment of commentsData) {
@@ -17,6 +16,7 @@ function newInterfaceCommentsList(commentsData: Array<any>): Array<InterfaceComm
     }
     return res
 }
+
 
 export default InterfaceComment
 export {newInterfaceCommentsList, InterfaceComment}

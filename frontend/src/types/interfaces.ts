@@ -22,5 +22,6 @@ function newInterface(data: any): Interface {
     return new Interface(data.Interface, data.Status, data.Description, vlans, comments, data.GraphsLink || "")
 }
 
+
 export default Interface
 export {Interface, newInterface}
