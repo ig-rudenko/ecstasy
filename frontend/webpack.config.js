@@ -5,8 +5,8 @@ module.exports = {
     entry: {
         // devices_list: './src/devices_list.js',
         // device_info: './src/device_info.js',
-        search_description: './src/descriptionSearch',
-        // traceroute: './src/traceroute.js',
+        // search_description: './src/descriptionSearch',
+        traceroute: './src/traceroute',
         // transport_ring: './src/transport_ring.js',
         // access_rings: './src/access_rings.js',
         // gpon_tech_data: './src/gpon_base/tech_data.js',

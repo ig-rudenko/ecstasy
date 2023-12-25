@@ -1,3 +1,4 @@
+<template>
 <div>
 
     <div>
@@ -23,7 +24,7 @@
 
 <!--                RUN VLAN SCAN-->
                 <div v-else-if="!vlanScanStatus.running && vlanScanStatus.available">
-                    <svg style="cursor: pointer" @click="run_vlans_scan" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <svg style="cursor: pointer" @click="vlanScanStatus.run_vlans_scan" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
                          <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>
                          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"></path>
                      </svg>
@@ -130,7 +131,7 @@
 
 <!--                RUN MAC SCAN-->
                 <div v-else-if="!macScanStatus.running && macScanStatus.available">
-                    <svg style="cursor: pointer" @click="run_mac_scan" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <svg style="cursor: pointer" @click="macScanStatus.run_vlans_scan" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
                          <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>
                          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"></path>
                      </svg>
@@ -196,3 +197,195 @@
     </div>
 
 </div>
+</template>
+
+<script lang="ts">
+import api_request from "../api_request";
+import ScanStatus from "./scan";
+import TracerouteNetwork from "./net";
+
+export default {
+  name: 'app',
+  data() {
+    return {
+      macScanIcon: "",
+
+      vlanScanStatus: new ScanStatus("/tools/ajax/vlans-scan/check", "/tools/ajax/vlans-scan/run"),
+      macScanStatus: new ScanStatus("/gather/mac-scan/check", "/gather/mac-scan/run"),
+
+      vlanTracerouteStarted: false,
+      macTracerouteStarted: false,
+
+      // Установка значения по умолчанию для свойства tracerouteMode.
+      tracerouteMode: 'vlan',
+
+      // Пользовательский ввод
+      inputVlan: "",
+      inputMac: "",
+
+      inputVlanInfo: {
+        name: "",
+        description: ""
+      },
+
+      // Свойство данных, которое используется для хранения состояния флажков.
+      vlanTracerouteOptions: {
+        adminDownPorts: false,
+        showEmptyPorts: false,
+        doubleCheckVlan: true,
+        graphMinLength: 3,
+      },
+
+      vlanNetwork: new TracerouteNetwork("vlan-network"),
+      macNetwork: new TracerouteNetwork("mac-network")
+
+    }
+  },
+
+  // Хук жизненного цикла, который вызывается после создания экземпляра.
+  created() {
+    this.vlanScanStatus.checkScanStatus()
+    this.macScanStatus.checkScanStatus()
+  },
+
+  methods: {
+
+    getInputVlanInfo() {
+      api_request.get("/tools/ajax/vlan_desc?vlan="+this.inputVlan)
+          .then(resp => {this.inputVlanInfo = resp.data})
+    },
+
+    // Метод, который переключает значение свойства `tracerouteMode` между `vlan` и `mac`.
+    toggleMode() {
+      if (this.tracerouteMode === 'vlan') {
+        this.tracerouteMode = 'mac';
+      }
+      else if (this.tracerouteMode === 'mac') {
+        this.tracerouteMode = 'vlan';
+      }
+    },
+
+    /**
+     * Метод, возвращающий копию объекта baseVisOptions с изменениями, в зависимости от значения свойства tracerouteMode.
+     */
+    getVisOptions(...update){
+      if (this.tracerouteMode==='vlan'){
+        this.vlanNetwork.options.edges.arrows.middle.enabled = false
+        return {...this.vlanNetwork.options, ...update}
+
+
+      } else if (this.tracerouteMode==='mac') {
+        this.macNetwork.options.edges.arrows.middle.enabled = true
+        return {...this.macNetwork.options, ...update}
+      }
+
+    },
+
+
+    // Проверяет, действителен ли vlan.
+    validateVlan(vlan: string): number {
+      // Это регулярное выражение, которое проверяет, является ли строка числом.
+      if (!/^\d+$/.test(vlan)) return 0;
+      // Он преобразует строку в число.
+      let vlanNumber = Number(vlan)
+      // Это простая проверка, чтобы убедиться, что vlan действителен.
+      if (vlanNumber > 0 && vlanNumber <= 4096) return vlanNumber;
+      return 0
+    },
+
+
+    /**
+     * Отправляем на сервер запрос трассировки указанного в поле для ввода VLAN
+     * И создаем в определенном блоке граф для данной трассировки.
+     */
+    load_vlan_traceroute() {
+      // Проверяем, действителен ли vlan.
+      let valid_vlan = this.validateVlan(this.inputVlan)
+      if (valid_vlan === 0) return;
+
+      this.vlanTracerouteStarted = true
+
+      let url = '/tools/ajax/vlantraceroute?vlan=' + this.inputVlan +
+          '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
+          '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
+          '&double-check=' + this.vlanTracerouteOptions.doubleCheckVlan +
+          '&graph-min-length=' + this.vlanTracerouteOptions.graphMinLength
+
+      api_request.get(url)
+          .then(
+              resp => {
+                this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions(resp.data.options));
+                this.vlanTracerouteStarted = false;
+              }
+          ).catch(
+              () => this.vlanTracerouteStarted = false
+          )
+
+    },
+
+    // Удаляет из MAC адреса все символы, не являющиеся шестнадцатеричными.
+    validateMac(mac: string): string {
+      return String(mac).replace(/\W/g, "")
+    },
+
+
+    /**
+     * Отправляем на сервер запрос трассировки указанного в поле для ввода MAC.
+     * И создаем в определенном блоке граф для данной трассировки.
+     */
+    load_mac_traceroute() {
+      let valid_mac = this.validateMac(this.inputMac)
+      if (!valid_mac.length) return
+
+      this.macTracerouteStarted = true
+      const url = '/gather/api/traceroute/mac-address/' + valid_mac + "/"
+
+      api_request.get(url)
+          .then(
+              resp => {
+                this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions());
+                this.macTracerouteStarted = false;
+              }
+          )
+          .catch(
+              () => this.macTracerouteStarted = false
+          )
+    },
+
+  }
+}
+</script>
+
+<style>
+.fullScreen {
+    z-index: 9;
+    position: absolute;
+    top: -8px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+.fullScreenButton {
+    display: none;
+    text-align: right;
+    position: relative;
+    z-index: 1;
+    top: 57px;
+    right: 10px;
+}
+.back-title {
+  margin-left: 40px;
+  border-bottom: 1px solid;
+  width: fit-content;
+  cursor: pointer;
+}
+.noselect {
+  -webkit-touch-callout: none!important; /* iOS Safari */
+    -webkit-user-select: none!important; /* Safari */
+     -khtml-user-select: none!important; /* Konqueror HTML */
+       -moz-user-select: none!important; /* Old versions of Firefox */
+        -ms-user-select: none!important; /* Internet Explorer/Edge */
+            user-select: none!important; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+</style>

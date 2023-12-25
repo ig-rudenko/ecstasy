@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.2",
+    "vis-network": "^9.1.9",
     "chokidar": "^3.5.3",
     "css-loader": "^6.8.1",
     "primevue": "^3.44.0",
