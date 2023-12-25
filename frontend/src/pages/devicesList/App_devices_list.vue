@@ -10,14 +10,14 @@
 <!--        Нагрузка по портам-->
         <div v-if="displayMode === 'default'" class="col-md-3 py-2">
             <button @click="getDeviceWithStats" class="btn">
-                <img src="/img/loading_circle.svg" height="50" class="me-2" alt="loading-circle">
+                <img src="/static/img/loading_circle.svg" height="50" class="me-2" alt="loading-circle">
                 Нагрузка по портам
             </button>
         </div>
 <!--        Ожидание-->
         <div v-if="displayMode === 'waiting'" class="col-md-3 py-2">
             <button class="btn">
-                <img src="/img/loading_circle.svg" class="spinner-border me-2"
+                <img src="/static/img/loading_circle.svg" class="spinner-border me-2"
                      style="vertical-align: middle; height: 50px; width: 50px; border: none;" alt="loading-circle">
                 Нагрузка по портам
             </button>
@@ -25,7 +25,7 @@
 <!--        Обычный режим-->
         <div v-if="displayMode === 'interfaces_loading'" class="col-md-3 py-2">
             <button @click="getDevices" class="btn">
-                <img src="/img/default_view.svg" height="50" class="me-2" alt="default-view">
+                <img src="/static/img/default_view.svg" height="50" class="me-2" alt="default-view">
                 Обычный вид
             </button>
         </div>

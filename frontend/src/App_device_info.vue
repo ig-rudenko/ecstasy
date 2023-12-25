@@ -92,7 +92,6 @@ export default {
 
   async mounted() {
     document.deviceName = this.deviceName
-    document.CSRF_TOKEN = $("input[name=csrfmiddlewaretoken]")[0].value
 
     await this.getInfo()
 
