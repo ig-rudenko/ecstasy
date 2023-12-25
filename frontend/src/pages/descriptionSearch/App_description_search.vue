@@ -92,19 +92,19 @@
 <!--Выполняется поиск-->
 <div v-show="waitResult" class="text-center">
     <h4 class="text-center py-2">Поиск по паттерну: "{{ pattern }}"</h4>
-    <img height="200" src="/static/img/load_desc.gif" alt="load-desc">
+    <img height="200" src="/img/load_desc.gif" alt="load-desc">
 </div>
 
 </template>
 
 <script lang="ts">
-import Comment from "../components/Comment.vue";
-import Pagination from "../components/Pagination.vue";
-import SearchInput from "../components/SearchInput.vue";
-import api_request from "../api_request";
+import Comment from "../../components/Comment.vue";
+import Pagination from "../../components/Pagination.vue";
+import SearchInput from "../../components/SearchInput.vue";
+import api_request from "../../api_request";
 import {newSearchMatchList, SearchMatch} from "./type";
-import Interface from "../types/interfaces";
-import Paginator from "../types/paginator";
+import Interface from "../../types/interfaces";
+import Paginator from "../../types/paginator";
 
 export default {
   components: {

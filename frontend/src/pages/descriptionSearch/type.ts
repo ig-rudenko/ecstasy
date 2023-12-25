@@ -1,4 +1,4 @@
-import {newInterfaceCommentsList, InterfaceComment} from "../types/comments";
+import {newInterfaceCommentsList, InterfaceComment} from "../../types/comments";
 
 class SearchMatch {
     constructor(

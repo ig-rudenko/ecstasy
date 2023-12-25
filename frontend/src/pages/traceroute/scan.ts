@@ -1,4 +1,4 @@
-import api_request from "../api_request";
+import api_request from "../../api_request";
 
 class ScanStatus {
     running: boolean

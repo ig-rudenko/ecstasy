@@ -23,5 +23,30 @@ function newInterface(data: any): Interface {
 }
 
 
+class InterfacesCount {
+    constructor(
+        public abons: number,
+        public abonsDown: number,
+        public abonsDownNoDesc: number,
+        public abonsDownWithDesc: number,
+        public abonsUp: number,
+        public abonsUpNoDesc: number,
+        public abonsUpWithDesc: number,
+        public count: number,
+    ) { }
+}
+function newInterfacesCount(data: any): InterfacesCount {
+    return new InterfacesCount(
+        data.abons,
+        data.abons_down,
+        data.abons_down_no_desc,
+        data.abons_down_with_desc,
+        data.abons_up,
+        data.abons_up_no_desc,
+        data.abons_up_with_desc,
+        data.count
+    )
+}
+
 export default Interface
-export {Interface, newInterface}
+export {Interface, newInterface, InterfacesCount, newInterfacesCount}

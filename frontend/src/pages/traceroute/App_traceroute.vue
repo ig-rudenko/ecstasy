@@ -200,7 +200,7 @@
 </template>
 
 <script lang="ts">
-import api_request from "../api_request";
+import api_request from "../../api_request";
 import ScanStatus from "./scan";
 import TracerouteNetwork from "./net";
 
