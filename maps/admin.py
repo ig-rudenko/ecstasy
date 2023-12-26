@@ -119,7 +119,7 @@ class LayerFrom(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Динамически смотрим группы из Zabbix
         self.fields["zabbix_group_name"] = forms.ChoiceField(
-            label="Выберите группу Zabbix", choices=get_zabbix_groups()
+            label="Выберите группу Zabbix", choices=get_zabbix_groups(), required=False
         )
         self.fields["marker_icon_name"] = forms.ChoiceField(
             label="Выберите иконку",
@@ -127,7 +127,11 @@ class LayerFrom(forms.ModelForm):
             choices=get_icons_html_code(
                 self.instance.points_color, self.instance.points_border_color
             ),
+            initial=next(get_icons_html_code(
+                self.instance.points_color, self.instance.points_border_color
+            ))
         )
+
 
     class Meta:
         model = Layers
