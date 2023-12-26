@@ -73,7 +73,7 @@
 
 <!--Добавить новый медиа-->
           <template v-if="!currentItem">
-            <LoadMedia @loadedmedia="addNewMedia" :device-name="deviceName"></LoadMedia>
+            <LoadMedia @loadedmedia="addNewMedia" :device-name="deviceName" />
           </template>
 
           <div v-else class="m-4" style="height: 100%;">
@@ -130,26 +130,24 @@
 </div>
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
-import getFileEarmarkClass from "../../helpers/fileFormat";
+
 import LoadMedia from "./LoadMedia.vue";
 import EditMedia from "./EditMedia.vue";
+import api_request from "../../../api_request";
+import getFileEarmarkClass from "../fileFormat";
+import {MediaFileInfo, newMediaFileInfoList} from "../files";
 
 export default defineComponent({
   components: {EditMedia, LoadMedia},
   props: {
     deviceName: {required: true, type: String}
   },
-  async created() {
-    await this.loadMedia()
-    if (this.items.length){
-      this.currentItem = this.items[0]
-    }
-  },
+
   data() {
     return {
-      items: [],
+      items: [] as Array<MediaFileInfo>,
       currentItem: null,
       editForm: {
         show: false,
@@ -163,8 +161,14 @@ export default defineComponent({
       }
     }
   },
+  mounted() {
+    this.loadMedia()
+    if (this.items.length){
+      this.currentItem = this.items[0]
+    }
+  },
   computed: {
-    mediaToggleButtonColor() {
+    mediaToggleButtonColor(): string {
       if (this.items.length) {
         return "#198754"
       }
@@ -173,22 +177,22 @@ export default defineComponent({
   },
   methods: {
 
-    showDeleteFrom() {
+    showDeleteFrom(): void {
       this.editForm.show = false
       this.deleteForm.show = true
     },
 
-    showEditForm(itemIndex) {
+    showEditForm(itemIndex: number): void {
       this.deleteForm.show = false
       this.editForm.show = true
       this.editForm.itemIndex = itemIndex
     },
 
-    fileEarmarkClass(filename) {
+    fileEarmarkClass(filename: string): string {
       return getFileEarmarkClass(filename)
     },
 
-    itemClasses(item) {
+    itemClasses(item: MediaFileInfo): Array<string> {
       let defaultClasses = ["list-group-item", "list-group-item-action", "py-3", "lh-sm", "rounded-3"]
       if (item === this.currentItem) {
         defaultClasses.push("active")
@@ -196,40 +200,25 @@ export default defineComponent({
       return defaultClasses
     },
 
-    async loadMedia() {
-      try {
-        const resp = await fetch(
-          `/device/api/${this.deviceName}/media`,
-          {
-              method: "get",
-              credentials: "include",
-              headers: {
-                  "X-CSRFToken": document.CSRF_TOKEN
-              }
-          }
-        );
-        const data = await resp.json()
-        if (resp.ok) {
-          this.items = data
-        } else {
-          this.error = data
-        }
-      } catch (e) {
-        console.log(e)
-      }
+    loadMedia(): void {
+      api_request.get(`/device/api/${this.deviceName}/media`)
+          .then(
+              (value: any) => this.items = newMediaFileInfoList(value.data),
+              (reason: any) => {console.log(reason)}
+          )
+          .catch((reason: any) => {console.log(reason)})
     },
 
-    addNewMedia(media) {
-      console.log("media", media)
+    addNewMedia(media: MediaFileInfo): void {
       this.items.push(media)
     },
 
-    updateMedia(newMedia) {
+    updateMedia(newMedia: MediaFileInfo): void {
       this.items.splice(this.editForm.itemIndex, 1, newMedia)
     },
 
     // Функция для парсинга строки даты времени в формате ISO 8601
-    parseDateTimeString(str) {
+    parseDateTimeString(str: string): string {
       // Создаем объект Date из строки
       let date = new Date(str);
       // Проверяем, является ли объект Date валидным
@@ -237,50 +226,41 @@ export default defineComponent({
         // Если нет, возвращаем ошибку
         return "Неверный формат даты времени";
       }
+
       // Извлекаем часы, минуты, день, месяц и год из объекта Date
       let hours = date.getHours();
       let minutes = date.getMinutes();
       let day = date.getDate();
       let month = date.getMonth() + 1; // Месяцы в JS начинаются с 0
       let year = date.getFullYear();
+
       // Добавляем нули перед однозначными числами для красоты
-      hours = hours < 10 ? "0" + hours : hours;
-      minutes = minutes < 10 ? "0" + minutes : minutes;
-      day = day < 10 ? "0" + day : day;
-      month = month < 10 ? "0" + month : month;
+      let hoursStr = hours < 10 ? "0" + hours : String(hours);
+      let minutesStr = minutes < 10 ? "0" + minutes : String(minutes);
+      let dayStr = day < 10 ? "0" + day : String(day);
+      let monthStr = month < 10 ? "0" + month : String(month);
+
       // Формируем и возвращаем новую строку даты времени в желаемом формате
-      return `${hours}:${minutes} - ${day}.${month}.${year}`;
+      return `${hoursStr}:${minutesStr} - ${dayStr}.${monthStr}.${year}`;
     },
 
-    async deleteCurrentItem() {
+    deleteCurrentItem() {
       if (!this.currentItem) return;
-      try {
-        const resp = await fetch(
-          `/device/api/${this.deviceName}/media/${this.currentItem.id}`,
-          {
-              method: "delete",
-              credentials: "include",
-              headers: {
-                  "X-CSRFToken": document.CSRF_TOKEN
-              }
-          }
-        );
-        if (resp.ok) {
-          this.removeElement(this.items, this.currentItem)
-          this.currentItem = null
-          this.deleteForm.show = false
-
-        } else {
-          const data = await resp.json()
-          this.deleteForm.notification.error = data.error
-        }
-
-      } catch (e) {
-        this.deleteForm.notification.error = e
-      }
+      api_request.delete(`/device/api/${this.deviceName}/media/${this.currentItem.id}`)
+          .then(
+              () => {
+                this.removeElement(this.items, this.currentItem)
+                this.currentItem = null
+                this.deleteForm.show = false
+              },
+              (reason: any) => {this.deleteForm.notification.error = reason.response}
+          )
+          .catch(
+              (reason: any) => {this.deleteForm.notification.error = reason.response}
+          )
     },
 
-    removeElement(array, element) {
+    removeElement(array: Array<MediaFileInfo>, element: MediaFileInfo) {
       // Находим индекс элемента в массиве
       let index = array.indexOf(element);
       // Если элемент найден, удаляем его из массива

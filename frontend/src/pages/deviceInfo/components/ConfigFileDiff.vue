@@ -47,7 +47,7 @@
 <script>
 import Dropdown from "primevue/dropdown/Dropdown.vue";
 import {diffLines} from 'diff';
-import api_request from "../../api_request";
+import api_request from "../../../api_request";
 
 export default {
   name: "ConfigFileDiff",

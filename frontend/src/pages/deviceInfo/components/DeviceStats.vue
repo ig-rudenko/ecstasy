@@ -81,24 +81,16 @@
 </div>
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+import {HardwareStats} from "../hardwareStats";
 
 export default defineComponent({
   props: {
-      stats: {
-        required: true,
-        type: {
-            cpu: { util: [ Number, ] },
-            ram: { util: Number },
-            flash: { util: Number },
-            temp: { value: Number, status: String }
-        },
-        default: {}
-      }
+      stats: { required: true, type: Object as PropType<HardwareStats> }
   },
   methods: {
-    value_color: function (value) {
+    value_color(value: number): string {
       if (!value) return "grey"
       if (value < 30) return "#198754";
       if (value < 80) return "#ff9836";

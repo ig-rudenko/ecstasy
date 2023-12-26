@@ -38,15 +38,15 @@
 </h2>
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
 
 
 export default defineComponent({
   props: {
-      status: { required: true, type: Number, default: -1 },
-      deviceName: { required: true, type: String, default: "" },
-      deviceIp: { required: true, type: String, default: "" }
+      status: { required: true, type: Number },
+      deviceName: { required: true, type: String },
+      deviceIp: { required: true, type: String }
   },
   data() {
     return {

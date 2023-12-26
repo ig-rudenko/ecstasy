@@ -83,8 +83,10 @@
 
 </template>
 
-<script>
+<script lang="ts">
 import MediaPreview from "./MediaPreview.vue";
+import {MediaFile} from "../files";
+import api_request from "../../../api_request";
 
 export default {
   name: "LoadMedia",
@@ -94,11 +96,7 @@ export default {
   },
   data() {
     return {
-      files: [],
-        //   file: null,
-        //   isImage: false,
-        //   imageSrc: null,
-        //   description: "",
+      files: [] as Array<MediaFile>,
 
       notification: {
         type: null,
@@ -112,19 +110,21 @@ export default {
     }
   },
 
+  emits: ["loadedmedia"],
+
   mounted() {
     this.addDragAndDropListeners()
   },
 
   computed: {
-    areaClasses() {
+    areaClasses(): Array<string> {
       let classes = ["align-content-center", "justify-content-md-center", "row"]
       if (!this.files.length) {
         classes.push("h-100")
       }
       return classes
     },
-    notificationClasses() {
+    notificationClasses(): Array<string> {
       let classes = ["alert", "modal-header", "rounded-3"]
       classes.push(`alert-${this.notification.type}`)
       return classes
@@ -133,67 +133,49 @@ export default {
 
   methods: {
 
-    addDragAndDropListeners() {
+    addDragAndDropListeners(): void {
       let container = document.querySelector("#drag-drop-area");
       container.addEventListener("dragover", e => e.preventDefault());
-      container.addEventListener("drop", (e) => this.addByDragAndDrop(e));
+      container.addEventListener("drop", (e) => this.addByDragAndDrop(<DragEvent>e));
     },
 
-    addByDragAndDrop(e) {
+    addByDragAndDrop(e: DragEvent): void {
       e.preventDefault();
       this.addFiles(e.dataTransfer.files)
     },
 
-    handleFileChange(event) {
-      this.addFiles(event.target.files)
+    handleFileChange(event: Event): void {
+      this.addFiles((<HTMLInputElement>event.target).files)
     },
 
-    addFiles(files) {
+    addFiles(files: FileList): void {
       // Если после загрузки добавляются еще файлы, то обнуляем статус загрузки
       this.loadingBar.active = false
-
-      for (const file of files) {
-        let imageSrc = null
-        const isImage = file.type.startsWith("image/");
-        if (isImage) {
-          // Создать URL-адрес объекта для предварительного просмотра изображения
-          imageSrc = URL.createObjectURL(file);
-        }
-
-        this.files.unshift(
-            {
-              file: file,
-              isImage: isImage,
-              imageSrc: imageSrc,
-              description: "",
-              errors: [],
-            }
-        )
-
-        console.log(this.files)
+      for (const file of Array.from(files)) {
+        this.files.unshift(new MediaFile(file))
       }
     },
 
-    handleUploadFileError(error) {
+    handleUploadFileError(error: any): string {
       if (error.description) {
         return `Ошибка при указании описания: "${error.description}"`
       } else {
-        return error
+        return String(error)
       }
     },
 
-    deleteFile(file_obj){
-      const index = this.files.indexOf(file_obj)
+    deleteFile(fileObj: MediaFile): void {
+      const index = this.files.indexOf(fileObj)
       if (index !== -1) {
         this.files.splice(index, 1)
       }
     },
 
-    async uploadAllFiles() {
+    uploadAllFiles(): void {
       if (!this.files.length) return;
 
       // Создаем временные список файлов для загрузки
-      const files = new Array(...this.files)
+      const files: Array<MediaFile> = new Array(...this.files)
 
       // Показываем статус загрузки и обнуляем прогресс
       this.loadingBar.active = true
@@ -201,7 +183,7 @@ export default {
       this.loadingBar.partWidth = 100 / files.length
 
       for (let i = 0; i < files.length; i++) {
-        await this.uploadFile(files[i])
+        this.uploadFile(files[i])
 
         // Добавляем статус загрузки файла (смотрим, нет ли ошибок)
         this.loadingBar.progress.push({
@@ -219,37 +201,24 @@ export default {
       this.notification.text = `(${uploaded} из ${files.length}) медиафайла(ов) успешно загружены`
     },
 
-    async uploadFile(file_obj) {
-      if (!file_obj.file) return;
+    uploadFile(mediaFile: MediaFile): void {
+      if (!mediaFile.file) return;
 
       // Создать объект FormData для отправки файла
       let formData = new FormData();
-      formData.append("file", file_obj.file);
-      formData.append("description", file_obj.description)
-      try {
-        const resp = await fetch(
-          `/device/api/${this.deviceName}/media`,
-          {
-            method: "post",
-            body: formData,
-            credentials: "include",
-            headers: {
-              "X-CSRFToken": document.CSRF_TOKEN,
-            }
-          }
-        )
-        const data = await resp.json()
-        if (resp.ok) {
-          this.deleteFile(file_obj)
-          this.$emit("loadedmedia", data)
-        } else {
-          file_obj.errors.push(this.handleUploadFileError(data))
-        }
-
-      } catch (e) {
-        file_obj.errors.push = e
-      }
-
+      formData.append("file", mediaFile.file);
+      formData.append("description", mediaFile.description)
+      api_request.post(`/device/api/${this.deviceName}/media`, formData)
+          .then(
+              () => {
+                this.deleteFile(mediaFile)
+                this.$emit("loadedmedia", mediaFile)
+              },
+              (reason: any) => mediaFile.errors.push(this.handleUploadFileError(reason.response.data))
+          )
+          .catch(
+              (reason: any) => mediaFile.errors.push(this.handleUploadFileError(reason.response.data))
+          )
     },
   }
 }

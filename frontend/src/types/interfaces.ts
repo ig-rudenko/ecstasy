@@ -22,6 +22,14 @@ function newInterface(data: any): Interface {
     return new Interface(data.Interface, data.Status, data.Description, vlans, comments, data.GraphsLink || "")
 }
 
+function newInterfacesList(data: Array<any>): Array<Interface> {
+    let res: Array<Interface> = []
+    for (const line of data) {
+        res.push(newInterface(line))
+    }
+    return res
+}
+
 
 class InterfacesCount {
     constructor(
@@ -49,4 +57,4 @@ function newInterfacesCount(data: any): InterfacesCount {
 }
 
 export default Interface
-export {Interface, newInterface, InterfacesCount, newInterfacesCount}
+export {Interface, newInterface, newInterfacesList, InterfacesCount, newInterfacesCount}

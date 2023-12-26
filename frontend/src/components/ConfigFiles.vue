@@ -148,7 +148,7 @@
 import Dialog from "primevue/dialog/Dialog.vue";
 import {defineComponent} from "vue";
 
-import ConfigFileDiff from "./DeviceInfo/ConfigFileDiff.vue";
+import ConfigFileDiff from "../pages/deviceInfo/components/ConfigFileDiff.vue";
 
 export default defineComponent({
   name: "ConfigFiles",

@@ -1,0 +1,55 @@
+class MediaFile {
+    public file: File
+    public description: string
+    public imageSrc: string | null
+    public errors: Array<string>
+
+    constructor(
+        file: File,
+    ) {
+        this.file = file
+        this.description = ""
+        this.imageSrc = null
+        if (this.isImage) {
+          // Создать URL-адрес объекта для предварительного просмотра изображения
+          this.imageSrc = URL.createObjectURL(file);
+        }
+        this.errors = []
+    }
+
+    public get isImage(): boolean {
+        return this.file.type.startsWith("image/");
+    }
+}
+
+
+class MediaFileInfo {
+    constructor(
+        public description: string,
+        public fileType: string,
+        public id: number,
+        public isImage: boolean,
+        public modTime: string,
+        public name: string,
+        public url: string,
+    ) {}
+}
+
+
+function newMediaFileInfoList(data: Array<any>): Array<MediaFileInfo> {
+    let res: Array<MediaFileInfo> = []
+    for (const datum of data) {
+        res.push(new MediaFileInfo(
+            datum.description,
+            datum.file_type,
+            datum.id,
+            datum.is_image,
+            datum.mod_time,
+            datum.name,
+            datum.url,
+        ))
+    }
+    return res
+}
+
+export {MediaFile, MediaFileInfo, newMediaFileInfoList}

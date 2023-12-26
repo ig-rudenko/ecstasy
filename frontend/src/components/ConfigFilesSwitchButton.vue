@@ -1,5 +1,5 @@
 <template>
-  <div @click="configFiles.display?configFiles.display=false:configFiles.display=true">
+  <div @click="configFiles.display=!configFiles.display">
 
     <button class="btn" style="width: 100%; text-align: left">
 
@@ -21,12 +21,12 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-    configFiles: {required: true, type: { display: Boolean, array: Array }}
+    configFiles: {required: true, type: Object}
   }
 })
 

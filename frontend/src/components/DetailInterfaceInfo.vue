@@ -282,7 +282,7 @@ import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
-import GraphsLink from "./DeviceInfo/GraphsLink.vue";
+import GraphsLink from "../pages/deviceInfo/components/GraphsLink.vue";
 
 export default defineComponent({
   data() {

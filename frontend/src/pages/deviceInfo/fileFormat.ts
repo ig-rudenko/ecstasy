@@ -4,7 +4,7 @@
  * @param {string} file_name - Параметр `file_name` представляет собой строку, представляющую имя файла, включая его расширение.
  * @returns {string} Функция getFileEarmarkClass возвращает строку, представляющую имя класса CSS для данного имени файла.
  */
-function getFileEarmarkClass(file_name) {
+function getFileEarmarkClass(file_name: string): string {
   const parts = file_name.split(".")
   if (parts.length === 1){
     // Не указано расширение

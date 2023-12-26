@@ -31,7 +31,7 @@
 
     <div v-if="!current_status">
       <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-         @click="updateCurrentStatus">
+         @click="$emit('update')">
           Посмотреть текущее состояние портов
       </a>
     </div>
@@ -39,7 +39,7 @@
 </div>
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
 
 export default defineComponent({
@@ -49,7 +49,7 @@ export default defineComponent({
       current_status: { required: true, type: Boolean },
       time_passed: { required: true, type: String, },
       last_interface_update: { required: false, type: String },
-      updateCurrentStatus: { required: true, type: Function }
-  }
+  },
+  emits: ["update"]
 })
 </script>

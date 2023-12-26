@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import getFileEarmarkClass from "../../helpers/fileFormat";
+import getFileEarmarkClass from "../fileFormat";
 import MediaPreview from "./MediaPreview.vue";
 
 

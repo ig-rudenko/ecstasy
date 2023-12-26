@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.10"
 
 volumes:
   redis-data:
@@ -26,61 +26,35 @@ services:
       timeout: 20s
       retries: 10
 
-  celery: &backend
+  backend:
     build: .
-    image: ecstasy:v.15.2
+    image: ecstasy:v17.5.6
     restart: always
-    command: celery -A ecstasy_project worker -B -l INFO -c 4 -n worker1
+    command: /bin/sh run.sh
+    volumes:
+      - "./db.sqlite3:/app/db.sqlite3"
+      - "./run.sh:/app/run.sh"
+      - "./logs:/app/logs"
+      - "./static:/app/static"
+      - "./media:/app/media"
+      - "./map_layer_files:/app/media/map_layer_files"
+      - "./configurations:/configurations"
     environment:
       ALLOWED_HOSTS: "*"
       REDIS_CACHE_URL: "redis:6379/0"
-      REDIS_BROKER_URL: "redis:6379/1"
       DATABASES: |
         {
             "default": {
-                "ENGINE": "django.db.backends.mysql",
-                "NAME": "ecstasy",
-                "USER": "ecstasy",
-                "PASSWORD": "ecstasy_password",
-                "HOST": "mysql",
-                "PORT": "3306"
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": "db.sqlite3",
+                "OPTIONS": {
+                    "timeout": 20
+                }
             }
         }
-      DJANGO_SECRET_KEY: "django-key"
+      DJANGO_SECRET_KEY: "9129038921n79sfmmnoYN()!*(*(*(*(*(*(*(#)*@!Y#ASJLSDJF:LJ!{02197390123"
       CONFIG_STORAGE_DIR: "/configurations"
 
     depends_on:
-      - backend
-    volumes:
-    - "./logs:/app/logs"
-
-  backend:
-    <<: *backend
-    command: /bin/sh run.sh
-    volumes:
-    - "./run.sh:/app/run.sh"
-    - "./logs:/app/logs"
-    - "./static:/app/static"
-    - "./media:/app/media"
-    - "./map_layer_files:/app/media/map_layer_files"
-    - "./configurations:/configurations"
-    depends_on:
       redis:
         condition: service_healthy
-      mysql:
-        condition: service_healthy
-
-  mysql:
-    image: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_USER: ecstasy
-      MYSQL_PASSWORD: ecstasy_password
-      MYSQL_DATABASE: ecstasy
-    restart: always
-    volumes:
-      - "./data:/var/lib/mysql"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10

@@ -1,5 +1,5 @@
 import {createApp} from 'vue'
-import App from './App_device_info.vue'
+import App from './App.vue'
 import VueClipboard from 'vue-clipboard2'
 import PrimeVue from "primevue/config";
 import "primevue/resources/themes/lara-light-indigo/theme.css";
