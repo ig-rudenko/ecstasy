@@ -33,9 +33,10 @@ def validate_port(port: str) -> Optional[str]:
      - sfp1
      - sfp-sfpplus1
      - wlan2
+     - wlan60-station-1
     """
     port = port.lower()
-    if re.match(r"^ether|^sfp\d+|^wlan\d+$", port):
+    if re.match(r"^ether|^sfp|^wlan", port):
         return port
 
 
@@ -98,11 +99,11 @@ class MikroTik(BaseDevice):
     def _get_bridges_interfaces(self):
         output = self.send_command("interface bridge port print terse")
 
-        for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+interface)", output):
+        for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+(interface|comment))", output):
             line = line.replace("\r\n", "")
 
             match: List[Tuple[str, str]] = re.findall(
-                r"\d+\s+[XIDH]*\s+interface=(\S+) bridge=(\S+)", line
+                r"\d+\s+[XIDH]*\s+\S*\s*interface=(\S+) bridge=(\S+)", line
             )
             if not match:
                 continue
@@ -165,7 +166,7 @@ class MikroTik(BaseDevice):
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 
-            interface_name = BaseDevice.find_or_empty(r"name=(.+) default-name=", line)
+            interface_name = BaseDevice.find_or_empty(r" name=(\S+)", line)
             interfaces.append((interface_name, status, description))
 
         return interfaces

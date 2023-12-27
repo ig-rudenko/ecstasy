@@ -1,7 +1,7 @@
 from unittest.mock import patch, Mock
 
 from devicemanager.vendors.mikrotik import MikroTik
-from .base_factory_test import AbstractTestFactory
+from ..base_factory_test import AbstractTestFactory
 
 
 class TestMikroTikFactory(AbstractTestFactory):
@@ -44,3 +44,5 @@ class TestMikroTikFactory(AbstractTestFactory):
     def test_factory_device_attributes(self, send_command: Mock):
         send_command.return_value = self.mikrotik_version_output
         super().test_factory_device_attributes()
+
+
