@@ -14,7 +14,7 @@
             <div class="d-flex py-2 text-light" style="vertical-align: middle">
 
 <!--                RAN WITH PROGRESS-->
-                <div class="d-flex" v-if="vlanScanStatus.running && vlanScanStatus.progress > 0">
+                <div class="d-flex" v-if="vlanScanStatus.running && vlanScanStatus.progress && vlanScanStatus.progress > 0">
                     <div class="spinner-border me-2" role="status"></div>
                     <div style="display: flex; align-items: center;">Сканирование завершено на {{vlanScanStatus.progress}}%</div>
                 </div>
@@ -121,7 +121,7 @@
             <div class="d-flex py-2 text-light" style="vertical-align: middle">
 
 <!--                RAN WITH PROGRESS-->
-                <div v-if="macScanStatus.running && macScanStatus.progress > 0" class="d-flex">
+                <div v-if="macScanStatus.running && macScanStatus.progress && macScanStatus.progress > 0" class="d-flex">
                     <div class="spinner-border me-2" role="status"></div>
                     <div style="display: flex; align-items: center;">Сканирование завершено на {{macScanStatus.progress}}%</div>
                 </div>
@@ -268,13 +268,12 @@ export default {
     /**
      * Метод, возвращающий копию объекта baseVisOptions с изменениями, в зависимости от значения свойства tracerouteMode.
      */
-    getVisOptions(...update){
+    getVisOptions(...update): any {
       if (this.tracerouteMode==='vlan'){
         this.vlanNetwork.options.edges.arrows.middle.enabled = false
         return {...this.vlanNetwork.options, ...update}
 
-
-      } else if (this.tracerouteMode==='mac') {
+      } else {
         this.macNetwork.options.edges.arrows.middle.enabled = true
         return {...this.macNetwork.options, ...update}
       }

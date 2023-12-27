@@ -9,6 +9,7 @@
           <div class="card-body text-center">
     <!--    Имя оборудования и его статус-->
             <DeviceStatusName
+                    v-if="generalInfo"
                     :status="deviceAvailable"
                     :device-name="deviceName"
                     :device-ip="generalInfo.deviceIP"/>
@@ -44,7 +45,7 @@
       </div>
 
       <div class="col-md-6">
-        <div class="card shadow" style="min-height: 220px">
+        <div v-if="generalInfo" class="card shadow" style="min-height: 220px">
             <div class="card-body button-panel">
     <!--    Кнопка для отображения панели с информацией Zabbix-->
             <div class="col-md-6">
@@ -83,7 +84,7 @@
         <div class="card shadow" style="min-height: 220px">
             <div class="card-body">
         <!--  Иконки температуры, загрузки ЦП и т.д.-->
-              <DeviceStats :stats="deviceStats"/>
+              <DeviceStats v-if="deviceStats" :stats="deviceStats"/>
             </div>
         </div>
       </div>
@@ -96,7 +97,7 @@
     </div>
 
 <!--    Загруженность интерфейсов-->
-    <DeviceWorkloadBar :workload="interfacesWorkload" />
+    <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload" />
 
     <UserActionsButton :device-name="deviceName"/>
 
@@ -104,54 +105,47 @@
       <div class="col">
         <div class="card" style="border: none">
 
-<!--    Возможные ошибки-->
-        <h3 v-if="errorStatus" class="py-5" style="text-align: center;">
-            <span v-html="errorStatus"></span>
-        </h3>
-
 <!--    Таблица интерфейсов-->
         <div v-if="interfaces.length" class="table-responsive-lg">
-        <table class="table head-padding">
-          <thead>
-            <tr>
-              <th scope="col"></th>
-              <th scope="col" style="text-align: center">Порт</th>
-              <th scope="col" style="text-align: center">Статус</th>
-              <th scope="col">Описание</th>
-              <th scope="col">
-                  <a style="cursor: pointer" class="text-decoration-none"
-                     @click="toggleInterfacesWithVlans">
-                      <span v-if="withVlans">NO VLAN's</span>
-                      <span v-else>+ VLAN's</span>
-                  </a>
-              </th>
-            </tr>
-          </thead>
-          <tbody style="vertical-align: middle">
+          <table class="table head-padding">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col" style="text-align: center">Порт</th>
+                <th scope="col" style="text-align: center">Статус</th>
+                <th scope="col">Описание</th>
+                <th scope="col">
+                    <a style="cursor: pointer" class="text-decoration-none"
+                       @click="toggleInterfacesWithVlans">
+                        <span v-if="withVlans">NO VLAN's</span>
+                        <span v-else>+ VLAN's</span>
+                    </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody style="vertical-align: middle">
 
-          <template v-for="_interface in interfaces">
-              <DetailInterfaceInfo
-                      @find-mac="findMacEvent"
-                      @session-mac="sessionEvent"
-                      :dynamic-opacity="dynamicOpacity"
-                      :interface="_interface"
-                      :permission-level="generalInfo.permission"
-                      :comment-object="commentObject"
-                      :register-comment-action="registerCommentAction"
-                      :port-action="portAction"
-                      :register-interface-action="registerAction"
-              />
-          </template>
+            <template v-for="_interface in interfaces">
+                <DetailInterfaceInfo
+                        @find-mac="findMacEvent"
+                        @session-mac="sessionEvent"
+                        :dynamic-opacity="dynamicOpacity"
+                        :interface="_interface"
+                        :permission-level="generalInfo.permission"
+                        :comment-object="commentObject"
+                        :register-comment-action="registerCommentAction"
+                        :port-action="portAction"
+                        :register-interface-action="registerAction"
+                />
+            </template>
 
-          </tbody>
-        </table>
+            </tbody>
+          </table>
         </div>
 
         <!--Собираем интерфейсы-->
-        <div v-else-if="collected === 'new'" class="py-5 d-flex justify-content-center"></div>
-
         <h1 v-else class="py-5" style="text-align: center;">
-            <span>Нет интерфейсов</span>
+            <span>Собираем интерфейсы</span>
         </h1>
         </div>
       </div>
@@ -232,6 +226,7 @@ import api_request from "../../api_request";
 
 import {HardwareStats, newHardwareStats} from "./hardwareStats";
 import {GeneralInfo, newGeneralInfo} from "./GeneralInfo";
+import InterfaceComment from "../../types/comments";
 
 export default {
   name: 'device',
@@ -260,13 +255,13 @@ export default {
 
   data() {
     return {
-      deviceStats: null as HardwareStats,
-      interfacesWorkload: null as InterfacesCount,
-      generalInfo: null as GeneralInfo,
+      deviceStats: {} as HardwareStats,
+      interfacesWorkload: {} as InterfacesCount,
+      generalInfo: {} as GeneralInfo,
       interfaces: [] as Array<Interface>,
 
-      timePassedFromLastUpdate: null,
-      collected: "new", // Дата и время сбора интерфейсов
+      timePassedFromLastUpdate: "",
+      collected: new Date(Date.now()) as Date, // Дата и время сбора интерфейсов
       seconds_pass: 0,
 
       deviceAvailable: -1, // Оборудование доступно?
@@ -280,18 +275,21 @@ export default {
         id: -1,
         text: "",
         user: "",
-        action: "",
+        action: "" as ("add" | "update" | "delete"),
         interface: "",
-        submit: null
+        submit: null as any
       },
 
-      find_mac_address: null,
-      session_control: {},
+      find_mac_address: "",
+      session_control: {
+        mac: "",
+        port: ""
+      },
 
       portAction: {
         name: "",
-        action: "",
-        submit: null,
+        action: "" as (string | null),
+        submit: null as any,
         port: "",
         desc: ""
       },
@@ -339,30 +337,27 @@ export default {
     },
 
     sessionEvent(mac: string, port: string) {
-      this.session_control = {
-        "mac": mac,
-        "port": port
-      }
+      this.session_control = {mac: mac, port: port}
     },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
     getStats(): void {
       let url = "/device/api/" + this.deviceName + "/stats"
       api_request.get(url).then(
-          (value: any) => {
-            this.deviceStats = newHardwareStats(value.data)
-          }
+          (value: any) => {this.deviceStats = newHardwareStats(value.data)},
+          (reason: any) => this.showToastError(reason)
       ).catch(
-          (reason: any) => {console.log(reason)}
+          (reason: any) => this.showToastError(reason)
       )
     },
 
     getInterfacesWorkload() {
       let url = "/device/api/workload/interfaces/" + this.deviceName
       api_request.get(url).then(
-          (value: any) => {this.interfacesWorkload = newInterfacesCount(value.data)}
+          (value: any) => {this.interfacesWorkload = newInterfacesCount(value.data)},
+          (reason: any) => this.showToastError(reason)
       ).catch(
-          (reason: any) => {console.log(reason)}
+          (reason: any) => this.showToastError(reason)
       )
     },
 
@@ -370,9 +365,10 @@ export default {
     getInfo() {
       let url = "/device/api/" + this.deviceName + "/info"
       api_request.get(url).then(
-          (value: any) => {this.generalInfo = newGeneralInfo(value.data)}
+          (value: any) => {this.generalInfo = newGeneralInfo(value.data)},
+          (reason: any) => this.showToastError(reason)
       ).catch(
-          (reason: any) => {console.log(reason)}
+          (reason: any) => this.showToastError(reason)
       )
     },
 
@@ -399,9 +395,10 @@ export default {
 
             // Через 4 сек запускаем метод снова
             if (infinity) setTimeout(this.getInterfaces, 4000);
-          }
+          },
+          (reason: any) => this.showToastError(reason)
       ).catch(
-          (reason: any) => {console.log(reason)}
+          (reason: any) => this.showToastError(reason)
       )
 
     },
@@ -421,24 +418,25 @@ export default {
      *
      * @param action Действие: ('add', 'update' или 'delete')
      * @param comment Объект комментария из БД ('id', 'text', 'username')
-     * @param interface_name Название интерфейса
+     * @param interfaceName Название интерфейса
      */
-    registerCommentAction (action, comment, interface_name) {
+    registerCommentAction(action: "add" | "update" | "delete", comment: InterfaceComment, interfaceName: string) {
       if (action === "add") {
         this.commentObject = {
+          id: -1,
           text: '',
           user: '',
           action: action,
-          interface: interface_name,
+          interface: interfaceName,
           submit: this.submitCommentAction
         }
-      } else if (comment && (action === "update" || action === "delete")) {
+      } else if (comment.id && (action === "update" || action === "delete")) {
         this.commentObject = {
           id: comment.id,
           text: comment.text,
           user: comment.user,
           action: action,
-          interface: interface_name,
+          interface: interfaceName,
           submit: this.submitCommentAction
         }
       }
@@ -446,13 +444,11 @@ export default {
 
     /**
      * Регистрируем действие над состоянием порта.
-     *
      * @param action Действие: ("up", "down", "reload")
      * @param port Название порта
      * @param description Описание порта
      */
-    registerAction (action, port, description) {
-
+    registerAction (action: "up" | "down" | "reload", port: string, description: string): void {
       if (["up", "down", "reload"].indexOf(action) < 0) {
         // Если неверное действие
         this.portAction = {
@@ -464,14 +460,12 @@ export default {
         }
       }
 
-      let actionName
+      let actionName: string
       if (action === "up") {
         actionName = "включить"
-      }
-      if (action === "down") {
+      } else if (action === "down") {
         actionName = "выключить"
-      }
-      if (action === "reload") {
+      } else {
         actionName = "перезагрузить"
       }
 
@@ -486,55 +480,35 @@ export default {
 
     /**
      * Подтверждаем действие над выбранным портом
-     *
-     * @param save_config Сохранять конфигурацию?
+     * @param saveConfig Сохранять конфигурацию?
      */
-    submitPortAction (save_config) {
-      let toastInfo = this.toastInfo
-      let toast = this.toastObject
-
+    submitPortAction(saveConfig: boolean): void {
       let data = {
         port: this.portAction.port,       // Сам порт
         desc: this.portAction.desc,       // Описание порта
         status: this.portAction.action,   // Что сделать с портом
-        save: save_config,                // Сохранить конфигурацию после действия?
+        save: saveConfig,                // Сохранить конфигурацию после действия?
       }
 
-      fetch(
-          "/device/api/" + this.deviceName + "/port-status",
-          {
-              method: 'post',
-              body: JSON.stringify(data),
-              credentials: "include",
-              headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRFToken": document.CSRF_TOKEN
-              }
-          }
-      )
-          .then(response => response.json())
+      api_request.post("/device/api/" + this.deviceName + "/port-status", data)
           .then(
-            respData => {
-              if (respData.detail) {
-                  console.log("error", respData)
-                  toastInfo.title= "ERROR"
-                  toastInfo.message = respData.detail
-                  toastInfo.color = "#cb0707"
-              } else {
-                  toastInfo.title= `Порт: ${respData.port}`
-
-                  if (respData.save) {
-                    toastInfo.message = `Состояние: ${respData.status.toUpperCase()}<br> Конфигурация была сохранена!`
-                  } else {
-                    toastInfo.message = `Состояние: ${respData.status.toUpperCase()}<br> Конфигурация НЕ была сохранена!`
-                  }
-
-                  toastInfo.color = data.save?"#198754":"#0d6efd"
-              }
-              toast.toast('show')
-            }
-          );
-
+              value => {
+                if (value.data.detail) {
+                    this.$toast.add({ severity: "error", summary: "ERROR", detail: value.data.detail, life: 5000 })
+                } else {
+                    this.$toast.add({
+                      severity: value.data.save?"success":"info",
+                      summary: `Порт: ${value.data.port}`,
+                      detail: `Состояние: ${value.data.status.toUpperCase()}<br> Конфигурация была сохранена!`,
+                      life: 5000
+                    })
+                }
+              },
+              (reason: any) => this.showToastError(reason)
+          )
+          .catch(
+              (reason: any) => this.showToastError(reason)
+          )
     },
 
     /**
@@ -542,45 +516,39 @@ export default {
      */
     submitCommentAction () {
       let new_comment = this.commentObject.text
-      let method
-      let data
-      let url
+      let method: "post" | "patch" | "delete"
+      let data: any
+      let url: string = "/device/api/comments"
+
       // Добавляем новый комментарий
       if (this.commentObject.action === "add" && new_comment.length) {
-        method = "POST"
-        url = "/device/api/comments"
+        method = "post"
         data = {
           device: this.deviceName,
           comment: new_comment,
           interface: this.commentObject.interface
         }
-      }
-      // Обновление комментария на порту
-      if (this.commentObject.action === "update" && new_comment.length) {
+      } else if (this.commentObject.action === "update" && new_comment.length) {
+        // Обновление комментария на порту
         url = "/device/api/comments/" + this.commentObject.id
-        method = "PATCH"
+        method = "patch"
         data = { comment: new_comment }
-      }
-      // Удаление комментария на порту
-      if (this.commentObject.action === "delete") {
+      } else {
+        // Удаление комментария на порту
         url = "/device/api/comments/" + this.commentObject.id
-        method = "DELETE"
+        method = "delete"
         data = {}
       }
 
-      fetch(
-          url,
-          {
-              method: method,
-              body: JSON.stringify(data),
-              credentials: "include",
-              headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRFToken": document.CSRF_TOKEN
-              }
-          }
-      );
-
+      api_request[method](url, data)
+          .then(
+              () => {
+                let message: string = method==="patch"?"обновлен":method==="post"?"создан":"удален"
+                this.$toast.add({ severity: "success", summary: "ОК", detail: "Комментарий был "+message, life: 5000 })
+              },
+              (reason: any) => this.showToastError(reason)
+          )
+          .catch((reason: any) => this.showToastError(reason))
     },
 
     /**
@@ -596,7 +564,7 @@ export default {
      * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
      */
     timer() {
-      this.seconds_pass = Math.round((Date.now() - this.collected) / 1000)
+      this.seconds_pass = Math.round((Date.now() - this.collected.getMilliseconds()) / 1000)
 
       let min_ = Math.floor(this.seconds_pass / 60);
       let sec = (this.seconds_pass - (min_ * 60)).toString()
@@ -620,6 +588,11 @@ export default {
 
       setTimeout(this.timer, 1000)
     },
+
+
+    showToastError(reason: any) {
+      this.$toast.add({ severity: "error", summary: "ERROR", detail: reason.response, life: 5000 })
+    }
 
   },
 }

@@ -57,7 +57,7 @@ let baseVisOptions = {
 
 class TracerouteNetwork {
     private readonly elemID: string
-    public options: Object
+    public options: any
 
     constructor(elementId: string) {
         this.elemID = elementId
@@ -73,7 +73,7 @@ class TracerouteNetwork {
 
     renderVisualData(nodes: Array<any>, edges: Array<any>, options=null): void {
         new vis.Network(
-            document.getElementById(this.elemID),
+            (<HTMLDivElement>document.getElementById(this.elemID)),
             {
                 nodes: nodes.map(value => {return {...value, title: this.textToDiv(value.title)}}),
                 edges: edges.map(value => {return {...value, title: this.textToDiv(value.title)}})

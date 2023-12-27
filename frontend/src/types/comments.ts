@@ -1,5 +1,6 @@
 class InterfaceComment {
         constructor(
+        public id: number,
         public user: string,
         public text: string,
         public createdTime: string,
@@ -11,7 +12,7 @@ function newInterfaceCommentsList(commentsData: Array<any>): Array<InterfaceComm
     let res: Array<InterfaceComment> = []
     for (const comment of commentsData) {
         res.push(
-            new InterfaceComment(comment.user, comment.text, comment.createdTime)
+            new InterfaceComment(comment.id, comment.user, comment.text, comment.createdTime)
         )
     }
     return res

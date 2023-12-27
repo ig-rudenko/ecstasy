@@ -115,7 +115,7 @@ export default {
 
   data() {
     return {
-      interfaces: null as Array<SearchMatch>,
+      interfaces: [] as Array<SearchMatch>,
       pattern: "" as string,
       lastPattern: "" as string,
       waitResult: false as boolean,
@@ -144,9 +144,7 @@ export default {
     /** Обновляем паттерн поиска */
     updateSearch(event: Event) { this.pattern = (<HTMLInputElement>event.target).value },
 
-    /** Выделяем тегом <mark></mark> часть в описании, которая совпадает с паттерном поиска
-     * @param {String} desc
-     */
+    /** Выделяем тегом <mark></mark> часть в описании, которая совпадает с паттерном поиска */
     markDescription(desc: string): string {
       return desc.replace(new RegExp(this.lastPattern, 'ig'), s => '<mark>'+s+'</mark>')
     }

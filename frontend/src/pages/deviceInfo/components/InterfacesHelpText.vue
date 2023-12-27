@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import {defineComponent, PropType} from "vue";
 
 export default defineComponent({
   props: {
@@ -48,7 +48,7 @@ export default defineComponent({
       auto_update: { required: true, type: Boolean },
       current_status: { required: true, type: Boolean },
       time_passed: { required: true, type: String, },
-      last_interface_update: { required: false, type: String },
+      last_interface_update: { required: false, type: null as any, default: null },
   },
   emits: ["update"]
 })

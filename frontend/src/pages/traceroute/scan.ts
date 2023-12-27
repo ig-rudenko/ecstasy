@@ -2,7 +2,7 @@ import api_request from "../../api_request";
 
 class ScanStatus {
     running: boolean
-    progress?: number
+    progress: number | null
     available: boolean
     private statusURL: string
     private runURL: string

@@ -8,7 +8,7 @@ class Device {
         public model: string,
         public group: string,
         public vendor: string,
-        public interfacesCount?: InterfacesCount
+        public interfacesCount: InterfacesCount | null
     ) {}
 }
 

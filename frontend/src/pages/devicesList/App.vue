@@ -138,7 +138,7 @@ export default {
       vendors: [] as Array<string>,
       selectedVendor: "",
       displayMode: "default",
-      chartData: null as Array<number>,
+      chartData: [] as Array<number>,
     }
   },
   methods: {
@@ -189,8 +189,8 @@ export default {
     },
 
     getUniqueVendorsGroups() {
-      let devices_groups = []
-      let devices_vendors = []
+      let devices_groups: Array<string> = []
+      let devices_vendors: Array<string> = []
       // Определяем список уникальных имен вендоров и групп
       for (let dev of this.devices) {
           if (dev.group && devices_groups.indexOf(dev.group) === -1){
@@ -215,7 +215,7 @@ export default {
 
     calculateInterfacesWorkload(devicesArray: Array<Device>) {
       if (this.displayMode!=='interfaces_loading' || !devicesArray.length) {
-        this.chartData = null
+        this.chartData = []
         return
       }
       let abonsUpWithDesc = 0
@@ -251,10 +251,10 @@ export default {
                     return false
                 }
 
-                if (search_str === "") return true;
+                if (search_str.length <= 0) return true;
 
-                if (search_str.match(/^::load([<>=])(\d+)/i) && elem.interfacesCount) {
-                  let match = search_str.match(/^::load([<>=])(\d+)/i)
+                let match = search_str.match(/^::load([<>=])(\d+)/i)
+                if (match && elem.interfacesCount) {
                   let load = match[2]
                   let operator = match[1]
 
