@@ -1,5 +1,9 @@
 import {InterfaceComment, newInterfaceCommentsList} from "./comments";
 
+class DeviceLink {
+    constructor(public deviceName: string, public url: string) {}
+}
+
 class Interface {
     constructor(
         public name: string,
@@ -7,7 +11,8 @@ class Interface {
         public description: string,
         public vlans: Array<number> = [],
         public comments: Array<InterfaceComment> = [],
-        public graphsLink: string = ""
+        public graphsLink: string = "",
+        public link?: DeviceLink,
     ) { }
 }
 
@@ -18,8 +23,10 @@ function newInterface(data: any): Interface {
 
     let vlans: Array<number> = []
     if (data["VLAN's"]) { vlans = Array.from(data["VLAN's"]).map(Number) }
+    let link
+    if (data.Link) { link = new DeviceLink(data.Link.device_name, data.Link.url) }
 
-    return new Interface(data.Interface, data.Status, data.Description, vlans, comments, data.GraphsLink || "")
+    return new Interface(data.Interface, data.Status, data.Description, vlans, comments, data.GraphsLink || "", link)
 }
 
 function newInterfacesList(data: Array<any>): Array<Interface> {

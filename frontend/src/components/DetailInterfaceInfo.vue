@@ -10,7 +10,7 @@
         <Comment :interface="interface" :register-comment-action="registerCommentAction"/>
 
         <!-- Ссылка на графики в Zabbix -->
-        <GraphsLink :interface="interface"></GraphsLink>
+        <GraphsLink :interface="interface"/>
       </div>
 
     </td>
@@ -24,10 +24,10 @@
         <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
           <span class="position-absolute top-50 start-0 translate-middle badge rounded-pill"
                 :style="portTypeStyles">
-            {{portType}}
+            <span v-if="complexInfo">{{complexInfo.portType}}</span>
           </span>
           <span class="position-relative" style="padding-left: 30px;">
-                {{ interface.Interface }}
+                {{ interface.name }}
           </span>
 
         </div>
@@ -50,53 +50,54 @@
 
 <!--          Статус порта-->
     <td data-bs-toggle="tooltip" data-bs-placement="top"
-        :style="statusStyle(interface.Status)"
-        :data-bs-title="intfStatusDesc(interface.Status)">
-        <span>{{formatStatus(interface.Status)}}</span>
+        :style="statusStyle(interface.status)"
+        :data-bs-title="intfStatusDesc(interface.status)">
+        <span>{{formatStatus(interface.status)}}</span>
     </td>
 
 <!--          Описание порта-->
     <td>
-        <ChangeDescription :interface="interface" />
+        <ChangeDescription :device-name="deviceName" :interface="interface" />
     </td>
 
 <!--          VLANS-->
-    <td v-if="interface['VLAN\'s']">{{ compressVlanRange(interface["VLAN's"]) }}</td>
+    <td v-if="interface.vlans.length">{{ compressVlanRange(interface.vlans) }}</td>
     <td v-else></td>
 
   </tr>
 
   <tr v-if="showDetailInfo">
 
-  <td colspan="5">
+  <td v-if="complexInfo" colspan="5">
 
 <!--      DETAIL PORT INFO  -->
-    <div v-if="portDetailInfo" class="container row py-3">
+    <div v-if="complexInfo.portDetailInfo" class="container row py-3">
 
       <div class="text-end">
           <span v-if="collectingDetailInfo" class="text-muted text-help" style="cursor: default">Обновляю...</span>
           <span v-else @click="getDetailInfo" class="text-muted text-help" style="cursor: pointer">Обновить</span>
       </div>
 
-      <div v-if="portDetailInfo.type==='html'" class="card shadow py-3" v-html="portDetailInfo.data"></div>
-      <div v-else-if="portDetailInfo.type==='text'" class="card shadow py-3" v-html="format_to_html(portDetailInfo.data)"></div>
+      <div v-if="complexInfo.portDetailInfo.type==='html'" class="card shadow py-3" v-html="complexInfo.portDetailInfo.data"></div>
+      <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="card shadow py-3" v-html="formatToHtml(complexInfo.portDetailInfo.data)"></div>
 
 <!--      MIKROTIK -->
-      <div v-else-if="portDetailInfo.type==='mikrotik'" class="card shadow py-3">
-        <MikrotikInterfaceInfo :data="portDetailInfo.data" :interface="interface"/>
+      <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="card shadow py-3">
+        <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
       </div>
 
 <!--      ADSL -->
-      <div v-else-if="portDetailInfo.type==='adsl'" class="card shadow py-3">
-        <ADSLInterfaceInfo :data="portDetailInfo.data" :interface="interface"/>
+      <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="card shadow py-3">
+        <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
       </div>
 
 <!--      GPON -->
-      <div v-else-if="portDetailInfo.type==='gpon'" class="card shadow py-3">
+      <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="card shadow py-3">
         <GPONInterfaceInfo
             @find-mac="findMacEvent"
             @session-mac="sessionEvent"
-            :data="portDetailInfo.data"
+            :device-name="deviceName"
+            :gpon-data="complexInfo.portDetailInfo.data"
             :permission-level="permissionLevel"
             :register-comment-action="registerCommentAction"
             :register-interface-action="registerInterfaceAction"
@@ -104,11 +105,12 @@
       </div>
 
 <!--      ELTEX OLT -->
-      <div v-else-if="portDetailInfo.type==='eltex-gpon'" class="card shadow py-3">
+      <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="card shadow py-3">
         <OLTInterfaceInfo
             @find-mac="findMacEvent"
             @session-mac="sessionEvent"
-            :data="portDetailInfo.data"
+            :device-name="deviceName"
+            :data="complexInfo.portDetailInfo.data"
             :permission-level="permissionLevel"
             :register-interface-action="registerInterfaceAction"
             :interface="interface" />
@@ -117,13 +119,13 @@
     </div>
 
 <!--      ANOTHER INFO  -->
-    <div class="container row py-3">
+    <div v-if="complexInfo" class="container row py-3">
 
       <div class="col-auto">
 
 <!--        BUTTON-->
 <!--        Конфигурация порта-->
-        <div v-if="portConfig && portConfig.length">
+        <div v-if="complexInfo.portConfig.length">
           <button type="button"
                   @click="portDetailMenu='portConfig'"
                   :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
@@ -134,7 +136,7 @@
 
 <!--        BUTTON-->
 <!--        Ошибки на порту-->
-        <div v-if="portErrors && portErrors.length">
+        <div v-if="complexInfo.portErrors.length">
           <button type="button"
                   @click="portDetailMenu='portErrors'"
                   :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
@@ -145,7 +147,7 @@
 
 <!--        BUTTON-->
 <!--        Диагностика кабеля-->
-        <div v-if="hasCableDiag">
+        <div v-if="complexInfo.hasCableDiag">
           <button type="button"
                   @click="portDetailMenu='cableDiag'"
                   :class="portDetailMenu==='cableDiag'?['btn', 'active']:['btn']">
@@ -159,8 +161,8 @@
 <!--      Конфигурация порта -->
       <div v-show="portDetailMenu==='portConfig'" class="col-md">
 
-        <div v-if="portConfig!==null" class="card shadow" style="padding: 2rem;">
-          <span v-html="format_to_html(portConfig)" style="font-family: monospace"></span>
+        <div v-if="complexInfo.portConfig.length>0" class="card shadow" style="padding: 2rem;">
+          <span v-html="formatToHtml(complexInfo.portConfig)" style="font-family: monospace"></span>
         </div>
 
         <div v-else class="d-flex justify-content-center">
@@ -171,8 +173,8 @@
 <!--      Ошибки на порту -->
       <div v-show="portDetailMenu==='portErrors'" class="col-md">
 
-        <div v-if="portErrors!==null" class="card shadow" style="padding: 2rem;">
-          <span v-html="format_to_html(portErrors)" style="font-family: monospace"></span>
+        <div v-if="complexInfo.portErrors.length>0" class="card shadow" style="padding: 2rem;">
+          <span v-html="formatToHtml(complexInfo.portErrors)" style="font-family: monospace"></span>
         </div>
 
         <div v-else class="d-flex justify-content-center">
@@ -184,8 +186,8 @@
 <!--      Диагностика кабеля -->
       <div v-show="portDetailMenu==='cableDiag'" class="col-md">
 
-        <div v-if="hasCableDiag" class="card shadow" style="padding: 2rem;">
-          <CableDiag :port="interface.Interface"/>
+        <div v-if="complexInfo.hasCableDiag" class="card shadow" style="padding: 2rem;">
+          <CableDiag :port="interface.name"/>
         </div>
 
       </div>
@@ -193,67 +195,58 @@
 
 
 <!--      МАС-->
-    <div v-if="MACs && MACs.count > 0" class="container">
-      <span>Всего: {{MACs.count}}</span>
+    <div v-if="MACs.length > 0" class="container">
+      <span>Всего: {{MACs.length}}</span>
 
-      <Pagination v-bind:p-object="pagination"/>
+      <Pagination :p-object="pagination"/>
 
       <div class="table-responsive-lg">
-      <div class="text-end">
-          <span v-if="collectingMACs" class="text-muted text-help" style="cursor: default">Обновляю...</span>
-          <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+        <div class="text-end">
+            <span v-if="collectingMACs" class="text-muted text-help" style="cursor: default">Обновляю...</span>
+            <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th></th>
+              <th scope="col">VLAN</th>
+              <th scope="col">MAC</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-macs">
+
+            <tr v-for="mac in macsPage">
+                <td></td>
+
+                <td style="font-family: monospace; font-size: x-large;">
+                    <span :id="mac.mac" :title="mac.vlanName" style="cursor: help; font-family: monospace;">{{mac.vlanID}}</span>
+                </td>
+
+                <td class="mac-line" style="font-family: monospace; font-size: x-large;">
+                    <span @click="findMacEvent(mac.mac)" class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
+                        {{mac.mac}}
+                        <svg class="bi me-2" width="24" height="24" role="img"><use xlink:href="#search-icon"></use></svg>
+                    </span>
+                </td>
+
+                <td>
+                  <button @click="sessionEvent(mac.mac, interface.name)" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bras-session-modal">
+                    BRAS
+                  </button>
+                </td>
+            </tr>
+
+          </tbody>
+        </table>
       </div>
 
-      <table class="table">
-        <thead>
-          <tr>
-            <th></th>
-            <th scope="col">VLAN</th>
-            <th scope="col">MAC</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody-macs">
-
-          <tr v-for="mac in macsPage">
-              <td></td>
-
-              <td style="font-family: monospace; font-size: x-large;">
-                  <span :id="mac.mac" :title="mac.vlanName"
-                        style="cursor: help; font-family: monospace;">
-                      {{mac.vlanID}}
-                  </span>
-              </td>
-
-              <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                  <span
-                      @click="findMacEvent(mac.mac)"
-                      class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC"
-                      data-bs-toggle="modal" data-bs-target="#modal-find-mac">
-                      {{mac.mac}}
-                      <svg class="bi me-2" width="24" height="24" role="img">
-                          <use xlink:href="#search-icon"></use>
-                      </svg>
-                  </span>
-              </td>
-
-              <td>
-                <button @click="sessionEvent(mac.mac, interface.Interface)" type="button" class="btn btn-outline-primary"
-                        data-bs-toggle="modal" data-bs-target="#bras-session-modal">
-                  BRAS
-                </button>
-              </td>
-          </tr>
-
-        </tbody>
-      </table>
-      </div>
-
-      <Pagination v-bind:p-object="pagination"/>
+      <Pagination :p-object="pagination"/>
 
     </div>
 
-    <div v-else-if="MACs && MACs.count === 0" class="container">
+    <div v-else-if="MACs.length === 0" class="container">
       <div class="text-end">
           <span v-if="collectingMACs" class="text-muted text-help">Обновляю...</span>
           <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
@@ -271,8 +264,9 @@
 </template>
 
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "./Comment.vue";
@@ -283,39 +277,15 @@ import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
 import GraphsLink from "../pages/deviceInfo/components/GraphsLink.vue";
+import Interface from "../types/interfaces";
+import InterfaceComment from "../types/comments";
+import Paginator from "../types/paginator";
+import {ComplexInterfaceInfo} from "../pages/deviceInfo/detailInterfaceInfo";
+import api_request from "../api_request";
+import {AxiosResponse} from "axios";
+import MacInfo from "../types/mac";
 
 export default defineComponent({
-  data() {
-    return {
-      showDetailInfo: false,
-      portDetailMenu: null,
-      MACs: null,
-      collectingMACs: false,
-      portDetailInfo: null,
-      collectingDetailInfo: false,
-      portType: null,
-      portConfig: null,
-      portErrors: null,
-      cableDiag: null,
-      hasCableDiag: false,
-
-      pagination: {
-        count: 0,
-        page: 0,
-        rows_per_page: 20,
-        next_page: null,
-      },
-    }
-  },
-  props: {
-    interface: {required: true},
-    permissionLevel: {required: true, type: Number},
-    commentObject: {required: true},
-    registerCommentAction: {required: true, type: Function},
-    portAction: {required: true},
-    registerInterfaceAction: {required: true, type: Function},
-    dynamicOpacity: {required: true, type: {"opacity": Number}},
-  },
   components: {
     GraphsLink,
     Pagination,
@@ -329,38 +299,70 @@ export default defineComponent({
     MikrotikInterfaceInfo,
   },
 
+  emits: ["find-mac", "session-mac"],
+
+  props: {
+    deviceName: {required: true, type: String},
+    interface: {required: true, type: Object as PropType<Interface>},
+    permissionLevel: {required: true, type: Number},
+    registerCommentAction: {
+      required: true,
+      type: Function as PropType<(action: "add"|"update"|"delete", comment: InterfaceComment, interfaceName: string) => void>
+    },
+    registerInterfaceAction: {
+      required: true,
+      type: Function as PropType<(action: "up"|"down"|"reload", port: string, description: string) => void>
+    },
+    dynamicOpacity: {required: true, type: Object as PropType<{opacity: Number}>},
+  },
+
+  data() {
+    return {
+      showDetailInfo: false,
+      portDetailMenu: "" as (""|"portConfig"|"portErrors"|"cableDiag"),
+      MACs: [] as MacInfo[],
+      collectingMACs: false,
+
+      complexInfo: null as ComplexInterfaceInfo|null,
+      collectingDetailInfo: false,
+
+      pagination: new Paginator(0, 0, 20),
+    }
+  },
+
   computed: {
-    interfaceStyles: function () {
+    interfaceStyles(): any {
       if (this.showDetailInfo) return {"background-color": "#e8efff"};
       return this.dynamicOpacity
     },
-    interfaceClasses: function () {
+    interfaceClasses(): string[] {
       if (this.showDetailInfo) return ["shadow", "sticky-top"];
       return []
     },
-    portTypeStyles: function () {
+    portTypeStyles() {
       let styles = {"font-size": "0.6rem"}
 
-      if (!this.portType) return styles;
+      if (!this.complexInfo?.portType) return styles;
 
-      if (this.portType === "COPPER") {
+      let type_: string = this.complexInfo.portType
+
+      if (type_ === "COPPER") {
         styles["background-color"] = "#b87333"
-      } else if (this.portType === "SFP") {
+      } else if (type_ === "SFP") {
         styles["background-color"] = "#3e6cff"
-      } else if (this.portType.includes("COMBO")) {
+      } else if (type_.includes("COMBO")) {
         styles["background-color"] = "#8133b8"
-      } else if (this.portType === "WIRELESS") {
+      } else if (type_ === "WIRELESS") {
         styles["background-color"] = "#00c191"
       }
       return styles
     },
 
-    macsPage: function () {
+    macsPage() {
         // Обрезаем по размеру страницы
-
-        return this.MACs.result.slice(
-            this.pagination.page * this.pagination.rows_per_page,
-            (this.pagination.page + 1) * this.pagination.rows_per_page
+        return this.MACs.slice(
+            this.pagination.page * this.pagination.rowsPerPage,
+            (this.pagination.page + 1) * this.pagination.rowsPerPage
         )
     }
 
@@ -368,123 +370,104 @@ export default defineComponent({
 
   methods: {
 
-    findMacEvent: function (mac) {
+    findMacEvent(mac: string) {
       this.$emit("find-mac", mac)
     },
 
-    sessionEvent: function (mac, port) {
+    sessionEvent(mac: string, port: string) {
       this.$emit("session-mac", mac, port)
     },
 
     /**
      * Превращаем строку в html, для корректного отображения
      *
-     * @param string Строка, для форматирования.
+     * @param str Строка, для форматирования.
      * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
      */
-    format_to_html: function (string) {
-
+    formatToHtml(str: string): string {
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
-
-      string = string.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return string
+      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+      return str
     },
 
-    formatStatus: function (status) {
+    formatStatus(status: string): string {
       if (status === "dormant") return "activating..."
       return status
     },
 
-    toggleDetailInfo: async function() {
+    toggleDetailInfo() {
       this.showDetailInfo = !this.showDetailInfo
-
       if (!this.showDetailInfo) return
-
-      await this.getDetailInfo()
-      await this.getMacs()
+      this.getDetailInfo()
+      this.getMacs()
     },
 
-    getMacs: async function() {
+    getMacs() {
       if (!this.showDetailInfo) return
-
-      try {
-        this.collectingMACs = true
-        const response = await fetch(
-            "/device/api/" + document.deviceName + "/macs?port=" + this.interface.Interface,
-            {method: "get"}
-        )
-        this.MACs = await response.json()
-
-        this.pagination.count = this.MACs.count
-
-      } catch (err) {
-        console.log(err)
-      }
-      this.collectingMACs = false
+      this.collectingMACs = true
+      api_request.get("/device/api/" + this.deviceName + "/macs?port=" + this.interface.name)
+          .then(
+              (value: AxiosResponse<{result: MacInfo[], count: number }>) => {
+                this.MACs = value.data.result;
+                this.pagination.count = value.data.count
+                this.collectingMACs = false;
+              },
+              () => {this.collectingMACs = false;}
+          )
+          .catch(() => {this.collectingMACs = false;})
     },
 
-    getDetailInfo: async function() {
+    getDetailInfo() {
       if (!this.showDetailInfo) return
 
-      try {
-        this.collectingDetailInfo = true
-        const response = await fetch(
-            "/device/api/" + document.deviceName + "/interface-info?port=" + this.interface.Interface,
-            {method: "get"}
-        )
-        let data = await response.json()
-        console.log(data)
-
-        this.portErrors = data.portErrors
-        this.portConfig = data.portConfig
-        this.portType = data.portType
-        this.portDetailInfo = data.portDetailInfo
-        this.hasCableDiag = data.hasCableDiag
-
-      } catch (err) {
-        console.log(err)
-      }
-      this.collectingDetailInfo = false
+      api_request.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
+          .then(
+              (value: AxiosResponse<ComplexInterfaceInfo>) => {
+                this.complexInfo = value.data;
+                this.collectingDetailInfo = false
+              },
+              () => {this.collectingDetailInfo = false}
+          )
+          .catch(() => {this.collectingDetailInfo = false})
     },
 
-
-    intfStatusDesc: function (status) {
+    intfStatusDesc(status: string): string {
       if (status === "dormant") {
         return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
       }
       if (status === "notPresent") {
         return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)"
       }
+      return ""
     },
 
     /**
      * Вычисляем цвет статуса порта
-     *
      * @param status Статус порта
      * @returns {{"background-color": string, width: string, "text-align": string, "opacity": number}}
      */
-    statusStyle: function (status) {
+    statusStyle(status: string): any {
       status = status.toLowerCase()
-      let color = function () {
+      let color = () => {
         if (status === "admin down") return "#ffb4bb"
         if (status === "notpresent") return "#c1c1c1"
         if (status === "dormant") return "#ffe389"
         if (status !== "down") return "#22e58b"
       }
-      let base_style = {
+      let baseStyle = {
         'width': '150px',
         'text-align': 'center',
         'background-color': color()
       }
-      return Object.assign({}, this.dynamicOpacity, base_style)
+      return Object.assign({}, this.dynamicOpacity, baseStyle)
     },
 
-    compressVlanRange(list) {
+    compressVlanRange(list: number[]): string {
       if (!list || !list.length) return "";
 
       // сортируем список по возрастанию
-      list.sort((a, b) => a - b);
+      list.sort((a: number, b: number) => a - b);
       // инициализируем пустую строку для результата
       let result = "";
       // инициализируем начальное и конечное значение диапазона

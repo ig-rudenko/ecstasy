@@ -47,8 +47,15 @@
 
 </template>
 
-<script>
-import api_request from "../../../api_request.ts";
+<script lang="ts">
+import api_request from "../../../api_request";
+import {AxiosResponse} from "axios";
+
+interface UserAction {
+  action: string
+  time: string
+  user: string
+}
 
 export default {
   name: "UserActionsButton",
@@ -57,7 +64,7 @@ export default {
   },
   data() {
     return {
-      actions: null,
+      actions: [] as UserAction[],
       error: {
         status: null,
         msg: null,
@@ -68,7 +75,7 @@ export default {
   mounted() {
     if (!this.actions) {
       api_request.get("/device/api/"+this.deviceName+"/actions").then(
-          resp => {this.actions = resp.data}
+          (resp: AxiosResponse<UserAction[]>) => {this.actions = resp.data}
       ).catch(
           reason => {
             this.error.status = reason.response.status;
@@ -79,9 +86,8 @@ export default {
   },
 
   methods: {
-    formatActionPrefix(action) {
+    formatActionPrefix(action: string): string {
       let prefix = ""
-
       // Статус порта
       if (action.match("up port")) {
         prefix = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="green" class="me-2" viewBox="0 0 16 16">
@@ -115,10 +121,10 @@ export default {
       return prefix
     },
 
-    formatTime(datetime) {
+    formatTime(datetime: string): string {
       const date = new Date(datetime)
       // Make a fuzzy time
-      let delta = Math.round((+new Date - date) / 1000);
+      let delta = Math.round((Date.now() - date.getMilliseconds()) / 1000);
       let minute = 60,
           hour = minute * 60;
       let fuzzy = "";
@@ -143,7 +149,6 @@ export default {
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
-            timezone: 'UTC'
           }
       )
 

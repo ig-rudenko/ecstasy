@@ -42,15 +42,12 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import {defineComponent, PropType} from "vue";
 import Paginator from "../types/paginator";
 
 export default defineComponent({
   props: {
-    pObject: {
-      required: true,
-      type: Paginator,
-    }
+    pObject: {required: true, type: Object as PropType<Paginator>}
   },
   methods: {
     goToPage: function (num: number) {

@@ -128,7 +128,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
-        <button type="button" class="btn btn-danger" @click="deleteFile(selectedFile)" data-bs-dismiss="modal">Удалить</button>
+        <button v-if="selectedFile" type="button" class="btn btn-danger" @click="deleteFile(selectedFile)" data-bs-dismiss="modal">Удалить</button>
       </div>
     </div>
   </div>
@@ -144,35 +144,63 @@
 
 </template>
 
-<script>
-import Dialog from "primevue/dialog/Dialog.vue";
+<script lang="ts">
 import {defineComponent} from "vue";
+import {AxiosResponse} from "axios";
+import Dialog from "primevue/dialog/Dialog";
 
 import ConfigFileDiff from "../pages/deviceInfo/components/ConfigFileDiff.vue";
+import api_request from "../api_request";
+
+
+interface ConfigFile {
+  name: string
+  size: number,
+  modTime: string,
+  content?: string,
+  display?: boolean
+}
+
+
+class CollectNewConfig {
+  constructor(
+      public active: boolean = false,
+      public status: "success"|"error" = "success",
+      public display: boolean = false,
+      public text: string = ""
+  ) {}
+  setFree() {
+    this.display = true
+    this.active = false
+  }
+}
+
 
 export default defineComponent({
   name: "ConfigFiles",
+
   components: {
     Dialog,
     ConfigFileDiff,
   },
+
+  props: {
+    deviceName: {required: true, type: String},
+  },
+
   data() {
     return {
-      files: [{name: "", size: 0, modTime: "", content: ""}],
-      selectedFile: null,
-      deviceName: decodeURI(window.location.pathname).split('/').slice(-1).join(""),
-      collectNew: {
-        active: false,
-        status: "",
-        display: false,
-        text: ""
-      },
+      files: [] as ConfigFile[],
+      selectedFile: null as ConfigFile|null,
+      collectNew: new CollectNewConfig(),
       showDiffDialog: false,
     }
   },
-  async mounted() {
-    await this.getFiles()
+
+  mounted() {
+    this.getFiles()
   },
+
   computed: {
     alertClasses(){
       if (this.collectNew.status === "success"){
@@ -182,16 +210,16 @@ export default defineComponent({
       }
     }
   },
-  methods: {
 
-    fileIcon(file_name) {
-      if (file_name && file_name.endsWith(".txt")) {
+  methods: {
+    fileIcon(fileName: string): string {
+      if (fileName && fileName.endsWith(".txt")) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-text me-1" viewBox="0 0 16 16" style="cursor: pointer;">
                   <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"></path>
                   <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"></path>
                 </svg>`
       }
-      if (file_name && file_name.endsWith(".zip")) {
+      if (fileName && fileName.endsWith(".zip")) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-zip me-1" viewBox="0 0 16 16">
                   <path d="M5 7.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v.938l.4 1.599a1 1 0 0 1-.416 1.074l-.93.62a1 1 0 0 1-1.11 0l-.929-.62a1 1 0 0 1-.415-1.074L5 8.438V7.5zm2 0H6v.938a1 1 0 0 1-.03.243l-.4 1.598.93.62.929-.62-.4-1.598A1 1 0 0 1 7 8.438V7.5z"/>
                   <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1h-2v1h-1v1h1v1h-1v1h1v1H6V5H5V4h1V3H5V2h1V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
@@ -204,7 +232,7 @@ export default defineComponent({
               </svg>`
     },
 
-     formatBytes(bytes) {
+     formatBytes(bytes: number): string {
       let marker = 1024; // Измените на 1000 при необходимости
       let decimal = 1;
       let kiloBytes = marker; // Один килобайт - это 1024 байта
@@ -213,126 +241,83 @@ export default defineComponent({
       if (bytes < kiloBytes) return bytes + " Б";
       else if (bytes < megaBytes) return (bytes / kiloBytes).toFixed(decimal) + " КБ";
       else if (bytes < marker * megaBytes) return (bytes / megaBytes).toFixed(decimal) + " МБ";
+      return "1+ ГБ"
     },
 
     /**
      * Превращаем строку в html, для корректного отображения
-     *
-     * @param string Строка, для форматирования.
+     * @param str Строка, для форматирования.
      * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
      */
-    format_to_html: function (string) {
-
+    formatToHtml(str: string): string {
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
-
-      string = string.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return string
+      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+      return str
     },
 
-    async getFiles(){
-      try {
-        const response = await fetch(
-            "/device/api/" + this.deviceName + "/configs",
-            {
-              method: "GET",
-              credentials: "same-origin",
-            }
-        )
-        this.files = await response.json()
-
-      } catch (error) {
-        console.log(error)
-      }
+    getFiles(){
+      api_request.get("/device/api/" + this.deviceName + "/configs")
+          .then(
+              (value: AxiosResponse<ConfigFile[]>) => {
+                this.files = value.data
+              }
+          )
     },
 
-    async collectConfig(){
+    collectConfig(){
       // Это проверка для предотвращения множественных запросов к серверу.
       if (this.collectNew.active) return
 
-      try {
-        this.collectNew.active = true
-        const response = await fetch(
-            "/device/api/" + this.deviceName + "/collect-config",
-            {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "X-CSRFToken": document.CSRF_TOKEN
+      api_request.post("/device/api/" + this.deviceName + "/collect-config")
+          .then(
+              (value: AxiosResponse) => {
+                this.getFiles();
+                this.collectNew.status = "success";
+                this.collectNew.text = value.data.status;
+                this.collectNew.setFree();
               },
-            }
-        )
-
-        const data = await response.json()
-        if (response.ok) {
-          await this.getFiles()
-          this.collectNew.status = "success"
-          this.collectNew.text = data.status
-        } else {
-          this.collectNew.status = "error"
-          this.collectNew.text = data.error
-        }
-
-      } catch (error) {
-        console.log(error)
-        this.collectNew.status = "error"
-        this.collectNew.text = "Ошибка во время сбора новой конфигурации"
-        await this.getFiles()
-      }
-
-      this.collectNew.display = true
-      this.collectNew.active = false
-
+              (reason: any) => {
+                this.collectNew.status = "error";
+                this.collectNew.text = reason.response.data.error;
+                this.collectNew.setFree();
+              }
+          )
+          .catch(
+              () => {
+                this.collectNew.status = "error";
+                this.collectNew.text = "Ошибка во время сбора новой конфигурации";
+                this.collectNew.setFree();
+              }
+          )
     },
 
-    async deleteFile(file){
-      try {
-        const response = await fetch(
-            "/device/api/" + this.deviceName + "/config/" + file.name,
-            {
-              method: "DELETE",
-              credentials: "same-origin",
-              headers: {
-                "X-CSRFToken": document.CSRF_TOKEN
-              },
-            }
-        )
-
-        if (response.status === 204) {
-          await this.getFiles()
-        }
-
-      } catch (error) {
-        console.log(error)
-      }
+    deleteFile(file: ConfigFile){
+      api_request.delete("/device/api/" + this.deviceName + "/config/" + file.name)
+          .then(
+              (value: AxiosResponse) => {
+                if (value.status === 204) this.getFiles();
+              }
+          )
     },
 
-    async getFile(file) {
-      try {
-        const response = await fetch(
-            "/device/api/" + this.deviceName + "/config/" + file.name,
-            {method: "GET", credentials: "same-origin"}
-        )
-        // получаем blob из ответа
-        return await response.blob()
-      } catch (error) {
-        console.log(error)
-      }
-    },
-
-    async toggleFileDisplay(file) {
+    toggleFileDisplay(file: ConfigFile) {
       if (file.size > 1024 * 1024) return
 
       if (!file.content) {
-        let content = await this.getFile(file)
-        if (!content) return
-
-        file.content = this.formatConfigFile(await content.text())
+        api_request.get("/device/api/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
+            .then(
+                (value: AxiosResponse<Blob>) => {return value.data.text()}
+            )
+            .then(value => {
+              if (!value.length) return
+              file.content = this.formatConfigFile(value)
+            })
       }
       file.display = !file.display;
     },
 
-    formatConfigFile(content) {
+    formatConfigFile(content: string): string {
       let formattedContent = ""
       for (const line of content.split("\n")) {
         const formattedLine = line.replace(/^\s+|\s+$|(\r\n|\n|\r)/gm, "");
@@ -342,23 +327,21 @@ export default defineComponent({
       return formattedContent
     },
 
-    async downloadFile(file){
-
-       const blob = await this.getFile(file)
-
-       // создаем ссылку на файл из blob
-       const fileURL = URL.createObjectURL(blob);
-       // создаем элемент <a> с атрибутом href равным ссылке на файл
-       const link = document.createElement("a");
-       link.href = fileURL;
-       // задаем имя файла для загрузки (можно получить из ответа сервера)
-       link.download = file.name;
-       // добавляем элемент <a> в документ
-       document.body.appendChild(link);
-       // имитируем клик по элементу <a>
-       link.click();
-       // удаляем элемент <a> из документа
-       document.body.removeChild(link);
+    downloadFile(file: ConfigFile){
+      api_request.get("/device/api/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
+          .then((response) => {
+            // create file link in browser's memory
+            const href = URL.createObjectURL(response.data);
+            // create "a" HTML element with href to file & click
+            const link = document.createElement('a');
+            link.href = href;
+            link.setAttribute('download', 'file.pdf'); //or any other extension
+            document.body.appendChild(link);
+            link.click();
+            // clean up "a" element & remove ObjectURL
+            document.body.removeChild(link);
+            URL.revokeObjectURL(href);
+          });
     }
   }
 })

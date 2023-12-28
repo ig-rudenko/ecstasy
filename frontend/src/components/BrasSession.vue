@@ -33,16 +33,16 @@
 
 <!--        SESSIONS-->
         <div v-if="sessions">
-          <template v-if="sessions.BRAS1">
+          <template v-if="sessions[0]">
             <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS1</div></div>
-            <div class="card p-4" v-if="sessions.BRAS1.errors.length">{{sessions.BRAS1.errors}}</div>
-            <div class="card p-4" v-html="format_to_html(sessions.BRAS1.session)" style="font-family: monospace;"></div>
+            <div class="card p-4" v-if="sessions[0].errors.length">{{sessions[0].errors}}</div>
+            <div class="card p-4" v-html="formatToHtml(sessions[0].session)" style="font-family: monospace;"></div>
           </template>
 
-          <template v-if="sessions.BRAS2">
+          <template v-if="sessions[1]">
             <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS2</div></div>
-            <div class="card p-4" v-if="sessions.BRAS2.errors.length">{{sessions.BRAS2.errors}}</div>
-            <div class="card p-4" v-html="format_to_html(sessions.BRAS2.session)" style="font-family: monospace;"></div>
+            <div class="card p-4" v-if="sessions[1].errors.length">{{sessions[1].errors}}</div>
+            <div class="card p-4" v-html="formatToHtml(sessions[1].session)" style="font-family: monospace;"></div>
           </template>
         </div>
 <!--        LOADING SESSIONS-->
@@ -75,110 +75,94 @@
 
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
+import api_request from "../api_request";
+import {AxiosResponse} from "axios";
+
+class BrasData {
+  constructor(public session: string, public errors: string[]) {}
+}
 
 export default defineComponent({
   props: {
-    mac: {required: true, type: String, default: null},
-    port: {required: true, type: String, default: null}
+    deviceName: {required: true, type: String},
+    mac: {required: true, type: String},
+    port: {required: true, type: String}
   },
+  emits: ["closed"],
   data() {
     return {
       current_mac: "",
-      sessions: null,
-      show_bras: "bras1",
+      sessions: [] as BrasData[],
       cutSessionResult: null,
       cuttingNow: false,
       updating: false
     }
   },
-  async created() {
-    await this.getSessions()
+  created() {
+    this.getSessions()
   },
-  async updated() {
+  updated() {
     // Если МАС адрес остался прежним, то не обновляем информацию
     if (this.current_mac === this.mac) return
     this.current_mac = this.mac
-    await this.getSessions()
+    this.getSessions()
   },
 
   methods: {
     closed() {
-      this.sessions = null
-      this.show_bras = "bras1"
+      this.sessions = []
       this.cutSessionResult = null
       this.$emit("closed")
     },
-    async getSessions() {
-      let result = null
-      if (this.current_mac) {
-          try {
 
-            let url = "/device/api/session?mac=" + this.current_mac
-            this.updating = true
-            let response = await fetch(url);
-            console.log(response)
-            if (response.status === 200) {
-              result = await response.json()
-            }
-
-          } catch (err) {
-            console.log(err)
-          }
-      }
-      //setTimeout(this.getSessions, 5000)
-      this.updating = false
-      this.sessions = result
+    getSessions() {
+      if (!this.current_mac) return;
+      api_request.get("/device/api/session?mac=" + this.current_mac)
+          .then(
+              (value: AxiosResponse<any[]>) => {
+                this.updating = false
+                this.sessions = this.getBrasData(value.data)
+              }
+          )
     },
-    async cutSession() {
-      if (!this.current_mac) return
 
+    getBrasData(data: any): BrasData[] {
+      return [
+          new BrasData(data.BRAS1.session, data.BRAS1.errors),
+          new BrasData(data.BRAS2.session, data.BRAS2.errors),
+      ]
+    },
+
+    cutSession() {
+      if (!this.current_mac) return;
       this.cuttingNow = true
-
-      try {
-
-        let data = {
-          "device": document.deviceName,
-          "port": this.port,
-          "mac": this.current_mac
-        }
-
-        let result = await fetch(
-            "/device/api/cut-session",
-            {
-              method: "post",
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "X-CSRFToken": document.CSRF_TOKEN
-              },
-              body: JSON.stringify(data)
-            }
-        );
-        console.log(data)
-        if (result.status === 200) {
-          this.cutSessionResult = await result.json()
-        }
-
-      } catch (err) {
-        console.log(err)
+      let data = {
+        device: this.deviceName,
+        port: this.port,
+        mac: this.current_mac
       }
-      this.cuttingNow = false
+      api_request.post("/device/api/cut-session", data)
+          .then(
+              (value: AxiosResponse<any>) => {this.cutSessionResult = value.data; this.cuttingNow = false},
+              () => {this.cuttingNow = false}
+          )
+          .catch(() => {this.cuttingNow = false})
     },
+
     /**
      * Превращаем строку в html, для корректного отображения
-     *
-     * @param string Строка, для форматирования
+     * @param str Строка, для форматирования
      * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
      */
-    format_to_html: function (string) {
-      if (!string) return "";
+    formatToHtml(str: string): string {
+      if (!str) return "";
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
 
-      string = string.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return string
+      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+      return str
     },
   }
 

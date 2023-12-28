@@ -1,11 +1,11 @@
 <template>
 <div class="container">
     <button type="button" class="btn btn">
-      Всего <span class="badge text-bg-primary">{{ data.total_count }}</span>
+      Всего <span class="badge text-bg-primary">{{ gponData.total_count }}</span>
     </button>
 
     <button type="button" class="btn btn">
-      Online <span class="badge text-bg-success">{{ data.online_count }}</span>
+      Online <span class="badge text-bg-success">{{ gponData.online_count }}</span>
     </button>
     <br>
     <br>
@@ -24,11 +24,12 @@
         </tr>
       </thead>
       <tbody>
-        <template v-for="line in data.onts_lines" >
+        <template v-for="line in gponData.onts_lines" >
 
           <ONTDetailInfo
               @find-mac="findMacEvent"
               @session-mac="sessionEvent"
+              :device-name="deviceName"
               :line="line"
               :interface="interface"
               :permission-level="permissionLevel"
@@ -44,40 +45,49 @@
 
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
 import ONTDetailInfo from "./ONTDetailInfo.vue";
+import Interface from "../types/interfaces";
+import InterfaceComment from "../types/comments";
+
+type ontData = {
+  total_count: string,
+  online_count: string,
+  onts_lines: any[]
+}
 
 export default defineComponent({
+  components: {
+    ONTDetailInfo
+  },
+  emits: ["find-mac", "session-mac"],
   props: {
+    interface: {required: true, type: Object as PropType<Interface>},
+    deviceName: {required: true, type: String},
     permissionLevel: {required: true, type: Number},
-    registerCommentAction: {required: true, type: Function},
-    registerInterfaceAction: {required: true, type: Function},
-    data: {
+    gponData: {required: true, type: Object as PropType<ontData>},
+    registerCommentAction: {
       required: true,
-      type: {
-        total_count: String,
-        online_count: String,
-        onts_lines: []
-      }
+      type: Function as PropType<(action:("add"|"update"|"delete"), comment: InterfaceComment, interfaceName: string) => void>
     },
-    interface: {required: true, type: Object}
+    registerInterfaceAction: {
+      required: true,
+      type: Function as PropType<(action:("up"|"down"|"reload"), port: string, description: string) => void>
+    }
   },
   data() {
     return {
       showDetailInfo: false
     }
   },
-  components: {
-    ONTDetailInfo
-  },
   methods: {
 
-    findMacEvent: function (mac) {
+    findMacEvent(mac: string) {
       this.$emit("find-mac", mac)
     },
 
-    sessionEvent: function (mac, port) {
+    sessionEvent(mac: string, port: string) {
       this.$emit("session-mac", mac, port)
     },
 

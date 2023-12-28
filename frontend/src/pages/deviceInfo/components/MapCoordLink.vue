@@ -16,7 +16,7 @@ import {defineComponent, PropType} from "vue";
 
 export default defineComponent({
   props: {
-      coords: { required: true, type: [] as PropType<Array<string>> }
+      coords: { required: true, type: [] as PropType<[string, string]> }
   }
 })
 </script>

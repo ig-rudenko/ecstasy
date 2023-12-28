@@ -89,34 +89,34 @@
 </div>
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+import Interface from "../types/interfaces";
+import api_request from "../api_request";
+
+type xDLSData = {
+  profile_name: string,
+  first_col: string[],
+  streams: [
+    {
+      name: string,
+      down: { color: string, value: string },
+      up: { color: string, value: string }
+    }
+  ],
+  profiles: Array<[string, string]>
+}
 
 export default defineComponent({
   props: {
-    data: {
-      required: true,
-      type: {
-        profile_name: String,
-          first_col: [String],
-          streams: [
-              {
-                name: String,
-                down: { color: String, value: String },
-                up: { color: String, value: String }
-              }
-          ],
-          profiles: [
-              [ String, String]
-          ]
-      }
-    },
-    interface: {required: true, type: Object}
+    deviceName: {required: true, type: String},
+    data: {required: true, type: Object as PropType<xDLSData>},
+    interface: {required: true, type: Object as PropType<Interface>}
   },
   data() {
     return {
-      changeSuccess: null,
-      changeText: null
+      changeSuccess: null as (boolean|null),
+      changeText: ""
     }
   },
 
@@ -128,38 +128,29 @@ export default defineComponent({
   },
 
   methods: {
-    async changePortProfile(profile_index, profile_name) {
+
+    changePortProfile(profile_index: string, profile_name: string) {
 
       let data = {
-          port: this.interface.Interface,
+          port: this.interface.name,
           index: profile_index
       }
 
-      try {
-        let resp = await fetch(
-          "/device/api/" + document.deviceName + "/change-dsl-profile",
-          {
-              method: "post",
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "X-CSRFToken": document.CSRF_TOKEN
+      api_request.post("/device/api/" + this.deviceName + "/change-dsl-profile", data)
+          .then(
+              () => {
+                this.changeSuccess = true
+                this.changeText = 'Профиль был изменен на ' + profile_name
               },
-              body: JSON.stringify(data)
-          }
-        )
-
-        if (resp.status === 200) {
-          this.changeSuccess = true
-          this.changeText = 'Профиль был изменен на ' + profile_name
-        } else {
-          this.changeSuccess = false
-          this.changeText = 'Ошибка'
-        }
-
-      } catch (err) {
-        console.log(err)
-      }
+              () => {
+                this.changeSuccess = false
+                this.changeText = 'Ошибка'
+              }
+          )
+          .catch(() => {
+            this.changeSuccess = false
+            this.changeText = 'Ошибка'
+          })
     }
   }
 })

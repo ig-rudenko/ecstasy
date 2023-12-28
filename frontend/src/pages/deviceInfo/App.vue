@@ -93,7 +93,7 @@
 
 <!--    Список конфигураций-->
     <div v-show="configFiles.display">
-        <ConfigFiles/>
+        <ConfigFiles :device-name="deviceName"/>
     </div>
 
 <!--    Загруженность интерфейсов-->
@@ -132,9 +132,7 @@
                         :dynamic-opacity="dynamicOpacity"
                         :interface="_interface"
                         :permission-level="generalInfo.permission"
-                        :comment-object="commentObject"
                         :register-comment-action="registerCommentAction"
-                        :port-action="portAction"
                         :register-interface-action="registerAction"
                 />
             </template>
@@ -158,7 +156,11 @@
 
     <FindMac :mac="find_mac_address"/>
 
-    <BrasSession @closed="session_control = {}" :mac="session_control.mac" :port="session_control.port" />
+    <BrasSession
+        @closed="sessionControl.display = false"
+        :device-name="generalInfo.deviceName"
+        :mac="sessionControl.mac"
+        :port="sessionControl.port" />
 
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
       <symbol id="search-icon">
@@ -281,9 +283,10 @@ export default {
       },
 
       find_mac_address: "",
-      session_control: {
+      sessionControl: {
         mac: "",
-        port: ""
+        port: "",
+        display: false,
       },
 
       portAction: {
@@ -302,10 +305,11 @@ export default {
   },
 
   computed: {
-    dynamicOpacity: function () {
+    dynamicOpacity(): {opacity: number} {
       if (this.deviceAvailable === -1 || this.seconds_pass >= 60) {
         return {'opacity': 0.6}
       }
+      return {'opacity': 1}
     },
   },
 
@@ -337,7 +341,7 @@ export default {
     },
 
     sessionEvent(mac: string, port: string) {
-      this.session_control = {mac: mac, port: port}
+      this.sessionControl = {mac: mac, port: port, display: true}
     },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
@@ -365,7 +369,7 @@ export default {
     getInfo() {
       let url = "/device/api/" + this.deviceName + "/info"
       api_request.get(url).then(
-          (value: any) => {this.generalInfo = newGeneralInfo(value.data)},
+          (value: any) => {this.generalInfo = newGeneralInfo(value.data); this.deviceName=this.generalInfo.deviceName},
           (reason: any) => this.showToastError(reason)
       ).catch(
           (reason: any) => this.showToastError(reason)

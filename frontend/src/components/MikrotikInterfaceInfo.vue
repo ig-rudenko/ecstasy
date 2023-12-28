@@ -23,49 +23,42 @@
 
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+import Interface from "../types/interfaces";
+import api_request from "../api_request";
+import {AxiosResponse} from "axios";
+
+interface Poe {
+  poeStatus: string
+  poeChoices: string[]
+}
 
 export default defineComponent({
   props: {
-    data: {required: true, type: {poeStatus: String, poeChoices: [String]}},
-    interface: {required: true, type: {Interface: String, Status: String, Description: String}},
+    deviceName: {required: true, type: String},
+    data: {required: true, type: Object as PropType<Poe>},
+    interface: {required: true, type: Object as PropType<Interface>},
   },
   data() {
     return {
       newPoeStatus: this.data.poeStatus,
-      poeChangeSuccess: null,
+      poeChangeSuccess: null as boolean|null,
       changingPoEStatusNow: false
     }
   },
   methods: {
-    async changePoEStatus() {
-      try {
-        this.changingPoEStatusNow = true
-        let resp = await fetch(
-            "/device/api/" + document.deviceName + "/set-poe-out",
-            {
-              method: "post",
-              headers: {
-                "X-CSRFToken": document.CSRF_TOKEN,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(
-                  {port: this.interface.Interface, status: this.newPoeStatus}
-              )
-            }
-        )
+    changePoEStatus() {
+      let data = {port: this.interface.name, status: this.newPoeStatus}
 
-        this.poeChangeSuccess = resp.status === 200;
-
-      } catch (err) {
-        console.log(err)
-        this.poeChangeSuccess = false
-      }
-
-      this.changingPoEStatusNow = false
-
+      this.changingPoEStatusNow = true
+      api_request.post("/device/api/" + this.deviceName + "/set-poe-out", data)
+          .then(
+              (value: AxiosResponse) => {
+                this.poeChangeSuccess = value.status === 200;
+                this.changingPoEStatusNow = false
+              }
+          )
     },
   }
 })

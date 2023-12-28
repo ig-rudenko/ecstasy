@@ -3,7 +3,7 @@
 
 <!--     ВКЛЮЧИТЬ ПОРТ -->
       <button type="button" class="btn text-success" style="height: 16px; font-size: 10px; padding: 0"
-             @click="portAction('up', interface.Interface, interface.Description)">
+             @click="portAction('up', interface.name, interface.description)">
           <span data-bs-toggle="modal" data-bs-target="#modal" style="padding: 2px 12px 6px 12px">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
               <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"></path>
@@ -13,7 +13,7 @@
 
 <!--     ВЫКЛЮЧИТЬ ПОРТ -->
       <button type="button" class="btn text-danger" style="height: 16px; font-size: 10px; padding: 0"
-             @click="portAction('down', interface.Interface, interface.Description)">
+             @click="portAction('down', interface.name, interface.description)">
           <span data-bs-toggle="modal" data-bs-target="#modal" style="height: 16px">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down-fill" viewBox="0 0 16 16">
               <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"></path>
@@ -24,7 +24,7 @@
 
 <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
   <button v-if="permissionLevel >= 1" type="button" class="btn btn-group" style="padding: 6px 6px 2px 6px"
-          @click="portAction('reload', interface.Interface, interface.Description)"
+          @click="portAction('reload', interface.name, interface.description)"
           data-bs-toggle="modal" data-bs-target="#modal">
 
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
@@ -36,15 +36,15 @@
 </template>
 
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+import Interface from "../types/interfaces";
 
 export default defineComponent({
   props: {
     permissionLevel: { required: true, type: Number },
-    showPortEnterLink: { required: false, type: Boolean, default: false },
-    interface: { required: true, type: Object },
-    portAction: { required: true, type: Function }
+    interface: { required: true, type: Object as PropType<Interface> },
+    portAction: { required: true, type: Function as PropType<(action: ("up"|"down"|"reload"), port: string, description: string) => void> }
   }
 })
 </script>

@@ -39,12 +39,12 @@
 
                   <div class="py-3">
   <!--                Картинка-->
-                    <img v-if="item.is_image" :src="item.url" height="80" alt="image">
+                    <img v-if="item.isImage" :src="item.url" height="80" alt="image">
   <!--                Другой файл-->
                     <i v-else :class="['bi', fileEarmarkClass(item.name)]" style="font-size: 80px"></i>
                   </div>
 
-                  <small>{{ parseDateTimeString(item.mod_time) }}</small>
+                  <small>{{ parseDateTimeString(item.modTime) }}</small>
 
                   <span @click="showDeleteFrom" class="btn delete-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
@@ -102,7 +102,7 @@
             </template>
 
     <!--Просмотр изображения-->
-            <a v-if="!editForm.show && currentItem.is_image" :href="currentItem.url" target="_blank">
+            <a v-if="!editForm.show && currentItem.isImage" :href="currentItem.url" target="_blank">
               <img class="media-image" :src="currentItem.url" alt="image">
             </a>
 
@@ -148,10 +148,10 @@ export default defineComponent({
   data() {
     return {
       items: [] as Array<MediaFileInfo>,
-      currentItem: null,
+      currentItem: null as (MediaFileInfo | null),
       editForm: {
         show: false,
-        itemIndex: null,
+        itemIndex: 0,
       },
       deleteForm: {
         show: false,

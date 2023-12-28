@@ -7,7 +7,7 @@ class ZabbixInfo {
 
 class GeneralInfo {
     constructor(
-        public coords: Array<string>,
+        public coords: [string, string],
         public deviceIP: string,
         public deviceName: string,
         public elasticStackLink: string,
@@ -25,7 +25,7 @@ function newZabbixInfo(data: any): ZabbixInfo {
 
 function newGeneralInfo(data: any): GeneralInfo {
     return new GeneralInfo(
-        Array.from(data.coords),
+        [data.coords[0], data.coords[1]],
         data.deviceIP,
         data.deviceName,
         data.elasticStackLink,

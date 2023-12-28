@@ -51,44 +51,48 @@
 
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
 import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue"
 import api_request from "../api_request";
+import Interface from "../types/interfaces";
+
+type ontData = {
+  total_count: number,
+  online_count: number,
+  onts_lines: any[]
+}
 
 export default defineComponent({
-  props: {
-    permissionLevel: {required: true, type: Number},
-    registerInterfaceAction: {required: true, type: Function},
-    data: {
-      required: true,
-      type: {
-        total_count: Number,
-        online_count: Number,
-        onts_lines: []
-      }
-    },
-    interface: {required: true, type: Object}
+  components: {
+    OLT_ONT_Detail_info,
   },
+  props: {
+    deviceName: {required: true, type: String},
+    permissionLevel: {required: true, type: Number},
+    data: {required: true, type: Object as PropType<ontData> },
+    interface: {required: true, type: Object as PropType<Interface>},
+    registerInterfaceAction: {
+      required: true,
+      type: Function as PropType<(action:("up"|"down"|"reload"), port: string, description: string) => void>
+    }
+  },
+
+  emits: ["find-mac", "session-mac"],
 
   data() {
     return {
       showDetailInfo: false,
       showSubscribersData: false,
-      subscribersData: null,
-      deviceName: document.deviceName,
+      subscribersData: {},
     }
-  },
-
-  components: {
-    OLT_ONT_Detail_info,
   },
 
   methods: {
 
     getSubscribersData() {
       if (!this.subscribersData) {
-        api_request.get("/gpon/api/subscribers-on-device/"+this.deviceName+"?port="+this.interface.Interface)
+        api_request.get("/gpon/api/subscribers-on-device/"+this.deviceName+"?port="+this.interface.name)
             .then(resp => {
               this.showSubscribersData = true;
               this.addSubscribersData(resp.data)
@@ -109,8 +113,8 @@ export default defineComponent({
       }
     },
 
-    findMacEvent: function (mac) { this.$emit("find-mac", mac) },
-    sessionEvent: function (mac, port) { this.$emit("session-mac", mac, port) },
+    findMacEvent(mac: string) { this.$emit("find-mac", mac) },
+    sessionEvent(mac: string, port: string) { this.$emit("session-mac", mac, port) },
 
   }
 })

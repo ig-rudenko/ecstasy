@@ -28,37 +28,42 @@
 
     </span>
 
-    <input type="text" v-model="new_desc" :class="inputClasses" style="min-width: 130px;">
+    <input type="text" v-model="newDesc" :class="inputClasses" style="min-width: 130px;">
     <div class="invalid-feedback">{{ errors }}</div>
 
   </div>
 </template>
 
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+import Interface from "../types/interfaces";
+import api_request from "../api_request";
+import {AxiosResponse} from "axios";
 
 export default defineComponent({
   props: {
-    interface: { required: true, type: Object }
+    deviceName: { required: true, type: String },
+    interface: { required: true, type: Object as PropType<Interface> }
   },
   data() {
     return {
       displayMode: true,
-      new_desc: this.interface.Description,
-      errors: null,
+      newDesc: this.interface.description,
+      errors: null as any,
       loading: false
     }
   },
   computed: {
-    dynamicDescription: function () {
-      if (!this.interface.Link) return this.interface.Description || "";
-      return this.interface.Description.replace(
-          new RegExp(this.interface.Link.device_name, 'ig'),
-          s => `<mark><a class="text-dark text-decoration-none" href="${this.interface.Link.url}">${s}</a></mark>`
+    dynamicDescription(): string {
+      if (!this.interface.link) return this.interface.description || "";
+
+      return this.interface.description.replace(
+          new RegExp(this.interface.link.deviceName, 'ig'),
+          s => `<mark><a class="text-dark text-decoration-none" href="${this.interface.link!.url}">${s}</a></mark>`
       )
     },
-    inputClasses: function () {
+    inputClasses(): string[] {
       let classes = ["form-control"]
       if (this.errors) { classes.push("is-invalid") }
       return classes
@@ -66,53 +71,33 @@ export default defineComponent({
   },
   methods: {
 
-    startEditDesc: function () {
-      this.new_desc = this.interface.Description
-      this.displayMode = false
+    startEditDesc(): void {
+      this.newDesc = this.interface.description;
+      this.displayMode = false;
     },
 
-    setDescription: async function () {
-
+    setDescription(): void {
       // Начинаем отправку
-      this.loading = true
-
-      try {
-        const response = await fetch(
-          "/device/api/" + document.deviceName + "/change-description",
-          {
-            method: "post",
-            headers: {
-              "X-CSRFToken": document.CSRF_TOKEN,
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                port: this.interface.Interface,
-                description: this.new_desc,
-            }),
-          }
-        );
-
-        // Получили ответ
-        this.loading = false
-        const data = await response.json()
-
-        if (response.status === 200) {
-
-          // Отображаем новое описание
-          this.interface.Description = data.description
-          // Выходим из режима редактирования
-          this.displayMode = true
-          // Ошибок нет
-          this.errors = null
-
-        } else {
-            this.errors = data.detail
-        }
-
-      } catch (err) {
-        console.log(err)
+      this.loading = true;
+      let data = {
+        port: this.interface.name,
+        description: this.newDesc,
       }
+      
+      api_request.post("/device/api/" + this.deviceName + "/change-description", data)
+          .then(
+              (value: AxiosResponse<{description: string}>) => {
+                // Отображаем новое описание
+                this.interface.description = value.data.description;
+                // Выходим из режима редактирования
+                this.displayMode = true;
+                // Ошибок нет
+                this.errors = null;
+                this.loading = false;
+              },
+              reason => {this.errors = reason.response.data?reason.response.data.detail:reason.response;this.loading = false;}
+          )
+          .catch(reason => {this.errors = reason.response.data?reason.response.data.detail:reason.response;this.loading = false;})
     },
   }
 })
