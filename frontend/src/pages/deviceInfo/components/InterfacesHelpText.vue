@@ -3,11 +3,11 @@
 
     <blockquote class="blockquote">
 
-        <p v-if="device_status === 1 && current_status && auto_update">
+        <p v-if="deviceStatus === 1 && currentStatus && autoUpdate">
           Актуальное состояние интерфейсов
         </p>
 
-        <div v-else-if="device_status === -1 && auto_update" style="text-align: center">
+        <div v-else-if="deviceStatus === -1 && autoUpdate" style="text-align: center">
           <div>
             Опрашиваем интерфейсы
           </div>
@@ -16,20 +16,20 @@
           </div>
         </div>
 
-        <p v-else-if="current_status && auto_update">
+        <p v-else-if="currentStatus && autoUpdate">
           Обновляем интерфейсы
         </p>
 
-        <p v-else-if="current_status">
-          Данные интерфейсы были опрошены <br>{{ time_passed }} назад
+        <p v-else-if="currentStatus">
+          Данные интерфейсы были опрошены <br>{{ timePassed }} назад
         </p>
 
         <p v-else>
-          Интерфейсы были взяты <br>@{{ last_interface_update || " которого не было" }}
+          Интерфейсы были взяты <br>@{{ lastInterfaceUpdate || " которого не было" }}
         </p>
     </blockquote>
 
-    <div v-if="!current_status">
+    <div v-if="!currentStatus">
       <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
          @click="$emit('update')">
           Посмотреть текущее состояние портов
@@ -40,15 +40,15 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
+import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
-      device_status: { required: true, type: Number},
-      auto_update: { required: true, type: Boolean },
-      current_status: { required: true, type: Boolean },
-      time_passed: { required: true, type: String, },
-      last_interface_update: { required: false, type: null as any, default: null },
+      deviceStatus: { required: true, type: Number},
+      autoUpdate: { required: true, type: Boolean },
+      currentStatus: { required: true, type: Boolean },
+      timePassed: { required: true, type: String, },
+      lastInterfaceUpdate: { required: false, type: null as any, default: null },
   },
   emits: ["update"]
 })

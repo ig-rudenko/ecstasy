@@ -91,8 +91,8 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
-import Interface from "../types/interfaces";
-import api_request from "../api_request";
+import Interface from "../../../types/interfaces";
+import api_request from "../../../api_request";
 
 type xDLSData = {
   profile_name: string,

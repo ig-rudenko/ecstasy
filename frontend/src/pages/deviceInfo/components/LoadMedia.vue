@@ -84,11 +84,13 @@
 </template>
 
 <script lang="ts">
+import {defineComponent} from "vue";
+
 import MediaPreview from "./MediaPreview.vue";
 import {MediaFile} from "../files";
 import api_request from "../../../api_request";
 
-export default {
+export default defineComponent({
   name: "LoadMedia",
   components: {MediaPreview},
   props: {
@@ -99,13 +101,13 @@ export default {
       files: [] as Array<MediaFile>,
 
       notification: {
-        type: null,
+        type: "",
         text: "",
       },
       loadingBar: {
         active: false,
         partWidth: 0,
-        progress: [],
+        progress: [] as {className: string}[],
       },
     }
   },
@@ -134,21 +136,23 @@ export default {
   methods: {
 
     addDragAndDropListeners(): void {
-      let container = document.querySelector("#drag-drop-area");
+      let container: Element|null = document.querySelector("#drag-drop-area");
+      if (!container) return;
       container.addEventListener("dragover", e => e.preventDefault());
       container.addEventListener("drop", (e) => this.addByDragAndDrop(<DragEvent>e));
     },
 
     addByDragAndDrop(e: DragEvent): void {
       e.preventDefault();
-      this.addFiles(e.dataTransfer.files)
+      this.addFiles(e.dataTransfer?.files)
     },
 
     handleFileChange(event: Event): void {
       this.addFiles((<HTMLInputElement>event.target).files)
     },
 
-    addFiles(files: FileList): void {
+    addFiles(files?: FileList|null): void {
+      if (!files) return;
       // Если после загрузки добавляются еще файлы, то обнуляем статус загрузки
       this.loadingBar.active = false
       for (const file of Array.from(files)) {
@@ -221,7 +225,7 @@ export default {
           )
     },
   }
-}
+});
 </script>
 
 <style scoped>

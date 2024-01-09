@@ -35,6 +35,7 @@
           <OLT_ONT_Detail_info
               @find-mac="findMacEvent"
               @session-mac="sessionEvent"
+              :device-name="deviceName"
               :interface="interface"
               :register-interface-action="registerInterfaceAction"
               :permission-level="permissionLevel"
@@ -54,13 +55,15 @@
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
 import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue"
-import api_request from "../api_request";
-import Interface from "../types/interfaces";
+import api_request from "../../../api_request";
+import Interface from "../../../types/interfaces";
+import SubscribersData, {newSubscriberData} from "../subscribersData";
+import {AxiosResponse} from "axios";
 
 type ontData = {
   total_count: number,
   online_count: number,
-  onts_lines: any[]
+  onts_lines: string[][]
 }
 
 export default defineComponent({
@@ -84,7 +87,7 @@ export default defineComponent({
     return {
       showDetailInfo: false,
       showSubscribersData: false,
-      subscribersData: {},
+      subscribersData: {} as {number?: SubscribersData[]},
     }
   },
 
@@ -93,7 +96,8 @@ export default defineComponent({
     getSubscribersData() {
       if (!this.subscribersData) {
         api_request.get("/gpon/api/subscribers-on-device/"+this.deviceName+"?port="+this.interface.name)
-            .then(resp => {
+            .then(
+                (resp: AxiosResponse<any[]>) => {
               this.showSubscribersData = true;
               this.addSubscribersData(resp.data)
             })
@@ -103,13 +107,13 @@ export default defineComponent({
       }
     },
 
-    addSubscribersData(subscribersData) {
+    addSubscribersData(subscribersData: any[]) {
       this.subscribersData = {}
       for (let sub of subscribersData) {
         if (!this.subscribersData[sub.ont_id]) {
           this.subscribersData[sub.ont_id] = []
         }
-        this.subscribersData[sub.ont_id].push(sub)
+        this.subscribersData[sub.ont_id].push(newSubscriberData(sub))
       }
     },
 

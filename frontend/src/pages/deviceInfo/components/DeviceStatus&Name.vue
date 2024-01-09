@@ -55,11 +55,10 @@ export default defineComponent({
   },
   methods: {
     copyIP() {
+      // @ts-ignore
       this.$copyText(this.deviceIp).then(() => {
         this.copied = true
-        setTimeout(() => {
-          this.copied = false
-        }, 1000)
+        setTimeout(() => {this.copied = false}, 1000)
       })
     }
   }

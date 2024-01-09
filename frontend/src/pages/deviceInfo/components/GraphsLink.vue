@@ -21,15 +21,15 @@
 </template>
 
 <script lang="ts">
-import {PropType} from "vue";
+import {defineComponent, PropType} from "vue";
 
-interface InterfaceGraphs { graphsLink: string }
+import Interface from "../../../types/interfaces";
 
-export default {
+export default defineComponent({
   name: "graphsLink",
   props: {
     interface: {
-      required: true, type: Object as PropType<InterfaceGraphs>
+      required: true, type: Object as PropType<Interface>
     }
   },
   data() {
@@ -53,7 +53,7 @@ export default {
       }
     }
   }
-}
+});
 </script>
 
 <style scoped>

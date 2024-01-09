@@ -41,14 +41,14 @@
 
 <!--      TEXT-->
       <div class="modal-body text-center">
-          <h4 id="modal-text" v-if="port_action.action">
-              Вы уверены, что хотите {{ port_action.name }}
+          <h4 id="modal-text" v-if="portAction.action">
+              Вы уверены, что хотите {{ portAction.name }}
               <svg class="bi me-2" width="24" height="24" role="img">
-                <use v-if="port_action.name === 'включить'" xlink:href="#port-up-icon"></use>
-                <use v-else-if="port_action.name === 'выключить'" xlink:href="#port-down-icon"></use>
-                <use v-else-if="port_action.name === 'перезагрузить'" xlink:href="#port-reload-icon"></use>
+                <use v-if="portAction.name === 'включить'" xlink:href="#port-up-icon"></use>
+                <use v-else-if="portAction.name === 'выключить'" xlink:href="#port-down-icon"></use>
+                <use v-else-if="portAction.name === 'перезагрузить'" xlink:href="#port-reload-icon"></use>
               </svg>
-            {{ port_action.port }} ?
+            {{ portAction.port }} ?
           </h4>
           <h4 v-else>
             Неверное действие
@@ -58,7 +58,7 @@
 <!--      DESCRIPTION-->
       <div class="col text-center" style="margin-left: 20px">
           <h3 class="text-center">
-            <span id="modal-port-desc" class="bg-light text-dark">{{ port_action.desc }}</span>
+            <span id="modal-port-desc" class="bg-light text-dark">{{ portAction.desc }}</span>
           </h3>
       </div>
 
@@ -75,8 +75,8 @@
 
 
         <button
-            v-show="port_action.action"
-            @click="submit_port_action(false)"
+            v-show="portAction.action"
+            @click="submit_portAction(false)"
             id="modal-button-no-save" type="submit" class="btn btn-info" data-bs-dismiss="modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16">
                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -86,8 +86,8 @@
         </button>
 
         <button
-            v-show="port_action.action"
-            @click="submit_port_action(true)"
+            v-show="portAction.action"
+            @click="submit_portAction(true)"
             id="modal-button-save" type="submit" class="btn btn-success" data-bs-dismiss="modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16">
                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -101,26 +101,20 @@
 </div>
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
 
 export default defineComponent({
   props: {
-    port_action: {
+    portAction: {
       required: true,
-      type: {
-        name: String,
-        action: String,
-        submit: Function,
-        port: String,
-        desc: String
-      }
+      type: Object as PropType<{name: string, action: string, submit: Function|null, port: string, desc: string}>
     }
   },
   methods:{
-    submit_port_action: function (save) {
-      if (this.port_action.submit) {
-        this.port_action.submit(save)
+    submit_portAction(save: boolean) {
+      if (this.portAction.submit) {
+        this.portAction.submit(save)
       }
     }
   }

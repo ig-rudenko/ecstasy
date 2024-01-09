@@ -38,7 +38,7 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
-import Interface from "../types/interfaces";
+import Interface from "../../../types/interfaces";
 
 export default defineComponent({
   props: {

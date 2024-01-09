@@ -3,7 +3,7 @@
 <div>
   <div style="padding: 7px 13px;">
     <svg
-        v-bind:fill="stats.cpu?value_color(Math.max(...stats.cpu.util)):'grey'"
+        v-bind:fill="stats.cpu?valueColor(Math.max(...stats.cpu.util)):'grey'"
         class="bi bi-cpu" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="30" height="30">
       <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0zm-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3h-7zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5v-3zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
     </svg>
@@ -16,7 +16,7 @@
 <div>
   <div style="padding: 7px 13px;">
     <svg
-        v-bind:fill="stats.ram?value_color(stats.ram.util):'grey'"
+        v-bind:fill="stats.ram?valueColor(stats.ram.util):'grey'"
         class="bi bi-memory" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="30" height="30" >
       <path d="M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.586a1 1 0 0 0 .707-.293l.353-.353a.5.5 0 0 1 .708 0l.353.353a1 1 0 0 0 .707.293H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H1Zm.5 1h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm5 0h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm4.5.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4ZM2 10v2H1v-2h1Zm2 0v2H3v-2h1Zm2 0v2H5v-2h1Zm3 0v2H8v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Z"/>
     </svg>
@@ -28,8 +28,8 @@
   <!--  FLASH-->
 <div>
   <div style="padding: 7px 13px;">
-    <svg v-bind:fill="stats.flash?value_color(stats.flash.util):'grey'"
-        class="bi bi-sd-card-fill" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="{0}" >
+    <svg v-bind:fill="stats.flash?valueColor(stats.flash.util):'grey'"
+        class="bi bi-sd-card-fill" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="30" height="30" >
       <path d="M12.5 0H5.914a1.5 1.5 0 0 0-1.06.44L2.439 2.853A1.5 1.5 0 0 0 2 3.914V14.5A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 12.5 0Zm-7 2.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2 0a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2.75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 1.5 0Zm1.25-.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Z"/>
     </svg>
     <span v-if="stats.flash"> flash {{stats.flash.util}}%</span>
@@ -90,7 +90,7 @@ export default defineComponent({
       stats: { required: true, type: Object as PropType<HardwareStats> }
   },
   methods: {
-    value_color(value: number): string {
+    valueColor(value: number): string {
       if (!value) return "grey"
       if (value < 30) return "#198754";
       if (value < 80) return "#ff9836";

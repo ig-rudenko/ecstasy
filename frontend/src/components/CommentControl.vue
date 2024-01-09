@@ -48,7 +48,7 @@
         </button>
 
 
-        <button
+        <button v-if="comment.submit"
             @click="comment.submit"
             id="modal-button-no-save" type="submit" class="btn btn-success" data-bs-dismiss="modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16">
@@ -63,21 +63,14 @@
 </div>
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
 
 export default defineComponent({
   props: {
     comment: {
       required: true,
-      type: {
-          id: Number,
-          text: String,
-          user: String,
-          action: String,
-          interface: String,
-          submit: Function
-      }
+      type: Object as PropType<{id: number, text: string, user: string, action: (""|"add"|"update"|"delete"), interface: string, submit: Function|null}>
     }
   },
   computed: {

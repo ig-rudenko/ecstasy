@@ -1,16 +1,16 @@
 <template id="description-search">
 
 <SearchInput
-        :update_search="updateSearch"
-        @submit_input="searchDescription"
-        placeholder="Введите строку для поиска">
+    @submit-input="searchDescription"
+    :update-search="updateSearch"
+    placeholder="Введите строку для поиска">
 </SearchInput>
 
 
-<div v-show="interfaces !== null" class="py-4">
+<div v-show="interfaces.length" class="py-4">
 
   <!--Нашли по паттерну-->
-  <div v-if="interfaces !== null && interfaces.length && !waitResult">
+  <div v-if="interfaces.length && !waitResult">
       <div>
           <h4 class="text-center py-2">Поиск по паттерну: "{{ lastPattern }}"</h4>
           <h6 class="py-2" style="margin-left: 20px;">Найдено: {{ interfaces.length }}</h6>
@@ -73,7 +73,7 @@
   </div>
 
   <!--Не нашли-->
-  <div v-else-if="!interfaces && interfaces != null" class="py-4">
+  <div v-else-if="!interfaces.length" class="py-4">
       <h4 style="text-align: center">
           Поиск по паттерну: "<span style="background: #fff6d5">{{ pattern }}</span>" не дал результатов
       </h4>
@@ -115,7 +115,7 @@ export default {
 
   data() {
     return {
-      interfaces: [] as Array<SearchMatch>,
+      interfaces: [] as SearchMatch[],
       pattern: "" as string,
       lastPattern: "" as string,
       waitResult: false as boolean,
@@ -150,7 +150,7 @@ export default {
     }
   },
   computed: {
-    paginatedInterfaces(): Array<SearchMatch> {
+    paginatedInterfaces(): SearchMatch[] {
       if (!this.interfaces) return [];
       // Обрезаем по размеру страницы
       return this.interfaces.slice(

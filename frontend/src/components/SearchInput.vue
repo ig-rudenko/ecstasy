@@ -6,31 +6,31 @@
     </svg>
     <input type="text" class="search-input" autofocus
            :placeholder="placeholder"
-           @input="update_search"
+           @input="updateSearch"
            @keyup.enter="$emit('submit_input')">
 </div>
 </template>
 
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import {defineComponent, PropType} from "vue";
 
 export default defineComponent({
   props: {
+    updateSearch: { required: true, type: Function as PropType<(event: Event) => void> },
+    activeMode: { required: false, type: Boolean, default: false },
     placeholder: { required: false, type: String },
-    update_search: { required: true, type: Function },
-    active_mode: { required: false, type: Boolean, default: false }
   },
   emits: ["submit_input"],
   computed: {
     form_classes: function (): Array<string> {
-      if (this.active_mode) {
+      if (this.activeMode) {
         return ['search-form', 'shadow']
       }
       return ['search-form']
     },
     form_styles: function (): Object {
-      if (this.active_mode) {
+      if (this.activeMode) {
         return {"color": "#9f9f9f", "border": "2px solid"}
       }
       return {}

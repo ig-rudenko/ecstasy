@@ -48,8 +48,8 @@
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
 import ONTDetailInfo from "./ONTDetailInfo.vue";
-import Interface from "../types/interfaces";
-import InterfaceComment from "../types/comments";
+import Interface from "../../../types/interfaces";
+import InterfaceComment from "../../../types/comments";
 
 type ontData = {
   total_count: string,

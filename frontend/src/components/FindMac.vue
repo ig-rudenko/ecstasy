@@ -5,9 +5,7 @@
 
 <!--      HEADER-->
       <div class="modal-header">
-        <svg class="bi me-2" width="24" height="24" role="img">
-            <use xlink:href="#search-icon"></use>
-        </svg>
+        <svg class="bi me-2" width="24" height="24" role="img"><use xlink:href="#search-icon"></use></svg>
 
         <h1 class="modal-title fs-5 text-center" id="modalLabel" style="padding-left: 10px">
             MAC: "<span id="modal-mac-str">{{mac}}</span>"
@@ -26,7 +24,7 @@
 
         <div id="modal-mac-result" class="py-3" style="text-align: center;">
 
-          <div v-if="detailInfo" v-html="detailInfo"></div>
+          <div v-if="detailInfo.length" v-html="detailInfo"></div>
           <div v-else class="spinner-border" role="status"></div>
 
         </div>
@@ -39,8 +37,10 @@
 </template>
 
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
+import api_request from "../api_request";
+import {AxiosResponse} from "axios";
 
 export default defineComponent({
   props: {
@@ -48,57 +48,48 @@ export default defineComponent({
   },
   data() {
     return {
-      old_mac: "",
+      oldMac: "",
       vendor: "",
-      detailInfo: null
+      detailInfo: ""
     }
   },
-  async updated() {
+  updated() {
     // Если МАС адрес остался прежним, то не обновляем информацию
-    if (this.old_mac === this.mac) return
-    this.old_mac = this.mac
+    if (this.oldMac === this.mac) return
+    this.oldMac = this.mac
     // Очищаем старый вендор
     this.vendor = ""
     // Очищаем старую информацию
-    this.detailInfo = null
+    this.detailInfo = ""
     // Ищем вендор
-    this.vendor = await this.getVendor()
+    this.getVendor()
     // Ищем детальную информацию
-    this.detailInfo = await this.macDetail()
-
-    // Записываем текущий МАС как уже просмотренный
-
+    this.macDetail()
   },
 
   methods: {
-    async getVendor() {
-      if (!this.mac) return ""
-      try {
-
-        let result = await fetch("/tools/ajax/mac_vendor/" + this.mac);
-        let data = await result.json()
-        if (result.status === 200) return data.vendor
-
-      } catch (err) {
-        console.log(err)
-      }
-      return "Не удалось определить"
+    getVendor() {
+      if (!this.mac) return;
+      api_request.get("/tools/ajax/mac_vendor/" + this.mac)
+          .then(
+              (value: AxiosResponse<string>) => {
+                this.vendor = value.data
+              },
+              () => {this.vendor = "Не удалось определить"}
+          )
+          .catch(() => {this.vendor = "Не удалось определить"})
     },
 
-    async macDetail() {
-      if (!this.mac) return ""
-
-      try {
-
-        let result = await fetch("/tools/ajax/ip-mac-info/" + this.mac);
-        let data = await result.text()
-        if (result.status === 200) return data
-
-      } catch (err) {
-        console.log(err)
-      }
-      return "Не удалось определить"
-
+    macDetail() {
+      if (!this.mac) return;
+      api_request.get("/tools/ajax/ip-mac-info/" + this.mac)
+          .then(
+              (value: AxiosResponse<string>) => {
+                this.detailInfo = value.data
+              },
+              () => {this.detailInfo = "Не удалось определить"}
+          )
+          .catch(() => {this.detailInfo = "Не удалось определить"})
     }
   }
 })

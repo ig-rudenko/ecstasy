@@ -49,6 +49,8 @@
 
 <script lang="ts">
 import api_request from "../../../api_request";
+import {defineComponent} from "vue";
+
 import {AxiosResponse} from "axios";
 
 interface UserAction {
@@ -57,7 +59,7 @@ interface UserAction {
   user: string
 }
 
-export default {
+export default defineComponent({
   name: "UserActionsButton",
   props: {
     deviceName: {required: true, type: String},
@@ -155,7 +157,7 @@ export default {
     }
   }
 
-}
+});
 </script>
 
 <style scoped>

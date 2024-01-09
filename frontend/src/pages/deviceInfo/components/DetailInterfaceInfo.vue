@@ -269,21 +269,21 @@ import {defineComponent, PropType} from "vue";
 
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
-import Comment from "./Comment.vue";
-import Pagination from "./Pagination.vue";
+import Comment from "../../../components/Comment.vue";
+import Pagination from "../../../components/Pagination.vue";
 import CableDiag from "./CableDiag.vue";
 import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
-import GraphsLink from "../pages/deviceInfo/components/GraphsLink.vue";
-import Interface from "../types/interfaces";
-import InterfaceComment from "../types/comments";
-import Paginator from "../types/paginator";
-import {ComplexInterfaceInfo} from "../pages/deviceInfo/detailInterfaceInfo";
-import api_request from "../api_request";
+import GraphsLink from "./GraphsLink.vue";
+import Interface from "../../../types/interfaces";
+import InterfaceComment from "../../../types/comments";
+import Paginator from "../../../types/paginator";
+import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
+import api_request from "../../../api_request";
 import {AxiosResponse} from "axios";
-import MacInfo from "../types/mac";
+import MacInfo from "../../../types/mac";
 
 export default defineComponent({
   components: {

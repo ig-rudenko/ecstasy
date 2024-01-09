@@ -181,13 +181,13 @@
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
-import Comment from "./Comment.vue";
-import Interface from "../types/interfaces";
-import InterfaceComment from "../types/comments";
-import api_request from "../api_request";
+import Comment from "../../../components/Comment.vue";
+import Interface from "../../../types/interfaces";
+import InterfaceComment from "../../../types/comments";
+import api_request from "../../../api_request";
 import {AxiosResponse} from "axios";
-import MacInfo from "../types/mac";
-import {ComplexInterfaceInfo} from "../pages/deviceInfo/detailInterfaceInfo";
+import MacInfo from "../../../types/mac";
+import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
 
 export default defineComponent({
   components: {

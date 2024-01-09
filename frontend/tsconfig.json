@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "noEmitOnError": true,
     "noImplicitAny": false,
     "outDir": "../static/js",
     "module": "es6",

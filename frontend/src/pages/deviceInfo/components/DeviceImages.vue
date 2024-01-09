@@ -21,7 +21,7 @@
           <div class="py-2 d-flex justify-content-around">
 
 <!--            Кнопка добавить новый медиа-->
-            <button @click="currentItem=null" class="btn w-100">
+            <button @click="() => setCurrentItem()" class="btn w-100">
               Добавить
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -34,7 +34,7 @@
           <div v-if="items.length" class="list-group list-group-flush border-bottom scrollarea">
             <template v-for="(item, index) in items">
 
-              <div @click="currentItem = item" :class="itemClasses(item)" aria-current="true">
+              <div @click="() => setCurrentItem(item)" :class="itemClasses(item)" aria-current="true">
                 <div class="d-flex w-100 align-items-center justify-content-between">
 
                   <div class="py-3">
@@ -102,12 +102,12 @@
             </template>
 
     <!--Просмотр изображения-->
-            <a v-if="!editForm.show && currentItem.isImage" :href="currentItem.url" target="_blank">
+            <a v-if="!editForm.show && currentItem?.isImage" :href="currentItem.url" target="_blank">
               <img class="media-image" :src="currentItem.url" alt="image">
             </a>
 
     <!--Другие файлы-->
-            <div v-else-if="!editForm.show" class="align-content-center justify-content-md-center row h-100">
+            <div v-else-if="!editForm.show && currentItem" class="align-content-center justify-content-md-center row h-100">
               <div class="col-md-auto">
                 <div class="file-link">
                   <a :href="currentItem.url" target="_blank">
@@ -147,7 +147,7 @@ export default defineComponent({
 
   data() {
     return {
-      items: [] as Array<MediaFileInfo>,
+      items: [] as MediaFileInfo[],
       currentItem: null as (MediaFileInfo | null),
       editForm: {
         show: false,
@@ -163,9 +163,6 @@ export default defineComponent({
   },
   mounted() {
     this.loadMedia()
-    if (this.items.length){
-      this.currentItem = this.items[0]
-    }
   },
   computed: {
     mediaToggleButtonColor(): string {
@@ -176,6 +173,13 @@ export default defineComponent({
     }
   },
   methods: {
+    setCurrentItem(item?: MediaFileInfo): void {
+      if (item){
+        this.currentItem = item
+      } else {
+        this.currentItem = null
+      }
+    },
 
     showDeleteFrom(): void {
       this.editForm.show = false
@@ -203,7 +207,10 @@ export default defineComponent({
     loadMedia(): void {
       api_request.get(`/device/api/${this.deviceName}/media`)
           .then(
-              (value: any) => this.items = newMediaFileInfoList(value.data),
+              (value: any) => {
+                this.items = newMediaFileInfoList(value.data);
+                if (this.items.length){ this.setCurrentItem(this.items[0]) }
+              },
               (reason: any) => {console.log(reason)}
           )
           .catch((reason: any) => {console.log(reason)})
@@ -260,7 +267,8 @@ export default defineComponent({
           )
     },
 
-    removeElement(array: Array<MediaFileInfo>, element: MediaFileInfo) {
+    removeElement(array: Array<MediaFileInfo>, element: MediaFileInfo|null) {
+      if (!element) return array;
       // Находим индекс элемента в массиве
       let index = array.indexOf(element);
       // Если элемент найден, удаляем его из массива

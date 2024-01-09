@@ -36,33 +36,33 @@
 
 <!--            Equipment ID или АБОНЕНТ -->
         <td v-if="showSubscribersData">
-          <div v-for="line in getCustomersIDAndFullNameList(line[0])" ><a :href="'/gpon/subscriber-data/customers/'+line.id" target="_blank">{{line.fullName}}</a></div>
+          <div v-for="customer in getCustomersIDAndFullNameList(Number(line[0]))">
+            <a :href="'/gpon/subscriber-data/customers/'+customer.id" target="_blank">{{customer.fullName}}</a>
+          </div>
         </td>
         <td v-else>{{ line[2] }}</td>
 
 <!--            RSSI [dBm] или АДРЕС -->
-        <td v-if="showSubscribersData"><div v-for="address in getCustomersAddressList(line[0])">{{address}}</div></td>
+        <td v-if="showSubscribersData"><div v-for="address in getCustomersAddressList(Number(line[0]))">{{address}}</div></td>
         <td v-else>{{ line[3] }}</td>
 
 <!--            Serial или УСЛУГИ -->
-        <td v-if="showSubscribersData"><div v-for="services in getCustomersServicesList(line[0])">{{services}}</div></td>
+        <td v-if="showSubscribersData"><div v-for="services in getCustomersServicesList(Number(line[0]))">{{services}}</div></td>
         <td v-else>{{ line[4] }}</td>
 
 <!--            Description или ТРАНЗИТ -->
-        <td v-if="showSubscribersData"><div v-for="transit in getCustomersTransitList(line[0])">{{transit}}</div></td>
+        <td v-if="showSubscribersData"><div v-for="transit in getCustomersTransitList(Number(line[0]))">{{transit}}</div></td>
         <td v-else style="text-align: left">{{ line[5] }}</td>
 
     </tr>
-
-
 
 
     <tr v-if="showDetailInfo">
       <td colspan="6">
 
   <!--      DETAIL PORT INFO  -->
-      <div v-if="portDetailInfo" class="container row py-3">
-        <div v-if="portDetailInfo.type==='html'" class="card shadow py-3" v-html="portDetailInfo.data"></div>
+      <div v-if="complexInfo?.portDetailInfo" class="container row py-3">
+        <div v-if="complexInfo.portDetailInfo.type==='html'" class="card shadow py-3" v-html="complexInfo.portDetailInfo.data"></div>
       </div>
 
 
@@ -73,9 +73,8 @@
 
   <!--        BUTTON-->
   <!--        Конфигурация порта-->
-          <div v-if="portConfig && portConfig.length">
-            <button type="button"
-                    @click="portDetailMenu='portConfig'"
+          <div v-if="complexInfo?.portConfig">
+            <button type="button" @click="portDetailMenu=portDetailMenu==='portConfig'?'':'portConfig'"
                     :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
               <svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#gear-icon"></use></svg>
               Конфигурация порта
@@ -84,9 +83,8 @@
 
   <!--        BUTTON-->
   <!--        Ошибки на порту-->
-          <div v-if="portErrors && portErrors.length">
-            <button type="button"
-                    @click="portDetailMenu='portErrors'"
+          <div v-if="complexInfo?.portErrors">
+            <button type="button" @click="portDetailMenu=portDetailMenu==='portErrors'?'':'portErrors'"
                     :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
               <svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#warning-icon"></use></svg>
               Ошибки на порту
@@ -97,8 +95,8 @@
   <!--      Конфигурация порта -->
         <div v-show="portDetailMenu==='portConfig'" class="col-md">
 
-          <div v-if="portConfig!==null" class="card shadow" style="padding: 2rem; text-align: left">
-            <span v-html="format_to_html(portConfig)" style="font-family: monospace"></span>
+          <div v-if="complexInfo?.portConfig" class="card shadow" style="padding: 2rem; text-align: left">
+            <span v-html="formatToHtml(complexInfo.portConfig)" style="font-family: monospace"></span>
           </div>
 
           <div v-else class="d-flex justify-content-center">
@@ -109,8 +107,8 @@
   <!--      Ошибки на порту -->
         <div v-show="portDetailMenu==='portErrors'" class="col-md">
 
-          <div v-if="portErrors!==null" class="card shadow" style="padding: 2rem;">
-            <span v-html="format_to_html(portErrors)" style="font-family: monospace"></span>
+          <div v-if="complexInfo?.portErrors" class="card shadow" style="padding: 2rem;">
+            <span v-html="formatToHtml(complexInfo.portErrors)" style="font-family: monospace"></span>
           </div>
 
           <div v-else class="d-flex justify-content-center">
@@ -123,8 +121,8 @@
 
 
   <!--      МАС-->
-      <div v-if="MACs && MACs.count > 0" class="container">
-        <span>Всего: {{MACs.count}}</span>
+      <div v-if="MACs.length > 0" class="container">
+        <span>Всего: {{MACs.length}}</span>
 
         <div class="table-responsive-lg">
         <table class="table">
@@ -138,31 +136,24 @@
           </thead>
           <tbody id="tbody-macs">
 
-            <tr v-for="mac in MACs.result">
+            <tr v-for="mac in MACs">
                 <td></td>
 
                 <td style="font-family: monospace; font-size: x-large;">
-                    <span data-bs-toggle="tooltip" data-bs-placement="right" :data-bs-title="mac[2]"
-                          style="cursor: help; font-family: monospace;">
-                        {{mac[0]}}
+                    <span :title="mac.vlanName" style="cursor: help; font-family: monospace;">
+                        {{mac.vlanID}}
                     </span>
                 </td>
 
                 <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                    <span
-                        @click="findMacEvent(mac[1])"
-                        class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC"
-                        data-bs-toggle="modal" data-bs-target="#modal-find-mac">
-                        {{mac[1]}}
-                        <svg class="bi me-2" width="24" height="24" role="img">
-                            <use xlink:href="#search-icon"></use>
-                        </svg>
+                    <span @click="findMacEvent(mac.mac)" class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
+                        {{mac.mac}}
+                        <svg class="bi me-2" width="24" height="24" role="img"><use xlink:href="#search-icon"></use></svg>
                     </span>
                 </td>
 
                 <td>
-                  <button @click="sessionEvent(mac[1], ontInterface.Interface)" type="button" class="btn btn-outline-primary"
-                          data-bs-toggle="modal" data-bs-target="#bras-session-modal">
+                  <button @click="sessionEvent(mac.mac, ontInterface.name)" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bras-session-modal">
                     BRAS
                   </button>
                 </td>
@@ -174,7 +165,7 @@
 
       </div>
 
-      <div v-else-if="MACs && MACs.count === 0" class="container">
+      <div v-else-if="MACs" class="container">
         <h3 class="text-center" style="padding-bottom: 40px;">Нет MAC</h3>
       </div>
 
@@ -187,54 +178,42 @@
 
 </template>
 
-<script>
-import {defineComponent} from "vue";
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
-import formatAddress from "../helpers/address";
+import formatAddress from "../../../helpers/address";
+import SubscribersData from "../subscribersData";
+import Interface from "../../../types/interfaces";
+import api_request from "../../../api_request";
+import {AxiosResponse} from "axios";
+import MacInfo from "../../../types/mac";
+import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
 
 export default defineComponent({
   props: {
-    interface: {required: true, type: Object},
-    line: {required: true, type: Object},
+    deviceName: {required: true, type: String},
+    interface: {required: true, type: Object as PropType<Interface>},
+    line: {required: true, type: [] as PropType<string[]>},
     permissionLevel: {required: true, type: Number},
-    registerInterfaceAction: {required: true, type: Function},
+    registerInterfaceAction: {required: true, type: Function as PropType<(action: ("up"|"down"|"reload"), port: string, description: string) => void> },
     showSubscribersData: {required: false, type: Boolean},
     subscribersData: {
       required: false,
-      type: {
-        Number: [
-            {
-              id: Number,
-              address:{
-                region:String,settlement:String,planStructure:String,street:String,house:String,block:Number,floor:Number,apartment:Number
-              },
-              ont_id: Number, ip:String, ont_serial: String, ont_mac: String, order: String, transit: Number, connected_at: String,
-              services: [String],
-              status:String, end3Port: Number,
-              customer:{
-                id:Number, type:String, firstName:String, surname:String, lastName:String, companyName:String, contract:String, phone:String
-              }
-            }
-        ]
-      },
+      type: Object as PropType<{number?: SubscribersData[]}>,
       default: {}
     },
   },
+
+  emits: ["find-mac", "session-mac"],
 
   data() {
     return {
       showDetailInfo: false,
       ontID: this.line[0],
 
-      portDetailMenu: null,
-      MACs: {
-        result: this.line[6],
-        count: this.line[6].length
-      },
-      portDetailInfo: null,
-      portType: null,
-      portConfig: null,
-      portErrors: null,
+      portDetailMenu: "" as ""|"portConfig"|"portErrors",
+      MACs: [] as MacInfo[],
+      complexInfo: null as ComplexInterfaceInfo|null,
     }
   },
 
@@ -243,12 +222,12 @@ export default defineComponent({
   },
 
   computed: {
-    ontInterface() {
-      return {
-        Interface: this.interface.Interface + "/" + this.ontID,
-        Status: this.line[1],
-        Description: "ONT: " + this.ontID + " " + this.interface.Description
-      }
+    ontInterface(): Interface {
+      return new Interface(
+          this.interface.name + "/" + this.ontID,
+          this.line[1],
+          "ONT: " + this.ontID + " " + this.interface.description
+      )
     },
     lineClasses() {
       if (this.showDetailInfo) return ["shadow", "sticky-top"];
@@ -258,24 +237,20 @@ export default defineComponent({
 
   methods: {
 
-    getCustomersIDAndFullNameList(ontID) {
-      let result = []
+    getCustomersIDAndFullNameList(ontID: number): {id: string, fullName: string}[] {
+      let result: {id: string, fullName: string}[] = []
       if (this.subscribersData[String(ontID)]) {
         for (const subscriberData of this.subscribersData[String(ontID)]) {
           const c = subscriberData.customer
-          if (c.companyName) {
-            result.push({id: c.id, fullName: c.companyName})
-          }
-          else {
-            result.push({id: c.id, fullName: c.surname + " " + c.firstName + " " + c.lastName})
-          }
+          if (c.companyName) { result.push({id: c.id, fullName: c.companyName}) }
+          else { result.push({id: c.id, fullName: c.surname + " " + c.firstName + " " + c.lastName}) }
         }
       }
       return result
     },
 
-    getCustomersAddressList(ontID) {
-      let result = []
+    getCustomersAddressList(ontID: number): string[] {
+      let result: string[] = []
       if (this.subscribersData[String(ontID)]) {
         for (const subscriberData of this.subscribersData[String(ontID)]) {
           const address = subscriberData.address
@@ -288,8 +263,8 @@ export default defineComponent({
       return result
     },
 
-    getCustomersServicesList(ontID) {
-      let result = []
+    getCustomersServicesList(ontID: number): string[] {
+      let result: string[] = []
       if (this.subscribersData[String(ontID)]) {
         for (const subscriberData of this.subscribersData[String(ontID)]) {
           result.push(subscriberData.services.join(", "))
@@ -298,8 +273,8 @@ export default defineComponent({
       return result
     },
 
-    getCustomersTransitList(ontID) {
-      let result = []
+    getCustomersTransitList(ontID: number): string[] {
+      let result: string[] = []
       if (this.subscribersData[String(ontID)]) {
         for (const subscriberData of this.subscribersData[String(ontID)]) {
           result.push(subscriberData.transit)
@@ -308,72 +283,50 @@ export default defineComponent({
       return result
     },
 
-    findMacEvent: function (mac) {
-      this.$emit("find-mac", mac)
-    },
+    findMacEvent(mac: string) { this.$emit("find-mac", mac) },
+    sessionEvent(mac: string, port: string) { this.$emit("session-mac", mac, port) },
 
-    sessionEvent: function (mac, port) {
-      this.$emit("session-mac", mac, port)
-    },
-
-    statusStyles(status) {
+    statusStyles(status: string): any {
       if (status === "OK") return {"background-color": "#22e58b"}
       if (status === "OFFLINE") return {"background-color": "#ffcacf"}
+      return "UNKNOWN"
     },
-    lineStyle(status) {
+    lineStyle(status: string): any {
       if (status === "OFFLINE") return {"background-color": "#ffcacf"}
       if (this.showDetailInfo) return {"background-color": "#e8efff", "top": "56px"}
     },
-    format_to_html: function (string) {
-
+    formatToHtml(str: string): string {
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
-
-      string = string.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return string
+      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+      return str
     },
 
-    toggleDetailInfo: async function() {
+    toggleDetailInfo() {
       this.showDetailInfo = !this.showDetailInfo
+      if (!this.showDetailInfo) return
+      this.getDetailInfo()
+    },
 
+    getMacs() {
+      if (!this.showDetailInfo) return
+      api_request.get("/device/api/" + this.deviceName + "/macs?port=" + this.interface.name)
+          .then(
+              (value: AxiosResponse<{result: MacInfo[], count: number }>) => {
+                this.MACs = value.data.result;
+              },
+          )
+    },
+
+    getDetailInfo() {
       if (!this.showDetailInfo) return
 
-      await this.getDetailInfo()
-    },
-
-    getMacs: async function() {
-      try {
-        const response = await fetch(
-            "/device/api/" + document.deviceName + "/macs?port=" + this.ontInterface.Interface,
-            {method: "get"}
-        )
-        this.MACs = await response.json()
-
-        window.tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        window.tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-
-      } catch (err) {
-        console.log(err)
-      }
-    },
-
-    getDetailInfo: async function() {
-      try {
-        const response = await fetch(
-            "/device/api/" + document.deviceName + "/interface-info?port=" + this.ontInterface.Interface,
-            {method: "get"}
-        )
-        let data = await response.json()
-        console.log(data)
-
-        this.portErrors = data.portErrors
-        this.portConfig = data.portConfig
-        this.portType = data.portType
-        this.portDetailInfo = data.portDetailInfo
-
-      } catch (err) {
-        console.log(err)
-      }
+      api_request.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
+          .then(
+              (value: AxiosResponse<ComplexInterfaceInfo>) => {
+                this.complexInfo = value.data;
+              },
+          )
     },
 
   }

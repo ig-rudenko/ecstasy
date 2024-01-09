@@ -96,7 +96,7 @@
           <tr v-if="file.display && file.content">
             <td colspan="4" style="max-width: 1rem;">
 
-              <div style="font-family: monospace; padding: 1rem" v-html="format_to_html(file.content)"></div>
+              <div style="font-family: monospace; padding: 1rem" v-html="formatToHtml(file.content)"></div>
 
             </td>
           </tr>
@@ -147,7 +147,7 @@
 <script lang="ts">
 import {defineComponent} from "vue";
 import {AxiosResponse} from "axios";
-import Dialog from "primevue/dialog/Dialog";
+import Dialog from "primevue/dialog";
 
 import ConfigFileDiff from "../pages/deviceInfo/components/ConfigFileDiff.vue";
 import api_request from "../api_request";

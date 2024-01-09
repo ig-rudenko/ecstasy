@@ -130,8 +130,8 @@ export default defineComponent({
         required: true,
         type: [] as PropType<Array<Device>>
       },
-      setVendor: { required: true, type: Function },
-      setGroup: { required: true, type: Function },
+      setVendor: { required: true, type: Function as PropType<(vendor: string) => void> },
+      setGroup: { required: true, type: Function as PropType<(group: string) => void> },
       currentVendor: { required: true, type: String },
       currentGroup: { required: true, type: String },
       vendors: { required: true, type: [] as PropType<Array<string>> },

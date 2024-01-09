@@ -25,12 +25,12 @@
           <div class="card-body">
       <!--  Время обновления интерфейсов-->
             <InterfacesHelpText
-                    :time_passed="timePassedFromLastUpdate"
-                    :device_status="deviceAvailable"
-                    :auto_update="autoUpdateInterfaces"
-                    @update="updateCurrentStatus"
-                    :current_status="currentStatus"
-                    :last_interface_update="collected"/>
+                @update="updateCurrentStatus"
+                :time-passed="timePassedFromLastUpdate"
+                :device-status="deviceAvailable"
+                :auto-update="autoUpdateInterfaces"
+                :current-status="currentStatus"
+                :last-interface-update="collected"/>
 
       <!--  Обновление интерфейсов-->
             <div style="padding: 0 10px">
@@ -129,6 +129,7 @@
                 <DetailInterfaceInfo
                         @find-mac="findMacEvent"
                         @session-mac="sessionEvent"
+                        :device-name="deviceName"
                         :dynamic-opacity="dynamicOpacity"
                         :interface="_interface"
                         :permission-level="generalInfo.permission"
@@ -150,7 +151,7 @@
     </div>
 
 
-    <ModalPortControl :port_action="portAction" />
+    <ModalPortControl :port-action="portAction" />
 
     <CommentControl :comment="commentObject" />
 
@@ -203,6 +204,7 @@
 </template>
 
 <script lang="ts">
+import {defineComponent} from "vue";
 import Toast from "primevue/toast";
 
 import DeviceStatusName from "./components/DeviceStatus&Name.vue";
@@ -212,11 +214,10 @@ import ToZabbixLink from "./components/ToZabbixLink.vue";
 import ZabbixInfo from "./components/ZabbixInfo.vue";
 import InterfacesHelpText from "./components/InterfacesHelpText.vue";
 import ModalPortControl from "../../components/ModalPortControl.vue";
-import InfoToast from "../../components/InfoToast.vue";
 import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "../../components/CommentControl.vue";
 import DeviceWorkloadBar from "../../components/DeviceWorkloadBar.vue";
-import DetailInterfaceInfo from "../../components/DetailInterfaceInfo.vue";
+import DetailInterfaceInfo from "./components/DetailInterfaceInfo.vue";
 import FindMac from "../../components/FindMac.vue";
 import BrasSession from "../../components/BrasSession.vue";
 import ConfigFiles from "../../components/ConfigFiles.vue";
@@ -230,7 +231,7 @@ import {HardwareStats, newHardwareStats} from "./hardwareStats";
 import {GeneralInfo, newGeneralInfo} from "./GeneralInfo";
 import InterfaceComment from "../../types/comments";
 
-export default {
+export default defineComponent({
   name: 'device',
 
   components: {
@@ -241,7 +242,6 @@ export default {
     ConfigFiles,
     ConfigFilesSwitchButton,
     FindMac,
-    InfoToast,
     DeviceStatusName,
     ElasticStackLink,
     InterfacesHelpText,
@@ -599,7 +599,7 @@ export default {
     }
 
   },
-}
+});
 </script>
 
 <style>

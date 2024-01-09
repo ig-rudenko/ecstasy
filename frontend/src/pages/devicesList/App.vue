@@ -78,9 +78,9 @@
 
 <!--      Строка поиска-->
     <SearchInput
-            :update_search="updateSearch"
-            :active_mode="displayMode==='interfaces_loading'"
-            :placeholder="'Поиск по Имени или IP адресу' + (displayMode==='interfaces_loading'?' и по загруженности ::load':'')"/>
+      :update-search="updateSearch"
+      :active-mode="displayMode==='interfaces_loading'"
+      :placeholder="'Поиск по Имени или IP адресу' + (displayMode==='interfaces_loading'?' и по загруженности ::load':'')"/>
 
 
     <ul class="nav nav-tabs">
@@ -112,7 +112,7 @@
 import DevicesTable from "./DevicesTable.vue";
 import Pagination from "../../components/Pagination.vue";
 import SearchInput from "../../components/SearchInput.vue";
-import DoughnutChart from "../../components/DoughnutChart.vue";
+import DoughnutChart from "./DoughnutChart.vue";
 import Paginator from "../../types/paginator";
 import api_request from "../../api_request";
 import {Device, newDevicesList} from "./devices";

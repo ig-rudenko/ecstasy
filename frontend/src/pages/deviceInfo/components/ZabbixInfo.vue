@@ -37,7 +37,7 @@ import {ZabbixInfo} from "../GeneralInfo";
 
 export default defineComponent({
   props: {
-    zabbixInfo: {required: true, type: null as PropType<ZabbixInfo>}
+    zabbixInfo: {required: true, type: Object as PropType<ZabbixInfo>}
   },
 })
 </script>
