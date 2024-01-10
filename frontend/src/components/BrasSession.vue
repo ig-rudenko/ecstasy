@@ -32,7 +32,7 @@
       <div class="modal-body row">
 
 <!--        SESSIONS-->
-        <div v-if="sessions">
+        <div v-if="sessions.length">
           <template v-if="sessions[0]">
             <div class="d-flex justify-content-center"><div class="btn btn-primary">BRAS1</div></div>
             <div class="card p-4" v-if="sessions[0].errors.length">{{sessions[0].errors}}</div>

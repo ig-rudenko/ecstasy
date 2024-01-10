@@ -56,38 +56,33 @@
 
 </template>
 
-<script>
+<script lang="ts">
+import {defineComponent, PropType} from "vue";
+
 import getFileEarmarkClass from "../fileFormat";
 import MediaPreview from "./MediaPreview.vue";
+import {MediaFile, MediaFileInfo, newMediaFileInfo} from "../files";
+import api_request from "../../../api_request";
+import {AxiosResponse} from "axios";
 
 
-export default {
+export default defineComponent({
   name: "EditMedia",
   components: {MediaPreview},
   props: {
     deviceName: {required: true, type: String},
     item: {
       required: true,
-      type: {
-        id: Number,
-        name: String,
-        file_type: String,
-        is_image: Boolean,
-        description: String,
-        mod_time: String,
-        url: String,
-      }
+      type: Object as PropType<MediaFileInfo>
     }
   },
 
+  emits: ["reloadedmedia", "close"],
+
   data() {
     return {
-      newItem: {
-        file: null,
-        isImage: false,
-        imageSrc: null,
-      },
-      errors: []
+      newItem: null as (MediaFile|null),
+      errors: [] as string[]
     }
   },
 
@@ -96,13 +91,13 @@ export default {
   },
 
   computed: {
-    getCurrentItem() {
-      if (this.newItem.file) {
+    getCurrentItem(): MediaFile {
+      if (this.newItem) {
         return this.newItem
       } else {
-        return {
+        return <MediaFile>{
           file: {name: this.item.name},
-          isImage: this.item.is_image,
+          isImage: this.item.isImage,
           imageSrc: this.item.url,
           description: this.item.description
         }
@@ -113,77 +108,59 @@ export default {
 
   methods: {
     addDragAndDropListeners() {
-      let container = document.querySelector("#edit-drag-drop-area");
+      let container: Element|null = document.querySelector("#edit-drag-drop-area");
+      if (!container) return;
       container.addEventListener("dragover", e => e.preventDefault());
-      container.addEventListener("drop", (e) => this.addItemByDragAndDrop(e));
+      container.addEventListener("drop", (e) => this.addItemByDragAndDrop(<DragEvent>e));
     },
 
-    fileIconClass(fileName) {
+    fileIconClass(fileName: string): string {
       return getFileEarmarkClass(fileName)
     },
 
-    addItemByDragAndDrop(e) {
-      e.preventDefault();
-      if (e.dataTransfer.files) {
-        this.addNewFile(e.dataTransfer.files[0])
-      }
+    addItemByDragAndDrop(e: DragEvent) {
+        e.preventDefault();
+        if (e.dataTransfer?.files) {
+          this.addNewFile(e.dataTransfer.files)
+        }
     },
 
-    handleFileChange(e) {
-      if (e.target.files) {
-        this.addNewFile(e.target.files[0])
-      }
+    handleFileChange(e: Event) {
+        this.addNewFile((<HTMLInputElement>e.target)?.files)
     },
 
-    addNewFile(file) {
-      this.newItem.file = file
-      this.newItem.isImage = this.newItem.file.type.startsWith("image/");
-      if (this.newItem.isImage) {
-        // Создать URL-адрес объекта для предварительного просмотра изображения
-        this.newItem.imageSrc = URL.createObjectURL(this.newItem.file);
-      }
+    addNewFile(files: FileList|null) {
+        if (files) { this.newItem = new MediaFile(files[0]) }
     },
 
-    handleError(error) {
+    handleError(error: {description?: string}): string[] {
       if (error.description) {
         return [`Ошибка при указании описания: "${error.description}"`]
       } else {
-        return [error]
+        return [String(error)]
       }
     },
 
-    async updateItem() {
+    updateItem() {
       // Создать объект FormData для отправки файла
       let formData = new FormData();
-      if (this.newItem.file) {
+      if (this.newItem) {
         formData.append("file", this.newItem.file)
       }
       formData.append("description", this.item.description)
 
-      try {
-        const resp = await fetch(
-          `/device/api/${this.deviceName}/media/${this.item.id}`,
-          {
-            method: "patch",
-            body: formData,
-            credentials: "include",
-            headers: {
-              "X-CSRFToken": document.CSRF_TOKEN,
-            }
-          }
-        )
-        const data = await resp.json()
-        if (resp.ok) {
-          // Обновляем старую информацию на новую
-          this.$emit("reloadedmedia", data)
-          this.$emit("close")
-        } else {
-          this.errors.push(...this.handleError(data))
-        }
-
-      } catch (e) {
-        this.errors.push = e
-      }
+      api_request.patch(`/device/api/${this.deviceName}/media/${this.item.id}`, formData)
+          .then(
+              (value: AxiosResponse) => {
+                // Обновляем старую информацию на новую
+                this.$emit("reloadedmedia", newMediaFileInfo(value.data))
+                this.$emit("close")
+              },
+              (reason: any) => this.errors.push(...this.handleError(reason.response.data))
+          )
+          .catch(
+              (reason: any) => this.errors.push(...this.handleError(reason.response.data))
+          )
     },
 
     closeForm() {
@@ -191,9 +168,5 @@ export default {
     },
 
   }
-}
+});
 </script>
-
-<style scoped>
-
-</style>

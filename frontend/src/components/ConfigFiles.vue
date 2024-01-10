@@ -269,6 +269,7 @@ export default defineComponent({
       // Это проверка для предотвращения множественных запросов к серверу.
       if (this.collectNew.active) return
 
+      this.collectNew.active = true
       api_request.post("/device/api/" + this.deviceName + "/collect-config")
           .then(
               (value: AxiosResponse) => {

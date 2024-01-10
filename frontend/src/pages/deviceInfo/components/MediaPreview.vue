@@ -1,6 +1,6 @@
 <template>
   <!--Предпросмотр изображения-->
-  <img v-if="item.isImage" class="rounded-3" :src="item.imageSrc" alt="Предпросмотр изображения"/>
+  <img v-if="item.isImage && item.imageSrc" class="rounded-3" :src="item.imageSrc" alt="Предпросмотр изображения"/>
 
   <!--Отображение иконки файла-->
   <div v-else class="align-items-md-center d-flex flex-column py-4">

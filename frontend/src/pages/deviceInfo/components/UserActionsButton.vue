@@ -75,7 +75,7 @@ export default defineComponent({
   },
 
   mounted() {
-    if (!this.actions) {
+    if (!this.actions.length) {
       api_request.get("/device/api/"+this.deviceName+"/actions").then(
           (resp: AxiosResponse<UserAction[]>) => {this.actions = resp.data}
       ).catch(

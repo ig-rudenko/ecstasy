@@ -129,6 +129,7 @@
                 <DetailInterfaceInfo
                         @find-mac="findMacEvent"
                         @session-mac="sessionEvent"
+                        @toast="showToastError"
                         :device-name="deviceName"
                         :dynamic-opacity="dynamicOpacity"
                         :interface="_interface"
@@ -201,10 +202,14 @@
     </svg>
 
 </div>
+
+<ScrollTop/>
+
 </template>
 
 <script lang="ts">
 import {defineComponent} from "vue";
+import ScrollTop from "primevue/scrolltop";
 import Toast from "primevue/toast";
 
 import DeviceStatusName from "./components/DeviceStatus&Name.vue";
@@ -252,6 +257,7 @@ export default defineComponent({
     DeviceStats,
     CommentControl,
     BrasSession,
+    ScrollTop,
     Toast,
   },
 
@@ -320,18 +326,21 @@ export default defineComponent({
     this.getInterfacesWorkload()
 
     // Сначала смотрим предыдущие интерфейсы
-    this.getInterfaces()
+    this.getInterfaces()?.then(
+    () => {
+        // Далее опрашиваем текущий статус интерфейсов
+        this.currentStatus = true
 
-    // Далее опрашиваем текущий статус интерфейсов
-    this.currentStatus = true
+        this.timer()
 
-    this.timer()
+        // Смотрим информацию оборудования
+        this.getStats()
 
-    // Смотрим информацию оборудования
-    this.getStats()
+        // Смотрим текущую загруженность интерфейсов оборудования
+        this.getInterfacesWorkload()
+      }
+    )
 
-    // Смотрим текущую загруженность интерфейсов оборудования
-    this.getInterfacesWorkload()
   },
 
   methods: {
@@ -377,7 +386,7 @@ export default defineComponent({
     },
 
     /** Смотрим интерфейсы оборудования */
-    getInterfaces(infinity = true) {
+    getInterfaces(infinity = true): Promise<void> | undefined {
 
       // Если автообновление интерфейсов отключено, то ожидаем 2сек и запускаем метод снова
       if (!this.autoUpdateInterfaces) {
@@ -389,7 +398,7 @@ export default defineComponent({
       if (this.withVlans) { url += "vlans=1" } else { url += "vlans=0" }
       if (this.currentStatus) { url += "&current_status=1" }
 
-      api_request.get(url).then(
+      return api_request.get(url).then(
           (value: any) => {
             this.interfaces = newInterfacesList(value.data.interfaces);
             this.collected = new Date(value.data.collected);
@@ -491,7 +500,7 @@ export default defineComponent({
         port: this.portAction.port,       // Сам порт
         desc: this.portAction.desc,       // Описание порта
         status: this.portAction.action,   // Что сделать с портом
-        save: saveConfig,                // Сохранить конфигурацию после действия?
+        save: saveConfig,                 // Сохранить конфигурацию после действия?
       }
 
       api_request.post("/device/api/" + this.deviceName + "/port-status", data)
@@ -568,7 +577,7 @@ export default defineComponent({
      * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
      */
     timer() {
-      this.seconds_pass = Math.round((Date.now() - this.collected.getMilliseconds()) / 1000)
+      this.seconds_pass = Math.round((Date.now() - this.collected.getTime()) / 1000)
 
       let min_ = Math.floor(this.seconds_pass / 60);
       let sec = (this.seconds_pass - (min_ * 60)).toString()
@@ -594,8 +603,9 @@ export default defineComponent({
     },
 
 
-    showToastError(reason: any) {
-      this.$toast.add({ severity: "error", summary: "ERROR", detail: reason.response, life: 5000 })
+    showToastError(reason: any, text: string = "") {
+      this.$toast.add({ severity: "error", summary: "ERROR! status:" + reason.response.status,
+        detail: text + ". Причина: " + reason.response.data?.detail, life: 5000 })
     }
 
   },

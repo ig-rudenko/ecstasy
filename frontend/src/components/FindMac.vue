@@ -42,6 +42,11 @@ import {defineComponent} from "vue";
 import api_request from "../api_request";
 import {AxiosResponse} from "axios";
 
+type MACDetail = {
+  vendor: string,
+  address: string
+}
+
 export default defineComponent({
   props: {
     mac: {required: true, type: String}
@@ -72,8 +77,8 @@ export default defineComponent({
       if (!this.mac) return;
       api_request.get("/tools/ajax/mac_vendor/" + this.mac)
           .then(
-              (value: AxiosResponse<string>) => {
-                this.vendor = value.data
+              (value: AxiosResponse<MACDetail>) => {
+                this.vendor = value.data.vendor
               },
               () => {this.vendor = "Не удалось определить"}
           )

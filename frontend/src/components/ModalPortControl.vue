@@ -108,7 +108,7 @@ export default defineComponent({
   props: {
     portAction: {
       required: true,
-      type: Object as PropType<{name: string, action: string, submit: Function|null, port: string, desc: string}>
+      type: Object as PropType<{name: string, action: string|null, submit: Function|null, port: string, desc: string}>
     }
   },
   methods:{

@@ -3,7 +3,7 @@
 <!--Оповещение-->
 <div v-if="notification.type" :class="notificationClasses">
   <div class="w-100" style="text-align: center;">{{ notification.text }}</div>
-  <button class="btn-close" @click="notification.type=null"></button>
+  <button class="btn-close" @click="notification.type=''"></button>
 </div>
 
 <div id="drag-drop-area" :class="areaClasses">

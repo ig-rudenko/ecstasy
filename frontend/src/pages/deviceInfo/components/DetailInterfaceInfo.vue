@@ -1,6 +1,5 @@
 <template>
 
-
   <tr :style="interfaceStyles" :class="interfaceClasses">
 
     <td style="text-align: right">
@@ -68,7 +67,7 @@
 
   <tr v-if="showDetailInfo">
 
-  <td v-if="complexInfo" colspan="5">
+    <td v-if="complexInfo" colspan="5">
 
 <!--      DETAIL PORT INFO  -->
     <div v-if="complexInfo.portDetailInfo" class="container row py-3">
@@ -127,7 +126,7 @@
 <!--        Конфигурация порта-->
         <div v-if="complexInfo.portConfig.length">
           <button type="button"
-                  @click="portDetailMenu='portConfig'"
+                  @click="portDetailMenu=portDetailMenu=='portConfig'?'':'portConfig'"
                   :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
             <svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#gear-icon"></use></svg>
             Конфигурация порта
@@ -138,7 +137,7 @@
 <!--        Ошибки на порту-->
         <div v-if="complexInfo.portErrors.length">
           <button type="button"
-                  @click="portDetailMenu='portErrors'"
+                  @click="portDetailMenu=portDetailMenu=='portErrors'?'':'portErrors'"
                   :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
             <svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#warning-icon"></use></svg>
             Ошибки на порту
@@ -149,7 +148,7 @@
 <!--        Диагностика кабеля-->
         <div v-if="complexInfo.hasCableDiag">
           <button type="button"
-                  @click="portDetailMenu='cableDiag'"
+                  @click="portDetailMenu=portDetailMenu=='cableDiag'?'':'cableDiag'"
                   :class="portDetailMenu==='cableDiag'?['btn', 'active']:['btn']">
             <svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#cable-diag-icon"></use></svg>
             Диагностика кабеля
@@ -187,7 +186,7 @@
       <div v-show="portDetailMenu==='cableDiag'" class="col-md">
 
         <div v-if="complexInfo.hasCableDiag" class="card shadow" style="padding: 2rem;">
-          <CableDiag :port="interface.name"/>
+          <CableDiag :device-name="deviceName" :port="interface.name"/>
         </div>
 
       </div>
@@ -259,6 +258,10 @@
     </div>
 
     </td>
+
+    <td v-else class="d-flex justify-content-center" colspan="5">
+      <div><div class="spinner-border" role="status"></div></div>
+    </td>
   </tr>
 
 </template>
@@ -266,6 +269,7 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
+import {AxiosResponse} from "axios";
 
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
@@ -282,7 +286,6 @@ import InterfaceComment from "../../../types/comments";
 import Paginator from "../../../types/paginator";
 import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
 import api_request from "../../../api_request";
-import {AxiosResponse} from "axios";
 import MacInfo from "../../../types/mac";
 
 export default defineComponent({
@@ -299,7 +302,7 @@ export default defineComponent({
     MikrotikInterfaceInfo,
   },
 
-  emits: ["find-mac", "session-mac"],
+  emits: ["toast", "find-mac", "session-mac"],
 
   props: {
     deviceName: {required: true, type: String},
@@ -378,12 +381,6 @@ export default defineComponent({
       this.$emit("session-mac", mac, port)
     },
 
-    /**
-     * Превращаем строку в html, для корректного отображения
-     *
-     * @param str Строка, для форматирования.
-     * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
-     */
     formatToHtml(str: string): string {
       let space_re = new RegExp(' ', 'g');
       let n_re = new RegExp('\n', 'g');
@@ -406,6 +403,13 @@ export default defineComponent({
     getMacs() {
       if (!this.showDetailInfo) return
       this.collectingMACs = true
+
+      const error = (r: any) => {
+        this.collectingMACs = false;
+        this.$emit("toast", r, "Не удалось получить MAC интерфейса");
+        this.showDetailInfo = false;
+      }
+
       api_request.get("/device/api/" + this.deviceName + "/macs?port=" + this.interface.name)
           .then(
               (value: AxiosResponse<{result: MacInfo[], count: number }>) => {
@@ -413,13 +417,20 @@ export default defineComponent({
                 this.pagination.count = value.data.count
                 this.collectingMACs = false;
               },
-              () => {this.collectingMACs = false;}
-          )
-          .catch(() => {this.collectingMACs = false;})
+              error
+          ).catch(error)
     },
 
     getDetailInfo() {
       if (!this.showDetailInfo) return
+
+      this.collectingDetailInfo = true
+
+      const error = (r: any) => {
+        this.collectingDetailInfo = false;
+        this.$emit("toast", r, "Не удалось получить детали интерфейса");
+        this.showDetailInfo = false;
+      }
 
       api_request.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
           .then(
@@ -427,9 +438,8 @@ export default defineComponent({
                 this.complexInfo = value.data;
                 this.collectingDetailInfo = false
               },
-              () => {this.collectingDetailInfo = false}
-          )
-          .catch(() => {this.collectingDetailInfo = false})
+              error
+          ).catch(error)
     },
 
     intfStatusDesc(status: string): string {
@@ -442,11 +452,7 @@ export default defineComponent({
       return ""
     },
 
-    /**
-     * Вычисляем цвет статуса порта
-     * @param status Статус порта
-     * @returns {{"background-color": string, width: string, "text-align": string, "opacity": number}}
-     */
+    /** Вычисляем цвет статуса порта */
     statusStyle(status: string): any {
       status = status.toLowerCase()
       let color = () => {
@@ -490,8 +496,7 @@ export default defineComponent({
       result += start === end ? start : start + "-" + end;
       // возвращаем результат
       return result;
-    }
-
+    },
 
   }
 })

@@ -55,6 +55,7 @@ import {defineComponent} from "vue";
 
 export default defineComponent({
   props: {
+    deviceName: {required: true, type: String},
     port: {required: true, type: String}
   },
   data() {
@@ -70,7 +71,7 @@ export default defineComponent({
         let info = null
         try {
             let response = await fetch(
-                "/device/api/" + document.deviceName + "/cable-diag?port=" + this.port
+                "/device/api/" + this.deviceName + "/cable-diag?port=" + this.port
             )
             if (response.status === 200) info = await response.json()
         } catch (err) {

@@ -36,6 +36,19 @@ class MediaFileInfo {
 }
 
 
+function newMediaFileInfo(data: any): MediaFileInfo {
+    return new MediaFileInfo(
+        data.description,
+        data.file_type,
+        data.id,
+        data.is_image,
+        data.mod_time,
+        data.name,
+        data.url,
+    )
+}
+
+
 function newMediaFileInfoList(data: Array<any>): Array<MediaFileInfo> {
     let res: Array<MediaFileInfo> = []
     for (const datum of data) {
@@ -52,4 +65,4 @@ function newMediaFileInfoList(data: Array<any>): Array<MediaFileInfo> {
     return res
 }
 
-export {MediaFile, MediaFileInfo, newMediaFileInfoList}
+export {MediaFile, MediaFileInfo, newMediaFileInfoList, newMediaFileInfo}
