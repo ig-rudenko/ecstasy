@@ -106,6 +106,9 @@ class OLTState(models.Model):
     class Meta:
         db_table = "gpon_olt_states"
 
+    def __str__(self):
+        return f"{self.device} ({self.olt_port})"
+
 
 class HouseOLTState(models.Model):
     """
@@ -167,6 +170,10 @@ class HouseB(models.Model):
     def type(self) -> str:
         return "building" if self.apartment_building else "house"
 
+    def __str__(self):
+        prefix = "Building" if self.apartment_building else "House"
+        return f"{prefix} {self.address}"
+
 
 class End3(models.Model):
     """
@@ -222,6 +229,9 @@ class End3(models.Model):
         "Бирюзово-черный",
     ]
 
+    def __str__(self):
+        return f"{self.address}, {self.location}"
+
 
 @receiver(post_save, sender=End3)
 def create_tech_capabilities(sender, instance: End3, created: bool, **kwargs):
@@ -269,6 +279,9 @@ class TechCapability(models.Model):
 
     class Meta:
         db_table = "gpon_tech_capabilities"
+
+    def __str__(self):
+        return f"{self.end3.address} {self.end3.location}"
 
 
 class Customer(models.Model):

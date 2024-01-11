@@ -363,7 +363,6 @@ JAZZMIN_SETTINGS = {
         {"name": "Документация API", "url": "swagger-ui", "new_window": True},
         {"model": "auth.User"},
     ],
-    "related_modal_active": True,
     "navigation_expanded": False,
     "icons": {
         "auth": "fas fa-users-cog",
