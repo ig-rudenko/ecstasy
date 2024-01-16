@@ -508,7 +508,7 @@ export default defineComponent({
                     this.$toast.add({
                       severity: value.data.save?"success":"info",
                       summary: `Порт: ${value.data.port}`,
-                      detail: `Состояние: ${value.data.status.toUpperCase()}<br> Конфигурация была сохранена!`,
+                      detail: `Состояние: ${value.data.status.toUpperCase()} Конфигурация ${value.data.save?'':'НЕ '}была сохранена!`,
                       life: 5000
                     })
                 }
