@@ -9,4 +9,4 @@ const app = createApp(App);
 app.use(VueClipboard);
 app.use(ToastService);
 app.use(PrimeVue, {ripple: true});
-app.mount('#device');
+app.mount('#app');

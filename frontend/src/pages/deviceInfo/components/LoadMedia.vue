@@ -87,8 +87,9 @@
 import {defineComponent} from "vue";
 
 import MediaPreview from "./MediaPreview.vue";
-import {MediaFile} from "../files";
+import {MediaFile, newMediaFileInfo} from "../files";
 import api_request from "../../../api_request";
+import {AxiosResponse} from "axios";
 
 export default defineComponent({
   name: "LoadMedia",
@@ -175,7 +176,7 @@ export default defineComponent({
       }
     },
 
-    uploadAllFiles(): void {
+    async uploadAllFiles() {
       if (!this.files.length) return;
 
       // Создаем временные список файлов для загрузки
@@ -187,8 +188,7 @@ export default defineComponent({
       this.loadingBar.partWidth = 100 / files.length
 
       for (let i = 0; i < files.length; i++) {
-        this.uploadFile(files[i])
-
+        await this.uploadFile(files[i])
         // Добавляем статус загрузки файла (смотрим, нет ли ошибок)
         this.loadingBar.progress.push({
           className: files[i].errors.length>0?"bg-danger":"bg-primary"
@@ -205,18 +205,18 @@ export default defineComponent({
       this.notification.text = `(${uploaded} из ${files.length}) медиафайла(ов) успешно загружены`
     },
 
-    uploadFile(mediaFile: MediaFile): void {
+    uploadFile(mediaFile: MediaFile): Promise<number | void> | undefined {
       if (!mediaFile.file) return;
 
       // Создать объект FormData для отправки файла
       let formData = new FormData();
       formData.append("file", mediaFile.file);
       formData.append("description", mediaFile.description)
-      api_request.post(`/device/api/${this.deviceName}/media`, formData)
+      return api_request.post(`/device/api/${this.deviceName}/media`, formData)
           .then(
-              () => {
+              (value: AxiosResponse<any>) => {
                 this.deleteFile(mediaFile)
-                this.$emit("loadedmedia", mediaFile)
+                this.$emit("loadedmedia", newMediaFileInfo(value.data))
               },
               (reason: any) => mediaFile.errors.push(this.handleUploadFileError(reason.response.data))
           )

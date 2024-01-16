@@ -1,6 +1,4 @@
-<template>
-<div id="device">
-
+<template id="app">
   <Toast/>
 
     <div class="row mb-3">
@@ -200,8 +198,6 @@
         </svg>
       </symbol>
     </svg>
-
-</div>
 
 <ScrollTop/>
 
@@ -605,7 +601,7 @@ export default defineComponent({
 
     showToastError(reason: any, text: string = "") {
       this.$toast.add({ severity: "error", summary: "ERROR! status:" + reason.response.status,
-        detail: text + ". Причина: " + reason.response.data?.detail, life: 5000 })
+        detail: text + ". Причина: " + (reason.response.data?.detail || reason.response.data?.error), life: 10000 })
     }
 
   },

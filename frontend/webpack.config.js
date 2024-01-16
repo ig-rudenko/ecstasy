@@ -3,8 +3,8 @@ const { VueLoaderPlugin } = require('vue-loader'); // плагин для заг
 
 module.exports = {
     entry: {
-        // devices_list: './src/pages/devicesList',
-        device_info: './src/pages/deviceInfo',
+        devices_list: './src/pages/devicesList',
+        // device_info: './src/pages/deviceInfo',
         // search_description: './src/pages/descriptionSearch',
         // traceroute: './src/pages/traceroute',
         // transport_ring: './src/transport_ring.js',
