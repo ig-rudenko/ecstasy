@@ -1,4 +1,7 @@
 /static/*
+!/static/bootstrap
+!/static/leaflet
+!/static/swagger
 !/static/css
 !/static/js
 !/static/img
