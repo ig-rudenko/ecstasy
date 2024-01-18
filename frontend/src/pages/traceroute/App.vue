@@ -200,15 +200,17 @@
 </template>
 
 <script lang="ts">
+import {defineComponent} from "vue";
+
 import api_request from "../../api_request";
 import ScanStatus from "./scan";
 import TracerouteNetwork from "./net";
 
-export default {
+export default defineComponent({
   name: 'app',
   data() {
     return {
-      macScanIcon: "",
+      macScanIcon: "" as string,
 
       vlanScanStatus: new ScanStatus("/tools/ajax/vlans-scan/check", "/tools/ajax/vlans-scan/run"),
       macScanStatus: new ScanStatus("/gather/mac-scan/check", "/gather/mac-scan/run"),
@@ -217,15 +219,15 @@ export default {
       macTracerouteStarted: false,
 
       // Установка значения по умолчанию для свойства tracerouteMode.
-      tracerouteMode: 'vlan',
+      tracerouteMode: 'vlan' as ("vlan" | "mac"),
 
       // Пользовательский ввод
-      inputVlan: "",
-      inputMac: "",
+      inputVlan: "" as string,
+      inputMac: "" as string,
 
       inputVlanInfo: {
-        name: "",
-        description: ""
+        name: "" as string,
+        description: "" as string
       },
 
       // Свойство данных, которое используется для хранения состояния флажков.
@@ -268,7 +270,7 @@ export default {
     /**
      * Метод, возвращающий копию объекта baseVisOptions с изменениями, в зависимости от значения свойства tracerouteMode.
      */
-    getVisOptions(...update): any {
+    getVisOptions(...update: any[]): any {
       if (this.tracerouteMode==='vlan'){
         this.vlanNetwork.options.edges.arrows.middle.enabled = false
         return {...this.vlanNetwork.options, ...update}
@@ -279,7 +281,6 @@ export default {
       }
 
     },
-
 
     // Проверяет, действителен ли vlan.
     validateVlan(vlan: string): number {
@@ -352,7 +353,7 @@ export default {
     },
 
   }
-}
+});
 </script>
 
 <style>
