@@ -1,7 +1,7 @@
 class ZabbixInfo {
     constructor(
         public description: string,
-        public inventory: Object,
+        public inventory: any,
     ) {}
 }
 

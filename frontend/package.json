@@ -1,6 +1,6 @@
 {
   "name": "ecstasy",
-  "version": "17.5.7",
+  "version": "17.7.0",
   "scripts": {
     "build": "webpack",
     "dev": "vite"

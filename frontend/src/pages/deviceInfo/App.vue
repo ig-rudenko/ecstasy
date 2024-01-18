@@ -46,17 +46,17 @@
         <div v-if="generalInfo" class="card shadow" style="min-height: 220px">
             <div class="card-body button-panel">
     <!--    Кнопка для отображения панели с информацией Zabbix-->
-            <div class="col-md-6">
+            <div v-if="generalInfo.zabbixInfo"  class="col-md-6">
               <ZabbixInfo :zabbix-info="generalInfo.zabbixInfo"/>
             </div>
 
     <!--    Ссылка на Zabbix-->
-            <div class="col-md-6">
+            <div v-if="generalInfo.zabbixHostID" class="col-md-6">
                 <ToZabbixLink :zabbix-host-id="generalInfo.zabbixHostID" :zabbix-url="generalInfo.zabbixURL"/>
             </div>
 
     <!--    Ссылка на Elastic Stack-->
-            <div class="col-md-6">
+            <div v-if="generalInfo.elasticStackLink" class="col-md-6">
                 <ElasticStackLink :logs-url="generalInfo.elasticStackLink"/>
             </div>
 

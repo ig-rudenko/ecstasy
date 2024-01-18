@@ -18,6 +18,13 @@
   </div>
   <div class="offcanvas-body">
     <div v-if="zabbixInfo">
+
+        <div class="border d-flex flex-wrap mb-4 p-2 rounded-2">
+          <div v-for="imageURL in images" class="p-3">
+            <Image :src="imageURL" alt="Image" width="120" preview />
+          </div>
+        </div>
+
         <div v-if="zabbixInfo.description" class="card card-body">
           {{ zabbixInfo.description }}
         </div>
@@ -33,11 +40,40 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
+import Image from "primevue/image";
+
 import {ZabbixInfo} from "../GeneralInfo";
+import api_request from "../../../api_request";
+import {AxiosResponse} from "axios";
 
 export default defineComponent({
   props: {
-    zabbixInfo: {required: true, type: Object as PropType<ZabbixInfo>}
+    zabbixInfo: {required: true, type: {} as PropType<ZabbixInfo>}
   },
+  components: {Image},
+  data() {
+    return {
+      images: [] as string[]
+    }
+  },
+  async mounted() {
+      await this.getImages();
+  },
+  methods: {
+    async getImages() {
+      if (!this.zabbixInfo.inventory?.vendor || !this.zabbixInfo.inventory?.model) return;
+
+      for (let i = 1; i < 10; i++) {
+        const url = "/static/img/devices/"+
+            this.zabbixInfo.inventory.vendor.toLowerCase()+"/"+this.zabbixInfo.inventory.model.toUpperCase()
+            + "_" + i + ".png"
+        await api_request.head(url)
+            .then((value: AxiosResponse<any>) => {
+              if (value.status !== 200) i = 10;
+              this.images.push(url)
+            })
+      }
+    },
+  }
 })
 </script>
