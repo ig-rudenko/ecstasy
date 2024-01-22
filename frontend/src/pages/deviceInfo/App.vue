@@ -1,5 +1,12 @@
 <template id="app">
-  <Toast/>
+  <Toast>
+    <template #message="slotProps">
+        <div class="flex flex-column align-items-start" style="flex: 1">
+            <div class="font-medium text-lg my-3 text-900" v-html="slotProps.message.summary"></div>
+            <div class="font-medium text-lg my-3 text-900" v-html="slotProps.message.detail"></div>
+        </div>
+    </template>
+  </Toast>
 
     <div class="row mb-3">
       <div class="col" style="padding: 0">
@@ -503,14 +510,18 @@ export default defineComponent({
           .then(
               value => {
                 if (value.data.detail) {
-                    this.$toast.add({ severity: "error", summary: "ERROR", detail: value.data.detail, life: 5000 })
+                  this.$toast.add({ severity: "error", summary: "ERROR", detail: value.data.detail, life: 5000 })
                 } else {
-                    this.$toast.add({
-                      severity: value.data.save?"success":"info",
-                      summary: `Порт: ${value.data.port}`,
-                      detail: `Состояние: ${value.data.status.toUpperCase()} Конфигурация ${value.data.save?'':'НЕ '}была сохранена!`,
-                      life: 5000
-                    })
+                  let status = value.data.status.toUpperCase();
+                  let className = status==="DOWN"?"bg-danger":(status==="RELOAD"?"bg-warning":"bg-success");
+                  status = status==="DOWN"?"ADMIN DOWN":status;
+                  this.$toast.add({
+                    severity: value.data.save?"success":"info",
+                    summary: `Порт: <span class="badge bg-secondary">${value.data.port}</span>`,
+                    detail: `Состояние: <span class="badge ${className}">${status}</span>
+                             Конфигурация ${value.data.save?'':'НЕ '}была сохранена!`,
+                    life: 5000
+                  })
                 }
               },
               (reason: any) => this.showToastError(reason)
@@ -600,8 +611,8 @@ export default defineComponent({
 
 
     showToastError(reason: any, text: string = "") {
-      this.$toast.add({ severity: "error", summary: "ERROR! status:" + reason.response.status,
-        detail: text + ". Причина: " + (reason.response.data?.detail || reason.response.data?.error), life: 10000 })
+      this.$toast.add({ severity: "error", summary: `<h4>ERROR! status: ${reason.response.status}</h4>`,
+        detail: text + " Причина: " + (reason.response.data?.detail || reason.response.data?.error), life: 10000 })
     }
 
   },

@@ -65,7 +65,7 @@ export default defineComponent({
 
       for (let i = 1; i < 10; i++) {
         const url = "/static/img/devices/"+
-            this.zabbixInfo.inventory.vendor.toLowerCase()+"/"+this.zabbixInfo.inventory.model.toUpperCase()
+            this.zabbixInfo.inventory.vendor.toLowerCase()+"/"+this.zabbixInfo.inventory.model.toUpperCase().replace("/", "-")
             + "_" + i + ".png"
         await api_request.head(url)
             .then((value: AxiosResponse<any>) => {

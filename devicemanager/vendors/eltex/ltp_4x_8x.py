@@ -116,6 +116,8 @@ class EltexLTP(BaseDevice):
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 
+        self.model = self.model.replace(":", "-")
+
         # Проверяем, является ли модель LTP-4X.
         if "LTP-4X" in self.model:
             self.gpon_ports_count = 4
