@@ -446,13 +446,13 @@ class MacListAPIViewTestCase(APITestCase):
         # Добавляем название VLAN
         VlanName.objects.create(vid=1051, name=vlan_name)
 
-        with self.assertNumQueries(6):
-            # 1. django_session
-            # 2. auth_user
-            # 3. devices
-            # 4. user_profile
-            # 5. devices_group
-            # 6. vlan_name (Только один раз, проверка кэша)
+        with self.assertNumQueries(5):
+            # django_session Cached Now
+            # 1. auth_user
+            # 2. devices
+            # 3. user_profile
+            # 4. devices_group
+            # 5. vlan_name (Только один раз, проверка кэша)
             resp = self.client.get(
                 reverse("devices-api:mac-list", args=(self.device.name,)) + "?port=eth1"
             )

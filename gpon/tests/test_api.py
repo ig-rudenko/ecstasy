@@ -46,7 +46,7 @@ class TestTechDataAPIView(APITestCase):
         for _ in range(8):
             self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
 
-        with self.assertNumQueries(15):
+        with self.assertNumQueries(14):
             resp = self.client.get(path=reverse("gpon:api:tech-data"))
             self.assertEqual(resp.status_code, 200)
             pprint(resp.data)
