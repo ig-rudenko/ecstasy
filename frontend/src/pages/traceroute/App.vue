@@ -45,7 +45,7 @@
             <div>
               <input @keyup.enter="load_vlan_traceroute"
                      @input="getInputVlanInfo"
-                     v-model.trim="inputVlan"
+                     v-model="input.vlan"
                      style="text-align: center; width: 120px; height: 45px" type="text" class="form-control rounded-5 me-2"
                      autofocus placeholder="vlan">
             </div>
@@ -98,7 +98,7 @@
                       <path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8Z"/>
                     </svg>
               </span>
-              <input disabled v-model.number="vlanTracerouteOptions.graphMinLength" id="min-graph-length"
+              <input disabled :value="vlanTracerouteOptions.graphMinLength" id="min-graph-length"
                      type="text" class="form-control text-center">
               <span @click="vlanTracerouteOptions.graphMinLength++" class="input-group-text noselect cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
@@ -150,7 +150,7 @@
 
         <div class="my-3 d-flex align-items-center">
             <div>
-              <input @keyup.enter="load_mac_traceroute" v-model.trim="inputMac"
+              <input @keyup.enter="load_mac_traceroute" v-model="input.mac"
                      style="text-align: center; width: 200px; height: 45px;" type="text"
                      class="form-control rounded-5" autofocus placeholder="mac">
             </div>
@@ -212,7 +212,7 @@ export default defineComponent({
     return {
       macScanIcon: "" as string,
 
-      vlanScanStatus: new ScanStatus("/tools/ajax/vlans-scan/check", "/tools/ajax/vlans-scan/run"),
+      vlanScanStatus: new ScanStatus("/tools/api/vlans-scan/check", "/tools/api/vlans-scan/run"),
       macScanStatus: new ScanStatus("/gather/mac-scan/check", "/gather/mac-scan/run"),
 
       vlanTracerouteStarted: false,
@@ -222,8 +222,10 @@ export default defineComponent({
       tracerouteMode: 'vlan' as ("vlan" | "mac"),
 
       // Пользовательский ввод
-      inputVlan: "" as string,
-      inputMac: "" as string,
+      input: {
+        vlan: "",
+        mac: "",
+      },
 
       inputVlanInfo: {
         name: "" as string,
@@ -253,7 +255,8 @@ export default defineComponent({
   methods: {
 
     getInputVlanInfo() {
-      api_request.get("/tools/ajax/vlan_desc?vlan="+this.inputVlan)
+      if (this.validateVlan(this.input.vlan) === 0) return;
+      api_request.get("/tools/api/vlan-desc?vlan="+this.input.vlan)
           .then(resp => {this.inputVlanInfo = resp.data})
     },
 
@@ -270,14 +273,16 @@ export default defineComponent({
     /**
      * Метод, возвращающий копию объекта baseVisOptions с изменениями, в зависимости от значения свойства tracerouteMode.
      */
-    getVisOptions(...update: any[]): any {
+    getVisOptions(...update: any): any {
+      if (!update) update = {};
+
       if (this.tracerouteMode==='vlan'){
-        this.vlanNetwork.options.edges.arrows.middle.enabled = false
-        return {...this.vlanNetwork.options, ...update}
+        this.vlanNetwork.options.edges.arrows.middle.enabled = false;
+        return {...this.vlanNetwork.options, ...update};
 
       } else {
-        this.macNetwork.options.edges.arrows.middle.enabled = true
-        return {...this.macNetwork.options, ...update}
+        this.macNetwork.options.edges.arrows.middle.enabled = true;
+        return {...this.macNetwork.options, ...update};
       }
 
     },
@@ -300,21 +305,22 @@ export default defineComponent({
      */
     load_vlan_traceroute() {
       // Проверяем, действителен ли vlan.
-      let valid_vlan = this.validateVlan(this.inputVlan)
+      let valid_vlan = this.validateVlan(this.input.vlan)
       if (valid_vlan === 0) return;
 
       this.vlanTracerouteStarted = true
 
-      let url = '/tools/ajax/vlantraceroute?vlan=' + this.inputVlan +
+      let url = '/tools/api/vlan-traceroute?vlan=' + this.input.vlan +
           '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
           '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
-          '&double-check=' + this.vlanTracerouteOptions.doubleCheckVlan +
-          '&graph-min-length=' + this.vlanTracerouteOptions.graphMinLength
+          '&double_check=' + this.vlanTracerouteOptions.doubleCheckVlan +
+          '&graph_min_length=' + this.vlanTracerouteOptions.graphMinLength
 
       api_request.get(url)
           .then(
-              resp => {
-                this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions(resp.data.options));
+              (resp) => {
+                let options: any = resp.data?resp.data.options:null
+                this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions(options));
                 this.vlanTracerouteStarted = false;
               }
           ).catch(
@@ -334,7 +340,7 @@ export default defineComponent({
      * И создаем в определенном блоке граф для данной трассировки.
      */
     load_mac_traceroute() {
-      let valid_mac = this.validateMac(this.inputMac)
+      let valid_mac = this.validateMac(this.input.mac)
       if (!valid_mac.length) return
 
       this.macTracerouteStarted = true

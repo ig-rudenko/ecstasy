@@ -27,12 +27,19 @@ schema_view = get_schema_view(
 Время жизни access токена - `{settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60} минут`
 Время жизни refresh токена - `{settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
         """,
-        contact=openapi.Contact(name="Rudenko Igor", email="irudenko@sevtelecom.ru"),
-        license=openapi.License(name="License: Apache-2.0"),
+        contact=openapi.Contact(
+            name=settings.CONTACT_NAME or "user",
+            email=settings.CONTACT_EMAIL or "example@mail.com",
+        ),
+        license=openapi.License(
+            name="License: Apache-2.0",
+            url="https://github.com/ig-rudenko/ecstasy/blob/master/LICENSE",
+        ),
     ),
     # Это список всех конечных точек, которые будут отображаться в Swagger.
     patterns=[
         path("device/api/", include("check.api.urls")),
+        path("tools/api/", include("net_tools.api.urls")),
         path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
         path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
         path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),

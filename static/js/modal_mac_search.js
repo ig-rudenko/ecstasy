@@ -6,7 +6,7 @@ let result_div = document.getElementById('modal-mac-result')
 function get_vendor(mac_value) {
     $.ajax({
         type: 'get',
-        url: '/tools/ajax/mac_vendor/' + mac_value,
+        url: '/tools/api/mac-vendor/' + mac_value,
         success: function (response) {
             vendor.innerHTML = `${response.vendor} <br> Адрес: ${response.address}`;
         }
@@ -16,7 +16,7 @@ function get_vendor(mac_value) {
 function get_info_wtf(mac_value) {
     $.ajax({
         type: 'get',
-        url: '/tools/ajax/ip-mac-info/' + mac_value,
+        url: '/tools/api/ip-mac-info/' + mac_value,
         success: function (response) {
             result_div.innerHTML = response
         },

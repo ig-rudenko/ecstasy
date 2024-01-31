@@ -8,16 +8,22 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from pyvis.network import Network
 from requests import RequestException
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.request import Request
 
 from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
 from devicemanager.device import ZabbixAPIConnection
-from ..arp_find import find_mac_or_ip
-from ..finder import (
-    Finder,
-    VlanTraceroute,
-    MultipleVlanTraceroute,
+from .swagger.schemas import (
+    get_vendor_schema,
+    find_by_description_schema,
+    get_vlan_desc_schema,
+    vlan_traceroute_schema,
 )
+from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
+from ..arp_find import find_mac_or_ip
+from ..finder import Finder, VlanTraceroute, MultipleVlanTraceroute
 from ..models import VlanName
 from ..network import VlanNetwork
 from ..tasks import interfaces_scan, check_scanning_status
@@ -37,31 +43,34 @@ def run_periodically_scan(request):
 
 
 @login_required
-def check_periodically_scan(request):
-    return JsonResponse(check_scanning_status())
+def check_periodically_scan(request: Request):
+    return Response(check_scanning_status())
 
 
+@get_vendor_schema
+@api_view(["GET"])
 @login_required
-def get_vendor(request, mac: str) -> JsonResponse:
+def get_vendor(request: Request, mac: str) -> Response:
     """Определяет производителя по MAC адресу"""
-
     resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2)
     if resp.status_code == 200:
         data = resp.json()
-        return JsonResponse(
+        return Response(
             {
                 "vendor": data["company"],
                 "address": data["address"],
             }
         )
-    return JsonResponse({"vendor": resp.status_code})
+    return Response({"vendor": resp.status_code})
 
 
+@find_by_description_schema
+@api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_desc_search", raise_exception=True)
-def find_as_str(request):
+def find_by_description(request):
     """
-    ## Вывод результата поиска портов по описанию
+    ## Поиск портов по описанию и комментариям.
     """
 
     if not request.GET.get("pattern"):
@@ -114,27 +123,36 @@ def ip_mac_info(request, ip_or_mac: str):
     )
 
 
+@get_vlan_desc_schema
+@api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_traceroute", raise_exception=True)
-def get_vlan_desc(request) -> JsonResponse:
+def get_vlan_desc(request: Request) -> Response:
     """
     ## Возвращаем имя VLAN, который был передан в HTTP запросе
     """
+    serializer = GetVlanDescQuerySerializer(data=request.query_params)
+    serializer.is_valid(raise_exception=True)
+
+    data = {"name": "", "description": ""}
 
     try:
         # Получение имени vlan из базы данных.
-        vlan: VlanName = VlanName.objects.get(vid=int(request.GET.get("vlan", "")))
-        # Возвращает ответ JSON с именем vlan.
-        return JsonResponse({"name": vlan.name, "description": vlan.description})
+        vlan: VlanName = VlanName.objects.get(vid=serializer.validated_data["vlan"])
+    except VlanName.DoesNotExist:
+        pass
+    else:
+        data = {"name": vlan.name, "description": vlan.description}
 
-    except (VlanName.DoesNotExist, ValueError):
-        # Возврат пустого объекта JSON.
-        return JsonResponse({"name": "", "description": ""})
+    # Возвращает ответ JSON с именем vlan.
+    return Response(data)
 
 
+@vlan_traceroute_schema
+@api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_traceroute", raise_exception=True)
-def get_vlan(request):
+def get_vlan_traceroute(request: Request) -> Response:
     """
     ## Трассировка VLAN и отправка карты
 
@@ -155,21 +173,14 @@ def get_vlan(request):
     соседей и линии связи из результата. Затем функция отправляет карту в виде JSON-объекта как ответ на запрос.
     """
 
-    # Если в запросе нет vlan, вернет пустой объект JSON.
-    if not request.GET.get("vlan"):
-        return JsonResponse({"data": {}})
+    serializer = VlanTracerouteQuerySerializer(data=request.query_params)
+    serializer.is_valid(raise_exception=True)
 
-    empty_ports = request.GET.get("ep") == "true"
-    only_admin_up = request.GET.get("ad") == "true"
-    double_check = request.GET.get("double-check") == "true"
-    try:
-        graph_min_length = int(request.GET.get("graph-min-length", 0))
-    except ValueError:
-        graph_min_length = 0
-    try:
-        vlan = int(request.GET.get("vlan"))
-    except ValueError:
-        return JsonResponse({"detail": "VLAN должен быть числом"}, status=400)
+    vlan = serializer.validated_data["vlan"]
+    empty_ports = serializer.validated_data["ep"]
+    only_admin_up = serializer.validated_data["ad"]
+    double_check = serializer.validated_data["double_check"]
+    graph_min_length = serializer.validated_data["graph_min_length"]
 
     # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
@@ -187,7 +198,7 @@ def get_vlan(request):
     )
 
     if not result:  # Если поиск не дал результатов
-        return JsonResponse(
+        return Response(
             {
                 "nodes": [],
                 "edges": [],
@@ -203,7 +214,7 @@ def get_vlan(request):
 
     network.create_network(result, show_admin_down_ports=only_admin_up)
 
-    return JsonResponse(
+    return Response(
         {
             "nodes": network.nodes,
             "edges": network.edges,

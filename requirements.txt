@@ -20,7 +20,7 @@ djangorestframework
 redis
 django-filter
 djangorestframework-simplejwt
-drf-yasg
+drf-yasg>=1.21.7
 pysftp>=0.2.9
 django-dbbackup
 drf-orjson-renderer

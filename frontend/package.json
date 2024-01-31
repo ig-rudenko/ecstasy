@@ -1,8 +1,8 @@
 {
   "name": "ecstasy",
-  "version": "17.7.0",
+  "version": "17.7.4",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --stats-error-details",
     "dev": "vite"
   },
   "dependencies": {

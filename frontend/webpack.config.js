@@ -5,13 +5,13 @@ module.exports = {
     entry: {
         // devices_list: './src/pages/devicesList',
         // device_info: './src/pages/deviceInfo',
-        // search_description: './src/pages/descriptionSearch',
-        // traceroute: './src/pages/traceroute',
+        search_description: './src/pages/descriptionSearch',
+        traceroute: './src/pages/traceroute',
         // transport_ring: './src/transport_ring.js',
         // access_rings: './src/access_rings.js',
         // gpon_tech_data: './src/gpon_base/tech_data.js',
         // gpon_create_tech_data: './src/gpon_base/create_tech_data.js',
-        gpon_view_olt_tech_data: './src/gpon_base/view_olt_tech_data.js',
+        // gpon_view_olt_tech_data: './src/gpon_base/view_olt_tech_data.js',
         // gpon_view_building_tech_data: './src/gpon_base/view_building_tech_data.js',
         // gpon_view_end3_tech_data: './src/gpon_base/view_end3_tech_data.js',
         // gpon_subscriber_data: './src/gpon_base/subscriber_data.js',
@@ -22,7 +22,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, '../static/js/'),
         publicPath: '../static/js/',
-        filename: '[name]_v17.7.3.js'
+        filename: '[name]_v17.7.4.js'
     },
     module: {
         rules: [
@@ -64,7 +64,7 @@ module.exports = {
         extensions: ['.tsx', '.ts', '.js'],
     },
     performance: {
-        maxEntrypointSize: 712000,
-        maxAssetSize: 712000
+        maxEntrypointSize: 999000,
+        maxAssetSize: 999000
    },
 }

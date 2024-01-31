@@ -143,7 +143,7 @@ export default defineComponent({
     searchDescription() {
       if (this.pattern.length < 2) return;
       this.waitResult = true
-      api_request.get("/tools/ajax/find?pattern="+this.pattern).then(
+      api_request.get("/tools/api/find-by-desc?pattern="+this.pattern).then(
           (value: any) => {
             this.interfaces = newSearchMatchList(value.data.interfaces)
             this.lastPattern = this.pattern

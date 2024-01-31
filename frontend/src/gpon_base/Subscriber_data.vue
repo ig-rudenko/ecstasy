@@ -24,6 +24,10 @@
 
     <SubscriberDataTable v-if="gponSubscriberData" :data="gponSubscriberData"/>
 
+    <div v-else class="d-flex justify-content-center p-4">
+        <div class="spinner-border" role="status" style="width: 7rem;height: 7rem;"></div>
+    </div>
+
   </div>
 </template>
 
