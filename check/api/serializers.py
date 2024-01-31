@@ -40,12 +40,16 @@ class DeviceMediaSerializer(serializers.ModelSerializer):
 
 
 class InterfacesCommentsSerializer(serializers.ModelSerializer):
-    device = serializers.CharField(source="device.name", read_only=True)
+    device = serializers.SlugRelatedField(
+        slug_field="name",
+        help_text="Название оборудования",
+        queryset=Devices.objects.all(),
+    )
 
     class Meta:
         model = InterfacesComments
         fields = ["id", "interface", "comment", "user", "device"]
-        read_only_fields = ["id", "user", "device"]
+        read_only_fields = ["id", "user"]
 
 
 class MacSerializer(serializers.Serializer):

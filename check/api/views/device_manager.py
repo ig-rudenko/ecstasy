@@ -513,8 +513,7 @@ class CreateInterfaceCommentAPIView(generics.CreateAPIView):
     serializer_class = InterfacesCommentsSerializer
 
     def perform_create(self, serializer):
-        dev = get_object_or_404(models.Devices, name=self.request.data.get("device"))
-        serializer.save(user=self.request.user, device=dev)
+        serializer.save(user=self.request.user)
 
 
 class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
