@@ -75,7 +75,7 @@ export default defineComponent({
   methods: {
     getVendor() {
       if (!this.mac) return;
-      api_request.get("/tools/ajax/mac_vendor/" + this.mac)
+      api_request.get("/tools/api/mac-vendor/" + this.mac)
           .then(
               (value: AxiosResponse<MACDetail>) => {
                 this.vendor = value.data.vendor
@@ -87,7 +87,7 @@ export default defineComponent({
 
     macDetail() {
       if (!this.mac) return;
-      api_request.get("/tools/ajax/ip-mac-info/" + this.mac)
+      api_request.get("/tools/api/ip-mac-info/" + this.mac)
           .then(
               (value: AxiosResponse<string>) => {
                 this.detailInfo = value.data
