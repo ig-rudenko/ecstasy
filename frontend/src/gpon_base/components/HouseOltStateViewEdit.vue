@@ -6,7 +6,7 @@
       <circle cx="8" cy="8" r="8"/>
     </svg>
     <h4 class="m-0 me-3">
-      Адрес: <a :href="'/gpon/tech-data/building/'+buildingData.id">{{ getFullAddress(buildingData.address) }}</a>
+      Адрес: <a :href="'/gpon/tech-data/building/'+buildingData.address.id">{{ getFullAddress(buildingData.address) }}</a>
     </h4>
 
     <!-- Сохранить изменения -->
