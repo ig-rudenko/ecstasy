@@ -10,7 +10,7 @@
     "chart.js": "^4.4.1",
     "diff": "^5.1.0",
     "glob-parent": "^6.0.2",
-    "primevue": "^3.44.0",
+    "primevue": "^3.46.0",
     "vue": "^3.3.13",
     "vue-chartjs": "^5.3.0",
     "vue-pdf": "^4.3.0"
@@ -20,7 +20,7 @@
     "vis-network": "^9.1.9",
     "chokidar": "^3.5.3",
     "css-loader": "^6.8.1",
-    "primevue": "^3.44.0",
+    "primevue": "^3.46.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "babel-core": "^6.26.3",
