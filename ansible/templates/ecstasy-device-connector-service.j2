@@ -19,7 +19,7 @@ WorkingDirectory={{ root_folder }}
 User=root
 Group=root
 
-ExecStart={{ root_folder }}/venv/bin/gunicorn -b {{device_connector_socket}} device_connector:app -k gevent -w 1
+ExecStart={{ root_folder }}/venv/bin/gunicorn -b {{device_connector_socket}} device_connector:app -k gevent -w 1 --keep-alive 180
 
 TimeoutSec=10
 Restart=always

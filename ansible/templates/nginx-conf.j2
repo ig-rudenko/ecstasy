@@ -43,6 +43,8 @@ server {
 
     location /static/ {
         alias {{root_folder}}/static/;
+        gzip_static on;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
     }
 
     location / {
@@ -51,5 +53,9 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass http://{{gunicorn_socket}};
+
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Keep-Alive "timeout=60";
     }
 }
