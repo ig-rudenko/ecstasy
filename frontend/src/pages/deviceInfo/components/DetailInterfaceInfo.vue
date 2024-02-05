@@ -111,6 +111,7 @@
             :device-name="deviceName"
             :data="complexInfo.portDetailInfo.data"
             :permission-level="permissionLevel"
+            :register-comment-action="registerCommentAction"
             :register-interface-action="registerInterfaceAction"
             :interface="interface" />
       </div>

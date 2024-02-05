@@ -1,13 +1,13 @@
 class Customer {
     constructor(
-        id: number,
-        type: string,
-        firstName: string,
-        surname: string,
-        lastName: string,
-        companyName: string,
-        contract: string,
-        phone: string
+        public id: number,
+        public type: string,
+        public firstName: string,
+        public surname: string,
+        public lastName: string,
+        public companyName: string,
+        public contract: string,
+        public phone: string
     ) {}
 }
 

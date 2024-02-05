@@ -6,6 +6,7 @@
 
           <div class="btn-group" role="group">
 
+            <Comment :interface="ontInterface" :register-comment-action="registerCommentAction"/>
     <!--        Название Интерфейса-->
             <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
               <span class="position-relative">
@@ -188,13 +189,21 @@ import api_request from "../../../api_request";
 import {AxiosResponse} from "axios";
 import MacInfo from "../../../types/mac";
 import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
+import Customer from "../../../types/customer";
+import Address from "../../../types/address";
+import Comment from "../../../components/Comment.vue";
+import InterfaceComment, {newInterfaceCommentsList} from "../../../types/comments";
 
 export default defineComponent({
   props: {
     deviceName: {required: true, type: String},
     interface: {required: true, type: Object as PropType<Interface>},
-    line: {required: true, type: [] as PropType<string[]>},
+    line: {required: true, type: [] as PropType<any[]>},
     permissionLevel: {required: true, type: Number},
+    registerCommentAction: {
+      required: true,
+      type: Function as PropType<(action:("add"|"update"|"delete"), comment: InterfaceComment, interfaceName: string) => void>
+    },
     registerInterfaceAction: {required: true, type: Function as PropType<(action: ("up"|"down"|"reload"), port: string, description: string) => void> },
     showSubscribersData: {required: false, type: Boolean},
     subscribersData: {
@@ -210,6 +219,13 @@ export default defineComponent({
     return {
       showDetailInfo: false,
       ontID: this.line[0],
+      status: this.line[1],
+      equipmentID: this.line[2],
+      rssi: this.line[3],
+      serialNumber: this.line[4],
+      description: this.line[5],
+      macs: this.line[6],
+      comments: newInterfaceCommentsList(this.line[7]),
 
       portDetailMenu: "" as ""|"portConfig"|"portErrors",
       MACs: [] as MacInfo[],
@@ -218,6 +234,7 @@ export default defineComponent({
   },
 
   components: {
+    Comment,
     PortControlButtons,
   },
 
@@ -226,7 +243,9 @@ export default defineComponent({
       return new Interface(
           this.interface.name + "/" + this.ontID,
           this.line[1],
-          "ONT: " + this.ontID + " " + this.interface.description
+          "ONT: " + this.ontID + " " + this.interface.description,
+          [],
+          this.comments
       )
     },
     lineClasses() {
@@ -237,12 +256,13 @@ export default defineComponent({
 
   methods: {
 
-    getCustomersIDAndFullNameList(ontID: number): {id: string, fullName: string}[] {
-      let result: {id: string, fullName: string}[] = []
-      if (this.subscribersData[String(ontID)]) {
-        for (const subscriberData of this.subscribersData[String(ontID)]) {
-          const c = subscriberData.customer
-          if (c.companyName) { result.push({id: c.id, fullName: c.companyName}) }
+    getCustomersIDAndFullNameList(ontID: number): {id: number, fullName: string}[] {
+      let result: {id: number, fullName: string}[] = []
+      if (this.subscribersData[ontID]) {
+        console.log(this.subscribersData)
+        for (const subscriberData of this.subscribersData[ontID]) {
+          const c: Customer = subscriberData.customer
+          if (c.companyName && c.companyName.length) { result.push({id: c.id, fullName: c.companyName}) }
           else { result.push({id: c.id, fullName: c.surname + " " + c.firstName + " " + c.lastName}) }
         }
       }
@@ -251,9 +271,9 @@ export default defineComponent({
 
     getCustomersAddressList(ontID: number): string[] {
       let result: string[] = []
-      if (this.subscribersData[String(ontID)]) {
-        for (const subscriberData of this.subscribersData[String(ontID)]) {
-          const address = subscriberData.address
+      if (this.subscribersData[ontID]) {
+        for (const subscriberData of this.subscribersData[ontID]) {
+          const address: Address = subscriberData.address
           let address_string = formatAddress(address)
           if (address.apartment){ address_string += ` кв. ${address.apartment}` }
           if (address.floor){ address_string += ` (${address.floor} этаж)` }
@@ -265,8 +285,8 @@ export default defineComponent({
 
     getCustomersServicesList(ontID: number): string[] {
       let result: string[] = []
-      if (this.subscribersData[String(ontID)]) {
-        for (const subscriberData of this.subscribersData[String(ontID)]) {
+      if (this.subscribersData[ontID]) {
+        for (const subscriberData of this.subscribersData[ontID]) {
           result.push(subscriberData.services.join(", "))
         }
       }
@@ -275,8 +295,8 @@ export default defineComponent({
 
     getCustomersTransitList(ontID: number): string[] {
       let result: string[] = []
-      if (this.subscribersData[String(ontID)]) {
-        for (const subscriberData of this.subscribersData[String(ontID)]) {
+      if (this.subscribersData[ontID]) {
+        for (const subscriberData of this.subscribersData[ontID]) {
           result.push(subscriberData.transit)
         }
       }

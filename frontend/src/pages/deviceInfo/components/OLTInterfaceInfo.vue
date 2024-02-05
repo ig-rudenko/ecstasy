@@ -38,6 +38,7 @@
               :device-name="deviceName"
               :interface="interface"
               :register-interface-action="registerInterfaceAction"
+              :register-comment-action="registerCommentAction"
               :permission-level="permissionLevel"
               :line="line"
               :show-subscribers-data="showSubscribersData"
@@ -59,6 +60,7 @@ import api_request from "../../../api_request";
 import Interface from "../../../types/interfaces";
 import SubscribersData, {newSubscriberData} from "../subscribersData";
 import {AxiosResponse} from "axios";
+import InterfaceComment from "../../../types/comments";
 
 type ontData = {
   total_count: number,
@@ -75,6 +77,10 @@ export default defineComponent({
     permissionLevel: {required: true, type: Number},
     data: {required: true, type: Object as PropType<ontData> },
     interface: {required: true, type: Object as PropType<Interface>},
+    registerCommentAction: {
+      required: true,
+      type: Function as PropType<(action:("add"|"update"|"delete"), comment: InterfaceComment, interfaceName: string) => void>
+    },
     registerInterfaceAction: {
       required: true,
       type: Function as PropType<(action:("up"|"down"|"reload"), port: string, description: string) => void>
@@ -94,12 +100,12 @@ export default defineComponent({
   methods: {
 
     getSubscribersData() {
-      if (!this.subscribersData) {
+      if (this.isEmpty(this.subscribersData)) {
         api_request.get("/gpon/api/subscribers-on-device/"+this.deviceName+"?port="+this.interface.name)
             .then(
                 (resp: AxiosResponse<any[]>) => {
-              this.showSubscribersData = true;
-              this.addSubscribersData(resp.data)
+                  this.addSubscribersData(resp.data)
+                  this.showSubscribersData = true;
             })
             .catch(reason => {console.log(reason.response)})
       } else {
@@ -119,6 +125,15 @@ export default defineComponent({
 
     findMacEvent(mac: string) { this.$emit("find-mac", mac) },
     sessionEvent(mac: string, port: string) { this.$emit("session-mac", mac, port) },
+
+    isEmpty(obj: any): boolean {
+      for (let prop in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+          return false;
+        }
+      }
+      return true
+    }
 
   }
 })

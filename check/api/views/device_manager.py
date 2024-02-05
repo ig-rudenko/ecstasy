@@ -433,7 +433,7 @@ class InterfaceInfoAPIView(APIView):
         """
 
         # Ищем возможные комментарии только для GPON типа
-        if data["portDetailInfo"].get("type") != "gpon":
+        if "gpon" not in data["portDetailInfo"].get("type"):
             return
 
         onts_lines = data["portDetailInfo"]["data"].get("onts_lines", [])
@@ -441,22 +441,24 @@ class InterfaceInfoAPIView(APIView):
             return
 
         # Смотрим комментарии на порту оборудования, который начинается на переданный gpon порт.
-        interfaces_comments = device.interfacescomments_set.select_related(
-            "user"
-        ).filter(device__interfacescomments__interface__endswith=gpon_port)
-
+        interfaces_comments = (
+            device.interfacescomments_set.select_related("user")
+            .filter(interface__startswith=gpon_port)
+            .values("comment", "interface", "id", "user__username", "datetime")
+        )
         ont_interfaces_dict: Dict[str, list] = {}
 
         for comment in interfaces_comments:
             comment_data = {
-                "text": comment.comment,
-                "user": comment.user.username,
-                "id": comment.id,
+                "text": comment["comment"],
+                "user": comment["user__username"],
+                "id": comment["id"],
+                "createdTime": comment["datetime"],
             }
-            if ont_interfaces_dict.get(comment.interface):
-                ont_interfaces_dict[comment.interface].append(comment_data)
+            if ont_interfaces_dict.get(comment["interface"]):
+                ont_interfaces_dict[comment["interface"]].append(comment_data)
             else:
-                ont_interfaces_dict[comment.interface] = [comment_data]
+                ont_interfaces_dict[comment["interface"]] = [comment_data]
 
         new_onts_lines = []
 
