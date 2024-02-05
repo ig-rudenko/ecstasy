@@ -49,8 +49,12 @@ class DevicesListAPIView(generics.ListAPIView):
         """
 
         # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
-        return models.Devices.objects.filter(group_id__in=group_ids).select_related("group")
+        group_ids = self.request.user.profile.devices_groups.all().values_list(
+            "id", flat=True
+        )
+        return models.Devices.objects.filter(group_id__in=group_ids).select_related(
+            "group"
+        )
 
     @method_decorator(cache_page(60 * 10))
     @method_decorator(vary_on_cookie)
@@ -80,7 +84,9 @@ class DevicesListAPIView(generics.ListAPIView):
 
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
-class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView, DevicesInterfacesWorkloadCollector):
+class AllDevicesInterfacesWorkLoadAPIView(
+    generics.ListAPIView, DevicesInterfacesWorkloadCollector
+):
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceInfoFilter
 
@@ -92,7 +98,9 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView, DevicesInterface
 
     def list(self, request, *args, **kwargs):
         data = self.get_all_device_interfaces_workload()
-        groups_names = self.request.user.profile.devices_groups.all().values_list("name", flat=True)
+        groups_names = self.request.user.profile.devices_groups.all().values_list(
+            "name", flat=True
+        )
 
         valid_data = {
             "devices_count": data["devices_count"],
@@ -178,11 +186,15 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
         available = self.device.available  # Оборудование доступно или нет
 
         # Сканируем интерфейсы в реальном времени?
-        current_status = bool(request.GET.get("current_status", False)) and available > 0
+        current_status = (
+            bool(request.GET.get("current_status", False)) and available > 0
+        )
 
         # Вместе с VLAN?
         self.with_vlans = (
-            False if self.device_collector.protocol == "snmp" else request.GET.get("vlans") == "1"
+            False
+            if self.device_collector.protocol == "snmp"
+            else request.GET.get("vlans") == "1"
         )
 
         # Если не нужен текущий статус интерфейсов, то отправляем прошлые данные
@@ -314,14 +326,17 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
                 graphs = zbx.graph.get(hostids=[host_id])
 
                 for intf in interfaces:
-
-                    intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")
+                    intf_pattern = re.compile(
+                        rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]"
+                    )
                     intf_desc = intf["Description"]
                     valid_graph_ids = []
 
                     for g in graphs:
                         # Ищем все графики, в которых упоминается description или название интерфейса.
-                        if (intf_desc and intf_desc in g["name"]) or intf_pattern.search(g["name"]):
+                        if (
+                            intf_desc and intf_desc in g["name"]
+                        ) or intf_pattern.search(g["name"]):
                             valid_graph_ids.append(g["graphid"])
 
                     graphs_ids_params = ""

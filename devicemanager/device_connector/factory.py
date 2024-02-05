@@ -1,10 +1,9 @@
 import logging
 import os
 import time
+from queue import Queue, Empty
 from threading import Thread
 from typing import List, Any, Optional
-
-import pexpect
 
 from devicemanager import snmp
 from devicemanager.dc import DeviceRemoteConnector
@@ -13,6 +12,7 @@ from devicemanager.session_control import DEVICE_SESSIONS
 from devicemanager.vendors import BaseDevice
 
 logger = logging.Logger(__file__)
+logger.addHandler(logging.StreamHandler())
 
 DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", 3))
 
@@ -51,73 +51,53 @@ class DeviceSessionFactory:
         return pool_size
 
     def perform_method(self, method: str, **params) -> Any:
-        logger.debug(f'Начало выполнение метода "{method}", params={params}, ip={self.ip}')
-        return self._perform(method, last_try=False, **params)
+        if logger.level <= logging.DEBUG:
+            logger.debug(
+                f'{"-" * 10 }Начало выполнение метода "{method}", params={params}, ip={self.ip}'
+            )
+            start_time = time.perf_counter()
+            result = self._perform(method, **params)
+            logger.debug(
+                f'{"=" * 10 }Метод "{method}" выполнялся {round(time.perf_counter() - start_time, 4)} сек,'
+                f" params={params}, ip={self.ip}"
+            )
+            return result
 
-    def _perform(self, method: str, last_try: bool, **params) -> Any:
+        return self._perform(method, **params)
+
+    def _perform(self, method: str, **params) -> Any:
+        if method == "get_interfaces" and self.port_scan_protocol == "snmp":
+            # Получаем данные по SNMP
+            return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
+
         device_connection = self._get_connection_to_perform()
 
-        logger.info(f"{self.ip} {method}, {device_connection.__class__.__name__}")
+        logger.debug(
+            f"{' ' * 10 }IP={self.ip} Method={method} DeviceVendor={device_connection.__class__.__name__}"
+        )
 
-        if method == "get_interfaces" and self.port_scan_protocol == "snmp":
-            interfaces = snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
-            return interfaces
-
-        if hasattr(device_connection, method):
-            session_method = getattr(device_connection, method)
-
-            try:
-                method_data = session_method(**params)
-            except (pexpect.TIMEOUT, pexpect.EOF) as exc:
-                logger.error(
-                    f"Ошибка {exc.__class__.__name__} при выполнении метода {method}, ip={self.ip}",
-                    exc_info=exc,
-                )
-                if device_connection.session.isalive():
-                    device_connection.session.close()
-
-                if self.make_session_global:
-                    # Пересоздаем сессию
-                    logger.info(f"Пересоздаем сессию {self.ip}")
-                    Thread(
-                        target=self._create_and_append_new_connection,
-                        args=(self,),
-                        name=f"Create connection for {self.ip} - daemon",
-                        daemon=True,
-                    ).start()
-
-                if not last_try:
-                    # Пробуем в другой сессии пересоздать
-                    self._perform(method, last_try=True, **params)
-                else:
-                    raise exc
-            else:
-                return method_data
-
-            finally:
-                if not self.make_session_global:
-                    device_connection.session.close()
-
-        else:
+        if not hasattr(device_connection, method):
             raise MethodError()
+
+        session_method = getattr(device_connection, method)
+        data = session_method(**params)
+
+        logger.debug(
+            f"{' ' * 10 }IP={self.ip} Method={method} DeviceVendor={device_connection.__class__.__name__}"
+            f" DataLength={len(str(data))}"
+        )
+        return data
 
     def _get_connection_to_perform(self) -> BaseDevice:
         if self.make_session_global:
             return self._make_and_get_connection()
-        else:
-            return DeviceRemoteConnector(
-                ip=self.ip,
-                protocol=self.protocol,
-                auth_obj=self.auth_obj,
-                snmp_community=self.snmp_community,
-            ).get_session()
 
-    def _create_and_append_new_connection(self) -> None:
-        connections = []
-        self._add_device_session(connections, append_exc=False)
-        DEVICE_SESSIONS.add_connections_to_pool(
-            self.ip, pool_size=self.pool_size, connections=connections
-        )
+        return DeviceRemoteConnector(
+            ip=self.ip,
+            protocol=self.protocol,
+            auth_obj=self.auth_obj,
+            snmp_community=self.snmp_community,
+        ).get_session()
 
     def _make_and_get_connection(self) -> BaseDevice:
         start_time = time.perf_counter()
@@ -130,71 +110,111 @@ class DeviceSessionFactory:
                 not DEVICE_SESSIONS.pool_is_created(self.ip)
                 and time.perf_counter() - start_time < 30.0
             ):
-                time.sleep(0.3)
+                time.sleep(0.1)
             if time.perf_counter() - start_time > 30.0:
                 # Если не удалось дождаться пула более 30с, очищаем его и будем создавать заново
                 logger.debug(f"CLEAR POOL {self.ip}")
                 DEVICE_SESSIONS.clear_pool(self.ip)
 
         if DEVICE_SESSIONS.has_connection(self.ip):
-            self._check_and_expand_to_pool_size()
+            Thread(target=self._expand_to_pool_size, daemon=True).start()
             return DEVICE_SESSIONS.get_connection(self.ip)
 
         threads = []
-        connections: List[BaseDevice] = []
+        connections_queue = Queue(maxsize=self.pool_size)
+        DEVICE_SESSIONS.get_or_create_pool(self.ip, self.pool_size)
+
         for i in range(self.pool_size):
             new_thread = Thread(
                 target=self._add_device_session,
-                args=(connections,),
+                args=(connections_queue,),
                 name=f"Get session for ip {self.ip} - {i}",
+                daemon=True,
             )
             threads.append(new_thread)
             new_thread.start()
 
-        for i in range(len(threads)):
-            threads[i].join()
-
-        # Проверяем наличие ошибок
-        if all(isinstance(val, Exception) for val in connections):
-            DEVICE_SESSIONS.delete_pool(self.ip)
-            raise connections[0]
-
-        self.connections = [conn for conn in connections if not isinstance(conn, Exception)]
-
-        # Сохраняем новые сессии, если было указано хранение глобально.
+        first_connection = self.get_first_valid_connection(connections_queue)
+        logger.debug(f"GOT FIRST CONNECTION: {first_connection}")
+        # Сохраняем, если было указано хранение глобально.
         # Но для начала очистим пул от возможных не сброшенных подключений.
         DEVICE_SESSIONS.clear_pool(self.ip)
         DEVICE_SESSIONS.add_connections_to_pool(
-            self.ip, pool_size=self.pool_size, connections=self.connections
+            self.ip, pool_size=self.pool_size, connections=[first_connection]
         )
+        Thread(
+            target=self.add_to_pool_all_connections,
+            args=(connections_queue,),
+            name=f"add_to_pool_all_connections IP={self.ip} POOL_SIZE={self.pool_size}",
+            daemon=True,
+        ).start()
 
-        return self.connections[0]
+        return first_connection
 
-    def _add_device_session(self, result_list: list, append_exc=True) -> None:
-        tries = 3
-        while tries > 0:
+    def _add_device_session(self, queue: Queue) -> None:
+        try:
+            logger.debug(f"Создаем сессию для {self.ip}")
+            connection = DeviceRemoteConnector(
+                ip=self.ip,
+                protocol=self.protocol,
+                auth_obj=self.auth_obj,
+                snmp_community=self.snmp_community,
+            ).get_session()
+
+        except Exception as exc:
+            logger.error(f"Ошибка при создании сессии {self.ip}", exc_info=exc)
+            queue.put(exc, block=True)
+
+        else:
+            logger.debug(f"Успешно создали сессию для {self.ip}")
+            queue.put(connection, block=True)
+
+    @staticmethod
+    def get_first_valid_connection(queue: Queue) -> BaseDevice:
+        connection: Exception | BaseDevice | None = None
+        while True:
             try:
-                logger.debug(f"Создаем сессию для {self.ip}")
-                connection = DeviceRemoteConnector(
-                    ip=self.ip,
-                    protocol=self.protocol,
-                    auth_obj=self.auth_obj,
-                    snmp_community=self.snmp_community,
-                ).get_session()
+                connection = queue.get(timeout=30)
+            except Empty:
+                break
 
-            except Exception as exc:
-                logger.error(f"Ошибка при создании сессии {self.ip}", exc_info=exc)
-                if tries == 1 and append_exc:
-                    result_list.append(exc)
-                    return
-            else:
-                logger.debug(f"Успешно создали сессию для {self.ip}")
-                result_list.append(connection)
-                return
-            finally:
-                tries -= 1
+            if connection and not isinstance(connection, Exception):
+                return connection
+            elif isinstance(connection, Exception):
+                raise connection
 
-    def _check_and_expand_to_pool_size(self) -> None:
+        if isinstance(connection, Exception):
+            raise connection
+
+    def add_to_pool_all_connections(self, queue: Queue):
+        while True:
+            try:
+                connection: Exception | BaseDevice = queue.get(timeout=30)
+            except Empty:
+                break
+
+            logger.debug("add_to_pool_all_connections")
+            if connection and not isinstance(connection, Exception):
+                DEVICE_SESSIONS.add_connections_to_pool(
+                    self.ip, pool_size=self.pool_size, connections=[connection]
+                )
+            logger.debug(f"{self.ip} ADD Session to pool, {connection}")
+
+    def _expand_to_pool_size(self) -> None:
+        logger.debug("_check_and_expand_to_pool_size")
         pool = DEVICE_SESSIONS.get_or_create_pool(self.ip, self.pool_size)
-        for i in range(self.pool_size - len(pool)):
-            self._create_and_append_new_connection()
+        length = self.pool_size - len(pool)
+
+        if length <= 0:
+            return
+
+        queue = Queue(length)
+        for i in range(length):
+            Thread(
+                target=self._add_device_session,
+                args=(queue,),
+                name=f"Get session for ip {self.ip} - {i}",
+                daemon=True,
+            ).start()
+
+        self.add_to_pool_all_connections(queue)

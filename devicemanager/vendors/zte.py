@@ -500,11 +500,11 @@ class ZTE(BaseDevice):
 
         return result
 
-    def get_port_info(self, port: str) -> str:
-        return ""
+    def get_port_info(self, port: str) -> dict:
+        return {}
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class ZTEFactory(AbstractDeviceFactory):

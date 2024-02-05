@@ -78,7 +78,9 @@ class DeviceRemoteConnector:
     password_input_expect = r"[Pp]ass.*:\s*$"
 
     # Совпадения, после которых надо нажать `N` (no)
-    send_N_key = r"The password needs to be changed|Do you want to see the software license"
+    send_N_key = (
+        r"The password needs to be changed|Do you want to see the software license"
+    )
 
     # Не доступен telnet
     telnet_unavailable = r"Connection closed|Unable to connect"
@@ -181,7 +183,9 @@ class DeviceRemoteConnector:
                     elif expect_index == 1:
                         # HostKeyAlgorithms
                         session.expect(pexpect.EOF)
-                        ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
+                        ssh_spawn.get_host_key_algorithms(
+                            session.before.decode("utf-8")
+                        )
                         session = ssh_spawn.get_session()
 
                     elif expect_index == 2:
@@ -212,7 +216,10 @@ class DeviceRemoteConnector:
 
                     elif expect_index in {7, 9}:
                         session.close()
-                        raise SSHConnectionError("SSH недоступен", ip=self.ip)
+                        raise SSHConnectionError(
+                            "SSH недоступен" + session.before.decode("utf-8"),
+                            ip=self.ip,
+                        )
 
                 if connected:
                     self.login = login
@@ -228,13 +235,16 @@ class DeviceRemoteConnector:
 
     def _connect_by_telnet(self):
         session = None
+        timeout = 20
         try:
-            session = pexpect.spawn(f"telnet {self.ip}", timeout=30)
+            session = pexpect.spawn(f"telnet {self.ip}", timeout=timeout)
 
             pre_set_index = None  # По умолчанию стартуем без начального индекса
             status = "Не был передал логин/пароль"
             for login, password in zip(self.login, self.password):
-                status = self.__login_to_by_telnet(session, login, password, 30, pre_set_index)
+                status = self.__login_to_by_telnet(
+                    session, login, password, timeout, pre_set_index
+                )
 
                 if status == "Connected":
                     # Сохраняем текущие введенные логин и пароль, они являются верными
@@ -269,7 +279,9 @@ class DeviceRemoteConnector:
                 pre_expect_index = None
 
             else:
-                expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
+                expect_index = session.expect(
+                    self.telnet_authentication_expect, timeout=timeout
+                )
             # Login
             if expect_index == 0:
                 if login_try > 1:
@@ -286,7 +298,7 @@ class DeviceRemoteConnector:
                 continue
 
             # PROMPT
-            if expect_index == 2:  # Если был поймал символ начала ввода команды
+            if expect_index == 2:  # Если был пойман символ начала ввода команды
                 return "Connected"
 
             # TELNET FAIL
@@ -294,7 +306,8 @@ class DeviceRemoteConnector:
                 raise TelnetConnectionError(f"Telnet недоступен", ip=self.ip)
 
             # Press any key to continue
-            if expect_index == 4:  # Если необходимо нажать любую клавишу, чтобы продолжить
+            if expect_index == 4:
+                # Если необходимо нажать любую клавишу, чтобы продолжить
                 session.send(" ")
                 session.send(login + "\r")  # Вводим логин
                 session.send(password + "\r")  # Вводим пароль

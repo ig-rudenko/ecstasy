@@ -322,17 +322,17 @@ export default defineComponent({
     },
   },
 
-  mounted() {
+  async mounted() {
     this.getInfo()
-
     // Смотрим предыдущую загруженность интерфейсов оборудования
     this.getInterfacesWorkload()
 
     // Сначала смотрим предыдущие интерфейсы
-    this.getInterfaces()?.then(
+    this.getInterfaces(false)?.then(
     () => {
         // Далее опрашиваем текущий статус интерфейсов
         this.currentStatus = true
+        this.getInterfaces()
 
         this.timer()
 
@@ -357,9 +357,9 @@ export default defineComponent({
     },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
-    getStats(): void {
+    async getStats() {
       let url = "/device/api/" + this.deviceName + "/stats"
-      api_request.get(url).then(
+      return api_request.get(url).then(
           (value: any) => {this.deviceStats = newHardwareStats(value.data)},
           (reason: any) => this.showToastError(reason)
       ).catch(
@@ -367,9 +367,9 @@ export default defineComponent({
       )
     },
 
-    getInterfacesWorkload() {
+    async getInterfacesWorkload() {
       let url = "/device/api/workload/interfaces/" + this.deviceName
-      api_request.get(url).then(
+      return api_request.get(url).then(
           (value: any) => {this.interfacesWorkload = newInterfacesCount(value.data)},
           (reason: any) => this.showToastError(reason)
       ).catch(
@@ -378,9 +378,9 @@ export default defineComponent({
     },
 
     /** Смотрим информацию про оборудование */
-    getInfo() {
+    async getInfo() {
       let url = "/device/api/" + this.deviceName + "/info"
-      api_request.get(url).then(
+      return api_request.get(url).then(
           (value: any) => {this.generalInfo = newGeneralInfo(value.data); this.deviceName=this.generalInfo.deviceName},
           (reason: any) => this.showToastError(reason)
       ).catch(
@@ -389,7 +389,7 @@ export default defineComponent({
     },
 
     /** Смотрим интерфейсы оборудования */
-    getInterfaces(infinity = true): Promise<void> | undefined {
+    async getInterfaces(infinity = true) {
 
       // Если автообновление интерфейсов отключено, то ожидаем 2сек и запускаем метод снова
       if (!this.autoUpdateInterfaces) {
