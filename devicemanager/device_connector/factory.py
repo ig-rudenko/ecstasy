@@ -5,6 +5,8 @@ from queue import Queue, Empty
 from threading import Thread
 from typing import List, Any, Optional
 
+import pexpect
+
 from devicemanager import snmp
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device_connector.exceptions import MethodError
@@ -80,7 +82,12 @@ class DeviceSessionFactory:
             raise MethodError()
 
         session_method = getattr(device_connection, method)
-        data = session_method(**params)
+
+        try:
+            data = session_method(**params)
+        except Exception as exc:
+            device_connection.session.close()
+            raise exc
 
         logger.debug(
             f"{' ' * 10 }IP={self.ip} Method={method} DeviceVendor={device_connection.__class__.__name__}"

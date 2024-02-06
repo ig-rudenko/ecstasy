@@ -36,7 +36,12 @@ class Huawei(BaseDevice):
     vendor = "Huawei"
 
     def __init__(
-            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+        self,
+        session: pexpect,
+        ip: str,
+        auth: DeviceAuthDict,
+        model="",
+        snmp_community: str = "",
     ):
         """
         ## При инициализации заходим в привилегированный режим, но остаемся на уровне просмотра
@@ -81,19 +86,25 @@ class Huawei(BaseDevice):
 
         version = self.send_command("display version")
         # Нахождение модели устройства.
-        self.model = self.find_or_empty(r"Quidway (\S+) [Routing Switch]*uptime", version)
+        self.model = self.find_or_empty(
+            r"Quidway (\S+) [Routing Switch]*uptime", version
+        )
 
         if "S2403" in self.model:
             manuinfo = self.send_command("display device manuinfo")
             # Нахождение MAC-адреса устройства.
             self.mac = self.find_or_empty(r"MAC ADDRESS\s+:\s+(\S+)", manuinfo)
             # Нахождение серийного номера устройства.
-            self.serialno = self.find_or_empty(r"DEVICE SERIAL NUMBER\s+:\s+(\S+)", manuinfo)
+            self.serialno = self.find_or_empty(
+                r"DEVICE SERIAL NUMBER\s+:\s+(\S+)", manuinfo
+            )
 
         elif "S2326" in self.model:
             mac = self.send_command("display bridge mac-address")
             # Нахождение mac адреса устройства.
-            self.mac = self.find_or_empty(r"System Bridge Mac Address\s+:\s+(\S+)\.", mac)
+            self.mac = self.find_or_empty(
+                r"System Bridge Mac Address\s+:\s+(\S+)\.", mac
+            )
 
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
@@ -121,7 +132,7 @@ class Huawei(BaseDevice):
             self.session.sendline("Y")
             self.session.sendline("\n")
             match = self.session.expect(
-                [self.prompt, r"successfully", r"[Ss]ystem is busy"], timeout=20
+                [self.prompt, r"successfully", "busy in saving"], timeout=30
             )
             if match == 1:
                 return self.SAVED_OK
@@ -268,7 +279,10 @@ class Huawei(BaseDevice):
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [(int(vid), mac, format_type(type_), port) for mac, vid, port, type_ in mac_table]
+        return [
+            (int(vid), mac, format_type(type_), port)
+            for mac, vid, port, type_ in mac_table
+        ]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
@@ -297,7 +311,9 @@ class Huawei(BaseDevice):
 
         if "2403" in self.model:
             mac_str = self.send_command(f"display mac-address interface {port}")
-            for i in re.findall(rf"({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str):
+            for i in re.findall(
+                rf"({self.mac_format})\s+(\d+)\s+\S+\s+\S+\s+\S+", mac_str
+            ):
                 mac_list.append(i[::-1])
 
         elif "2326" in self.model:
@@ -377,7 +393,11 @@ class Huawei(BaseDevice):
 
         errors = self.__port_info(port).split("\n")
         return "\n".join(
-            [line.strip() for line in errors if "error" in line.lower() or "CRC" in line]
+            [
+                line.strip()
+                for line in errors
+                if "error" in line.lower() or "CRC" in line
+            ]
         )
 
     @BaseDevice.lock_session
@@ -537,7 +557,9 @@ class Huawei(BaseDevice):
         if "Wrong parameter found" in status:
             # Если длина описания больше чем доступно на оборудовании
             output = self.send_command("description ?")
-            max_length = int(self.find_or_empty(r"no more than (\d+) characters", output) or "0")
+            max_length = int(
+                self.find_or_empty(r"no more than (\d+) characters", output) or "0"
+            )
             return {
                 "max_length": max_length,
                 "error": "Too long",
@@ -574,10 +596,18 @@ class Huawei(BaseDevice):
 
         if "2326" in self.model:
             # Для Huawei 2326
-            parse_data["pair1"]["len"] = self.find_or_empty(r"Pair A length: (\d+)meter", data)
-            parse_data["pair2"]["len"] = self.find_or_empty(r"Pair B length: (\d+)meter", data)
-            parse_data["pair1"]["status"] = self.find_or_empty(r"Pair A state: (\S+)", data).lower()
-            parse_data["pair2"]["status"] = self.find_or_empty(r"Pair B state: (\S+)", data).lower()
+            parse_data["pair1"]["len"] = self.find_or_empty(
+                r"Pair A length: (\d+)meter", data
+            )
+            parse_data["pair2"]["len"] = self.find_or_empty(
+                r"Pair B length: (\d+)meter", data
+            )
+            parse_data["pair1"]["status"] = self.find_or_empty(
+                r"Pair A state: (\S+)", data
+            ).lower()
+            parse_data["pair2"]["status"] = self.find_or_empty(
+                r"Pair B state: (\S+)", data
+            ).lower()
 
             if parse_data["pair1"]["status"] == parse_data["pair2"]["status"] == "ok":
                 parse_data["status"] = "Up"
@@ -596,9 +626,9 @@ class Huawei(BaseDevice):
             # Для Huawei 2403
             parse_data["len"] = self.find_or_empty(r"(\d+) meter", data)
 
-            status = self.find_or_empty(r"Cable status: (normal)", data) or self.find_or_empty(
-                r"Cable status: abnormal\((\S+)\),", data
-            )
+            status = self.find_or_empty(
+                r"Cable status: (normal)", data
+            ) or self.find_or_empty(r"Cable status: abnormal\((\S+)\),", data)
 
             parse_data["status"] = "Up" if status == "normal" else status.capitalize()
             del parse_data["pair1"]
@@ -607,7 +637,9 @@ class Huawei(BaseDevice):
         return parse_data
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Неверный порт"})
+    @validate_and_format_port_as_normal(
+        if_invalid_return={"len": "-", "status": "Неверный порт"}
+    )
     def virtual_cable_test(self, port: str):
         """
         Эта функция запускает диагностику состояния линии на порту оборудования
@@ -660,7 +692,9 @@ class Huawei(BaseDevice):
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
-        return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
+        return self.__parse_virtual_cable_test_data(
+            cable_test_data
+        )  # Парсим полученные данные
 
     def get_port_info(self, port: str) -> dict:
         return {"type": "text", "data": ""}
