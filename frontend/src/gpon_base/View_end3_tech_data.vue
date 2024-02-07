@@ -30,6 +30,16 @@
             <InputText v-if="editMode && hasPermissionToUpdateEnd3" v-model.trim="detailData.location" class="w-100 my-1" type="text" placeholder="Локация"/>
             <span v-else class="fw-bold">{{detailData.location}}</span>
 
+            <!-- Сохранить изменения -->
+            <div v-if="editMode && hasPermissionToUpdateEnd3" class="pt-3">
+              <button @click="updateEnd3Info" class="save-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                </svg>
+                <span v-if="!isMobile" class="m-2">Обновить</span>
+              </button>
+            </div>
+
           </div>
           <div class="mx-2">
             <svg v-if="detailData.type === 'rizer'" style="transform: rotate(300grad);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 32" width="128" height="128">
@@ -276,6 +286,17 @@ export default {
 
 .ml-40 {
   margin-left: 40px;
+}
+
+.save-button {
+  padding: 7px 10px;
+  background: white;
+  border-radius: 12px;
+  color: #008b1e;
+  border: 1px #008b1e solid;
+}
+.save-button:hover {
+  box-shadow: 0 0 3px #008b1e;
 }
 
 @media (max-width: 835px) {
