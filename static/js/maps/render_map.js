@@ -2,10 +2,14 @@
 const copy = "© <a href='https://www.openstreetmap.org/#map=11/44.5795/33.5272'>OpenStreetMap </a>" +
     "<a href='/'>Ecstasy</a> Игорь Руденко";
 const url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const osm = L.tileLayer(url, { attribution: copy });
+const osm = L.tileLayer(url, { attribution: copy, drawControl: true });
 
 /* Он создает новый объект карты и устанавливает минимальный уровень масштабирования 5. */
 const map = L.map("map", { layers: [osm], minZoom: 5 });
+let popup = L.popup();
+
+const onMapClick = e => popup.setLatLng(e.latlng).setContent(e.latlng.toString()).openOn(map)
+map.on('click', onMapClick);
 
 /* Пытается найти ваше местоположение, и если он не может, он устанавливает вид на указанные координаты. */
 map.locate()
@@ -17,7 +21,8 @@ map.fitWorld();
 /* Переменная, используемая для хранения всех слоев, добавляемых на карту. */
 let layer_control = {
     base_layers: {
-        "openstreetmap": map,
+        "Схема": map,
+        "Спутник": L.tileLayer('https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {attribution: 'google'}),
     },
     overlays: {},
 };
@@ -34,7 +39,7 @@ let origin_devices_point_format = new Map();
 
 /* Функция, позволяющая использовать метод форматирования строк. */
 String.prototype.format = function () {
-  var args = arguments;
+  let args = arguments;
 
   return this.replace(/{([0-9]+)}/g, function (match, index) {
     return typeof args[index] == 'undefined' ? match : args[index];

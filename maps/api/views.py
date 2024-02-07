@@ -2,15 +2,15 @@ import re
 from datetime import datetime
 
 import orjson
-from pyzabbix import ZabbixAPI
 from django.template.loader import render_to_string
+from pyzabbix import ZabbixAPI
 from requests import RequestException
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from devicemanager.device import ZabbixAPIConnection
 from app_settings.models import ZabbixConfig
+from devicemanager.device import ZabbixAPIConnection
 from maps.models import Maps, Layers
 from .permissions import MapPermission
 from .serializers import MapLayerSerializer
@@ -99,7 +99,9 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
             )
         return layer_data
 
-    def get_zbx_group_data(self, group_id: int, group_name: str, current_layer: Layers) -> dict:
+    def get_zbx_group_data(
+        self, group_id: int, group_name: str, current_layer: Layers
+    ) -> dict:
         """
         Эта функция извлекает данные для указанной группы Zabbix, включая информацию
         о хосте и данные о местоположении, и возвращает их в формате GEOJSON.
@@ -130,6 +132,16 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         for host in hosts:
             if not self._is_valid_zbx_host(host):
                 continue
+
+            host["interfaces"] = set(
+                map(
+                    lambda x: x["ip"],
+                    filter(
+                        lambda x: x["ip"] != "127.0.0.1",
+                        host["interfaces"],
+                    ),
+                )
+            )
 
             result["features"].append(
                 {
@@ -321,7 +333,9 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         )
 
         # Перебор списка проблем.
-        problems = [self.get_host_acknowledges(problem) for problem in hosts_problems_list]
+        problems = [
+            self.get_host_acknowledges(problem) for problem in hosts_problems_list
+        ]
         return problems
 
     def get_host_acknowledges(self, problem: dict) -> dict:
@@ -339,7 +353,9 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         except RequestException:
             return {}
 
-        host_id = zbx.item.get(triggerids=[problem["objectid"]], output=["hostid", "name"])
+        host_id = zbx.item.get(
+            triggerids=[problem["objectid"]], output=["hostid", "name"]
+        )
 
         acknowledges = [
             [
