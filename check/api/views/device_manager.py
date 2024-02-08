@@ -416,7 +416,7 @@ class InterfaceInfoAPIView(APIView):
 
     @staticmethod
     def create_onts_lines_with_comments(
-        data, gpon_port: str, device: models.Devices
+        data: dict, gpon_port: str, device: models.Devices
     ) -> None:
         """
         Находит комментарии созданные на ONT для порта `gpon_port` оборудования `device`.
@@ -429,8 +429,7 @@ class InterfaceInfoAPIView(APIView):
 
         # Ищем возможные комментарии только для GPON типа
         if not (
-            data.get("portDetailInfo")
-            and data.get["portDetailInfo"].get("data")
+            data.get("portDetailInfo", {}).get("data")
             and "gpon" in data["portDetailInfo"].get("type", "")
         ):
             return
