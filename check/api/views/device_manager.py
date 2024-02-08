@@ -264,7 +264,7 @@ class MacListAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        vlan_names = {v.vid: v.name for v in VlanName.objects.all()}
+        vlan_names = {str(v.vid): v.name for v in VlanName.objects.all()}
 
         macs = []  # Итоговый список
         for vid, mac in device.connect().get_mac(port):  # Смотрим VLAN и MAC
@@ -272,7 +272,7 @@ class MacListAPIView(APIView):
                 {
                     "vlanID": vid,
                     "mac": mac,
-                    "vlanName": vlan_names.get(vid, ""),
+                    "vlanName": vlan_names.get(str(vid), ""),
                 }
             )
 
