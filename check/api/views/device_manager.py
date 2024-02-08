@@ -1,5 +1,4 @@
 import re
-from functools import lru_cache
 from typing import Literal, Dict, Optional
 
 import orjson
@@ -9,6 +8,7 @@ from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -36,7 +36,7 @@ class PortGuardCheckMixin:
         self.port_desc = ""
         self.profile: Optional[Profile] = None
 
-    def check_object_permissions(self, request, obj):
+    def check_object_permissions(self, request: Request, obj):
         # Смотрим интерфейсы, которые сохранены в БД
         dev_info, _ = DevicesInfo.objects.get_or_create(dev=obj)
 
@@ -48,11 +48,11 @@ class PortGuardCheckMixin:
             interfaces = Interfaces(orjson.loads(dev_info.interfaces))
 
         # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        self.port_desc: str = interfaces[self.request.data["port"]].desc
+        self.port_desc: str = interfaces[request.data["port"]].desc
 
         # Если не суперпользователь, то нельзя изменять состояние определенных портов
         try:
-            self.profile: Profile = Profile.objects.get(user=self.request.user)
+            self.profile: Profile = Profile.objects.get(user=request.user)
         except Profile.DoesNotExist:
             raise PermissionDenied(
                 detail="У вас нет профиля для выполнения данного действия!",
@@ -74,7 +74,7 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
     serializer_class = PortControlSerializer
 
     @except_connection_errors
-    def post(self, request, device_name: str):
+    def post(self, request: Request, device_name: str):
         """
         ## Изменяем состояние порта оборудования
         """
@@ -98,7 +98,7 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
         if not model_dev.available:
             return Response({"error": "Оборудование недоступно!"}, status=500)
 
-        # Теперь наконец можем подключиться к оборудованию :)
+        # Теперь наконец можем подключиться к оборудованию.
         session = model_dev.connect()
         # Перезагрузка порта
         if port_status == "reload":
@@ -109,6 +109,7 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
 
         # UP and DOWN
         else:
+            port_status: Literal["up", "down"]
             port_change_status = session.set_port(
                 port=port_name,
                 status=port_status,
@@ -127,7 +128,7 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
 
         return Response(serializer.validated_data, status=200)
 
-    def check_object_permissions(self, request, device) -> None:
+    def check_object_permissions(self, request: Request, device) -> None:
         super().check_object_permissions(request, device)
 
         # Если недостаточно привилегий для изменения статуса порта
@@ -158,7 +159,7 @@ class ChangeDescriptionAPIView(PortGuardCheckMixin, APIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def post(self, request, device_name: str):
+    def post(self, request: Request, device_name: str):
         """
         ## Меняем описание на порту оборудования
 
@@ -229,7 +230,7 @@ class MacListAPIView(APIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def get(self, request, device_name):
+    def get(self, request: Request, device_name):
         """
         ## Смотрим MAC-адреса на порту оборудования
 
@@ -263,32 +264,26 @@ class MacListAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
+        vlan_names = {v.vid: v.name for v in VlanName.objects.all()}
+
         macs = []  # Итоговый список
         for vid, mac in device.connect().get_mac(port):  # Смотрим VLAN и MAC
             macs.append(
                 {
                     "vlanID": vid,
                     "mac": mac,
-                    "vlanName": self.get_vlan_name(vid),
+                    "vlanName": vlan_names.get(vid, ""),
                 }
             )
 
         return Response({"count": len(macs), "result": macs})
-
-    @staticmethod
-    @lru_cache(maxsize=35)
-    def get_vlan_name(vlan_id: int) -> str:
-        try:
-            return VlanName.objects.get(vid=int(vlan_id)).name
-        except (ValueError, VlanName.DoesNotExist):
-            return ""
 
 
 class CableDiagAPIView(APIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def get(self, request, device_name):
+    def get(self, request: Request, device_name):
         """
         ## Запускаем диагностику кабеля на порту
 
@@ -337,7 +332,7 @@ class SetPoEAPIView(generics.GenericAPIView):
     serializer_class = PoEPortStatusSerializer
 
     @except_connection_errors
-    def post(self, request, device_name):
+    def post(self, request: Request, device_name):
         """
         ## Устанавливает PoE статус на порту
         """
@@ -373,7 +368,7 @@ class InterfaceInfoAPIView(APIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def get(self, request, device_name):
+    def get(self, request: Request, device_name):
         """
         ## Общая информация об определенном порте оборудования
 
@@ -433,7 +428,11 @@ class InterfaceInfoAPIView(APIView):
         """
 
         # Ищем возможные комментарии только для GPON типа
-        if "gpon" not in data["portDetailInfo"].get("type"):
+        if not (
+            data.get("portDetailInfo")
+            and data.get["portDetailInfo"].get("data")
+            and "gpon" in data["portDetailInfo"].get("type", "")
+        ):
             return
 
         onts_lines = data["portDetailInfo"]["data"].get("onts_lines", [])
