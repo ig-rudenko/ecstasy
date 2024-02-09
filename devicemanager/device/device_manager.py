@@ -1,20 +1,21 @@
-import orjson
 from typing import Any, Union
 
-from ping3 import ping as socket_ping
-from requests import RequestException
+import orjson
 from geopy.geocoders import Nominatim
+from ping3 import ping as socket_ping
+from pyzabbix.api import ZabbixAPIException
+from requests import RequestException
 
-from .interfaces import Interfaces
-from .zabbix_api import ZabbixAPIConnection
 from devicemanager.remote import remote_connector, RemoteDevice
-from ..exceptions import AuthException, BaseDeviceException
 from devicemanager.zabbix_info_dataclasses import (
     ZabbixHostInfo,
     ZabbixInventory,
     ZabbixHostGroup,
     Location,
 )
+from .interfaces import Interfaces
+from .zabbix_api import ZabbixAPIConnection
+from ..exceptions import AuthException, BaseDeviceException
 
 
 class DeviceManager:
@@ -50,7 +51,7 @@ class DeviceManager:
                     selectInterfaces=["ip"],
                     selectInventory="extend",
                 )
-        except RequestException:
+        except (RequestException, ZabbixAPIException):
             return
 
         if zabbix_info:
@@ -62,7 +63,11 @@ class DeviceManager:
             )
 
             # Инвентарные данные
-            inventory = zabbix_info[0]["inventory"].values() if zabbix_info[0]["inventory"] else {}
+            inventory = (
+                zabbix_info[0]["inventory"].values()
+                if zabbix_info[0]["inventory"]
+                else {}
+            )
             del zabbix_info[0]["inventory"]
 
             # Группы
@@ -97,7 +102,7 @@ class DeviceManager:
                         if value  # Только заполненные поля
                     },
                 )
-        except RequestException:
+        except (RequestException, ZabbixAPIException):
             pass
 
     @property
@@ -124,7 +129,7 @@ class DeviceManager:
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
                 return DeviceManager(host[0]["name"])
-        except RequestException:
+        except (RequestException, ZabbixAPIException):
             pass
         return None
 
@@ -158,13 +163,19 @@ class DeviceManager:
 
         try:
             device_data_history = DevicesInfo.objects.get(dev__name=self.name)
-            json_data = device_data_history.vlans if with_vlans else device_data_history.interfaces
+            json_data = (
+                device_data_history.vlans
+                if with_vlans
+                else device_data_history.interfaces
+            )
             self.interfaces = Interfaces(orjson.loads(json_data or "[]"))
 
         except DevicesInfo.DoesNotExist:
             self.interfaces = Interfaces()
 
-    def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, make_session_global=True):
+    def _get_interfaces_from_connection(
+        self, with_vlans: bool, auth_obj, make_session_global=True
+    ):
         auth_obj = auth_obj or self.auth_obj
         if not auth_obj:
             raise AuthException("Не указан объект авторизации!", ip=self.ip)
@@ -199,7 +210,9 @@ class DeviceManager:
             self.interfaces = Interfaces(session.get_interfaces())
 
     def __str__(self):
-        return f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
+        return (
+            f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
+        )
 
     def __repr__(self):
         return self.__str__()
