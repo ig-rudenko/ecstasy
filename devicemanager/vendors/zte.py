@@ -11,13 +11,13 @@ from .base.types import (
     TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     DeviceAuthDict,
     MACType,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port_only_digit
 
@@ -86,7 +86,7 @@ class ZTE(BaseDevice):
             self.__privileged = True
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -103,7 +103,7 @@ class ZTE(BaseDevice):
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status.lower() != "enabled":
                 status = "admin down"
             elif "down" in link_status.lower():
@@ -113,7 +113,7 @@ class ZTE(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -159,7 +159,7 @@ class ZTE(BaseDevice):
         return interfaces_vlan
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
 
@@ -180,7 +180,7 @@ class ZTE(BaseDevice):
         if "Command not found" in output:
             output = self.send_command("show mac", expect_command=False)
             parsed1: list[list[str]] = re.findall(rf"({self.mac_format})\s+(\d+)\s+port-(\d+)\s+", output)
-            mac_table: T_MACTable = []
+            mac_table: MACTableType = []
             # type_: Literal["dynamic"] = "dynamic"
             for mac, vid, port in parsed1:
                 mac_table.append((int(vid), mac, "dynamic", port))
@@ -194,7 +194,7 @@ class ZTE(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

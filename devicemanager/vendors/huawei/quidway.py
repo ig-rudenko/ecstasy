@@ -8,13 +8,13 @@ from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -130,10 +130,10 @@ class Huawei(BaseDevice):
                 sleep(2)
                 n += 1
                 continue
-            return self.SAVED_ERR
+        return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -165,7 +165,7 @@ class Huawei(BaseDevice):
             if re.match("^(NULL|A|V)", port_name):
                 continue
 
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if "*" in link_status.lower() or "adm" in link_status.lower() or "admin" in link_status.lower():
                 status = "admin down"
             elif "down" in link_status.lower():
@@ -176,7 +176,7 @@ class Huawei(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -197,10 +197,10 @@ class Huawei(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
         self.lock = False
-        interfaces: T_InterfaceList = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
-        result: T_InterfaceVLANList = []
+        result: InterfaceVLANListType = []
         for intf, status, desc in interfaces:
             if not re.match("^(V|NU|A)", intf):
                 output = self.send_command(
@@ -221,7 +221,7 @@ class Huawei(BaseDevice):
         return interface_normal_view(intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
 
@@ -261,7 +261,7 @@ class Huawei(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

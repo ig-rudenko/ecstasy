@@ -10,13 +10,13 @@ from gathering.ftp.exceptions import NotFound
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .. import UnknownDeviceError
 
@@ -35,7 +35,7 @@ class IskratelControl(BaseDevice):
         pass
 
     @BaseDevice.lock_session
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -310,7 +310,7 @@ class IskratelMBan(BaseDevice):
         return self._render_dsl_port_info(output)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращает таблицу MAC-адресов оборудования.
 
@@ -323,7 +323,7 @@ class IskratelMBan(BaseDevice):
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
     @BaseDevice.lock_session
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -451,7 +451,7 @@ class IskratelMBan(BaseDevice):
         )
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -470,7 +470,7 @@ class IskratelMBan(BaseDevice):
             )
 
             if interface:
-                status: T_Interface = "notPresent"
+                status: InterfaceType = "notPresent"
                 if interface[0][2] != "Equipped":
                     status = "admin down"
                 elif interface[0][3] == "Down":
@@ -488,7 +488,7 @@ class IskratelMBan(BaseDevice):
 
         return interfaces_list
 
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 

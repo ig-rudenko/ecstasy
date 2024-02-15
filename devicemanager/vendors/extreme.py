@@ -6,13 +6,13 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.types import (
-    T_InterfaceVLANList,
-    T_InterfaceList,
-    T_MACList,
-    T_MACTable,
+    InterfaceVLANListType,
+    InterfaceListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port_only_digit
 from .. import DeviceException
@@ -82,7 +82,7 @@ class Extreme(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -106,10 +106,10 @@ class Extreme(BaseDevice):
 
         interfaces_lines = [result_port_state[n] + result_des[n] for n in range(len(result_port_state))]
 
-        interfaces: list[tuple[str, T_Interface, str]] = []
+        interfaces: list[tuple[str, InterfaceType, str]] = []
         for port_name, admin_status, link_status, desc in interfaces_lines:
             # Проверяем статус порта и меняем его на более понятный для пользователя
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status.startswith("D"):
                 status = "admin down"
             elif link_status == "ready":
@@ -120,7 +120,7 @@ class Extreme(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         r"""
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -137,7 +137,7 @@ class Extreme(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
         self.lock = False
-        interfaces: T_InterfaceList = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
         output_vlans = self.send_command(
@@ -155,14 +155,14 @@ class Extreme(BaseDevice):
                 # Добавляем вланы на порты
                 ports_vlan[port].append(vlan_id)
 
-        interfaces_vlan: T_InterfaceVLANList = []  # итоговый список (интерфейсы и вланы)
+        interfaces_vlan: InterfaceVLANListType = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
             interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))
 
         return interfaces_vlan
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -183,7 +183,7 @@ class Extreme(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

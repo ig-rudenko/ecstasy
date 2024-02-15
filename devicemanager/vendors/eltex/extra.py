@@ -1,10 +1,10 @@
-from devicemanager.vendors.base.types import T_InterfaceList, T_Interface
+from devicemanager.vendors.base.types import InterfaceListType, InterfaceType
 
 
-def reformat_ltp_interfaces_list(interfaces: list[tuple[str, str]]) -> T_InterfaceList:
-    valid_interfaces: T_InterfaceList = []
+def reformat_ltp_interfaces_list(interfaces: list[tuple[str, str]]) -> InterfaceListType:
+    valid_interfaces: InterfaceListType = []
     for port_name, link_status in interfaces:
-        status: T_Interface = "up"
+        status: InterfaceType = "up"
         if link_status.lower() == "admin down":
             status = "admin down"
         elif link_status.lower() == "down":

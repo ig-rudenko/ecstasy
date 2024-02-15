@@ -2,7 +2,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from re import findall, IGNORECASE
 
-from .vendors.base.types import T_InterfaceList, T_Interface
+from .vendors.base.types import InterfaceListType, InterfaceType
 
 
 def physical_interface(name: str) -> bool:
@@ -26,7 +26,7 @@ def physical_interface(name: str) -> bool:
     return True
 
 
-def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
+def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
     """
 
     С помощью snmpwalk смотрит состояние интерфейсов, имена, описания
@@ -73,6 +73,7 @@ def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
             stderr=subprocess.DEVNULL,
             encoding="utf-8",
             errors="ignore",
+            check=False,
         )
         # Он разбивает вывод команды на строки.
         for line in res.stdout.split("\n"):
@@ -85,7 +86,7 @@ def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
         for key in snmp_result:
             snmp_executor.submit(snmpget, community, device_ip, snmp_port, key)
 
-    result: T_InterfaceList = []
+    result: InterfaceListType = []
 
     for snmp_index in snmp_result["IF-MIB::ifIndex"]:
         port_name = (
@@ -98,7 +99,7 @@ def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
         oper_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
         admin_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
 
-        status: T_Interface = "notPresent"
+        status: InterfaceType = "notPresent"
         if admin_status == "down":
             status = "admin down"
         elif oper_status in {"up", "down", "dormant"}:

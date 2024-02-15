@@ -4,11 +4,11 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 
 
@@ -36,7 +36,7 @@ class ProCurve(BaseDevice):
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         result = []
         raw_intf_status = self.send_command("show interfaces brief", expect_command=False)
 
@@ -47,7 +47,7 @@ class ProCurve(BaseDevice):
             port_output = self.send_command(f"show interfaces ethernet {port}", expect_command=False)
             desc = re.findall(r"Name\s*(:\s*\S*)\W+Link", port_output)
 
-            status: T_Interface = "down"
+            status: InterfaceType = "down"
             if line[1].strip() != "Yes":
                 status = "admin down"
             elif line[2].strip().lower() == "up":
@@ -62,10 +62,10 @@ class ProCurve(BaseDevice):
             )
         return result
 
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         return []
 
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         return []
 
     def reload_port(self, port: str, save_config=True) -> str:

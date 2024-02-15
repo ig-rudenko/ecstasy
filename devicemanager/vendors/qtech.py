@@ -7,13 +7,13 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port
 
@@ -66,7 +66,7 @@ class Qtech(BaseDevice):
         self.__cache_port_info: dict[str, str] = {}
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -84,7 +84,7 @@ class Qtech(BaseDevice):
 
         interfaces = []
         for port_name, link_status, desc in result:
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if link_status == "A-DOWN":
                 status = "admin down"
             elif link_status == "DOWN":
@@ -95,7 +95,7 @@ class Qtech(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -134,7 +134,7 @@ class Qtech(BaseDevice):
         return BaseDevice.find_or_empty(r"(\d+/\d+/?\d*)", intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic MAC-type и порта для данного оборудования.
 
@@ -160,7 +160,7 @@ class Qtech(BaseDevice):
 
     @BaseDevice.lock_session
     @qtech_validate_and_format_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

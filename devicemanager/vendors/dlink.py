@@ -11,13 +11,13 @@ from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.types import (
     TEMPLATE_FOLDER,
-    T_InterfaceVLANList,
-    T_InterfaceList,
-    T_MACList,
-    T_MACTable,
+    InterfaceVLANListType,
+    InterfaceListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port
 
@@ -174,7 +174,7 @@ class Dlink(BaseDevice):
         )
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         Эта функция возвращает список всех интерфейсов на устройстве
 
@@ -191,7 +191,7 @@ class Dlink(BaseDevice):
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status != "Enabled":
                 status = "admin down"
             elif "Down" in link_status:
@@ -202,7 +202,7 @@ class Dlink(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         Эта функция возвращает список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -263,7 +263,7 @@ class Dlink(BaseDevice):
         return re.sub(r"\D", "", intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
 
@@ -291,7 +291,7 @@ class Dlink(BaseDevice):
 
     @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return=[])
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         Эта функция возвращает список из VLAN и MAC-адреса для данного порта.
 

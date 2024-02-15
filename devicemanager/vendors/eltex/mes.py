@@ -7,12 +7,12 @@ import pexpect
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -87,7 +87,7 @@ class EltexMES(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -129,7 +129,7 @@ class EltexMES(BaseDevice):
             if port_name.startswith("V"):
                 # Пропускаем Vlan интерфейсы
                 continue
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status.lower() != "up":
                 status = "admin down"
             elif "down" in link_status.lower():
@@ -139,7 +139,7 @@ class EltexMES(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -192,7 +192,7 @@ class EltexMES(BaseDevice):
         return interface_normal_view(intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -212,7 +212,7 @@ class EltexMES(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

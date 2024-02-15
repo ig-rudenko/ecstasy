@@ -11,11 +11,11 @@ from .base.types import (
     TEMPLATE_FOLDER,
     FIBER_TYPES,
     COOPER_TYPES,
-    T_Interface,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceType,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
     ArpInfoResult,
@@ -94,7 +94,7 @@ class Cisco(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -112,7 +112,7 @@ class Cisco(BaseDevice):
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status.lower() == "admin down":
                 status = "admin down"
             elif "down" in link_status.lower():
@@ -123,7 +123,7 @@ class Cisco(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -139,10 +139,10 @@ class Cisco(BaseDevice):
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
-        result: T_InterfaceVLANList = []
+        result: InterfaceVLANListType = []
 
         self.lock = False
-        interfaces: T_InterfaceList = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
         for line in interfaces:
@@ -162,7 +162,7 @@ class Cisco(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -182,7 +182,7 @@ class Cisco(BaseDevice):
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 

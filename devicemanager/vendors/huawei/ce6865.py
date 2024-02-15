@@ -6,12 +6,12 @@ from typing import Literal
 from ..base.device import BaseDevice
 from ..base.helpers import parse_by_template, range_to_numbers
 from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
-    T_Interface,
+    InterfaceType,
 )
 from ..base.validators import validate_and_format_port
 
@@ -72,7 +72,7 @@ class HuaweiCE6865(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -92,7 +92,7 @@ class HuaweiCE6865(BaseDevice):
             if port_name.startswith("NULL") or port_name.startswith("V"):
                 continue
 
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if phy.lower() == "*down":
                 status = "admin down"
             elif "down" in protocol.lower():
@@ -102,7 +102,7 @@ class HuaweiCE6865(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -143,7 +143,7 @@ class HuaweiCE6865(BaseDevice):
         return normalize_interface_name(intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, тип и порт для данного оборудования.
 
@@ -177,7 +177,7 @@ class HuaweiCE6865(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_huawei_ce6865_port(if_invalid_return=[])
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 

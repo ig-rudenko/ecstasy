@@ -1,5 +1,4 @@
 import pathlib
-from enum import Enum
 from typing import Literal, TypedDict, NamedTuple
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
@@ -13,25 +12,15 @@ STATUS = str
 DESCRIPTION = str
 VID = int
 VLAN_LIST = list
-T_MACList = list[tuple[VID, MAC]]
+MACListType = list[tuple[VID, MAC]]
 
+InterfaceType = Literal["up", "down", "admin down", "notPresent", "dormant"]
 
-class InterfaceStatus(Enum):
-    up = "up"
-    down = "down"
-    admin_down = "admin down"
-    not_present = "notPresent"
-    dormant = "dormant"
+InterfaceListType = list[tuple[PORT, InterfaceType, DESCRIPTION]]
+InterfaceVLANListType = list[tuple[PORT, InterfaceType, DESCRIPTION, VLAN_LIST]]
+MACTableType = list[tuple[VID, MAC, MACType, PORT]]
 
-
-T_Interface = Literal["up", "down", "admin down", "notPresent", "dormant"]
-
-T_InterfaceList = list[tuple[PORT, T_Interface, DESCRIPTION]]
-T_InterfaceVLANList = list[tuple[PORT, T_Interface, DESCRIPTION, VLAN_LIST]]
-T_MACTable = list[tuple[VID, MAC, MACType, PORT]]
-
-
-T_SplittedPort = tuple[str, tuple[str, ...]]
+SplittedPortType = tuple[str, tuple[str, ...]]
 
 
 # Обозначения медных типов по стандарту IEEE 802.3

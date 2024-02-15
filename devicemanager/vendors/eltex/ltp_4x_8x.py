@@ -5,10 +5,10 @@ from typing import Any, TypedDict
 from .extra import reformat_ltp_interfaces_list
 from ..base.device import BaseDevice
 from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
 )
@@ -175,7 +175,7 @@ class EltexLTP(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         self.session.send("switch\r")
         self.session.expect(self.prompt)
 
@@ -204,7 +204,7 @@ class EltexLTP(BaseDevice):
         return reformat_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -236,7 +236,7 @@ class EltexLTP(BaseDevice):
             rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output
         )
 
-        table: T_MACTable = []
+        table: MACTableType = []
         mac_type: MACType
 
         for vid, mac, port, type_ in parsed:
@@ -250,13 +250,13 @@ class EltexLTP(BaseDevice):
         return table
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         Команда:
 

@@ -5,6 +5,7 @@ import tabulate
 
 @dataclass
 class ZabbixInventory:
+    # pylint: disable=too-many-instance-attributes
     type: str = ""
     type_full: str = ""
     name: str = ""
@@ -102,6 +103,7 @@ class ZabbixHostGroup:
 
 @dataclass
 class ZabbixHostInfo:
+    # pylint: disable=too-many-instance-attributes
     hostid: str = ""
     host: str = ""
     name: str = ""
@@ -118,14 +120,14 @@ class ZabbixHostInfo:
     def print(self):
         """Выводит в терминал данные, кроме данных инвентаризации"""
         res = []
-        for key in self.__dict__:
+        for key, value in self.__dict__.items():
             if key != "inventory":
                 if key == "hostgroups":
                     res.append([key, ", ".join(self.host_group_names)])
                 elif key == "ip":
                     res.append([key, ", ".join(self.ip)])
                 else:
-                    res.append([key, self.__dict__[key]])
+                    res.append([key, value])
 
         print(tabulate.tabulate(res))
 

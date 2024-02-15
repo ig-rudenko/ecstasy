@@ -11,13 +11,13 @@ import pysftp
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     MACType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port
 from ..exceptions import UnknownDeviceError
@@ -144,7 +144,7 @@ class MikroTik(BaseDevice):
         )
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         interfaces_output = self.send_command("interface print without-paging terse")
 
         interfaces = []
@@ -157,7 +157,7 @@ class MikroTik(BaseDevice):
                 continue
 
             flags = match.group(2)
-            status: T_Interface = "down"
+            status: InterfaceType = "down"
             if "R" in flags:
                 status = "up"
             elif "X" in flags:
@@ -171,11 +171,11 @@ class MikroTik(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         interfaces_with_vlans = []
 
         self.lock = False
-        interfaces: T_InterfaceList = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
         for line in interfaces:
             bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge", "")
@@ -192,7 +192,7 @@ class MikroTik(BaseDevice):
         return interfaces_with_vlans
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
 
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
@@ -211,7 +211,7 @@ class MikroTik(BaseDevice):
 
         output = self.send_command("interface bridge host print without-paging terse", expect_command=False)
 
-        mac_table: T_MACTable = []
+        mac_table: MACTableType = []
 
         # Разбиваем вывод на строки, начинающиеся с числа и пробела.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
@@ -248,7 +248,7 @@ class MikroTik(BaseDevice):
 
     @BaseDevice.lock_session
     @mikrotik_validate_and_format_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -265,7 +265,7 @@ class MikroTik(BaseDevice):
             expect_command=False,
         )
 
-        macs: T_MACList = []
+        macs: MACListType = []
         # Приведенный выше код разбивает строку `output` на строки на основе шаблона регулярного выражения.
         # Затем для каждой строки он ищет MAC-адрес и соответствующий `bridge`, используя шаблон регулярного выражения.
         # Если MAC-адрес и `bridge` найдены, он добавляет кортеж из VLAN ID и MAC-адреса в список под названием «macs».

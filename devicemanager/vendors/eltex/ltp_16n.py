@@ -5,10 +5,10 @@ from .extra import reformat_ltp_interfaces_list
 from .ltp_4x_8x import _EltexLTPPortTypes
 from ..base.device import BaseDevice
 from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     DeviceAuthDict,
 )
 
@@ -123,7 +123,7 @@ class EltexLTP16N(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         Интерфейсы на оборудовании
 
@@ -147,12 +147,12 @@ class EltexLTP16N(BaseDevice):
         return reformat_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
 
@@ -181,7 +181,7 @@ class EltexLTP16N(BaseDevice):
 
     @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         Команда:
 

@@ -7,10 +7,10 @@ import requests
 from devicemanager import exceptions
 from devicemanager.vendors.base.device import AbstractDevice
 from devicemanager.vendors.base.types import (
-    T_MACList,
-    T_InterfaceVLANList,
-    T_InterfaceList,
-    T_MACTable,
+    MACListType,
+    InterfaceVLANListType,
+    InterfaceListType,
+    MACTableType,
     SetDescriptionResult,
     ArpInfoResult,
 )
@@ -87,13 +87,13 @@ class RemoteDevice(AbstractDevice):
     def get_system_info(self):
         return self._remote_call("get_system_info")
 
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         return self._remote_call("get_interfaces")
 
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         return self._remote_call("get_vlans")
 
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         return self._remote_call("get_mac", port=port)
 
     def reload_port(self, port: str, save_config=True) -> str:
@@ -157,5 +157,5 @@ class RemoteDevice(AbstractDevice):
         operation: Literal["add", "delete"],
         vlans: Sequence[int],
         tagged: bool = True,
-    ) -> T_MACTable:
+    ) -> MACTableType:
         return self._remote_call("vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged)

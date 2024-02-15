@@ -5,9 +5,9 @@ import textfsm
 from ..base.device import BaseDevice
 from ..base.types import (
     TEMPLATE_FOLDER,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
     ArpInfoResult,
 )
 
@@ -74,13 +74,13 @@ class HuaweiCX600(BaseDevice):
 
         return list(map(lambda r: ArpInfoResult(*r), result)) if result else []
 
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         return []
 
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         return []
 
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         return []
 
     def reload_port(self, port: str, save_config=True) -> str:

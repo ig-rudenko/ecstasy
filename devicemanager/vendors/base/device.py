@@ -9,9 +9,9 @@ import pexpect
 
 from .types import (
     DeviceAuthDict,
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
     SystemInfo,
 )
 
@@ -23,7 +23,7 @@ class AbstractDevice(ABC):
     """
 
     @abstractmethod
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         Интерфейсы на оборудовании
 
@@ -31,7 +31,7 @@ class AbstractDevice(ABC):
         """
 
     @abstractmethod
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         Интерфейсы и VLAN на оборудовании
 
@@ -39,7 +39,7 @@ class AbstractDevice(ABC):
         """
 
     @abstractmethod
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         Поиск маков на порту
 

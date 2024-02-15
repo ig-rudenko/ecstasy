@@ -1,6 +1,0 @@
-[MASTER]
-load-plugins=pylint_django
-django-settings-module=ecstasy_project.settings
-
-[MESSAGES CONTROL]
-disable=line-too-long

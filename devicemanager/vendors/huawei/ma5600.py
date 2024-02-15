@@ -8,11 +8,11 @@ from jinja2 import Environment, FileSystemLoader
 from devicemanager import snmp
 from ..base.device import BaseDevice
 from ..base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
-    T_SplittedPort,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
+    SplittedPortType,
     DeviceAuthDict,
 )
 
@@ -53,8 +53,8 @@ class HuaweiMA5600T(BaseDevice):
 
         self.adsl_profiles: str = self.get_adsl_profiles()
         self.vdsl_templates: list = self.get_vdsl_templates()
-        self.interfaces: T_InterfaceList = []
-        self.interfaces_vlans: T_InterfaceVLANList = []
+        self.interfaces: InterfaceListType = []
+        self.interfaces_vlans: InterfaceVLANListType = []
 
     def get_adsl_profiles(self) -> str:
         return self.send_command(
@@ -242,7 +242,7 @@ class HuaweiMA5600T(BaseDevice):
         return self.send_command(f"display board {board_index}")
 
     @lru_cache()
-    def split_port(self, port: str) -> T_SplittedPort:
+    def split_port(self, port: str) -> SplittedPortType:
         """
         ## Разделяет строку порта на тип интерфейса и плата, слот, порт
 
@@ -508,8 +508,8 @@ class HuaweiMA5600T(BaseDevice):
         """
 
         def color(val: float, s: str) -> str:
-            color_code = ""
             """Определяем цвета в зависимости от числовых значений показателя"""
+            color_code = ""
             if "SNR margin" in s:
                 gradient = [5, 7, 10, 20]
             elif "attenuation" in s:
@@ -749,7 +749,7 @@ class HuaweiMA5600T(BaseDevice):
         port = self.split_port(intf)
         return port[0] + "/".join(port[1])
 
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращает таблицу MAC-адресов оборудования.
 
@@ -758,7 +758,7 @@ class HuaweiMA5600T(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        mac_table: T_MACTable = []
+        mac_table: MACTableType = []
 
         for interface in self.interfaces:
             port_macs = self.get_mac(interface[0])
@@ -766,7 +766,7 @@ class HuaweiMA5600T(BaseDevice):
         return mac_table
 
     @BaseDevice.lock_session
-    def get_mac(self, port) -> T_MACList:
+    def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
@@ -816,7 +816,7 @@ class HuaweiMA5600T(BaseDevice):
             self.send_command(f"display security bind mac {'/'.join(indexes)}", expect_command=False),
         )
 
-        res: T_MACList = []
+        res: MACListType = []
         for mac, vid in macs1 + macs2:
             res.append((int(vid), mac))
         return res
@@ -967,11 +967,11 @@ class HuaweiMA5600T(BaseDevice):
         return s
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         return []
 
     @BaseDevice.lock_session

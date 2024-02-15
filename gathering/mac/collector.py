@@ -11,7 +11,7 @@ from check.models import Devices
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
 from devicemanager.exceptions import BaseDeviceException
-from devicemanager.vendors.base.types import T_MACTable
+from devicemanager.vendors.base.types import MACTableType
 from net_tools.models import DevicesInfo
 from ..models import MacAddress
 
@@ -29,7 +29,7 @@ class MacAddressTableGather:
 
         # по умолчанию normalize_interface возвращает переданное ей значение.
         self.normalize_interface = lambda x: x
-        self.table: T_MACTable = []
+        self.table: MACTableType = []
         self.interfaces: Interfaces = Interfaces()
         self.interfaces_desc: dict = {}
 
@@ -63,7 +63,7 @@ class MacAddressTableGather:
         except BaseDeviceException:
             pass
 
-    def get_mac_address_table(self, session) -> T_MACTable:
+    def get_mac_address_table(self, session) -> MACTableType:
         """
         # Если в сеансе есть функция с именем get_mac_table, вернуть результат вызова этой функции. В противном
         случае вернуть пустой список

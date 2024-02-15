@@ -3,7 +3,7 @@ from check.logger import django_actions_logger
 
 class BaseDeviceException(Exception):
     def __init__(self, message: str, ip: str = "no ip"):
-        django_actions_logger.warning(f"{ip} {message}")
+        django_actions_logger.warning("%s %s", ip, message)
         self.message: str = message
 
     def __str__(self):

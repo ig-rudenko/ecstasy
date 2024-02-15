@@ -23,6 +23,7 @@
 from django.contrib import admin
 from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import ConnectionError as ZabbixConnectionError, Session
+
 from app_settings.models import (
     LogsElasticStackSettings,
     ZabbixConfig,
@@ -61,6 +62,7 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
                 return zabbix_api.is_authenticated
         except (ZabbixAPIException, ZabbixConnectionError):
             return False
+        # pylint: disable-next=broad-exception-caught
         except Exception as error:
             print(error)
             return False

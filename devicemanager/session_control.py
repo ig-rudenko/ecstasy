@@ -18,6 +18,7 @@ class GlobalSession:
     def alive(self) -> bool:
         try:
             return self.connection.session.isalive()
+        # pylint: disable-next=broad-exception-caught
         except Exception as exc:
             logger.error('Ошибка во время проверки статуса сессии "isalive"', exc_info=exc)
             return False
@@ -29,6 +30,7 @@ class GlobalSession:
     def close(self) -> None:
         try:
             self.connection.session.close()
+        # pylint: disable-next=broad-exception-caught
         except Exception as exc:
             logger.error("Ошибка во время удаления сессии", exc_info=exc)
 

@@ -9,12 +9,12 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
-    T_InterfaceList,
-    T_InterfaceVLANList,
-    T_MACList,
-    T_MACTable,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     DeviceAuthDict,
-    T_Interface,
+    InterfaceType,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -31,7 +31,7 @@ class EdgeCore(BaseDevice):
     mac_format = r"\S\S-" * 5 + r"\S\S"
 
     @BaseDevice.lock_session
-    def get_interfaces(self) -> T_InterfaceList:
+    def get_interfaces(self) -> InterfaceListType:
         """
         ## Возвращаем список всех интерфейсов на устройстве
 
@@ -50,7 +50,7 @@ class EdgeCore(BaseDevice):
         for port_name, admin_status, link_status, desc in result:
             if port_name.startswith("V"):
                 continue
-            status: T_Interface = "up"
+            status: InterfaceType = "up"
             if admin_status.lower() != "up":
                 status = "admin down"
             elif "down" in link_status.lower():
@@ -61,7 +61,7 @@ class EdgeCore(BaseDevice):
         return interfaces
 
     @BaseDevice.lock_session
-    def get_vlans(self) -> T_InterfaceVLANList:
+    def get_vlans(self) -> InterfaceVLANListType:
         """
         ## Возвращаем список всех интерфейсов и его VLAN на коммутаторе.
 
@@ -79,7 +79,7 @@ class EdgeCore(BaseDevice):
         # Получение текущей конфигурации устройства.
         running_config = self.send_command("show running-config")
         self.lock = False
-        interfaces: T_InterfaceList = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
 
         # Разделение текущей конфигурации на список строк. Каждая строка является частью конфигурации порта.
         split_config = running_config.split("interface ")
@@ -136,7 +136,7 @@ class EdgeCore(BaseDevice):
         return interface_normal_view(intf)
 
     @BaseDevice.lock_session
-    def get_mac_table(self) -> T_MACTable:
+    def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, dynamic и порта для данного оборудования.
 
@@ -155,7 +155,7 @@ class EdgeCore(BaseDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
-    def get_mac(self, port: str) -> T_MACList:
+    def get_mac(self, port: str) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
 
