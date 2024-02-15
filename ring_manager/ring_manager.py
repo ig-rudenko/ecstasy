@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List, Tuple, Set, Optional
 
 from devicemanager.device import DeviceManager
 from .base.exceptions import InvalidRingStructureError, RingStatusError
@@ -12,7 +11,7 @@ from .solutions import Solutions
 
 @dataclass
 class RingPoint(BaseRingPoint):
-    point: RingDev = None
+    point: RingDev = None  # type: ignore
 
 
 class RingStatus:
@@ -20,26 +19,26 @@ class RingStatus:
         self.transport_ring_manager = transport_ring_manager
 
         # Последний доступный, перед недоступным со стороны `head`
-        self.last_available: Optional[RingPoint] = None
+        self.last_available: RingPoint | None = None
         # Первый недоступный узел в кольце
-        self.first_unavailable: Optional[RingPoint] = None
+        self.first_unavailable: RingPoint | None = None
         # Первый доступный узел, после недоступных
-        self.first_available_after: Optional[RingPoint] = None
+        self.first_available_after: RingPoint | None = None
         # Порты со статусом admin down
         self.closed_ports: list = []
         # Обрывы портов
         self.broken_links: list = []
 
         # VLAN, которые в данный момент имеются на `tail`
-        self.tail_current_vlans: Set[int] = set()
+        self.tail_current_vlans: set[int] = set()
         # Требуемые VLAN для разворота кольца
-        self.required_vlans: Set[int] = set()
+        self.required_vlans: set[int] = set()
 
         # VLAN, которые требуются, но уже имеются на `tail`
-        self.tail_exists_vlans: Tuple[int] = tuple()
+        self.tail_exists_vlans: tuple[int, ...] = tuple()
 
         # VLAN, которые необходимо еще прописать
-        self.tail_required_vlans: Tuple[int] = tuple()
+        self.tail_required_vlans: tuple[int, ...] = tuple()
 
         self.solutions = Solutions()
 
@@ -101,9 +100,7 @@ class RingStatus:
                     },
                     "to_dev": {
                         "device": self.transport_ring_manager.ring_devs[ring_index + 1],
-                        "port": self.transport_ring_manager.ring_devs[
-                            ring_index + 1
-                        ].port_to_prev_dev,
+                        "port": self.transport_ring_manager.ring_devs[ring_index + 1].port_to_prev_dev,
                     },
                 }
             )
@@ -121,11 +118,7 @@ class RingStatus:
 
             # Если после цепочки недоступных появляется еще одно недоступное устройство, то видимо проблемы на сети
             # Неопределенность.
-            if (
-                self.first_unavailable is not None
-                and self.first_available_after is not None
-                and not dev.ping
-            ):
+            if self.first_unavailable is not None and self.first_available_after is not None and not dev.ping:
                 self.solutions.error(
                     "uncertainty",
                     "После цепочки недоступных появляется еще одно недоступное устройство, видимо проблемы на сети",
@@ -220,8 +213,7 @@ class RingStatus:
                 # Если на `tail` есть некоторые VLANS
                 if self.tail_exists_vlans:
                     self.solutions.info(
-                        "Кольцо находится в исправном состоянии, но необходимо удалить зацикленные "
-                        "VLANS"
+                        "Кольцо находится в исправном состоянии, но необходимо удалить зацикленные " "VLANS"
                     )
                     # Необходимо удалить их
                     self.solutions.delete_vlans(
@@ -278,11 +270,7 @@ class RingStatus:
             )
 
         # Имеется закрытый порт и все оборудование доступно, можно развернуть в штатное состояние
-        elif (
-            len(self.closed_ports)
-            and self.first_unavailable is None
-            and self.first_available_after is None
-        ):
+        elif len(self.closed_ports) and self.first_unavailable is None and self.first_available_after is None:
             self.solutions.info(
                 f"Транспортное кольцо в данный момент развернуто, со стороны"
                 f" {self.transport_ring_manager.tail.device.name} "
@@ -346,7 +334,7 @@ class TransportRingManager:
         self._validate_ring(ring)
 
         self.ring = ring
-        self.vlans: List[int] = ring.vlans
+        self.vlans: list[int] = ring.vlans
         self.ring_devs = self._get_ring_devices()
 
         self.head = self.ring_devs[0]
@@ -426,9 +414,7 @@ class TransportRingManager:
     @staticmethod
     def _validate_ring(ring):
         if not isinstance(ring, TransportRing):
-            raise TypeError(
-                f"Менеджер колец не принимает тип {type(ring)}, только `model.TransportRing`"
-            )
+            raise TypeError(f"Менеджер колец не принимает тип {type(ring)}, только `model.TransportRing`")
 
         if ring.head is None:
             raise InvalidRingStructureError("В кольце не указано головное устройство")
@@ -439,7 +425,7 @@ class TransportRingManager:
         if not ring.vlans:
             raise InvalidRingStructureError("Для разворота требуется указать VLAN")
 
-    def _get_ring_devices(self) -> List[RingPoint]:
+    def _get_ring_devices(self) -> list[RingPoint]:
         """
         Функция «ring_devices» возвращает список устройств в кольце по порядку
         """
@@ -447,7 +433,9 @@ class TransportRingManager:
 
         devs = []
 
-        iter_dev: RingDev = self.ring.head
+        iter_dev: RingDev | None = self.ring.head
+        if iter_dev is None:
+            raise InvalidRingStructureError("Не найдено головное устройство")
 
         # Перебирает устройства в кольце и добавляет в список.
         # Начинается с головного устройства кольца и продолжается добавление пока не достигнет конца кольца

@@ -1,6 +1,7 @@
 import json
-from django.db.models.signals import post_delete
+
 from django.db import models
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 
@@ -52,7 +53,7 @@ class TransportRing(models.Model):
         verbose_name="VLAN'S",
         help_text="Укажите через запятую, "
         "какие VLAN необходимо добавить для оконечного оборудования в кольце в случае разворота",
-    )
+    )  # type: ignore
     status = models.CharField(
         choices=_STATUS,
         max_length=20,
@@ -76,7 +77,7 @@ class TransportRing(models.Model):
             self._vlans = json.dumps(value)
         super().__setattr__(key, value)
 
-    def __getattribute__(self, item):
+    def __getattribute__(self, item: str):
         """
         Эта функция переопределяет поведение по умолчанию при доступе к атрибуту объекта и преобразует
         атрибут "vlans" из строки JSON в список целых чисел.
@@ -137,7 +138,6 @@ class TransportRing(models.Model):
 
 
 class RingDev(models.Model):
-
     device = models.ForeignKey(
         "check.Devices",
         on_delete=models.CASCADE,

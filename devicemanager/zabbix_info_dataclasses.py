@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Tuple
+
 import tabulate
 
 
@@ -109,7 +109,7 @@ class ZabbixHostInfo:
     description: str = ""
     ip: tuple = field(default_factory=tuple)
     inventory: ZabbixInventory = field(default_factory=ZabbixInventory)
-    hostgroups: Tuple[ZabbixHostGroup] = field(default_factory=tuple)
+    hostgroups: list[ZabbixHostGroup] = field(default_factory=list)
 
     @property
     def host_group_names(self):

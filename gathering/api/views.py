@@ -1,10 +1,10 @@
 import re
 from functools import lru_cache
 
+from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.humanize.templatetags.humanize import naturaltime
 
 from app_settings.models import VlanTracerouteConfig
 from net_tools.models import DescNameFormat
@@ -37,7 +37,6 @@ class MacTraceroute(APIView):
 
             for pattern in reformat.replacement.split(", "):
                 if pattern in name:  # Если паттерн содержится в исходном имени
-
                     # Заменяем совпадение "pattern" в названии "name" на правильное "n"
                     return re.sub(pattern, reformat.standard, name)
 
@@ -83,7 +82,7 @@ class MacTraceroute(APIView):
 
         return "#ffffff"
 
-    def get_next_device(self, mac_address: MacAddress) -> (str, str):
+    def get_next_device(self, mac_address: MacAddress) -> tuple[str, str]:
         """
         ### Принимает объект mac_address и возвращает кортеж строк, где первая строка — это имя следующего устройства, а
         вторая строка — описание следующего устройства.
@@ -92,9 +91,7 @@ class MacTraceroute(APIView):
         :return: Кортеж из двух строк.
         """
         # Ищем в описании на порту следующее устройство по паттерну
-        next_device_match = re.findall(
-            self.find_device_pattern, self.reformatting(mac_address.desc)
-        )
+        next_device_match = re.findall(self.find_device_pattern, self.reformatting(mac_address.desc))
         # Если нашли в описании следующее оборудование
         if next_device_match:
             next_device_id = next_device_label = next_device_match[0]
@@ -135,14 +132,10 @@ class MacTraceroute(APIView):
         exist_nodes_id = []
 
         for record in traceroute:
-
             next_device_id, next_device_label = self.get_next_device(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
-            if (
-                next_device_id not in found_devices_names
-                and next_device_id not in exist_nodes_id
-            ):
+            if next_device_id not in found_devices_names and next_device_id not in exist_nodes_id:
                 # Добавление нового узла в список узлов.
                 nodes.append(
                     {

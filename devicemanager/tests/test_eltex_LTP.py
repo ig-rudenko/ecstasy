@@ -39,12 +39,12 @@ class EltexLTP4XPexpectFaker:
     ## Это класс создает имитацию сессии pexpect для обработки команд Eltex LTP 4X.
     """
 
-    def __init__(self):
-        self.before: bin = b""
-        self.sent_commands = []
+    def __init__(self) -> None:
+        self.before: bytes = b""
+        self.sent_commands: list[str] = []
         self.expect_cmd = 0
 
-    def send(self, command: str):
+    def send(self, command: str) -> None:
         """
         ## Обрабатывает команду
 
@@ -106,9 +106,9 @@ class EltexLTP8XPexpectFaker:
     ## Это класс создает имитацию сессии pexpect для обработки команд Eltex LTP 8X.
     """
 
-    def __init__(self):
-        self.before: bin = b""
-        self.sent_commands = []
+    def __init__(self) -> None:
+        self.before: bytes = b""
+        self.sent_commands: list[str] = []
         self.expect_cmd = 0
 
     def send(self, command: str):

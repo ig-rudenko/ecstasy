@@ -1,8 +1,6 @@
 import re
 from time import sleep
-from typing import Literal, Sequence, Tuple, List, Dict
-
-import pexpect
+from typing import Literal, Sequence
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
@@ -13,8 +11,8 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port_only_digit
 from .. import DeviceException
@@ -35,12 +33,12 @@ class Extreme(BaseDevice):
     vendor = "Extreme"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства:
@@ -98,29 +96,25 @@ class Extreme(BaseDevice):
         # Смотрим имена интерфейсов, статус порта и его состояние
         output_links = self.send_command("show ports information")
 
-        result_port_state: List[List[str, str, str]] = parse_by_template(
+        result_port_state: list[list[str]] = parse_by_template(
             "interfaces/extreme_links.template", output_links
         )
 
         # Смотрим имена интерфейсов и описания
         output_des = self.send_command("show ports description")
-        result_des: List[List[str]] = parse_by_template(
-            "interfaces/extreme_des.template", output_des
-        )
+        result_des: list[list[str]] = parse_by_template("interfaces/extreme_des.template", output_des)
 
-        interfaces_lines = [
-            result_port_state[n] + result_des[n] for n in range(len(result_port_state))
-        ]
+        interfaces_lines = [result_port_state[n] + result_des[n] for n in range(len(result_port_state))]
 
-        interfaces: List[Tuple[str, InterfaceStatus, str]] = []
+        interfaces: list[tuple[str, T_Interface, str]] = []
         for port_name, admin_status, link_status, desc in interfaces_lines:
             # Проверяем статус порта и меняем его на более понятный для пользователя
+            status: T_Interface = "up"
             if admin_status.startswith("D"):
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif link_status == "ready":
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
+                status = "down"
+
             interfaces.append((port_name, status, desc))
 
         return interfaces
@@ -149,12 +143,12 @@ class Extreme(BaseDevice):
         output_vlans = self.send_command(
             'show configuration "vlan"', before_catch=r"Module vlan configuration\."
         )
-        result_vlans: List[List[str, str]] = parse_by_template(
+        result_vlans: list[tuple[str, str]] = parse_by_template(
             "vlans_templates/extreme.template", output_vlans
         )
 
         # Создаем словарь, где ключи это порты, а значениями будут вланы на них
-        ports_vlan: Dict[int, List[str]] = {num: [] for num in range(1, len(interfaces) + 1)}
+        ports_vlan: dict[int, list[str]] = {num: [] for num in range(1, len(interfaces) + 1)}
 
         for vlan_id, ports in result_vlans:
             for port in range_to_numbers(ports):
@@ -179,7 +173,7 @@ class Extreme(BaseDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
         mac_str = self.send_command("show fdb", expect_command=False)
-        mac_table: List[Tuple[str, str, str]] = re.findall(
+        mac_table: list[tuple[str, str, str]] = re.findall(
             rf"({self.mac_format})\s+v\S+\((\d+)\)\s+\d+\s+d m\s+(\d+).*\n",
             mac_str,
             flags=re.IGNORECASE,
@@ -202,7 +196,7 @@ class Extreme(BaseDevice):
         """
 
         output = self.send_command(f"show fdb ports {port}", expect_command=False)
-        macs: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
+        macs: list[tuple[str, str]] = re.findall(rf"({self.mac_format})\s+v(\d+)", output)
 
         return [(int(vid), mac) for mac, vid in macs]
 
@@ -243,7 +237,7 @@ class Extreme(BaseDevice):
         sleep(1)
         self.session.sendline(f"enable ports {port}")
         self.session.expect(self.prompt)
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
@@ -270,7 +264,7 @@ class Extreme(BaseDevice):
 
         self.session.sendline(f"{cmd} ports {port}")
         self.session.expect(self.prompt)
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
@@ -297,9 +291,7 @@ class Extreme(BaseDevice):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @validate_and_format_port_only_digit(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -396,6 +388,11 @@ class ExtremeFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         return Extreme(session, ip, auth, snmp_community=snmp_community)

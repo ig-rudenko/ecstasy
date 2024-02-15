@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("maps", "0002_alter_layers_options_alter_layers_description_and_more"),
@@ -15,9 +14,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="maps",
             name="layers",
-            field=models.ManyToManyField(
-                blank=True, null=True, to="maps.layers", verbose_name="Cлои"
-            ),
+            field=models.ManyToManyField(blank=True, null=True, to="maps.layers", verbose_name="Cлои"),  # type: ignore
         ),
         migrations.AlterField(
             model_name="maps",
@@ -36,7 +33,7 @@ class Migration(migrations.Migration):
             field=models.ManyToManyField(
                 blank=True,
                 help_text="Пользователи",
-                null=True,
+                null=True,  # type: ignore
                 to=settings.AUTH_USER_MODEL,
                 verbose_name="Выберите пользователей",
             ),

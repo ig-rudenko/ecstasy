@@ -1,7 +1,9 @@
-from django.test import TestCase
 from unittest.mock import patch, Mock
-from ..models import User, Devices, Bras, UsersActions, DeviceGroup, AuthGroup
+
+from django.test import TestCase
+
 from ..logging import log
+from ..models import User, Devices, Bras, UsersActions, DeviceGroup, AuthGroup
 
 
 class TestLog(TestCase):
@@ -20,7 +22,7 @@ class TestLog(TestCase):
     @patch("check.logger.django_actions_logger.info")
     def test_invalid_inputs(self, mock_logger_info: Mock):
         # Проверка, что при неверных (некорректных) входных данных, функция log не записывает в базу
-        log(None, None, "123")
+        log(None, None, "123")  # type: ignore
         self.assertEqual(UsersActions.objects.count(), 0)
         mock_logger_info.assert_called_with("| NO DB | None       | None            | 123")
 
@@ -42,9 +44,7 @@ class TestLog(TestCase):
         log(self.user, self.bras, "test_bras_action")
         bras_log = UsersActions.objects.get(action__contains="test_bras_action")
         self.assertEqual(bras_log.action, f"{self.bras} | test_bras_action")
-        mock_logger_info.assert_called_with(
-            f"| {self.user.username:<10} | {self.bras} | test_bras_action"
-        )
+        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.bras} | test_bras_action")
 
     @patch("check.logger.django_actions_logger.info")
     def test_very_long_log_bras(self, mock_logger_info: Mock):

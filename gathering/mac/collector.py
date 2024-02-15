@@ -1,18 +1,18 @@
 import re
-from itertools import islice
 from datetime import timedelta
+from itertools import islice
 
 import orjson
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 
+from app_settings.models import ZabbixConfig
 from check.models import Devices
-from net_tools.models import DevicesInfo
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
-from devicemanager.vendors.base.types import T_MACTable
-from app_settings.models import ZabbixConfig
 from devicemanager.exceptions import BaseDeviceException
+from devicemanager.vendors.base.types import T_MACTable
+from net_tools.models import DevicesInfo
 from ..models import MacAddress
 
 
@@ -39,7 +39,7 @@ class MacAddressTableGather:
                 ip=self.device.ip,
                 protocol=self.device.port_scan_protocol,
                 auth_obj=self.device.auth_group,
-                snmp_community=self.device.snmp_community,
+                snmp_community=self.device.snmp_community or "",
             ) as session:
                 # Если в сеансе есть функция с именем normalize_interface_name,
                 # установите атрибут normalize_interface для этой функции.
@@ -84,9 +84,7 @@ class MacAddressTableGather:
     def get_interfaces(self) -> Interfaces:
         device_manager = DeviceManager.from_model(self.device)
         # Получение интерфейсов с устройства.
-        device_manager.collect_interfaces(
-            vlans=False, current_status=True, make_session_global=False
-        )
+        device_manager.collect_interfaces(vlans=False, current_status=True, make_session_global=False)
         return device_manager.interfaces or Interfaces()
 
     def format_interfaces(self, old_interfaces: Interfaces) -> dict:

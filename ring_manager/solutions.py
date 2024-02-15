@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Literal, Sequence, Dict, Tuple, Callable
+from typing import Literal, Sequence, Callable
 
 import check.models
 from devicemanager import DeviceException
@@ -105,7 +105,7 @@ class Solutions:
     def _change_vlans(
         self,
         status: Literal["add", "delete"],
-        vlans: Tuple[int],
+        vlans: tuple[int, ...],
         device: check.models.Devices,
         port: str,
         message: str,
@@ -127,15 +127,13 @@ class Solutions:
                 }
             )
 
-    def delete_vlans(
-        self, vlans: Tuple[int], device: check.models.Devices, port: str, message: str
-    ):
+    def delete_vlans(self, vlans: tuple[int, ...], device: check.models.Devices, port: str, message: str):
         """
         Удаляет указанные VLAN на порту данного устройства.
         """
         self._change_vlans("delete", vlans, device, port, message)
 
-    def add_vlans(self, vlans: Tuple[int], device: check.models.Devices, port: str, message: str):
+    def add_vlans(self, vlans: tuple[int, ...], device: check.models.Devices, port: str, message: str):
         """
         Добавляет указанные VLAN на порт данного устройства.
         """
@@ -164,7 +162,7 @@ class SolutionsPerformer:
         if not self._ring.solutions:
             raise SolutionsPerformerError("Нет решений, которые необходимо выполнить")
 
-        if self.is_solution_expired(self._ring.solution_time):
+        if self._ring.solution_time is not None and self.is_solution_expired(self._ring.solution_time):
             # Этот код проверяет, является ли время создания решений (сохраненное в `self.ring.solution_time`)
             # более ранним чем текущее время минус время истечения срока действия решений (`self.solution_expire`).
             # Это делается для того, чтобы решения выполнялись своевременно и не применялись к сети после того, как они
@@ -218,7 +216,7 @@ class SolutionsPerformer:
         return self._solutions
 
     def _perform_pipeline(
-        self, solutions: Sequence[dict], counter: Dict[str, int], reverse_status: bool = False
+        self, solutions: Sequence[dict], counter: dict[str, int], reverse_status: bool = False
     ):
         """
         Эта функция выполняет конвейер решений, проверяя их безопасность и выполняя их в зависимости от типа.
@@ -261,9 +259,7 @@ class SolutionsPerformer:
                 performer_method(**solution[solution_type], reverse_status=reverse_status)
             else:
                 # Нет такого метода, либо это был атрибут((
-                raise SolutionsPerformerError(
-                    f"Не был найден метод для решения типа {solution_type}"
-                )
+                raise SolutionsPerformerError(f"Не был найден метод для решения типа {solution_type}")
 
         except SolutionsPerformerError as error:
             # Помечаем статус данного решения, как ошибка
@@ -284,7 +280,7 @@ class SolutionsPerformer:
         )
 
     @staticmethod
-    def _get_device(device: Dict[str, str]) -> check.models.Devices:
+    def _get_device(device: dict[str, str]) -> check.models.Devices:
         """
         Это функция Python, которая принимает словарь, представляющий устройство, и возвращает объект типа
         check.models.Devices.
@@ -315,7 +311,7 @@ class SolutionsPerformer:
     def _perform_set_port_vlans(
         self,
         status: Literal["add", "delete"],
-        device: Dict[str, str],
+        device: dict[str, str],
         port: str,
         vlans: Sequence[int],
         message: str = "",
@@ -363,8 +359,7 @@ class SolutionsPerformer:
                     conn.vlans_on_port(port=port, operation=status, vlans=vlans)
                 except InvalidMethod:
                     raise SolutionsPerformerError(
-                        f"Оборудование {device_obj}, не имеет метода "
-                        f"для управления VLAN на порту"
+                        f"Оборудование {device_obj}, не имеет метода " f"для управления VLAN на порту"
                     )
 
                 tries -= 1
@@ -431,7 +426,7 @@ class SolutionsPerformer:
     def _perform_set_port_status(
         self,
         status: Literal["up", "down"],
-        device: Dict[str, str],
+        device: dict[str, str],
         port: str,
         message: str = "",
         reverse_status: bool = False,
@@ -475,9 +470,7 @@ class SolutionsPerformer:
 
                 result = conn.set_port(port=port, status=status, save_config=True)
                 if result == "Неверный порт":
-                    raise SolutionsPerformerError(
-                        f"Неверный порт {port} для оборудования {device_obj}"
-                    )
+                    raise SolutionsPerformerError(f"Неверный порт {port} для оборудования {device_obj}")
 
                 tries -= 1
 

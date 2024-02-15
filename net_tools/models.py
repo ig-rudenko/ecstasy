@@ -1,8 +1,8 @@
-from typing import Union, Sequence
+from typing import Sequence
 
 import orjson
-from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
 from django.utils import timezone
 
 from check.models import Devices
@@ -19,14 +19,14 @@ class DevicesInfo(models.Model):
     class Meta:
         db_table = "device_info"
 
-    def update_interfaces_state(self, interfaces: Union[Sequence, Interfaces]):
+    def update_interfaces_state(self, interfaces: Sequence | Interfaces):
         """
         Обновляет поле интерфейсов и время.
         """
         self.interfaces = self._parse_interfaces_to_json(interfaces, with_vlans=False)
         self.interfaces_date = timezone.now()
 
-    def update_interfaces_with_vlans_state(self, interfaces: Union[Sequence, Interfaces]):
+    def update_interfaces_with_vlans_state(self, interfaces: Sequence | Interfaces):
         """
         Обновляет поле интерфейсов и вланов, а также время
         """
@@ -34,7 +34,7 @@ class DevicesInfo(models.Model):
         self.vlans_date = timezone.now()
 
     @staticmethod
-    def _parse_interfaces_to_json(interfaces: Union[Sequence, Interfaces], with_vlans: bool) -> str:
+    def _parse_interfaces_to_json(interfaces: Sequence | Interfaces, with_vlans: bool) -> str:
         if isinstance(interfaces, Sequence):
             interfaces = Interfaces(interfaces)
 
@@ -59,9 +59,7 @@ class DevicesInfo(models.Model):
 
 
 class DescNameFormat(models.Model):
-    standard = models.CharField(
-        max_length=255, unique=True, verbose_name="Необходимое имя оборудования"
-    )
+    standard = models.CharField(max_length=255, unique=True, verbose_name="Необходимое имя оборудования")
     replacement = models.TextField(verbose_name="Возможные варианты (через запятую)")
 
     class Meta:

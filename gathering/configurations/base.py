@@ -2,7 +2,8 @@ import pathlib
 import string
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import IO, List, Union
+from typing import IO
+
 from check import models
 
 
@@ -15,7 +16,7 @@ class ConfigFile:
     name: str
     size: int
     modTime: str
-    path: Union[str, pathlib.Path] = ""
+    path: str | pathlib.Path = ""
 
     def __bool__(self):
         return bool(self.name)
@@ -72,11 +73,11 @@ class ConfigStorage(ABC):
         pass
 
     @abstractmethod
-    def files_list(self) -> List[ConfigFile]:
+    def files_list(self) -> list[ConfigFile]:
         """
         ## Возвращает список файлов конфигураций для оборудования
 
-        :return: List[ConfigFile]
+        :return: list[ConfigFile]
         """
 
         pass
@@ -102,7 +103,7 @@ class ConfigStorage(ABC):
         pass
 
     @abstractmethod
-    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path = None):
+    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path | None = None):
         """
         ## Добавляет новый файл конфигурации
 

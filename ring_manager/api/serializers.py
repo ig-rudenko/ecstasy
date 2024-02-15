@@ -2,9 +2,11 @@ from rest_framework import serializers
 
 from ..models import TransportRing
 
+VlansType = serializers.ListSerializer[serializers.IntegerField]
+
 
 class TransportRingSerializer(serializers.ModelSerializer):
-    vlans = serializers.ListSerializer(child=serializers.IntegerField())
+    vlans: VlansType = serializers.ListSerializer(child=serializers.IntegerField())
 
     class Meta:
         model = TransportRing
@@ -22,13 +24,7 @@ class PointInterfacesSerializer(serializers.Serializer):
     name = serializers.CharField()
     status = serializers.CharField()
     description = serializers.CharField(source="desc")
-    vlans = serializers.ListSerializer(source="vlan", child=serializers.IntegerField())
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
+    vlans: VlansType = serializers.ListSerializer(source="vlan", child=serializers.IntegerField())
 
 
 class PointRingSerializer(serializers.Serializer):
@@ -37,9 +33,3 @@ class PointRingSerializer(serializers.Serializer):
     available = serializers.BooleanField(source="ping")
     port_to_prev_dev = PointInterfacesSerializer()
     port_to_next_dev = PointInterfacesSerializer()
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass

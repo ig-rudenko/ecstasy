@@ -1,14 +1,33 @@
 import logging
+from typing import cast
 
-from pyzabbix.api import logger
 from celery.result import AsyncResult
 from django.core.cache import cache
+from pyzabbix.api import logger
 
+from check.interfaces_collector import DeviceInterfacesCollectorMixin
+from check.models import Devices as ModelDevices, Devices
+from devicemanager.device import DeviceManager
 from ecstasy_project.celery import app
 from ecstasy_project.task import ThreadUpdatedStatusTask
-from check.interfaces_collector import DeviceInterfacesCollectorMixin
-from check.models import Devices as ModelDevices
-from devicemanager.device import DeviceManager
+
+
+class DeviceInterfacesCollector(DeviceInterfacesCollectorMixin):
+    @property
+    def device(self) -> Devices:
+        return cast(Devices, self._device)
+
+    @device.setter
+    def device(self, device: Devices) -> None:
+        self._device = device
+
+    @property
+    def device_collector(self) -> DeviceManager:
+        return cast(DeviceManager, self._device_collector)
+
+    @device_collector.setter
+    def device_collector(self, device_collector: DeviceManager) -> None:
+        self._device_collector = device_collector
 
 
 class InterfacesScanTask(ThreadUpdatedStatusTask):
@@ -28,7 +47,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
         try:
             print(f"Start collect interfaces --> {obj}")
-            collector = DeviceInterfacesCollectorMixin()
+            collector = DeviceInterfacesCollector()
             collector.with_vlans = True
             collector.device = obj
             collector.device_collector = DeviceManager.from_model(obj)
@@ -49,7 +68,7 @@ interfaces_scan = app.register_task(InterfacesScanTask())
 def check_scanning_status() -> dict:
     task_id = cache.get("periodically_scan_id")
     if task_id:
-        task = AsyncResult(str(task_id))
+        task: AsyncResult = AsyncResult(str(task_id))
         if task.status == "PENDING":
             return {"status": "PENDING"}
         if task.status == "PROGRESS":

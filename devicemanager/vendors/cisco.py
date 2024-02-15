@@ -1,9 +1,7 @@
 import io
 import re
 from time import sleep
-from typing import Tuple, List, Dict
 
-import pexpect
 import textfsm
 
 from .base.device import BaseDevice
@@ -13,12 +11,12 @@ from .base.types import (
     TEMPLATE_FOLDER,
     FIBER_TYPES,
     COOPER_TYPES,
+    T_Interface,
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
     ArpInfoResult,
 )
@@ -47,7 +45,7 @@ class Cisco(BaseDevice):
 
     def __init__(
         self,
-        session: pexpect,
+        session,
         ip: str,
         auth: DeviceAuthDict,
         model: str = "",
@@ -70,7 +68,7 @@ class Cisco(BaseDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
-        self.__cache_port_info: Dict[str, str] = {}
+        self.__cache_port_info: dict[str, str] = {}
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
@@ -110,16 +108,15 @@ class Cisco(BaseDevice):
         output = self.send_command("show interfaces description")
         output = re.sub(".+\nInterface", "Interface", output)
 
-        result: List[List[str]] = parse_by_template("interfaces/cisco.template", output)
+        result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
+            status: T_Interface = "up"
             if admin_status.lower() == "admin down":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "down" in link_status.lower():
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
+                status = "down"
 
             interfaces.append((port_name, status, desc))
 
@@ -158,9 +155,7 @@ class Cisco(BaseDevice):
                 )
 
                 #
-                vlans_group: List[str] = re.findall(
-                    r"(?<=access|llowed) vlan [ad\s]*(\S*\d)", output
-                )
+                vlans_group: list[str] = re.findall(r"(?<=access|llowed) vlan [ad\s]*(\S*\d)", output)
                 result.append((line[0], line[1], line[2], vlans_group))
 
         return result
@@ -183,9 +178,7 @@ class Cisco(BaseDevice):
             f"show mac address-table interface {port}",
             expect_command=False,
         )
-        macs_list: List[Tuple[str, str]] = re.findall(
-            rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str
-        )
+        macs_list: list[tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice.lock_session
@@ -209,15 +202,12 @@ class Cisco(BaseDevice):
             return "security"
 
         mac_str = self.send_command("show mac address-table", expect_command=False)
-        mac_table: List[Tuple[str, str, str, str]] = re.findall(
+        mac_table: list[tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(dynamic|static)\s+.*?(\S+)\s*\n",
             mac_str,
             flags=re.IGNORECASE,
         )
-        return [
-            (int(vid), mac, mac_type(type_), port)
-            for vid, mac, type_, port in mac_table
-        ]
+        return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()
@@ -256,7 +246,7 @@ class Cisco(BaseDevice):
         self.session.expect(self.prompt)
         self.session.sendline("end")
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
@@ -295,7 +285,7 @@ class Cisco(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
@@ -366,14 +356,10 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
-            "data", ""
-        )
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
         # Ищем тип порта.
         port_type = "".join(
-            self.find_or_empty(
-                r"media type is .+[Bb]ase[-]?(\S{1,2})|media type is (.+)", port_info
-            )
+            self.find_or_empty(r"media type is .+[Bb]ase[-]?(\S{1,2})|media type is (.+)", port_info)
         )
         # Проверка, является ли порт оптоволоконным.
         if "No XCVR" in port_type or "SFP" in port_info or port_type in FIBER_TYPES:
@@ -392,13 +378,9 @@ class Cisco(BaseDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get(
-            "data", ""
-        )
+        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
 
-        media_type = [
-            line.strip() for line in port_info.split("\n") if "errors" in line
-        ]
+        media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
@@ -419,7 +401,7 @@ class Cisco(BaseDevice):
         return config
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         """
         ## Ищем MAC адрес в таблице ARP оборудования
 
@@ -442,7 +424,7 @@ class Cisco(BaseDevice):
         return self._search_in_arp(address=formatted_mac)
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         """
         ## Ищем IP адрес в таблице ARP оборудования
 
@@ -457,7 +439,7 @@ class Cisco(BaseDevice):
         """
         return self._search_in_arp(address=ip_address)
 
-    def _search_in_arp(self, address: str) -> List[ArpInfoResult]:
+    def _search_in_arp(self, address: str) -> list[ArpInfoResult]:
         match = self.send_command(f"show arp | include {address}")
         # Форматируем вывод
         with open(
@@ -469,9 +451,7 @@ class Cisco(BaseDevice):
         return list(map(lambda r: ArpInfoResult(*r), result))
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -509,9 +489,7 @@ class Cisco(BaseDevice):
         self.session.sendline(f"interface {port}")
         self.session.expect(self.prompt)
 
-        if (
-            desc == ""
-        ):  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+        if desc == "":  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             res = self.send_command("no description", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
@@ -537,7 +515,7 @@ class Cisco(BaseDevice):
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
-        data: Dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
+        data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         for key in data:
             data[key]["util"] = getattr(self, f"get_{key}_utilization")()
         data["temp"] = self.get_temp()
@@ -550,9 +528,7 @@ class Cisco(BaseDevice):
 
         cpu_percent = re.findall(
             r"one minute: (\d+)%",
-            self.send_command(
-                "show processes cpu | include minute", expect_command=False
-            ),
+            self.send_command("show processes cpu | include minute", expect_command=False),
             flags=re.IGNORECASE,
         )
 
@@ -569,9 +545,7 @@ class Cisco(BaseDevice):
             flags=re.IGNORECASE,
         )
 
-        flash_percent = (
-            int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
-        )
+        flash_percent = int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
         return flash_percent
 
     def get_ram_utilization(self) -> int:
@@ -607,7 +581,7 @@ class Cisco(BaseDevice):
 
         current_temp = float(temp)
 
-        high_temp_limit: List[Tuple[str, str]] = re.findall(
+        high_temp_limit: list[tuple[str, str]] = re.findall(
             r"SYSTEM High Temperature Shutdown Threshold: (\d+[.]?\d?) Degree Celsius|"
             r"Red Threshold {4}: (\d+) Degree Celsius",
             output,
@@ -617,7 +591,7 @@ class Cisco(BaseDevice):
         else:
             high_temp = 60.0
 
-        medium_temp_limit: List[Tuple[str, str]] = re.findall(
+        medium_temp_limit: list[tuple[str, str]] = re.findall(
             r"SYSTEM High Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius|"
             r"Yellow Threshold : (\d+) Degree Celsius",
             output,

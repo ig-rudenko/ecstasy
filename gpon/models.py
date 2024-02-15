@@ -364,5 +364,6 @@ class SubscriberConnection(models.Model):
 @receiver(post_delete, sender=SubscriberConnection)
 def delete_file(sender, instance: SubscriberConnection, *args, **kwargs):
     """Освобождаем техническую возможность после удаления абонентского подключения"""
-    instance.tech_capability.status = TechCapability.Status.empty.value
-    instance.tech_capability.save()
+    if instance.tech_capability:
+        instance.tech_capability.status = TechCapability.Status.empty.value
+        instance.tech_capability.save()

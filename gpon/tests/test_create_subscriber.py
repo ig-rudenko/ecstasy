@@ -20,7 +20,7 @@ class TestSubscriberDataCreation(APITestCase):
             type=End3.Type.splitter.value,
             capacity=2,
         )
-        self.tech_capability: TechCapability = self.end3.techcapability_set.first()
+        self.tech_capability: TechCapability = self.end3.techcapability_set.first()  # type: ignore
         self.valid_mac = "aaaabbbb9900"
 
         self.data = {
@@ -70,7 +70,9 @@ class TestSubscriberDataCreation(APITestCase):
 
     def test_create_api_view(self):
         self.client.force_login(self.superuser)
-        resp = self.client.post(reverse("gpon:api:subscribers-data-list-create"), data=self.data, format="json")
+        resp = self.client.post(
+            reverse("gpon:api:subscribers-data-list-create"), data=self.data, format="json"
+        )
         self.assertEqual(resp.status_code, 201)
         self._after_created()
 

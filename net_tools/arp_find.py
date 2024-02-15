@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from re import findall
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 from check.models import Devices
 from devicemanager.exceptions import BaseDeviceException
@@ -10,39 +10,37 @@ from net_tools.models import DevicesForMacSearch
 
 class MacIpFindResult(NamedTuple):
     device: Devices
-    results: List[ArpInfoResult]
+    results: list[ArpInfoResult]
 
 
-def find_mac_or_ip(ip_or_mac: str) -> List[MacIpFindResult]:
+def find_mac_or_ip(ip_or_mac: str) -> list[MacIpFindResult]:
     # Получение устройств из базы данных, которые используются в поиске MAC/IP адресов
     devices_for_search = DevicesForMacSearch.objects.all()
 
     # Поиск IP-адреса в строке.
-    find_address = findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip_or_mac)
-    if find_address:
+    find_address_match: list[str] = findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip_or_mac)
+    if find_address_match:
         # Нашли IP адрес
-        find_type: str = "ip"
-        find_address = find_address[0]
+        find_type = "ip"
+        find_address = find_address_match[0]
 
     else:
         # Поиск всех шестнадцатеричных символов из входной строки.
         find_address = "".join(findall(r"[a-fA-F\d]", ip_or_mac)).lower()
         # Нашли MAC адрес
-        find_type: str = "mac"
+        find_type = "mac"
         # Проверка правильности MAC-адреса.
         if not find_address or len(find_address) < 6 or len(find_address) > 12:
             return []
 
-    match: List[MacIpFindResult] = []
+    match: list[MacIpFindResult] = []
 
     # Менеджер контекста, который создает пул потоков и выполняет код внутри блока with.
     with ThreadPoolExecutor() as execute:
         # Проходит через каждое устройство в списке устройств.
         for dev in devices_for_search:
             # Отправка задачи в пул потоков.
-            execute.submit(
-                get_ip_or_mac_from, dev.device, find_address, match, find_type
-            )
+            execute.submit(get_ip_or_mac_from, dev.device, find_address, match, find_type)
 
     return match
 
@@ -50,7 +48,7 @@ def find_mac_or_ip(ip_or_mac: str) -> List[MacIpFindResult]:
 def get_ip_or_mac_from(
     model_dev: Devices,
     find_address: str,
-    result: List[MacIpFindResult],
+    result: list[MacIpFindResult],
     find_type: str,
 ) -> None:
     """
@@ -63,7 +61,7 @@ def get_ip_or_mac_from(
     """
 
     session = model_dev.connect()
-    info: List[ArpInfoResult] = []
+    info: list[ArpInfoResult] = []
 
     try:
         # Проверка, является ли find_type IP-адресом и имеет ли сеанс атрибут search_ip.

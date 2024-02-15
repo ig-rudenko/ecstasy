@@ -1,6 +1,6 @@
 from functools import lru_cache
-from re import findall, sub, IGNORECASE, compile, escape
-from typing import List, NamedTuple
+from re import findall, sub, IGNORECASE, compile, escape, Pattern
+from typing import NamedTuple
 
 import orjson
 from django.contrib.auth.models import User
@@ -13,7 +13,7 @@ from .models import DevicesInfo, DescNameFormat
 
 class Finder:
     @staticmethod
-    def find_description(pattern: str, user: User) -> list:
+    def find_description(pattern_str: str, user: User) -> list:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -30,40 +30,39 @@ class Finder:
         }
         ```
 
-        :param pattern: Регулярное выражение, по которому будет осуществляться поиск описания портов.
+        :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
         :param user: Поль
         :return: Список результатов поиска
         """
 
-        all_comments = list(
-            InterfacesComments.objects.filter(
-                comment__iregex=escape(pattern)
-            ).select_related("user", "device")
+        all_comments: list[InterfacesComments] = list(
+            InterfacesComments.objects.filter(comment__iregex=escape(pattern_str)).select_related(
+                "user", "device"
+            )
         )
 
-        comments_dict = {}
+        comments_dict: dict[str, dict[str, list[dict[str, str | float]]]] = {}
         for comment in all_comments:
-            if not comments_dict.get(comment.device):
-                comments_dict[comment.device.name] = {}
-            if not comments_dict[comment.device.name].get(comment.interface):
-                comments_dict[comment.device.name][comment.interface] = []
+            comments_dict.setdefault(comment.device.name, {})
+            comments_dict[comment.device.name].setdefault(comment.interface, [])
 
             comments_dict[comment.device.name][comment.interface].append(
                 {
-                    "user": comment.user.username,
+                    "user": comment.user.username if comment.user else "Anonymous",
                     "text": comment.comment,
-                    "createdTime": comment.datetime.isoformat(),
+                    "createdTime": comment.datetime.strftime("%d.%m.%Y %H:%M:%S"),
                 }
             )
 
-        pattern = compile(escape(pattern), flags=IGNORECASE)
+        pattern: Pattern[str] = compile(escape(pattern_str), flags=IGNORECASE)
 
         result = []
 
         user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
 
+        device_queryset: QuerySet[DevicesInfo] = DevicesInfo.objects.all().select_related("dev")
         # Производим поочередный поиск
-        for device in DevicesInfo.objects.all().select_related("dev"):
+        for device in device_queryset:
             try:
                 if device.dev.group_id not in user_groups:
                     continue
@@ -75,7 +74,7 @@ class Finder:
                 continue
 
             # Загрузка данных json из базы данных в словарь python.
-            interfaces = orjson.loads(device.interfaces)
+            interfaces: list[dict] = orjson.loads(device.interfaces or "[]")
 
             for line in interfaces:
                 find_on_desc = False
@@ -84,20 +83,21 @@ class Finder:
                 if findall(pattern, line["Description"]):
                     find_on_desc = True
 
-                comments_dict_value = comments_dict.get(device.dev.name, {}).get(
-                    line["Interface"], []
-                )
+                comments_dict_value = comments_dict.get(device.dev.name, {}).get(line["Interface"], [])
 
                 if find_on_desc or comments_dict_value:
+                    if device.interfaces_date is not None:
+                        interfaces_datetime = device.interfaces_date.strftime("%d.%m.%Y %H:%M:%S")
+                    else:
+                        interfaces_datetime = "No Datetime"
+
                     result.append(
                         {
                             "Device": device.dev.name,
                             "Interface": line["Interface"],
                             "Description": line["Description"],
                             "Comments": comments_dict_value,
-                            "SavedTime": device.interfaces_date.strftime(
-                                "%d.%m.%Y %H:%M:%S"
-                            ),
+                            "SavedTime": interfaces_datetime,
                         }
                     )
 
@@ -114,9 +114,7 @@ class Finder:
                                 "Interface": interface,
                                 "Description": comment["text"],
                                 "Comments": [comment],
-                                "SavedTime": comment["datetime"].strftime(
-                                    "%d.%m.%Y %H:%M:%S"
-                                ),
+                                "SavedTime": comment["createdTime"],
                             }
                             for comment in comments_dict[dev_name][interface]
                         ]
@@ -145,10 +143,10 @@ class VlanTraceroute:
     визуальной карты топологии сети.
     """
 
-    def __init__(self):
-        self.result: List[VlanTracerouteResult] = []  # Итоговый список
-        self._desc_name_list: List[DescNameFormat] = []
-        self.passed_devices = set()  # Множество уже пройденного оборудования
+    def __init__(self) -> None:
+        self.result: list[VlanTracerouteResult] = []  # Итоговый список
+        self._desc_name_list: list[DescNameFormat] = []
+        self.passed_devices: set[str] = set()  # Множество уже пройденного оборудования
 
     @lru_cache(maxsize=200)
     def reformatting(self, name: str):
@@ -190,16 +188,12 @@ class VlanTraceroute:
         :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
         """
         if not self._desc_name_list:
-            self._desc_name_list: List[DescNameFormat] = list(
-                DescNameFormat.objects.all()
-            )
+            self._desc_name_list = list(DescNameFormat.objects.all())
 
         if device in self.passed_devices:
             return
 
-        self.passed_devices.add(
-            device
-        )  # Добавляем узел в список уже пройденных устройств
+        self.passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
         try:
             dev = DevicesInfo.objects.get(dev__name=device)
         except DevicesInfo.DoesNotExist:
@@ -216,7 +210,7 @@ class VlanTraceroute:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device_find: List[str] = findall(
+            next_device_find: list[str] = findall(
                 find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
             )
 
@@ -238,9 +232,7 @@ class VlanTraceroute:
             next_dev_interface_name = ""
             if double_check and next_device:  # Если есть следующее оборудование
                 try:
-                    next_dev_intf_json: str = (
-                        DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
-                    )
+                    next_dev_intf_json: str = DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
                 except DevicesInfo.DoesNotExist:
                     next_dev_intf_json = "[]"
 
@@ -332,9 +324,8 @@ class MultipleVlanTraceroute:
         find_device_pattern: str,
         double_check: bool,
         graph_min_length: int,
-    ) -> List[VlanTracerouteResult]:
-
-        result: List[VlanTracerouteResult] = []
+    ) -> list[VlanTracerouteResult]:
+        result: list[VlanTracerouteResult] = []
         # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
         for start_dev in self._devices_queryset:
             # Трассировка vlan

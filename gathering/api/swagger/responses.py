@@ -3,15 +3,9 @@ from rest_framework import serializers
 
 class NodesSwaggerSerializer(serializers.Serializer):
     id = serializers.CharField()
-    label = serializers.CharField()
+    label = serializers.CharField()  # type: ignore
     shape = serializers.ChoiceField(choices=["dot"])
     color = serializers.CharField()
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
 
 
 class EdgesSwaggerSerializer(serializers.Serializer):
@@ -30,19 +24,7 @@ class EdgesSwaggerSerializer(serializers.Serializer):
             self._declared_fields["from"] = self._declared_fields["_from"]
             del self._declared_fields["_from"]
 
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
-
 
 class MacTracerouteSwaggerSerializer(serializers.Serializer):
     nodes = NodesSwaggerSerializer(many=True)
     edges = EdgesSwaggerSerializer(many=True)
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass

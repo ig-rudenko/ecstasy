@@ -1,7 +1,6 @@
 import re
 from functools import lru_cache
 from time import sleep
-from typing import Tuple, List
 
 import pexpect
 from jinja2 import Environment, FileSystemLoader
@@ -30,12 +29,12 @@ class HuaweiMA5600T(BaseDevice):
     vendor = "Huawei"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         """
         При инициализации активируем режим пользователя командой:
@@ -93,7 +92,7 @@ class HuaweiMA5600T(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: str = None,
+        before_catch: str | None = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -133,7 +132,7 @@ class HuaweiMA5600T(BaseDevice):
             self.session.expect(
                 command[-num_of_expect:]
             )  # Считываем введенную команду с поправкой по длине символов
-        if before_catch:
+        if before_catch and isinstance(before_catch, str):
             self.session.expect(before_catch)
 
         if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
@@ -152,7 +151,7 @@ class HuaweiMA5600T(BaseDevice):
                 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
                 # Убираем их
-                output += ansi_escape.sub("", self.session.before.decode(errors="ignore"))
+                output += ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
 
                 if match == 0:
                     break
@@ -176,7 +175,8 @@ class HuaweiMA5600T(BaseDevice):
                 self.session.expect(prompt)
             except pexpect.TIMEOUT:
                 pass
-            output = re.sub(r"\\x1[bB]\[\d\d\S", "", self.session.before.decode(errors="ignore"))
+            before = (self.session.before or b"").decode(errors="ignore")
+            output = re.sub(r"\\x1[bB]\[\d\d\S", "", before)
         return output
 
     @BaseDevice.lock_session
@@ -282,9 +282,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def _render_adsl_port_info(
-        self, port: str, info: str, profile_name: str, all_profiles: list
-    ) -> dict:
+    def _render_adsl_port_info(self, port: str, info: str, profile_name: str, all_profiles: list) -> dict:
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
 
@@ -319,7 +317,10 @@ class HuaweiMA5600T(BaseDevice):
 
         lines = info.strip().split("\n")  # Построчно создаем список
 
-        up_down_streams = {"Do": [], "Up": []}  # Down Stream info  # Up   Stream info
+        up_down_streams: dict[str, list[dict[str, str]]] = {
+            "Do": [],  # Down Stream info
+            "Up": [],  # Up   Stream info
+        }
 
         first_col_info = []  # Информация про порт
 
@@ -373,7 +374,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         }
 
-    def _render_gpon_port_info(self, indexes: Tuple[str, ...]) -> dict:
+    def _render_gpon_port_info(self, indexes: tuple[str, ...]) -> dict:
         """
         ## Преобразовываем информацию о GPON порте для отображения на странице
         """
@@ -399,12 +400,8 @@ class HuaweiMA5600T(BaseDevice):
             self.send_command("quit")
 
             data = {
-                "total_count": self.find_or_empty(
-                    r"the total of ONTs are: (\d+), online: \d+", output
-                ),
-                "online_count": self.find_or_empty(
-                    r"the total of ONTs are: \d+, online: (\d+)", output
-                ),
+                "total_count": self.find_or_empty(r"the total of ONTs are: (\d+), online: \d+", output),
+                "online_count": self.find_or_empty(r"the total of ONTs are: \d+, online: (\d+)", output),
             }
 
             lines = re.findall(
@@ -431,14 +428,14 @@ class HuaweiMA5600T(BaseDevice):
             }
 
         # Смотрим ONT
-        data = self._ont_port_info(indexes=i)
+        ont_port_info = self._ont_port_info(indexes=i)
         self.send_command("quit")
 
         env = Environment(autoescape=True, loader=FileSystemLoader("templates"))
         template = env.get_template("check/ont_port_info.html")
         return {
             "type": "html",
-            "data": template.render(ont_info=data),
+            "data": template.render(ont_info=ont_port_info),
         }
 
     @lru_cache()
@@ -465,9 +462,7 @@ class HuaweiMA5600T(BaseDevice):
 
         """
         i: tuple = indexes  # Упрощаем запись переменной
-        info = self.send_command(
-            f"display ont wan-info {i[0]}/{i[1]} {i[2]} {i[3]}", expect_command=False
-        )
+        info = self.send_command(f"display ont wan-info {i[0]}/{i[1]} {i[2]} {i[3]}", expect_command=False)
         data = []  # Общий список
 
         # Разделяем на сервисы
@@ -482,12 +477,8 @@ class HuaweiMA5600T(BaseDevice):
                 {
                     "type": self.find_or_empty(r"Service type\s+: (\S+)", service_part),
                     "index": self.find_or_empty(r"Index\s+: (\d+)", service_part),
-                    "ipv4_status": self.find_or_empty(
-                        r"IPv4 Connection status\s+: (\S+)", service_part
-                    ),
-                    "ipv4_access_type": self.find_or_empty(
-                        r"IPv4 access type\s+: (\S+)", service_part
-                    ),
+                    "ipv4_status": self.find_or_empty(r"IPv4 Connection status\s+: (\S+)", service_part),
+                    "ipv4_access_type": self.find_or_empty(r"IPv4 access type\s+: (\S+)", service_part),
                     "ipv4_address": self.find_or_empty(r"IPv4 address\s+: (\S+)", service_part),
                     "subnet_mask": self.find_or_empty(r"Subnet mask\s+: (\S+)", service_part),
                     "manage_vlan": self.find_or_empty(r"Manage VLAN\s+: (\d+)", service_part),
@@ -610,8 +601,8 @@ class HuaweiMA5600T(BaseDevice):
                 continue
 
             value = self.find_or_empty(r"-?\d+\.?\d*", line)
-            up_down_streams[index][stream]["value"] = value
-            up_down_streams[index][stream]["color"] = color(float(value), line)
+            up_down_streams[index][stream]["value"] = value  # type: ignore
+            up_down_streams[index][stream]["color"] = color(float(value), line)  # type: ignore
 
         return {
             "type": "adsl",
@@ -810,11 +801,9 @@ class HuaweiMA5600T(BaseDevice):
         #     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
         #     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
         #   ---------------------------------------------------------------------
-        macs1: List[Tuple[str, str]] = re.findall(
+        macs1: list[tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.send_command(
-                f"display mac-address port {'/'.join(indexes)}", expect_command=False
-            ),
+            self.send_command(f"display mac-address port {'/'.join(indexes)}", expect_command=False),
         )
 
         # Попробуем еще одну команду -> display security bind mac
@@ -822,11 +811,9 @@ class HuaweiMA5600T(BaseDevice):
         #   ------------------------------------------------------------------------------
         #       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
-        macs2: List[Tuple[str, str]] = re.findall(
+        macs2: list[tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.send_command(
-                f"display security bind mac {'/'.join(indexes)}", expect_command=False
-            ),
+            self.send_command(f"display security bind mac {'/'.join(indexes)}", expect_command=False),
         )
 
         res: T_MACList = []
@@ -914,12 +901,12 @@ class HuaweiMA5600T(BaseDevice):
             self.session.sendline(cmd)
             self.session.expect(cmd)
 
-            s = self.session.before.decode()
+            s = (self.session.before or b"").decode()
 
             self.session.sendline("\n")
             self.session.expect(self.prompt)
 
-            s += self.session.before.decode()
+            s += (self.session.before or b"").decode()
 
         self.send_command("quit")
         self.send_command("quit")

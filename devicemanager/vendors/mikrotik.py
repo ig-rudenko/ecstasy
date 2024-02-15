@@ -4,9 +4,8 @@ import re
 import time
 from datetime import datetime
 from functools import partial
-from typing import Tuple, List, Literal, Optional, Dict
+from typing import Literal
 
-import pexpect
 import pysftp
 
 from .base.device import BaseDevice
@@ -17,14 +16,14 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port
 from ..exceptions import UnknownDeviceError
 
 
-def validate_port(port: str) -> Optional[str]:
+def validate_port(port: str) -> str | None:
     """
     ## Проверка правильности порта MikroTik.
 
@@ -38,6 +37,7 @@ def validate_port(port: str) -> Optional[str]:
     port = port.lower()
     if re.match(r"^ether|^sfp|^wlan", port):
         return port
+    return None
 
 
 # Создаем свой декоратор для проверки портов
@@ -51,36 +51,36 @@ class MikroTik(BaseDevice):
     vendor = "MikroTik"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
         routerboard = self.send_command("system routerboard print")
         self.model = self.find_or_empty(r"model: (\S+)", routerboard)
 
         # {"bridge_name": {"vlans": ['10', '20']}}
-        self._bridges: Dict[str, Dict[str, List[str]]] = {}
+        self._bridges: dict[str, dict[str, list[str]]] = {}
 
         # {"vlan10": '10', "vlan20": '20'}
-        self._vlans_interfaces: Dict[str, str] = {}
+        self._vlans_interfaces: dict[str, str] = {}
 
         # {"ether1": {"bridge": "bridge_name"}, "ether2": {"bridge": "bridge_name"}}
-        self._ether_interfaces: Dict[str, Dict[str, str]] = {}
+        self._ether_interfaces: dict[str, dict[str, str]] = {}
 
         self._get_vlans_bridges()
         self._get_bridges_interfaces()
 
-    def _get_vlans_bridges(self):
+    def _get_vlans_bridges(self) -> None:
         output = self.send_command("interface vlan print detail terse")
 
         for line in re.split(r"(?<=\S)\s*(?=\d+\s+[RX]*\s+)", output):
             line = line.replace("\r\n", "")
 
-            match: List[Tuple[str, str, str]] = re.findall(
+            match: list[tuple[str, str, str]] = re.findall(
                 r"\d+\s+R*\s+name=(\S+) .+vlan-id=(\d+) interface=(\S+)", line
             )
             if not match:
@@ -96,13 +96,13 @@ class MikroTik(BaseDevice):
             else:
                 self._bridges[bridge_name]["vlans"].append(vlan_id)
 
-    def _get_bridges_interfaces(self):
+    def _get_bridges_interfaces(self) -> None:
         output = self.send_command("interface bridge port print terse")
 
         for line in re.split(r"\s*(?=\d+\s+[XIDH]*\s+(interface|comment))", output):
             line = line.replace("\r\n", "")
 
-            match: List[Tuple[str, str]] = re.findall(
+            match: list[tuple[str, str]] = re.findall(
                 r"\d+\s+[XIDH]*\s+\S*\s*interface=(\S+) bridge=(\S+)", line
             )
             if not match:
@@ -124,7 +124,7 @@ class MikroTik(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: Optional[str] = None,
+        before_catch: str | None = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -157,12 +157,11 @@ class MikroTik(BaseDevice):
                 continue
 
             flags = match.group(2)
+            status: T_Interface = "down"
             if "R" in flags:
-                status = InterfaceStatus.up.value
+                status = "up"
             elif "X" in flags:
-                status = InterfaceStatus.admin_down.value
-            else:
-                status = InterfaceStatus.down.value
+                status = "admin down"
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 
@@ -210,9 +209,7 @@ class MikroTik(BaseDevice):
         :return: ```[ ('{vid}', '{mac}', {'dynamic'|'static'}, '{port}'), ... ]```
         """
 
-        output = self.send_command(
-            "interface bridge host print without-paging terse", expect_command=False
-        )
+        output = self.send_command("interface bridge host print without-paging terse", expect_command=False)
 
         mac_table: T_MACTable = []
 
@@ -222,7 +219,7 @@ class MikroTik(BaseDevice):
             line = line.replace("\r\n", "")
 
             # Находим необходимые элементы в строке
-            parsed: List[Tuple[str, str, str, str]] = re.findall(
+            parsed: list[tuple[str, str, str, str]] = re.findall(
                 r"\d+\s+(DL?)\s+mac-address=(\S+) .* bridge=(\S+) .*on-interface=(\S+).*",
                 line,
             )
@@ -275,7 +272,7 @@ class MikroTik(BaseDevice):
         # Идентификатор VLAN получается из словаря под названием «_bridges», используя имя `bridge` в качестве ключа.
         for line in re.split(r"(?<=\s)(?=\d+\s+[XIDE]*\s+)", output):
             line = line.replace("\r\n", "")
-            mac_line: Tuple[str, str] = BaseDevice.find_or_empty(
+            mac_line: tuple[str, str] = BaseDevice.find_or_empty(
                 rf"mac-address=({self.mac_format}) .* bridge=(\S+)", line
             )
             if not mac_line:
@@ -307,9 +304,7 @@ class MikroTik(BaseDevice):
         """Автоматическое сохранение на Mikrotik"""
 
     @BaseDevice.lock_session
-    @mikrotik_validate_and_format_port(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @mikrotik_validate_and_format_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         # Очищаем описание от запрещенных символов
         desc = self.clear_description(desc)
@@ -402,7 +397,12 @@ class MikrotikFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         version_output = cls.send_command(session, "system resource print")
         if "mikrotik" in str(version_output).lower():

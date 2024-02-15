@@ -9,19 +9,19 @@ from django.shortcuts import render
 from pyvis.network import Network
 from requests import RequestException
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework.request import Request
+from rest_framework.response import Response
 
 from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
 from devicemanager.device import ZabbixAPIConnection
+from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
 from .swagger.schemas import (
     get_vendor_schema,
     find_by_description_schema,
     get_vlan_desc_schema,
     vlan_traceroute_schema,
 )
-from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
 from ..arp_find import find_mac_or_ip
 from ..finder import Finder, VlanTraceroute, MultipleVlanTraceroute
 from ..models import VlanName
@@ -100,9 +100,7 @@ def ip_mac_info(request, ip_or_mac: str):
     if len(arp_info) > 0:
         # Если получили совпадение
         # Поиск всех IP-адресов в списке совпадений.
-        ips = reduce(
-            lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info)
-        )
+        ips = reduce(lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info))
 
         try:
             with ZabbixAPIConnection().connect() as zbx:
@@ -142,7 +140,7 @@ def get_vlan_desc(request: Request) -> Response:
     except VlanName.DoesNotExist:
         pass
     else:
-        data = {"name": vlan.name, "description": vlan.description}
+        data = {"name": vlan.name or "", "description": vlan.description}
 
     # Возвращает ответ JSON с именем vlan.
     return Response(data)
@@ -185,9 +183,7 @@ def get_vlan_traceroute(request: Request) -> Response:
     # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
-    tracert = MultipleVlanTraceroute(
-        finder=VlanTraceroute(), devices_queryset=Devices.objects.all()
-    )
+    tracert = MultipleVlanTraceroute(finder=VlanTraceroute(), devices_queryset=Devices.objects.all())
     result = tracert.execute_traceroute(
         vlan=vlan,
         empty_ports=empty_ports,
@@ -206,11 +202,7 @@ def get_vlan_traceroute(request: Request) -> Response:
             }
         )
 
-    network = VlanNetwork(
-        network=Network(
-            height="100%", width="100%", bgcolor="#222222", font_color="white"
-        )
-    )
+    network = VlanNetwork(network=Network(height="100%", width="100%", bgcolor="#222222", font_color="white"))
 
     network.create_network(result, show_admin_down_ports=only_admin_up)
 

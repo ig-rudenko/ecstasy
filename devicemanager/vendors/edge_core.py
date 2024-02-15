@@ -1,7 +1,7 @@
 import re
 from functools import lru_cache
 from time import sleep
-from typing import Literal, List, Tuple
+from typing import Literal
 
 import pexpect
 
@@ -13,8 +13,8 @@ from .base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -44,18 +44,17 @@ class EdgeCore(BaseDevice):
 
         output = self.send_command("show interfaces status")
 
-        result: List[List[str]] = parse_by_template("interfaces/edge_core.template", output)
+        result: list[list[str]] = parse_by_template("interfaces/edge_core.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
             if port_name.startswith("V"):
                 continue
+            status: T_Interface = "up"
             if admin_status.lower() != "up":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "down" in link_status.lower():
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
+                status = "down"
 
             interfaces.append((port_name, status, desc))
 
@@ -152,9 +151,7 @@ class EdgeCore(BaseDevice):
         mac_table = re.findall(rf"(\S+ \d+/\s?\d+)\s+({self.mac_format})\s+(\d+)\s+.*\n", output)
 
         mac_type: Literal["dynamic"] = "dynamic"
-        return [
-            (int(vid), str(mac), mac_type, re.sub(r"\s", "", port)) for port, mac, vid in mac_table
-        ]
+        return [(int(vid), str(mac), mac_type, re.sub(r"\s", "", port)) for port, mac, vid in mac_table]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])
@@ -171,7 +168,7 @@ class EdgeCore(BaseDevice):
         """
 
         output = self.send_command(f"show mac-address-table interface {port}")
-        macs: List[Tuple[str, ...]] = re.findall(rf"({self.mac_format})\s+(\d+)", output)
+        macs: list[tuple[str, ...]] = re.findall(rf"({self.mac_format})\s+(\d+)", output)
         return [(int(vid), mac) for mac, vid, in macs]
 
     @BaseDevice.lock_session
@@ -253,7 +250,7 @@ class EdgeCore(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
@@ -342,11 +339,7 @@ class EdgeCore(BaseDevice):
             if piece.startswith(port.lower()):
                 # Удаление "!" из переменной port_config.
                 port_config = "\n".join(
-                    [
-                        line
-                        for line in piece.split("\n")
-                        if not line.strip().startswith("!") and line
-                    ]
+                    [line for line in piece.split("\n") if not line.strip().startswith("!") and line]
                 )
                 return "interface " + port_config
         return ""
@@ -372,9 +365,7 @@ class EdgeCore(BaseDevice):
         return ""
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -412,9 +403,7 @@ class EdgeCore(BaseDevice):
         self.session.sendline("configure")
         self.session.sendline(f"interface {port}")
 
-        if (
-            desc == ""
-        ):  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
+        if desc == "":  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             res = self.send_command("no description", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
@@ -450,6 +439,11 @@ class EdgeCoreFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         return EdgeCore(session, ip, auth, snmp_community=snmp_community)

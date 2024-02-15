@@ -13,8 +13,8 @@ from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import BaseDeviceException
 
 app = Flask(__name__)
-TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN")
-app.logger.setLevel(logging.INFO)
+TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN", "ASDIH!hausd17391")
+app.logger.setLevel(logging.DEBUG)
 
 
 class ConnectionType(TypedDict):
@@ -64,12 +64,12 @@ def connector(ip: str, method: str):
     try:
         factory = DeviceSessionFactory(
             ip=ip,
-            protocol=connection.get("cmd_protocol"),
+            protocol=connection.get("cmd_protocol", "ssh"),
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
             pool_size=connection.get("pool_size", None),
-            snmp_community=connection.get("snmp_community"),
-            port_scan_protocol=connection.get("port_scan_protocol"),
+            snmp_community=connection.get("snmp_community", ""),
+            port_scan_protocol=connection.get("port_scan_protocol", "ssh"),
         )
         params = data.get("params", {})
 
@@ -95,4 +95,4 @@ def connector(ip: str, method: str):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9999, use_reloader=True)
+    app.run(host="0.0.0.0", port=8000, use_reloader=True)

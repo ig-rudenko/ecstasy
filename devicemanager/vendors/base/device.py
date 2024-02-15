@@ -3,11 +3,17 @@ import string
 import time
 from abc import ABC, abstractmethod
 from functools import wraps
-from typing import Literal, Optional
+from typing import Literal
 
 import pexpect
 
-from .types import DeviceAuthDict, T_InterfaceList, T_InterfaceVLANList, T_MACList, SystemInfo
+from .types import (
+    DeviceAuthDict,
+    T_InterfaceList,
+    T_InterfaceVLANList,
+    T_MACList,
+    SystemInfo,
+)
 
 
 class AbstractDevice(ABC):
@@ -49,7 +55,7 @@ class AbstractDevice(ABC):
         """Изменение состояния порта"""
 
     @abstractmethod
-    def save_config(self):
+    def save_config(self) -> str:
         """Сохраняем конфигурацию оборудования"""
 
     @abstractmethod
@@ -90,7 +96,7 @@ class BaseDevice(AbstractDevice, ABC):
     prompt: str
 
     # Регулярное выражение, которое указывает на ожидание ввода клавиши, для последующего отображения информации
-    space_prompt: Optional[str]
+    space_prompt: str | None
 
     mac_format = ""  # Регулярное выражение, которое определяет отображение МАС адреса
     SAVED_OK = "Saved OK"  # Конфигурация была сохранена
@@ -101,7 +107,12 @@ class BaseDevice(AbstractDevice, ABC):
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
     def __init__(
-            self, session: pexpect, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         self.session: pexpect.spawn = session
         self.ip = ip
@@ -270,7 +281,7 @@ class BaseDevice(AbstractDevice, ABC):
     def send_command(
         self,
         command: str,
-        before_catch: Optional[str] = None,
+        before_catch: str | None = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -323,7 +334,7 @@ class BaseDevice(AbstractDevice, ABC):
                 )
 
                 # Убираем управляющие последовательности ANSI
-                output += self.ansi_escape.sub("", self.session.before.decode(errors="ignore"))
+                output += self.ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
 
                 if match == 0:
                     break
@@ -345,5 +356,5 @@ class BaseDevice(AbstractDevice, ABC):
             except pexpect.TIMEOUT:
                 pass
             # Убираем управляющие последовательности ANSI
-            output += self.ansi_escape.sub("", self.session.before.decode(errors="ignore"))
+            output += self.ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
         return output

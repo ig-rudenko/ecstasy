@@ -1,5 +1,5 @@
 import re
-from typing import Literal, Dict, Optional
+from typing import Any
 
 import orjson
 from django.shortcuts import get_object_or_404
@@ -31,10 +31,10 @@ from ...models import Profile
 
 
 class PortGuardCheckMixin:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.port_desc = ""
-        self.profile: Optional[Profile] = None
+        self.profile: Profile | None = None
 
     def check_object_permissions(self, request: Request, obj):
         # Смотрим интерфейсы, которые сохранены в БД
@@ -48,11 +48,15 @@ class PortGuardCheckMixin:
             interfaces = Interfaces(orjson.loads(dev_info.interfaces))
 
         # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        self.port_desc: str = interfaces[request.data["port"]].desc
+        self.port_desc = interfaces[request.data["port"]].desc
 
-        # Если не суперпользователь, то нельзя изменять состояние определенных портов
+        if request.user.is_anonymous:
+            raise PermissionDenied(
+                detail="Необходимо войти для выполнения данного действия!",
+            )
+
         try:
-            self.profile: Profile = Profile.objects.get(user=request.user)
+            self.profile = Profile.objects.get(user=request.user)
         except Profile.DoesNotExist:
             raise PermissionDenied(
                 detail="У вас нет профиля для выполнения данного действия!",
@@ -80,12 +84,10 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
         """
 
         # Проверяем данные, полученные в запросе, с помощью сериализатора.
-        serializer: PortControlSerializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        port_status: Literal["up", "down", "reload"] = serializer.validated_data[
-            "status"
-        ]
+        port_status = serializer.validated_data["status"]
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
@@ -109,7 +111,6 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
 
         # UP and DOWN
         else:
-            port_status: Literal["up", "down"]
             port_change_status = session.set_port(
                 port=port_name,
                 status=port_status,
@@ -132,11 +133,7 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
         super().check_object_permissions(request, device)
 
         # Если недостаточно привилегий для изменения статуса порта
-        if (
-            self.profile
-            and self.profile.perm_level < 2
-            and request.data["status"] in ["up", "down"]
-        ):
+        if self.profile and self.profile.perm_level < 2 and request.data["status"] in ["up", "down"]:
             # Логи
             log(
                 request.user,
@@ -193,11 +190,11 @@ class ChangeDescriptionAPIView(PortGuardCheckMixin, APIView):
         self.check_object_permissions(request, dev)
 
         new_description = self.request.data.get("description", "")
-        port = self.request.data.get("port")
+        port = self.request.data.get("port", "")
+        if not port:
+            raise ValidationError({"detail": "Необходимо указать порт"})
 
-        set_description_status = dev.connect().set_description(
-            port=port, desc=new_description
-        )
+        set_description_status = dev.connect().set_description(port=port, desc=new_description)
 
         if set_description_status.max_length:
             # Если есть данные, что описание слишком длинное.
@@ -401,7 +398,7 @@ class InterfaceInfoAPIView(APIView):
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=500)
 
-        result = {}
+        result: dict[str, Any] = {}
         session = device.connect()
 
         result["portDetailInfo"] = session.get_port_info(port)
@@ -415,9 +412,7 @@ class InterfaceInfoAPIView(APIView):
         return Response(result)
 
     @staticmethod
-    def create_onts_lines_with_comments(
-        data: dict, gpon_port: str, device: models.Devices
-    ) -> None:
+    def create_onts_lines_with_comments(data: dict, gpon_port: str, device: models.Devices) -> None:
         """
         Находит комментарии созданные на ONT для порта `gpon_port` оборудования `device`.
 
@@ -429,8 +424,7 @@ class InterfaceInfoAPIView(APIView):
 
         # Ищем возможные комментарии только для GPON типа
         if not (
-            data.get("portDetailInfo", {}).get("data")
-            and "gpon" in data["portDetailInfo"].get("type", "")
+            data.get("portDetailInfo", {}).get("data") and "gpon" in data["portDetailInfo"].get("type", "")
         ):
             return
 
@@ -444,7 +438,7 @@ class InterfaceInfoAPIView(APIView):
             .filter(interface__startswith=gpon_port)
             .values("comment", "interface", "id", "user__username", "datetime")
         )
-        ont_interfaces_dict: Dict[str, list] = {}
+        ont_interfaces_dict: dict[str, list] = {}
 
         for comment in interfaces_comments:
             comment_data = {

@@ -1,5 +1,4 @@
 import re
-from typing import List
 from concurrent.futures import ThreadPoolExecutor
 
 from alive_progress import alive_bar
@@ -14,7 +13,7 @@ from ..zabbix_info_dataclasses import ZabbixInventory
 class DevicesCollection:
     """Создает коллекцию из узлов сети, для комплексной работы с ними"""
 
-    def __init__(self, devs: (list, tuple), intf_coll=False, zbx_coll=False):
+    def __init__(self, devs: list | tuple, intf_coll=False, zbx_coll=False):
         self.interfaces_collected = intf_coll  # Были собраны интерфейсы
         self.zabbix_collected = zbx_coll  # Были собраны из Zabbix данные
         self.auth_groups: list = []
@@ -22,9 +21,9 @@ class DevicesCollection:
         # Если верно передан параметр
         if isinstance(devs, (list, tuple)):
             if all(isinstance(d, DeviceManager) for d in devs):
-                self.collection: List[DeviceManager] = devs
+                self.collection: list[DeviceManager] = list(devs)
             elif all(isinstance(d, str) for d in devs):
-                self.collection: List[DeviceManager] = [DeviceManager(d) for d in devs]
+                self.collection = [DeviceManager(d) for d in devs]
             else:
                 raise TypeError(
                     "Коллекция должна состоять из объектов DeviceManager или содержать имена устройств"
@@ -52,7 +51,7 @@ class DevicesCollection:
         return DevicesCollection([DeviceManager(d["name"]) for d in hosts])
 
     @classmethod
-    def from_zabbix_groups(cls, groups_name: (str, list), zabbix_info: bool) -> "DevicesCollection":
+    def from_zabbix_groups(cls, groups_name: str | list, zabbix_info: bool) -> "DevicesCollection":
         """
         Создаем коллекцию из групп узлов сети Zabbix
 
@@ -82,16 +81,13 @@ class DevicesCollection:
         return DevicesCollection(devs)
 
     @classmethod
-    def from_zabbix_ips(cls, ips: (str, list), zabbix_info: bool) -> "DevicesCollection":
+    def from_zabbix_ips(cls, ips: list[str], zabbix_info: bool) -> "DevicesCollection":
         """
         Создаем коллекцию из переданных IP адресов
 
         :param ips: IP адрес или список IP адресов
         :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
         """
-
-        if ips.count(" "):
-            ips = ips.split()
         try:
             with ZabbixAPIConnection().connect() as zbx:
                 hosts = zbx.host.get(filter={"ip": ips}, output=["name"], sortfield=["name"])

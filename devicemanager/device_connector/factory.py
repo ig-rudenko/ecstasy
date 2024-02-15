@@ -3,11 +3,9 @@ import os
 import time
 from queue import Queue, Empty
 from threading import Thread
-from typing import List, Any, Optional
+from typing import Any
 
-import pexpect
-
-from devicemanager import snmp
+from devicemanager import snmp, DeviceException
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS
@@ -26,7 +24,7 @@ class DeviceSessionFactory:
         protocol: str,
         auth_obj,
         make_session_global: bool,
-        pool_size: Optional[int],
+        pool_size: int | None,
         snmp_community: str,
         port_scan_protocol: str,
     ):
@@ -38,7 +36,7 @@ class DeviceSessionFactory:
         self.auth_obj = auth_obj
         self.protocol = protocol
         self.ip = ip
-        self.connections: List[BaseDevice] = []
+        self.connections: list[BaseDevice] = []
 
     @staticmethod
     def _validate_pool_size(pool_size) -> int:
@@ -54,9 +52,7 @@ class DeviceSessionFactory:
 
     def perform_method(self, method: str, **params) -> Any:
         if logger.level <= logging.DEBUG:
-            logger.debug(
-                f'{"-" * 10 }Начало выполнение метода "{method}", params={params}, ip={self.ip}'
-            )
+            logger.debug(f'{"-" * 10 }Начало выполнение метода "{method}", params={params}, ip={self.ip}')
             start_time = time.perf_counter()
             result = self._perform(method, **params)
             logger.debug(
@@ -113,10 +109,7 @@ class DeviceSessionFactory:
             # Проверяем, что имеется пул, а если он еще создается, то необходимо подождать.
             # Иначе будет множественное создание пулов.
             # Ожидаем 30 сек.
-            while (
-                not DEVICE_SESSIONS.pool_is_created(self.ip)
-                and time.perf_counter() - start_time < 30.0
-            ):
+            while not DEVICE_SESSIONS.pool_is_created(self.ip) and time.perf_counter() - start_time < 30.0:
                 time.sleep(0.1)
             if time.perf_counter() - start_time > 30.0:
                 # Если не удалось дождаться пула более 30с, очищаем его и будем создавать заново
@@ -128,7 +121,7 @@ class DeviceSessionFactory:
             return DEVICE_SESSIONS.get_connection(self.ip)
 
         threads = []
-        connections_queue = Queue(maxsize=self.pool_size)
+        connections_queue: Queue = Queue(maxsize=self.pool_size)
         DEVICE_SESSIONS.get_or_create_pool(self.ip, self.pool_size)
 
         for i in range(self.pool_size):
@@ -185,13 +178,16 @@ class DeviceSessionFactory:
             except Empty:
                 break
 
-            if connection and not isinstance(connection, Exception):
+            if connection is not None and not isinstance(connection, Exception):
                 return connection
             elif isinstance(connection, Exception):
                 raise connection
 
         if isinstance(connection, Exception):
             raise connection
+        if connection is None:
+            raise DeviceException("Connection was not established")
+        return connection
 
     def add_to_pool_all_connections(self, queue: Queue):
         while True:
@@ -215,7 +211,7 @@ class DeviceSessionFactory:
         if length <= 0:
             return
 
-        queue = Queue(length)
+        queue: Queue = Queue(length)
         for i in range(length):
             Thread(
                 target=self._add_device_session,

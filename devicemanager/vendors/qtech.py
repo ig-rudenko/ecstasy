@@ -1,7 +1,7 @@
 import re
 from functools import partial
 from time import sleep
-from typing import Tuple, List, Literal, Optional
+from typing import Literal
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
@@ -12,13 +12,13 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port
 
 
-def validate_port(port: str) -> Optional[str]:
+def validate_port(port: str) -> str | None:
     """
     ## Проверка правильности порта Q-Tech.
 
@@ -34,6 +34,7 @@ def validate_port(port: str) -> Optional[str]:
     port = port.strip()
     if re.match(r"^\d+/\d+/\d+$", port):
         return port
+    return None
 
 
 # Создаем свой декоратор для проверки портов
@@ -54,10 +55,15 @@ class Qtech(BaseDevice):
     vendor = "Q-Tech"
 
     def __init__(
-            self, session, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
-        self.__cache_port_info = {}
+        self.__cache_port_info: dict[str, str] = {}
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
@@ -78,12 +84,11 @@ class Qtech(BaseDevice):
 
         interfaces = []
         for port_name, link_status, desc in result:
+            status: T_Interface = "up"
             if link_status == "A-DOWN":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif link_status == "DOWN":
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
+                status = "down"
 
             interfaces.append((port_name, status, desc))
 
@@ -115,9 +120,7 @@ class Qtech(BaseDevice):
 
         for line in interfaces:
             if not line[0].startswith("V"):
-                output = self.send_command(
-                    command=f"show running-config interface ethernet {line[0]}"
-                )
+                output = self.send_command(command=f"show running-config interface ethernet {line[0]}")
                 vlans_group = re.findall(r"vlan [ad ]*(\S*\d)", output)  # Строчки вланов
                 vlans = []
                 for v in vlans_group:
@@ -149,7 +152,7 @@ class Qtech(BaseDevice):
         """
 
         output = self.send_command("show mac-address-table")
-        parsed: List[Tuple[str, str, str]] = re.findall(
+        parsed: list[tuple[str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+DYNAMIC\s+\S+\s+(\S+).*\n", output
         )
         mac_type: MACType = "dynamic"
@@ -170,7 +173,7 @@ class Qtech(BaseDevice):
         """
 
         output = self.send_command(f"show mac-address-table interface ethernet {port}")
-        macs: List[Tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})", output)
+        macs: list[tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})", output)
         return [(int(vid), mac) for vid, mac in macs]
 
     @BaseDevice.lock_session
@@ -210,7 +213,7 @@ class Qtech(BaseDevice):
         self.session.expect(self.prompt)
         self.session.sendline("end")
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
@@ -249,7 +252,7 @@ class Qtech(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        self.session.before.decode(errors="ignore")
+        (self.session.before or b"").decode(errors="ignore")
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return s
@@ -273,14 +276,14 @@ class Qtech(BaseDevice):
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def __get_port_info(self, port):
+    def __get_port_info(self, port: str) -> str:
         """Общая информация о порте"""
 
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
     @qtech_validate_and_format_port()
-    def get_port_info(self, port) -> dict:
+    def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.
 
@@ -300,7 +303,7 @@ class Qtech(BaseDevice):
         }
 
     @qtech_validate_and_format_port(if_invalid_return="?")
-    def get_port_type(self, port):
+    def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
 
@@ -316,7 +319,7 @@ class Qtech(BaseDevice):
         return "COPPER"
 
     @qtech_validate_and_format_port()
-    def get_port_errors(self, port):
+    def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
 
@@ -334,7 +337,7 @@ class Qtech(BaseDevice):
 
     @BaseDevice.lock_session
     @qtech_validate_and_format_port()
-    def get_port_config(self, port):
+    def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
 
@@ -416,7 +419,7 @@ class Qtech(BaseDevice):
         }
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class QtechFactory(AbstractDeviceFactory):
@@ -426,7 +429,12 @@ class QtechFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version_output)
         return Qtech(session, ip, auth, model=model, snmp_community=snmp_community)

@@ -43,12 +43,12 @@ class LargeTablePaginator(Paginator):
             column_index = 4
 
         cursor = connection.cursor()
-        cursor.execute(raw_sql, [self.object_list.query.model._meta.db_table])
+        cursor.execute(raw_sql, [self.object_list.query.model._meta.db_table])  # type: ignore
         data = cursor.fetchone()
         return int(data[column_index])
 
     def _get_estimate(self) -> int:
-        if not self.object_list.query.where:
+        if not self.object_list.query.where:  # type: ignore
             try:
                 return self._get_table_count()
             except Exception as error:  # pylint: disable=W0703

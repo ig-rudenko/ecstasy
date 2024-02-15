@@ -1,5 +1,3 @@
-from typing import List
-
 from pyvis.network import Network
 
 from net_tools.finder import VlanTracerouteResult
@@ -21,10 +19,7 @@ class VlanNetwork:
     def options(self):
         return self._net.options
 
-    def create_network(
-        self, data: List[VlanTracerouteResult], show_admin_down_ports: bool = False
-    ):
-
+    def create_network(self, data: list[VlanTracerouteResult], show_admin_down_ports: bool = False):
         # Создаем невидимые элементы, для инициализации групп 0-9
         # 0 - голубой;      1 - желтый;     2 - красный;    3 - зеленый;            4 - розовый;
         # 5 - пурпурный;    6 - оранжевый;  7 - синий;      8 - светло-красный;     9 - светло-зеленый
@@ -38,9 +33,7 @@ class VlanNetwork:
         nodes_count = len(self._net.nodes)
 
         # Настройка физики для карты сети.
-        self._net.repulsion(
-            node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89
-        )
+        self._net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
 
         # Итерация по всем узлам в сети.
         for node in self._net.nodes:
@@ -60,9 +53,7 @@ class VlanNetwork:
         # Установка сглаживания краев на динамическое.
         self._net.set_edge_smooth("dynamic")
 
-    def _create_nodes(
-        self, result: List[VlanTracerouteResult], show_admin_down_ports: bool
-    ):
+    def _create_nodes(self, result: list[VlanTracerouteResult], show_admin_down_ports: bool):
         """
         ## Создает элементы и связи между ними для карты VLAN
         """
@@ -75,7 +66,7 @@ class VlanNetwork:
             dst_shape = "dot"
             src_label = e.node
             dst_label = e.next_node
-            line_width = e.line_width
+            line_width: int | float = e.line_width
 
             # ASW: желтый
             if "ASW" in e.node:
@@ -144,9 +135,7 @@ class VlanNetwork:
             all_nodes = self._net.get_nodes()
             # Создаем узлы, если их не было
             if e.node not in all_nodes:
-                self._net.add_node(
-                    e.node, src_label, title=src_label, group=src_gr, shape=src_shape
-                )
+                self._net.add_node(e.node, src_label, title=src_label, group=src_gr, shape=src_shape)
 
             if e.next_node not in all_nodes:
                 self._net.add_node(
@@ -158,12 +147,10 @@ class VlanNetwork:
                 )
 
             # Добавление ребра между двумя узлами.
-            self._net.add_edge(
-                e.node, e.next_node, value=line_width, title=e.line_description
-            )
+            self._net.add_edge(e.node, e.next_node, value=line_width, title=e.line_description)
 
     @staticmethod
-    def _add_node_neighbors(node, neighbor_list: List[str]):
+    def _add_node_neighbors(node, neighbor_list: list[str]):
         title = node["title"] + " Соединено:"
 
         for i, dev in enumerate(neighbor_list, 1):

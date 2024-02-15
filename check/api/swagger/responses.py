@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from ...models import Devices, InterfacesComments
 
 
@@ -13,9 +14,7 @@ class SwaggerSerializer(serializers.Serializer):
 class ConfigFileSwaggerSerializer(SwaggerSerializer):
     name = serializers.CharField()
     size = serializers.IntegerField(min_value=0)
-    modTime = serializers.DateTimeField(
-        format="%H:%M %d.%m.%Y", default="%H:%M %d.%m.%Y"
-    )
+    modTime = serializers.DateTimeField(format="%H:%M %d.%m.%Y")
     isDir = serializers.BooleanField()
 
 

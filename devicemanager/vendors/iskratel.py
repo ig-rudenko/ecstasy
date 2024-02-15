@@ -4,7 +4,6 @@ import re
 import shutil
 from functools import lru_cache
 from time import sleep
-from typing import Tuple, List, Optional
 
 from gathering.ftp import FTPCollector
 from gathering.ftp.exceptions import NotFound
@@ -16,8 +15,8 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .. import UnknownDeviceError
 
@@ -60,34 +59,34 @@ class IskratelControl(BaseDevice):
         return res
 
     def get_interfaces(self) -> list:
-        pass
+        return []
 
     def get_vlans(self) -> list:
-        pass
+        return []
 
     def reload_port(self, port, save_config=True) -> str:
-        pass
+        return ""
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
     def get_port_info(self, port: str) -> dict:
-        pass
+        return {}
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class IskratelMBan(BaseDevice):
@@ -104,7 +103,12 @@ class IskratelMBan(BaseDevice):
     vendor = "Iskratel"
 
     def __init__(
-            self, session, ip: str, auth: DeviceAuthDict, model: str = "", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
         self.dsl_profiles = self._get_dsl_profiles()
@@ -146,10 +150,11 @@ class IskratelMBan(BaseDevice):
 
         """
 
-        def color(val: str, s: str) -> str:
-            if not val:
+        def color(value: str, s: str) -> str:
+            try:
+                val = float(value)
+            except ValueError:
                 return ""
-            val = float(val)
 
             color_code = ""
             # Определяем цвета в зависимости от числовых значений показателя
@@ -196,9 +201,9 @@ class IskratelMBan(BaseDevice):
         first_col_info.append(self.find_or_empty(r"Type .*", info))
 
         # Определение скорости передачи данных для порта DSL.
-        data_rate = re.findall(
-            r"DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit", info
-        ) or [("", "")]
+        data_rate = re.findall(r"DS Data Rate AS0\s+(\d+) kbit/s\s+US Data Rate LS0\s+(\d+) kbit", info) or [
+            ("", "")
+        ]
         max_rate = [
             (
                 self.find_or_empty(r"Maximum DS attainable aggregate rate\s+(\d+) kbit", info),
@@ -209,9 +214,9 @@ class IskratelMBan(BaseDevice):
         # Нахождение сигнал/шума для нисходящего и восходящего каналов.
         snr = re.findall(r"DS SNR Margin\s+(\d+) dB\s+US SNR Margin\s+(\d+)", info) or [("", "")]
         # Нахождение чередующейся задержки для нисходящего и восходящего каналов.
-        intl = re.findall(
-            r"DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)", info
-        ) or [("", "")]
+        intl = re.findall(r"DS interleaved delay\s+(\d+) ms\s+US interleaved delay\s+(\d+)", info) or [
+            ("", "")
+        ]
         # Нахождение уровня затухания для нисходящего и восходящего каналов.
         att = re.findall(r"DS Attenuation\s+(\d+) dB\s+US Attenuation\s+(\d+)", info) or [("", "")]
 
@@ -313,9 +318,7 @@ class IskratelMBan(BaseDevice):
         """
 
         output = self.send_command("show bridge mactable", expect_command=False)
-        parsed: List[Tuple[str, str, str]] = re.findall(
-            rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output
-        )
+        parsed: list[tuple[str, str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
         mac_type: MACType = "dynamic"
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
 
@@ -345,7 +348,8 @@ class IskratelMBan(BaseDevice):
         # Для fasteth портов
         if port_type == "fasteth":
             output = self.send_command(
-                f"show bridge mactable interface fasteth{port_number}", expect_command=False
+                f"show bridge mactable interface fasteth{port_number}",
+                expect_command=False,
             )
             macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
             return macs
@@ -353,7 +357,8 @@ class IskratelMBan(BaseDevice):
         # Для dsl портов
         for sp in self._get_service_ports:  # смотрим маки на сервис портах
             output = self.send_command(
-                f"show bridge mactable interface dsl{port_number}:{sp}", expect_command=False
+                f"show bridge mactable interface dsl{port_number}:{sp}",
+                expect_command=False,
             )
             macs.extend(re.findall(rf"(\d*)\s+({self.mac_format})", output))
 
@@ -361,7 +366,7 @@ class IskratelMBan(BaseDevice):
 
     @staticmethod
     @lru_cache()
-    def validate_port(port: str) -> Tuple[Optional[str], Optional[int]]:
+    def validate_port(port: str) -> tuple[str | None, int | None]:
         """
         ## Проверяем правильность полученного порта
 
@@ -393,7 +398,7 @@ class IskratelMBan(BaseDevice):
             return "fasteth", int(port[7:])
 
         # Для портов типа: 12, port1, dsl2:1_40, ISKRATEL:sv-263-3443 atm 2/1
-        port_slice: List[Tuple[str, str, str, str]] = re.findall(
+        port_slice: list[tuple[str, str, str, str]] = re.findall(
             r"^(\d+)$|^port(\d+)$|^ISKRATEL.+/(\d+)$|^dsl(\d+):\S+$", port
         )
         if port_slice and any(port_slice[0]):
@@ -417,13 +422,9 @@ class IskratelMBan(BaseDevice):
         if port_type is None:
             return "Неверный порт!"
 
-        s1 = self.send_command(
-            f"set dsl port {port_number} port_equp unequipped", expect_command=False
-        )
+        s1 = self.send_command(f"set dsl port {port_number} port_equp unequipped", expect_command=False)
         sleep(1)
-        s2 = self.send_command(
-            f"set dsl port {port_number} port_equp equipped", expect_command=False
-        )
+        s2 = self.send_command(f"set dsl port {port_number} port_equp equipped", expect_command=False)
 
         return s1 + s2
 
@@ -464,19 +465,18 @@ class IskratelMBan(BaseDevice):
         output = self.send_command("show dsl port", expect_command=False)
         interfaces_list = []
         for line in output.split("\n"):
-            interface: List[List[str]] = re.findall(
+            interface: list[list[str]] = re.findall(
                 r"(\d+)\s+(\S*?)\s+\S+\s+(Equipped|Unequipped)\s*(Up|Down|)", line
             )
 
             if interface:
+                status: T_Interface = "notPresent"
                 if interface[0][2] != "Equipped":
-                    status = InterfaceStatus.admin_down.value
+                    status = "admin down"
                 elif interface[0][3] == "Down":
-                    status = InterfaceStatus.down.value
+                    status = "down"
                 elif interface[0][3] == "Up":
-                    status = InterfaceStatus.up.value
-                else:
-                    status = InterfaceStatus.not_present.value
+                    status = "up"
 
                 interfaces_list.append(
                     (
@@ -569,7 +569,8 @@ class IskratelMBan(BaseDevice):
             if "successfully updated" in no_policing:
                 # Если ограничение снято, снова меняем профиль
                 output = self.send_command(
-                    f"set dsl port {port_number} profile {profile_index}", expect_command=False
+                    f"set dsl port {port_number} profile {profile_index}",
+                    expect_command=False,
                 )
 
         return output
@@ -601,19 +602,16 @@ class IskratelMBan(BaseDevice):
 
         # Предпочтительная папка MY****77
         try:
-            config_folder = ftp.download_folder(
-                folder_or_pattern=folder_pattern, local_dir=local_folder_path
-            )
+            config_folder = ftp.download_folder(folder_or_pattern=folder_pattern, local_dir=local_folder_path)
         except NotFound:
             # Если такой нет, то MY****5*
             folder_pattern = re.compile(r"^MY\S+5\d$")
-            config_folder = ftp.download_folder(
-                folder_or_pattern=folder_pattern, local_dir=local_folder_path
-            )
+            config_folder = ftp.download_folder(folder_or_pattern=folder_pattern, local_dir=local_folder_path)
 
         archive_path = config_folder
 
-        shutil.make_archive(archive_path, "zip", config_folder)  # Создаем архив
+        # Создаем архив
+        shutil.make_archive(str(archive_path.absolute()), "zip", config_folder)
         archive_path = archive_path.parent / f"{archive_path.name}.zip"
         shutil.rmtree(config_folder, ignore_errors=True)  # Удаляем папку
         return archive_path
@@ -622,11 +620,16 @@ class IskratelMBan(BaseDevice):
 class IskratelFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and re.search(r"ISKRATEL|IskraTEL", str(version_output))
+        return bool(version_output and re.search(r"ISKRATEL|IskraTEL", str(version_output)))
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         # ISKRATEL CONTROL
         if "ISKRATEL" in version_output:

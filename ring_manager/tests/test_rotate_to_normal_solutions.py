@@ -103,7 +103,7 @@ class TestTransportRingManager(TransportRingManager):
 
 
 class FakeTailSession(RemoteDevice):
-    vlans_on_port_args = []
+    vlans_on_port_args: list[list] = []
     port_vlans = ["4"]
 
     @classmethod
@@ -149,7 +149,7 @@ class FakeTailSession(RemoteDevice):
 
 
 class FakeTailAndDev3Session(FakeTailSession):
-    set_port_args = []
+    set_port_args: list[list] = []
     port_status = "admin down"
 
     @classmethod
@@ -357,9 +357,7 @@ class TestRotateToNormalSolutions(TestRingBase):
         ring.save(update_fields=["solutions", "solution_time"])
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования
-        remote_connector.set_connector(
-            "ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession"
-        )
+        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession")
         # Теперь `SolutionsPerformer` будет использовать для `tail` фальшивую сессию
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()

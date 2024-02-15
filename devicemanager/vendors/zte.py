@@ -1,8 +1,7 @@
 import re
 from time import sleep
-from typing import List, Tuple, Literal
+from typing import Literal
 
-import pexpect
 import textfsm
 
 from .base.device import BaseDevice
@@ -16,8 +15,9 @@ from .base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
-    InterfaceStatus,
     DeviceAuthDict,
+    MACType,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port_only_digit
 
@@ -36,13 +36,16 @@ class ZTE(BaseDevice):
     prompt = r"\S+\(cfg\)#|\S+>"
     space_prompt = "----- more -----"
     # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
-    mac_format = (
-            r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
-    )
+    mac_format = r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
     vendor = "ZTE"
 
     def __init__(
-            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model="",
+        snmp_community: str = "",
     ):
         """
         ## При инициализации повышаем уровень привилегий:
@@ -70,7 +73,7 @@ class ZTE(BaseDevice):
 
         if match_ == 1:
             # send secret
-            self.session.sendline(self.auth.get("privilege_mode_password"))
+            self.session.sendline(self.auth["privilege_mode_password"])
             if self.session.expect([r"refused", r"\(cfg\)#"]):
                 self.__privileged = True
             else:
@@ -100,13 +103,11 @@ class ZTE(BaseDevice):
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
+            status: T_Interface = "up"
             if admin_status.lower() != "enabled":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "down" in link_status.lower():
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
-
+                status = "down"
             interfaces.append((port_name, status, desc))
 
         return interfaces
@@ -178,17 +179,18 @@ class ZTE(BaseDevice):
         output = self.send_command("show fdb detail", expect_command=False)
         if "Command not found" in output:
             output = self.send_command("show mac", expect_command=False)
-            parsed: List[List[str]] = re.findall(
-                rf"({self.mac_format})\s+(\d+)\s+port-(\d+)\s+", output
-            )
+            parsed1: list[list[str]] = re.findall(rf"({self.mac_format})\s+(\d+)\s+port-(\d+)\s+", output)
             mac_table: T_MACTable = []
-            type_: Literal["dynamic"] = "dynamic"
-            for mac, vid, port in parsed:
-                mac_table.append((int(vid), mac, type_, port))
+            # type_: Literal["dynamic"] = "dynamic"
+            for mac, vid, port in parsed1:
+                mac_table.append((int(vid), mac, "dynamic", port))
             return mac_table
+
         else:
-            parsed = re.findall(rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output)
-            return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed]
+            parsed2: list[tuple[str, str, str, MACType]] = re.findall(
+                rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output
+            )
+            return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed2]
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])
@@ -209,7 +211,7 @@ class ZTE(BaseDevice):
         if "not found" in output_macs:
             output_macs = self.send_command(f"show mac dynamic port {port}", expect_command=False)
 
-        mac_lines: List[Tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
+        mac_lines: list[tuple[str, str]] = re.findall(rf"({self.mac_format})\s+(\d+)", output_macs)
         return [(int(vid), mac) for mac, vid in mac_lines]
 
     @BaseDevice.lock_session
@@ -364,9 +366,7 @@ class ZTE(BaseDevice):
         return self.send_command(f"show port {port} statistics")
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @validate_and_format_port_only_digit(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -457,7 +457,7 @@ class ZTE(BaseDevice):
         (Open), короткое замыкание (Short), рассогласование импеданса (Impedance Mismatch).
         """
 
-        result = {
+        result: dict[str, str | dict] = {
             "len": "-",  # Length
             "status": "",  # Up, Down
         }
@@ -491,11 +491,17 @@ class ZTE(BaseDevice):
                 # Плохая скрутка, либо кабель с некорректным сопротивлением. Или, к примеру, очень большая длина.
                 status = "mismatch"
 
-            result[f"pair{i}"] = {}
-            result[f"pair{i}"]["status"] = status
-            result[f"pair{i}"]["len"] = pair[1]
+            result[f"pair{i}"] = {"status": status, "len": pair[1]}
 
-        if result["pair1"]["status"] == result["pair1"]["status"]:
+        if (
+            result.get("pair1") is not None
+            and result.get("pair2") is not None
+            and isinstance(result["pair1"], dict)
+            and isinstance(result["pair2"], dict)
+            and result["pair1"].get("status") is not None
+            and result["pair2"].get("status") is not None
+            and result["pair1"]["status"] == result["pair2"]["status"]
+        ):
             result["status"] = result["pair1"]["status"].capitalize()
 
         return result
@@ -514,7 +520,12 @@ class ZTEFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version_output)
         return ZTE(session, ip, auth, model=model, snmp_community=snmp_community)

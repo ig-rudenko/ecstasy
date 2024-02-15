@@ -1,11 +1,11 @@
 import re
-from typing import List
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from gpon.api.serializers.address import AddressSerializer
-from gpon.models import SubscriberConnection, Customer, Service, TechCapability
+from .address import AddressSerializer
+from .types import ServicesType
+from ...models import SubscriberConnection, Customer, Service, TechCapability
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -49,11 +49,9 @@ class CustomerSerializer(serializers.ModelSerializer):
 class SubscriberDataSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
     customer = CustomerSerializer()
-    services = serializers.ListSerializer(child=serializers.CharField())
+    services: ServicesType = serializers.ListSerializer(child=serializers.CharField())
     ip = serializers.IPAddressField(required=False, allow_null=True, allow_blank=True)
-    ont_mac = serializers.CharField(
-        max_length=20, allow_null=True, allow_blank=True, required=False
-    )
+    ont_mac = serializers.CharField(max_length=20, allow_null=True, allow_blank=True, required=False)
 
     class Meta:
         model = SubscriberConnection
@@ -80,7 +78,7 @@ class SubscriberDataSerializer(serializers.ModelSerializer):
             raise ValidationError("Неверный MAC адрес")
         return "".join(mac)
 
-    def validate_services(self, values: List[str]) -> List[str]:
+    def validate_services(self, values: list[str]) -> list[str]:
         if not values:
             return values
         if Service.objects.filter(name__in=values).count() != len(values):
@@ -158,13 +156,13 @@ class UpdateSubscriberDataSerializer(SubscriberDataSerializer):
                 instance.services.clear()
                 instance.services.add(*services)
             elif attr == "tech_capability":
-                if instance.tech_capability.id != value.id:
+                if instance.tech_capability is not None and instance.tech_capability.id != value.id:
                     instance.tech_capability.status = TechCapability.Status.empty.value
                     instance.tech_capability.save(update_fields=["status"])
-                    instance.tech_capability = value
-                    value.status = TechCapability.Status.active.value
-                    value.save()
-                    updated_fields.append(attr)
+                instance.tech_capability = value
+                value.status = TechCapability.Status.active.value
+                value.save()
+                updated_fields.append(attr)
             else:
                 setattr(instance, attr, value)
                 updated_fields.append(attr)

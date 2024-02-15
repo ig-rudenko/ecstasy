@@ -1,8 +1,8 @@
-import socket
 import ftplib
 import pathlib
+import socket
 from dataclasses import dataclass
-from typing import List, Union, Pattern, Optional
+from typing import Pattern
 
 from .base import AbstractFTPCollector
 from .exceptions import NotFound, FileDownloadError
@@ -24,8 +24,8 @@ class FTPItem:
 
 
 class FTPCollector(AbstractFTPCollector):
-    def __init__(self, host: str, timeout: Optional[int] = None):
-        self._ftp = ftplib.FTP(host, timeout=timeout)
+    def __init__(self, host: str, timeout: int | None = None):
+        self._ftp = ftplib.FTP(host, timeout=float(timeout or 0))
         self.local_dir: pathlib.Path = pathlib.Path()
         self.retry_after_fail = False
         self.retry_counts = 1
@@ -33,13 +33,13 @@ class FTPCollector(AbstractFTPCollector):
     def login(self, username: str, password: str, *args, **kwargs):
         self._ftp.login(username, password)
 
-    def download_file(self, file_or_pattern: Union[str, Pattern], local_dir: str, *args, **kwargs):
+    def download_file(self, file_or_pattern: str | Pattern, local_dir: str, *args, **kwargs):
         pass
 
     def download_folder(
         self,
-        folder_or_pattern: Union[str, Pattern],
-        local_dir: Union[str, pathlib.Path],
+        folder_or_pattern: str | Pattern,
+        local_dir: str | pathlib.Path,
         retry_after_fail: bool = False,
         retry_counts: int = 1,
     ) -> pathlib.Path:
@@ -64,9 +64,7 @@ class FTPCollector(AbstractFTPCollector):
         elif isinstance(local_dir, pathlib.Path):
             self.local_dir = local_dir
         else:
-            ValueError(
-                f"`local_dir должен быть `str` либо `pathlib.Path`, а был передан {type(local_dir)}"
-            )
+            ValueError(f"`local_dir должен быть `str` либо `pathlib.Path`, а был передан {type(local_dir)}")
 
         self.retry_after_fail = retry_after_fail
         self.retry_counts = retry_counts
@@ -87,7 +85,7 @@ class FTPCollector(AbstractFTPCollector):
                 f"требуется `str` или `Pattern`, а был передан {type(folder_or_pattern)}"
             )
 
-    def _list_dir(self, path: str) -> List[FTPItem]:
+    def _list_dir(self, path: str) -> list[FTPItem]:
         """
         Возвращает список элементов в каталоге на FTP-сервере, как список объектов FTPItem, содержащих имя и режим
         каждого элемента.
@@ -96,7 +94,7 @@ class FTPCollector(AbstractFTPCollector):
          хотим вывести.
         :return: список объектов FTPItem, которые представляют файлы и каталоги по указанному пути на FTP-сервере.
         """
-        dir_list: List[FTPItem] = []
+        dir_list: list[FTPItem] = []
         self._ftp.retrlines(
             f"LIST {path}",
             callback=lambda x: dir_list.append(
@@ -141,7 +139,6 @@ class FTPCollector(AbstractFTPCollector):
                 self._mirror_ftp_dir(f"{path}/{item.name}")
 
             else:
-
                 file_path = self.local_dir / path
                 file_path.mkdir(parents=True, exist_ok=True)
                 file_path = file_path / item.name

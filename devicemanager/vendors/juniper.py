@@ -1,7 +1,7 @@
 import binascii
 import re
 from re import findall, sub
-from typing import List, Literal
+from typing import Literal
 
 import pexpect
 import textfsm
@@ -23,7 +23,7 @@ class Juniper(BaseDevice):
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         """
         ## Ищем MAC адрес среди subscribers и в таблице ARP оборудования
 
@@ -43,7 +43,7 @@ class Juniper(BaseDevice):
         return self._search_ip_or_mac_address(mac_address, "mac")
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         """
         ## Ищем IP адрес среди subscribers и в таблице ARP оборудования
 
@@ -61,7 +61,7 @@ class Juniper(BaseDevice):
 
     def _search_ip_or_mac_address(
         self, address: str, search_type: Literal["ip", "mac"]
-    ) -> List[ArpInfoResult]:
+    ) -> list[ArpInfoResult]:
         subscriber_search = "address"
         if search_type == "mac":
             address = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*address)
@@ -109,9 +109,7 @@ class Juniper(BaseDevice):
             # в байтовый объект, затем используем метод `decode()` для преобразования bytes в строку
             # с использованием кодировки ASCII. Аргумент `errors="replace"` указывает, что любые символы,
             # отличные от ASCII, во входной строке должны быть заменены символом замены Unicode (U+FFFD) в строке.
-            return binascii.unhexlify(unknown_format_str).decode(
-                "ascii", errors="replace"
-            )
+            return binascii.unhexlify(unknown_format_str).decode("ascii", errors="replace")
 
         # Если шестнадцатеричная строка не является допустимой шестнадцатеричной строкой, она выдаст ошибку.
         # Это способ поймать эту ошибку и вернуть исходную шестнадцатеричную строку к списку.
@@ -137,7 +135,7 @@ class Juniper(BaseDevice):
 
         # Форматируем вывод
 
-        info: List[str] = []
+        info: list[str] = []
 
         # IP / MAC / VLAN
         ip_mac_vlan = findall(
@@ -180,47 +178,48 @@ class Juniper(BaseDevice):
         return info
 
     def get_interfaces(self) -> list:
-        pass
+        return []
 
     def get_vlans(self) -> list:
-        pass
+        return []
 
     def get_mac(self, port: str) -> list:
-        pass
+        return []
 
     def reload_port(self, port: str, save_config=True) -> str:
-        pass
+        return ""
 
     def set_port(self, port: str, status: str, save_config=True) -> str:
-        pass
+        return ""
 
     def save_config(self):
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        pass
+    def set_description(self, port: str, desc: str) -> dict:
+        return {}
 
-    def get_port_info(self, port: str) -> str:
-        pass
+    def get_port_info(self, port: str) -> dict:
+        return {}
 
     def get_port_type(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_config(self, port: str) -> str:
-        pass
+        return ""
 
     def get_port_errors(self, port: str) -> str:
-        pass
+        return ""
 
     def get_device_info(self) -> dict:
-        pass
+        return {}
 
 
 class JuniperFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and re.search(
-            r"JUNOS|show: invalid command, valid commands are", str(version_output)
+        return bool(
+            version_output
+            and re.search(r"JUNOS|show: invalid command, valid commands are", str(version_output))
         )
 
     @classmethod
@@ -235,9 +234,7 @@ class JuniperFactory(AbstractDeviceFactory):
         if "show: invalid command, valid commands are" in version_output:
             session.sendline("sys info show")
             while True:
-                match = session.expect(
-                    [r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT]
-                )
+                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
                 version_output += str(session.before.decode("utf-8"))
                 if match == 1:
                     session.sendline(" ")
@@ -249,9 +246,7 @@ class JuniperFactory(AbstractDeviceFactory):
             if "unknown keyword show" in version_output:
                 return Juniper(session, ip, auth, snmp_community=snmp_community)
             else:
-                raise UnknownDeviceError(
-                    "JuniperFactory не удалось распознать модель оборудования", ip=ip
-                )
+                raise UnknownDeviceError("JuniperFactory не удалось распознать модель оборудования", ip=ip)
 
         model = BaseDevice.find_or_empty(r"Model: (\S+)", version_output)
         return Juniper(session, ip, auth, model, snmp_community=snmp_community)

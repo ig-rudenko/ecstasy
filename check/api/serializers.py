@@ -117,7 +117,7 @@ class PortControlSerializer(serializers.Serializer):
 
     port = serializers.CharField(max_length=50, required=True)
     status = serializers.ChoiceField(choices=["up", "down", "reload"], required=True)
-    save = RequiredBooleanField(required=True)
+    save = RequiredBooleanField(required=True)  # type: ignore
 
     def update(self, instance, validated_data):
         pass
@@ -128,9 +128,7 @@ class PortControlSerializer(serializers.Serializer):
 
 class PoEPortStatusSerializer(serializers.Serializer):
     port = serializers.CharField(max_length=50, required=True)
-    status = serializers.ChoiceField(
-        choices=["auto-on", "forced-on", "off"], required=True
-    )
+    status = serializers.ChoiceField(choices=["auto-on", "forced-on", "off"], required=True)
 
     def update(self, instance, validated_data):
         pass

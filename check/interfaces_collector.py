@@ -1,37 +1,42 @@
+from abc import abstractmethod
 from datetime import datetime
-from typing import Optional, Type
 
 import orjson
+from django.core.cache import cache
 from django.db.models import QuerySet
 from django.utils import timezone
-from django.core.cache import cache
-from rest_framework.serializers import ModelSerializer
 
-from .api.serializers import DevicesSerializer
-from .models import Devices
 from devicemanager.device import DeviceManager
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo
+from .models import Devices
 
 
 class DeviceInterfacesCollectorMixin:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.device: Devices = Optional[None]
-        self.device_collector: DeviceManager = Optional[None]
+        self._device: Devices | None = None
+        self._device_collector: DeviceManager | None = None
 
         # Поля для обновлений, в случае изменения записи в БД
-        self.model_update_fields = []
+        self.model_update_fields: list[str] = []
 
         # Собирать вместе с VLAN
         self.with_vlans = False
 
-    def get_device(self) -> Devices:
+    @property
+    @abstractmethod
+    def device(self) -> Devices:
         pass
 
-    def sync_device_info_to_db(self):
+    @property
+    @abstractmethod
+    def device_collector(self) -> DeviceManager:
+        pass
+
+    def sync_device_info_to_db(self) -> None:
         """
         ## Обновляем информацию об устройстве (вендор, модель) в БД.
         """
@@ -64,7 +69,7 @@ class DeviceInterfacesCollectorMixin:
             make_session_global=make_session_global,
         )
 
-    def get_last_interfaces(self) -> (list, datetime):
+    def get_last_interfaces(self) -> tuple[list, datetime]:
         """
         ## Возвращает кортеж из последних собранных интерфейсов и времени их последнего изменения.
 
@@ -74,7 +79,7 @@ class DeviceInterfacesCollectorMixin:
             )
         """
 
-        interfaces = []
+        interfaces: list = []
         collected_time: datetime = timezone.now()
 
         try:
@@ -137,14 +142,14 @@ class DevicesInterfacesWorkloadCollector:
 
         if not cache_value or not from_cache:
             queryset = self.get_queryset()
-            DeviceSerializerClass = self.get_serializer_class()
+            device_serializer_class = self.get_serializer_class()
 
             cache_value = {
                 "devices_count": queryset.count(),
                 "devices": [
                     {
                         "interfaces_count": self.get_interfaces_load(dev_info),
-                        **DeviceSerializerClass(dev_info.dev).data,
+                        **device_serializer_class(dev_info.dev).data,
                     }
                     for dev_info in queryset
                     if dev_info.dev and dev_info.interfaces
@@ -156,7 +161,3 @@ class DevicesInterfacesWorkloadCollector:
 
     def get_queryset(self) -> QuerySet:
         return DevicesInfo.objects.all().select_related("dev").order_by("dev__name")
-
-    @staticmethod
-    def get_serializer_class() -> Type[ModelSerializer]:
-        return DevicesSerializer

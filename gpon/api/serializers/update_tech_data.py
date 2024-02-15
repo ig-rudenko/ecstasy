@@ -1,6 +1,6 @@
 import copy
-from typing import Optional, List
 
+from django.db.models import QuerySet
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -23,9 +23,9 @@ class UpdateRetrieveOLTStateSerializer(OLTStateSerializer):
         model = OLTState
         fields = ["deviceName", "devicePort", "fiber", "description"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._device: Optional[Devices] = None
+        self._device: Devices | None = None
 
     def update(self, instance: OLTState, validated_data) -> OLTState:
         """
@@ -39,6 +39,8 @@ class UpdateRetrieveOLTStateSerializer(OLTStateSerializer):
          которые передаются в метод update. Он используется для обновления полей объекта экземпляра
         :return: Метод возвращает обновленный экземпляр модели OLState.
         """
+        if self._device is None:
+            raise ValidationError("Невозможно обновить запись с отсутствующим device id")
         instance.device_id = self._device.id
 
         if validated_data.get("olt_port") and instance.olt_port != validated_data["olt_port"]:
@@ -112,20 +114,23 @@ class End3TechCapabilitySerializer(End3Serializer):
 
     def update(self, instance: End3, validated_data):
         if validated_data.get("capacity"):
-            tech_capability = self.instance.techcapability_set.all().order_by("number")
+            tech_cap_queryset: QuerySet[TechCapability] = self.instance.techcapability_set.all().order_by(
+                "number"
+            )
+
             if validated_data["capacity"] < instance.capacity:
-                to_delete = self._get_affected_tech_capability(
-                    validated_data["capacity"], tech_capability
-                )
+                to_delete = self._get_affected_tech_capability(validated_data["capacity"], tech_cap_queryset)
                 for tech in to_delete:
                     tech.delete()
 
             if validated_data["capacity"] > instance.capacity:
-                last_tech_capacity: TechCapability = tech_capability.last()
+                last_tech_cap = tech_cap_queryset.values("number").last()
+                last_number = last_tech_cap["number"] if last_tech_cap else 0
+
                 additional_capacity = validated_data["capacity"] - instance.capacity
                 for i in range(
-                    last_tech_capacity.number + 1,
-                    last_tech_capacity.number + additional_capacity + 1,
+                    last_number + 1,
+                    last_number + additional_capacity + 1,
                 ):
                     TechCapability.objects.create(end3=instance, number=i)
 
@@ -141,22 +146,23 @@ class End3TechCapabilitySerializer(End3Serializer):
         return instance
 
     @staticmethod
-    def _get_affected_tech_capability(new_capacity: int, tech_capability) -> List[TechCapability]:
+    def _get_affected_tech_capability(
+        new_capacity: int, tech_capabilities: QuerySet[TechCapability]
+    ) -> list[TechCapability]:
         """
         Возвращает список объектов `TechCapability`, которые необходимо удалить, на
         основе нового значения ёмкости и списка существующих объектов `TechCapability`.
         Если будут затронуты абонентские подключения, то произойдет ошибка `ValidationError`.
 
         :param new_capacity: Параметр new_capacity — это целое число, которое представляет новое значение емкости.
-         Он используется для определения того, какие объекты TechCapability следует удалить из списка tech_capability
-        :param tech_capability: Параметр tech_capability представляет собой список объектов типа TechCapability
-        :return: список объектов TechCapability, которые необходимо удалить.
+         Он используется для определения того, какие объекты TechCapability следует удалить из списка tech_capability.
+        :param tech_capabilities: QuerySet объектов типа TechCapability.
+        :return: Список объектов TechCapability, которые необходимо удалить.
         """
-        to_delete = []
-        for i, line in enumerate(tech_capability, 1):
+        to_delete: list[TechCapability] = []
+        for i, line in enumerate(tech_capabilities, 1):
             if i <= new_capacity:
                 continue
-            line: TechCapability
             if line.subscriber_connection.count():
                 raise ValidationError("Нельзя, есть абоненты")
             to_delete.append(line)

@@ -1,10 +1,12 @@
 import os
 from collections import Counter
+from typing import cast
 
 import orjson
 from django import forms
 from django.contrib import admin
-from django.utils.html import mark_safe, format_html
+from django.utils.html import format_html
+from django.utils.safestring import SafeString, mark_safe
 from requests import RequestException
 
 from devicemanager.device.zabbix_api import ZabbixAPIConnection
@@ -16,9 +18,7 @@ svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/
 </svg>"""
 
 
-def get_icons_html_code(
-    fill_color: str, stroke_color: str, icon_name=None
-) -> (str, tuple):
+def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> str | tuple[str | tuple, ...]:
     """
     Функция возвращает HTML-код для различных иконок на основе входных параметров.
 
@@ -79,11 +79,12 @@ def get_icons_html_code(
     ]
 
     if icon_name is None:
-        return ((ico["name"], mark_safe(ico["code"])) for ico in icons)
+        return tuple((ico["name"], mark_safe(ico["code"])) for ico in icons)
 
     for ico in icons:
         if icon_name == ico["name"]:
             return ico["code"]
+    return ""
 
 
 def get_polygon(fill_color: str):
@@ -121,17 +122,14 @@ class LayerFrom(forms.ModelForm):
         self.fields["zabbix_group_name"] = forms.ChoiceField(
             label="Выберите группу Zabbix", choices=get_zabbix_groups(), required=False
         )
+        icons = get_icons_html_code(self.instance.points_color, self.instance.points_border_color)
+
         self.fields["marker_icon_name"] = forms.ChoiceField(
             label="Выберите иконку",
             widget=forms.RadioSelect,
-            choices=get_icons_html_code(
-                self.instance.points_color, self.instance.points_border_color
-            ),
-            initial=next(get_icons_html_code(
-                self.instance.points_color, self.instance.points_border_color
-            ))
+            choices=icons,
+            initial=icons[0],
         )
-
 
     class Meta:
         model = Layers
@@ -195,7 +193,7 @@ class LayersAdmin(admin.ModelAdmin):
         return ""
 
     @admin.display(description="Структура файла")
-    def icon(self, instance: Layers) -> str:
+    def icon(self, instance: Layers) -> SafeString:
         """
         Эта функция генерирует HTML-код для значков на основе типа предоставленного слоя:
         либо из файла, либо из экземпляра Zabbix.
@@ -222,17 +220,21 @@ class LayersAdmin(admin.ModelAdmin):
             try:
                 file_info = self.parse_layer_file(instance.from_file.path)
             except Exception as exc:
-                return format_html(f"<div style=\"color: red\">{exc}</div>")
+                return format_html(f'<div style="color: red">{exc}</div>')
 
             html = ""
             icon_name = instance.marker_icon_name
             if file_info.get("Point"):
                 # Если присутствует маркер в файле
-                html += get_icons_html_code(
-                    instance.points_color,
-                    instance.points_border_color,
-                    icon_name=icon_name,
+                icon: str = cast(
+                    str,
+                    get_icons_html_code(
+                        instance.points_color,
+                        instance.points_border_color,
+                        icon_name=icon_name,
+                    ),
                 )
+                html += icon
             if file_info.get("Polygon"):
                 # Если присутствует полигон в файле
                 colors = file_info["Polygon"]["colours"].most_common(1)
@@ -244,7 +246,7 @@ class LayersAdmin(admin.ModelAdmin):
                 main_color = colors[0][0] if colors else instance.polygon_border_color
                 html += get_line(fill_color=main_color)
 
-        return format_html(html)
+        return format_html(html)  # type: ignore
 
     @admin.display(description="Тип слоя")
     def layer_type(self, instance: Layers):
@@ -258,9 +260,7 @@ class LayersAdmin(admin.ModelAdmin):
                 f"На основе файла - <strong>\"{instance.from_file.name.rsplit('/', 1)[-1]}\"</strong>"
             )
         if instance.zabbix_group_name:
-            return mark_safe(
-                f'На основе группы Zabbix - <strong>"{instance.zabbix_group_name}"</strong>'
-            )
+            return mark_safe(f'На основе группы Zabbix - <strong>"{instance.zabbix_group_name}"</strong>')
 
         return "Неизвестный тип слоя"
 

@@ -6,6 +6,7 @@ from rest_framework.generics import (
     GenericAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from gpon.models import Customer, SubscriberConnection, OLTState
@@ -35,6 +36,10 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     queryset = SubscriberConnection.objects
     serializer_class = UpdateSubscriberDataSerializer
 
+    @transaction.atomic
+    def perform_update(self, serializer) -> None:
+        super().perform_update(serializer)
+
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
@@ -49,7 +54,7 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
 class SubscribersOnDevicePort(GenericAPIView):
     permission_classes = [SubscriberDataPermission]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args, **kwargs) -> Response:
         device_name = self.kwargs["device_name"]
         olt_port: str = self.request.query_params.get("port", "")
         ont_id: str = self.request.query_params.get("ont_id", "")
@@ -62,9 +67,7 @@ class SubscribersOnDevicePort(GenericAPIView):
         try:
             olt = OLTState.objects.get(device__name=device_name, olt_port=olt_port)
         except OLTState.DoesNotExist:
-            return Response(
-                {"error": "Does not exists."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Does not exists."}, status=status.HTTP_400_BAD_REQUEST)
 
         subscriber_connections = [
             subscriber_connection

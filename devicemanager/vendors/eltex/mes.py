@@ -1,7 +1,6 @@
 import io
 import re
 from time import sleep
-from typing import List, Tuple
 
 import pexpect
 
@@ -12,8 +11,8 @@ from ..base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -41,13 +40,13 @@ class EltexMES(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
-            mac: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
+        mac: str = "",
     ):
         """
         ## При инициализации смотрим характеристики устройства.
@@ -107,7 +106,7 @@ class EltexMES(BaseDevice):
         while True:
             # Ожидание prompt, space prompt или тайм-аута.
             match = self.session.expect([self.prompt, self.space_prompt, pexpect.TIMEOUT])
-            output += self.session.before.decode("utf-8").strip()
+            output += (self.session.before or b"").decode("utf-8").strip()
             # Проверяем, есть ли в выводе строка "Ch Port Mode (VLAN)".
             # Если это так, он отправляем команду «q», а затем выходим из цикла.
             if "Ch       Port Mode (VLAN)" in output:
@@ -122,22 +121,19 @@ class EltexMES(BaseDevice):
                 print(self.ip, "Ошибка: timeout")
                 break
 
-        result: List[List[str, str, str, str]] = parse_by_template(
+        result: list[tuple[str, str, str, str]] = parse_by_template(
             f"interfaces/{self._template_name}.template", output
         )
-
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
             if port_name.startswith("V"):
                 # Пропускаем Vlan интерфейсы
                 continue
+            status: T_Interface = "up"
             if admin_status.lower() != "up":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "down" in link_status.lower():
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
-
+                status = "down"
             interfaces.append((port_name, status, desc))
 
         return interfaces
@@ -229,9 +225,7 @@ class EltexMES(BaseDevice):
         """
 
         mac_str = self.send_command(f"show mac address-table interface {port}")
-        macs_list: List[Tuple[str, str]] = re.findall(
-            rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str
-        )
+        macs_list: list[tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+\S+\s+\S+", mac_str)
         return [(int(vid), mac) for vid, mac in macs_list]
 
     @BaseDevice.lock_session
@@ -269,7 +263,7 @@ class EltexMES(BaseDevice):
         self.session.sendline("no shutdown")
         self.session.sendline("end")
         self.session.expect(r"#")
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
@@ -412,9 +406,7 @@ class EltexMES(BaseDevice):
         return "\n".join(errors)
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(
-        if_invalid_return={"error": "Неверный порт", "status": "fail"}
-    )
+    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов

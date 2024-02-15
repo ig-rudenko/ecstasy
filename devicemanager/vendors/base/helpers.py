@@ -1,12 +1,11 @@
 import re
-from typing import List
 
 import textfsm
 
 from devicemanager.vendors.base.types import TEMPLATE_FOLDER
 
 
-def range_to_numbers(ports_string: str) -> List[int]:
+def range_to_numbers(ports_string: str) -> list[int]:
     """
     Переводит строку с диапазоном чисел в список
 
@@ -19,16 +18,13 @@ def range_to_numbers(ports_string: str) -> List[int]:
     [134, 135, 136, 234, 411]
     """
 
-    ports_split = set()
+    ports_split: set = set()
 
     # Проверка наличия слова "to" в файле ports_string.
     if "to" in ports_string:
         # Если имеется формат "1 to 7 10 12 to 44"
         ports_split.update(
-            *[
-                set(range(int(v[0]), int(v[1]) + 1))
-                for v in re.findall(r"(\d+)\s*to\s*(\d+)", ports_string)
-            ]
+            *[set(range(int(v[0]), int(v[1]) + 1)) for v in re.findall(r"(\d+)\s*to\s*(\d+)", ports_string)]
         )
 
         # Добавляем к диапазону оставшиеся числа
@@ -37,9 +33,9 @@ def range_to_numbers(ports_string: str) -> List[int]:
         return sorted(ports_split)
 
     if "," in ports_string:
-        ports_split = ports_string.replace(" ", "").split(",")
+        ports_split = set(ports_string.replace(" ", "").split(","))
     else:
-        ports_split = ports_string.split()
+        ports_split = set(ports_string.split())
 
     res_ports = []
     for p in ports_split:

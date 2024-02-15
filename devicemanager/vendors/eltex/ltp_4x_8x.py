@@ -1,10 +1,8 @@
 import re
 from functools import wraps
-from typing import List, Tuple, Dict, Any, Optional, TypedDict
+from typing import Any, TypedDict
 
-import pexpect
-
-from .extra import validate_ltp_interfaces_list
+from .extra import reformat_ltp_interfaces_list
 from ..base.device import BaseDevice
 from ..base.types import (
     T_InterfaceList,
@@ -34,7 +32,7 @@ def _validate_port(if_invalid_return: Any = None):
     def validate(func):
         @wraps(func)
         def wrapper(deco_self: "EltexLTP", port, *args, **kwargs):
-            port_types: Dict[int, _EltexLTPPortTypes] = {
+            port_types: dict[int, _EltexLTPPortTypes] = {
                 0: {
                     "name": "front-port",
                     "max_number": deco_self.front_ports_count - 1,
@@ -50,7 +48,7 @@ def _validate_port(if_invalid_return: Any = None):
             }
 
             # Регулярное выражения для поиска трёх типов портов на Eltex LTP 4X, 8X
-            port_match: List[Tuple[str]] = re.findall(
+            port_match: list[tuple[str]] = re.findall(
                 r"^front[-port]*\s*(\d+)$|"  # `0` - front-port
                 r"^10[Gg]-front[-port]*\s*(\d+)$|"  # `1` - 10G-front-port
                 r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*)?)$",  # `2` - ont-port | gpon-port
@@ -112,7 +110,12 @@ class EltexLTP(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="LTP", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model="LTP",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 
@@ -137,7 +140,7 @@ class EltexLTP(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: Optional[str] = None,
+        before_catch: str | None = None,
         expect_command=True,
         num_of_expect=10,
         space_prompt=None,
@@ -176,7 +179,7 @@ class EltexLTP(BaseDevice):
         self.session.send("switch\r")
         self.session.expect(self.prompt)
 
-        interfaces: List[List[str, str]] = []
+        interfaces: list[tuple[str, str]] = []
 
         interfaces_10gig_output = self.send_command(
             f"show interfaces status 10G-front-port 0 - {self.the_10G_ports_count - 1}",
@@ -198,7 +201,7 @@ class EltexLTP(BaseDevice):
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        return validate_ltp_interfaces_list(interfaces)
+        return reformat_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> T_MACTable:
@@ -229,7 +232,7 @@ class EltexLTP(BaseDevice):
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        parsed: List[Tuple[str, str, str, str]] = re.findall(
+        parsed: list[tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+({self.mac_format})\s+(\S+\s\d+)\s+(\S+).*\n", output
         )
 
@@ -263,7 +266,7 @@ class EltexLTP(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
         port_type, port_number = port.split()
-        macs_list: List[Tuple[str, str]]
+        macs_list: list[tuple[str, str]]
 
         if port_number.isdigit():
             self.session.send("switch\r")
@@ -296,7 +299,7 @@ class EltexLTP(BaseDevice):
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data: Dict[str, Any] = {}
+            data: dict[str, Any] = {}
 
             # Смотрим сконфигурированные ONT на данном порту
             ont_info = self.send_command(f"show interface ont {port_number} configured")
@@ -315,7 +318,7 @@ class EltexLTP(BaseDevice):
             )
 
             # Добавляем в итоговый словарь список из отсортированных по возрастанию ONT ID записей
-            # сконфигурированных ONT в виде List[List], вместо List[Tuple].
+            # сконфигурированных ONT в виде list[List], вместо list[Tuple].
             # Добавляем для каждой записи пустой список, который далее будет использоваться
             # для заполнения VLAN/MAC
             data["onts_lines"] = onts_lines

@@ -154,7 +154,7 @@ class Devices(models.Model):
             ip=self.ip,
             cmd_protocol=self.cmd_protocol,
             port_scan_protocol=self.port_scan_protocol,
-            snmp_community=self.snmp_community,
+            snmp_community=str(self.snmp_community),
             auth_obj=self.auth_group,
             make_session_global=make_session_global,
         )
@@ -184,7 +184,7 @@ class DeviceMedia(models.Model):
 
     @property
     def is_image(self) -> bool:
-        return self.file_type in ["png", "jpeg", "jpg", "bmp", "gif", "svg"]
+        return self.file_type.lower() in ["png", "jpeg", "jpg", "bmp", "gif", "svg"]
 
     @property
     def file_name(self):
@@ -234,7 +234,7 @@ class Bras(models.Model):
             cmd_protocol="telnet",
             port_scan_protocol="telnet",
             snmp_community="",
-            auth_obj=SimpleAuthObject(self.login, self.password, self.secret),
+            auth_obj=SimpleAuthObject(self.login, self.password, self.secret or ""),
             make_session_global=True,
         )
 

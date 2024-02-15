@@ -1,10 +1,8 @@
-from typing import List
-
-from .types import BaseRingPoint
 from .exceptions import InvalidRingStructureError
+from .types import BaseRingPoint
 
 
-def find_links_between_points(ring_devs: List[BaseRingPoint]):
+def find_links_between_points(ring_devs: list[BaseRingPoint]):
     length = len(ring_devs)
 
     # Проходимся по кольцу

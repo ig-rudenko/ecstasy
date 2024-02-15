@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Literal
 
 import textfsm
 
@@ -24,7 +24,7 @@ class HuaweiCX600(BaseDevice):
     vendor = "Huawei"
 
     @BaseDevice.lock_session
-    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         """
         ## Возвращаем данные абонента по его MAC адресу
 
@@ -43,7 +43,7 @@ class HuaweiCX600(BaseDevice):
         return self._search_ip_or_mac(address=formatted_mac, address_type="mac")
 
     @BaseDevice.lock_session
-    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         """
         ## Ищем абонента по его IP адресу
 
@@ -58,9 +58,7 @@ class HuaweiCX600(BaseDevice):
         """
         return self._search_ip_or_mac(address=ip_address, address_type="ip")
 
-    def _search_ip_or_mac(
-        self, address: str, address_type: Literal["ip", "mac"]
-    ) -> List[ArpInfoResult]:
+    def _search_ip_or_mac(self, address: str, address_type: Literal["ip", "mac"]) -> list[ArpInfoResult]:
         match = self.send_command(
             f"display access-user {address_type}-address {address}",
             expect_command=False,
@@ -94,8 +92,8 @@ class HuaweiCX600(BaseDevice):
     def save_config(self):
         pass
 
-    def set_description(self, port: str, desc: str) -> str:
-        return ""
+    def set_description(self, port: str, desc: str) -> dict:
+        return {}
 
     def get_port_info(self, port: str) -> dict:
         return {}
@@ -113,13 +111,9 @@ class HuaweiCX600(BaseDevice):
         return {}
 
     def get_access_user_data(self, mac: str) -> str:
-        bras_output = self.send_command(
-            f"display access-user mac-address {mac}", expect_command=False
-        )
+        bras_output = self.send_command(f"display access-user mac-address {mac}", expect_command=False)
         if "No online user!" not in bras_output:
-            user_index = self.find_or_empty(
-                r"User access index\s+:\s+(\d+)", bras_output
-            )
+            user_index = self.find_or_empty(r"User access index\s+:\s+(\d+)", bras_output)
 
             if user_index:
                 bras_output = self.send_command(

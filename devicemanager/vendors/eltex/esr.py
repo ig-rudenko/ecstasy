@@ -13,7 +13,7 @@ class EltexESR(EltexMES):
 
     _template_name = "eltex-esr"
 
-    def _find_system_info(self):
+    def _find_system_info(self) -> None:
         system = self.send_command("show system")
         self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
 
@@ -45,7 +45,9 @@ class EltexESR(EltexMES):
             # Выходим из режима редактирования конфигурации
             self.session.sendline("end")
             self.session.sendline("commit")
-            self.session.expect([self.prompt, "Configuration has been successfully applied"])
+            self.session.expect(
+                [self.prompt, "Configuration has been successfully applied"]
+            )
 
         # Подтверждаем изменение
         status = self.send_command("confirm")

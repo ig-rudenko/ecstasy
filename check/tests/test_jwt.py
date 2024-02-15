@@ -1,7 +1,7 @@
 import orjson
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.shortcuts import reverse
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -32,9 +32,7 @@ class JWTTestCase(TestCase):
         """
 
         # отправляем POST-запрос с данными пользователя
-        response = client.post(
-            token_url, orjson.dumps(user_data), content_type="application/json"
-        )
+        response = client.post(token_url, orjson.dumps(user_data), content_type="application/json")
         # проверяем статус ответа (должен быть 200 OK)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # проверяем наличие полей access и refresh в ответе
@@ -50,9 +48,7 @@ class JWTTestCase(TestCase):
         """
 
         # получаем токены с помощью предыдущего метода
-        response = client.post(
-            token_url, orjson.dumps(user_data), content_type="application/json"
-        )
+        response = client.post(token_url, orjson.dumps(user_data), content_type="application/json")
         access_token = response.data["access"]
         refresh_token = response.data["refresh"]
         # отправляем POST-запрос с refresh токеном

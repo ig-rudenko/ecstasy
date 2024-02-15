@@ -1,3 +1,4 @@
+from typing import ClassVar
 from unittest.mock import MagicMock, patch, Mock
 
 import orjson
@@ -8,18 +9,27 @@ from rest_framework.test import APITestCase
 from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 from net_tools.models import DevicesInfo, VlanName
-from ..models import Devices, DeviceGroup, User, UsersActions
+from ..models import Devices, DeviceGroup, User, UsersActions, AuthGroup
 
 
 class PortControlAPIViewTestCase(APITestCase):
+    user = None  # type: ClassVar[User]
+    group = None  # type: ClassVar[DeviceGroup]
+    device = None  # type: ClassVar[Devices]
+    url = None  # type: ClassVar[str]
+    auth_group = None  # type: ClassVar[AuthGroup]
+
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+        cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
-        cls.device: Devices = Devices.objects.create(
+        cls.auth_group = AuthGroup.objects.create(
+            name="auth_group",
+            login="auth_group",
+            password="auth_group",
+        )
+        cls.device = Devices.objects.create(
             ip="172.30.0.58",
             name="dev1",
             group=cls.group,
@@ -164,14 +174,10 @@ class PortControlAPIViewTestCase(APITestCase):
             data={"port": "Gi0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(
-            resp.data["detail"], "Запрещено изменять состояние данного порта!"
-        )
+        self.assertEqual(resp.data["detail"], "Запрещено изменять состояние данного порта!")
 
     @patch("check.models.Devices.connect")
-    def test_port_down_superuser_access_to_change_core_port_by_desc(
-        self, device_connection: Mock
-    ):
+    def test_port_down_superuser_access_to_change_core_port_by_desc(self, device_connection: Mock):
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)
@@ -232,14 +238,16 @@ class PortControlAPIViewTestCase(APITestCase):
 
 
 class ChangeDescriptionAPIViewTestCase(APITestCase):
+    user = None  # type: ClassVar[User]
+    group = None  # type: ClassVar[DeviceGroup]
+    device = None  # type: ClassVar[Devices]
+
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+        cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
-        cls.device: Devices = Devices.objects.create(
+        cls.device = Devices.objects.create(
             ip="172.31.176.21",
             name="dev1",
             group=cls.group,
@@ -268,9 +276,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             saved="Saved OK",
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = (
-            set_description_result
-        )
+        device_connect.return_value.set_description.return_value = set_description_result
         data = {"port": "eth1"}
 
         # Отправка запроса.
@@ -327,9 +333,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             saved="Saved OK",
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = (
-            set_description_result
-        )
+        device_connect.return_value.set_description.return_value = set_description_result
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.
@@ -383,9 +387,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             max_length=64,
             port="eth1",
         )
-        device_connect.return_value.set_description.return_value = (
-            set_description_result
-        )
+        device_connect.return_value.set_description.return_value = set_description_result
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.
@@ -420,14 +422,16 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
 
 
 class MacListAPIViewTestCase(APITestCase):
+    user = None  # type: ClassVar[User]
+    group = None  # type: ClassVar[DeviceGroup]
+    device = None  # type: ClassVar[Devices]
+
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+        cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
-        cls.device: Devices = Devices.objects.create(
+        cls.device = Devices.objects.create(
             ip="172.31.176.21",
             name="dev1",
             group=cls.group,
@@ -453,9 +457,7 @@ class MacListAPIViewTestCase(APITestCase):
             # 3. user_profile
             # 4. devices_group
             # 5. vlan_name (Только один раз, проверка кэша)
-            resp = self.client.get(
-                reverse("devices-api:mac-list", args=(self.device.name,)) + "?port=eth1"
-            )
+            resp = self.client.get(reverse("devices-api:mac-list", args=(self.device.name,)) + "?port=eth1")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertDictEqual(

@@ -1,3 +1,4 @@
+from typing import ClassVar
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
@@ -180,9 +181,7 @@ class TestCE6865Template(TestCase):
         )
 
     def test_vlans_find_template(self):
-        parse_data = parse_by_template(
-            f"vlans_templates/huawei-ce6865.template", dis_cur_inter_output
-        )
+        parse_data = parse_by_template(f"vlans_templates/huawei-ce6865.template", dis_cur_inter_output)
 
         self.assertListEqual(
             [
@@ -209,9 +208,25 @@ class TestCE6865Template(TestCase):
 
 
 class TestCE6865Methods(TestCase):
+    device = None  # type: ClassVar[HuaweiCE6865]
+    display_mac_address_output = None  # type: ClassVar[str]
+    display_mac_address_port_output = None  # type: ClassVar[str]
+    display_interface_errors_output = None  # type: ClassVar[str]
+    display_interface_output = None  # type: ClassVar[str]
+    valid_interfaces_list = None  # type: ClassVar[list]
+    valid_vlans_list = None  # type: ClassVar[list]
+
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.device = HuaweiCE6865(session=None, ip="", auth={})
+        cls.device = HuaweiCE6865(
+            session=None,
+            ip="",
+            auth={
+                "login": "login",
+                "password": "password",
+                "privilege_mode_password": "privilege_mode_password",
+            },
+        )
         cls.display_mac_address_output = """
 # display mac-address
 Flags: * - Backup
@@ -242,9 +257,7 @@ MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
 8aad-b22b-b194 104/-/-       25GE1/0/1           dynamic                144
 8aad-b22b-b194 300/-/-       25GE1/0/1           dynamic                363"""
         cls.display_interface_errors_output = "CRC: 123\nErrors: 0"
-        cls.display_interface_output = (
-            f"some data\n{cls.display_interface_errors_output}\nnext data"
-        )
+        cls.display_interface_output = f"some data\n{cls.display_interface_errors_output}\nnext data"
         cls.valid_interfaces_list = [
             ("25GE1/0/1", "up", "Desc1"),
             ("25GE1/0/1.105", "up", "Desc2"),

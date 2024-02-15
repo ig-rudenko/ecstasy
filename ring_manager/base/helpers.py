@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Type
+from typing import Type
 
 from devicemanager.device import Interfaces, DeviceManager
 from .types import BaseRingPoint
@@ -10,7 +10,7 @@ def _ping_point(point: BaseRingPoint):
     return point.device.available and point.device.available
 
 
-def thread_ping(devices: List[BaseRingPoint]):
+def thread_ping(devices: list[BaseRingPoint]):
     """
     Эта функция проверяет наличие устройств в списке и обновляет их статус ping.
     :return: Список объектов RingPoint, где каждый объект RingPoint имеет логическое значение,
@@ -34,7 +34,7 @@ def _get_device_interfaces(point: BaseRingPoint, device_manager: Type[DeviceMana
 
 
 def collect_current_interfaces(
-    devices: List[BaseRingPoint], device_manager: Type[DeviceManager] = DeviceManager
+    devices: list[BaseRingPoint], device_manager: Type[DeviceManager] = DeviceManager
 ):
     """
     Эта функция использует ThreadPoolExecutor для сбора всех интерфейсов устройств в кольце.

@@ -95,11 +95,7 @@ class TestOLTStateSerializer(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertDictEqual(
             serializer.errors,
-            {
-                "devicePort": [
-                    ErrorDetail(string="Данное оборудование не имеет порта `123`", code="invalid")
-                ]
-            },
+            {"devicePort": [ErrorDetail(string="Данное оборудование не имеет порта `123`", code="invalid")]},
         )
 
     def test_serializer_invalid_device_name(self):
@@ -114,11 +110,7 @@ class TestOLTStateSerializer(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertDictEqual(
             serializer.errors,
-            {
-                "deviceName": [
-                    ErrorDetail(string="Оборудование `asdfasdf` не существует", code="invalid")
-                ]
-            },
+            {"deviceName": [ErrorDetail(string="Оборудование `asdfasdf` не существует", code="invalid")]},
         )
 
 
@@ -298,9 +290,7 @@ class TestCreateTechDataSerializer(TestCase):
             serializer.errors,
             {
                 "end3": [
-                    ErrorDetail(
-                        string="Обязательный параметр для данных splitter/rizer", code="required"
-                    )
+                    ErrorDetail(string="Обязательный параметр для данных splitter/rizer", code="required")
                 ]
             },
         )
@@ -316,9 +306,7 @@ class TestCreateTechDataSerializer(TestCase):
             serializer.errors,
             {
                 "oltState": [
-                    ErrorDetail(
-                        string="Обязательный параметр для данных OLT состояния", code="required"
-                    )
+                    ErrorDetail(string="Обязательный параметр для данных OLT состояния", code="required")
                 ]
             },
         )
@@ -332,11 +320,7 @@ class TestCreateTechDataSerializer(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertDictEqual(
             serializer.errors,
-            {
-                "houseB": [
-                    ErrorDetail(string="Обязательный параметр для данных строения", code="required")
-                ]
-            },
+            {"houseB": [ErrorDetail(string="Обязательный параметр для данных строения", code="required")]},
         )
 
     def test_serializer_invalid_street_address(self):
@@ -377,9 +361,7 @@ class TestCreateTechDataSerializer(TestCase):
                 "houseB": {
                     "address": {
                         "non_field_errors": [
-                            ErrorDetail(
-                                string="Необходимо указать либо СНТ ТСН, либо улицу", code="invalid"
-                            )
+                            ErrorDetail(string="Необходимо указать либо СНТ ТСН, либо улицу", code="invalid")
                         ]
                     }
                 }
@@ -398,9 +380,7 @@ class TestCreateTechDataSerializer(TestCase):
             {
                 "end3": {
                     "non_field_errors": [
-                        ErrorDetail(
-                            string="Необходимо выбрать хотя бы один splitter/rizer", code="invalid"
-                        )
+                        ErrorDetail(string="Необходимо выбрать хотя бы один splitter/rizer", code="invalid")
                     ]
                 }
             },
@@ -521,7 +501,7 @@ class TestCreateTechDataSerializer(TestCase):
         self.assertEqual(olt_state.description, self.data["oltState"]["description"].strip())
 
         # Проверяем правильность заполнения houseB
-        house: HouseB = olt_state.houses.first()
+        house: HouseB = olt_state.houses.first()  # type: ignore
         self.assertEqual(house.total_entrances, self.data["houseB"]["address"]["total_entrances"])
         self.assertEqual(house.floors, self.data["houseB"]["address"]["floors"])
         self.assertEqual(

@@ -1,7 +1,7 @@
 import io
 import re
 from time import sleep
-from typing import Literal, Union
+from typing import Literal
 
 from ..base.device import BaseDevice
 from ..base.helpers import parse_by_template, range_to_numbers
@@ -10,7 +10,8 @@ from ..base.types import (
     T_InterfaceVLANList,
     T_MACList,
     T_MACTable,
-    InterfaceStatus,
+    MACType,
+    T_Interface,
 )
 from ..base.validators import validate_and_format_port
 
@@ -24,9 +25,7 @@ def normalize_interface_name(intf: str) -> str:
 
 
 def validate_huawei_ce6865_port(if_invalid_return=None):
-    return validate_and_format_port(
-        validator=normalize_interface_name, if_invalid_return=if_invalid_return
-    )
+    return validate_and_format_port(validator=normalize_interface_name, if_invalid_return=if_invalid_return)
 
 
 class HuaweiCE6865(BaseDevice):
@@ -63,16 +62,14 @@ class HuaweiCE6865(BaseDevice):
             self.session.sendline("save")
             self.session.expect(r"The current configuration will be written to the device")
             self.session.sendline("Y")
-            match = self.session.expect(
-                [self.prompt, r"successfully", r"[Ss]ystem is busy"], timeout=20
-            )
+            match = self.session.expect([self.prompt, r"successfully", r"[Ss]ystem is busy"], timeout=20)
             if match == 1:
                 return self.SAVED_OK
             if match == 2:
                 sleep(2)
                 n += 1
                 continue
-            return self.SAVED_ERR
+        return self.SAVED_ERR
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> T_InterfaceList:
@@ -95,13 +92,11 @@ class HuaweiCE6865(BaseDevice):
             if port_name.startswith("NULL") or port_name.startswith("V"):
                 continue
 
+            status: T_Interface = "up"
             if phy.lower() == "*down":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "down" in protocol.lower():
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
-
+                status = "down"
             interfaces.append((port_name, status, desc.strip()))
 
         return interfaces
@@ -174,7 +169,11 @@ class HuaweiCE6865(BaseDevice):
         """
 
         output = self.send_command("display mac-address", expect_command=False)
-        return self._parse_mac_address_string(output, short=False)
+        mac_table = self._parse_mac_address_string(output)
+        return [
+            (int(vid), mac, mac_type, interface_full_name)
+            for mac, vid, interface_full_name, intf_speed_prefix, subinterface, mac_type in mac_table
+        ]
 
     @BaseDevice.lock_session
     @validate_huawei_ce6865_port(if_invalid_return=[])
@@ -190,17 +189,15 @@ class HuaweiCE6865(BaseDevice):
         """
 
         output = self.send_command(f"display mac-address interface {port}")
-        return self._parse_mac_address_string(output, short=True)
+        mac_table = self._parse_mac_address_string(output)
+        return [(int(vid), mac) for mac, vid, *_ in mac_table]
 
-    def _parse_mac_address_string(self, string: str, short: bool) -> Union[T_MACTable, T_MACList]:
+    def _parse_mac_address_string(self, string: str) -> list[tuple[str, str, str, str, str, MACType]]:
         mac_table = re.findall(
             rf"({self.mac_format})\s+(\d+)/\S+/\S+\s+((25|100)GE\d+/\d+/\d+(\.\d+)?)\s+(dynamic|static|security)",
             string,
         )
-        return [
-            (int(vid), mac, mac_type, interface_full_name) if not short else (int(vid), mac)
-            for mac, vid, interface_full_name, intf_speed_prefix, subinterface, mac_type in mac_table
-        ]
+        return mac_table
 
     @validate_huawei_ce6865_port(if_invalid_return={"type": "text", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> dict:
@@ -225,9 +222,7 @@ class HuaweiCE6865(BaseDevice):
         """
 
         errors = self.__port_info(port).split("\n")
-        return "\n".join(
-            [line.strip() for line in errors if "error" in line.lower() or "CRC" in line]
-        )
+        return "\n".join([line.strip() for line in errors if "error" in line.lower() or "CRC" in line])
 
     @validate_huawei_ce6865_port()
     @BaseDevice.lock_session
@@ -280,7 +275,7 @@ class HuaweiCE6865(BaseDevice):
 
         self._quit_from_interface_with_commit()
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"
@@ -324,7 +319,7 @@ class HuaweiCE6865(BaseDevice):
 
         self._quit_from_interface_with_commit()
 
-        r = self.session.before.decode(errors="ignore")
+        r = (self.session.before or b"").decode(errors="ignore")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"

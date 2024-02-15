@@ -1,6 +1,6 @@
 import pathlib
 from abc import ABC, abstractmethod
-from typing import Union, Pattern
+from typing import Pattern
 
 
 class AbstractFTPCollector(ABC):
@@ -10,10 +10,10 @@ class AbstractFTPCollector(ABC):
 
     @abstractmethod
     def download_folder(
-        self, folder_or_pattern: Union[str, Pattern], local_dir: str, *args, **kwargs
+        self, folder_or_pattern: str | Pattern, local_dir: str, *args, **kwargs
     ) -> pathlib.Path:
         pass
 
     @abstractmethod
-    def download_file(self, file_or_pattern: Union[str, Pattern], local_dir: str, *args, **kwargs):
+    def download_file(self, file_or_pattern: str | Pattern, local_dir: str, *args, **kwargs):
         pass

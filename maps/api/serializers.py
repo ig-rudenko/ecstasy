@@ -10,5 +10,8 @@ class MapLayerField(serializers.CharField):
         return "None"
 
 
+GroupsType = serializers.ListSerializer[MapLayerField]
+
+
 class MapLayerSerializer(serializers.Serializer):
-    groups = serializers.ListSerializer(child=MapLayerField(), source="layers")
+    groups: GroupsType = serializers.ListSerializer(child=MapLayerField(), source="layers")

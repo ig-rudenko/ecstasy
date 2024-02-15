@@ -2,9 +2,8 @@ import io
 import re
 from functools import partial
 from time import sleep
-from typing import Literal, Tuple, List, Optional, Dict, Any
+from typing import Literal, Any
 
-import pexpect
 import textfsm
 
 from .base.device import BaseDevice
@@ -17,13 +16,13 @@ from .base.types import (
     T_MACList,
     T_MACTable,
     MACType,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 from .base.validators import validate_and_format_port
 
 
-def validate_port(port: str) -> Optional[str]:
+def validate_port(port: str) -> str | None:
     """
     Проверяем порт на валидность для D-Link.
 
@@ -77,12 +76,12 @@ class Dlink(BaseDevice):
     vendor = "D-Link"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model: str = "",
-            snmp_community: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
     ):
         """
         При инициализации повышаем уровень привилегий до уровня администратора командой:
@@ -155,7 +154,7 @@ class Dlink(BaseDevice):
     def send_command(
         self,
         command: str,
-        before_catch: Optional[str] = None,
+        before_catch: str | None = None,
         expect_command=False,
         num_of_expect=10,
         space_prompt=None,
@@ -188,16 +187,15 @@ class Dlink(BaseDevice):
 
         output = self.send_command("show ports des")
 
-        result: List[List[str]] = parse_by_template("interfaces/d-link.template", output)
+        result: list[list[str]] = parse_by_template("interfaces/d-link.template", output)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
+            status: T_Interface = "up"
             if admin_status != "Enabled":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif "Down" in link_status:
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.up.value
+                status = "down"
 
             interfaces.append((port_name, status, desc))
 
@@ -238,7 +236,7 @@ class Dlink(BaseDevice):
         port_num = set(sorted([int(re.findall(r"\d+", p[0])[0]) for p in interfaces]))
 
         # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
-        ports_vlan: Dict[str, list] = {str(num): [] for num in range(1, len(port_num) + 1)}
+        ports_vlan: dict[str, list] = {str(num): [] for num in range(1, len(port_num) + 1)}
 
         for vlan in result_vlan:
             # Преобразуем диапазон VLAN в список чисел.
@@ -284,7 +282,7 @@ class Dlink(BaseDevice):
             return "static"
 
         mac_str = self.send_command("show fdb", expect_command=False)
-        mac_table: List[Tuple[str, str, str, str]] = re.findall(
+        mac_table: list[tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",
             mac_str,
             flags=re.IGNORECASE,
@@ -307,7 +305,7 @@ class Dlink(BaseDevice):
 
         mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
         # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
-        mac_lines: List[Tuple[str, str]] = re.findall(
+        mac_lines: list[tuple[str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str
         )
         return [(int(vid), mac) for vid, mac in mac_lines]
@@ -442,7 +440,7 @@ class Dlink(BaseDevice):
         if self.session.expect([self.prompt, "Previous Page"]):
             self.session.sendline("q")
 
-        return self.session.before.decode()
+        return (self.session.before or b"").decode()
 
     @BaseDevice.lock_session
     def set_description(self, port: str, desc: str) -> dict:
@@ -555,7 +553,7 @@ class Dlink(BaseDevice):
         if "Available commands" in diag_output:
             return {}
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
             "status": "",  # Состояние на порту (Up, Down, Empty)
         }
@@ -577,9 +575,7 @@ class Dlink(BaseDevice):
                 result["status"] = match[0]  # Up или Down
         else:
             # C ошибкой
-            result["status"] = (
-                self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
-            )
+            result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
             # Смотрим по очереди 4 пары
             for i in range(1, 5):
                 # Нахождение пары по номеру `i`.
@@ -610,7 +606,7 @@ class Dlink(BaseDevice):
         self.session.sendline("show utilization " + type_)
         self.session.sendcontrol("c")
         self.session.expect(self.prompt)
-        output = self.session.before.decode("utf-8", errors="ignore")
+        output = (self.session.before or b"").decode("utf-8", errors="ignore")
 
         cpu_percent = self.find_or_empty(
             expect,
@@ -664,6 +660,11 @@ class DlinkFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         return Dlink(session, ip, auth, snmp_community=snmp_community)

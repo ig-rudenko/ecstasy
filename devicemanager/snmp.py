@@ -1,8 +1,8 @@
 import subprocess
-from re import findall, IGNORECASE
 from concurrent.futures import ThreadPoolExecutor
+from re import findall, IGNORECASE
 
-from .vendors.base.types import T_InterfaceList, InterfaceStatus
+from .vendors.base.types import T_InterfaceList, T_Interface
 
 
 def physical_interface(name: str) -> bool:
@@ -56,7 +56,7 @@ def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
     :return: [('name', 'admin status', 'oper status', 'desc'), ...]
     """
 
-    snmp_result = {
+    snmp_result: dict = {
         "IF-MIB::ifAlias": {},
         "IF-MIB::ifIndex": {},
         "IF-MIB::ifName": {},
@@ -84,24 +84,25 @@ def get_interfaces(device_ip, community, snmp_port=161) -> T_InterfaceList:
     with ThreadPoolExecutor() as snmp_executor:
         for key in snmp_result:
             snmp_executor.submit(snmpget, community, device_ip, snmp_port, key)
-    result = []
+
+    result: T_InterfaceList = []
 
     for snmp_index in snmp_result["IF-MIB::ifIndex"]:
         port_name = (
-            snmp_result["IF-MIB::ifName"].get(snmp_index)
-            or snmp_result["IF-MIB::ifDescr"][snmp_index]
+            snmp_result["IF-MIB::ifName"].get(snmp_index) or snmp_result["IF-MIB::ifDescr"][snmp_index]
         )
 
         if not physical_interface(port_name):
             continue
 
-        if snmp_result["IF-MIB::ifAdminStatus"].get(snmp_index, "") == "down":
-            status = InterfaceStatus.admin_down.value
-        elif snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "") in {"up", "down", "dormant"}:
-            snmp_status = snmp_result["IF-MIB::ifOperStatus"][snmp_index]
-            status = getattr(InterfaceStatus, snmp_status).value
-        else:
-            status = InterfaceStatus.not_present.value
+        oper_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
+        admin_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
+
+        status: T_Interface = "notPresent"
+        if admin_status == "down":
+            status = "admin down"
+        elif oper_status in {"up", "down", "dormant"}:
+            status = snmp_result["IF-MIB::ifOperStatus"][snmp_index]
 
         result.append(
             (

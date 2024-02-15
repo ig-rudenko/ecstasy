@@ -1,10 +1,7 @@
 import re
 from functools import wraps
-from typing import List, Tuple, Dict, Union
 
-import pexpect
-
-from .extra import validate_ltp_interfaces_list
+from .extra import reformat_ltp_interfaces_list
 from .ltp_4x_8x import _EltexLTPPortTypes
 from ..base.device import BaseDevice
 from ..base.types import (
@@ -29,7 +26,7 @@ def _validate_port(if_invalid_return=None):
     def validate(func):
         @wraps(func)
         def wrapper(deco_self: "EltexLTP16N", port, *args, **kwargs):
-            port_types: Dict[int, _EltexLTPPortTypes] = {
+            port_types: dict[int, _EltexLTPPortTypes] = {
                 0: {
                     "name": "front-port",
                     "max_number": 8,
@@ -41,7 +38,7 @@ def _validate_port(if_invalid_return=None):
             }
 
             # Регулярное выражения для поиска типов портов на Eltex LTP 16N
-            port_match: List[Tuple[str]] = re.findall(
+            port_match: list[tuple[str]] = re.findall(
                 r"^front[-port]*\s*(\d+)$|"  # `0` - front-port
                 r"^[gp]*on[-port]*\s*(\d+(?:[/\\]?\d*)?)$",  # `1` - ont-port | gpon-port
                 port,
@@ -101,12 +98,12 @@ class EltexLTP16N(BaseDevice):
     vendor = "Eltex"
 
     def __init__(
-            self,
-            session: pexpect,
-            ip: str,
-            auth: DeviceAuthDict,
-            model="LTP-16N",
-            snmp_community: str = "",
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model="LTP-16N",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 
@@ -133,7 +130,7 @@ class EltexLTP16N(BaseDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        interfaces = []
+        interfaces: list[tuple[str, str]] = []
 
         interfaces_front_output = self.send_command("show interface front-port 1-8 state")
         interfaces += [
@@ -147,7 +144,7 @@ class EltexLTP16N(BaseDevice):
             for line in re.findall(r"(\d+)\s+(\S+).+[\r\n]", interfaces_pon_output)
         ]
 
-        return validate_ltp_interfaces_list(interfaces)
+        return reformat_ltp_interfaces_list(interfaces)
 
     @BaseDevice.lock_session
     def get_vlans(self) -> T_InterfaceVLANList:
@@ -216,7 +213,7 @@ class EltexLTP16N(BaseDevice):
 
         if port_type == "pon-port":
             # Данные для шаблона
-            data: Dict[str, Union[int, list]] = {}
+            data: dict[str, int | list] = {}
 
             # Смотрим ONLINE ONT
             ont_online_info = self.send_command(f"show interface ont {port_number} online")

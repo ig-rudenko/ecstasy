@@ -1,5 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
+
 from celery import Task
+from django.db.models import QuerySet
 
 from app_settings.models import ZabbixConfig
 from devicemanager.device import ZabbixAPIConnection
@@ -10,9 +12,8 @@ class ThreadUpdatedStatusTask(Task):
     # Создает пул потоков, а затем отправляет задачу в пул потоков для каждого объекта в наборе запросов.
     """
 
-    name = None
-    queryset = None
-    max_workers = None
+    queryset = None  # type: QuerySet
+    max_workers = None  # type: int
 
     def __init__(self):
         """

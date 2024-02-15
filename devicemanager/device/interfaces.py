@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import List, Sequence, Optional
+from typing import Sequence
 
 import tabulate
 
@@ -17,7 +17,6 @@ class Interface:
 
     @property
     def has_desc(self):
-
         if "HUAWEI, Quidway Series" in self.desc:
             return False
 
@@ -53,7 +52,7 @@ class Interfaces:
     """
 
     @staticmethod
-    def _parse_vlans_line(vlans: list) -> List[int]:
+    def _parse_vlans_line(vlans: list) -> list[int]:
         """
         Эта функция принимает список VLAN, преобразует любые диапазоны VLAN, указанные в виде строк, в список
         целых чисел и возвращает список всех VLAN в виде целых чисел.
@@ -79,48 +78,43 @@ class Interfaces:
                 vlans_list.append(vlan)
         return vlans_list
 
-    def __init__(self, data: Optional[Sequence] = None):
-        if not data:  # Если не были переданы интерфейсы, то создаем пустой список
-            self.__interfaces = []
-        else:
-            self.__interfaces: List[Interface] = []
+    def __init__(self, data: Sequence | None = None):
+        self.__interfaces: list[Interface] = []
+        if not data:  # Если не были переданы интерфейсы
+            return
 
-            for intf in data:
-                # Если был передан словарь
-                if isinstance(intf, dict):
-                    if intf.get("Status") is None:
-                        intf["Status"] = (
-                            "admin down" if intf["Admin Status"] == "down" else intf["Link"]
-                        )
+        for intf in data:
+            # Если был передан словарь
+            if isinstance(intf, dict):
+                if intf.get("Status") is None:
+                    intf["Status"] = "admin down" if intf["Admin Status"] == "down" else intf["Link"]
 
+                self.__interfaces.append(
+                    Interface(
+                        intf["Interface"].strip(),
+                        intf["Status"],
+                        intf["Description"].strip(),
+                        self._parse_vlans_line(intf.get("VLAN's", [])),
+                    )
+                )
+
+            # Если был передан список, кортеж
+            elif isinstance(intf, (list, tuple)):
+                if len(intf) == 3:  # Без VLAN
+                    self.__interfaces.append(Interface(intf[0].strip(), intf[1], intf[2].strip(), []))
+                elif len(intf) == 4:  # + VLAN
                     self.__interfaces.append(
                         Interface(
-                            intf["Interface"].strip(),
-                            intf["Status"],
-                            intf["Description"].strip(),
-                            self._parse_vlans_line(intf.get("VLAN's", [])),
+                            intf[0].strip(),
+                            intf[1],
+                            intf[2].strip(),
+                            self._parse_vlans_line(intf[3]),
                         )
                     )
 
-                # Если был передан список, кортеж
-                elif isinstance(intf, (list, tuple)):
-                    if len(intf) == 3:  # Без VLAN
-                        self.__interfaces.append(
-                            Interface(intf[0].strip(), intf[1], intf[2].strip(), [])
-                        )
-                    elif len(intf) == 4:  # + VLAN
-                        self.__interfaces.append(
-                            Interface(
-                                intf[0].strip(),
-                                intf[1],
-                                intf[2].strip(),
-                                self._parse_vlans_line(intf[3]),
-                            )
-                        )
-
-                # Если был передан объект Interface
-                elif isinstance(intf, Interface):
-                    self.__interfaces.append(intf)
+            # Если был передан объект Interface
+            elif isinstance(intf, Interface):
+                self.__interfaces.append(intf)
 
     def __str__(self):
         if not self.__interfaces:
@@ -303,7 +297,7 @@ class Interfaces:
     @property
     def unique_vlans(self) -> list:
         """Возвращает отсортированный список VLAN'ов, которые имеются на портах"""
-        vlans = set()
+        vlans: set = set()
         for i in self.__interfaces:
             vlans = vlans.union({v for v in i.vlan if v.isdigit()})
         return sorted([int(v) for v in vlans])

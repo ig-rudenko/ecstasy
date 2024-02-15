@@ -30,9 +30,20 @@ pipeline {
                 // Активация виртуального окружения
                 sh '''#!/bin/bash
                     source ${VENV_NAME}/bin/activate
-                    pip install -r requirements.txt && pip install coverage'''
+                    pip install -r requirements.txt && pip install coverage
+                    pip install -r requirements-mypy.txt'''
                 // Возвращаем все обратно
                 sh "sed -i 's/^#mysqlclient/mysqlclient/' requirements.txt"
+            }
+        }
+
+        // Стадия запуска статического анализатора mypy
+        stage('Run mypy') {
+            steps {
+                sh '''#!/bin/bash
+                    source ${VENV_NAME}/bin/activate
+                    export DJANGO_DEBUG=1
+                    mypy app_settings check devicemanager ecstasy_project gathering gpon maps net_tools ring_manager'''
             }
         }
 

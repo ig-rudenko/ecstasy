@@ -3,8 +3,8 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
+from devicemanager import DeviceException
 from devicemanager.vendors import BaseDevice
 
 logger = logging.Logger(__file__)
@@ -36,7 +36,7 @@ class GlobalSession:
 class ConnectionPool:
     def __init__(self, max_size: int = 5):
         self._size = max_size
-        self._pool: List[GlobalSession] = []
+        self._pool: list[GlobalSession] = []
         self._created = False
         self.expired = datetime.now() + timedelta(minutes=2)
 
@@ -63,7 +63,7 @@ class ConnectionPool:
         else:
             connection.connection.session.close()
 
-    def get(self) -> Optional[GlobalSession]:
+    def get(self) -> GlobalSession | None:
         if not self.available:
             return None
 
@@ -92,8 +92,8 @@ class ConnectionPool:
 
 
 class SessionController:
-    def __init__(self):
-        self._sessions: Dict[str, ConnectionPool] = {}
+    def __init__(self) -> None:
+        self._sessions: dict[str, ConnectionPool] = {}
         self.__cleaner_running = False
 
     def has_pool(self, device_ip: str) -> bool:
@@ -121,9 +121,7 @@ class SessionController:
         if pool:
             pool.close_all()
 
-    def add_connections_to_pool(
-        self, device_ip: str, pool_size: int, connections: List[BaseDevice]
-    ) -> None:
+    def add_connections_to_pool(self, device_ip: str, pool_size: int, connections: list[BaseDevice]) -> None:
         pool = self.get_or_create_pool(device_ip, pool_size)
 
         for conn in connections:
@@ -139,9 +137,13 @@ class SessionController:
 
     def get_connection(self, device_ip) -> BaseDevice:
         pool = self._sessions.get(device_ip)
+        if pool is None:
+            raise DeviceException("Device session pool not found")
         # Продлеваем срок действия сессий еще на 2 минуты.
         pool.expired = datetime.now() + timedelta(minutes=2)
         session = pool.get()
+        if session is None:
+            raise DeviceException("Device session not found")
         return session.connection
 
     def session_cleaner(self) -> None:

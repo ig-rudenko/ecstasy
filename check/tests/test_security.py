@@ -1,12 +1,10 @@
 from django.test import TestCase
-from django.shortcuts import reverse
+from django.urls import reverse
 
 
 class NoAccessWithNoLogin(TestCase):
     def test_show_devices_home_page(self):
-        self.assertRedirects(
-            self.client.get(reverse("home")), expected_url="/accounts/login/?next=/"
-        )
+        self.assertRedirects(self.client.get(reverse("home")), expected_url="/accounts/login/?next=/")
 
     def test_device_info_page(self):
         self.assertRedirects(

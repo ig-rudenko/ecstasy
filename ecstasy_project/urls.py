@@ -16,7 +16,6 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include, re_path
-from django.views.generic import TemplateView
 from django.views.static import serve
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -32,7 +31,7 @@ from .swagger import schema_view
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
-    path("by-zabbix/<hostid>", views.by_zabbix_hostid, name="by-zabbix-hostid"),
+    path("by-zabbix/<host_id>", views.by_zabbix_host_id, name="by-zabbix-hostid"),
     path("devices", views.show_devices, name="devices-list"),
     path("device/", include("check.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
@@ -48,9 +47,7 @@ urlpatterns = [
 
 # Документация API
 urlpatterns += [
-    path(
-        "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
-    ),
+    path("swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"),
     path(
         "swagger/",
         schema_view.with_ui("swagger", cache_timeout=0),

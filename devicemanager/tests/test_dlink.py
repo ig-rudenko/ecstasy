@@ -8,7 +8,6 @@ from .base_factory_test import AbstractTestFactory
 
 
 class TestDlinkFactory(AbstractTestFactory):
-
     @staticmethod
     def get_device_class():
         return Dlink
@@ -229,9 +228,7 @@ Total Entries  : 0
             """
         elif "cable_diag ports" in command:
             self.before = self._virtual_cable_test(command)
-        elif (
-            "config ports 2 description" in command or "config ports 2 clear_description" in command
-        ):
+        elif "config ports 2 description" in command or "config ports 2 clear_description" in command:
             self.before = b"Success"
         else:
             self.before = b""
@@ -608,9 +605,16 @@ class TestDLinkPortStateControl(SimpleTestCase):
     def setUp(self) -> None:
         # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса DLink.
         self.fake_session = DLinkPexpectFaker()
-        auth = {"privilege_mode_password": ""}
         # Создание объекта Dlink с fake_session, ip-адресом и авторизацией.
-        self.dlink = Dlink(self.fake_session, "10.10.10.10", auth=auth)
+        self.dlink = Dlink(
+            self.fake_session,
+            "10.10.10.10",
+            auth={
+                "login": "login",
+                "password": "password",
+                "privilege_mode_password": "privilege_mode_password",
+            },
+        )
         self.fake_session.sent_commands = []
 
     def test_port_reload_commands(self):

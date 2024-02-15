@@ -104,7 +104,9 @@ class LogsElasticStackSettings(SingletonModel):
 
     def is_set(self):
         """Проверяет, настройки имеются или нет"""
-        return self.kibana_url and self.time_range and self.time_field and self.query_str
+        return (
+            self.kibana_url and self.time_range and self.time_field and self.query_str
+        )
 
     def query_kibana_url(self, **kwargs) -> str:
         """
@@ -112,10 +114,7 @@ class LogsElasticStackSettings(SingletonModel):
          и возвращает URL для входа в Kibana
         """
         if self.is_set():
-            try:
-                query_str = self.query_str.format(**kwargs)
-            except AttributeError:
-                query_str = ""
+            query_str = self.query_str.format(**kwargs) if self.query_str else ""
 
             return (
                 f"{self.kibana_url}?_g=(filters:!(),refreshInterval:(pause:!t,value:0),"
@@ -138,7 +137,9 @@ class ZabbixConfig(SingletonModel):
     ## Настройки для подключения к Zabbix API через http
     """
 
-    url = models.URLField(verbose_name="URL", help_text="Например: https://10.0.0.1/zabbix")
+    url = models.URLField(
+        verbose_name="URL", help_text="Например: https://10.0.0.1/zabbix"
+    )
     login = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
 
@@ -152,6 +153,7 @@ class ZabbixConfig(SingletonModel):
         super().save(*args, **kwargs)
         # Устанавливаем конфигурацию для работы с devicemanager
         from devicemanager.device import ZabbixAPIConnection
+
         ZabbixAPIConnection.set(self)
 
     class Meta:

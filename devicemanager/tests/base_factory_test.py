@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch
 from django.test import SimpleTestCase
 
 from devicemanager.multifactory import DeviceMultiFactory
+from devicemanager.vendors.base.types import DeviceAuthDict
 
 
 class AbstractTestFactory(SimpleTestCase):
@@ -13,7 +14,7 @@ class AbstractTestFactory(SimpleTestCase):
 
     def setUp(self) -> None:
         self.version_output = self.get_output_from_show_version_command()
-        self.auth_dict = {
+        self.auth_dict: DeviceAuthDict = {
             "login": "user",
             "password": "passwd",
             "privilege_mode_password": "secret",
@@ -25,14 +26,14 @@ class AbstractTestFactory(SimpleTestCase):
         """
         Возвращает класс, объект которого должен вернуться из фабрики
         """
-        pass
+        return
 
     @staticmethod
     def get_output_from_show_version_command() -> str:
         """
         Возвращает выходные данные от ввода на оборудовании команды «show version» в виде строки.
         """
-        pass
+        return ""
 
     @staticmethod
     def get_fake_session():
@@ -45,7 +46,7 @@ class AbstractTestFactory(SimpleTestCase):
     def _is_need_skip(self) -> bool:
         if not self.get_device_class() or not self.get_output_from_show_version_command():
             if self.__class__ != AbstractTestFactory:
-                raise NotImplemented(
+                raise NotImplementedError(
                     "Необходимо переопределить методы "
                     "`get_device_class` и `get_output_from_show_version_command`"
                 )

@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Optional
 
 import orjson
 from geopy.geocoders import Nominatim
@@ -24,7 +24,7 @@ class DeviceManager:
     Сканирует интерфейсы оборудования в реальном времени.
     """
 
-    def __init__(self, name, zabbix_info=True):
+    def __init__(self, name: str, zabbix_info=True):
         self.name: str = name
         self.ip: str = ""
         self._zabbix_info: ZabbixHostInfo = ZabbixHostInfo()
@@ -63,11 +63,7 @@ class DeviceManager:
             )
 
             # Инвентарные данные
-            inventory = (
-                zabbix_info[0]["inventory"].values()
-                if zabbix_info[0]["inventory"]
-                else {}
-            )
+            inventory = zabbix_info[0]["inventory"].values() if zabbix_info[0]["inventory"] else {}
             del zabbix_info[0]["inventory"]
 
             # Группы
@@ -77,7 +73,7 @@ class DeviceManager:
             self._zabbix_info = ZabbixHostInfo(
                 *zabbix_info[0].values(),
                 inventory=ZabbixInventory(*inventory),
-                hostgroups=tuple(ZabbixHostGroup(*group.values()) for group in groups),
+                hostgroups=[ZabbixHostGroup(*group.values()) for group in groups],
             )
             self._zabbix_info_collected = True
 
@@ -85,9 +81,7 @@ class DeviceManager:
                 self.ip = [
                     i
                     for i in self.zabbix_info.ip
-                    if len(self.zabbix_info.ip) > 1
-                    and i != "127.0.0.1"
-                    or len(self.zabbix_info.ip) == 1
+                    if len(self.zabbix_info.ip) > 1 and i != "127.0.0.1" or len(self.zabbix_info.ip) == 1
                 ][0]
 
     def push_zabbix_inventory(self):
@@ -122,7 +116,7 @@ class DeviceManager:
         return dev
 
     @classmethod
-    def from_hostid(cls, hostid: str) -> Union["DeviceManager", None]:
+    def from_hostid(cls, hostid: str) -> Optional["DeviceManager"]:
         """Создаем объект через переданный hostid Zabbix"""
         try:
             with ZabbixAPIConnection().connect() as zbx:
@@ -163,19 +157,13 @@ class DeviceManager:
 
         try:
             device_data_history = DevicesInfo.objects.get(dev__name=self.name)
-            json_data = (
-                device_data_history.vlans
-                if with_vlans
-                else device_data_history.interfaces
-            )
+            json_data = device_data_history.vlans if with_vlans else device_data_history.interfaces
             self.interfaces = Interfaces(orjson.loads(json_data or "[]"))
 
         except DevicesInfo.DoesNotExist:
             self.interfaces = Interfaces()
 
-    def _get_interfaces_from_connection(
-        self, with_vlans: bool, auth_obj, make_session_global=True
-    ):
+    def _get_interfaces_from_connection(self, with_vlans: bool, auth_obj, make_session_global=True):
         auth_obj = auth_obj or self.auth_obj
         if not auth_obj:
             raise AuthException("Не указан объект авторизации!", ip=self.ip)
@@ -210,9 +198,7 @@ class DeviceManager:
             self.interfaces = Interfaces(session.get_interfaces())
 
     def __str__(self):
-        return (
-            f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
-        )
+        return f'DeviceManager(name="{self.name}", ip="{"; ".join(self._zabbix_info.ip)}")'
 
     def __repr__(self):
         return self.__str__()
@@ -248,9 +234,7 @@ class DeviceManager:
                 self._location = Location(**location.raw["address"])
         return self._location
 
-    def connect(
-        self, protocol: str = None, auth_obj: Any = None, make_session_global=True
-    ) -> RemoteDevice:
+    def connect(self, protocol: str = "", auth_obj: Any = None, make_session_global=True) -> RemoteDevice:
         """
         Устанавливаем подключение к оборудованию
         """

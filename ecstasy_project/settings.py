@@ -24,7 +24,7 @@ from urllib3.exceptions import InsecureRequestWarning
 
 from gathering.ftp import FTPCollector
 
-_locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]
+_locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]  # type: ignore
 
 # Отключает warnings для `Unverified HTTPS request`
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -42,8 +42,9 @@ DEBUG = os.getenv("DJANGO_DEBUG") == "1"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
 
-if os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS"):
-    CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS").split(",")
+trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
+if trusted_origins is not None:
+    CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
 # Application definition
 INSTALLED_APPS = [
@@ -124,9 +125,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
-DATABASES = orjson.loads(
-    os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", "")
-)
+DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", ""))
 if not DATABASES:
     DATABASES = {
         "default": {
@@ -205,7 +204,6 @@ if DEBUG:
     }
 
 else:
-
     REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
 
     CACHES = {

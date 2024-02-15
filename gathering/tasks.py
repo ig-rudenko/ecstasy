@@ -7,13 +7,13 @@ from django.core.cache import cache
 from django.utils import timezone
 from pyzabbix.api import logger
 
-from ecstasy_project.task import ThreadUpdatedStatusTask
-from ecstasy_project.celery import app
 from check.models import Devices
-from .mac import MacAddressTableGather
+from ecstasy_project.celery import app
+from ecstasy_project.task import ThreadUpdatedStatusTask
 from .configurations.collector import ConfigurationGather
 from .configurations.exceptions import ConfigFileError
 from .configurations.local_storage import LocalConfigStorage
+from .mac import MacAddressTableGather
 from .models import MacAddress
 
 
@@ -65,7 +65,7 @@ def check_scanning_status() -> dict:
 
     task_id = cache.get("mac_table_gather_task_id")
     if task_id:
-        task = AsyncResult(str(task_id))
+        task: AsyncResult = AsyncResult(str(task_id))
         if task.status == "PENDING":
             return {"status": "PENDING"}
         if task.status == "PROGRESS":

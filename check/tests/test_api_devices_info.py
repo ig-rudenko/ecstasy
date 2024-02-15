@@ -15,12 +15,10 @@ from ..models import Devices, DeviceGroup, User, InterfacesComments
 
 
 class DevicesListAPIViewTestCase(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         cache.clear()
         self.url = reverse("devices-api:devices-list")
-        self.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+        self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
@@ -58,12 +56,10 @@ class DevicesListAPIViewTestCase(APITestCase):
 
 
 class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         cache.clear()
         self.url = reverse("devices-api:all-devices-interfaces-workload")
-        self.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+        self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
 
         self.user.profile.devices_groups.add(self.group)
@@ -178,9 +174,7 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
     def test_get_interfaces_load(self):
         # Test with device that has one up and one down interface
-        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(
-            self.device_info
-        )
+        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(self.device_info)
         self.assertEqual(interfaces_load["count"], 7)
         self.assertEqual(interfaces_load["abons"], 6)
         self.assertEqual(interfaces_load["abons_up"], 2)
@@ -192,9 +186,7 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
         # Test with device that has no interface
         device = DevicesInfo()
-        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(
-            device
-        )
+        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(device)
         self.assertEqual(interfaces_load["count"], 0)
         self.assertEqual(interfaces_load["abons"], 0)
         self.assertEqual(interfaces_load["abons_up"], 0)
@@ -202,10 +194,8 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
 
 class DeviceInterfacesAPIViewTestCase(APITestCase):
-    def setUp(self):
-        self.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+    def setUp(self) -> None:
+        self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
@@ -274,7 +264,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
                         "Comments": [
                             {
                                 "text": self.comment.comment,
-                                "user": self.comment.user.username,
+                                "user": self.comment.user.username if self.comment.user else "Anonymous",
                                 "id": self.comment.id,
                                 "createdTime": self.comment.datetime.isoformat(),
                             }
@@ -302,11 +292,14 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock.push_zabbix_inventory.assert_called_once()
 
         # Проверяем, что полученные интерфейсы с VLAN были записаны в базу
-        self.assertListEqual(orjson.loads(device_info.vlans), interfaces)
+        self.assertListEqual(
+            orjson.loads(device_info.vlans or "[]"),
+            interfaces,
+        )
 
         # А также записаны интерфейсы без VLAN
         self.assertListEqual(
-            orjson.loads(device_info.interfaces),
+            orjson.loads(device_info.interfaces or "[]"),
             [
                 {
                     "Interface": line["Interface"],
@@ -338,7 +331,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Получаем свежие данные
-        device_info = DevicesInfo.objects.get(dev=self.device)
+        device_info: DevicesInfo = DevicesInfo.objects.get(dev=self.device)
         device = Devices.objects.get(id=self.device.id)
 
         # В базе должны были остаться без изменения поля
@@ -361,7 +354,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         # НО записаны интерфейсы без VLAN
         self.assertListEqual(
-            orjson.loads(device_info.interfaces),
+            orjson.loads(device_info.interfaces or "[]"),
             [
                 {
                     "Interface": line["Interface"],
@@ -374,10 +367,8 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
 
 class DeviceInfoAPIViewTestCase(APITestCase):
-    def setUp(self):
-        self.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+    def setUp(self) -> None:
+        self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
@@ -397,9 +388,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
         expected_data = {
             "deviceName": self.device.name,
             "deviceIP": self.device.ip,
-            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(
-                device=self.device
-            ),
+            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
             "zabbixInfo": {"description": "", "inventory": {}},
@@ -420,10 +409,8 @@ class DeviceInfoAPIViewTestCase(APITestCase):
 
 
 class TestDeviceStatsInfoAPIView(APITestCase):
-    def setUp(self):
-        self.user: User = User.objects.create_user(
-            username="test_user", password="password"
-        )
+    def setUp(self) -> None:
+        self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
@@ -437,7 +424,6 @@ class TestDeviceStatsInfoAPIView(APITestCase):
 
     @patch("check.models.Devices.connect")
     def test_device_stats_info_api_view(self, mock_connect: Mock):
-
         # Делаем так, чтобы оборудование было доступно
         self.device.ip = "127.0.0.1"
         self.device.save()
@@ -493,9 +479,7 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         self.client.force_authenticate(user=user)
 
         # DevicePermission разрешает только владельцу устройства доступ
-        url = reverse(
-            "devices-api:device-stats-info", kwargs={"device_name": self.device.name}
-        )
+        url = reverse("devices-api:device-stats-info", kwargs={"device_name": self.device.name})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

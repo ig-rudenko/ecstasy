@@ -16,13 +16,21 @@ __all__ = ["HuaweiFactory"]
 class HuaweiFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and re.search(
-            r"Unrecognized command|% Unknown command", str(version_output)
+        return bool(
+            version_output
+            and re.search(
+                r"Unrecognized command|% Unknown command", str(version_output)
+            )
         )
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         if "Unrecognized command" in version_output:
             version = cls.send_command(session, "display version")
@@ -50,7 +58,9 @@ class HuaweiFactory(AbstractDeviceFactory):
             version_output = ""
             session.sendline("display version")
             while True:
-                match = session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
+                match = session.expect(
+                    [r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"]
+                )
                 if match == 5:
                     session.expect(r"\}:")
                     session.sendline("\n")
@@ -63,9 +73,13 @@ class HuaweiFactory(AbstractDeviceFactory):
                 else:
                     break
             if re.findall(r"VERSION : MA5600", version_output):
-                model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version_output)
+                model = BaseDevice.find_or_empty(
+                    r"VERSION : (MA5600\S+)", version_output
+                )
                 return HuaweiMA5600T(
                     session, ip, auth, model=model, snmp_community=snmp_community
                 )
 
-        raise UnknownDeviceError("HuaweiFactory не удалось распознать модель оборудования", ip=ip)
+        raise UnknownDeviceError(
+            "HuaweiFactory не удалось распознать модель оборудования", ip=ip
+        )

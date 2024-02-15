@@ -1,16 +1,16 @@
 """
 Модуль предоставляет функциональность для создания Excel-файлов на основе переданной выборки из модели.
 """
-
-# pylint: disable=maybe-no-member, missing-function-docstring
-
-import xlwt
 import orjson
+import xlwt
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
 
 from devicemanager.device import Interfaces
+
+
+# pylint: disable=maybe-no-member, missing-function-docstring
 
 
 class ExcelExport:
@@ -29,13 +29,13 @@ class ExcelExport:
     """
 
     # Список полей из queryset, которые будут использоваться для формирования выборки.
-    queryset_values = []
+    queryset_values: list[str] = []
 
     # Список полей, которые будут использоваться для формирования join запроса,
     # с целью оптимизации скорости выборки.
-    select_related = []
+    select_related: list[str] = []
 
-    excel_headers = []  # Список заголовков столбцов excel файла.
+    excel_headers: list[str] = []  # Список заголовков столбцов excel файла.
     sheet_name = "data"  # имя листа в excel файле.
 
     def __init__(self, queryset: QuerySet):
@@ -43,14 +43,14 @@ class ExcelExport:
             queryset = queryset.select_related(select_related_field)
 
         # Формируем данные
-        self._queryset: QuerySet[dict] = queryset.values(*self.queryset_values)
+        self._queryset: QuerySet = queryset.values(*self.queryset_values)
 
         # Создаем excel
         self._wb = xlwt.Workbook()
         self._sheet = self._wb.add_sheet(self.sheet_name)
 
         # Словарь в который можно помещать значения некоторых колонок для суммирования значений
-        self.total = {}
+        self.total: dict[str, int] = {}
 
     @staticmethod
     def get_file_name() -> str:

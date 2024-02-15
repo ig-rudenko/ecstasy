@@ -1,5 +1,6 @@
 import re
 
+from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest
 
 from ecstasy_project.protected_serve import BaseServeLimitation
@@ -12,19 +13,14 @@ class MapMediaServeLimitation(BaseServeLimitation):
     """
 
     @staticmethod
-    def check(request: HttpRequest, path, document_root=None, show_indexes=False) -> bool:
-        has_permission = False
-        for group in request.user.groups.all():
-            has_permission = (
-                group.permissions.filter(
-                    codename__in=["add_layers", "change_layers", "delete_layers", "view_layers"]
-                ).count()
-                > 0
-            )
-            if has_permission:
-                break
-
-        if request.user and (request.user.is_superuser or has_permission):
+    def check(request: WSGIRequest | HttpRequest, path, document_root=None, show_indexes=False) -> bool:
+        if (
+            request.user.is_superuser
+            or request.user.has_perm("maps.view_layers")
+            or request.user.has_perm("maps.add_layers")
+            or request.user.has_perm("maps.change_layers")
+            or request.user.has_perm("maps.delete_layers")
+        ):
             return True
         if re.match("^map_layer_files", path):
             return False

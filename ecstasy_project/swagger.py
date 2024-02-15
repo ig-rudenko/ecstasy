@@ -1,8 +1,7 @@
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
+from django.conf import settings
 from django.urls import path, include
-from django.contrib.staticfiles.utils import settings
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -11,7 +10,10 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenVerifyView,
 )
+
 from gathering.api.views import MacTraceroute
+
+access_token_lifetime_seconds: float = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60  # type: ignore
 
 # Это представление для пользовательского интерфейса Swagger.
 schema_view = get_schema_view(
@@ -24,7 +26,7 @@ schema_view = get_schema_view(
 
 Для работы с каждым endpoint `требуется токен` (JWT). Получить можно по URL `/api/token`.
 
-Время жизни access токена - `{settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60} минут`
+Время жизни access токена - `{access_token_lifetime_seconds} минут`
 Время жизни refresh токена - `{settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
         """,
         contact=openapi.Contact(

@@ -41,7 +41,7 @@ class TracerouteNodeSerializer(serializers.Serializer):
     group = serializers.IntegerField(min_value=0)
     hidden = serializers.BooleanField(required=False)
     id = serializers.IntegerField(min_value=0)
-    label = serializers.CharField(label="Может быть и строкой и числом")
+    label = serializers.CharField(label="Может быть и строкой и числом")  # type: ignore
     shape = serializers.CharField()
     value = serializers.IntegerField(min_value=1)
     font = NodeFontSerializer()
@@ -50,7 +50,7 @@ class TracerouteNodeSerializer(serializers.Serializer):
 class TracerouteEdgeSerializer(serializers.Serializer):
     value = serializers.IntegerField()
     title = serializers.CharField()
-    from_ = serializers.IntegerField(source='from', help_text="По факту вернется поле `from`")
+    from_ = serializers.IntegerField(source="from", help_text="По факту вернется поле `from`")
     to = serializers.IntegerField()
 
 

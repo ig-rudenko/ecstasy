@@ -1,27 +1,29 @@
+from typing import Type
+
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import exceptions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from check import models
 from check.permissions import profile_permission
 from gathering.configurations.collector import ConfigurationGather
 from gathering.configurations.exceptions import ConfigFileError
 from gathering.configurations.local_storage import LocalConfigStorage, ConfigStorage
-from ..permissions import DevicePermission
 from ..filters import DeviceFilter
+from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
 
 
 class BaseConfigStorageAPIView(APIView):
-    config_storage = None
+    config_storage: Type[ConfigStorage] | None = None
 
-    def get_storage(self, device_name: str, file_name: str = None) -> ConfigStorage:
+    def get_storage(self, device_name: str, file_name: str | None = None) -> ConfigStorage:
         """
         ## Эта функция проверяет, что имя устройства является допустимым
         А также файл конфигурации верный
@@ -31,15 +33,13 @@ class BaseConfigStorageAPIView(APIView):
         :return: Хранилище для конфигураций
         """
 
-        if not issubclass(self.config_storage, ConfigStorage):
-            raise NotImplementedError(
-                "Хранилище конфигурация должно наследоваться от ConfigStorage"
-            )
+        if self.config_storage is None or not issubclass(self.config_storage, ConfigStorage):
+            raise NotImplementedError("Хранилище конфигураций должно наследоваться от ConfigStorage")
 
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(self.request, device)
 
-        storage = self.config_storage(device)
+        storage: ConfigStorage = self.config_storage(device)
 
         if file_name is None:
             return storage

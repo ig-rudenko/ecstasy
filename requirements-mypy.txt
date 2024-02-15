@@ -1,0 +1,12 @@
+mypy
+celery-types
+types-pexpect
+django-stubs
+django-filter-stubs
+djangorestframework-stubs
+types-Markdown
+types-Pygments
+types-psycopg2
+types-pysftp
+types-tabulate
+drf-yasg-stubs

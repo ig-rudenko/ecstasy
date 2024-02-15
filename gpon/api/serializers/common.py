@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from gpon.api.serializers.address import AddressSerializer
-from gpon.models import End3, Customer, SubscriberConnection
+from .address import AddressSerializer
+from .types import ServicesType
+from ...models import End3, Customer, SubscriberConnection
 
 
 class End3Serializer(serializers.ModelSerializer):
@@ -14,15 +15,9 @@ class End3Serializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    firstName = serializers.CharField(
-        source="first_name", allow_null=True, allow_blank=True
-    )
-    lastName = serializers.CharField(
-        source="last_name", allow_null=True, allow_blank=True
-    )
-    companyName = serializers.CharField(
-        source="company_name", allow_null=True, allow_blank=True
-    )
+    firstName = serializers.CharField(source="first_name", allow_null=True, allow_blank=True)
+    lastName = serializers.CharField(source="last_name", allow_null=True, allow_blank=True)
+    companyName = serializers.CharField(source="company_name", allow_null=True, allow_blank=True)
 
     class Meta:
         model = Customer
@@ -54,7 +49,7 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 class SubscriberConnectionSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
-    services = serializers.ListSerializer(child=serializers.CharField())
+    services: ServicesType = serializers.ListSerializer(child=serializers.CharField())
     status = serializers.CharField(source="tech_capability.status")
     end3Port = serializers.IntegerField(source="tech_capability.number")
     customer = CustomerSerializer()

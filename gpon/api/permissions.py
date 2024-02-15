@@ -4,10 +4,10 @@ from rest_framework.views import APIView
 
 
 class UserBasePermission(BasePermission):
-    safe_permissions_list = []
-    create_permissions_list = []
-    update_permissions_list = []
-    delete_permissions_list = []
+    safe_permissions_list: list[str] = []
+    create_permissions_list: list[str] = []
+    update_permissions_list: list[str] = []
+    delete_permissions_list: list[str] = []
 
     def __init__(self):
         super().__init__()
@@ -23,25 +23,24 @@ class UserBasePermission(BasePermission):
             return "У вас нет доступа для изменения данного элемента"
         elif self.method == "DELETE":
             return "У вас нет доступа для удаления данной записи"
+        return "Данный метод не разрешен"
 
     def has_permission(self, request: Request, view: APIView) -> bool:
         self.method = request.method
         if request.method in SAFE_METHODS:
-            return self.safe_permissions_list and request.user.has_perms(
-                self.safe_permissions_list,
+            return bool(
+                self.safe_permissions_list
+                and request.user.has_perms(
+                    self.safe_permissions_list,
+                )
             )
         elif request.method == "POST":
-            return self.create_permissions_list and request.user.has_perms(
-                self.create_permissions_list
-            )
+            return bool(self.create_permissions_list and request.user.has_perms(self.create_permissions_list))
         elif request.method in ["PUT", "PATCH"]:
-            return self.update_permissions_list and request.user.has_perms(
-                self.update_permissions_list
-            )
+            return bool(self.update_permissions_list and request.user.has_perms(self.update_permissions_list))
         elif request.method == "DELETE":
-            return self.delete_permissions_list and request.user.has_perms(
-                self.delete_permissions_list
-            )
+            return bool(self.delete_permissions_list and request.user.has_perms(self.delete_permissions_list))
+        return False
 
 
 class TechDataPermission(UserBasePermission):

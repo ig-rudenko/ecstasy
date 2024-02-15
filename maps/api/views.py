@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 
 import orjson
+from django.db.models import QuerySet
 from django.template.loader import render_to_string
 from pyzabbix import ZabbixAPI
 from requests import RequestException
@@ -77,11 +78,7 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         - "features": словарь, содержащий данные, полученные из Zabbix для данного слоя.
          Если группа Zabbix существует, ключ «features» будет содержать данные
         """
-        layer_data = {
-            "name": layer.zabbix_group_name,
-            "type": "zabbix",
-            "features": {},
-        }
+
         try:
             zbx = self.get_zbx_session()
         except RequestException:
@@ -90,18 +87,22 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         # Находим группу в Zabbix
         group = zbx.hostgroup.get(filter={"name": layer.zabbix_group_name})
 
-        if group:  # Если такая группа существует
+        features: dict = {}
+        if group and layer.zabbix_group_name is not None:  # Если такая группа существует
             # Добавление результата функции `zabbix_get` в список `geo_json["features"]`
-            layer_data["features"] = self.get_zbx_group_data(
+            features = self.get_zbx_group_data(
                 group_id=int(group[0]["groupid"]),
                 group_name=layer.zabbix_group_name,
                 current_layer=layer,
             )
-        return layer_data
 
-    def get_zbx_group_data(
-        self, group_id: int, group_name: str, current_layer: Layers
-    ) -> dict:
+        return {
+            "name": layer.zabbix_group_name,
+            "type": "zabbix",
+            "features": features,
+        }
+
+    def get_zbx_group_data(self, group_id: int, group_name: str, current_layer: Layers) -> dict:
         """
         Эта функция извлекает данные для указанной группы Zabbix, включая информацию
         о хосте и данные о местоположении, и возвращает их в формате GEOJSON.
@@ -115,7 +116,7 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
          и ключ "features" со списком словарей в качестве значения. Каждый словарь в списке
          «features» представляет хост Zabbix и содержит информацию о его расположении и свойствах.
         """
-        result = {"type": "FeatureCollection", "features": []}
+        features: list[dict] = []
 
         try:
             zbx = self.get_zbx_session()
@@ -143,18 +144,16 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
                 )
             )
 
-            result["features"].append(
+            features.append(
                 {
                     "type": "Feature",
                     "id": host["hostid"],
                     "geometry": self._get_geometry_for_zbx_host(host),
-                    "properties": self._get_properties_for_zbx_host(
-                        host, group_name, current_layer
-                    ),
+                    "properties": self._get_properties_for_zbx_host(host, group_name, current_layer),
                 }
             )
 
-        return result
+        return {"type": "FeatureCollection", "features": features}
 
     @staticmethod
     def _is_valid_zbx_host(host: dict) -> bool:
@@ -175,9 +174,7 @@ class InteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
             ],
         }
 
-    def _get_properties_for_zbx_host(
-        self, host: dict, group_name: str, current_layer: Layers
-    ) -> dict:
+    def _get_properties_for_zbx_host(self, host: dict, group_name: str, current_layer: Layers) -> dict:
         return {
             "name": host["name"],
             "description": self._get_description_for_zbx_host(host),
@@ -280,10 +277,13 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
 
         map_obj: Maps = self.get_object()
 
-        groups = map_obj.layers.all().values_list("zabbix_group_name", flat=True)
+        layers: QuerySet[Layers] = map_obj.layers.all()
+
+        groups = layers.values_list("zabbix_group_name", flat=True)
         problem_hosts = []
         for group_name in groups:
-            problem_hosts += self.get_group_problems(group_name)
+            if group_name is not None:
+                problem_hosts += self.get_group_problems(group_name)
 
         return Response({"problems": problem_hosts})
 
@@ -319,9 +319,7 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         hosts_id = [
             host["hostid"]
             # Получение всех хостов в группе с заданным идентификатором группы.
-            for host in zbx.host.get(
-                groupids=[zabbix_group_id], output=["hostid"], filter={"status": "0"}
-            )
+            for host in zbx.host.get(groupids=[zabbix_group_id], output=["hostid"], filter={"status": "0"})
         ]
 
         # Получение проблемы узла сети из Zabbix.
@@ -333,9 +331,7 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         )
 
         # Перебор списка проблем.
-        problems = [
-            self.get_host_acknowledges(problem) for problem in hosts_problems_list
-        ]
+        problems = [self.get_host_acknowledges(problem) for problem in hosts_problems_list]
         return problems
 
     def get_host_acknowledges(self, problem: dict) -> dict:
@@ -353,9 +349,7 @@ class UpdateInteractiveMapAPIView(ZabbixSessionMixin, generics.RetrieveAPIView):
         except RequestException:
             return {}
 
-        host_id = zbx.item.get(
-            triggerids=[problem["objectid"]], output=["hostid", "name"]
-        )
+        host_id = zbx.item.get(triggerids=[problem["objectid"]], output=["hostid", "name"])
 
         acknowledges = [
             [

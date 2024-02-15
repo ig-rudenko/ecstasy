@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Literal, Type, Union, Tuple, Sequence, List
+from typing import Literal, Type, Sequence
 
 import requests
 
@@ -41,9 +41,7 @@ class RemoteDevice(AbstractDevice):
 
     def _handle_error(self, error: dict):
         if hasattr(exceptions, error["type"]):
-            SomeException: Type[exceptions.BaseDeviceException] = getattr(
-                exceptions, error["type"]
-            )
+            SomeException: Type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
             raise SomeException(error["message"], ip=self.ip)
         else:
             raise exceptions.DeviceException(error["message"], ip=self.ip)
@@ -79,9 +77,7 @@ class RemoteDevice(AbstractDevice):
     @staticmethod
     def _handle_response(resp):
         if "filename" in resp.headers.get("Content-Disposition", ""):
-            file_name_match = re.findall(
-                r"filename=(\S+)", resp.headers.get("Content-Disposition")
-            )
+            file_name_match = re.findall(r"filename=(\S+)", resp.headers.get("Content-Disposition"))
             file_name = file_name_match[0] if file_name_match else "file_name"
             return resp.content, file_name
 
@@ -103,17 +99,13 @@ class RemoteDevice(AbstractDevice):
     def reload_port(self, port: str, save_config=True) -> str:
         return self._remote_call("reload_port", port=port, save_config=save_config)
 
-    def set_port(
-        self, port: str, status: Literal["up", "down"], save_config=True
-    ) -> str:
-        return self._remote_call(
-            "set_port", port=port, status=status, save_config=save_config
-        )
+    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
+        return self._remote_call("set_port", port=port, status=status, save_config=save_config)
 
     def save_config(self):
         return self._remote_call("save_config")
 
-    def set_description(self, port: str, desc: str) -> SetDescriptionResult:
+    def set_description(self, port: str, desc: str) -> SetDescriptionResult:  # type: ignore
         result = self._remote_call("set_description", port=port, desc=desc)
         return SetDescriptionResult(**result)
 
@@ -135,7 +127,7 @@ class RemoteDevice(AbstractDevice):
     def virtual_cable_test(self, port: str) -> dict:
         return self._remote_call("virtual_cable_test", port=port)
 
-    def get_current_configuration(self) -> Tuple[Union[str, bytes], str]:
+    def get_current_configuration(self) -> tuple[str | bytes, str]:
         return self._remote_call("get_current_configuration")
 
     def set_poe_out(self, port: str, status: str):
@@ -150,11 +142,11 @@ class RemoteDevice(AbstractDevice):
     def cut_access_user_session(self, mac: str):
         return self._remote_call("cut_access_user_session", mac=mac)
 
-    def search_ip(self, ip_address: str) -> List[ArpInfoResult]:
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         result = self._remote_call("search_ip", ip_address=ip_address)
         return list(map(lambda r: ArpInfoResult(*r), result))
 
-    def search_mac(self, mac_address: str) -> List[ArpInfoResult]:
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         print(mac_address)
         result = self._remote_call("search_mac", mac_address=mac_address)
         return list(map(lambda r: ArpInfoResult(*r), result))
@@ -166,6 +158,4 @@ class RemoteDevice(AbstractDevice):
         vlans: Sequence[int],
         tagged: bool = True,
     ) -> T_MACTable:
-        return self._remote_call(
-            "vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged
-        )
+        return self._remote_call("vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged)

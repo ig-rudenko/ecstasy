@@ -1,8 +1,10 @@
+from django.contrib.auth.models import AnonymousUser
+
 from . import models
 from .logger import django_actions_logger
 
 
-def log(user: models.User, model_device: (models.Devices, models.Bras), operation: str):
+def log(user: models.User | AnonymousUser, model_device: models.Devices | models.Bras, operation: str):
     """
     ## Записывает логи о действиях пользователя
 
@@ -27,7 +29,7 @@ def log(user: models.User, model_device: (models.Devices, models.Bras), operatio
 
     # В базу
     # Получение максимальной длины поля «действие» в модели UsersActions.
-    operation_max_length = models.UsersActions._meta.get_field("action").max_length
+    operation_max_length: int = models.UsersActions._meta.get_field("action").max_length or 100
     if len(operation) > operation_max_length:
         operation = operation[:operation_max_length]
 

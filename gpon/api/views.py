@@ -43,9 +43,7 @@ from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 
 class ListUserPermissions(GenericAPIView):
     def get(self, *args, **kwargs):
-        permissions = filter(
-            lambda x: x.startswith("gpon"), self.request.user.get_all_permissions()
-        )
+        permissions = filter(lambda x: x.startswith("gpon"), self.request.user.get_all_permissions())
         return Response(permissions)
 
 
@@ -57,7 +55,7 @@ class TechDataListCreateAPIView(GenericAPIView):
     permission_classes = [TechDataPermission]
 
     cache_key = "gpon:api:TechDataListCreateAPIView:get"
-    cache_timeout = 1
+    cache_timeout = 10  # секунд.
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -68,17 +66,16 @@ class TechDataListCreateAPIView(GenericAPIView):
         if data:
             return Response(data)
 
-        buildings = HouseB.objects.all().select_related("address")
-
+        buildings: QuerySet[HouseB] = HouseB.objects.all().select_related("address")
         for house in buildings:
-            house: HouseB
-            for house_olt_state in (
+            house_olt_states_queryset: QuerySet[HouseOLTState] = (
                 house.house_olt_states.all()
                 .select_related("statement", "statement__device")
                 .prefetch_related("end3_set")
-            ):
-                house_olt_state: HouseOLTState
-                end3: End3 = house_olt_state.end3_set.first()
+            )
+            for house_olt_state in house_olt_states_queryset:
+                end3: End3 | None = house_olt_state.end3_set.first()
+
                 data.append(
                     {
                         **OLTStateSerializer(instance=house_olt_state.statement).data,
@@ -115,9 +112,7 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
         olt_port = self.request.GET.get("port")
 
         try:
-            return OLTState.objects.select_related("device").get(
-                device__name=device_name, olt_port=olt_port
-            )
+            return OLTState.objects.select_related("device").get(device__name=device_name, olt_port=olt_port)
         except OLTState.DoesNotExist:
             raise ValidationError(
                 f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
@@ -150,18 +145,14 @@ class BuildingsAddressesListAPIView(ListAPIView):
             return queryset
 
         try:
-            olt_state: OLTState = OLTState.objects.get(
-                olt_port=port, device__name=device
-            )
+            olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
         except OLTState.DoesNotExist:
             return queryset.none()
         addresses_ids = set()
-        for house_olt_state in olt_state.house_olt_states.all():
-            house_olt_state: HouseOLTState
+        house_olt_states_queryset: QuerySet[HouseOLTState] = olt_state.house_olt_states.all()
+        for house_olt_state in house_olt_states_queryset:
             addresses_ids |= set(
-                house_olt_state.end3_set.all()
-                .select_related("address")
-                .values_list("address", flat=True)
+                house_olt_state.end3_set.all().select_related("address").values_list("address", flat=True)
             )
 
         return queryset.filter(address_id__in=addresses_ids)
@@ -180,9 +171,7 @@ class DevicesNamesListAPIView(GenericAPIView):
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
         if self.request.user.is_authenticated:
-            group_ids = self.request.user.profile.devices_groups.all().values_list(
-                "id", flat=True
-            )
+            group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         else:
             group_ids = []
         return Devices.objects.filter(group_id__in=group_ids)

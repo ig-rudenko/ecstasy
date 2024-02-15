@@ -1,7 +1,4 @@
 import re
-from typing import List
-
-import pexpect
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
@@ -10,8 +7,8 @@ from .base.types import (
     T_InterfaceList,
     T_InterfaceVLANList,
     T_MACList,
-    InterfaceStatus,
     DeviceAuthDict,
+    T_Interface,
 )
 
 
@@ -21,7 +18,12 @@ class ProCurve(BaseDevice):
     vendor = "ProCurve"
 
     def __init__(
-            self, session: pexpect, ip: str, auth: DeviceAuthDict, model="", snmp_community: str = ""
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model="",
+        snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
         sys_info = self.send_command(
@@ -38,23 +40,18 @@ class ProCurve(BaseDevice):
         result = []
         raw_intf_status = self.send_command("show interfaces brief", expect_command=False)
 
-        intf_status: List[str] = parse_by_template(
-            "interfaces/procurve_status.template", raw_intf_status
-        )
+        intf_status: list[str] = parse_by_template("interfaces/procurve_status.template", raw_intf_status)
 
         for line in intf_status:
             port = self.find_or_empty(r"[ABCD]*\d+", line[0])
-            port_output = self.send_command(
-                f"show interfaces ethernet {port}", expect_command=False
-            )
+            port_output = self.send_command(f"show interfaces ethernet {port}", expect_command=False)
             desc = re.findall(r"Name\s*(:\s*\S*)\W+Link", port_output)
 
+            status: T_Interface = "down"
             if line[1].strip() != "Yes":
-                status = InterfaceStatus.admin_down.value
+                status = "admin down"
             elif line[2].strip().lower() == "up":
-                status = InterfaceStatus.down.value
-            else:
-                status = InterfaceStatus.down.value
+                status = "up"
 
             result.append(
                 (
@@ -106,6 +103,11 @@ class ProCurveFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
     ) -> BaseDevice:
         return ProCurve(session, ip, auth, snmp_community=snmp_community)

@@ -1,5 +1,3 @@
-from typing import List
-
 from django.http import HttpResponseForbidden, HttpRequest
 from django.views.static import serve
 
@@ -28,8 +26,8 @@ class ProtectedServe:
     и возвращает сообщение об ошибке, если доступ запрещен.
     """
 
-    def __init__(self):
-        self._limitations: List[BaseServeLimitation] = []
+    def __init__(self) -> None:
+        self._limitations: list[BaseServeLimitation] = []
 
     def add_limitation(self, limitation: BaseServeLimitation):
         self._limitations.append(limitation)

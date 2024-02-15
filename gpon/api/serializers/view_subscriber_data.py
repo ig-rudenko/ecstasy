@@ -1,18 +1,18 @@
 import re
-from typing import List
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from gpon.models import (
+from .address import AddressSerializer
+from .common import CustomerSerializer, End3Serializer
+from .types import ServicesType
+from ...models import (
     Customer,
     SubscriberConnection,
     HouseOLTState,
     Service,
     TechCapability,
 )
-from .address import AddressSerializer
-from .common import CustomerSerializer, End3Serializer
 
 
 class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):
@@ -31,7 +31,7 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     address = AddressSerializer()
-    services = serializers.ListSerializer(child=serializers.CharField())
+    services: ServicesType = serializers.ListSerializer(child=serializers.CharField())
     status = serializers.CharField(source="tech_capability.status")
     tech_capability_id = serializers.PrimaryKeyRelatedField(
         source="tech_capability", queryset=TechCapability.objects.all()
@@ -68,7 +68,7 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             raise ValidationError("Неверный MAC адрес")
         return "".join(mac)
 
-    def validate_services(self, values: List[str]) -> List[str]:
+    def validate_services(self, values: list[str]) -> list[str]:
         if not values:
             return values
         if Service.objects.filter(name__in=values).count() != len(values):

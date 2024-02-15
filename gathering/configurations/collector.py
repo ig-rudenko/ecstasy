@@ -1,16 +1,14 @@
 import hashlib
 import re
-from typing import Union
 
+from devicemanager.remote.exceptions import InvalidMethod
+from gathering.ftp.exceptions import FTPCollectorError
 from .base import ConfigStorage
 from .exceptions import ConfigFileError
-from gathering.ftp.exceptions import FTPCollectorError
-from devicemanager.remote.exceptions import InvalidMethod
 
 
 class ConfigurationGather:
     def __init__(self, storage: ConfigStorage):
-
         self.storage = storage
         self.files = self.storage.files_list()
 
@@ -25,7 +23,7 @@ class ConfigurationGather:
         for file in self.files[:-10]:
             self.storage.delete(file.name)
 
-    def _save_by_content(self, current_config: Union[str, bytes], file_format: str) -> bool:
+    def _save_by_content(self, current_config: str | bytes, file_format: str) -> bool:
         """
         ## Берет текущую конфигурацию, удаляет все пробелы, хеширует ее и сравниваем с последней конфигурацией.
         Если они совпадают, то возвращает False.
@@ -40,30 +38,32 @@ class ConfigurationGather:
         unformatted_config = current_config
 
         read_mode = "rb"
-        last_config: bytes = b""
+        last_config_bytes: bytes = b""
 
         if isinstance(current_config, str):
             read_mode = "r"
-            current_config: bytes = self.re_pattern_space.sub("", current_config).encode()
+            current_config_bytes: bytes = self.re_pattern_space.sub("", current_config).encode()
+        else:
+            current_config_bytes = current_config
 
         if self.last_config_file:
+            last_config_text = ""
             try:
                 # Открытие файла в режиме чтения.
                 with self.storage.open(self.last_config_file.name, mode=read_mode) as file:
                     # Чтение последнего файла конфигурации.
-                    last_config = file.read()
+                    last_config_text = file.read()
             # Резервный вариант, когда файл не в формате ascii или отсутствует.
             except (UnicodeError, FileNotFoundError):
-                last_config: str = ""
+                pass
 
-        if isinstance(last_config, str):
-            last_config: bytes = self.re_pattern_space.sub("", last_config).encode()
+            last_config_bytes = self.re_pattern_space.sub("", last_config_text).encode()
 
         # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        current_config_hash = hashlib.sha3_224(current_config).hexdigest()
+        current_config_hash = hashlib.sha3_224(current_config_bytes).hexdigest()
 
         # Берем прошлую конфигурацию и удаляем все пробелы, а затем хешируем ее.
-        last_config_hash = hashlib.sha3_224(last_config).hexdigest()
+        last_config_hash = hashlib.sha3_224(last_config_bytes).hexdigest()
 
         # Проверяем, совпадает ли last_config с current_config.
         if last_config_hash == current_config_hash:
@@ -78,7 +78,7 @@ class ConfigurationGather:
 
         return True
 
-    def save_config(self, new_config: Union[str, bytes], file_name: str) -> bool:
+    def save_config(self, new_config: str | bytes, file_name: str) -> bool:
         """
         Сохраняем конфигурацию в зависимости от типа (str или bytes)
         """

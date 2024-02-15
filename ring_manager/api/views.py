@@ -91,15 +91,17 @@ class GetLastSolutionsAPIView(generics.GenericAPIView):
 
     @ring_valid
     def get(self, request, ring_name: str):
-        ring = get_object_or_404(TransportRing, name=ring_name)
+        ring: TransportRing = get_object_or_404(TransportRing, name=ring_name)
         self.check_object_permissions(request, ring)
 
-        last_solutions_time = 0
+        last_solutions_time = 0.0
         solutions = Solutions()
 
         # Есть ли какие-либо решения и не истек ли срок действия последнего решения.
-        if ring.solutions and not SolutionsPerformer.is_solution_expired(
-            ring.solution_time
+        if (
+            ring.solutions
+            and ring.solution_time is not None
+            and not SolutionsPerformer.is_solution_expired(ring.solution_time)
         ):
             solutions = Solutions.from_ring_history(ring)
             last_solutions_time = ring.solution_time.timestamp()
@@ -164,9 +166,7 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         self.check_object_permissions(request, ring)
 
         if ring.status == ring.IN_PROCESS:
-            return Response(
-                {"error": "Кольцо уже разворачивается в данный момент"}, status=400
-            )
+            return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
 
         ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
         try:

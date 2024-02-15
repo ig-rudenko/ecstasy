@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 from datetime import datetime
-from typing import IO, List
+from typing import IO
 
 from django.conf import settings
 
@@ -26,9 +26,7 @@ class LocalConfigStorage(ConfigStorage):
 
     def check_storage(self) -> bool:
         # Проверяем наличие переменной
-        if not settings.CONFIG_STORAGE_DIR or not isinstance(
-            settings.CONFIG_STORAGE_DIR, pathlib.Path
-        ):
+        if not settings.CONFIG_STORAGE_DIR or not isinstance(settings.CONFIG_STORAGE_DIR, pathlib.Path):
             raise ValueError(
                 "Укажите CONFIG_STORAGE_DIR в settings.py как объект `pathlib.Path`"
                 " для использования локального хранилища конфигураций"
@@ -57,14 +55,13 @@ class LocalConfigStorage(ConfigStorage):
         (self._storage / file_name).unlink(missing_ok=True)
         return True
 
-    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path = None) -> bool:
-
+    def add(self, new_file_name: str, file_content=None, file_path: pathlib.Path | None = None) -> bool:
         # Если ничего не передали
         if not file_content and not file_path:
             return False
 
         # Если передали только путь к файлу
-        elif not file_content and file_path:
+        elif not file_content and file_path is not None:
             new_file_path = self._storage / new_file_name
 
             # Если это один и тот же файл
@@ -89,7 +86,7 @@ class LocalConfigStorage(ConfigStorage):
             file.write(file_content)
         return True
 
-    def files_list(self) -> List[ConfigFile]:
+    def files_list(self) -> list[ConfigFile]:
         config_files = sorted(
             self._storage.iterdir(),
             key=lambda x: x.stat().st_mtime,
@@ -110,7 +107,7 @@ class LocalConfigStorage(ConfigStorage):
                     modTime=datetime.fromtimestamp(stats.st_mtime).strftime(
                         "%H:%M %d.%m.%Y"  # Время последней модификации
                     ),
-                    path=file.absolute()
+                    path=file.absolute(),
                 )
             )
         return res
