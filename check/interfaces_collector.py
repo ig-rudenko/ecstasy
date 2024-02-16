@@ -1,15 +1,18 @@
 from abc import abstractmethod
 from datetime import datetime
+from typing import Type
 
 import orjson
 from django.core.cache import cache
 from django.db.models import QuerySet
 from django.utils import timezone
+from rest_framework.serializers import BaseSerializer
 
 from devicemanager.device import DeviceManager
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo
+from .api.serializers import DevicesSerializer
 from .models import Devices
 
 
@@ -136,6 +139,9 @@ class DevicesInterfacesWorkloadCollector:
             "abons_down_with_desc": abons_down_with_desc.count,
             "abons_down_no_desc": abons_down.count - abons_down_with_desc.count,
         }
+
+    def get_serializer_class(self) -> Type[BaseSerializer]:
+        return DevicesSerializer
 
     def get_all_device_interfaces_workload(self, from_cache=True):
         cache_value = cache.get(self.cache_key)

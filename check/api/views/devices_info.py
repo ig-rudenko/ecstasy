@@ -1,4 +1,5 @@
 import re
+from typing import Type
 
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -11,6 +12,7 @@ from requests import RequestException
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 from rest_framework.views import APIView
 
 from app_settings.models import LogsElasticStackSettings
@@ -81,12 +83,14 @@ class DevicesListAPIView(generics.ListAPIView):
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
 class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView, DevicesInterfacesWorkloadCollector):
-    serializer_class = DevicesSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceInfoFilter
 
     def get_queryset(self):
         return ModelDeviceInfo.objects.all().select_related("dev").order_by("dev__name")
+
+    def get_serializer_class(self) -> Type[BaseSerializer]:
+        return DevicesSerializer
 
     def list(self, request, *args, **kwargs):
         data = self.get_all_device_interfaces_workload()
@@ -110,6 +114,9 @@ class AllDevicesInterfacesWorkLoadAPIView(generics.ListAPIView, DevicesInterface
 class DeviceInterfacesWorkLoadAPIView(generics.RetrieveAPIView, AllDevicesInterfacesWorkLoadAPIView):
     lookup_url_kwarg = "device_name"
     lookup_field = "dev__name"
+
+    def get_serializer_class(self) -> Type[BaseSerializer]:
+        return DevicesSerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
