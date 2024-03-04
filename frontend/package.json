@@ -8,7 +8,7 @@
   "dependencies": {
     "axios": "^1.6.7",
     "chart.js": "^4.4.1",
-    "diff": "^5.1.0",
+    "diff": "^5.2.0",
     "glob-parent": "^6.0.2",
     "primevue": "^3.47.2",
     "vue": "^3.4.15",
