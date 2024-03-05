@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+
 from maps import views
 from maps.api import views as api_views
 
@@ -7,6 +8,7 @@ from maps.api import views as api_views
 urlpatterns = [
     # Домашняя страница для карт
     path("", views.map_home, name="map-home"),
+    path("api/", include("maps.api.urls")),
     path(  # Обновление точек на интерактивной карте
         "<int:map_id>/api/update",
         api_views.UpdateInteractiveMapAPIView.as_view(),

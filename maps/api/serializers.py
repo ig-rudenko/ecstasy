@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from ..models import Layers
+
 
 class MapLayerField(serializers.CharField):
     def to_representation(self, value):
@@ -15,3 +17,15 @@ GroupsType = serializers.ListSerializer[MapLayerField]
 
 class MapLayerSerializer(serializers.Serializer):
     groups: GroupsType = serializers.ListSerializer(child=MapLayerField(), source="layers")
+
+
+class LayerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Layers
+        fields = [
+            "id",
+            "name",
+            "description",
+            "type",
+            "from_file",
+        ]
