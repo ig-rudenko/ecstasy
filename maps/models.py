@@ -72,7 +72,7 @@ class Layers(models.Model):
         verbose_name="Цвет рамки маркера",
     )
     points_size = models.PositiveSmallIntegerField(
-        default=7,
+        default=22,
         verbose_name="Размер маркера (px)",
         validators=[MinValueValidator(2), MaxValueValidator(64)],
     )
