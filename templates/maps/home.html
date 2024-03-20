@@ -10,6 +10,7 @@
     <title>{% block title %}Карты{% endblock %}</title>
 
     <link rel="stylesheet" href="{% static 'bootstrap/5.2.2.min.css' %}">
+    <script src="{% static 'bootstrap/bundle5.2.2.min.js' %}"></script>
     {% block links %}
     <link rel="stylesheet" href="{% static 'leaflet/1.6.0.min.css' %}">
     <script src="{% static 'leaflet/1.6.0.min.js' %}"></script>
@@ -65,28 +66,29 @@ html * {
 
           {% for map in maps %}
             <div class="col row-eq-height">
-              <div class="card shadow-sm">
+              <div class="card shadow-sm h-100">
 
                 <a href="{% url 'interactive-map-show' map.id %}">
                 {% if map.preview_image %}
-                    <div style="max-height: 225px; min-height: 225px; background-image: url('{{ map.preview_image.url }}');
-                            background-size: cover">
-                    </div>
+                    <div style="max-height: 225px; min-height: 225px; background-image: url('{{ map.preview_image.url }}'); background-size: cover"></div>
                 {% else %}
-                    <svg class="bd-placeholder-img card-img-top" width="100%" height="225"
-                         xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail"
-                         preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title>
-                        <rect width="100%" height="100%" fill="#55595c">
-                        </rect>
+                    <svg class="bd-placeholder-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100%" height="100%" fill="#55595c"></rect>
                     </svg>
                 {% endif %}
                 </a>
 
                 <div class="card-body">
-                  <h3 class="card-text">{{ map.name }}</h3>
-                  <p class="card-text">{{ map.description }}</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                  </div>
+                  <h3 class="card-text d-flex align-items-center justify-content-between">
+                    <div>{{ map.name }}</div>
+                    {% if map.interactive %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="green" viewBox="0 0 16 16" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Данные обновляются автоматически">
+                          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"></path>
+                          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"></path>
+                        </svg>
+                    {% endif %}
+                  </h3>
+                  <p class="card-text pb-2">{{ map.description }}</p>
                 </div>
               </div>
             </div>
@@ -111,6 +113,8 @@ html * {
 <script>
 const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 const map = L.map("map", { layers: [osm], minZoom: 5 }).setView([44.61, 33.5], 13);
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 </script>
 {% endblock %}
 
