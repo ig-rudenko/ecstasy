@@ -276,6 +276,12 @@ class Profile(models.Model):
         help_text="Регулярное выражение, совпадение которого с описанием"
         " порта будет запрещать определенные действия с ним",
     )
+    console_access = models.BooleanField(
+        default=False,
+        verbose_name="Доступ к консоли",
+        help_text="Доступ к консоли сервера удаленных подключений"
+    )
+    console_url = models.CharField(default="", max_length=500, blank=True, verbose_name="URL консоли")
 
     @property
     def perm_level(self) -> int:

@@ -20,20 +20,20 @@ from .serializers.view_subscriber_data import CustomerDetailSerializer
 
 
 class CustomersListAPIView(ListAPIView):
-    queryset = Customer.objects
+    queryset = Customer.objects.all()
     permission_classes = [CustomerPermission]
     serializer_class = CustomerSerializer
 
 
 class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Customer.objects
+    queryset = Customer.objects.all()
     permission_classes = [CustomerPermission]
     serializer_class = CustomerDetailSerializer
 
 
 class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [SubscriberDataPermission]
-    queryset = SubscriberConnection.objects
+    queryset = SubscriberConnection.objects.all()
     serializer_class = UpdateSubscriberDataSerializer
 
     @transaction.atomic
@@ -43,7 +43,7 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
-    queryset = SubscriberConnection.objects
+    queryset = SubscriberConnection.objects.all()
     serializer_class = SubscriberDataSerializer
 
     @transaction.atomic

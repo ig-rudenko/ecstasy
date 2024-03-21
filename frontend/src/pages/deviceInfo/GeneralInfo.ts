@@ -14,7 +14,8 @@ class GeneralInfo {
         public permission: number,
         public zabbixHostID: number,
         public zabbixInfo: ZabbixInfo,
-        public zabbixURL: string
+        public zabbixURL: string,
+        public consoleURL: string,
     ) {}
 }
 
@@ -33,6 +34,7 @@ function newGeneralInfo(data: any): GeneralInfo {
         data.zabbixHostID,
         newZabbixInfo(data.zabbixInfo),
         data.zabbixURL,
+        data.consoleURL,
     )
 }
 

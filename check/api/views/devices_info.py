@@ -404,8 +404,22 @@ class DeviceInfoAPIView(APIView):
                 },
                 "permission": request.user.profile.perm_level,
                 "coords": dev.zabbix_info.inventory.coordinates(),
+                "consoleURL": self.get_console_url(request.user.profile, model_dev),
             }
         )
+
+    @staticmethod
+    def get_console_url(profile: models.Profile, device: models.Devices) -> str:
+        if not profile.console_access or not profile.console_url:
+            return ""
+        if device.cmd_protocol == "telnet":
+            return (
+                f"{profile.console_url}&command=./.tc.sh {device.ip}&title={device.ip} ({device.name}) telnet"
+            )
+        elif device.cmd_protocol == "ssh":
+            return f"{profile.console_url}&command=./.sc.sh {device.ip}&title={device.ip} ({device.name}) ssh"
+        else:
+            return profile.console_url
 
 
 class DeviceStatsInfoAPIView(APIView):

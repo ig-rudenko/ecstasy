@@ -17,7 +17,8 @@
                     v-if="generalInfo"
                     :status="deviceAvailable"
                     :device-name="deviceName"
-                    :device-ip="generalInfo.deviceIP"/>
+                    :device-ip="generalInfo.deviceIP"
+                    :console-url="generalInfo.consoleURL"/>
           </div>
         </div>
       </div>
@@ -232,7 +233,7 @@ import ConfigFiles from "../../components/ConfigFiles.vue";
 import ConfigFilesSwitchButton from "../../components/ConfigFilesSwitchButton.vue";
 import DeviceImages from "./components/DeviceImages.vue";
 import UserActionsButton from "./components/UserActionsButton.vue";
-import {Interface, newInterfacesList, InterfacesCount, newInterfacesCount} from "../../types/interfaces";
+import {Interface, InterfacesCount, newInterfacesCount, newInterfacesList} from "../../types/interfaces";
 import api_request from "../../api_request";
 
 import {HardwareStats, newHardwareStats} from "./hardwareStats";
