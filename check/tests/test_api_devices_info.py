@@ -394,6 +394,29 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "zabbixInfo": {"description": "", "inventory": {}},
             "permission": self.user.profile.perm_level,
             "coords": [],
+            "consoleURL": "",
+        }
+        self.assertEqual(response.json(), expected_data)
+
+    def test_view_returns_valid_response_with_console_url(self):
+        self.user.profile.console_access = True
+        self.user.profile.console_url = "http://test_url"
+        self.user.profile.save()
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        expected_data = {
+            "deviceName": self.device.name,
+            "deviceIP": self.device.ip,
+            "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
+            "zabbixHostID": 0,
+            "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
+            "zabbixInfo": {"description": "", "inventory": {}},
+            "permission": self.user.profile.perm_level,
+            "coords": [],
+            "consoleURL": "http://test_url&command=./.tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",
         }
         self.assertEqual(response.json(), expected_data)
 
