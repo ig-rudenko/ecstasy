@@ -414,10 +414,14 @@ class DeviceInfoAPIView(APIView):
             return ""
         if device.cmd_protocol == "telnet":
             return (
-                f"{profile.console_url}&command=./.tc.sh {device.ip}&title={device.ip} ({device.name}) telnet"
+                f"{profile.console_url}&command=/usr/share/connections/tc.sh {device.ip}"
+                f"&title={device.ip} ({device.name}) telnet"
             )
         elif device.cmd_protocol == "ssh":
-            return f"{profile.console_url}&command=./.sc.sh {device.ip}&title={device.ip} ({device.name}) ssh"
+            return (
+                f"{profile.console_url}&command=/usr/share/connections/sc.sh {device.ip}"
+                f"&title={device.ip} ({device.name}) ssh"
+            )
         else:
             return profile.console_url
 
