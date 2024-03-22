@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import statistic_view
 from . import subscriber_view
 from . import views
 
@@ -96,5 +97,16 @@ urlpatterns += [
         "subscribers-on-device/<device_name>",
         subscriber_view.SubscribersOnDevicePort.as_view(),
         name="subscribers-data-list-create",
+    ),
+]
+
+
+# ============= STATISTIC DATA ==============
+
+urlpatterns += [
+    path(
+        "statistic/subscribers-count/<device_name>",
+        statistic_view.OLTPortSubscribersCountAPIView.as_view(),
+        name="olt-port-subscribers-count",
     ),
 ]

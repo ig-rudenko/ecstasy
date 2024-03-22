@@ -61,11 +61,12 @@
               </div>
 
               <!-- Device Name -->
-              <span v-else id="deviceName" class="badge fs-6" style="color: black">
+              <span v-else id="deviceName" class="align-items-center badge d-flex fs-6" style="color: black;vertical-align: center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
                   <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
                 </svg>
-                {{detailData.deviceName}}
+                <span class="me-2">{{detailData.deviceName}}</span>
+                <OltPortsSubscriberStatistic :device-name="detailData.deviceName"/>
               </span>
 
             </div>
@@ -197,10 +198,12 @@ import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api_request from "../api_request";
 import formatAddress from "../helpers/address";
 import printElementById from "../helpers/print";
+import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    OltPortsSubscriberStatistic,
     HouseOltStateViewEdit,
     ViewPrintEditButtons,
     End3CollapsedView,
