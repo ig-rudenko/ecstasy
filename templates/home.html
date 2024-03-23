@@ -34,13 +34,11 @@
 
 {#      GPON #}
   {% if request.user|has_any_gpon_permissions %}
-      <a class="gradient-border row mb-4 p-4 shadow text-white text-decoration-none" href="{% url 'gpon:main' %}"
+      <a class="border rounded-5 row mb-4 p-4 shadow text-white text-decoration-none" href="{% url 'gpon:main' %}"
          style="background-image: url('{% static 'img/gpon/sphere-global.jpeg' %}');
                  background-position: left; background-size: cover">
           <div>
-              <h4><span class="badge me-1" style="background-color: hsl(269, 85%, 66%)">new*</span>
-                  База GPON
-              </h4>
+              <h4>База GPON</h4>
               <div class="container-fluid py-3">
                 <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#list-icon"></use></svg>
                     Отображение технических данных GPON
@@ -67,7 +65,7 @@
     <a href="{% url 'devices-list' %}" class="text-dark text-decoration-none row mb-4 p-4 border rounded-5 shadow">
         <div class="col-md-7">
 
-            <h4 class="fw-bold">Управление оборудованием</h4>
+          <h4 class="fw-bold">Управление оборудованием</h4>
 
           <div class="container-fluid py-1">
               <br>

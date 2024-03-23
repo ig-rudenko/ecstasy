@@ -20,113 +20,88 @@
           <ul class="navbar-nav d-flex text-center">
 
     {#              HOME #}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Главная">
               <a href="{% url 'home' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"></path>
-                </svg>
-                Home
+                <img width="64" height="64" src="{% static 'img/menu/home.png' %}" class="bi d-block mx-auto mb-1" alt="home"/>
               </a>
             </li>
 
     {#              CONSOLE #}
-        {% if request.user.profile.console_access and request.user.profile.console_url %}
-            <li class="nav-item active">
+        {% if request.user %}
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Консоль">
               <a href="{{ request.user.profile.console_url }}&command=figlet hello {{ request.user }}!" target="_blank" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"></path>
-                </svg>
-                Console
+                <img width="64" height="64" src="{% static 'img/menu/console.png' %}" class="bi d-block mx-auto mb-1" alt="console"/>
               </a>
             </li>
         {% endif %}
 
     {#              LIST DEVICES #}
         {% if request.user.profile.devices_groups.count %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Список оборудования">
               <a href="{% url 'devices-list' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"></path>
-                </svg>
-                List Devices
+                <img width="64" height="64" src="{% static 'img/menu/devices.png' %}" class="bi d-block mx-auto mb-1" alt="devices"/>
               </a>
             </li>
         {% endif %}
 
     {#              MAPS   #}
           {% if request.user|has_map_view_permission %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Карты">
               <a href="{% url 'map-home' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M15.817.113A.5.5 0 0 1 16 .5v14a.5.5 0 0 1-.402.49l-5 1a.502.502 0 0 1-.196 0L5.5 15.01l-4.902.98A.5.5 0 0 1 0 15.5v-14a.5.5 0 0 1 .402-.49l5-1a.5.5 0 0 1 .196 0L10.5.99l4.902-.98a.5.5 0 0 1 .415.103zM10 1.91l-4-.8v12.98l4 .8V1.91zm1 12.98 4-.8V1.11l-4 .8v12.98zm-6-.8V1.11l-4 .8v12.98l4-.8z"></path>
-                </svg>
-                Maps
+                <img width="64" height="64" src="{% static 'img/menu/map.png' %}" class="bi d-block mx-auto mb-1" alt="map"/>
               </a>
             </li>
           {% endif %}
 
     {#              Search Desc #}
           {% if request.user|has_desc_search_permission %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Поиск по описанию">
               <a href="{% url 'find-descr' %}" class="nav-link text-white">
-                <img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/search-description-icon.svg' %}">
-                Search Desc
+                <img width="64" height="64" src="{% static 'img/menu/search.png' %}" class="bi d-block mx-auto mb-1" alt="search"/>
               </a>
             </li>
           {% endif %}
 
     {#              VLAN Traceroute #}
           {% if request.user|has_traceroute_permission %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Трассировка VLAN/MAC">
               <a href="{% url 'traceroute' %}" class="nav-link text-white">
-                <div><img class="bi d-block mx-auto mb-1" height="24" src="{% static 'img/vlan-traceroute-icon.svg' %}"></div>
-                Trace
+                <img width="64" height="64" src="{% static 'img/menu/topology.png' %}" class="bi d-block mx-auto mb-1" alt="topology"/>
               </a>
             </li>
           {% endif %}
 
     {#              WTF Search #}
           {% if request.user|has_wft_search_permission %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Поиск по IP/MAC">
               <a href="{% url 'search-wtf' %}" class="nav-link text-white">
-                <img class="bi d-block mx-auto mb-1" height="25" src="{% static 'img/mac-icon.svg' %}">
-                WTF search
+                <img width="64" height="64" src="{% static 'img/menu/radar.png' %}" class="bi d-block mx-auto mb-1" alt="radar"/>
               </a>
             </li>
           {% endif %}
 
     {#              Ring Manager #}
           {% if request.user|has_any_ring_permission %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Менеджер колец">
               <a href="{% url 'ring-manager:home' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path d="M2 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM0 2a2 2 0 0 1 3.937-.5h8.126A2 2 0 1 1 14.5 3.937v8.126a2 2 0 1 1-2.437 2.437H3.937A2 2 0 1 1 1.5 12.063V3.937A2 2 0 0 1 0 2zm2.5 1.937v8.126c.703.18 1.256.734 1.437 1.437h8.126a2.004 2.004 0 0 1 1.437-1.437V3.937A2.004 2.004 0 0 1 12.063 2.5H3.937A2.004 2.004 0 0 1 2.5 3.937zM14 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM2 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm12 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"></path>
-                </svg>
-                Rings
+                <img width="64" height="64" src="{% static 'img/menu/ring.png' %}" class="bi d-block mx-auto mb-1" alt="ring"/>
               </a>
             </li>
           {% endif %}
 
     {#              GPON Base #}
           {% if request.user|has_any_gpon_permissions %}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="База GPON">
               <a href="{% url 'gpon:main' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"></path>
-                </svg>
-                GPON
+                <img width="64" height="64" src="{% static 'img/menu/gpon.png' %}" class="bi d-block mx-auto mb-1" alt="gpon"/>
               </a>
             </li>
           {% endif %}
 
     {#              LOGOUT #}
-            <li class="nav-item active">
+            <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Выход">
               <a href="{% url 'logout' %}" class="nav-link text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi d-block mx-auto mb-1" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"></path>
-                  <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"></path>
-                </svg>
-                Logout
+                <img width="64" height="64" src="{% static 'img/menu/logout.png' %}" class="bi d-block mx-auto mb-1" alt="logout"/>
               </a>
             </li>
 
@@ -134,3 +109,8 @@
       </div>
   </div>
 </nav>
+
+<script>
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+</script>

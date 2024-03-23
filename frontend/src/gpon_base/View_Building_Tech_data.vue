@@ -76,7 +76,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
                   <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
                 </svg>
-                {{oltState.statement.deviceName}}
+                <span class="me-2">{{oltState.statement.deviceName}}</span>
+                <OltPortsSubscriberStatistic :device-name="oltState.statement.deviceName"/>
               </span>
             </div>
 
@@ -145,16 +146,17 @@
 </template>
 
 <script>
-import Dropdown from "primevue/dropdown/Dropdown.vue"
-import InlineMessage from "primevue/inlinemessage/InlineMessage.vue"
-import InputText from "primevue/inputtext/InputText.vue"
+import Dropdown from "primevue/dropdown"
+import InlineMessage from "primevue/inlinemessage"
+import InputText from "primevue/inputtext"
 import ScrollTop from "primevue/scrolltop";
-import Textarea from "primevue/textarea/Textarea.vue";
-import Toast from "primevue/toast/Toast.vue"
+import Textarea from "primevue/textarea";
+import Toast from "primevue/toast"
 
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import BuildingIcon from "./components/BuildingIcon.vue"
 import End3CollapsedView from "./components/End3CollapsedView.vue";
+import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api_request from "../api_request";
@@ -164,6 +166,7 @@ import printElementById from "../helpers/print";
 export default {
   name: "Gpon_base.vue",
   components: {
+    OltPortsSubscriberStatistic,
     ViewPrintEditButtons,
     End3CollapsedView,
     AddressGetCreate,
