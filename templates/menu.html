@@ -27,7 +27,7 @@
             </li>
 
     {#              CONSOLE #}
-        {% if request.user %}
+        {% if request.user.profile.console_access and request.user.profile.console_url %}
             <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Консоль">
               <a href="{{ request.user.profile.console_url }}&command=figlet hello {{ request.user }}!" target="_blank" class="nav-link text-white">
                 <img width="64" height="64" src="{% static 'img/menu/console.png' %}" class="bi d-block mx-auto mb-1" alt="console"/>
