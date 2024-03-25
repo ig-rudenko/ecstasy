@@ -74,11 +74,11 @@ class DevicesAdmin(admin.ModelAdmin):
 
     @admin.display(description="Группа")
     def show_group(self, obj: Devices):
-        return obj.group.name
+        return obj.group.name if obj.group else "Не указано"
 
     @admin.display(description="Авторизация")
     def show_auth_group(self, obj: Devices):
-        return obj.auth_group.name
+        return obj.auth_group.name if obj.auth_group else "Не указано"
 
     @admin.display(description="")
     def show_auth_type(self, obj: Devices):
