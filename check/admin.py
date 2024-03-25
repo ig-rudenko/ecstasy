@@ -46,8 +46,8 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 class DevicesAdmin(admin.ModelAdmin):
     """Управление оборудованием"""
 
-    list_display = ["ip", "name", "vendor", "model", "group", "auth_group", "show_device"]
-    list_filter = ["vendor", "group", "auth_group", "model"]
+    list_display = ["ip", "name", "vendor", "model", "show_group", "show_auth_group", "show_auth_type", "show_device"]
+    list_filter = ["vendor", "group", "auth_group", "model", "port_scan_protocol", "cmd_protocol"]
     radio_fields = {"port_scan_protocol": admin.HORIZONTAL, "cmd_protocol": admin.HORIZONTAL}
     readonly_fields = ["show_interfaces"]
     search_fields = ["ip", "name"]
@@ -71,6 +71,40 @@ class DevicesAdmin(admin.ModelAdmin):
         "set_snmp",
         "set_ssh",
     ]
+
+    @admin.display(description="Группа")
+    def show_group(self, obj: Devices):
+        return obj.group.name
+
+    @admin.display(description="Авторизация")
+    def show_auth_group(self, obj: Devices):
+        return obj.auth_group.name
+
+    @admin.display(description="")
+    def show_auth_type(self, obj: Devices):
+        text = ""
+        if obj.port_scan_protocol == "telnet":
+            text += """<span class="ml-1" title="telnet"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ff8591" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.8 11.8 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7 7 0 0 0 1.048-.625 11.8 11.8 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 63 63 0 0 0-2.887-.87C9.843.266 8.69 0 8 0m0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5"/>
+                    </svg></span>"""
+        elif obj.port_scan_protocol == "ssh":
+            text += """<span class="ml-1" title="ssh"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="orange" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.8 11.8 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7 7 0 0 0 1.048-.625 11.8 11.8 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 63 63 0 0 0-2.887-.87C9.843.266 8.69 0 8 0m0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5"/>
+                    </svg></span>"""
+        elif obj.port_scan_protocol == "snmp":
+            text += """<span class="ml-1" style="color: green;font-family: fantasy;">SNMP</span>"""
+
+        if obj.cmd_protocol != obj.port_scan_protocol:
+            if obj.cmd_protocol == "telnet":
+                text += """<span title="telnet"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ff8591" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.8 11.8 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7 7 0 0 0 1.048-.625 11.8 11.8 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 63 63 0 0 0-2.887-.87C9.843.266 8.69 0 8 0m0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5"/>
+                        </svg></span>"""
+            elif obj.cmd_protocol == "ssh":
+                text += """<span title="ssh"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="orange" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.8 11.8 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7 7 0 0 0 1.048-.625 11.8 11.8 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 63 63 0 0 0-2.887-.87C9.843.266 8.69 0 8 0m0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5"/>
+                        </svg></span>"""
+
+        return mark_safe(text)
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
@@ -186,14 +220,20 @@ class BrasAdmin(admin.ModelAdmin):
 class ProfileAdmin(admin.ModelAdmin):
     """Управление уровнем привилегий пользователей"""
 
-    list_display = ["user", "permissions"]
+    list_display = ["user", "permissions", "dev_groups", "console_access"]
     list_select_related = ["user"]
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):
         """Отображаем username пользователя"""
-
         return obj.user.username
+
+    @admin.display(description="Группы")
+    def dev_groups(self, obj: Profile):
+        """Отображение доступных групп для пользователя"""
+        user_groups: QuerySet[DeviceGroup] = obj.devices_groups.all()
+        groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])
+        return mark_safe(groups_string)
 
 
 admin.site.unregister(User)  # Отменяем старую админку для пользователя
@@ -205,13 +245,17 @@ class UserProfileAdmin(UserAdmin):
 
     list_display = [
         "username",
-        "first_name",
-        "last_name",
+        "verbose_name",
         "email",
+        "is_active",
         "last_login",
         "permission",
         "dev_groups",
     ]
+
+    @admin.display(description="")
+    def verbose_name(self, obj: User):
+        return f"{obj.first_name} {obj.last_name}"
 
     @admin.display(description="Права")
     def permission(self, obj: User):
