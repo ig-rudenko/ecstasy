@@ -43,32 +43,3 @@
         </div>
     </div>
   </footer>
-
-<script>
-
-$(function(){
-    resizeAll();
-    $(window).bind("resize", function(){
-        resizeAll();
-    });
-});
-
-$(window).bind('load', function() {resizeAll()});
-
-
-function footerStickBottom (footer_block) {
-    $(footer_block).css({'margin-top':0});
-    let allWindowsHeight = $(window).height();
-    let footerBottomOffset = $(footer_block).offset().top + $(footer_block).outerHeight();
-    if (allWindowsHeight > footerBottomOffset) {
-        let footerMarginTop = allWindowsHeight - footerBottomOffset;
-        $(footer_block).css({'margin-top':footerMarginTop});
-    }
-}
-
-function resizeAll() {
-
-    footerStickBottom ('footer');
-
-}
-</script>

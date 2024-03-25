@@ -113,8 +113,8 @@ html * {
 <script>
 const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 const map = L.map("map", { layers: [osm], minZoom: 5 }).setView([44.61, 33.5], 13);
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+const tooltipTriggerListInteractive = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipListInteractive = [...tooltipTriggerListInteractive].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 </script>
 {% endblock %}
 
