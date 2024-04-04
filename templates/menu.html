@@ -100,9 +100,12 @@
 
     {#              LOGOUT #}
             <li class="nav-item active" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Выход">
-              <a href="{% url 'logout' %}" class="nav-link text-white">
-                <img width="64" height="64" src="{% static 'img/menu/logout.png' %}" class="bi d-block mx-auto mb-1" alt="logout"/>
-              </a>
+                <form action="{% url 'logout' %}" method="post" class="d-flex justify-content-center">
+                  {% csrf_token %}
+                  <button type="submit" class="nav-link text-white" style="background: none; border: none;">
+                    <img width="64" height="64" src="{% static 'img/menu/logout.png' %}" class="bi d-block mx-auto mb-1" alt="logout"/>
+                  </button>
+                </form>
             </li>
 
           </ul>
