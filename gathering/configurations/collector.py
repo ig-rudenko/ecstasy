@@ -52,7 +52,7 @@ class ConfigurationGather:
                 with self.storage.open(self.last_config_file.name, mode=read_mode) as file:
                     # Чтение последнего файла конфигурации.
                     last_config_text: str = file.read()
-                last_config_bytes: bytes = self.re_pattern_space.sub("", last_config_text).encode()
+                last_config_bytes = self.re_pattern_space.sub("", last_config_text).encode()
 
             # Резервный вариант, когда файл не в формате ascii или отсутствует.
             except (UnicodeError, FileNotFoundError):
