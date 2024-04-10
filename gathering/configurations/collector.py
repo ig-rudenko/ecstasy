@@ -46,18 +46,17 @@ class ConfigurationGather:
         else:
             current_config_bytes = current_config
 
-        if self.last_config_file:
-            last_config_text = ""
+        if self.last_config_file and read_mode == "r":
             try:
                 # Открытие файла в режиме чтения.
                 with self.storage.open(self.last_config_file.name, mode=read_mode) as file:
                     # Чтение последнего файла конфигурации.
-                    last_config_text = file.read()
+                    last_config_text: str = file.read()
+                last_config_bytes: bytes = self.re_pattern_space.sub("", last_config_text).encode()
+
             # Резервный вариант, когда файл не в формате ascii или отсутствует.
             except (UnicodeError, FileNotFoundError):
                 pass
-
-            last_config_bytes = self.re_pattern_space.sub("", last_config_text).encode()
 
         # Берем текущую конфигурацию и удаляем все пробелы, а затем хешируем ее.
         current_config_hash = hashlib.sha3_224(current_config_bytes).hexdigest()
