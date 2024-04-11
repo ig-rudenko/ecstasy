@@ -1,16 +1,17 @@
 # Ecstasy
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10-blue.svg)
 [![Code style: black](https://img.shields.io/badge/code_style-black-black.svg)](https://github.com/psf/black)
 
-<div>
+<div> 
+<img src="https://www.vectorlogo.zone/logos/nginx/nginx-icon.svg" alt="nginx" width="30" height="30"/>
 <img src="https://www.vectorlogo.zone/logos/vuejs/vuejs-icon.svg" alt="vue.js" width="30" height="30"/>
-<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
 <img src="https://cdn.worldvectorlogo.com/logos/django.svg" alt="django" width="30" height="30"/>
-<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
+<img src="https://havola.uz/uploads/logos/90/sb4u0gqv.png" alt="celery" width="30" height="30"/>
 <img src="https://www.vectorlogo.zone/logos/redis/redis-icon.svg" alt="redis" width="32" height="32"/>
-<strong style="padding: 2px; vertical-align: text-bottom">+</strong>
-<img src="https://codeguida.com/media/post_title/celery-logo.png" alt="celery" width="32" height="32"/>
+<img src="https://www.vectorlogo.zone/logos/mysql/mysql-icon.svg" alt="mysql" width="32" height="32"/>
+<img src="https://www.vectorlogo.zone/logos/ansible/ansible-icon.svg" alt="ansible" width="32" height="32"/>
+<img src="https://www.vectorlogo.zone/logos/jenkins/jenkins-icon.svg" alt="jenkins" width="32" height="32"/>
 </div>
 
 ### Веб-приложение для взаимодействия с сетевым оборудованием
@@ -20,6 +21,10 @@
 
 
 ![img.png](img/img_3.png)
+
+### Структура
+
+![img.png](img/img_8.png)
 
 ### Возможности:
 
@@ -65,11 +70,9 @@
 - `Q-Tech`
   - Проверено для: `QSW-3450-*` `QSW-8200-*`
 
-### Структура
-
-![img.png](img/img_8.png)
-
 ### Развертывание приложения (Ansible)
+
+![img.png](img/jenkins-ansible.png)
 
 1. Устанавливаем ansible.
 2. Копируем проект и переходим в папку `ansible`.
