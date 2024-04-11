@@ -5,7 +5,7 @@ from alive_progress import alive_bar
 from requests import RequestException
 
 from .device_manager import DeviceManager
-from .zabbix_api import ZabbixAPIConnection
+from .zabbix_api import zabbix_api
 from ..exceptions import AuthException
 from ..zabbix_info_dataclasses import ZabbixInventory
 
@@ -44,7 +44,7 @@ class DevicesCollection:
         Коллекция, потому что по данному IP могут быть несколько записей в Zabbix
         """
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 hosts = zbx.host.get(filter={"ip": ip}, output=["name"])
         except RequestException:
             return DevicesCollection([])
@@ -59,7 +59,7 @@ class DevicesCollection:
         :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
         """
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 groups = zbx.hostgroup.get(filter={"name": groups_name}, output=["groupid"])
                 if groups:
                     hosts = zbx.host.get(
@@ -89,7 +89,7 @@ class DevicesCollection:
         :param zabbix_info: Собрать информацию оборудования из Zabbix в момент создания коллекции?
         """
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 hosts = zbx.host.get(filter={"ip": ips}, output=["name"], sortfield=["name"])
         except RequestException:
             return DevicesCollection([])

@@ -4,7 +4,7 @@ from celery import Task
 from django.db.models import QuerySet
 
 from app_settings.models import ZabbixConfig
-from devicemanager.device import ZabbixAPIConnection
+from devicemanager.device import zabbix_api
 
 
 class ThreadUpdatedStatusTask(Task):
@@ -29,7 +29,7 @@ class ThreadUpdatedStatusTask(Task):
         """
         ## Эта функция вызывается перед началом симуляции
         """
-        ZabbixAPIConnection.set(ZabbixConfig.load())
+        zabbix_api.set(ZabbixConfig.load())
 
     def run(self, *args, **kwargs):
         """

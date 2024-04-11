@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from app_settings.models import LogsElasticStackSettings
-from devicemanager.device import Interfaces, ZabbixAPIConnection
+from devicemanager.device import Interfaces, zabbix_api
 from net_tools.models import DevicesInfo
 from ..api.serializers import DevicesSerializer
 from ..api.views.devices_info import AllDevicesInterfacesWorkLoadAPIView
@@ -390,7 +390,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "deviceIP": self.device.ip,
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
-            "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
+            "zabbixURL": zabbix_api.zabbix_url,
             "zabbixInfo": {"description": "", "inventory": {}},
             "permission": self.user.profile.perm_level,
             "coords": [],
@@ -412,7 +412,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "deviceIP": self.device.ip,
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
-            "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
+            "zabbixURL": zabbix_api.zabbix_url,
             "zabbixInfo": {"description": "", "inventory": {}},
             "permission": self.user.profile.perm_level,
             "coords": [],

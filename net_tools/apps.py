@@ -7,6 +7,7 @@ class FindDescConfig(AppConfig):
     name = "net_tools"
 
     def ready(self):
+        # pylint: disable-next=import-outside-toplevel
         from .new_permissions import create_permission
 
         post_migrate.connect(create_permission, sender=self)

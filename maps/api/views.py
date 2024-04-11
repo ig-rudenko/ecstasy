@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from app_settings.models import ZabbixConfig
-from devicemanager.device import ZabbixAPIConnection
+from devicemanager.device import zabbix_api
 from maps.models import Maps, Layers
 from .permissions import MapPermission
 from .serializers import MapLayerSerializer
@@ -33,7 +33,7 @@ class ZabbixSessionMixin:
 
     def get_zbx_session(self) -> ZabbixAPI:
         if self._zbx_session is None:
-            self._zbx_session = ZabbixAPIConnection().connect()
+            self._zbx_session = zabbix_api.connect()
         return self._zbx_session
 
     def __del__(self, *args, **kwargs):

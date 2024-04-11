@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
-from devicemanager.device import ZabbixAPIConnection
+from devicemanager.device import zabbix_api
 from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
 from .swagger.schemas import (
     get_vendor_schema,
@@ -103,7 +103,7 @@ def ip_mac_info(request, ip_or_mac: str):
         ips = reduce(lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info))
 
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 # Ищем хост по IP
                 hosts = zbx.host.get(
                     output=["name", "status"],

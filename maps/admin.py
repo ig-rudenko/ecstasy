@@ -11,7 +11,7 @@ from django.utils.safestring import SafeString, mark_safe
 from pyzabbix import ZabbixAPIException
 from requests import RequestException
 
-from devicemanager.device.zabbix_api import ZabbixAPIConnection
+from devicemanager.device.zabbix_api import zabbix_api
 from .models import Layers, Maps
 
 svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
@@ -147,7 +147,7 @@ def get_zabbix_groups():
     :return: Список кортежей.
     """
     try:
-        with ZabbixAPIConnection().connect() as zbx:
+        with zabbix_api.connect() as zbx:
             # Получение всех групп узлов сети из Zabbix.
             groups = zbx.hostgroup.get(output=["name"])
     except (RequestException, ZabbixAPIException) as exc:

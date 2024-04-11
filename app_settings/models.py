@@ -5,7 +5,6 @@
 
 """
 
-
 from django.db import models
 
 
@@ -147,11 +146,10 @@ class ZabbixConfig(SingletonModel):
         После сохранения новых настроек Zabbix API в базу, необходимо указать эти параметры для `ZabbixAPIConnection`.
         """
         super().save(*args, **kwargs)
-        # Устанавливаем конфигурацию для работы с devicemanager
         # pylint: disable-next=import-outside-toplevel
-        from devicemanager.device import ZabbixAPIConnection
+        from devicemanager.device import zabbix_api
 
-        ZabbixAPIConnection.set(self)
+        zabbix_api.set(self)
 
     class Meta:
         db_table = "zabbix_api_settings"

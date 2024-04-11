@@ -1,45 +1,58 @@
-from requests import Session
-from django.db import DatabaseError
+from typing import Callable, Any, Optional
+
 from pyzabbix import ZabbixAPI
 
-from app_settings.models import ZabbixConfig
 
-
-class ZabbixAPIConnection:
+class ZabbixAPIConnector:
     """Конфигурация для работы с Zabbix API"""
 
-    ZABBIX_URL: str = ""
-    ZABBIX_USER: str = ""
-    ZABBIX_PASSWORD: str = ""
+    __zabbix_url: str = ""
+    __zabbix_user: str = ""
+    __zabbix_password: str = ""
+    __init_load_function: Optional[Callable[[], Any]] = None
 
     def __init__(self, timeout: int = 2):
         self.timeout = timeout
         self._zabbix_connection: ZabbixAPI = ZabbixAPI()
-        self._session = self.get_session()
 
-    @staticmethod
-    def get_session() -> Session:
-        session = Session()
-        session.verify = False
-        return session
+    def set_init_load_function(self, func: Callable):
+        self.__init_load_function = func
 
-    @staticmethod
-    def set(obj):
+    @property
+    def zabbix_url(self):
+        self.__init_load()
+        return self.__zabbix_url
+
+    @property
+    def zabbix_user(self):
+        self.__init_load()
+        return self.__zabbix_user
+
+    @property
+    def zabbix_password(self):
+        self.__init_load()
+        return self.__zabbix_password
+
+    def set(self, obj):
         """Задаем настройки"""
-        ZabbixAPIConnection.ZABBIX_URL = obj.url
-        ZabbixAPIConnection.ZABBIX_USER = obj.login
-        ZabbixAPIConnection.ZABBIX_PASSWORD = obj.password
+        self.__zabbix_url = str(getattr(obj, "url", ""))
+        self.__zabbix_user = str(getattr(obj, "login", ""))
+        self.__zabbix_password = str(getattr(obj, "password", ""))
 
     def connect(self) -> ZabbixAPI:
-        self._zabbix_connection = ZabbixAPI(
-            server=self.ZABBIX_URL, session=self._session, timeout=self.timeout
-        )
-        self._zabbix_connection.login(user=self.ZABBIX_USER, password=self.ZABBIX_PASSWORD)
+        self._zabbix_connection = ZabbixAPI(server=self.zabbix_url, timeout=self.timeout)
+        self._zabbix_connection.login(user=self.zabbix_user, password=self.zabbix_password)
         return self._zabbix_connection
 
+    def __init_load(self):
+        """Загрузка настроек Zabbix API из функции"""
+        if (
+            self.__init_load_function is not None
+            and callable(self.__init_load_function)
+            and not (self.__zabbix_url and self.__zabbix_user and self.__zabbix_password)
+        ):
+            print("Загрузка настроек Zabbix API")
+            self.set(self.__init_load_function())
 
-try:
-    # Устанавливаем конфигурацию для работы с devicemanager
-    ZabbixAPIConnection.set(ZabbixConfig.load())
-except DatabaseError:
-    pass
+
+zabbix_api = ZabbixAPIConnector()

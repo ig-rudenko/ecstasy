@@ -9,7 +9,7 @@ from django.utils import timezone
 from app_settings.models import ZabbixConfig
 from check.models import Devices
 from devicemanager.dc import DeviceRemoteConnector
-from devicemanager.device import DeviceManager, ZabbixAPIConnection, Interfaces
+from devicemanager.device import DeviceManager, zabbix_api, Interfaces
 from devicemanager.exceptions import BaseDeviceException
 from devicemanager.vendors.base.types import MACTableType
 from net_tools.models import DevicesInfo
@@ -22,8 +22,8 @@ class MacAddressTableGather:
     """
 
     def __init__(self, from_: Devices):
-        if not ZabbixAPIConnection.ZABBIX_URL:
-            ZabbixAPIConnection.set(ZabbixConfig.load())
+        if not zabbix_api.zabbix_url:
+            zabbix_api.set(ZabbixConfig.load())
 
         self.device: Devices = from_
 

@@ -21,14 +21,14 @@
 """
 
 from django.contrib import admin
-from pyzabbix import ZabbixAPI, ZabbixAPIException
-from requests import ConnectionError as ZabbixConnectionError, Session
+from requests import RequestException
 
 from app_settings.models import (
     LogsElasticStackSettings,
     ZabbixConfig,
     VlanTracerouteConfig,
 )
+from devicemanager.device.zabbix_api import zabbix_api
 
 
 @admin.register(LogsElasticStackSettings)
@@ -48,24 +48,18 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
 
     list_display = ["url", "login", "connectable"]
 
-    @admin.display(description="Connectable", boolean=True)
-    def connectable(self, obj: ZabbixConfig) -> bool:
+    @admin.display(description="Connectable")
+    def connectable(self, obj: ZabbixConfig) -> str:
         """
         Отображает, можно ли подключиться к Zabbix по указанным настройкам
         """
-
-        session = Session()
-        session.verify = False
+        zabbix_api.set(obj)
         try:
-            with ZabbixAPI(server=obj.url, session=session, timeout=2) as zabbix_api:
-                zabbix_api.login(user=obj.login, password=obj.password)
-                return zabbix_api.is_authenticated
-        except (ZabbixAPIException, ZabbixConnectionError):
-            return False
+            with zabbix_api.connect() as conn:
+                return "✅ Подключено" if conn.is_authenticated else "❌ Не подключено"
         # pylint: disable-next=broad-exception-caught
-        except Exception as error:
-            print(error)
-            return False
+        except (Exception, RequestException) as exc:
+            return str(exc)
 
 
 @admin.register(VlanTracerouteConfig)

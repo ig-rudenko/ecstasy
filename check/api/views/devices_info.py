@@ -23,7 +23,7 @@ from check.interfaces_collector import (
 )
 from check.logger import django_actions_logger
 from devicemanager.device import DeviceManager
-from devicemanager.device import ZabbixAPIConnection
+from devicemanager.device import zabbix_api
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter, DeviceInfoFilter
@@ -308,8 +308,9 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
         return interfaces
 
     def add_zabbix_graph_links(self, interfaces: list) -> list:
+        print(zabbix_api.zabbix_url)
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 host = zbx.host.get(output=["name"], filter={"name": self.device.name})
                 if not host:
                     return interfaces
@@ -336,7 +337,7 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
                     if graphs_ids_params:
                         # Создаем ссылку на графики zabbix, если получилось их найти.
                         intf["GraphsLink"] = (
-                            f"{ZabbixAPIConnection.ZABBIX_URL}/zabbix.php?"
+                            f"{zabbix_api.zabbix_url}/zabbix.php?"
                             f"view_as=showgraph&action=charts.view&from=now-24h&to=now&"
                             f"filter_hostids%5B%5D={host_id}&filter_search_type=0&"
                             f"{graphs_ids_params}filter_set=1"
@@ -397,7 +398,7 @@ class DeviceInfoAPIView(APIView):
                 # Создание URL-адреса для запроса журналов Kibana.
                 "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
                 "zabbixHostID": int(dev.zabbix_info.hostid or 0),
-                "zabbixURL": ZabbixAPIConnection.ZABBIX_URL,
+                "zabbixURL": zabbix_api.zabbix_url,
                 "zabbixInfo": {
                     "description": dev.zabbix_info.description,
                     "inventory": dev.zabbix_info.inventory.to_dict,

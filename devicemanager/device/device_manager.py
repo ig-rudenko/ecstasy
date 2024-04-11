@@ -14,7 +14,7 @@ from devicemanager.zabbix_info_dataclasses import (
     Location,
 )
 from .interfaces import Interfaces
-from .zabbix_api import ZabbixAPIConnection
+from .zabbix_api import zabbix_api
 from ..exceptions import AuthException, BaseDeviceException
 
 
@@ -43,7 +43,7 @@ class DeviceManager:
         """Собирает информацию по данному оборудованию из Zabbix"""
 
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 zabbix_info = zbx.host.get(
                     filter={"name": self.name},
                     output=["hostid", "host", "name", "status", "description"],
@@ -87,7 +87,7 @@ class DeviceManager:
     def push_zabbix_inventory(self):
         """Обновляем инвентарные данные узла сети в Zabbix"""
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 zbx.host.update(
                     hostid=self.zabbix_info.hostid,
                     inventory={
@@ -119,7 +119,7 @@ class DeviceManager:
     def from_hostid(cls, hostid: str) -> Optional["DeviceManager"]:
         """Создаем объект через переданный hostid Zabbix"""
         try:
-            with ZabbixAPIConnection().connect() as zbx:
+            with zabbix_api.connect() as zbx:
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
                 return DeviceManager(host[0]["name"])
