@@ -67,6 +67,9 @@ def interface_normal_view(interface) -> str:
 
     >>> interface_normal_view("GE1/0/12")
     'GigabitEthernet 1/0/12'
+
+    >>> interface_normal_view("gi1")
+    'GigabitEthernet 1'
     """
 
     interface_number = re.findall(r"(\d+([/\\]?\d*)*)", str(interface))

@@ -69,6 +69,7 @@ class SetDescriptionResult(NamedTuple):
     saved: str = ""
     port: str = ""
     error: str = ""
+    info: str = ""
     max_length: int = 0
 
 

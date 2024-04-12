@@ -152,7 +152,8 @@ class DeviceRemoteConnector:
                         self.send_N_key,  # 6
                         r"Connection closed",  # 7
                         r"Incorrect login",  # 8
-                        pexpect.EOF,  # 9
+                        pexpect.EOF,  # 9,
+                        self.login_input_expect,  # 10
                     ],
                     timeout=30,
                 )
@@ -193,12 +194,14 @@ class DeviceRemoteConnector:
                     session.close()
                     raise DeviceLoginError("Неверный Логин/Пароль (подключение SSH)", ip=self.ip)
 
-                elif expect_index in {7, 9}:
+                elif expect_index in (7, 9):
                     session.close()
                     raise SSHConnectionError(
                         "SSH недоступен" + session.before.decode("utf-8"),
                         ip=self.ip,
                     )
+                elif expect_index == 10:
+                    session.send(self.login + "\r")  # Login
 
         except Exception as exc:
             if session is not None and session.isalive():

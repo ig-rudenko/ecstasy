@@ -460,7 +460,10 @@ class EltexMES(BaseDevice):
             self.session.sendline("end")
             self.session.expect(self.prompt)
 
-            return "Max length:" + self.find_or_empty(r" Up to (\d+) characters", output)
+            return {
+                "max_length": int(self.find_or_empty(r" Up to (\d+) characters", output)),
+                "status": "fail",
+            }
 
         self.session.sendline("end")
         self.session.expect(self.prompt)
