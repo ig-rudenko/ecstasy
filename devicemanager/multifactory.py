@@ -1,4 +1,5 @@
 from . import UnknownDeviceError
+from .vendors.almatek import AlmatekFactory
 from .vendors.base.device import BaseDevice
 from .vendors.base.factory import AbstractDeviceFactory
 from .vendors.base.types import DeviceAuthDict
@@ -23,7 +24,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
@@ -72,6 +73,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
             EdgeCoreFactory,
             JuniperFactory,
             ProCurveFactory,
+            AlmatekFactory,
         ]
 
         for factory in factories:

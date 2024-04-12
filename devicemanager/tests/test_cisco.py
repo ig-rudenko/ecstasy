@@ -550,7 +550,6 @@ class TestCiscoInfo(SimpleTestCase):
             "SFP",  # 12
         ]
         for i in range(1, len(valid_result) + 1):
-            print(i)
             self.assertEqual(valid_result[i - 1], self.cisco.get_port_type(f"Gi0/{i}"))
 
 
