@@ -26,9 +26,9 @@ class Almatek(BaseDevice):
     def __init__(self, session, ip: str, auth: DeviceAuthDict, snmp_community: str = ""):
         super().__init__(session, ip, auth, snmp_community=snmp_community)
         info = self.send_command("show info")
-        self.model = self.find_or_empty(r"System Model\s+:(\S+)", info)
-        self.mac = self.find_or_empty(r"MAC Address\s+:(\S+)", info)
-        self.serialno = self.find_or_empty(r"System SN\s+:(\S+)", info)
+        self.model = self.find_or_empty(r"System Model\s+:\s+(\S+)", info)
+        self.mac = self.find_or_empty(r"MAC Address\s+:\s+(\S+)", info)
+        self.serialno = self.find_or_empty(r"System SN\s+:\s+(\S+)", info)
         self.__cache_port_info: dict[str, str] = {}
 
     @BaseDevice.lock_session

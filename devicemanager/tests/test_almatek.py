@@ -80,7 +80,7 @@ VID  VLAN Name        Untagged Ports              Tagged Ports                Ty
 1    default          gi8-10,lag1-8                                           Default
 3000 NAME             gi1-7                       gi8-9                       Static
 """
-        elif command == "show mac address-table GigabitEthernet 1":
+        elif command == "show mac address-table interface GigabitEthernet 1":
             self.before = b"""
  VID  | MAC Address       | Type              | Ports          
 ------+-------------------+-------------------+----------------
@@ -169,11 +169,8 @@ class TestAlmatekInterfaces(SimpleTestCase):
         )
 
     def test_get_macs(self):
-        mac_list = self.almatek.get_mac("Gi0/1")
-        self.assertEqual(
-            mac_list,
-            [(3929, "80:BE:AF:52:B3:F8")],
-        )
+        mac_list = self.almatek.get_mac("gi1")
+        self.assertEqual(mac_list, [(3929, "80:BE:AF:52:B3:F8")])
 
         mac_list_2 = self.almatek.get_mac("rea0/1")
         self.assertEqual(mac_list_2, [])
