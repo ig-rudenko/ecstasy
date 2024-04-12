@@ -142,12 +142,10 @@ class Almatek(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
         mac_output = self.send_command(f"show mac address-table interface {port}")
-        print(mac_output)
         mac_parsed: list[list[str]] = re.findall(
             rf"(\d+)\s+\|\s+({self.mac_format})\s+\|\s+\S+\s+\|\s+gi\d+", mac_output
         )
-        print(mac_parsed)
-        return [(vid, mac) for vid, mac, *_ in mac_parsed]
+        return [(int(vid), mac) for vid, mac, *_ in mac_parsed]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()
