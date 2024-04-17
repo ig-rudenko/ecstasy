@@ -4,7 +4,7 @@ import orjson
 import requests as requests_lib
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.cache import cache
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import render
 from pyvis.network import Network
 from requests import RequestException
@@ -42,6 +42,7 @@ def run_periodically_scan(request):
     return HttpResponse(status=400)
 
 
+@api_view(["GET"])
 @login_required
 def check_periodically_scan(request: Request):
     return Response(check_scanning_status())
@@ -74,11 +75,11 @@ def find_by_description(request):
     """
 
     if not request.GET.get("pattern"):
-        return JsonResponse({"interfaces": []})
+        return Response({"interfaces": []})
 
     result = Finder.find_description(request.GET.get("pattern"), request.user)
 
-    return JsonResponse(
+    return Response(
         {"interfaces": result},
     )
 
