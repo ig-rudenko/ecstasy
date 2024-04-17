@@ -141,20 +141,20 @@
                 <td></td>
 
                 <td style="font-family: monospace; font-size: x-large;">
-                    <span :title="mac.vlanName" style="cursor: help; font-family: monospace;">
-                        {{mac.vlanID}}
+                    <span :title="mac[2]" style="cursor: help; font-family: monospace;">
+                        {{mac[0]}}
                     </span>
                 </td>
 
                 <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                    <span @click="findMacEvent(mac.mac)" class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
-                        {{mac.mac}}
+                    <span @click="findMacEvent(mac[1])" class="nowrap" style="cursor: pointer; font-family: monospace;" title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
+                        {{mac[1]}}
                         <svg class="bi me-2" width="24" height="24" role="img"><use xlink:href="#search-icon"></use></svg>
                     </span>
                 </td>
 
                 <td>
-                  <button @click="sessionEvent(mac.mac, ontInterface.name)" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bras-session-modal">
+                  <button @click="sessionEvent(mac[1], ontInterface.name)" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bras-session-modal">
                     BRAS
                   </button>
                 </td>
@@ -166,7 +166,7 @@
 
       </div>
 
-      <div v-else-if="MACs" class="container">
+      <div v-else-if="MACs.length == 0" class="container">
         <h3 class="text-center" style="padding-bottom: 40px;">Нет MAC</h3>
       </div>
 
@@ -187,7 +187,6 @@ import SubscribersData from "../subscribersData";
 import Interface from "../../../types/interfaces";
 import api_request from "../../../api_request";
 import {AxiosResponse} from "axios";
-import MacInfo from "../../../types/mac";
 import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
 import Customer from "../../../types/customer";
 import Address from "../../../types/address";
@@ -224,11 +223,10 @@ export default defineComponent({
       rssi: this.line[3],
       serialNumber: this.line[4],
       description: this.line[5],
-      macs: this.line[6],
+      MACs: this.line[6],
       comments: newInterfaceCommentsList(this.line[7]),
 
       portDetailMenu: "" as ""|"portConfig"|"portErrors",
-      MACs: [] as MacInfo[],
       complexInfo: null as ComplexInterfaceInfo|null,
     }
   },
@@ -328,20 +326,10 @@ export default defineComponent({
       this.getDetailInfo()
     },
 
-    getMacs() {
-      if (!this.showDetailInfo) return
-      api_request.get("/device/api/" + this.deviceName + "/macs?port=" + this.interface.name)
-          .then(
-              (value: AxiosResponse<{result: MacInfo[], count: number }>) => {
-                this.MACs = value.data.result;
-              },
-          )
-    },
-
     getDetailInfo() {
       if (!this.showDetailInfo) return
 
-      api_request.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
+      api_request.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.ontInterface.name)
           .then(
               (value: AxiosResponse<ComplexInterfaceInfo>) => {
                 this.complexInfo = value.data;
