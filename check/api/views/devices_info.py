@@ -308,7 +308,6 @@ class DeviceInterfacesAPIView(DeviceInterfacesCollectorMixin, APIView):
         return interfaces
 
     def add_zabbix_graph_links(self, interfaces: list) -> list:
-        print(zabbix_api.zabbix_url)
         try:
             with zabbix_api.connect() as zbx:
                 host = zbx.host.get(output=["name"], filter={"name": self.device.name})
