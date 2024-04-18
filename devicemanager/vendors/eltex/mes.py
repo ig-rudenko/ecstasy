@@ -483,5 +483,5 @@ class EltexMES(BaseDevice):
     @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("show startup-config", expect_command=True)
-        config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        config = re.sub(r" +\n +(?=\S)", "", config.strip())
         return io.BytesIO(config.encode())

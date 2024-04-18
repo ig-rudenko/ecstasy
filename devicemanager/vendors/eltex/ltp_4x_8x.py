@@ -1,3 +1,4 @@
+import io
 import re
 from functools import wraps
 from typing import Any, TypedDict
@@ -491,5 +492,6 @@ class EltexLTP(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
-        return self.send_command("show running-config", expect_command=True)
+    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
+        config = self.send_command("show running-config", expect_command=True)
+        return io.BytesIO(config.encode())

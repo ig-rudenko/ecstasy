@@ -1,3 +1,4 @@
+import io
 import re
 from functools import wraps
 
@@ -211,7 +212,18 @@ class EltexLTP16N(BaseDevice):
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
 
-        if port_type == "pon-port":
+        if port_type == "front-port":
+            info = self.send_command(f"show interface front-port {port_number} sfp")
+            info += self.send_command(f"show interface front-port {port_number} state")
+            info = info.strip()
+            info = re.sub(r"\n", "<br>", info)
+            info = re.sub(r"\s", "&nbsp;", info)
+            return {
+                "type": "html",
+                "data": f'<div style="white-space: pre-wrap;font-family: monospace;font-size: 13px;">{info}</div>',
+            }
+
+        elif port_type == "pon-port":
             # Данные для шаблона
             data: dict[str, int | list] = {}
 
@@ -374,6 +386,8 @@ class EltexLTP16N(BaseDevice):
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
             # Для порта ONT вида - `0/1`
             return self.send_command(f"show interface ont {port_number} configuration")
+        elif port_type == "front-port":
+            return self.send_command(f"show running-config interface front-port {port_number}")
 
         return ""
 
@@ -389,5 +403,6 @@ class EltexLTP16N(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> str:
-        return self.send_command("show running-config", expect_command=True)
+    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
+        config = self.send_command("show running-config", expect_command=True)
+        return io.BytesIO(config.encode())
