@@ -97,7 +97,7 @@ def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
             continue
 
         oper_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
-        admin_status = snmp_result["IF-MIB::ifOperStatus"].get(snmp_index, "")
+        admin_status = snmp_result["IF-MIB::ifAdminStatus"].get(snmp_index, "")
 
         status: InterfaceType = "notPresent"
         if admin_status == "down":
