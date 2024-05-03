@@ -1,7 +1,9 @@
 import io
 import re
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from time import sleep
-from typing import Literal
+from typing import Literal, Dict, Optional
 
 from ..base.device import BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
@@ -17,6 +19,12 @@ from ..base.types import (
     InterfaceType,
 )
 from ..base.validators import validate_and_format_port_as_normal
+
+
+@dataclass
+class _PortInfo:
+    info: str
+    exp: datetime
 
 
 class Huawei(BaseDevice):
@@ -101,6 +109,8 @@ class Huawei(BaseDevice):
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
+
+        self.__ports_info: Dict[str, _PortInfo] = {}
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -307,7 +317,7 @@ class Huawei(BaseDevice):
 
     @validate_and_format_port_as_normal()
     @BaseDevice.lock_session
-    def __port_info(self, port):
+    def __get_port_info(self, port: str):
         """
         ## Возвращаем полную информацию о порте.
 
@@ -318,7 +328,16 @@ class Huawei(BaseDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        return self.send_command(f"display interface {port}")
+        port_info: Optional[_PortInfo] = self.__ports_info.get(port, None)
+        now = datetime.now()
+        if port_info is None or port_info.exp < now:
+            new_port_info = _PortInfo(
+                info=self.send_command(f"display interface {port}"),
+                exp=now + timedelta(seconds=5),
+            )
+            self.__ports_info[port] = new_port_info
+
+        return self.__ports_info[port].info
 
     def get_port_type(self, port) -> str:
         """
@@ -328,7 +347,7 @@ class Huawei(BaseDevice):
         :return: "SFP", "COPPER", "COMBO-FIBER", "COMBO-COPPER" или "?"
         """
 
-        res = self.__port_info(port)
+        res = self.__get_port_info(port)
 
         # Определение аппаратного типа порта.
         type_ = self.find_or_empty(r"Port hardware type is (\S+)|Port Mode: (.*)", res)
@@ -362,7 +381,7 @@ class Huawei(BaseDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        errors = self.__port_info(port).split("\n")
+        errors = self.__get_port_info(port).split("\n")
         return "\n".join([line.strip() for line in errors if "error" in line.lower() or "CRC" in line])
 
     @BaseDevice.lock_session
@@ -641,7 +660,7 @@ class Huawei(BaseDevice):
         return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
 
     def get_port_info(self, port: str) -> dict:
-        return {"type": "text", "data": ""}
+        return {"type": "text", "data": self.__get_port_info(port)}
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
