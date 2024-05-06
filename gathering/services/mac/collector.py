@@ -12,8 +12,8 @@ from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, zabbix_api, Interfaces
 from devicemanager.exceptions import BaseDeviceException
 from devicemanager.vendors.base.types import MACTableType
+from gathering.models import MacAddress
 from net_tools.models import DevicesInfo
-from ..models import MacAddress
 
 
 class MacAddressTableGather:

@@ -3,8 +3,9 @@ import shutil
 from datetime import datetime
 
 from django.test import TestCase
-from gathering.configurations.local_storage import LocalConfigStorage, ConfigFile
+
 from check.models import Devices
+from gathering.services.configurations import LocalConfigStorage, ConfigFile
 
 
 class TestLocalStorage(TestCase):

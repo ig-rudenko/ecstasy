@@ -1,8 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from gathering.services.mac.traceroute import MacTraceroute
 from .swagger.schemas import mac_traceroute_api_doc
-from ..mac.traceroute import MacTraceroute
 
 
 class MacTracerouteAPIView(APIView):

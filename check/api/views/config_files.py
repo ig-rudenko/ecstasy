@@ -11,9 +11,9 @@ from rest_framework.views import APIView
 
 from check import models
 from check.permissions import profile_permission
-from gathering.configurations.collector import ConfigurationGather
-from gathering.configurations.exceptions import ConfigFileError
-from gathering.configurations.local_storage import LocalConfigStorage, ConfigStorage
+from gathering.services.configurations import ConfigFileError
+from gathering.services.configurations import LocalConfigStorage, ConfigStorage
+from gathering.services.configurations.collector import ConfigurationGather
 from ..filters import DeviceFilter
 from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer, ConfigFileSerializer

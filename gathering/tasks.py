@@ -10,10 +10,10 @@ from pyzabbix.api import logger
 from check.models import Devices
 from ecstasy_project.celery import app
 from ecstasy_project.task import ThreadUpdatedStatusTask
-from .configurations.collector import ConfigurationGather
-from .configurations.exceptions import ConfigFileError
-from .configurations.local_storage import LocalConfigStorage
-from .mac import MacAddressTableGather
+from gathering.services.configurations import ConfigurationGather
+from gathering.services.configurations.exceptions import ConfigFileError
+from gathering.services.configurations.local_storage import LocalConfigStorage
+from gathering.services.mac import MacAddressTableGather
 from .models import MacAddress
 
 

@@ -2,7 +2,7 @@ import hashlib
 import re
 
 from devicemanager.remote.exceptions import InvalidMethod
-from gathering.ftp.exceptions import FTPCollectorError
+from gathering.services.ftp.exceptions import FTPCollectorError
 from .base import ConfigStorage
 from .exceptions import ConfigFileError
 

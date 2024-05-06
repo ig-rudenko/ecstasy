@@ -5,8 +5,8 @@ import shutil
 from functools import lru_cache
 from time import sleep
 
-from gathering.ftp import FTPCollector
-from gathering.ftp.exceptions import NotFound
+from gathering.services.ftp import FTPCollector
+from gathering.services.ftp.exceptions import NotFound
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
