@@ -5,22 +5,25 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from check import models
 from check.permissions import profile_permission
-from gathering.configurations.collector import ConfigurationGather
-from gathering.configurations.exceptions import ConfigFileError
-from gathering.configurations.local_storage import LocalConfigStorage, ConfigStorage
+from gathering.services.configurations import (
+    ConfigurationGather,
+    ConfigFileError,
+    LocalConfigStorage,
+    ConfigStorage,
+)
 from ..filters import DeviceFilter
 from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
 
 
-class BaseConfigStorageAPIView(APIView):
+class BaseConfigStorageAPIView(GenericAPIView):
     config_storage: Type[ConfigStorage] | None = None
 
     def get_storage(self, device_name: str, file_name: str | None = None) -> ConfigStorage:
@@ -127,10 +130,8 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-
         # Фильтруем запрос
-        group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
-        return models.Devices.objects.filter(group_id__in=group_ids).select_related("group")
+        return models.Devices.objects.filter(group__profile__user_id=self.request.user.id)
 
     def get(self, request, **kwargs):
         """
@@ -170,11 +171,11 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
             "devices": [],
         }
         devices = self.filter_queryset(self.get_queryset())
-        for dev in devices:
+        for dev in devices:  # type: models.Devices
             result["count"] += 1
 
             # Файлы конфигураций
-            files = self.get_storage(dev).files_list()
+            files = self.get_storage(dev.name).files_list()
 
             # Сериализуем файлы
             files_serializer = self.serializer_class(files, many=True)

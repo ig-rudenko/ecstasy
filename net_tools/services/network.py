@@ -1,6 +1,6 @@
 from pyvis.network import Network
 
-from net_tools.finder import VlanTracerouteResult
+from net_tools.services.finder import VlanTracerouteResult
 
 
 class VlanNetwork:

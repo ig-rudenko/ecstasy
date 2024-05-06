@@ -22,7 +22,7 @@ import urllib3
 from pyzabbix.api import logger as zabbix_api_logger
 from urllib3.exceptions import InsecureRequestWarning
 
-from gathering.ftp import FTPCollector
+from gathering.services.ftp import FTPCollector
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]  # type: ignore
 
