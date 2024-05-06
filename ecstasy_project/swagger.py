@@ -11,7 +11,7 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from gathering.api.views import MacTraceroute
+from gathering.api.views import MacTracerouteAPIView
 
 access_token_lifetime_seconds: float = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60  # type: ignore
 
@@ -45,7 +45,7 @@ schema_view = get_schema_view(
         path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
         path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
         path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
-        path("gather/api/traceroute/mac-address/<mac>/", MacTraceroute.as_view()),
+        path("gather/api/traceroute/mac-address/<mac>/", MacTracerouteAPIView.as_view()),
         path("maps/api/", include("maps.api.urls")),
     ],
     authentication_classes=[
