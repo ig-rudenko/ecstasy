@@ -190,7 +190,11 @@ class VlanTraceroute:
         self._desc_name_list: list[DescNameFormat] = []
         self.passed_devices: set[str] = set()  # Множество уже пройденного оборудования
 
-    @lru_cache(maxsize=200)
+        # Словарь содержащий информацию об VLAN для каждого оборудования
+        self._devices_vlans_info: dict[str, str | None] = {}
+        self._get_devices_vlans()
+
+    @lru_cache(maxsize=2000)
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
 
@@ -234,15 +238,10 @@ class VlanTraceroute:
 
         if device in self.passed_devices:
             return
-
         self.passed_devices.add(device)  # Добавляем узел в список уже пройденных устройств
-        try:
-            dev = DevicesInfo.objects.get(dev__name=device)
-        except DevicesInfo.DoesNotExist:
-            return
 
-        interfaces = Interfaces(orjson.loads(dev.vlans or "[]"))
-
+        # Получаем интерфейсы устройства, если они есть в базе данных.
+        interfaces: Interfaces = self._get_device_interfaces(device)
         if not interfaces:
             return
 
@@ -273,12 +272,7 @@ class VlanTraceroute:
             # не имеет подходящего порта.
             next_dev_interface_name = ""
             if double_check and next_device:  # Если есть следующее оборудование
-                try:
-                    next_dev_intf_json: str = DevicesInfo.objects.get(dev__name=next_device).vlans or "[]"
-                except DevicesInfo.DoesNotExist:
-                    next_dev_intf_json = "[]"
-
-                next_dev_interfaces = Interfaces(orjson.loads(next_dev_intf_json))
+                next_dev_interfaces: Interfaces = self._get_device_interfaces(next_device)
 
                 for next_dev_interface in next_dev_interfaces:
                     if vlan_to_find in next_dev_interface.vlan and re.findall(
@@ -293,53 +287,17 @@ class VlanTraceroute:
             # Создаем данные для visual map
             if next_device:
                 # Следующий узел сети
-                self.result.append(
-                    VlanTracerouteResult(
-                        node=device,  # Устройство (название узла)
-                        next_node=next_device,  # Сосед (название узла)
-                        line_width=10,  # Толщина линии соединения
-                        line_description=f"""
-                        <strong>
-                            {device} port: 
-                            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
-                            {next_device} port: 
-                            <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
-                        </strong>
-                        """,  # Описание линии
-                        admin_down_status=admin_status,
-                    )
+                self._add_next_device_result(
+                    device, interface.name, next_device, next_dev_interface_name, admin_status
                 )
+
             # Порт с описанием
             elif interface.desc:
-                self.result.append(
-                    VlanTracerouteResult(
-                        node=device,  # Устройство (название узла)
-                        next_node=f"{device} d:({interface.desc})",  # Порт (название узла)
-                        line_width=10,  # Толщина линии соединения
-                        line_description=f"""
-                        <strong>
-                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
-                            {interface.desc}
-                        </strong>
-                        """,  # Описание линии соединения
-                        admin_down_status=admin_status,
-                    )
-                )
+                self._add_unknown_device_result(device, interface.name, interface.desc, admin_status)
+
             # Пустые порты
             elif empty_ports:
-                self.result.append(
-                    VlanTracerouteResult(
-                        node=device,  # Устройство (название узла)
-                        next_node=f"{device} p:({interface.name})",  # Порт (название узла)
-                        line_width=5,  # Толщина линии соединения
-                        line_description=f"""
-                        <strong>
-                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span>
-                        </strong>
-                        """,  # Описание линии соединения
-                        admin_down_status=admin_status,
-                    )
-                )
+                self._add_empty_port_result(device, interface.name, admin_status)
 
             # Проверка наличия следующего устройства в списке пройденных устройств.
             if next_device and next_device not in self.passed_devices:
@@ -351,6 +309,109 @@ class VlanTraceroute:
                     find_device_pattern=find_device_pattern,
                     double_check=double_check,
                 )
+
+    def _add_next_device_result(
+        self,
+        device: str,
+        interface_name: str,
+        next_device: str,
+        next_dev_interface_name: str,
+        admin_down_status: str,
+    ):
+        """
+        Добавляет данные следующего устройства в результаты.
+        :param device: Устройство (название).
+        :param interface_name: Название интерфейса `device`.
+        :param next_device: Следующее устройство (название).
+        :param next_dev_interface_name: Название интерфейса следующего устройства, который смотрит в сторону `device`
+        :param admin_down_status: Статус доступности порта `device` в сторону `next_device`.
+        """
+        line_description = f"""
+        <strong>
+            {device} port: 
+            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface_name}</span> -->
+            {next_device} port: 
+            <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
+        </strong>
+        """
+        self.result.append(
+            VlanTracerouteResult(
+                node=device,  # Устройство (название узла)
+                next_node=next_device,  # Сосед (название узла)
+                line_width=10,  # Толщина линии соединения
+                line_description=line_description,  # Описание линии
+                admin_down_status=admin_down_status,
+            )
+        )
+
+    def _add_unknown_device_result(
+        self, device: str, interface_name: str, interface_desc: str, admin_down_status: str
+    ):
+        """
+        Добавляет неизвестное устройство в результат.
+        :param device: Имя устройства.
+        :param interface_name: Имя порта.
+        :param interface_desc: Описание порта.
+        :param admin_down_status: Статус доступности порта.
+        """
+
+        line_description = f"""
+        <strong>
+            {device} port: 
+            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface_name}</span> -->
+            {interface_desc}
+        </strong>
+        """
+        self.result.append(
+            VlanTracerouteResult(
+                node=device,  # Устройство (название узла)
+                next_node=f"{device} d:({interface_desc})",  # Порт (название узла)
+                line_width=10,
+                line_description=line_description,
+                admin_down_status=admin_down_status,
+            )
+        )
+
+    def _add_empty_port_result(self, device: str, interface: str, admin_down_status: str):
+        """
+        Добавляет пустой порт в результат
+        :param device: Имя устройства
+        :param interface: Имя порта
+        :param admin_down_status: Статус доступности порта.
+        """
+        line_description = f"""
+        <strong>
+            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface}</span>
+        </strong>
+        """
+        self.result.append(
+            VlanTracerouteResult(
+                node=device,  # Устройство (название узла)
+                next_node=f"{device} p:({interface})",  # Порт (название узла)
+                line_width=5,  # Толщина линии соединения
+                line_description=line_description,  # Описание линии соединения
+                admin_down_status=admin_down_status,
+            )
+        )
+
+    def clear_results(self):
+        """Очищает результаты поиска."""
+        self.result = []
+
+    def _get_devices_vlans(self):
+        """Получаем список всех устройств сети, содержащий информацию об VLAN для каждого"""
+        if not self._devices_vlans_info:
+            self._devices_vlans_info = {
+                dev["dev__name"]: dev["vlans"]
+                for dev in DevicesInfo.objects.all().values("dev__name", "vlans")
+            }
+
+    def _get_device_interfaces(self, device_name: str) -> Interfaces:
+        """Получаем список VLAN для текущего устройства"""
+        device_info = self._devices_vlans_info.get(device_name, None)
+        if device_info is not None:
+            return Interfaces(orjson.loads(device_info or "[]"))
+        return Interfaces()
 
 
 class MultipleVlanTraceroute:
@@ -369,18 +430,20 @@ class MultipleVlanTraceroute:
     ) -> list[VlanTracerouteResult]:
         result: list[VlanTracerouteResult] = []
         # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
-        for start_dev in self._devices_queryset:
+        for device_name in self._devices_queryset.values_list("name", flat=True):
             # Трассировка vlan
-            finder = VlanTraceroute()
-            finder.find_vlan(
-                device=start_dev.name,
+            self._finder.find_vlan(
+                device=device_name,
                 vlan_to_find=vlan,
                 empty_ports=empty_ports,
                 only_admin_up=only_admin_up,
                 find_device_pattern=find_device_pattern,
                 double_check=double_check,
             )
-            if not graph_min_length or len(finder.result) >= graph_min_length:
-                result.extend(finder.result)
+            if not graph_min_length or len(self._finder.result) >= graph_min_length:
+                result.extend(self._finder.result)
+
+            # Очистка результаты поиска для следующего устройства
+            self._finder.clear_results()
 
         return result
