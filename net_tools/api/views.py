@@ -15,6 +15,11 @@ from rest_framework.response import Response
 from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
 from devicemanager.device import zabbix_api
+from net_tools.models import VlanName
+from net_tools.services.arp_find import find_mac_or_ip
+from net_tools.services.finder import Finder, VlanTraceroute, MultipleVlanTraceroute
+from net_tools.services.network import VlanNetwork
+from net_tools.tasks import interfaces_scan, check_scanning_status
 from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
 from .swagger.schemas import (
     get_vendor_schema,
@@ -22,11 +27,6 @@ from .swagger.schemas import (
     get_vlan_desc_schema,
     vlan_traceroute_schema,
 )
-from ..arp_find import find_mac_or_ip
-from ..finder import Finder, VlanTraceroute, MultipleVlanTraceroute
-from ..models import VlanName
-from ..network import VlanNetwork
-from ..tasks import interfaces_scan, check_scanning_status
 
 
 @login_required
@@ -77,11 +77,9 @@ def find_by_description(request):
     if not request.GET.get("pattern"):
         return Response({"interfaces": []})
 
-    result = Finder.find_description(request.GET.get("pattern"), request.user)
+    result = Finder().find_description(request.GET.get("pattern"), request.user.id)
 
-    return Response(
-        {"interfaces": result},
-    )
+    return Response({"interfaces": result})
 
 
 @login_required

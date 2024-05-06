@@ -1,19 +1,59 @@
+import re
+from dataclasses import dataclass, field
 from functools import lru_cache
-from re import findall, sub, IGNORECASE, compile, escape, Pattern
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict, Literal
 
 import orjson
-from django.contrib.auth.models import User
+from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.db.models import QuerySet
 
 from check.models import Devices, InterfacesComments
 from devicemanager.device import Interfaces
-from .models import DevicesInfo, DescNameFormat
+from net_tools.models import DevicesInfo, DescNameFormat
+
+
+@dataclass
+class InterfaceComment:
+    user: str
+    text: str
+    created_time: str
+
+    def to_dict(self):
+        return {"user": self.user, "text": self.text, "createdTime": self.created_time}
+
+
+@dataclass
+class DeviceInterfacesComments:
+    interfaces: dict[str, list[InterfaceComment]] = field(default_factory=dict)
+
+
+@dataclass
+class Comments:
+    devices: dict[str, DeviceInterfacesComments] = field(default_factory=dict)
+
+    def get_interface(self, device_name: str, interface_name: str) -> list[InterfaceComment]:
+        device_interfaces = self.devices.get(device_name)
+        if device_interfaces is not None:
+            return device_interfaces.interfaces.get(interface_name, [])
+        return []
+
+
+class InterfaceCommentDict(TypedDict):
+    user: str
+    text: str
+    createdTime: str
+
+
+class DescriptionFinderResult(TypedDict):
+    Device: str
+    Interface: str
+    Description: str
+    Comments: list[InterfaceCommentDict]
+    SavedTime: str
 
 
 class Finder:
-    @staticmethod
-    def find_description(pattern_str: str, user: User) -> list:
+    def find_description(self, pattern_str: str, user_id: int) -> list[DescriptionFinderResult]:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -22,105 +62,107 @@ class Finder:
         Список результатов содержит следующие элементы:
 
         ```python
-        {
-            "Device": "Имя оборудования",
-            "Interface": "Порт",
-            "Description": "Описание",
-            "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
-        }
+            {
+                "Device": "Имя оборудования",
+                "Interface": "Порт",
+                "Description": "Описание",
+                "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
+            }
         ```
 
         :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
-        :param user: Поль
+        :param user_id: Пользователь, для которого будет осуществляться поиск.
         :return: Список результатов поиска
         """
 
-        all_comments: list[InterfacesComments] = list(
-            InterfacesComments.objects.filter(comment__iregex=escape(pattern_str)).select_related(
-                "user", "device"
-            )
-        )
+        comments: Comments = self.get_comments(pattern_str)
 
-        comments_dict: dict[str, dict[str, list[dict[str, str | float]]]] = {}
-        for comment in all_comments:
-            comments_dict.setdefault(comment.device.name, {})
-            comments_dict[comment.device.name].setdefault(comment.interface, [])
-
-            comments_dict[comment.device.name][comment.interface].append(
-                {
-                    "user": comment.user.username if comment.user else "Anonymous",
-                    "text": comment.comment,
-                    "createdTime": comment.datetime.strftime("%d.%m.%Y %H:%M:%S"),
-                }
-            )
-
-        pattern: Pattern[str] = compile(escape(pattern_str), flags=IGNORECASE)
+        pattern: re.Pattern[str] = re.compile(re.escape(pattern_str), flags=re.IGNORECASE)
 
         result = []
 
-        user_groups = [g["id"] for g in user.profile.devices_groups.all().values("id")]
+        dev_info_queryset = (
+            DevicesInfo.objects.filter(dev__group__profile__user_id=user_id)
+            .select_related("dev")
+            .values("interfaces", "interfaces_date", "dev__name")
+        )
 
-        device_queryset: QuerySet[DevicesInfo] = DevicesInfo.objects.all().select_related("dev")
         # Производим поочередный поиск
-        for device in device_queryset:
-            try:
-                if device.dev.group_id not in user_groups:
-                    continue
-            except Devices.DoesNotExist:
-                continue
-
+        for device in dev_info_queryset:
             # Проверяем, пуста ли переменная interfaces.
-            if not device.interfaces:
+            if not device["interfaces"]:
                 continue
 
             # Загрузка данных json из базы данных в словарь python.
-            interfaces: list[dict] = orjson.loads(device.interfaces or "[]")
+            interfaces: list = orjson.loads(device["interfaces"] or "[]")
 
-            for line in interfaces:
+            for line in interfaces:  # type: dict[Literal["Interface", "Status", "Description"], str]
                 find_on_desc = False
 
                 # Если нашли совпадение в описании порта
-                if findall(pattern, line["Description"]):
+                if re.findall(pattern, line["Description"]):
                     find_on_desc = True
 
-                comments_dict_value = comments_dict.get(device.dev.name, {}).get(line["Interface"], [])
+                interface_comments = comments.get_interface(device["dev__name"], line["Interface"])
 
-                if find_on_desc or comments_dict_value:
-                    if device.interfaces_date is not None:
-                        interfaces_datetime = device.interfaces_date.strftime("%d.%m.%Y %H:%M:%S")
+                if find_on_desc or interface_comments:
+                    if device["interfaces_date"] is not None:
+                        interfaces_datetime = naturaltime(device["interfaces_date"])
                     else:
                         interfaces_datetime = "No Datetime"
 
                     result.append(
                         {
-                            "Device": device.dev.name,
+                            "Device": device["dev__name"],
                             "Interface": line["Interface"],
                             "Description": line["Description"],
-                            "Comments": comments_dict_value,
+                            "Comments": [comment.to_dict() for comment in interface_comments],
                             "SavedTime": interfaces_datetime,
                         }
                     )
 
-                    if comments_dict_value:
-                        del comments_dict[device.dev.name][line["Interface"]]
+                    if interface_comments:
+                        del comments.devices[device["dev__name"]].interfaces[line["Interface"]]
 
-        for dev_name in comments_dict:
-            if comments_dict[dev_name]:
-                for interface in comments_dict[dev_name]:
-                    result.append(
-                        *[
-                            {
-                                "Device": dev_name,
-                                "Interface": interface,
-                                "Description": comment["text"],
-                                "Comments": [comment],
-                                "SavedTime": comment["createdTime"],
-                            }
-                            for comment in comments_dict[dev_name][interface]
-                        ]
-                    )
+        for dev_name in comments.devices:
+            for interface in comments.devices[dev_name].interfaces:
+                result.append(
+                    *[
+                        {
+                            "Device": dev_name,
+                            "Interface": interface,
+                            "Description": comment.text,
+                            "Comments": [comment.to_dict()],
+                            "SavedTime": comment.created_time,
+                        }
+                        for comment in comments.devices[dev_name].interfaces[interface]
+                    ]
+                )
 
         return result
+
+    @staticmethod
+    def get_comments(regex_str: str) -> Comments:
+        """Возвращает список всех комментариев поискового запроса."""
+        comments = list(
+            InterfacesComments.objects.filter(comment__iregex=re.escape(regex_str))
+            .select_related("user", "device")
+            .values("user__username", "device__name", "interface", "comment", "datetime")
+        )
+        comments_result: Comments = Comments()
+
+        for comment in comments:
+            comments_result.devices.setdefault(comment["device__name"], DeviceInterfacesComments())
+            comments_result.devices[comment["device__name"]].interfaces.setdefault(comment["interface"], [])
+
+            comments_result.devices[comment["device__name"]].interfaces[comment["interface"]].append(
+                InterfaceComment(
+                    user=comment["user__username"] or "Anonymous",
+                    text=comment["comment"],
+                    created_time=comment["datetime"],
+                )
+            )
+        return comments_result
 
 
 class VlanTracerouteResult(NamedTuple):
@@ -158,9 +200,9 @@ class VlanTraceroute:
                 return name
 
             for pattern in reformat.replacement.split(", "):
-                if pattern in name:  # Если паттерн содержится в исходном имени
+                if re.search(pattern, name, flags=re.IGNORECASE):  # Если паттерн содержится в исходном имени
                     # Заменяем совпадение "pattern" в названии "name" на правильное "n"
-                    return sub(pattern, reformat.standard, name)
+                    return re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
 
         # Если не требуется замены
         return name
@@ -180,8 +222,8 @@ class VlanTraceroute:
         Функция загружает данные об устройстве из базы данных, парсит информацию о VLAN на портах,
         и если находит совпадение с искомым VLAN, то добавляет информацию в итоговый список.
 
-        :param device: Имя устройства, на котором осуществляется поиск
-        :param vlan_to_find: VLAN, который ищем
+        :param device: Имя устройства, на котором осуществляется поиск.
+        :param vlan_to_find: VLAN, который ищем.
         :param empty_ports: Включать пустые порты в анализ?
         :param only_admin_up:  Включать порты со статусом admin down в анализ?
         :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта.
@@ -210,8 +252,8 @@ class VlanTraceroute:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device_find: list[str] = findall(
-                find_device_pattern, self.reformatting(interface.desc), flags=IGNORECASE
+            next_device_find: list[str] = re.findall(
+                find_device_pattern, self.reformatting(interface.desc), flags=re.IGNORECASE
             )
 
             # Приводим к единому формату имя узла сети
@@ -239,10 +281,8 @@ class VlanTraceroute:
                 next_dev_interfaces = Interfaces(orjson.loads(next_dev_intf_json))
 
                 for next_dev_interface in next_dev_interfaces:
-                    if vlan_to_find in next_dev_interface.vlan and findall(
-                        device,
-                        self.reformatting(next_dev_interface.desc),
-                        flags=IGNORECASE,
+                    if vlan_to_find in next_dev_interface.vlan and re.findall(
+                        device, self.reformatting(next_dev_interface.desc), flags=re.IGNORECASE
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)
@@ -260,8 +300,10 @@ class VlanTraceroute:
                         line_width=10,  # Толщина линии соединения
                         line_description=f"""
                         <strong>
-                            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
-                            {next_device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
+                            {device} port: 
+                            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface.name}</span> -->
+                            {next_device} port: 
+                            <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
                         </strong>
                         """,  # Описание линии
                         admin_down_status=admin_status,
