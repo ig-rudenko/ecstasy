@@ -2,6 +2,7 @@ class ZabbixInfo {
     constructor(
         public description: string,
         public inventory: any,
+        public monitoringAvailable: number,
     ) {}
 }
 
@@ -21,7 +22,7 @@ class GeneralInfo {
 
 
 function newZabbixInfo(data: any): ZabbixInfo {
-    return new ZabbixInfo(data.description, data.inventory)
+    return new ZabbixInfo(data.description, data.inventory, data.monitoringAvailable)
 }
 
 function newGeneralInfo(data: any): GeneralInfo {

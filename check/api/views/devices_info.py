@@ -400,6 +400,7 @@ class DeviceInfoAPIView(APIView):
                 "zabbixURL": zabbix_api.zabbix_url,
                 "zabbixInfo": {
                     "description": dev.zabbix_info.description,
+                    "monitoringAvailable": dev.zabbix_info.status == 1,
                     "inventory": dev.zabbix_info.inventory.to_dict,
                 },
                 "permission": request.user.profile.perm_level,

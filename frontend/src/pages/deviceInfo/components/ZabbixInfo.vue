@@ -19,19 +19,21 @@
   <div class="offcanvas-body">
     <div v-if="zabbixInfo">
 
-        <div class="border d-flex flex-wrap mb-4 p-2 rounded-2">
-          <div v-for="imageURL in images" class="p-3">
-            <Image :src="imageURL" alt="Image" width="120" preview />
-          </div>
-        </div>
+      <div v-if="!zabbixInfo.monitoringAvailable" class="alert alert-danger mb-2">Снято с мониторинга</div>
 
-        <div v-if="zabbixInfo.description" class="card card-body">
-          {{ zabbixInfo.description }}
+      <div class="border d-flex flex-wrap mb-4 p-2 rounded-2">
+        <div v-for="imageURL in images" class="p-3">
+          <Image :src="imageURL" alt="Image" width="120" preview/>
         </div>
-        <div v-for="(value, key) in zabbixInfo.inventory">
-          <p>{{ key }}:</p>
-          <ul style="white-space: pre-line">{{ value }}</ul>
-        </div>
+      </div>
+
+      <div v-if="zabbixInfo.description" class="card card-body">
+        {{ zabbixInfo.description }}
+      </div>
+      <div v-for="(value, key) in zabbixInfo.inventory">
+        <p>{{ key }}:</p>
+        <ul style="white-space: pre-line">{{ value }}</ul>
+      </div>
     </div>
   </div>
 </div>

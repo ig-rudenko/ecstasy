@@ -60,7 +60,9 @@
 
     <!--    Ссылка на Zabbix-->
             <div v-if="generalInfo.zabbixHostID" class="col-md-6">
-                <ToZabbixLink :zabbix-host-id="generalInfo.zabbixHostID" :zabbix-url="generalInfo.zabbixURL"/>
+              <ToZabbixLink :monitoringAvailable="generalInfo.zabbixInfo.monitoringAvailable"
+                            :zabbix-host-id="generalInfo.zabbixHostID"
+                            :zabbix-url="generalInfo.zabbixURL"/>
             </div>
 
     <!--    Ссылка на Elastic Stack-->
@@ -215,6 +217,8 @@
 import {defineComponent} from "vue";
 import ScrollTop from "primevue/scrolltop";
 import Toast from "primevue/toast";
+import TimeAgo from 'javascript-time-ago'
+import ru from 'javascript-time-ago/locale/ru'
 
 import DeviceStatusName from "./components/DeviceStatus&Name.vue";
 import ElasticStackLink from "./components/ElasticStackLink.vue";
@@ -324,6 +328,7 @@ export default defineComponent({
   },
 
   async mounted() {
+    TimeAgo.addDefaultLocale(ru)
     this.getInfo()
     // Смотрим предыдущую загруженность интерфейсов оборудования
     this.getInterfacesWorkload()
@@ -585,31 +590,10 @@ export default defineComponent({
      * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
      */
     timer() {
-      this.seconds_pass = Math.round((Date.now() - this.collected.getTime()) / 1000)
-
-      let min_ = Math.floor(this.seconds_pass / 60);
-      let sec = (this.seconds_pass - (min_ * 60)).toString()
-      let min = min_.toString()
-
-      let sec_str = ''
-      let min_str = ''
-
-      if (min_ !== 0) {  // Если есть минуты
-          if (/1$/.test(min)) { min_str = ' минуту ' }
-          if (/[2-4]$/.test(min)) { min_str = ' минуты '}
-          if (/[05-9]$/.test(min)) { min_str = ' минут ' }
-      } else { min = '' }
-
-      if (/1$/.test(sec)) { sec_str = ' секунду ' }
-      if (/[2-4]$/.test(sec)) { sec_str = ' секунды '}
-      if (/[05-9]$/.test(sec)) { sec_str = ' секунд ' }
-      if (/1\d$/.test(sec)) { sec_str = ' секунд ' }
-
-      this.timePassedFromLastUpdate = min+min_str+sec+sec_str
-
+      const timeAgo = new TimeAgo('ru-RU')
+      this.timePassedFromLastUpdate = timeAgo.format(this.collected)
       setTimeout(this.timer, 1000)
     },
-
 
     showToastError(reason: any, text: string = "") {
       this.$toast.add({ severity: "error", summary: `<h4>ERROR! status: ${reason.response.status}</h4>`,
