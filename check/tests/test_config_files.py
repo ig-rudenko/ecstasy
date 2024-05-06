@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from check.api.serializers import ConfigFileSerializer
-from gathering.services.configurations import ConfigFile
+from gathering.services.configurations.local_storage import ConfigFile
 
 
 class TestConfigFile(TestCase):

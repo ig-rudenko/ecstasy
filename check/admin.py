@@ -26,7 +26,7 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from devicemanager.device import Interfaces
-from gathering.services.configurations.local_storage import LocalConfigStorage
+from gathering.services.configurations import LocalConfigStorage
 from .export import DevicesInterfacesWorkloadExcelExport
 from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions, DeviceMedia
 

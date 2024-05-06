@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from functools import lru_cache
 from typing import NamedTuple, TypedDict, Literal
 
@@ -16,7 +17,7 @@ from net_tools.models import DevicesInfo, DescNameFormat
 class InterfaceComment:
     user: str
     text: str
-    created_time: str
+    created_time: datetime
 
     def to_dict(self):
         return {"user": self.user, "text": self.text, "createdTime": self.created_time}
@@ -79,7 +80,7 @@ class Finder:
 
         pattern: re.Pattern[str] = re.compile(re.escape(pattern_str), flags=re.IGNORECASE)
 
-        result = []
+        result: list[DescriptionFinderResult] = []
 
         dev_info_queryset = (
             DevicesInfo.objects.filter(dev__group__profile__user_id=user_id)
@@ -126,14 +127,14 @@ class Finder:
 
         for dev_name in comments.devices:
             for interface in comments.devices[dev_name].interfaces:
-                result.append(
-                    *[
+                result.extend(
+                    [
                         {
                             "Device": dev_name,
                             "Interface": interface,
                             "Description": comment.text,
                             "Comments": [comment.to_dict()],
-                            "SavedTime": comment.created_time,
+                            "SavedTime": str(comment.created_time),
                         }
                         for comment in comments.devices[dev_name].interfaces[interface]
                     ]

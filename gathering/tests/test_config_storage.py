@@ -5,7 +5,7 @@ from datetime import datetime
 from django.test import TestCase
 
 from check.models import Devices
-from gathering.services.configurations import LocalConfigStorage, ConfigFile
+from gathering.services.configurations.local_storage import LocalConfigStorage, ConfigFile
 
 
 class TestLocalStorage(TestCase):

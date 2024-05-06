@@ -13,7 +13,7 @@ from net_tools.models import DescNameFormat
 
 class MacQueryValues(TypedDict):
     type: str
-    vlan: str
+    vlan: int
     port: str
     desc: str
     datetime: datetime
@@ -21,7 +21,7 @@ class MacQueryValues(TypedDict):
 
 
 class MacTraceroute:
-    def __init__(self):
+    def __init__(self) -> None:
         self.desc_name_list: list[DescNameFormat] = list(DescNameFormat.objects.all())
         # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
         self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
@@ -44,7 +44,7 @@ class MacTraceroute:
         """
 
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
-        macs_objects: list[MacQueryValues] = (
+        macs_objects = (
             MacAddress.objects.filter(address=mac)
             .select_related("device")
             .values("type", "vlan", "port", "desc", "datetime", "device__name")
@@ -57,7 +57,7 @@ class MacTraceroute:
         found_devices_names = [record["device__name"] for record in macs_objects]
         exist_nodes_id = []
 
-        for record in macs_objects:
+        for record in macs_objects:  # type: MacQueryValues
             next_device_id, next_device_label = self.get_next_device(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
