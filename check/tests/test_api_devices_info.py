@@ -391,12 +391,12 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
-            "zabbixInfo": {"description": "", "inventory": {}},
+            "zabbixInfo": {"description": "", "inventory": {}, "monitoringAvailable": False},
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "",
         }
-        self.assertEqual(response.json(), expected_data)
+        self.assertDictEqual(response.json(), expected_data)
 
     def test_view_returns_valid_response_with_console_url(self):
         self.user.profile.console_access = True
@@ -413,12 +413,12 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
-            "zabbixInfo": {"description": "", "inventory": {}},
+            "zabbixInfo": {"description": "", "inventory": {}, "monitoringAvailable": False},
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "http://test_url&command=/usr/share/connections/tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",
         }
-        self.assertEqual(response.json(), expected_data)
+        self.assertDictEqual(response.json(), expected_data)
 
     def test_view_requires_authentication(self):
         response = self.client.get(self.url)
