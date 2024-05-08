@@ -18,6 +18,7 @@ from .base.types import (
     MACType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port
 from ..exceptions import UnknownDeviceError
@@ -325,8 +326,8 @@ class MikroTik(BaseDevice):
         }
 
     @BaseDevice.lock_session
-    @mikrotik_validate_and_format_port()
-    def get_port_info(self, port: str) -> dict:
+    @mikrotik_validate_and_format_port({"type": "error", "data": "Неверный порт"})
+    def get_port_info(self, port: str) -> PortInfoType:
         data = {}
 
         raw_poe_info = self.send_command(f'interface ethernet poe print terse where name="{port}"')

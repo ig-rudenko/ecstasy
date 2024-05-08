@@ -293,7 +293,7 @@ class EltexLTP(BaseDevice):
         return []
 
     @BaseDevice.lock_session
-    @_validate_port()
+    @_validate_port({"type": "error", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> dict:
         # Получаем тип порта и его номер
         port_type, port_number = port.split()
@@ -354,7 +354,7 @@ class EltexLTP(BaseDevice):
                 "data": data,
             }
 
-        return {}
+        return {"type": "text", "data": ""}
 
     @BaseDevice.lock_session
     @_validate_port()

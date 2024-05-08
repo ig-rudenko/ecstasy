@@ -12,6 +12,7 @@ from ..base.types import (
     MACTableType,
     MACType,
     InterfaceType,
+    PortInfoType,
 )
 from ..base.validators import validate_and_format_port
 
@@ -199,8 +200,8 @@ class HuaweiCE6865(BaseDevice):
         )
         return mac_table
 
-    @validate_huawei_ce6865_port(if_invalid_return={"type": "text", "data": "Неверный порт"})
-    def get_port_info(self, port: str) -> dict:
+    @validate_huawei_ce6865_port(if_invalid_return={"type": "error", "data": "Неверный порт"})
+    def get_port_info(self, port: str) -> PortInfoType:
         return {
             "type": "text",
             "data": self.__port_info(port),

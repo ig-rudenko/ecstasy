@@ -14,6 +14,7 @@ from ..base.types import (
     MACTableType,
     SplittedPortType,
     DeviceAuthDict,
+    PortInfoType,
 )
 
 
@@ -282,7 +283,9 @@ class HuaweiMA5600T(BaseDevice):
 
         return port_type, tuple(indexes)
 
-    def _render_adsl_port_info(self, port: str, info: str, profile_name: str, all_profiles: list) -> dict:
+    def _render_adsl_port_info(
+        self, port: str, info: str, profile_name: str, all_profiles: list
+    ) -> PortInfoType:
         """
         ## Преобразовываем информацию о ADSL порте для отображения на странице
 
@@ -374,7 +377,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         }
 
-    def _render_gpon_port_info(self, indexes: tuple[str, ...]) -> dict:
+    def _render_gpon_port_info(self, indexes: tuple[str, ...]) -> PortInfoType:
         """
         ## Преобразовываем информацию о GPON порте для отображения на странице
         """
@@ -383,7 +386,7 @@ class HuaweiMA5600T(BaseDevice):
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
             return {
                 "type": "error",
-                "text": f'Неверный порт! (GPON {"/".join(indexes)})',
+                "data": f'Неверный порт! (GPON {"/".join(indexes)})',
             }
 
         self.send_command("config")  # Переходим в режим конфигурации
@@ -490,7 +493,7 @@ class HuaweiMA5600T(BaseDevice):
 
         return data
 
-    def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list) -> dict:
+    def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list) -> PortInfoType:
         """
         ## Преобразовываем информацию о VDSL порте для отображения на странице
 
@@ -614,7 +617,7 @@ class HuaweiMA5600T(BaseDevice):
             },
         }
 
-    def _vdsl_port_info(self, indexes: tuple) -> dict:
+    def _vdsl_port_info(self, indexes: tuple) -> PortInfoType:
         """
         ## Смотрим информацию на VDSL порту
         """
@@ -642,7 +645,7 @@ class HuaweiMA5600T(BaseDevice):
         return self._render_vdsl_port_info(port_stats, template_name, self.vdsl_templates)
 
     @BaseDevice.lock_session
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         """
         ## Смотрим информацию на порту
 
@@ -662,7 +665,7 @@ class HuaweiMA5600T(BaseDevice):
         if not port_type or len(indexes) != 3:
             return {
                 "type": "error",
-                "text": f"Неверный порт! ({port})",
+                "data": f"Неверный порт! ({port})",
             }
 
         # Для VDSL используем отдельный метод
@@ -676,7 +679,7 @@ class HuaweiMA5600T(BaseDevice):
         if self.session.expect([r"Are you sure to continue", "Unknown command"]):
             return {
                 "type": "error",
-                "text": "Unknown command",
+                "data": "Unknown command",
             }
 
         output = self.send_command("y", expect_command=True, before_catch=r"Failure|------[-]+")

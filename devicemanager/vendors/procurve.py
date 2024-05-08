@@ -9,6 +9,7 @@ from .base.types import (
     MACListType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 
 
@@ -80,8 +81,8 @@ class ProCurve(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {"status": "fail", "error": "Изменение описания недоступно"}
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""

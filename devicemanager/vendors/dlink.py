@@ -18,6 +18,7 @@ from .base.types import (
     MACType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port
 
@@ -633,7 +634,7 @@ class Dlink(BaseDevice):
         """
         return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:

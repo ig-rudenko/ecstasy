@@ -17,6 +17,7 @@ from .base.types import (
     MACType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from .. import UnknownDeviceError
 
@@ -73,8 +74,8 @@ class IskratelControl(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""
@@ -139,7 +140,7 @@ class IskratelMBan(BaseDevice):
         """
         return ["1_32", "1_33", "1_40"]
 
-    def _render_dsl_port_info(self, info: str) -> dict:
+    def _render_dsl_port_info(self, info: str) -> PortInfoType:
         """
         ## Возвращаем информацию о порте DSL
 
@@ -254,7 +255,7 @@ class IskratelMBan(BaseDevice):
         }
 
     @BaseDevice.lock_session
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         """
         ## Смотрим информацию на порту
 
@@ -287,7 +288,7 @@ class IskratelMBan(BaseDevice):
 
         port_type, port_number = self.validate_port(port)
         if port_type is None:
-            return {"type": "error", "detail": "Неверный порт!"}
+            return {"type": "error", "data": "Неверный порт!"}
 
         if port_type == "fasteth":
             cmd = f"show interface fasteth{port_number}"

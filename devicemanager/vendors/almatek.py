@@ -13,6 +13,7 @@ from .base.types import (
     InterfaceType,
     MACTableType,
     MACType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -313,9 +314,9 @@ class Almatek(BaseDevice):
             "info": self.save_config(),
         }
 
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
     @BaseDevice.lock_session
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         """
         ## Возвращаем информацию о порте.
 

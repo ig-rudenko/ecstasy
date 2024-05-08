@@ -15,6 +15,7 @@ from .base.types import (
     MACTableType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -272,8 +273,8 @@ class EdgeCore(BaseDevice):
 
         return self.send_command(f"show interfaces status {port}")
 
-    @validate_and_format_port_as_normal()
-    def get_port_info(self, port: str) -> dict:
+    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
+    def get_port_info(self, port: str) -> PortInfoType:
         """
         ## Возвращает информацию о порте
 

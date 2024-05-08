@@ -176,7 +176,7 @@ class DeviceManager:
             make_session_global=make_session_global,
         )
 
-        sys_info: dict = session.get_system_info()
+        sys_info = session.get_system_info()
 
         if sys_info.get("model"):
             self.zabbix_info.inventory.model = sys_info["model"]
@@ -184,7 +184,7 @@ class DeviceManager:
         if sys_info.get("vendor"):
             self.zabbix_info.inventory.vendor = sys_info["vendor"]
 
-        if sys_info.get("mac"):
+        if sys_info.get("serialno"):
             self.zabbix_info.inventory.serialno_a = sys_info["serialno"]
 
         if sys_info.get("mac"):

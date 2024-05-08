@@ -17,6 +17,7 @@ from ..base.types import (
     MACType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -659,7 +660,7 @@ class Huawei(BaseDevice):
         self.session.expect(self.prompt)
         return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
 
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": self.__get_port_info(port)}
 
     @BaseDevice.lock_session

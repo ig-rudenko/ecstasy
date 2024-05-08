@@ -13,6 +13,8 @@ from devicemanager.vendors.base.types import (
     MACTableType,
     SetDescriptionResult,
     ArpInfoResult,
+    SystemInfo,
+    PortInfoType,
 )
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
@@ -84,7 +86,7 @@ class RemoteDevice(AbstractDevice):
         if resp.headers.get("Content-Type") == "application/json":
             return resp.json().get("data")
 
-    def get_system_info(self):
+    def get_system_info(self) -> SystemInfo:
         return self._remote_call("get_system_info")
 
     def get_interfaces(self) -> InterfaceListType:
@@ -102,14 +104,14 @@ class RemoteDevice(AbstractDevice):
     def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
         return self._remote_call("set_port", port=port, status=status, save_config=save_config)
 
-    def save_config(self):
+    def save_config(self) -> str:
         return self._remote_call("save_config")
 
     def set_description(self, port: str, desc: str) -> SetDescriptionResult:  # type: ignore
         result = self._remote_call("set_description", port=port, desc=desc)
         return SetDescriptionResult(**result)
 
-    def get_port_info(self, port: str) -> dict:
+    def get_port_info(self, port: str) -> PortInfoType:
         return self._remote_call("get_port_info", port=port)
 
     def get_port_type(self, port: str) -> str:

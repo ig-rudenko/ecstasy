@@ -312,7 +312,7 @@ class EltexMES(BaseDevice):
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
     @BaseDevice.lock_session
     def get_port_info(self, port):
         """

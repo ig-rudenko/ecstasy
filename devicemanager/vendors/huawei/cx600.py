@@ -9,6 +9,7 @@ from ..base.types import (
     InterfaceVLANListType,
     MACListType,
     ArpInfoResult,
+    PortInfoType,
 )
 
 
@@ -95,8 +96,8 @@ class HuaweiCX600(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""

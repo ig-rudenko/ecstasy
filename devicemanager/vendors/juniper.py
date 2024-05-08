@@ -8,7 +8,7 @@ import textfsm
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.types import TEMPLATE_FOLDER, DeviceAuthDict, ArpInfoResult
+from .base.types import TEMPLATE_FOLDER, DeviceAuthDict, ArpInfoResult, PortInfoType
 from .. import UnknownDeviceError
 
 
@@ -198,8 +198,8 @@ class Juniper(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""

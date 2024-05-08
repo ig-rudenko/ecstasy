@@ -18,6 +18,7 @@ from .base.types import (
     DeviceAuthDict,
     MACType,
     InterfaceType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port_only_digit
 
@@ -506,8 +507,8 @@ class ZTE(BaseDevice):
 
         return result
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_device_info(self) -> dict:
         return {}

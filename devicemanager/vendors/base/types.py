@@ -1,5 +1,5 @@
 import pathlib
-from typing import Literal, TypedDict, NamedTuple
+from typing import Literal, TypedDict, NamedTuple, Any
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"
@@ -54,6 +54,11 @@ class DeviceAuthDict(TypedDict):
     login: str
     password: str
     privilege_mode_password: str
+
+
+class PortInfoType(TypedDict):
+    type: str
+    data: Any
 
 
 class SystemInfo(TypedDict):

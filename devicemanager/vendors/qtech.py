@@ -14,6 +14,7 @@ from .base.types import (
     MACType,
     DeviceAuthDict,
     InterfaceType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port
 
@@ -282,8 +283,8 @@ class Qtech(BaseDevice):
         port_type = self.send_command(f"show interface ethernet{port}")
         return f"<p>{port_type}</p>"
 
-    @qtech_validate_and_format_port()
-    def get_port_info(self, port: str) -> dict:
+    @qtech_validate_and_format_port({"type": "error", "data": "Неверный порт"})
+    def get_port_info(self, port: str) -> PortInfoType:
         """
         ## Возвращаем информацию о порте.
 

@@ -45,9 +45,7 @@ class EltexESR(EltexMES):
             # Выходим из режима редактирования конфигурации
             self.session.sendline("end")
             self.session.sendline("commit")
-            self.session.expect(
-                [self.prompt, "Configuration has been successfully applied"]
-            )
+            self.session.expect([self.prompt, "Configuration has been successfully applied"])
 
         # Подтверждаем изменение
         status = self.send_command("confirm")
@@ -74,7 +72,7 @@ class EltexESR(EltexMES):
         return "COPPER"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> dict:
         """
         ## Возвращаем информацию о порте.

@@ -1,5 +1,5 @@
 from ..base.device import BaseDevice
-from ..base.types import DeviceAuthDict
+from ..base.types import DeviceAuthDict, PortInfoType
 
 
 class EltexBase(BaseDevice):
@@ -46,9 +46,7 @@ class EltexBase(BaseDevice):
         # Нахождение MAC-адреса устройства.
         self.mac = self.find_or_empty(r"System MAC [Aa]ddress:\s+(\S+)", system)
         # Регулярное выражение, которое ищет модель устройства.
-        model = self.find_or_empty(
-            r"System Description:\s+(\S+)|System type:\s+Eltex (\S+)", system
-        )
+        model = self.find_or_empty(r"System Description:\s+(\S+)|System type:\s+Eltex (\S+)", system)
         self.model = model[0] or model[1] if model else ""
 
     def save_config(self):
@@ -72,8 +70,8 @@ class EltexBase(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
-    def get_port_info(self, port: str) -> dict:
-        return {}
+    def get_port_info(self, port: str) -> PortInfoType:
+        return {"type": "text", "data": ""}
 
     def get_port_type(self, port: str) -> str:
         return ""
