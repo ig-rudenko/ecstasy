@@ -55,22 +55,18 @@ class InterfacesCommentsSerializer(serializers.ModelSerializer):
 class MacSerializer(serializers.Serializer):
     mac = serializers.CharField(max_length=24, required=True)
 
-    def validate_mac(self, value):
+    @staticmethod
+    def validate_mac(value: str) -> str:
         """
         ## Удаляет все нешестнадцатеричные символы из строки MAC адреса
 
-        Возвращает MAC в виде строки - `001122334455`.
+        Возвращает MAC в виде строки - `0011-2233-4455`.
         """
         mac = findall(r"\w", value)
         if len(mac) == 12:
-            return "".join(mac).lower()
+            mac = "".join(mac).lower()
+            return "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac)
         raise ValidationError("Неверный MAC")
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
 
 
 class BrassSessionSerializer(MacSerializer):
@@ -99,12 +95,6 @@ class ADSLProfileSerializer(serializers.Serializer):
     index = serializers.IntegerField(min_value=0)
     port = serializers.CharField(max_length=50, required=True)
 
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
-
 
 class RequiredBooleanField(serializers.BooleanField):
     default_empty_html = serializers.empty
@@ -119,34 +109,16 @@ class PortControlSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["up", "down", "reload"], required=True)
     save = RequiredBooleanField(required=True)  # type: ignore
 
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
-
 
 class PoEPortStatusSerializer(serializers.Serializer):
     port = serializers.CharField(max_length=50, required=True)
     status = serializers.ChoiceField(choices=["auto-on", "forced-on", "off"], required=True)
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
 
 
 class ConfigFileSerializer(serializers.Serializer):
     name = serializers.CharField()
     size = serializers.IntegerField()
     modTime = serializers.CharField()
-
-    def update(self, instance, validated_data):
-        pass
-
-    def create(self, validated_data):
-        pass
 
 
 class UserDeviceActionSerializer(serializers.ModelSerializer):

@@ -527,12 +527,9 @@ class TestCiscoInfo(SimpleTestCase):
     def test_invalid_get_port_info(self):
         status = self.cisco.get_port_info(port="Re 0/1")
 
-        self.assertEqual(status, "Неверный порт")
+        self.assertEqual({"type": "error", "data": "Неверный порт"}, status)
 
-        self.assertEqual(
-            self.fake_session.sent_commands,
-            [],
-        )
+        self.assertEqual(self.fake_session.sent_commands, [])
 
     def test_port_type(self):
         valid_result = [

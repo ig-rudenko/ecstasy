@@ -563,11 +563,11 @@ class TestHuaweiMA5600T(SimpleTestCase):
     def test_invalid_get_port_info(self):
         invalid_res = {
             "type": "error",
-            "text": "Неверный порт! (2)",
+            "data": "Неверный порт! (2)",
         }
         self.assertEqual(self.device.get_port_info("2"), invalid_res)
         invalid_res = {
             "type": "error",
-            "text": "Неверный порт! (GPON 1/2)",
+            "data": "Неверный порт! (GPON 1/2)",
         }
-        self.assertDictEqual(self.device.get_port_info("GPON 1/2"), invalid_res)
+        self.assertEqual(self.device.get_port_info("GPON 1/2"), invalid_res)

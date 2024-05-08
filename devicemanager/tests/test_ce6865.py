@@ -365,10 +365,10 @@ MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
     def test_get_port_info_method_invalid_port(self, send_command: Mock):
         send_command.return_value = self.display_interface_output
 
-        self.assertDictEqual(
+        self.assertEqual(
             self.device.get_port_info(port="dsfas"),
             {
-                "type": "text",
+                "type": "error",
                 "data": "Неверный порт",
             },
         )

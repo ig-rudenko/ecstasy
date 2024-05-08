@@ -1,10 +1,10 @@
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AbstractBaseUser
 
 from . import models
 from .logger import django_actions_logger
 
 
-def log(user: models.User | AnonymousUser, model_device: models.Devices | models.Bras, operation: str):
+def log(user: models.User | AbstractBaseUser, model_device: models.Devices | models.Bras, operation: str):
     """
     ## Записывает логи о действиях пользователя
 
