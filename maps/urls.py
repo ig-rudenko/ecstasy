@@ -15,18 +15,12 @@ urlpatterns = [
         name="interactive-map-update",
     ),
     path(  # Возвращаем слои на интерактивной карте
-        "<int:map_id>/api/layers",
-        api_views.MapLayersListAPIView.as_view(),
-        name="interactive-map-layers",
+        "<int:map_id>/api/layers", api_views.MapLayersListAPIView.as_view(), name="interactive-map-layers"
     ),
     path(  # Возврат всех точек для интерактивной карты
-        "<int:map_id>/api/render",
-        api_views.InteractiveMapAPIView.as_view(),
-        name="interactive-map-render",
+        "<int:map_id>/api/render", api_views.InteractiveMapAPIView.as_view(), name="interactive-map-render"
     ),
     path(  # Возвращаем шаблон интерактивной карты
-        "<int:map_id>",
-        views.show_interactive_map,
-        name="interactive-map-show",
+        "<int:map_id>", views.show_interactive_map, name="interactive-map-show"
     ),
 ]
