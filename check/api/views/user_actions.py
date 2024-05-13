@@ -9,4 +9,6 @@ class UserDeviceActionsAPIView(ListAPIView):
 
     def get_queryset(self):
         device_name = self.kwargs["device_name"]
-        return UsersActions.objects.filter(device__name=device_name)
+        return UsersActions.objects.filter(device__name=device_name).values(
+            "time", "user", "action", "user__username"
+        )

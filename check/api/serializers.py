@@ -122,7 +122,7 @@ class ConfigFileSerializer(serializers.Serializer):
 
 
 class UserDeviceActionSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(source="user.username")
+    user = serializers.CharField(source="user__username")
 
     class Meta:
         model = UsersActions

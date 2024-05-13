@@ -26,6 +26,7 @@ from ..swagger.schemas import (
     interfaces_list_api_doc,
 )
 from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
+from ...services.remote_terminal import get_console_url
 
 
 class DevicesListAPIView(UserAuthenticatedAPIView):
@@ -156,7 +157,7 @@ class DeviceInterfacesAPIView(UserAuthenticatedAPIView):
         return Response(interfaces_data)
 
 
-class DeviceInfoAPIView(APIView):
+class DeviceInfoAPIView(UserAuthenticatedAPIView):
     """
     ## Возвращаем общую информацию оборудования
 
@@ -194,45 +195,28 @@ class DeviceInfoAPIView(APIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     def get(self, request, device_name: str):
-        model_dev = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, model_dev)
+        device = get_object_or_404(models.Devices, name=device_name)
+        self.check_object_permissions(self.request, device)
+        zabbix_info = DeviceManager(name=device_name).zabbix_info
 
-        dev = DeviceManager(name=device_name)
         return Response(
             {
                 "deviceName": device_name,
-                "deviceIP": model_dev.ip,
+                "deviceIP": device.ip,
                 # Создание URL-адреса для запроса журналов Kibana.
-                "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=model_dev),
-                "zabbixHostID": int(dev.zabbix_info.hostid or 0),
+                "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=device),
+                "zabbixHostID": int(zabbix_info.hostid or 0),
                 "zabbixURL": zabbix_api.zabbix_url,
                 "zabbixInfo": {
-                    "description": dev.zabbix_info.description,
-                    "monitoringAvailable": dev.zabbix_info.status == 1,
-                    "inventory": dev.zabbix_info.inventory.to_dict,
+                    "description": zabbix_info.description,
+                    "monitoringAvailable": zabbix_info.status == 1,
+                    "inventory": zabbix_info.inventory.to_dict,
                 },
-                "permission": request.user.profile.perm_level,
-                "coords": dev.zabbix_info.inventory.coordinates(),
-                "consoleURL": self.get_console_url(request.user.profile, model_dev),
+                "permission": self.current_user.profile.perm_level,
+                "coords": zabbix_info.inventory.coordinates(),
+                "consoleURL": get_console_url(self.current_user.profile, device),
             }
         )
-
-    @staticmethod
-    def get_console_url(profile: models.Profile, device: models.Devices) -> str:
-        if not profile.console_access or not profile.console_url:
-            return ""
-        if device.cmd_protocol == "telnet":
-            return (
-                f"{profile.console_url}&command=/usr/share/connections/tc.sh {device.ip}"
-                f"&title={device.ip} ({device.name}) telnet"
-            )
-        elif device.cmd_protocol == "ssh":
-            return (
-                f"{profile.console_url}&command=/usr/share/connections/sc.sh {device.ip}"
-                f"&title={device.ip} ({device.name}) ssh"
-            )
-        else:
-            return profile.console_url
 
 
 class DeviceStatsInfoAPIView(APIView):

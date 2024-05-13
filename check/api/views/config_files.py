@@ -130,7 +130,9 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        return models.Devices.objects.filter(group__profile__user_id=self.request.user.id)
+        return models.Devices.objects.filter(group__profile__user_id=self.request.user.id).select_related(
+            "group"
+        )
 
     def get(self, request, **kwargs):
         """
