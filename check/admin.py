@@ -28,7 +28,15 @@ from django.utils.safestring import mark_safe
 from devicemanager.device import Interfaces
 from gathering.services.configurations import LocalConfigStorage
 from .export import DevicesInterfacesWorkloadExcelExport
-from .models import DeviceGroup, Devices, AuthGroup, Bras, Profile, UsersActions, DeviceMedia
+from .models import (
+    DeviceGroup,
+    Devices,
+    AuthGroup,
+    Bras,
+    Profile,
+    UsersActions,
+    DeviceMedia,
+)
 
 
 @admin.register(DeviceGroup)
@@ -46,9 +54,28 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 class DevicesAdmin(admin.ModelAdmin):
     """Управление оборудованием"""
 
-    list_display = ["ip", "name", "vendor", "model", "show_group", "show_auth_group", "show_auth_type", "show_device"]
-    list_filter = ["vendor", "group", "auth_group", "model", "port_scan_protocol", "cmd_protocol"]
-    radio_fields = {"port_scan_protocol": admin.HORIZONTAL, "cmd_protocol": admin.HORIZONTAL}
+    list_display = [
+        "ip",
+        "name",
+        "vendor",
+        "model",
+        "show_group",
+        "show_auth_group",
+        "show_auth_type",
+        "show_device",
+    ]
+    list_filter = [
+        "vendor",
+        "group",
+        "auth_group",
+        "model",
+        "port_scan_protocol",
+        "cmd_protocol",
+    ]
+    radio_fields = {
+        "port_scan_protocol": admin.HORIZONTAL,
+        "cmd_protocol": admin.HORIZONTAL,
+    }
     readonly_fields = ["show_interfaces"]
     search_fields = ["ip", "name"]
     list_select_related = ["auth_group", "group"]
@@ -175,7 +202,8 @@ class DevicesAdmin(admin.ModelAdmin):
         datetime_part = datetime.now().strftime("%d %b %Y %Hh %Mm")
 
         zip_file_path = (
-            archive_storage_dir / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
+            archive_storage_dir
+            / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
         )
 
         with zipfile.ZipFile(zip_file_path, "w") as my_zip:
@@ -186,7 +214,9 @@ class DevicesAdmin(admin.ModelAdmin):
                     file_path = str(file.absolute().as_posix())
 
                 file_name_with_parent_folder = file_path.split("/")[-2:]
-                my_zip.write(filename=file, arcname="/".join(file_name_with_parent_folder))
+                my_zip.write(
+                    filename=file, arcname="/".join(file_name_with_parent_folder)
+                )
 
         response = HttpResponse(
             zip_file_path.open("rb"), content_type="application/x-zip-compressed"

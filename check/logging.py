@@ -4,7 +4,11 @@ from . import models
 from .logger import django_actions_logger
 
 
-def log(user: models.User | AbstractBaseUser, model_device: models.Devices | models.Bras, operation: str):
+def log(
+    user: models.User | AbstractBaseUser,
+    model_device: models.Devices | models.Bras,
+    operation: str,
+):
     """
     ## Записывает логи о действиях пользователя
 
@@ -29,13 +33,17 @@ def log(user: models.User | AbstractBaseUser, model_device: models.Devices | mod
 
     # В базу
     # Получение максимальной длины поля «действие» в модели UsersActions.
-    operation_max_length: int = models.UsersActions._meta.get_field("action").max_length or 100
+    operation_max_length: int = (
+        models.UsersActions._meta.get_field("action").max_length or 100
+    )
     if len(operation) > operation_max_length:
         operation = operation[:operation_max_length]
 
     # Проверка того, является ли model_device экземпляром класса models.Devices.
     if isinstance(model_device, models.Devices):
-        models.UsersActions.objects.create(user=user, device=model_device, action=operation)
+        models.UsersActions.objects.create(
+            user=user, device=model_device, action=operation
+        )
         # В файл
         django_actions_logger.info(
             f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}"
@@ -47,4 +55,6 @@ def log(user: models.User | AbstractBaseUser, model_device: models.Devices | mod
             user=user, action=f"{model_device} | {operation}"[:operation_max_length]
         )
         # В файл
-        django_actions_logger.info(f"| {user.username:<10} | {model_device} | {operation}")
+        django_actions_logger.info(
+            f"| {user.username:<10} | {model_device} | {operation}"
+        )

@@ -1,6 +1,6 @@
 from celery import shared_task
 
-from .interfaces_collector import DevicesInterfacesWorkloadCollector
+from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
 
 @shared_task(ignore_result=True)

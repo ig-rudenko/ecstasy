@@ -1,19 +1,18 @@
 from unittest.mock import Mock
 
-from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User
-from check.permissions import profile_permission
+from django.test import TestCase, RequestFactory
+
 from check import models
 from check.api.permissions import DevicePermission
+from check.permissions import profile_permission
 
 
 class ReadPermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.request = RequestFactory()
-        cls.request.user = User.objects.create_user(
-            username="read_permission_user", password="password"
-        )
+        cls.request.user = User.objects.create_user(username="read_permission_user", password="password")
 
     def test_read_perms(self):
         @profile_permission(models.Profile.READ)
@@ -171,7 +170,9 @@ class DevicePermissionTest(TestCase):
             name="test_device", ip="20.20.20.20", group=self.device_group
         )
         self.user = User(
-            username="device_permission_user", email="testuser@example.com", password="secret"
+            username="device_permission_user",
+            email="testuser@example.com",
+            password="secret",
         )
         self.user.save()
 

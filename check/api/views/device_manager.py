@@ -1,11 +1,6 @@
-import re
-from typing import Any
-
-import orjson
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import generics
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -15,9 +10,15 @@ from rest_framework.views import APIView
 from check import models
 from check.logging import log
 from check.permissions import profile_permission
-from devicemanager.device import Interfaces
+from check.services.device.interfaces import (
+    change_port_state,
+    set_interface_description,
+    get_mac_addresses_on_interface,
+    get_interface_detail_info,
+    check_user_interface_permission,
+)
 from devicemanager.remote.exceptions import InvalidMethod
-from net_tools.models import VlanName, DevicesInfo
+from ecstasy_project.types.api import UserAuthenticatedAPIView
 from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..serializers import (
@@ -27,53 +28,11 @@ from ..serializers import (
     PoEPortStatusSerializer,
 )
 from ..swagger import schemas
-from ...models import Profile
-
-
-class PortGuardCheckMixin:
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.port_desc = ""
-        self.profile: Profile | None = None
-
-    def check_object_permissions(self, request: Request, obj):
-        # Смотрим интерфейсы, которые сохранены в БД
-        dev_info, _ = DevicesInfo.objects.get_or_create(dev=obj)
-
-        if dev_info.interfaces is None:
-            # Собираем интерфейсы с оборудования.
-            interfaces = Interfaces(obj.connect().get_interfaces())
-        else:
-            # Преобразовываем JSON строку с интерфейсами в класс `Interfaces`
-            interfaces = Interfaces(orjson.loads(dev_info.interfaces))
-
-        # Далее смотрим описание на порту, так как от этого будет зависеть, может ли пользователь управлять им
-        self.port_desc = interfaces[request.data["port"]].desc
-
-        if request.user.is_anonymous:
-            raise PermissionDenied(
-                detail="Необходимо войти для выполнения данного действия!",
-            )
-
-        try:
-            self.profile = Profile.objects.get(user=request.user)
-        except Profile.DoesNotExist:
-            raise PermissionDenied(
-                detail="У вас нет профиля для выполнения данного действия!",
-            )
-
-        # Если в профиле пользователя стоит ограничение на определенные порты
-        if self.profile.port_guard_pattern and re.search(
-            self.profile.port_guard_pattern, self.port_desc, flags=re.IGNORECASE
-        ):
-            raise PermissionDenied(
-                detail="Запрещено изменять состояние данного порта!",
-            )
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
 @method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
-class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
+class InterfaceControlAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PortControlSerializer
 
@@ -87,68 +46,30 @@ class PortControlAPIView(PortGuardCheckMixin, generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        port_status = serializer.validated_data["status"]
+        port_status: str = serializer.validated_data["status"]
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
-        model_dev = get_object_or_404(models.Devices, name=device_name)
+        device = get_object_or_404(models.Devices, name=device_name)
 
-        # Есть ли у пользователя доступ к группе данного оборудования
-        self.check_object_permissions(request, model_dev)
+        # Есть ли у пользователя доступ к группе данного оборудования.
+        self.check_object_permissions(request, device)
 
-        # Если оборудование Недоступно
-        if not model_dev.available:
-            return Response({"error": "Оборудование недоступно!"}, status=500)
+        # Есть ли у пользователя доступ к порту данного оборудования.
+        interface = check_user_interface_permission(self.current_user, device, port_name, action=port_status)
 
-        # Теперь наконец можем подключиться к оборудованию.
-        session = model_dev.connect()
-        # Перезагрузка порта
-        if port_status == "reload":
-            port_change_status = session.reload_port(
-                port=port_name,
-                save_config=save_config,
-            )
-
-        # UP and DOWN
-        else:
-            port_change_status = session.set_port(
-                port=port_name,
-                status=port_status,
-                save_config=save_config,
-            )
-
-        if "Неверный порт" in port_change_status:
-            return Response({"error": port_change_status}, status=400)
+        change_status = change_port_state(
+            device, port_name=port_name, port_status=port_status, save_config=save_config
+        )
 
         # Логи
-        log(
-            request.user,
-            model_dev,
-            f"{port_status} port {port_name} ({self.port_desc}) \n{port_change_status}",
-        )
+        log(self.current_user, device, f"{port_status} port {port_name} ({interface.desc}) \n{change_status}")
 
         return Response(serializer.validated_data, status=200)
 
-    def check_object_permissions(self, request: Request, device) -> None:
-        super().check_object_permissions(request, device)
-
-        # Если недостаточно привилегий для изменения статуса порта
-        if self.profile and self.profile.perm_level < 2 and request.data["status"] in ["up", "down"]:
-            # Логи
-            log(
-                request.user,
-                device,
-                f"Tried to set port {request.data['port']} ({self.port_desc}) "
-                f"to the {request.data['status']} state, but was refused \n",
-            )
-
-            raise PermissionDenied(
-                detail="У вас недостаточно прав, для изменения состояния порта!",
-            )
-
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDescriptionAPIView(PortGuardCheckMixin, APIView):
+class ChangeDescriptionAPIView(UserAuthenticatedAPIView):
     """
     ## Изменяем описание на порту у оборудования
     """
@@ -181,49 +102,34 @@ class ChangeDescriptionAPIView(PortGuardCheckMixin, APIView):
 
         """
 
-        if not self.request.data.get("port"):
-            raise ValidationError({"detail": "Укажите порт!"})
-
-        dev = get_object_or_404(models.Devices, name=device_name)
-
-        # Проверяем права доступа пользователя к оборудованию
-        self.check_object_permissions(request, dev)
-
-        new_description = self.request.data.get("description", "")
         port = self.request.data.get("port", "")
+        new_description = self.request.data.get("description", "")
         if not port:
             raise ValidationError({"detail": "Необходимо указать порт"})
 
-        set_description_status = dev.connect().set_description(port=port, desc=new_description)
+        device = get_object_or_404(models.Devices, name=device_name)
 
-        if set_description_status.max_length:
-            # Если есть данные, что описание слишком длинное.
-            raise ValidationError(
-                {
-                    "detail": "Слишком длинное описание! "
-                    f"Укажите не более {set_description_status.max_length} символов."
-                }
-            )
+        # Проверяем права доступа пользователя к оборудованию
+        self.check_object_permissions(request, device)
+        # Проверяем права доступа пользователя к порту.
+        check_user_interface_permission(self.current_user, device, port)
 
-        log(request.user, dev, str(set_description_status))
+        description_status = set_interface_description(
+            device, interface_name=port, description=new_description
+        )
 
-        if set_description_status.error:
-            return Response(
-                {"detail": f"{set_description_status.error}, port={port}"},
-                status=400 if set_description_status.error == "Неверный порт" else 500,
-            )
-        # Логи
+        log(self.current_user, device, str(description_status))
 
         return Response(
             {
-                "description": set_description_status.description,
-                "port": set_description_status.port,
-                "saved": set_description_status.saved,
+                "description": description_status.description,
+                "port": description_status.port,
+                "saved": description_status.saved,
             }
         )
 
 
-class MacListAPIView(APIView):
+class MacListAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
@@ -241,12 +147,7 @@ class MacListAPIView(APIView):
                     {
                         "vlanID": "1051",
                         "mac": "00-04-96-51-AD-3D",
-                        "vlanName": ""
-                    },
-                    {
-                        "vlanID": "1051",
-                        "mac": "00-04-96-52-A5-FB",
-                        "vlanName": ""
+                        "vlanName": "Описание VLAN"
                     },
                     ...
                 ]
@@ -254,29 +155,19 @@ class MacListAPIView(APIView):
 
         """
 
-        port = self.request.GET.get("port")
+        port: str = self.request.GET.get("port", "")
         if not port:
             raise ValidationError({"detail": "Укажите порт!"})
 
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        vlan_names = {str(v.vid): v.name for v in VlanName.objects.all()}
-
-        macs = []  # Итоговый список
-        for vid, mac in device.connect().get_mac(port):  # Смотрим VLAN и MAC
-            macs.append(
-                {
-                    "vlanID": vid,
-                    "mac": mac,
-                    "vlanName": vlan_names.get(str(vid), ""),
-                }
-            )
+        macs = get_mac_addresses_on_interface(device, port)
 
         return Response({"count": len(macs), "result": macs})
 
 
-class CableDiagAPIView(APIView):
+class CableDiagAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
@@ -324,7 +215,7 @@ class CableDiagAPIView(APIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class SetPoEAPIView(generics.GenericAPIView):
+class SetPoEAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = PoEPortStatusSerializer
 
@@ -336,6 +227,8 @@ class SetPoEAPIView(generics.GenericAPIView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        poe_status = serializer.validated_data["status"]
+        port_name = serializer.validated_data["port"]
 
         # Находим оборудование
         device = get_object_or_404(models.Devices, name=device_name)
@@ -345,9 +238,6 @@ class SetPoEAPIView(generics.GenericAPIView):
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=500)
 
-        poe_status = serializer.validated_data["status"]
-        port_name = serializer.validated_data["port"]
-
         try:
             _, err = device.connect().set_poe_out(port_name, poe_status)
         except InvalidMethod:
@@ -355,13 +245,10 @@ class SetPoEAPIView(generics.GenericAPIView):
         else:
             if not err:
                 return Response({"status": poe_status})
-            return Response(
-                {"detail": f"Invalid data ({poe_status})"},
-                status=400,
-            )
+            return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
 
 
-class InterfaceInfoAPIView(APIView):
+class InterfaceInfoAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
@@ -384,7 +271,6 @@ class InterfaceInfoAPIView(APIView):
                 "hasCableDiag": true        - Имеется ли на данном типе оборудования возможность диагностики порта
             }
 
-
         """
 
         port = self.request.GET.get("port")
@@ -394,73 +280,9 @@ class InterfaceInfoAPIView(APIView):
         device = get_object_or_404(models.Devices, name=device_name)
         self.check_object_permissions(request, device)
 
-        # Если оборудование недоступно
-        if not device.available:
-            return Response({"detail": "Device unavailable"}, status=500)
-
-        result: dict[str, Any] = {}
-        session = device.connect()
-
-        result["portDetailInfo"] = session.get_port_info(port)
-        result["portConfig"] = session.get_port_config(port)
-        result["portType"] = session.get_port_type(port)
-        result["portErrors"] = session.get_port_errors(port)
-        result["hasCableDiag"] = True
-
-        self.create_onts_lines_with_comments(result, port, device)
+        result = get_interface_detail_info(device, port)  # Получаем информацию о порте
 
         return Response(result)
-
-    @staticmethod
-    def create_onts_lines_with_comments(data: dict, gpon_port: str, device: models.Devices) -> None:
-        """
-        Находит комментарии созданные на ONT для порта `gpon_port` оборудования `device`.
-
-        :param data: Текущий список данных.
-        :param gpon_port: Основной GPON порт.
-        :param device: Оборудование, на котором надо искать комментарии.
-        :return: Список данных ONT с добавлением в конец списка возможных комментариев.
-        """
-
-        # Ищем возможные комментарии только для GPON типа
-        if not (
-            data.get("portDetailInfo", {}).get("data") and "gpon" in data["portDetailInfo"].get("type", "")
-        ):
-            return
-
-        onts_lines = data["portDetailInfo"]["data"].get("onts_lines", [])
-        if not onts_lines:
-            return
-
-        # Смотрим комментарии на порту оборудования, который начинается на переданный gpon порт.
-        interfaces_comments = (
-            device.interfacescomments_set.select_related("user")
-            .filter(interface__startswith=gpon_port)
-            .values("comment", "interface", "id", "user__username", "datetime")
-        )
-        ont_interfaces_dict: dict[str, list] = {}
-
-        for comment in interfaces_comments:
-            comment_data = {
-                "text": comment["comment"],
-                "user": comment["user__username"],
-                "id": comment["id"],
-                "createdTime": comment["datetime"],
-            }
-            if ont_interfaces_dict.get(comment["interface"]):
-                ont_interfaces_dict[comment["interface"]].append(comment_data)
-            else:
-                ont_interfaces_dict[comment["interface"]] = [comment_data]
-
-        new_onts_lines = []
-
-        for line in onts_lines:
-            # Соединяем порт GPON и ONTid
-            ont_full_port = f"{gpon_port}/{line[0]}"
-            # Добавляем комментарии либо пустой список в конец
-            new_onts_lines.append(line + [ont_interfaces_dict.get(ont_full_port, [])])
-
-        data["portDetailInfo"]["data"]["onts_lines"] = new_onts_lines
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")

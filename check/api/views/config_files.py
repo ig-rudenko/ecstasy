@@ -5,12 +5,12 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
-from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from check import models
 from check.permissions import profile_permission
+from ecstasy_project.types.api import UserAuthenticatedAPIView
 from gathering.services.configurations import (
     ConfigurationGather,
     ConfigFileError,
@@ -23,7 +23,7 @@ from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
 
 
-class BaseConfigStorageAPIView(GenericAPIView):
+class BaseConfigStorageAPIView(UserAuthenticatedAPIView):
     config_storage: Type[ConfigStorage] | None = None
 
     def get_storage(self, device_name: str, file_name: str | None = None) -> ConfigStorage:
@@ -130,7 +130,6 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        # Фильтруем запрос
         return models.Devices.objects.filter(group__profile__user_id=self.request.user.id)
 
     def get(self, request, **kwargs):

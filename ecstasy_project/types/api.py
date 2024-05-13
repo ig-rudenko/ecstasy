@@ -1,6 +1,6 @@
 from typing import cast
 
-from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import User
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 
@@ -13,5 +13,5 @@ class UserAuthenticatedAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     @property
-    def current_user(self) -> AbstractBaseUser:
-        return cast(AbstractBaseUser, self.request.user)
+    def current_user(self) -> User:
+        return cast(User, self.request.user)

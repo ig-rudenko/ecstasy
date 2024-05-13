@@ -31,7 +31,9 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
         )
         with pathlib.Path(__file__).open("rb") as file:
             cls.device_media = DeviceMedia.objects.create(
-                device=cls.device, file=File(file, name="file-name"), description="Описание файла"
+                device=cls.device,
+                file=File(file, name="file-name"),
+                description="Описание файла",
             )
 
     @classmethod
@@ -43,13 +45,19 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
         self.client.force_login(user=self.user)
 
     def test_get_device_media_list(self):
-        url = reverse("devices-api:device-media-list-create", kwargs={"device_name": self.device.name})
+        url = reverse(
+            "devices-api:device-media-list-create",
+            kwargs={"device_name": self.device.name},
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), DeviceMediaSerializer([self.device_media], many=True).data)
 
     def test_create_device_media(self):
-        url = reverse("devices-api:device-media-list-create", kwargs={"device_name": self.device.name})
+        url = reverse(
+            "devices-api:device-media-list-create",
+            kwargs={"device_name": self.device.name},
+        )
         with pathlib.Path(__file__).open("rb") as f:
             response = self.client.post(
                 url,

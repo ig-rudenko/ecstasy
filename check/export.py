@@ -149,7 +149,9 @@ class DevicesInterfacesWorkloadExcelExport(ExcelExport):
         Получение количества интерфейсов,
         абонентских портов и задействованных абонентских портов устройства.
         """
-        interfaces = Interfaces(orjson.loads(query_element.get("devicesinfo__interfaces") or "[]"))
+        interfaces = Interfaces(
+            orjson.loads(query_element.get("devicesinfo__interfaces") or "[]")
+        )
         interfaces = interfaces.physical()
 
         non_system = interfaces.non_system()

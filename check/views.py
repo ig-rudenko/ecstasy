@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import QuerySet
 from django.http import (
     HttpResponseRedirect,
-    Http404, HttpRequest,
+    Http404,
+    HttpRequest,
 )
 from django.shortcuts import render, resolve_url
 

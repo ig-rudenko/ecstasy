@@ -58,13 +58,13 @@ class MacSerializer(serializers.Serializer):
     @staticmethod
     def validate_mac(value: str) -> str:
         """
-        ## Удаляет все нешестнадцатеричные символы из строки MAC адреса
+        ## Удаляет все не шестнадцатеричные символы из строки MAC адреса
 
         Возвращает MAC в виде строки - `0011-2233-4455`.
         """
-        mac = findall(r"\w", value)
-        if len(mac) == 12:
-            mac = "".join(mac).lower()
+        mac_letters = findall(r"\w", value)
+        if len(mac_letters) == 12:
+            mac = "".join(mac_letters).lower()
             return "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac)
         raise ValidationError("Неверный MAC")
 

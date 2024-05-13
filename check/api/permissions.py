@@ -4,13 +4,13 @@ from rest_framework.request import Request
 from check.models import Devices, DeviceMedia, Profile
 
 
-def get_user_devices_groups(user_id: int) -> list[int]:
+def get_user_devices_groups(user_id) -> list[int]:
     try:
         profile = Profile.objects.get(user_id=user_id)
     except Profile.DoesNotExist:
         return []
 
-    return profile.devices_groups.all().values_list("id", flat=True)
+    return list(profile.devices_groups.all().values_list("id", flat=True))
 
 
 class DevicePermission(permissions.BasePermission):

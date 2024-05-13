@@ -16,7 +16,7 @@ def except_connection_errors(handler):
 
     @wraps(handler)
     def wrapper(*args, **kwargs):
-        contact = f'Пишите на почту: {settings.CONTACT_EMAIL}'
+        contact = f"Пишите на почту: {settings.CONTACT_EMAIL}"
         try:
             return handler(*args, **kwargs)
         except pexpect.EOF:

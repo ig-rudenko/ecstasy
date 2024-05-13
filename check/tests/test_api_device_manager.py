@@ -58,7 +58,7 @@ class PortControlAPIViewTestCase(APITestCase):
     def test_no_auth(self):
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "down", "save": True},
+            data={"port": "Fa1/0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -66,7 +66,7 @@ class PortControlAPIViewTestCase(APITestCase):
         self.client.force_login(user=self.user)
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "down", "save": True},
+            data={"port": "Fa1/0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -77,7 +77,7 @@ class PortControlAPIViewTestCase(APITestCase):
 
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "down", "save": True},
+            data={"port": "Fa1/0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertDictEqual(resp.data, {"error": "Оборудование недоступно!"})
@@ -90,7 +90,7 @@ class PortControlAPIViewTestCase(APITestCase):
         # Неверный статус.
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "asdasd", "save": True},
+            data={"port": "Fa1/0/1", "status": "asdasd", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("status", resp.data)
@@ -99,7 +99,7 @@ class PortControlAPIViewTestCase(APITestCase):
         # Не был передан `save`.
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "down"},
+            data={"port": "Fa1/0/1", "status": "down"},
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("save", resp.data)
@@ -132,7 +132,7 @@ class PortControlAPIViewTestCase(APITestCase):
             data={"port": "eth1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertDictEqual(resp.data, {"error": "Неверный порт"})
+        self.assertIn("detail", resp.data)
 
     def test_port_down_not_enough_permission(self):
         # Права только на перезагрузку.
@@ -143,7 +143,7 @@ class PortControlAPIViewTestCase(APITestCase):
         # Попытка выключить порт.
         resp = self.client.post(
             self.url,
-            data={"port": "eth1", "status": "down", "save": True},
+            data={"port": "Fa1/0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
@@ -247,11 +247,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
         cls.user.profile.devices_groups.add(cls.group)
-        cls.device = Devices.objects.create(
-            ip="172.31.176.21",
-            name="dev1",
-            group=cls.group,
-        )
+        cls.device = Devices.objects.create(ip="172.31.176.21", name="dev1", group=cls.group)
 
     def setUp(self) -> None:
         self.client.force_login(user=self.user)
@@ -271,18 +267,16 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
 
         # Подготовка данных.
         set_description_result = SetDescriptionResult(
-            status="cleared",
-            description="",
-            saved="Saved OK",
-            port="eth1",
+            status="cleared", description="", saved="Saved OK", port="eth1"
         )
         device_connect.return_value.set_description.return_value = set_description_result
-        data = {"port": "eth1"}
+        device_connect.return_value.get_interfaces.return_value = [("eth1", "up", "desc1")]
 
         # Отправка запроса.
+        request_data = {"port": "eth1"}
         resp = self.client.post(
             reverse("devices-api:set-description", args=(self.device.name,)),
-            data=data,
+            data=request_data,
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -293,7 +287,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         self.assertEqual(device_connect.call_count, 2)
         # Правильность вызова `set_description`.
         device_connect.return_value.set_description.assert_called_once_with(
-            port=data["port"],
+            port=request_data["port"],
             desc="",  # Пустое описание.
         )
 
@@ -334,6 +328,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             port="eth1",
         )
         device_connect.return_value.set_description.return_value = set_description_result
+        device_connect.return_value.get_interfaces.return_value = [("eth1", "up", "desc1")]
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.
@@ -388,6 +383,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             port="eth1",
         )
         device_connect.return_value.set_description.return_value = set_description_result
+        device_connect.return_value.get_interfaces.return_value = [("eth1", "up", "desc1")]
         data = {"port": "eth1", "description": description}
 
         # Отправка запроса.

@@ -10,8 +10,8 @@ from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Interfaces, zabbix_api
 from net_tools.models import DevicesInfo
 from ..api.serializers import DevicesSerializer
-from ..api.views.devices_info import AllDevicesInterfacesWorkLoadAPIView
 from ..models import Devices, DeviceGroup, User, InterfacesComments
+from ..services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
 
 class DevicesListAPIViewTestCase(APITestCase):
@@ -156,25 +156,17 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
             },
         )
 
-    def test_cache_key_and_seconds(self):
-        self.assertEqual(
-            AllDevicesInterfacesWorkLoadAPIView.cache_key,
-            "all_devices_interfaces_workload_api_view",
-        )
-        self.assertEqual(AllDevicesInterfacesWorkLoadAPIView.cache_seconds, 600)
-
     def test_get_queryset(self):
-        queryset = AllDevicesInterfacesWorkLoadAPIView().get_queryset()
+        queryset = DevicesInterfacesWorkloadCollector().get_queryset()
         self.assertEqual(queryset.count(), 1)
-        self.assertEqual(queryset.first(), self.device_info)
 
     def test_get_serializer_class(self):
-        serializer_class = AllDevicesInterfacesWorkLoadAPIView().get_serializer_class()
+        serializer_class = DevicesInterfacesWorkloadCollector().get_serializer_class()
         self.assertEqual(serializer_class.Meta.model, Devices)
 
     def test_get_interfaces_load(self):
         # Test with device that has one up and one down interface
-        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(self.device_info)
+        interfaces_load = DevicesInterfacesWorkloadCollector().get_interfaces_load(self.device_info)
         self.assertEqual(interfaces_load["count"], 7)
         self.assertEqual(interfaces_load["abons"], 6)
         self.assertEqual(interfaces_load["abons_up"], 2)
@@ -186,7 +178,7 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
         # Test with device that has no interface
         device = DevicesInfo()
-        interfaces_load = AllDevicesInterfacesWorkLoadAPIView().get_interfaces_load(device)
+        interfaces_load = DevicesInterfacesWorkloadCollector().get_interfaces_load(device)
         self.assertEqual(interfaces_load["count"], 0)
         self.assertEqual(interfaces_load["abons"], 0)
         self.assertEqual(interfaces_load["abons_up"], 0)
@@ -316,16 +308,16 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1"},
             {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2"},
         ]
+        self.device.port_scan_protocol = "snmp"
+        self.device.save()
 
         device_manager_mock = MagicMock()
-        device_manager_mock.protocol = "snmp"
-        mock_connect.return_value = device_manager_mock
         device_manager_mock.interfaces = Interfaces(interfaces)
-
         # Указываем ПУСТЫМИ вендор и модель, после они НЕ должны быть записаны в базе
         device_manager_mock.zabbix_info.inventory.vendor = ""
         device_manager_mock.zabbix_info.inventory.model = ""
         device_manager_mock.push_zabbix_inventory.return_value = None
+        mock_connect.return_value = device_manager_mock
 
         response = self.client.get(f"{self.url}?current_status=1&vlans=1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -391,7 +383,11 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
-            "zabbixInfo": {"description": "", "inventory": {}, "monitoringAvailable": False},
+            "zabbixInfo": {
+                "description": "",
+                "inventory": {},
+                "monitoringAvailable": False,
+            },
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "",
@@ -413,7 +409,11 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
-            "zabbixInfo": {"description": "", "inventory": {}, "monitoringAvailable": False},
+            "zabbixInfo": {
+                "description": "",
+                "inventory": {},
+                "monitoringAvailable": False,
+            },
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "http://test_url&command=/usr/share/connections/tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",

@@ -101,7 +101,7 @@ class RemoteDevice(AbstractDevice):
     def reload_port(self, port: str, save_config=True) -> str:
         return self._remote_call("reload_port", port=port, save_config=save_config)
 
-    def set_port(self, port: str, status: Literal["up", "down"], save_config=True) -> str:
+    def set_port(self, port: str, status: str, save_config=True) -> str:
         return self._remote_call("set_port", port=port, status=status, save_config=save_config)
 
     def save_config(self) -> str:
