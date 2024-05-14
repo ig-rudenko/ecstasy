@@ -263,6 +263,9 @@ export default defineComponent({
                 this.files = value.data
               }
           )
+          .catch(reason => {
+            console.log(reason)
+          })
     },
 
     collectConfig(){

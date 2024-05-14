@@ -27,6 +27,7 @@ from ..swagger.schemas import (
 )
 from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
 from ...services.remote_terminal import get_console_url
+from ...services.zabbix import get_device_zabbix_maps_ids
 
 
 class DevicesListAPIView(UserAuthenticatedAPIView):
@@ -199,6 +200,9 @@ class DeviceInfoAPIView(UserAuthenticatedAPIView):
         self.check_object_permissions(self.request, device)
         zabbix_info = DeviceManager(name=device_name).zabbix_info
 
+        with zabbix_api.connect() as zbx:
+            devices_maps = get_device_zabbix_maps_ids(zbx, zabbix_info.hostid)
+
         return Response(
             {
                 "deviceName": device_name,
@@ -211,6 +215,7 @@ class DeviceInfoAPIView(UserAuthenticatedAPIView):
                     "description": zabbix_info.description,
                     "monitoringAvailable": zabbix_info.status == 1,
                     "inventory": zabbix_info.inventory.to_dict,
+                    "maps": devices_maps,
                 },
                 "permission": self.current_user.profile.perm_level,
                 "coords": zabbix_info.inventory.coordinates(),
@@ -227,9 +232,7 @@ class DeviceStatsInfoAPIView(APIView):
 
         {
             "cpu": {
-                "util": [
-                    2
-                ]
+                "util": [ 2 ]
             },
             "ram": {
                 "util": 15

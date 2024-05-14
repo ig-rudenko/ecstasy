@@ -1,13 +1,12 @@
 <template>
-  <div :class="blockClasses" v-tooltip.bottom="monitoringAvailable?'':'Снято с мониторинга'">
+  <div :class="blockClasses" v-tooltip.bottom="monitoringAvailable?'В Zabbix':'Снято с мониторинга'">
     <a v-if="zabbixHostId"
        :href="zabbixUrl + '/hostinventories.php?hostid=' + zabbixHostId"
        class="align-items-center btn d-flex" target="_blank" style="width: 100%; text-align: left">
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 64 64">
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" class="me-2" viewBox="0 0 64 64">
         <path d="M0 0h64v64H0z" fill="#d31f26"/>
         <path d="M18.8 15.382h26.393v3.424l-21.24 26.027h21.744v3.784H18.293v-3.43l21.24-26.02H18.8z" fill="#fff"/>
       </svg>
-      <span class="mx-2">В Zabbix</span>
 
       <svg v-if="!monitoringAvailable" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
            class="bi bi-dash-circle-dotted" viewBox="0 0 16 16">

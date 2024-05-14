@@ -27,7 +27,7 @@
     <div class="row" style="padding-bottom: 5px;">
 
       <div class="col-md-4">
-        <div class="card shadow" style="min-height: 220px">
+        <div class="card shadow h-100">
           <div class="card-body">
       <!--  Время обновления интерфейсов-->
             <InterfacesHelpText
@@ -50,50 +50,56 @@
         </div>
       </div>
 
-      <div class="col-md-6">
-        <div v-if="generalInfo" class="card shadow" style="min-height: 220px">
-            <div class="card-body button-panel">
-    <!--    Кнопка для отображения панели с информацией Zabbix-->
-            <div v-if="generalInfo.zabbixInfo"  class="col-md-6">
+      <div class="col-md-8">
+        <div v-if="generalInfo" class="card shadow h-100 justify-content-between">
+
+          <div class="p-3 d-flex flex-wrap">
+            <!--    Кнопка для отображения панели с информацией Zabbix-->
+            <div v-if="generalInfo.zabbixInfo">
               <ZabbixInfo :zabbix-info="generalInfo.zabbixInfo"/>
             </div>
 
-    <!--    Ссылка на Zabbix-->
-            <div v-if="generalInfo.zabbixHostID" class="col-md-6">
+            <!--    Ссылка на Zabbix-->
+            <div v-if="generalInfo.zabbixHostID">
               <ToZabbixLink :monitoringAvailable="generalInfo.zabbixInfo.monitoringAvailable"
                             :zabbix-host-id="generalInfo.zabbixHostID"
                             :zabbix-url="generalInfo.zabbixURL"/>
             </div>
 
-    <!--    Ссылка на Elastic Stack-->
-            <div v-if="generalInfo.elasticStackLink" class="col-md-6">
-                <ElasticStackLink :logs-url="generalInfo.elasticStackLink"/>
+            <!--    Ссылка на Elastic Stack-->
+            <div v-if="generalInfo.elasticStackLink">
+              <ElasticStackLink :logs-url="generalInfo.elasticStackLink"/>
             </div>
 
-    <!--    Ссылка на карту-->
-            <div class="col-md-6">
-                <MapCoordLink :coords="generalInfo.coords"/>
+            <!--    Ссылка на карту-->
+            <div>
+              <MapCoordLink :coords="generalInfo.coords"/>
             </div>
 
-    <!--    Показать/Скрыть список конфигураций-->
-            <div class="col-md-6">
-               <ConfigFilesSwitchButton :config-files="configFiles" />
+            <!--    Показать/Скрыть список конфигураций-->
+            <div>
+              <ConfigFilesSwitchButton :config-files="configFiles"/>
+            </div>
+            <!--    Медиафайлы-->
+            <div>
+              <DeviceImages :device-name="deviceName"/>
             </div>
 
-            <div class="col-md-6">
-                <DeviceImages :device-name="deviceName"/>
+            <!--    Карты Zabbix-->
+            <div v-if="generalInfo.zabbixInfo?.maps.length > 0">
+              <ZabbixMapsDropdown :zabbix-url="generalInfo.zabbixURL" :maps-data="generalInfo.zabbixInfo.maps"/>
             </div>
 
-            </div>
-        </div>
-      </div>
+            <!--              <div>-->
+            <!--                <ZabbixMapsDropdown zabbix-url="https://zabbix.net92.ru/zabbix/" :maps-data="[]"/>-->
+            <!--              </div>-->
 
-      <div class="col-md-2">
-        <div class="card shadow" style="min-height: 220px">
-            <div class="card-body">
-        <!--  Иконки температуры, загрузки ЦП и т.д.-->
-              <DeviceStats v-if="deviceStats" :stats="deviceStats"/>
             </div>
+
+          <div class="d-flex flex-wrap justify-content-end mx-2 pb-2">
+            <DeviceStats v-if="deviceStats" :stats="deviceStats"/>
+          </div>
+
         </div>
       </div>
 
@@ -220,6 +226,7 @@ import Toast from "primevue/toast";
 import TimeAgo from 'javascript-time-ago'
 import ru from 'javascript-time-ago/locale/ru'
 
+import ZabbixMapsDropdown from "./components/ZabbixMapsDropdown.vue";
 import DeviceStatusName from "./components/DeviceStatus&Name.vue";
 import ElasticStackLink from "./components/ElasticStackLink.vue";
 import MapCoordLink from "./components/MapCoordLink.vue";
@@ -267,6 +274,7 @@ export default defineComponent({
     BrasSession,
     ScrollTop,
     Toast,
+    ZabbixMapsDropdown,
   },
 
   data() {

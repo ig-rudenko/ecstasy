@@ -1,8 +1,17 @@
+class ZabbixMapInfo {
+    constructor(
+        public sysmapid: number,
+        public name: string,
+    ) {
+    }
+}
+
 class ZabbixInfo {
     constructor(
         public description: string,
         public inventory: any,
         public monitoringAvailable: number,
+        public maps: ZabbixMapInfo[],
     ) {}
 }
 
@@ -22,7 +31,7 @@ class GeneralInfo {
 
 
 function newZabbixInfo(data: any): ZabbixInfo {
-    return new ZabbixInfo(data.description, data.inventory, data.monitoringAvailable)
+    return new ZabbixInfo(data.description, data.inventory, data.monitoringAvailable, data.maps)
 }
 
 function newGeneralInfo(data: any): GeneralInfo {
@@ -39,4 +48,4 @@ function newGeneralInfo(data: any): GeneralInfo {
     )
 }
 
-export {ZabbixInfo, GeneralInfo, newGeneralInfo}
+export {ZabbixMapInfo, ZabbixInfo, GeneralInfo, newGeneralInfo}
