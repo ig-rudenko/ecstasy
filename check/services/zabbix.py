@@ -2,11 +2,11 @@ from django.core.cache import cache
 from pyzabbix.api import ZabbixAPI
 
 
-def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> list[dict[str, str]]:
+def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> list[dict[str, str | int]]:
     """
     Возвращает список карт Zabbix, в которых находится узел сети Zabbix по его id.
     """
-    hosts_map_ids: list[dict[str, str]] = []
+    hosts_map_ids: list[dict[str, str | int]] = []
     if not host_id:
         return []
 
@@ -19,7 +19,7 @@ def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> li
                 if host.get("hostid") == str(host_id):
                     hosts_map_ids.append(
                         {
-                            "sysmapid": int(map_.get("sysmapid")),  # ID карты
+                            "sysmapid": int(map_["sysmapid"]),  # ID карты
                             "name": map_.get("name", "Без названия"),  # Название карты
                         },
                     )
