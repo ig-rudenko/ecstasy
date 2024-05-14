@@ -1,6 +1,7 @@
 <template>
   <div>
-    <DataTable ref="dt" :value="devices" v-model:filters="filters" paginator-position="both" :loading="loading"
+    <DataTable ref="dt" :value="devices" v-model:filters="filters" :paginator-position="paginatorPosition"
+               :loading="loading"
                paginator :rows="50" :rowsPerPageOptions="[10, 20, 50]"
                export-filename="devices" @valueChange="filterDevices"
                filterDisplay="menu" stripedRows size="small" removableSort
@@ -154,7 +155,7 @@ export default defineComponent({
     groups: {required: true},
     globalSearch: {required: true, type: String},
   },
-  emits: ["update:data", "filter:devices"],
+  emits: ["update:data", "filter:devices", "filter:clear"],
 
   updated() {
     this.filters.global.value = this.globalSearch;
@@ -162,6 +163,7 @@ export default defineComponent({
 
   data() {
     return {
+      paginatorPosition: 'both' as 'top' | 'bottom' | 'both' | undefined,
       _filters: {
         global: {value: "", matchMode: FilterMatchMode.CONTAINS},
         vendor: {value: null, matchMode: FilterMatchMode.EQUALS},
@@ -194,8 +196,18 @@ export default defineComponent({
 
   methods: {
     updateData() {
-      this.$emit("update:data")
+      this.clearFilters();
+      this.$emit("update:data");
     },
+
+    clearFilters() {
+      this.$emit("filter:clear");
+      this.filters.global.value = "";
+      this.filters.vendor.value = null;
+      this.filters.model.value = null;
+      this.filters.group.value = null;
+    },
+
     stringToColour(str: string): string {
       if (!str) return '';
       let hash = 0;
@@ -209,6 +221,13 @@ export default defineComponent({
       (<DataTable>this.$refs.dt).exportCSV();
     },
     filterDevices(devices: Device[]): void {
+      if (devices.length > 10) {
+        this.paginatorPosition = 'both';
+      } else if (devices.length > 0) {
+        this.paginatorPosition = 'top';
+      } else {
+        this.paginatorPosition = undefined;
+      }
       this.$emit("filter:devices", devices)
     }
   }

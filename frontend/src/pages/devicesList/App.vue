@@ -39,7 +39,7 @@
 
     <!--Просмотр загрузки оборудования-->
     <div v-if="chartData.length > 0">
-      <h3 class="fs-4 fw-bold">Общая абонентская загрузка интерфейсов</h3>
+      <h3 class="fs-4 fw-bold">Общая загрузка интерфейсов</h3>
       <div class="d-flex flex-wrap justify-content-center align-items-center">
         <div style="display: block; box-sizing: border-box; height: 270px; width: 270px;">
           <DoughnutChart :data="chartData"/>
@@ -85,6 +85,7 @@
   <DevicesListTable :globalSearch="search" :devices="devices"
                     :groups="groups" :vendors="vendors" :models="models"
                     @filter:devices="processFilteredDevices"
+                    @filter:clear="() => search = ''"
                     @update:data="getDevices"/>
 
   <ScrollTop :threshold="100"/>
