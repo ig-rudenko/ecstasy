@@ -1,12 +1,12 @@
 <template>
-  <Doughnut id="my-chart-id" :options="chartOptions" :data="chartData"/>
+  <Doughnut id="my-chart-id" :options="chartOptions" :data="chartData" :labels="labels"/>
 </template>
 
 <script>
-import { Doughnut } from 'vue-chartjs'
-import { Chart as ChartJS, Title, Tooltip, Legend, CategoryScale, LinearScale, ArcElement } from 'chart.js'
+import {Doughnut} from 'vue-chartjs'
+import {ArcElement, CategoryScale, Chart as ChartJS, LinearScale, Title, Tooltip} from 'chart.js'
 
-ChartJS.register(Title, Tooltip, Legend, CategoryScale, LinearScale, ArcElement)
+ChartJS.register(Title, Tooltip, CategoryScale, LinearScale, ArcElement)
 
 export default {
   name: 'DoughnutChart',
@@ -17,10 +17,12 @@ export default {
   computed: {
     chartData() {
       return {
-        datasets: [ {
-          data: this.data,
-          label: 'Кол-во интерфейсов',
-        } ]
+        datasets: [
+          {
+            data: this.data,
+
+          }
+        ]
       }
     },
     chartOptions() {
@@ -31,7 +33,8 @@ export default {
           '#198754',
           '#74bf9c',
           '#ffbdbd',
-          '#cfcfcf'
+          '#cfcfcf',
+          '#0dcaf0'
         ],
       }
     }

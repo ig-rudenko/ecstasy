@@ -12,9 +12,9 @@ class Device {
     ) {}
 }
 
-function newDevicesList(data: Array<any>): Array<Device> {
+function newDevicesList(data: any): Device[] {
     if (!data) return []
-    let res: Array<Device> = []
+    let res: Device[] = []
     for (const elem of data) {
         res.push(
             new Device(
