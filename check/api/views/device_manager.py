@@ -1,11 +1,9 @@
-from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from check import models
 from check.logging import log
@@ -18,7 +16,7 @@ from check.services.device.interfaces import (
     check_user_interface_permission,
 )
 from devicemanager.remote.exceptions import InvalidMethod
-from ecstasy_project.types.api import UserAuthenticatedAPIView
+from .base import DeviceAPIView
 from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..serializers import (
@@ -32,12 +30,11 @@ from ..swagger import schemas
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
 @method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
-class InterfaceControlAPIView(UserAuthenticatedAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
+class InterfaceControlAPIView(DeviceAPIView):
     serializer_class = PortControlSerializer
 
     @except_connection_errors
-    def post(self, request: Request, device_name: str):
+    def post(self, request: Request, *args, **kwargs):
         """
         ## Изменяем состояние порта оборудования
         """
@@ -50,7 +47,7 @@ class InterfaceControlAPIView(UserAuthenticatedAPIView):
         port_name: str = serializer.validated_data["port"]
         save_config: bool = serializer.validated_data["save"]
 
-        device = get_object_or_404(models.Devices, name=device_name)
+        device: models.Devices = self.get_object()
 
         # Есть ли у пользователя доступ к группе данного оборудования.
         self.check_object_permissions(request, device)
@@ -69,15 +66,13 @@ class InterfaceControlAPIView(UserAuthenticatedAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDescriptionAPIView(UserAuthenticatedAPIView):
+class ChangeDescriptionAPIView(DeviceAPIView):
     """
     ## Изменяем описание на порту у оборудования
     """
 
-    permission_classes = [IsAuthenticated, DevicePermission]
-
     @except_connection_errors
-    def post(self, request: Request, device_name: str):
+    def post(self, request: Request, *args, **kwargs):
         """
         ## Меняем описание на порту оборудования
 
@@ -107,7 +102,7 @@ class ChangeDescriptionAPIView(UserAuthenticatedAPIView):
         if not port:
             raise ValidationError({"detail": "Необходимо указать порт"})
 
-        device = get_object_or_404(models.Devices, name=device_name)
+        device: models.Devices = self.get_object()
 
         # Проверяем права доступа пользователя к оборудованию
         self.check_object_permissions(request, device)
@@ -129,11 +124,11 @@ class ChangeDescriptionAPIView(UserAuthenticatedAPIView):
         )
 
 
-class MacListAPIView(UserAuthenticatedAPIView):
+class MacListAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def get(self, request: Request, device_name):
+    def get(self, request: Request, *args, **kwargs):
         """
         ## Смотрим MAC-адреса на порту оборудования
 
@@ -159,19 +154,16 @@ class MacListAPIView(UserAuthenticatedAPIView):
         if not port:
             raise ValidationError({"detail": "Укажите порт!"})
 
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+        device: models.Devices = self.get_object()
 
         macs = get_mac_addresses_on_interface(device, port)
 
         return Response({"count": len(macs), "result": macs})
 
 
-class CableDiagAPIView(UserAuthenticatedAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
+class CableDiagAPIView(DeviceAPIView):
     @except_connection_errors
-    def get(self, request: Request, device_name):
+    def get(self, request: Request, *args, **kwargs):
         """
         ## Запускаем диагностику кабеля на порту
 
@@ -199,8 +191,7 @@ class CableDiagAPIView(UserAuthenticatedAPIView):
             raise ValidationError({"detail": "Неверные данные"})
 
         # Находим оборудование
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+        device: models.Devices = self.get_object()
 
         # Если оборудование недоступно
         if not device.available:
@@ -215,15 +206,12 @@ class CableDiagAPIView(UserAuthenticatedAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class SetPoEAPIView(UserAuthenticatedAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
+class SetPoEAPIView(DeviceAPIView):
     serializer_class = PoEPortStatusSerializer
 
     @except_connection_errors
-    def post(self, request: Request, device_name):
-        """
-        ## Устанавливает PoE статус на порту
-        """
+    def post(self, request: Request, *args, **kwargs):
+        """Устанавливает PoE статус на порту"""
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -231,8 +219,7 @@ class SetPoEAPIView(UserAuthenticatedAPIView):
         port_name = serializer.validated_data["port"]
 
         # Находим оборудование
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+        device = self.get_object()
 
         # Если оборудование недоступно
         if not device.available:
@@ -248,11 +235,9 @@ class SetPoEAPIView(UserAuthenticatedAPIView):
             return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
 
 
-class InterfaceInfoAPIView(UserAuthenticatedAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
+class InterfaceInfoAPIView(DeviceAPIView):
     @except_connection_errors
-    def get(self, request: Request, device_name):
+    def get(self, request: Request, *args, **kwargs):
         """
         ## Общая информация об определенном порте оборудования
 
@@ -277,8 +262,7 @@ class InterfaceInfoAPIView(UserAuthenticatedAPIView):
         if not port:
             raise ValidationError({"detail": "Укажите порт!"})
 
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+        device = self.get_object()
 
         result = get_interface_detail_info(device, port)  # Получаем информацию о порте
 
@@ -286,23 +270,21 @@ class InterfaceInfoAPIView(UserAuthenticatedAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
-class ChangeDSLProfileAPIView(APIView):
+class ChangeDSLProfileAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def post(self, request, device_name: str):
+    def post(self, request, *args, **kwargs):
         """
-        ## Изменяем профиль xDSL порта на другой
+        Изменяем профиль xDSL порта на другой
 
         Возвращаем `{ "status": status }` или `{ "error": error }`
-
         """
 
         serializer = ADSLProfileSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+        device = self.get_object()
 
         # Если оборудование недоступно
         if not device.available:
@@ -312,8 +294,7 @@ class ChangeDSLProfileAPIView(APIView):
         session = device.connect()
         try:
             status = session.change_profile(
-                serializer.validated_data["port"],
-                serializer.validated_data["index"],
+                serializer.validated_data["port"], serializer.validated_data["index"]
             )
         except InvalidMethod:
             # Нельзя менять профиль для данного устройства
@@ -324,6 +305,7 @@ class ChangeDSLProfileAPIView(APIView):
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):
     serializer_class = InterfacesCommentsSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -332,5 +314,6 @@ class CreateInterfaceCommentAPIView(generics.CreateAPIView):
 class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.InterfacesComments.objects.all()
     serializer_class = InterfacesCommentsSerializer
+    permission_classes = [IsAuthenticated]
     lookup_field = "pk"
     lookup_url_kwarg = "pk"

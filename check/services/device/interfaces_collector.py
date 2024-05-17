@@ -110,9 +110,14 @@ class DeviceInterfacesResult(TypedDict):
 
 
 def get_device_interfaces(
-    device: Devices, device_collector: DeviceManager, current_status: bool, with_vlans: bool
+    device: Devices,
+    device_collector: DeviceManager,
+    current_status: bool,
+    with_vlans: bool,
+    check_status: bool = True,
 ) -> DeviceInterfacesResult:
-    available = device.available  # Оборудование доступно или нет
+    # Проверяем доступность оборудования.
+    available = check_status and device.available
 
     # Если оборудование доступно, то можно собирать интерфейсы в реальном времени.
     current_status = current_status and available > 0

@@ -1,46 +1,39 @@
 from typing import Type
 
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from check import models
 from check.permissions import profile_permission
-from ecstasy_project.types.api import UserAuthenticatedAPIView
 from gathering.services.configurations import (
     ConfigurationGather,
     ConfigFileError,
     LocalConfigStorage,
     ConfigStorage,
 )
+from .base import DeviceAPIView
 from ..filters import DeviceFilter
-from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
 
 
-class BaseConfigStorageAPIView(UserAuthenticatedAPIView):
+class BaseConfigStorageAPIView(DeviceAPIView):
     config_storage: Type[ConfigStorage] | None = None
 
-    def get_storage(self, device_name: str, file_name: str | None = None) -> ConfigStorage:
+    def get_storage(self, device: models.Devices, file_name: str | None = None) -> ConfigStorage:
         """
-        ## Эта функция проверяет, что имя устройства является допустимым
-        А также файл конфигурации верный
+        ## Эта функция проверяет, что файл конфигурации верный.
 
-        :param device_name: Имя устройства для проверки
-        :param file_name: Имя файла конфигурации (optional)
-        :return: Хранилище для конфигураций
+        :param device: Устройство.
+        :param file_name: Имя файла конфигурации (optional).
+        :return: Хранилище для конфигураций.
         """
 
         if self.config_storage is None or not issubclass(self.config_storage, ConfigStorage):
             raise NotImplementedError("Хранилище конфигураций должно наследоваться от ConfigStorage")
-
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(self.request, device)
 
         storage: ConfigStorage = self.config_storage(device)
 
@@ -64,29 +57,27 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     # Для загрузки и удаления файла конфигурации конкретного оборудования
     """
 
-    permission_classes = [IsAuthenticated, DevicePermission]
     config_storage = LocalConfigStorage
 
     def get(self, request, device_name: str, file_name: str):
         """
         ## Отправляет содержимое файла конфигурации
         """
-        storage = self.get_storage(device_name, file_name)
-
+        device = self.get_object()
+        storage = self.get_storage(device, file_name)
         return FileResponse(storage.open(file_name), filename=file_name)
 
     def delete(self, request, device_name: str, file_name: str):
         """
         ## Удаляет файл конфигурации
         """
-        self.get_storage(device_name, file_name).delete(file_name)
-
+        device = self.get_object()
+        self.get_storage(device, file_name).delete(file_name)
         return Response(status=204)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
 
@@ -105,8 +96,8 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
                 }
             ]
         """
-
-        storage = self.get_storage(device_name)
+        device = self.get_object()
+        storage = self.get_storage(device)
 
         config_files = storage.files_list()
         serializer = self.serializer_class(config_files, many=True)
@@ -125,14 +116,6 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
     filterset_class = DeviceFilter
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
-
-    def get_queryset(self):
-        """
-        ## Возвращаем queryset всех устройств из доступных для пользователя групп
-        """
-        return models.Devices.objects.filter(group__profile__user_id=self.request.user.id).select_related(
-            "group"
-        )
 
     def get(self, request, **kwargs):
         """
@@ -176,7 +159,7 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
             result["count"] += 1
 
             # Файлы конфигураций
-            files = self.get_storage(dev.name).files_list()
+            files = self.get_storage(dev).files_list()
 
             # Сериализуем файлы
             files_serializer = self.serializer_class(files, many=True)
@@ -205,10 +188,10 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
         Если такая конфигурация уже имеется, то файл не будет создан (чтобы не было лишних копий)
 
         """
-
-        storage = self.get_storage(device_name)
-
+        device = self.get_object()
+        storage = self.get_storage(device)
         gather = ConfigurationGather(storage)
+
         try:
             if gather.collect_config_file():
                 # Файл конфигурации был добавлен

@@ -1,11 +1,8 @@
-from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from app_settings.models import LogsElasticStackSettings
 from check import models
@@ -16,9 +13,9 @@ from devicemanager.device import DeviceManager
 from devicemanager.device import zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 from net_tools.models import DevicesInfo as ModelDeviceInfo
+from .base import DeviceAPIView
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter, DeviceInfoFilter
-from ..permissions import DevicePermission
 from ..serializers import DevicesSerializer
 from ..swagger.schemas import (
     devices_interfaces_workload_list_api_doc,
@@ -98,12 +95,10 @@ class DeviceInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
         return Response(result)
 
 
-class DeviceInterfacesAPIView(UserAuthenticatedAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
+class DeviceInterfacesAPIView(DeviceAPIView):
     @interfaces_list_api_doc
     @except_connection_errors
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         """
         ## Вывод интерфейсов оборудования
 
@@ -140,8 +135,7 @@ class DeviceInterfacesAPIView(UserAuthenticatedAPIView):
                 "collected": "2023-03-01T15:13:11.559175"
             }
         """
-        device = get_object_or_404(models.Devices, name=kwargs["device_name"])
-        self.check_object_permissions(request, device)
+        device: models.Devices = self.get_object()
 
         status_on = ["1", "yes", "true"]
 
@@ -150,6 +144,7 @@ class DeviceInterfacesAPIView(UserAuthenticatedAPIView):
             DeviceManager.from_model(device),
             current_status=request.GET.get("current_status") in status_on,
             with_vlans=request.GET.get("vlans") in status_on,
+            check_status=request.GET.get("check_status", "true") in status_on,
         )
 
         interfaces_builder = InterfacesBuilder(device)
@@ -158,7 +153,7 @@ class DeviceInterfacesAPIView(UserAuthenticatedAPIView):
         return Response(interfaces_data)
 
 
-class DeviceInfoAPIView(UserAuthenticatedAPIView):
+class DeviceInfoAPIView(DeviceAPIView):
     """
     ## Возвращаем общую информацию оборудования
 
@@ -193,11 +188,8 @@ class DeviceInfoAPIView(UserAuthenticatedAPIView):
 
     """
 
-    permission_classes = [IsAuthenticated, DevicePermission]
-
-    def get(self, request, device_name: str):
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(self.request, device)
+    def get(self, request, device_name: str, *args, **kwargs):
+        device: models.Devices = self.get_object()
         zabbix_info = DeviceManager(name=device_name).zabbix_info
 
         with zabbix_api.connect() as zbx:
@@ -224,7 +216,7 @@ class DeviceInfoAPIView(UserAuthenticatedAPIView):
         )
 
 
-class DeviceStatsInfoAPIView(APIView):
+class DeviceStatsInfoAPIView(DeviceAPIView):
     """
     ## Возвращаем данные CPU, FLASH, RAM, TEMP
 
@@ -248,12 +240,9 @@ class DeviceStatsInfoAPIView(APIView):
 
     """
 
-    permission_classes = [IsAuthenticated, DevicePermission]
-
     @except_connection_errors
-    def get(self, request, device_name: str):
-        device = get_object_or_404(models.Devices, name=device_name)
-        self.check_object_permissions(request, device)
+    def get(self, request, *args, **kwargs) -> Response:
+        device: models.Devices = self.get_object()
 
         # Если оборудование недоступно
         if not device.available:

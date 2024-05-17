@@ -1,4 +1,5 @@
 from django.db.models import QuerySet
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +18,10 @@ class DeviceMediaListCreateAPIView(generics.ListCreateAPIView):
     def get_device(self) -> Devices:
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        device = get_object_or_404(Devices, **filter_kwargs)
+        try:
+            device = get_object_or_404(Devices, **filter_kwargs)
+        except Http404:
+            device = get_object_or_404(Devices, ip=self.kwargs[lookup_url_kwarg])
         self.check_object_permissions(self.request, device)
         return device
 

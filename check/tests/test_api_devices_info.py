@@ -232,6 +232,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         # Получаем свежие данные
         device_info = DevicesInfo.objects.get(dev=self.device)
+        print(device_info)
         device = Devices.objects.get(id=self.device.id)
 
         # В базе должны были обновиться поля
@@ -426,7 +427,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
         user = User.objects.create_user(username="user123")
         self.client.force_authenticate(user=user)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
 
 class TestDeviceStatsInfoAPIView(APITestCase):
@@ -503,6 +504,6 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         url = reverse("devices-api:device-stats-info", kwargs={"device_name": self.device.name})
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         mock_connect.assert_not_called()
