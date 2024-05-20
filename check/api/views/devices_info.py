@@ -197,7 +197,7 @@ class DeviceInfoAPIView(DeviceAPIView):
 
         return Response(
             {
-                "deviceName": device_name,
+                "deviceName": device.name,
                 "deviceIP": device.ip,
                 # Создание URL-адреса для запроса журналов Kibana.
                 "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=device),
