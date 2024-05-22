@@ -8,13 +8,6 @@ html * {
     box-shadow: 0.4em 0.4em 5px rgb(122 122 122 / 30%);
 }
 
-.logo {
-    border: none;
-    height: 70px;
-    width: 70px;
-    animation: 3.75s linear infinite spinner-border;
-}
-
 .search-string {
     text-align: center;
     width: 100%;
