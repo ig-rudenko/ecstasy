@@ -14,31 +14,36 @@
 <body class="text-center">
 
 <main class="form-signin">
-  <form method="post" action="{% url 'login' %}">
+    <video id="background-video" autoplay loop muted poster="{% static 'img/login-background-video-preview.png' %}">
+        <source src="{% static 'video/welcome.mp4' %}" type="video/mp4">
+    </video>
+
+    <form method="post" action="{% url 'login' %}">
     {% csrf_token %}
-    <div id="logo_nedema">
-        <img class="spinner-border"
-             style="border: none; height: 300px; width: 300px; padding: 20px; animation: 3.25s linear infinite spinner-border;"
-             src="{% static 'img/logo-1.png' %}">
+        <input hidden name="next" value="{{ request.GET.next }}">
+
+        <h1 class="h3 mb-3 fw-normal text-white mb-4">Пожалуйста, войдите в систему Ecstasy</h1>
+
+        <div>
+            {% for error in form.non_field_errors %}
+                <div class="alert bg-danger text-white">{{ error }}</div>
+            {% endfor %}
     </div>
-    <h1 class="h3 mb-3 fw-normal">Пожалуйста, войдите в систему Ecstasy</h1>
 
     <div class="form-floating">
-      <input type="text" class="form-control" id="floatingInput" name="username">
-      <label for="floatingInput">Логин</label>
+        <input type="text" required autofocus class="form-control" id="floatingInput" name="username">
+        <label for="floatingInput" class="text-white">Логин</label>
     </div>
     <div class="form-floating">
-      <input type="password" class="form-control" id="floatingPassword" name="password">
-      <label for="floatingPassword">Пароль</label>
+        <input type="password" required class="form-control" id="floatingPassword" name="password">
+        <label for="floatingPassword" class="text-white">Пароль</label>
     </div>
 
-      <input hidden name="next" value="{{ request.GET.next }}">
-
-    <div class="checkbox mb-3">
-      <a href="{% url 'password_reset' %}">Забыл</a>
+        <div class="d-flex p-2 pt-0">
+            <a class="text-decoration-none" href="{% url 'password_reset' %}">Забыл пароль</a>
     </div>
-    <button class="w-100 btn btn-lg btn-primary" type="submit">Войти</button>
-    <p class="mt-5 mb-3 text-muted">АО "Севастополь Телеком" <br> Руденко Игорь &copy; 2022-2023</p>
+        <button class="w-100 btn btn-lg btn-outline-primary" type="submit">Войти</button>
+        <p class="mt-5 mb-3 text-muted">АО "Севастополь Телеком" <br> Руденко Игорь &copy; 2022-{% now 'Y' %}</p>
   </form>
 </main>
 </body>
