@@ -43,7 +43,7 @@ pipeline {
                 sh '''#!/bin/bash
                     source ${VENV_NAME}/bin/activate
                     export DJANGO_DEBUG=1
-                    mypy app_settings check devicemanager ecstasy_project gathering gpon maps net_tools ring_manager'''
+                    mypy app_settings check devicemanager ecstasy_project gathering gpon maps net_tools ring_manager accounting'''
             }
         }
 

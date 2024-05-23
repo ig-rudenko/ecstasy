@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "dbbackup",
     "django_celery_beat",
     "gpon",
+    "accounting",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"

@@ -5,11 +5,7 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-    TokenObtainPairView,
-    TokenVerifyView,
-)
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView, TokenVerifyView
 
 from gathering.api.views import MacTracerouteAPIView
 
@@ -47,6 +43,7 @@ schema_view = get_schema_view(
         path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
         path("gather/api/traceroute/mac-address/<mac>/", MacTracerouteAPIView.as_view()),
         path("maps/api/", include("maps.api.urls")),
+        path("api/accounts/", include("accounting.urls")),
     ],
     authentication_classes=[
         SessionAuthentication,
