@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "gpon",
     "accounting",
+    "news",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -113,6 +114,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "news.context_preprocessors.global_news",
             ],
             "libraries": {
                 "gpon_perms": "gpon.templatetags.gpon_perms",
@@ -386,6 +388,7 @@ JAZZMIN_SETTINGS = {
         "maps.Maps": "fas fa-map",
         "net_tools.VlanName": "fas fa-network-wired",
         "net_tools.DevicesForMacSearch": "fas fa-server",
+        "news.GlobalNews": "fas fa-newspaper",
     },
 }
 JAZZMIN_UI_TWEAKS = {
