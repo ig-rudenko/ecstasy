@@ -32,3 +32,4 @@ urllib3>=2.2.1
 flask>=3.0.2
 gevent>=23.9.0
 flower>=2.0.1
+tornado>=6.4.1 # not directly required, pinned by Snyk to avoid a vulnerability
