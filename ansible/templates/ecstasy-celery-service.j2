@@ -18,7 +18,7 @@ WorkingDirectory={{ root_folder }}
 #User=root
 #Group=root
 
-ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project worker -B --scheduler django -l INFO -c {{celery_concurrent}} -n {{ celery_worker_name }}
+ExecStart={{ root_folder }}/venv/bin/celery -A ecstasy_project worker -B --scheduler django -l INFO -c {{ celery_concurrent }} -n {{ celery_worker_name }} --max-memory-per-child 300000
 
 TimeoutSec=10
 Restart=always
