@@ -8,11 +8,11 @@ class DevicesResource(resources.ModelResource):
     group = fields.Field(column_name="Группа")
 
     @staticmethod
-    def dehydrate_auth_group(obj: Devices):
+    def dehydrate_auth_group(obj):
         return obj.auth_group.name
 
     @staticmethod
-    def dehydrate_group(obj: Devices):
+    def dehydrate_group(obj):
         return obj.group.name
 
     class Meta:
