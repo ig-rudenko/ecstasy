@@ -11,6 +11,7 @@ from devicemanager.dc import SimpleAuthObject
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import BaseDeviceException
+from devicemanager.session_control import DEVICE_SESSIONS
 
 app = Flask(__name__)
 TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN", "ASDIH!hausd17391")
@@ -44,8 +45,7 @@ def handle_method_data(data):
     return jsonify({"data": data})
 
 
-@app.route("/connector/<ip>/<method>", methods=["POST"])
-def connector(ip: str, method: str):
+def check_token():
     request_token = request.headers.get("Token")
     if not request_token or request_token != TOKEN:
         resp = jsonify(
@@ -56,6 +56,13 @@ def connector(ip: str, method: str):
         )
         resp.status_code = 401
         return resp
+
+
+@app.route("/connector/<ip>/<method>", methods=["POST"])
+def connector(ip: str, method: str):
+    token_error = check_token()
+    if token_error:
+        return token_error
 
     data = request.get_json(force=True)
     connection: ConnectionType = data.get("connection")
@@ -92,6 +99,18 @@ def connector(ip: str, method: str):
         )
         resp.status_code = 500
         return resp
+
+
+@app.route("/pool/<ip>", methods=["DELETE"])
+def delete_connection_pool(ip: str):
+    """Очистить пул соединений"""
+    token_error = check_token()
+    if token_error:
+        return token_error
+    DEVICE_SESSIONS.delete_pool(ip)
+    resp = jsonify({"message":  "Connection pool deleted"})
+    resp.status_code = 204
+    return resp
 
 
 if __name__ == "__main__":

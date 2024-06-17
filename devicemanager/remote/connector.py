@@ -41,16 +41,27 @@ class RemoteDevice(AbstractDevice):
         self._make_session_global = make_session_global
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
 
+        self._timeout = 60 * 3
+        self._session = requests.Session()
+        self._session.headers.update({
+                "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", "")
+            }
+        )
+
     def _handle_error(self, error: dict):
+        self._delete_pool()  # Удаляем пул соединений, чтобы он создался заново
         if hasattr(exceptions, error["type"]):
-            SomeException: Type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
-            raise SomeException(error["message"], ip=self.ip)
+            some_exception: Type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
+            raise some_exception(error["message"], ip=self.ip)
         else:
             raise exceptions.DeviceException(error["message"], ip=self.ip)
 
+    def _delete_pool(self):
+        self._session.delete(f"{self._remote_connector_address}/pool/{self.ip}")
+
     def _remote_call(self, method: str, **params):
         url = f"{self._remote_connector_address}/connector/{self.ip}/{method}"
-        resp = requests.post(
+        resp = self._session.post(
             url=url,
             json={
                 "connection": {
@@ -62,10 +73,7 @@ class RemoteDevice(AbstractDevice):
                 "auth": self._remote_auth,
                 "params": params,
             },
-            headers={
-                "Token": os.getenv("DEVICE_CONNECTOR_TOKEN", ""),
-            },
-            timeout=60 * 3,
+            timeout=self._timeout,
         )
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
