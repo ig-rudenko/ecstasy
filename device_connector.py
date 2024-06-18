@@ -108,7 +108,7 @@ def delete_connection_pool(ip: str):
     if token_error:
         return token_error
     DEVICE_SESSIONS.delete_pool(ip)
-    resp = jsonify({"message":  "Connection pool deleted"})
+    resp = jsonify({"message": "Connection pool deleted"})
     resp.status_code = 204
     return resp
 

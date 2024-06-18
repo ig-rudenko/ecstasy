@@ -1,3 +1,5 @@
+import re
+
 from devicemanager.vendors.base.types import InterfaceListType, InterfaceType
 
 
@@ -11,3 +13,28 @@ def reformat_ltp_interfaces_list(interfaces: list[tuple[str, str]]) -> Interface
             status = "down"
         valid_interfaces.append((port_name, status, ""))
     return valid_interfaces
+
+
+def reformat_gpon_ports_state_output(output: str) -> InterfaceListType:
+    ports: list[str] = []
+    states: list[str] = []
+
+    port_match = re.search(r"Gpon-port:([\s\d]+)", output)
+    if port_match is not None:
+        ports = port_match.group(1).split()
+
+    state_match = re.search(r"State:([\s\S]+)", output)
+    if state_match is not None:
+        states = state_match.group(1).split()
+
+    interfaces: InterfaceListType = []
+    if ports and states:
+        for port_number, state in zip(ports, states):
+            status: InterfaceType = "up"
+            if state.upper() == "DISABLED":
+                status = "admin down"
+            # elif state.lower() == "down":
+            #     status = "down"
+            interfaces.append((f"pon-port {port_number}", status, ""))
+
+    return interfaces
