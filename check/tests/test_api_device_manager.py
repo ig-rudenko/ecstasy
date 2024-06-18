@@ -30,7 +30,7 @@ class PortControlAPIViewTestCase(APITestCase):
             password="auth_group",
         )
         cls.device = Devices.objects.create(
-            ip="172.30.0.58",
+            ip="10.255.255.255",
             name="dev1",
             group=cls.group,
         )
