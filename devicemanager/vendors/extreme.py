@@ -1,3 +1,4 @@
+import io
 import re
 from time import sleep
 from typing import Literal, Sequence
@@ -340,9 +341,9 @@ class Extreme(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
-    def get_current_configuration(self, *args, **kwargs) -> str:
+    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
         config = self.send_command("show configuration")
-        return config.strip()
+        return io.BytesIO(config.strip().encode())
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit()
