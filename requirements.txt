@@ -32,6 +32,11 @@ urllib3>=2.2.2
 flask>=3.0.2
 gevent>=23.9.0
 flower>=2.0.1
+certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
+cryptography>=42.0.2 # not directly required, pinned by Snyk to avoid a vulnerability
+idna>=3.7 # not directly required, pinned by Snyk to avoid a vulnerability
+jinja2>=3.1.4 # not directly required, pinned by Snyk to avoid a vulnerability
+paramiko>=3.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
 openpyxl
 django-import-export
 sqlparse>=0.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
