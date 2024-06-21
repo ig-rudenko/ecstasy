@@ -1,9 +1,10 @@
 import io
 import re
+import time
 from functools import wraps
 from typing import Any, TypedDict
 
-from .extra import reformat_ltp_interfaces_list
+from .extra import reformat_ltp_interfaces_list, reformat_gpon_ports_state_output
 from ..base.device import BaseDevice
 from ..base.types import (
     InterfaceListType,
@@ -193,16 +194,16 @@ class EltexLTP(BaseDevice):
             expect_command=False,
         )
         interfaces += re.findall(r"(front\S+ \d+)\s+(\S{2,})\s+", interfaces_front_output)
-
-        interfaces_pon_output = self.send_command(
-            f"show interfaces status pon-port 0 - {self.gpon_ports_count - 1}",
-            expect_command=False,
-        )
-        interfaces += re.findall(r"(pon\S+ \d+)\s+(\S{2,})\s+", interfaces_pon_output)
         self.session.send("exit\r")
         self.session.expect(self.prompt)
 
-        return reformat_ltp_interfaces_list(interfaces)
+        interfaces_gpon_output = self.send_command(
+            f"show interface gpon-port 0-{self.gpon_ports_count - 1} state",
+            expect_command=False,
+        )
+        valid_interfaces = reformat_ltp_interfaces_list(interfaces)
+        valid_interfaces += reformat_gpon_ports_state_output(interfaces_gpon_output)
+        return valid_interfaces
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:
@@ -368,11 +369,62 @@ class EltexLTP(BaseDevice):
             res = self.send_command(f"send omci reset interface ont {port_number}")
             return res + "Without saving"
 
+        if port_type == "pon-port" and re.match(r"^\d+$", port_number):
+            # Для порта GPON
+            self.session.send("configure terminal\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"interface gpon-port {port_number}\r")
+            self.session.expect(self.prompt)
+
+            self.session.send("shutdown\r")
+            self.session.expect(self.prompt)
+            self.session.send("do commit\r")
+            self.session.expect(self.prompt)
+
+            time.sleep(1)
+
+            self.session.send("no shutdown\r")
+            self.session.expect(self.prompt)
+            self.session.send("do commit\r")
+            self.session.expect(self.prompt)
+
+            self.session.send(f"exit\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"exit\r")
+            self.session.expect(self.prompt)
+
+            self.lock = False
+            return self.save_config() if save_config else "Without saving"
+
         return "Этот порт нельзя перезагружать"
 
     @BaseDevice.lock_session
     @_validate_port()
     def set_port(self, port: str, status: str, save_config=True) -> str:
+        port_type, port_number = port.split()
+        if port_type == "pon-port" and re.match(r"^\d+$", port_number):
+            # Для порта GPON
+            self.session.send("configure terminal\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"interface gpon-port {port_number}\r")
+            self.session.expect(self.prompt)
+
+            if status == "up":
+                self.session.send("no shutdown\r")
+            elif status == "down":
+                self.session.send("shutdown\r")
+
+            self.session.expect(self.prompt)
+            self.session.send("do commit\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"exit\r")
+            self.session.expect(self.prompt)
+            self.session.send(f"exit\r")
+            self.session.expect(self.prompt)
+
+            self.lock = False
+            return self.save_config() if save_config else "Without saving"
+
         return "Этот порт нельзя установить в " + status
 
     @BaseDevice.lock_session

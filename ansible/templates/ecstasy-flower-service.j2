@@ -5,6 +5,7 @@ After=network.target
 
 [Service]
 EnvironmentFile=/etc/sysconfig/ecstasy
+Environment="PYTHONUNBUFFERED=1"
 
 Type=simple
 

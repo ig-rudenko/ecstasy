@@ -69,14 +69,21 @@ front-port 1        down         none    auto         auto        no
 front-port 2        down         none    auto         auto        no
 front-port 3        down         none    auto         auto        no
             """
-        elif command == "show interfaces status pon-port 0 - 3\r":
+        elif command == "show interface gpon-port 0-3 state\r":
             self.before = b"""
- show interfaces status pon-port 0 - 3
-Interface           Status       Media   Speed        Duplex      Flow control
-pon-port 0          up                   2.5G         full        no
-pon-port 1          up                   2.5G         full        no
-pon-port 2          up                   2.5G         full        no
-pon-port 3          up                   2.5G         full        no
+    Reading:  .....
+    Gpon-ports status information:
+        Gpon-port:                               0                1                  2                  3
+        State:                                  OK               OK                 OK                 OK
+        ONT count:                               7                1                 56                 54
+        ONT autofind:                      enabled          enabled            enabled            enabled
+        SFP vendor:                        Hisense          Hisense              BAZIS              BAZIS
+        SFP product number:          LTE3680P-BC+2    LTE3680P-BC+2    BZ-SFP-GPON-C++    BZ-SFP-GPON-C++
+        SFP vendor revision:                    11               11                                      
+        SFP temperature [C]:                    39               39                 42                 43
+        SFP voltage [V]:                      3.25             3.24               3.22               3.18
+        SFP tx bias current [mA]:             8.23             7.95              11.65               8.00
+        SFP tx power [dBm]:                   7.78             7.76               6.05               5.91
             """
         elif "show mac include interface" in command:
             self.before = b"""
@@ -140,18 +147,21 @@ front-port 5        down         none    auto         auto        no
 front-port 6        down         none    auto         auto        no
 front-port 7        down         none    auto         auto        no
             """
-        elif command == "show interfaces status pon-port 0 - 7\r":
+        elif command == "show interface gpon-port 0-7 state\r":
             self.before = b"""
- show interfaces status pon-port 0 - 7
-Interface           Status       Media   Speed        Duplex      Flow control
-pon-port 0          up                   2.5G         full        no
-pon-port 1          up                   2.5G         full        no
-pon-port 2          up                   2.5G         full        no
-pon-port 3          up                   2.5G         full        no
-pon-port 4          up                   2.5G         full        no
-pon-port 5          up                   2.5G         full        no
-pon-port 6          up                   2.5G         full        no
-pon-port 7          up                   2.5G         full        no
+    Reading:  ........
+    Gpon-ports status information:
+        Gpon-port:                               0                1                  2                  3                4                5                  6                  7
+        State:                                  OK               OK                 OK                 OK               OK               OK                 OK                 OK
+        ONT count:                               7                1                 56                 54                1                0                 38                 47
+        ONT autofind:                      enabled          enabled            enabled            enabled          enabled          enabled            enabled            enabled
+        SFP vendor:                        Hisense          Hisense              BAZIS              BAZIS          Hisense          Hisense              BAZIS              BAZIS
+        SFP product number:          LTE3680P-BC+2    LTE3680P-BC+2    BZ-SFP-GPON-C++    BZ-SFP-GPON-C++    LTE3680P-BC+2    LTE3680P-BC+2    BZ-SFP-GPON-C++    BZ-SFP-GPON-C++
+        SFP vendor revision:                    11               11                                                     11               11
+        SFP temperature [C]:                    39               39                 43                 43               42               42                 41                 41
+        SFP voltage [V]:                      3.25             3.24               3.21               3.18             3.25             3.23               3.22               3.22
+        SFP tx bias current [mA]:             8.49             7.87              11.55               8.00             7.08             8.35               7.87              10.82
+        SFP tx power [dBm]:                   7.78             7.76               6.06               5.90             7.74             7.68               7.07               7.06
             """
         elif "show mac include interface" in command:
             self.before = b"""

@@ -24,10 +24,12 @@ from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from import_export.admin import ExportMixin
 
 from devicemanager.device import Interfaces
 from gathering.services.configurations import LocalConfigStorage
 from .export import DevicesInterfacesWorkloadExcelExport
+from .export_resources import DevicesResource
 from .models import (
     DeviceGroup,
     Devices,
@@ -51,8 +53,9 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 
 
 @admin.register(Devices)
-class DevicesAdmin(admin.ModelAdmin):
+class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     """Управление оборудованием"""
+    resource_class = DevicesResource
 
     list_display = [
         "ip",
@@ -319,8 +322,9 @@ class UsersActionsAdmin(admin.ModelAdmin):
 
 @admin.register(DeviceMedia)
 class DeviceMediaAdmin(admin.ModelAdmin):
-    list_display = ["file_type", "file_name", "description"]
+    list_display = ["file_type", "file_name", "current_file"]
     search_fields = ["device__name"]
+    list_select_related = ["device"]
 
     fieldsets = (
         (

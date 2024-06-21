@@ -19,6 +19,7 @@ from pathlib import Path
 
 import orjson
 import urllib3
+from import_export.formats.base_formats import CSV, XLSX, JSON
 from pyzabbix.api import logger as zabbix_api_logger
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -71,6 +72,7 @@ INSTALLED_APPS = [
     "gpon",
     "accounting",
     "news",
+    "import_export",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -397,3 +399,6 @@ JAZZMIN_UI_TWEAKS = {
 }
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
+
+
+IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
