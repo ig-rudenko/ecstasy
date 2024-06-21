@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import transaction
 from rest_framework import status
 from rest_framework.generics import (
@@ -18,6 +19,8 @@ from .serializers.create_subscriber_data import (
 )
 from .serializers.view_subscriber_data import CustomerDetailSerializer
 
+all_subscriber_connections_cache_key = "gpon:all_subscriber_connections"
+
 
 class CustomersListAPIView(ListAPIView):
     queryset = Customer.objects.all()
@@ -30,6 +33,18 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [CustomerPermission]
     serializer_class = CustomerDetailSerializer
 
+    def put(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().put(request, *args, **kwargs)
+
+    def patch(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().patch(request, *args, **kwargs)
+
+    def delete(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().delete(request, *args, **kwargs)
+
 
 class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [SubscriberDataPermission]
@@ -40,14 +55,36 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer) -> None:
         super().perform_update(serializer)
 
+    def put(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().put(request, *args, **kwargs)
+
+    def patch(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().patch(request, *args, **kwargs)
+
+    def delete(self, request: Request, *args, **kwargs) -> Response:
+        cache.delete(all_subscriber_connections_cache_key)
+        return super().delete(request, *args, **kwargs)
+
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects.all()
     serializer_class = SubscriberDataSerializer
+    cache_timeout = 60 * 10
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        customers = cache.get(all_subscriber_connections_cache_key)
+        if not customers:
+            customers = super().get(request, *args, **kwargs).data
+            cache.set(all_subscriber_connections_cache_key, customers, self.cache_timeout)
+
+        return Response(customers)
 
     @transaction.atomic
     def perform_create(self, serializer) -> None:
+        cache.delete(all_subscriber_connections_cache_key)
         super().perform_create(serializer)
 
 

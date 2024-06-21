@@ -55,7 +55,7 @@ class TechDataListCreateAPIView(GenericAPIView):
     permission_classes = [TechDataPermission]
 
     cache_key = "gpon:api:TechDataListCreateAPIView:get"
-    cache_timeout = 10  # секунд.
+    cache_timeout = 60 * 5  # секунд.
 
     def get_serializer_class(self):
         if self.request.method == "POST":
