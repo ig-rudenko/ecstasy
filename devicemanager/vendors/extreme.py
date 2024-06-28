@@ -112,7 +112,9 @@ class Extreme(BaseDevice):
         for port_name, admin_status, link_status, desc in interfaces_lines:
             # Проверяем статус порта и меняем его на более понятный для пользователя
             status: InterfaceType = "up"
-            if admin_status.startswith("D"):
+            if "notpresent" in link_status.lower():
+                status = "notPresent"
+            elif admin_status.startswith("D"):
                 status = "admin down"
             elif link_status == "ready":
                 status = "down"
