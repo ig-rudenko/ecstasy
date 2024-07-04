@@ -1,7 +1,6 @@
 {% if enable_https %}
 server {
-    listen {{nginx_http_listen_port}} default_server;
-    listen [::]:{{nginx_http_listen_port}} default_server;
+    listen {{ nginx_http_listen_ip }}:{{ nginx_http_listen_port }} default_server;
     return 302 https://$server_name$request_uri;
 }
 {% endif %}

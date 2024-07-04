@@ -19,6 +19,7 @@ flower_port: 5555
 flower_username: monitoring
 flower_password: flower-password
 
+nginx_http_listen_ip: 0.0.0.0
 nginx_http_listen_port: 80
 domain_name: localhost
 enable_https: no
