@@ -3,6 +3,7 @@
 {% load gpon_perms %}
 {% load net_tools_perms %}
 {% load ring_manager_perms %}
+{% load account_perms %}
 
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
   <div class="container">
@@ -19,15 +20,18 @@
       <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
           <ul class="navbar-nav d-flex text-center">
 
-    {#              HOME #}
-              <li class="nav-item text-white">
-                  <a href="{% url 'home' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/home.png' %}" class="bi d-block mx-auto mb-1" alt="home"/>
+              {#              LIST DEVICES #}
+              {% if request.user.profile.devices_groups.count %}
+                  <li class="nav-item text-white">
+                      <a href="{% url 'devices-list' %}" class="nav-link p-0">
+                          <img width="64" height="64" src="{% static 'img/menu/devices.png' %}"
+                               class="bi d-block mx-auto mb-1" alt="devices"/>
               </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Главная</span>
-                  </div>
+                      <div class="d-flex flex-column">
+                          <span class="m-0 p-0" style="font-size: 0.7rem">Оборудование</span>
+                      </div>
             </li>
+              {% endif %}
 
     {#              CONSOLE #}
         {% if request.user.profile.console_access and request.user.profile.console_url %}
@@ -42,14 +46,16 @@
             </li>
         {% endif %}
 
-    {#              LIST DEVICES #}
-        {% if request.user.profile.devices_groups.count %}
+              {#              ECSTASY-LOOP #}
+              {% if request.user|has_access_ecstasy_loop_permission %}
             <li class="nav-item text-white">
-                <a href="{% url 'devices-list' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/devices.png' %}" class="bi d-block mx-auto mb-1" alt="devices"/>
+                <a href="{{ ecstasy_loop_url }}"
+                   target="_blank" class="nav-link p-0">
+                    <img width="64" height="64" src="{% static 'img/menu/loop.png' %}" class="bi d-block mx-auto mb-1"
+                         alt="console"/>
               </a>
                 <div class="d-flex flex-column">
-                    <span class="m-0 p-0" style="font-size: 0.7rem">Оборудование</span>
+                    <span class="m-0 p-0" style="font-size: 0.7rem">Loop Detector</span>
                 </div>
             </li>
         {% endif %}

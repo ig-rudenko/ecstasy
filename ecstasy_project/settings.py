@@ -117,12 +117,14 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "news.context_preprocessors.global_news",
+                "accounting.context_preprocessors.ecstasy_loop_url",
             ],
             "libraries": {
                 "gpon_perms": "gpon.templatetags.gpon_perms",
                 "net_tools_perms": "net_tools.templatetags.net_tools_perms",
                 "ring_manager_perms": "ring_manager.templatetags.ring_manager_perms",
                 "masp_perms": "maps.templatetags.maps_perms",
+                "accounting_perms": "accounting.templatetags.account_perms",
             },
         },
     },
@@ -402,3 +404,5 @@ CONTACT_NAME = os.getenv("CONTACT_NAME")
 
 
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
+
+ECSTASY_LOOP_URL = os.getenv("ECSTASY_LOOP_URL")
