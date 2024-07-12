@@ -24,7 +24,7 @@ from ..swagger.schemas import (
 )
 from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
 from ...services.remote_terminal import get_console_url
-from ...services.zabbix import get_device_zabbix_maps_ids
+from ...services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
 
 
 class DevicesListAPIView(UserAuthenticatedAPIView):
@@ -235,9 +235,9 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
             "temp": {
                 "value": 43.5,
                 "status": "normal"
-            }
+            },
+            "uptime": 123123123
         }
-
     """
 
     @except_connection_errors
@@ -249,4 +249,11 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
             return Response({"detail": "Device unavailable"}, status=500)
 
         device_stats: dict = device.connect().get_device_info() or {}
+
+        zabbix_info = DeviceManager(name=device.name).zabbix_info
+        with zabbix_api.connect() as zbx:
+            uptime = get_device_uptime(zbx, zabbix_info.hostid)
+
+        device_stats["uptime"] = uptime
+
         return Response(device_stats)
