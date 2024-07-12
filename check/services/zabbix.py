@@ -49,16 +49,8 @@ def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
     Возвращает время работы устройства.
     """
     uptime_items = zbx_session.item.get(hostids=host_id, output=["itemid"], search={"key_": "uptime"})
-    print(uptime_items)
     for item in uptime_items:
-        uptime_value = zbx_session.history.get(
-            itemids=item["itemid"],
-            output=["value"],
-            history=3,
-            limit=1,
-        )
-        print(uptime_value)
+        uptime_value = zbx_session.history.get(itemids=item["itemid"], output=["value"], history=3, limit=1)
         if uptime_value:
             return uptime_value[0]["value"]
-
     return -1
