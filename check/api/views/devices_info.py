@@ -2,6 +2,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from requests.exceptions import RequestException
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
@@ -251,8 +252,12 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
         device_stats: dict = device.connect().get_device_info() or {}
 
         zabbix_info = DeviceManager(name=device.name).zabbix_info
-        with zabbix_api.connect() as zbx:
-            uptime = get_device_uptime(zbx, zabbix_info.hostid)
+
+        try:
+            with zabbix_api.connect() as zbx:
+                uptime = get_device_uptime(zbx, zabbix_info.hostid)
+        except RequestException:
+            uptime = -1
 
         device_stats["uptime"] = uptime
 

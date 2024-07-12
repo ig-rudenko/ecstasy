@@ -456,6 +456,7 @@ class TestDeviceStatsInfoAPIView(APITestCase):
             "ram": {"util": 15},
             "flash": {"util": 50},
             "temp": {"value": 43.5, "status": "normal"},
+            "uptime": -1,
         }
 
         response = self.client.get(self.url)
@@ -468,6 +469,7 @@ class TestDeviceStatsInfoAPIView(APITestCase):
                 "ram": {"util": 15},
                 "flash": {"util": 50},
                 "temp": {"value": 43.5, "status": "normal"},
+                "uptime": -1,
             },
         )
 
