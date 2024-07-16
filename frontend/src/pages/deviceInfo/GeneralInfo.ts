@@ -26,6 +26,7 @@ class GeneralInfo {
         public zabbixInfo: ZabbixInfo,
         public zabbixURL: string,
         public consoleURL: string,
+        public uptime: number,
     ) {}
 }
 
@@ -45,6 +46,7 @@ function newGeneralInfo(data: any): GeneralInfo {
         newZabbixInfo(data.zabbixInfo),
         data.zabbixURL,
         data.consoleURL,
+        data.uptime,
     )
 }
 

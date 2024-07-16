@@ -21,7 +21,7 @@
         </p>
 
         <p v-else-if="currentStatus">
-          Данные интерфейсы были опрошены <br>{{ timePassed }} назад
+          Данные интерфейсы были опрошены <br>{{ timePassed }}
         </p>
 
         <p v-else>

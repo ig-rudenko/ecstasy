@@ -61,7 +61,7 @@
 
             <!--    Ссылка на Zabbix-->
             <div v-if="generalInfo.zabbixHostID">
-              <ToZabbixLink :monitoringAvailable="generalInfo.zabbixInfo.monitoringAvailable"
+              <ToZabbixLink :monitoringAvailable="Boolean(generalInfo.zabbixInfo.monitoringAvailable)"
                             :zabbix-host-id="generalInfo.zabbixHostID"
                             :zabbix-url="generalInfo.zabbixURL"/>
             </div>
@@ -97,7 +97,7 @@
             </div>
 
           <div class="d-flex flex-wrap justify-content-end mx-2 pb-2">
-            <DeviceStats v-if="deviceStats" :stats="deviceStats"/>
+            <DeviceStats v-if="deviceStats" :stats="deviceStats" :uptime="generalInfo.uptime"/>
           </div>
 
         </div>
@@ -404,6 +404,7 @@ export default defineComponent({
 
     /** Смотрим интерфейсы оборудования */
     async getInterfaces(infinity = true) {
+      this.seconds_pass = Math.floor((new Date().getTime() - this.collected.getTime()) / 1000)
 
       // Если автообновление интерфейсов отключено, то ожидаем 2сек и запускаем метод снова
       if (!this.autoUpdateInterfaces) {
@@ -598,8 +599,12 @@ export default defineComponent({
      * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
      */
     timer() {
-      const timeAgo = new TimeAgo('ru-RU')
-      this.timePassedFromLastUpdate = timeAgo.format(this.collected)
+      if (this.seconds_pass < 60) {
+        this.timePassedFromLastUpdate = `${this.seconds_pass} сек. назад`
+      } else {
+        const timeAgo = new TimeAgo('ru-RU')
+        this.timePassedFromLastUpdate = timeAgo.format(this.collected)
+      }
       setTimeout(this.timer, 1000)
     },
 

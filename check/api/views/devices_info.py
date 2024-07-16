@@ -195,6 +195,10 @@ class DeviceInfoAPIView(DeviceAPIView):
 
         with zabbix_api.connect() as zbx:
             devices_maps = get_device_zabbix_maps_ids(zbx, zabbix_info.hostid)
+            try:
+                uptime = get_device_uptime(zbx, zabbix_info.hostid)
+            except RequestException:
+                uptime = -1
 
         return Response(
             {
@@ -213,6 +217,7 @@ class DeviceInfoAPIView(DeviceAPIView):
                 "permission": self.current_user.profile.perm_level,
                 "coords": zabbix_info.inventory.coordinates(),
                 "consoleURL": get_console_url(self.current_user.profile, device),
+                "uptime": uptime,
             }
         )
 
@@ -236,8 +241,7 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
             "temp": {
                 "value": 43.5,
                 "status": "normal"
-            },
-            "uptime": 123123123
+            }
         }
     """
 
@@ -250,15 +254,5 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
             return Response({"detail": "Device unavailable"}, status=500)
 
         device_stats: dict = device.connect().get_device_info() or {}
-
-        zabbix_info = DeviceManager(name=device.name).zabbix_info
-
-        try:
-            with zabbix_api.connect() as zbx:
-                uptime = get_device_uptime(zbx, zabbix_info.hostid)
-        except RequestException:
-            uptime = -1
-
-        device_stats["uptime"] = uptime
 
         return Response(device_stats)

@@ -22,7 +22,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, '../static/js/'),
         publicPath: '../static/js/',
-        filename: '[name]_v17.13.8.js'
+        filename: '[name]_v17.13.9.js'
     },
     module: {
         rules: [

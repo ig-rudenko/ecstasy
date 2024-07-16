@@ -389,6 +389,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "",
+            "uptime": -1,
         }
         self.assertDictEqual(response.json(), expected_data)
 
@@ -416,6 +417,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "permission": self.user.profile.perm_level,
             "coords": [],
             "consoleURL": "http://test_url&command=/usr/share/connections/tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",
+            "uptime": -1,
         }
         self.assertDictEqual(response.json(), expected_data)
 
@@ -456,7 +458,6 @@ class TestDeviceStatsInfoAPIView(APITestCase):
             "ram": {"util": 15},
             "flash": {"util": 50},
             "temp": {"value": 43.5, "status": "normal"},
-            "uptime": -1,
         }
 
         response = self.client.get(self.url)
@@ -469,7 +470,6 @@ class TestDeviceStatsInfoAPIView(APITestCase):
                 "ram": {"util": 15},
                 "flash": {"util": 50},
                 "temp": {"value": 43.5, "status": "normal"},
-                "uptime": -1,
             },
         )
 

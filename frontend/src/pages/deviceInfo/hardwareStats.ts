@@ -15,7 +15,6 @@ class HardwareStats {
         public flash: Utilization | null,
         public ram: Utilization | null,
         public temp: Temp | null,
-        public uptime: number,
     ) {}
 }
 
@@ -25,7 +24,6 @@ function newHardwareStats(data: any): HardwareStats {
         data.flash?new Utilization(data.flash.util):null,
         data.ram?new Utilization(data.ram.util):null,
         data.temp?new Temp(data.temp.status, data.temp.value):null,
-        data.uptime,
     )
 }
 

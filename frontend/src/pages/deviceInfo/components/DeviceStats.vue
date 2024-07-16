@@ -1,7 +1,7 @@
 <template>
   <!--  UPTIME -->
-  <div v-if="stats.uptime>0">
-    <div style="padding: 7px 13px;">
+  <div v-if="uptime>0">
+    <div style="padding: 7px 13px;" v-tooltip.bottom="'Время работы'">
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="me-2"
            viewBox="0 0 16 16">
         <path
@@ -10,7 +10,7 @@
         <path
             d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"/>
       </svg>
-      <span>{{ formatUptime(stats.uptime) }}</span>
+      <span>{{ formatUptime(uptime) }}</span>
     </div>
   </div>
 
@@ -115,7 +115,8 @@ import {HardwareStats} from "../hardwareStats";
 
 export default defineComponent({
   props: {
-    stats: {required: true, type: Object as PropType<HardwareStats>}
+    stats: {required: true, type: Object as PropType<HardwareStats>},
+    uptime: {required: false, type: Number, default: -1}
   },
   methods: {
     valueColor(value: number): string {
