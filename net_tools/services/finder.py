@@ -45,16 +45,58 @@ class InterfaceCommentDict(TypedDict):
     createdTime: str
 
 
+class InterfaceInfoDict(TypedDict):
+    name: str
+    status: str
+    description: str
+    vlans: str
+    savedTime: str
+    vlansSavedTime: str
+
+
 class DescriptionFinderResult(TypedDict):
-    Device: str
-    Interface: str
-    Description: str
-    Comments: list[InterfaceCommentDict]
-    SavedTime: str
+    device: str
+    interface: InterfaceInfoDict
+    comments: list[InterfaceCommentDict]
+
+
+@dataclass
+class DeviceInterfacesData:
+    interfaces: list[dict[Literal["Interface", "Status", "Description"], str]]
+    vlans: list[dict[Literal["Interface", "Status", "Description", "VLAN's"], str | list[int]]]
+    interfaces_date: datetime | None
+    vlans_date: datetime | None
+
+    def get_interface_vlans(self, interface_name: str) -> str:
+        for vlan in self.vlans:
+            if vlan["Interface"] == interface_name:
+                return ", ".join(map(str, vlan["VLAN's"]))
+        return ""
 
 
 class Finder:
-    def find_description(self, pattern_str: str, user_id: int) -> list[DescriptionFinderResult]:
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        self.dev_info_queryset = (
+            DevicesInfo.objects.filter(dev__group__profile__user_id=self.user_id)
+            .select_related("dev")
+            .values("interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name")
+        )
+
+        self.devices: dict[str, DeviceInterfacesData] = {}
+        for dev_info in self.dev_info_queryset:
+            interfaces = orjson.loads(dev_info["interfaces"] or "[]")
+            # Проверяем, пуста ли переменная interfaces.
+            if not interfaces:
+                continue
+            self.devices[dev_info["dev__name"]] = DeviceInterfacesData(
+                interfaces=interfaces,
+                vlans=orjson.loads(dev_info["vlans"] or "[]"),
+                interfaces_date=dev_info["interfaces_date"],
+                vlans_date=dev_info["vlans_date"],
+            )
+
+    def find_description(self, pattern_str: str) -> list[DescriptionFinderResult]:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -72,7 +114,6 @@ class Finder:
         ```
 
         :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
-        :param user_id: Пользователь, для которого будет осуществляться поиск.
         :return: Список результатов поиска
         """
 
@@ -82,65 +123,74 @@ class Finder:
 
         result: list[DescriptionFinderResult] = []
 
-        dev_info_queryset = (
-            DevicesInfo.objects.filter(dev__group__profile__user_id=user_id)
-            .select_related("dev")
-            .values("interfaces", "interfaces_date", "dev__name")
-        )
+        self._find_in_interfaces_history(pattern, comments, result)
+        self._add_comments_to_result(comments, result)
+        return result
 
+    def _find_in_interfaces_history(
+        self, pattern: re.Pattern[str], comments: Comments, result: list[DescriptionFinderResult]
+    ) -> None:
         # Производим поочередный поиск
-        for device in dev_info_queryset:
-            # Проверяем, пуста ли переменная interfaces.
-            if not device["interfaces"]:
-                continue
-
-            # Загрузка данных json из базы данных в словарь python.
-            interfaces: list = orjson.loads(device["interfaces"] or "[]")
-
-            for line in interfaces:  # type: dict[Literal["Interface", "Status", "Description"], str]
+        for device_name, info in self.devices.items():
+            for line in info.interfaces:
                 find_on_desc = False
 
                 # Если нашли совпадение в описании порта
                 if re.findall(pattern, line["Description"]):
                     find_on_desc = True
 
-                interface_comments = comments.get_interface(device["dev__name"], line["Interface"])
+                interface_comments = comments.get_interface(device_name, line["Interface"])
 
                 if find_on_desc or interface_comments:
-                    if device["interfaces_date"] is not None:
-                        interfaces_datetime = naturaltime(device["interfaces_date"])
-                    else:
-                        interfaces_datetime = "No Datetime"
+                    try:
+                        result.append(
+                            {
+                                "device": device_name,
+                                "comments": [comment.to_dict() for comment in interface_comments],
+                                "interface": {
+                                    "name": line["Interface"],
+                                    "status": line["Status"],
+                                    "description": line["Description"],
+                                    "vlans": info.get_interface_vlans(line["Interface"]),
+                                    "savedTime": self.get_natural_time(info.interfaces_date),
+                                    "vlansSavedTime": self.get_natural_time(info.vlans_date),
+                                },
+                            }
+                        )
+                    except KeyError as exc:
+                        print(exc)
 
-                    result.append(
-                        {
-                            "Device": device["dev__name"],
-                            "Interface": line["Interface"],
-                            "Description": line["Description"],
-                            "Comments": [comment.to_dict() for comment in interface_comments],
-                            "SavedTime": interfaces_datetime,
-                        }
-                    )
-
+                    # Удаляем найденные комментарии
                     if interface_comments:
-                        del comments.devices[device["dev__name"]].interfaces[line["Interface"]]
+                        del comments.devices[device_name].interfaces[line["Interface"]]
 
+    def _add_comments_to_result(self, comments: Comments, result: list[DescriptionFinderResult]) -> None:
         for dev_name in comments.devices:
             for interface in comments.devices[dev_name].interfaces:
                 result.extend(
                     [
                         {
-                            "Device": dev_name,
-                            "Interface": interface,
-                            "Description": comment.text,
-                            "Comments": [comment.to_dict()],
-                            "SavedTime": str(comment.created_time),
+                            "device": dev_name,
+                            "comments": [comment.to_dict()],
+                            "interface": {
+                                "name": interface,
+                                "status": interface,
+                                "description": comment.text,
+                                "vlans": self.devices[dev_name].get_interface_vlans(interface),
+                                "savedTime": self.get_natural_time(self.devices[dev_name].interfaces_date),
+                                "vlansSavedTime": self.get_natural_time(self.devices[dev_name].vlans_date),
+                            },
                         }
                         for comment in comments.devices[dev_name].interfaces[interface]
                     ]
                 )
 
-        return result
+    @staticmethod
+    def get_natural_time(time_str: datetime | None) -> str:
+        if time_str is not None:
+            return naturaltime(time_str)
+        else:
+            return "No Datetime"
 
     @staticmethod
     def get_comments(regex_str: str) -> Comments:

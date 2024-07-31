@@ -4,8 +4,8 @@ const { VueLoaderPlugin } = require('vue-loader'); // плагин для заг
 module.exports = {
     entry: {
         // devices_list: './src/pages/devicesList',
-        device_info: './src/pages/deviceInfo',
-        // search_description: './src/pages/descriptionSearch',
+        // device_info: './src/pages/deviceInfo',
+        search_description: './src/pages/descriptionSearch',
         // traceroute: './src/pages/traceroute',
         // transport_ring: './src/transport_ring.js',
         // access_rings: './src/access_rings.js',
@@ -22,7 +22,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, '../static/js/'),
         publicPath: '../static/js/',
-        filename: '[name]_v17.13.9.js'
+        filename: '[name]_v17.13.10.js'
     },
     module: {
         rules: [

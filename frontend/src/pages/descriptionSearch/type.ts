@@ -1,26 +1,19 @@
-import {newInterfaceCommentsList, InterfaceComment} from "../../types/comments";
+import {InterfaceComment} from "../../types/comments";
 
-class SearchMatch {
-    constructor(
-        public description: string,
-        public device: string,
-        public interfaceName: string,
-        public savedTime: string,
-        public comments: Array<InterfaceComment>
-    ) {}
-}
 
-function newSearchMatchList(data: Array<any>): Array<SearchMatch> {
-    let res: Array<SearchMatch> = []
-    for (const line of data) {
-        res.push(
-            new SearchMatch(
-                line.Description, line.Device, line.Interface, line.SavedTime,
-                newInterfaceCommentsList(line.Comments)
-            )
-        )
+export interface InterfaceMatchResult {
+    device: string
+    comments: Array<InterfaceComment>
+    interface: {
+        name: string
+        status: string
+        description: string
+        vlans: string
+        savedTime: string
+        vlansSavedTime: string
     }
-    return res
 }
 
-export {SearchMatch, newSearchMatchList}
+export interface MatchResult {
+    interfaces: Array<InterfaceMatchResult>
+}

@@ -35,9 +35,10 @@
             <tr>
               <th scope="col">Оборудование</th>
               <th scope="col" style="padding-left: 40px">Порт</th>
+              <th scope="col">Был статус</th>
               <th scope="col" style="text-align: left">Описание</th>
               <th scope="col">Комментарии</th>
-              <th scope="col">Время сохранения</th>
+              <th scope="col">VLANS</th>
             </tr>
           </thead>
           <tbody style="vertical-align: middle">
@@ -58,21 +59,33 @@
                   </span>
               </td>
 
-    <!--      INTERFACE-->
-              <td class="nowrap">
-                {{ intf.interfaceName }}
+              <!--INTERFACE-->
+              <td class="nowrap">{{ intf.interface.name }}</td>
+
+              <!--STATUS-->
+              <td v-tooltip="'Время опроса: ' + intf.interface.savedTime.toString()" class="nowrap"
+                  :style="statusStyle(intf.interface.status)">
+                <span class="me-1">{{ intf.interface.status }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"></path>
+                  <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"></path>
+                </svg>
               </td>
 
-    <!--      DESCRIPTION-->
-              <td style="text-align: left" v-html="markDescription(intf.description)"></td>
+              <!--DESCRIPTION-->
+              <td style="text-align: left" v-html="markDescription(intf.interface.description)"></td>
 
-    <!--      COMMENT-->
+              <!--COMMENT-->
               <td>
-                  <Comment v-if="intf.comments.length" :interface="getInterface(intf)"></Comment>
+                <Comment v-if="intf.comments.length" :interface="getInterface(intf)"></Comment>
               </td>
 
-    <!--      SAVED TIME-->
-              <td>{{ intf.savedTime }}</td>
+              <!--VLANS LIST-->
+              <td>
+                <div @click="toggleVlansList($event, intf.interface)" style="cursor: pointer">
+                  {{ truncateVlans(intf.interface.vlans) }}
+                </div>
+              </td>
 
             </tr>
           </tbody>
@@ -108,44 +121,57 @@
 
   <ScrollTop/>
 
+  <!--  VLANS FULL LIST-->
+  <OverlayPanel ref="vlansList">
+    <div class="align-items-center d-flex pb-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
+           viewBox="0 0 16 16">
+        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"></path>
+        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"></path>
+      </svg>
+      <span>{{ selectedVlansTime }}</span>
+    </div>
+    <div>{{ selectedVlans }}</div>
+  </OverlayPanel>
+
 </template>
 
 <script lang="ts">
 import {defineComponent} from "vue";
 import ScrollTop from "primevue/scrolltop";
+import OverlayPanel from 'primevue/overlaypanel';
 
 import Comment from "../../components/Comment.vue";
 import Pagination from "../../components/Pagination.vue";
 import SearchInput from "../../components/SearchInput.vue";
 import api_request from "../../api_request";
-import {newSearchMatchList, SearchMatch} from "./type";
+import {InterfaceMatchResult, MatchResult} from "./type";
 import Interface from "../../types/interfaces";
 import Paginator from "../../types/paginator";
 
 export default defineComponent({
-  components: {
-    Comment,
-    Pagination,
-    SearchInput,
-    ScrollTop,
-  },
+  components: {Comment, Pagination, SearchInput, ScrollTop, OverlayPanel},
 
   data() {
     return {
-      interfaces: [] as SearchMatch[],
+      interfaces: [] as InterfaceMatchResult[],
       pattern: "" as string,
       lastPattern: "" as string,
       waitResult: false as boolean,
       paginator: new Paginator(),
+
+      selectedVlans: "",
+      selectedVlansTime: "",
     }
   },
   methods: {
     searchDescription() {
       if (this.pattern.length < 2) return;
       this.waitResult = true
-      api_request.get("/tools/api/find-by-desc?pattern="+this.pattern).then(
-          (value: any) => {
-            this.interfaces = newSearchMatchList(value.data.interfaces)
+
+      api_request.get<MatchResult>("/tools/api/find-by-desc?pattern=" + this.pattern).then(
+          value => {
+            this.interfaces = value.data.interfaces
             this.lastPattern = this.pattern
             this.paginator = new Paginator(this.interfaces.length)
             this.waitResult = false
@@ -154,8 +180,8 @@ export default defineComponent({
       )
     },
 
-    getInterface(match: SearchMatch): Interface {
-      return new Interface(match.interfaceName, "", match.description, [], match.comments)
+    getInterface(match: InterfaceMatchResult): Interface {
+      return new Interface(match.interface.name, "", match.interface.description, [], match.comments)
     },
 
     /** Обновляем паттерн поиска */
@@ -164,10 +190,38 @@ export default defineComponent({
     /** Выделяем тегом <mark></mark> часть в описании, которая совпадает с паттерном поиска */
     markDescription(desc: string): string {
       return desc.replace(new RegExp(this.lastPattern, 'ig'), s => '<mark>'+s+'</mark>')
+    },
+
+    statusStyle(status: string): any {
+      status = status.toLowerCase()
+      const color = () => {
+        if (status === "admin down") return "#ffb4bb"
+        if (status === "notpresent") return "#c1c1c1"
+        if (status === "dormant") return "#ffe389"
+        if (status !== "down") return "#22e58b"
+      }
+      return {
+        'background-color': color(),
+        width: '100px',
+      }
+    },
+
+    truncateVlans(vlans: string): string {
+      if (vlans.length > 17) {
+        return vlans.slice(0, 15) + "..."
+      }
+      return vlans
+    },
+
+    toggleVlansList(event: Event, intf: { vlans: string, vlansSavedTime: string }) {
+      this.selectedVlans = intf.vlans;
+      this.selectedVlansTime = intf.vlansSavedTime;
+      (<OverlayPanel>this.$refs.vlansList).toggle(event);
     }
+
   },
   computed: {
-    paginatedInterfaces(): SearchMatch[] {
+    paginatedInterfaces(): InterfaceMatchResult[] {
       if (!this.interfaces) return [];
       // Обрезаем по размеру страницы
       return this.interfaces.slice(

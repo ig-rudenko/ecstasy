@@ -77,7 +77,7 @@ def find_by_description(request):
     if not request.GET.get("pattern"):
         return Response({"interfaces": []})
 
-    result = Finder().find_description(request.GET.get("pattern"), request.user.id)
+    result = Finder(request.user.id).find_description(request.GET.get("pattern"))
 
     return Response({"interfaces": result})
 
