@@ -106,7 +106,7 @@ class Cisco(BaseDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show interfaces description")
+        output = self.send_command("show interfaces description", expect_command=False)
         output = re.sub(".+\nInterface", "Interface", output)
 
         result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
@@ -154,8 +154,6 @@ class Cisco(BaseDevice):
                     before_catch="Building configuration",
                     expect_command=False,
                 )
-
-                #
                 vlans_group: list[str] = re.findall(r"(?<=access|llowed) vlan [ad\s]*(\S*\d)", output)
                 result.append((line[0], line[1], line[2], vlans_group))
 
@@ -398,6 +396,7 @@ class Cisco(BaseDevice):
         config = self.send_command(
             f"show running-config interface {port}",
             before_catch=r"Current configuration.+?\!",
+            expect_command=False,
         ).strip()
         return config
 
@@ -441,7 +440,7 @@ class Cisco(BaseDevice):
         return self._search_in_arp(address=ip_address)
 
     def _search_in_arp(self, address: str) -> list[ArpInfoResult]:
-        match = self.send_command(f"show arp | include {address}")
+        match = self.send_command(f"show arp | include {address}", expect_command=False)
         # Форматируем вывод
         with open(
             f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template",
@@ -542,7 +541,7 @@ class Cisco(BaseDevice):
 
         flash = self.find_or_empty(
             r"(\d+)\s+(\d+)\s+\S+\s+\S+\s+[boot]*flash",
-            self.send_command("show file systems"),
+            self.send_command("show file systems", expect_command=False),
             flags=re.IGNORECASE,
         )
 
@@ -554,11 +553,11 @@ class Cisco(BaseDevice):
         ## Возвращает использование DRAM в процентах
         """
 
-        output = self.send_command("show memory statistics")
+        output = self.send_command("show memory statistics", expect_command=False)
         pattern = r"Processor\s+\S+\s+(\d+)\s+(\d+)"
 
         if "Invalid input" in output:
-            output = self.send_command("show memory")
+            output = self.send_command("show memory", expect_command=False)
             pattern = r"Process\s+(\d+)\s+(\d+)"
 
         ram = self.find_or_empty(pattern, output, flags=re.IGNORECASE)
@@ -567,10 +566,10 @@ class Cisco(BaseDevice):
         return dram_percent
 
     def get_temp(self) -> dict:
-        output = self.send_command("show env temp status")
+        output = self.send_command("show env temp status", expect_command=False)
 
         if "Invalid input" in output:
-            output = self.send_command("show env temp")
+            output = self.send_command("show env temp", expect_command=False)
             pattern = r"CPU\s+([-]?\d+)C"
         else:
             pattern = r"Temperature Value: ([-]?\d+[.]?\d?) Degree Celsius"
@@ -624,7 +623,7 @@ class Cisco(BaseDevice):
     def get_current_configuration(self) -> io.BytesIO:
         data = self.send_command(
             "show running-config",
-            expect_command=True,
+            expect_command=False,
             before_catch=r"Building configuration\.\.\.",
         )
         return io.BytesIO(data.encode())

@@ -2,6 +2,8 @@ import io
 import re
 from functools import wraps
 
+from packaging.version import Version
+
 from .extra import reformat_ltp_interfaces_list
 from .ltp_4x_8x import _EltexLTPPortTypes
 from ..base.device import BaseDevice
@@ -107,6 +109,11 @@ class EltexLTP16N(BaseDevice):
         snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
+        version_output = self.send_command("show version")
+
+        self.software_version: Version = Version("0.0.0")
+        if match := re.search(r"software version (\S+) build", version_output):
+            self.software_version: Version = Version(match.group())
 
     @BaseDevice.lock_session
     def save_config(self) -> str:
@@ -184,19 +191,25 @@ class EltexLTP16N(BaseDevice):
     @_validate_port(if_invalid_return=[])
     def get_mac(self, port: str) -> MACListType:
         """
-        Команда:
+        Команда для version 1.8.0 и выше:
 
             # show mac interface {port_type} {port}
 
-        :param port:
-        :return: ```[ ('vid', 'mac'), ... ]```
+        Команда для старых версий:
+
+            # show mac verbose include interface {port_type} {port}
         """
         port_type, port_number = port.split()
 
         if not port_number.isdigit():
             port_type = "ont"
 
-        macs_output = self.send_command(f"show mac interface {port_type} {port_number}")
+        if self.software_version >= Version("1.8.0"):
+            command = f"show mac interface {port_type} {port_number}"
+        else:
+            command = f"show mac verbose include interface {port_type} {port_number}"
+
+        macs_output = self.send_command(command)
 
         macs = []
         for line in re.findall(rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)", macs_output):
