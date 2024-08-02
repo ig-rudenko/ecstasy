@@ -113,7 +113,7 @@ class EltexLTP16N(BaseDevice):
 
         self.software_version: Version = Version("0.0.0")
         if match := re.search(r"software version (\S+) build", version_output):
-            self.software_version: Version = Version(match.group())
+            self.software_version = Version(match.group())
 
     @BaseDevice.lock_session
     def save_config(self) -> str:
