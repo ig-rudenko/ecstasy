@@ -186,7 +186,7 @@ class EltexLTP16N(BaseDevice):
         """
         Команда:
 
-            # show mac verbose include interface {port_type} {port}
+            # show mac interface {port_type} {port}
 
         :param port:
         :return: ```[ ('vid', 'mac'), ... ]```
@@ -196,9 +196,7 @@ class EltexLTP16N(BaseDevice):
         if not port_number.isdigit():
             port_type = "ont"
 
-        macs_output = self.send_command(
-            f"show mac verbose include interface {port_type} {port_number}",
-        )
+        macs_output = self.send_command(f"show mac interface {port_type} {port_number}")
 
         macs = []
         for line in re.findall(rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)", macs_output):
@@ -266,7 +264,7 @@ class EltexLTP16N(BaseDevice):
             if port_number.isdigit():
                 macs_list = re.findall(
                     rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d+/(\d+)",
-                    self.send_command(f"show mac verbose include interface pon-port {port_number}"),
+                    self.send_command(f"show mac interface pon-port {port_number}"),
                 )
             else:
                 macs_list = []
