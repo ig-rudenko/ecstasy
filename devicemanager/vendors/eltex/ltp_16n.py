@@ -138,17 +138,36 @@ class EltexLTP16N(BaseDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        interfaces: list[tuple[str, str]] = []
+        interfaces: list[tuple[str, str, str]] = []
 
+        # Смотрим состояние front портов.
+        # Front-port             Status                 Speed                  Media
+        # --------------------   --------------------   --------------------   --------------------
+        # 1                      up                     10G                    fiber
+        # 2                      up                     10G                    copper
         interfaces_front_output = self.send_command("show interface front-port 1-8 state")
-        interfaces += [
-            (f"front-port {line[0]}", line[1])
-            for line in re.findall(r"(\d)\s+(\S+)", interfaces_front_output)
-        ]
 
+        # Далее смотрим текущую конфигурацию front портов, чтобы найти description.
+        interfaces_running_config_output: str = self.send_command(
+            "show running-config interface front-port 1-8", expect_command=False
+        )
+
+        # Преобразовываем данные конфигурации разбивая её на части по строчке `exit`.
+        interfaces_running_config_list: list[str] = re.split("exit", interfaces_running_config_output)
+        for line in re.findall(r"(\d)\s+(\S+)", interfaces_front_output):
+            description = ""
+            for config in interfaces_running_config_list:
+                # Ищем блок конфигурации текущего порта и его описание.
+                if match := re.search(rf'front-port {line[0]}.*description "(.*?)"', config, flags=re.DOTALL):
+                    # Если имеется описание.
+                    description = match.group(1)
+
+            interfaces.append((f"front-port {line[0]}", line[1], description))
+
+        # Смотрим состояние PON портов.
         interfaces_pon_output = self.send_command("show interface pon-port 1-16 state")
         interfaces += [
-            (f"pon-port {line[0]}", line[1])
+            (f"pon-port {line[0]}", line[1], "")
             for line in re.findall(r"(\d+)\s+(\S+).+[\r\n]", interfaces_pon_output)
         ]
 
@@ -156,8 +175,28 @@ class EltexLTP16N(BaseDevice):
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
+        result: InterfaceVLANListType = []
+
         self.lock = False
-        return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
+        interfaces = self.get_interfaces()
+        self.lock = True
+
+        # Далее смотрим текущую конфигурацию front портов, чтобы найти VLAN.
+        interfaces_running_config_output: str = self.send_command(
+            "show running-config interface front-port 1-8", expect_command=False
+        )
+
+        # Преобразовываем данные конфигурации разбивая её на части по строчке `exit`.
+        interfaces_running_config_list: list[str] = re.split("exit", interfaces_running_config_output)
+        for name, status, desc in interfaces:
+            vlans: list[str] = []
+            for config in interfaces_running_config_list:
+                # Ищем блок конфигурации текущего порта и его VLAN.
+                if match := re.search(rf"{name}.*vlan allow (\S+)", config, flags=re.DOTALL):
+                    vlans = match.group(1).split(",")
+            result.append((name, status, desc, vlans))
+
+        return result
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:
@@ -273,11 +312,16 @@ class EltexLTP16N(BaseDevice):
             # Общее кол-во сконфигурированных ONT на данном порту
             data["total_count"] = len(onts_lines)
 
+            # В зависимости от версии прошивки будут разные команды.
+            if self.software_version >= Version("1.8.0"):
+                command = f"show mac interface pon-port {port_number}"
+            else:
+                command = f"show mac verbose include interface pon-port {port_number}"
+
             # Смотрим MAC на pon порту
             if port_number.isdigit():
                 macs_list = re.findall(
-                    rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d+/(\d+)",
-                    self.send_command(f"show mac interface pon-port {port_number}"),
+                    rf"({self.mac_format})\s+\S+\s\d+\s+(\d+)\s+\d+/(\d+)", self.send_command(command)
                 )
             else:
                 macs_list = []

@@ -201,7 +201,7 @@ class EltexLTP(BaseDevice):
             f"show interface gpon-port 0-{self.gpon_ports_count - 1} state",
             expect_command=False,
         )
-        valid_interfaces = reformat_ltp_interfaces_list(interfaces)
+        valid_interfaces = reformat_ltp_interfaces_list([(name, status, "") for name, status in interfaces])
         valid_interfaces += reformat_gpon_ports_state_output(interfaces_gpon_output)
         return valid_interfaces
 
