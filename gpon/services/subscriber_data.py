@@ -10,14 +10,14 @@ all_subscriber_connections_cache_key = "gpon:all_subscriber_connections"
 def get_all_subscriber_connections(from_cache: bool = True):
     cache_timeout = 60 * 10
 
-    subscriber_connections = None
+    data = None
     if from_cache:
-        subscriber_connections = cache.get(all_subscriber_connections_cache_key)
-    if subscriber_connections is None:
+        data = cache.get(all_subscriber_connections_cache_key)
+    if data is None:
         queryset = SubscriberConnection.objects.all().select_related("customer", "address")
-        subscriber_connections = SubscriberDataSerializer(queryset, many=True)
-        cache.set(all_subscriber_connections_cache_key, subscriber_connections, cache_timeout)
-    return subscriber_connections
+        data = SubscriberDataSerializer(queryset, many=True).data
+        cache.set(all_subscriber_connections_cache_key, data, cache_timeout)
+    return data
 
 
 def get_subscribers_on_device_port(device_name: str, olt_port: str, ont_id: str):

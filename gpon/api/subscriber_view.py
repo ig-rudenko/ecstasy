@@ -74,8 +74,8 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     serializer_class = SubscriberDataSerializer
 
     def get(self, request: Request, *args, **kwargs) -> Response:
-        customers = get_all_subscriber_connections()
-        return Response(customers.data)
+        customers_data = get_all_subscriber_connections()
+        return Response(customers_data)
 
     @transaction.atomic
     def perform_create(self, serializer) -> None:
