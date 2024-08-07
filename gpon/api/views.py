@@ -1,5 +1,4 @@
 import orjson
-from django.core.cache import cache
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
@@ -20,11 +19,10 @@ from .permissions import (
     TechCapabilityPermission,
     End3Permission,
 )
-from .serializers.address import AddressSerializer, BuildingAddressSerializer
+from .serializers.address import BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import (
     CreateTechDataSerializer,
-    OLTStateSerializer,
     AddEnd3ToHouseOLTStateSerializer,
 )
 from .serializers.update_tech_data import (
@@ -39,6 +37,7 @@ from .serializers.view_tech_data import (
     TechCapabilitySerializer,
 )
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
+from ..services.tech_data import get_all_tech_data
 
 
 class ListUserPermissions(GenericAPIView):
@@ -54,45 +53,12 @@ class TechDataListCreateAPIView(GenericAPIView):
 
     permission_classes = [TechDataPermission]
 
-    cache_key = "gpon:api:TechDataListCreateAPIView:get"
-    cache_timeout = 60 * 5  # секунд.
-
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateTechDataSerializer
 
     def get(self, request) -> Response:
-        data = cache.get(self.cache_key, [])
-        if data:
-            return Response(data)
-
-        buildings: QuerySet[HouseB] = HouseB.objects.all().select_related("address")
-        for house in buildings:
-            house_olt_states_queryset: QuerySet[HouseOLTState] = (
-                house.house_olt_states.all()
-                .select_related("statement", "statement__device")
-                .prefetch_related("end3_set")
-            )
-            for house_olt_state in house_olt_states_queryset:
-                end3: End3 | None = house_olt_state.end3_set.first()
-
-                data.append(
-                    {
-                        **OLTStateSerializer(instance=house_olt_state.statement).data,
-                        "address": AddressSerializer(instance=house.address).data,
-                        "building_type": house.type,
-                        "building_id": house.id,
-                        "entrances": house_olt_state.entrances,
-                        "customerLine": {
-                            "type": end3.type if end3 else None,
-                            "count": house_olt_state.end3_set.count(),
-                            "typeCount": end3.capacity if end3 else None,
-                        },
-                    }
-                )
-
-        cache.set(self.cache_key, data, timeout=self.cache_timeout)
-
+        data = get_all_tech_data()
         return Response(data)
 
     def post(self, request):

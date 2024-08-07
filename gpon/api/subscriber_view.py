@@ -12,14 +12,14 @@ from rest_framework.response import Response
 
 from gpon.models import Customer, SubscriberConnection, OLTState
 from .permissions import SubscriberDataPermission, CustomerPermission
-from .serializers.common import CustomerSerializer, SubscriberConnectionSerializer
-from .serializers.create_subscriber_data import (
-    SubscriberDataSerializer,
-    UpdateSubscriberDataSerializer,
-)
+from .serializers.common import CustomerSerializer
+from .serializers.create_subscriber_data import SubscriberDataSerializer, UpdateSubscriberDataSerializer
 from .serializers.view_subscriber_data import CustomerDetailSerializer
-
-all_subscriber_connections_cache_key = "gpon:all_subscriber_connections"
+from ..services.subscriber_data import (
+    all_subscriber_connections_cache_key,
+    get_all_subscriber_connections,
+    get_subscribers_on_device_port,
+)
 
 
 class CustomersListAPIView(ListAPIView):
@@ -72,15 +72,10 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects.all()
     serializer_class = SubscriberDataSerializer
-    cache_timeout = 60 * 10
 
     def get(self, request: Request, *args, **kwargs) -> Response:
-        customers = cache.get(all_subscriber_connections_cache_key)
-        if not customers:
-            customers = super().get(request, *args, **kwargs).data
-            cache.set(all_subscriber_connections_cache_key, customers, self.cache_timeout)
-
-        return Response(customers)
+        customers = get_all_subscriber_connections()
+        return Response(customers.data)
 
     @transaction.atomic
     def perform_create(self, serializer) -> None:
@@ -100,22 +95,9 @@ class SubscribersOnDevicePort(GenericAPIView):
                 {"error": "Missing `port` parameter."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         try:
-            olt = OLTState.objects.get(device__name=device_name, olt_port=olt_port)
+            data = get_subscribers_on_device_port(device_name, olt_port, ont_id)
         except OLTState.DoesNotExist:
             return Response({"error": "Does not exists."}, status=status.HTTP_400_BAD_REQUEST)
 
-        subscriber_connections = [
-            subscriber_connection
-            for house_olt_state in olt.house_olt_states.all()
-            for end3 in house_olt_state.end3_set.all()
-            for tech_capability in end3.techcapability_set.all()
-            for subscriber_connection in tech_capability.subscriber_connection.all().select_related(
-                "customer"
-            )
-            if not ont_id or str(subscriber_connection.ont_id) == ont_id
-        ]
-
-        serializer = SubscriberConnectionSerializer(subscriber_connections, many=True)
-        return Response(serializer.data, status=200)
+        return Response(data)
