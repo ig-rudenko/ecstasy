@@ -14,14 +14,13 @@ import _locale
 import logging
 import os
 import re
-from datetime import timedelta, datetime
+from datetime import timedelta
 from pathlib import Path
 
 import orjson
 import urllib3
 from import_export.formats.base_formats import CSV, XLSX, JSON
 from pyzabbix.api import logger as zabbix_api_logger
-from urllib3.exceptions import InsecureRequestWarning
 
 from gathering.services.ftp import FTPCollector
 
@@ -87,7 +86,6 @@ FTP_COLLECTOR_CLASS = FTPCollector
 
 
 REMOTE_DEVICE_CLASS = "devicemanager.remote.connector.RemoteDevice"
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -253,7 +251,6 @@ SWAGGER_SETTINGS = {
     }
 }
 
-
 # ================= CELERY ==================
 
 REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/1")
@@ -261,7 +258,6 @@ REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/1")
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-
 
 # ========== CONFIGURATION STORAGE ===========
 
@@ -401,7 +397,6 @@ JAZZMIN_UI_TWEAKS = {
 }
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
-
 
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
 

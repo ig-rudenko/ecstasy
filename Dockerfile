@@ -1,10 +1,10 @@
-FROM python:3.11-alpine
+FROM python:3.12.5-alpine
 
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-RUN apk add --update --no-cache mariadb-connector-c-dev net-snmp-tools busybox-extras \
+RUN apk add --update --no-cache mariadb-connector-c-dev net-snmp-tools busybox-extras openssh-client \
 	&& apk add --no-cache --virtual .build-deps \
 		mariadb-dev python3-dev \
 		gcc \

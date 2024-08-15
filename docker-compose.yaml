@@ -1,4 +1,4 @@
-version: "3.9"
+#version: "3.9"
 
 volumes:
   redis-data:
@@ -26,11 +26,11 @@ services:
       timeout: 20s
       retries: 10
 
-  celery: &backend
+  celery: &celery
     build: .
-    image: ecstasy:v.15.2
+    image: ecstasy:v.17.4
     restart: always
-    command: celery -A ecstasy_project worker -B -l INFO -c 4 -n worker1
+    command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
     environment:
       ALLOWED_HOSTS: "*"
       REDIS_CACHE_URL: "redis:6379/0"
@@ -46,29 +46,67 @@ services:
                 "PORT": "3306"
             }
         }
-      DJANGO_SECRET_KEY: "django-key"
+      DJANGO_SECRET_KEY: "django-key12312423534532452345234523452345345"
       CONFIG_STORAGE_DIR: "/configurations"
 
     depends_on:
       - backend
     volumes:
-    - "./logs:/app/logs"
+      - "./logs:/app/logs"
+
+  celery-beat:
+    <<: *celery
+    command: celery -A ecstasy_project beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
   backend:
-    <<: *backend
+    build: .
+    image: ecstasy:v.17.4
+    restart: always
     command: /bin/sh run.sh
+    environment:
+      DEVICE_CONNECTOR_TOKEN: "jiodjiwejdf9h2e9dfh9wqhef9hfh9h343"
+      DEVICE_CONNECTOR_ADDRESS: "http://device-connector:8000"
+      ALLOWED_HOSTS: "*"
+      REDIS_CACHE_URL: "redis:6379/0"
+      REDIS_BROKER_URL: "redis:6379/1"
+      DATABASES: |
+        {
+            "default": {
+                "ENGINE": "django.db.backends.mysql",
+                "NAME": "ecstasy",
+                "USER": "ecstasy",
+                "PASSWORD": "ecstasy_password",
+                "HOST": "mysql",
+                "PORT": "3306"
+            }
+        }
+      DJANGO_SECRET_KEY: "django-key12312423534532452345234523452345345"
+      CONFIG_STORAGE_DIR: "/configurations"
+
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_PASSWORD: password
+
     volumes:
-    - "./run.sh:/app/run.sh"
-    - "./logs:/app/logs"
-    - "./static:/app/static"
-    - "./media:/app/media"
-    - "./map_layer_files:/app/media/map_layer_files"
-    - "./configurations:/configurations"
+      - "./run.sh:/app/run.sh"
+      - "./logs:/app/logs"
+      - "./static:/app/static"
+      - "./media:/app/media"
+      - "./map_layer_files:/app/media/map_layer_files"
+      - "./configurations:/configurations"
+
     depends_on:
       redis:
         condition: service_healthy
       mysql:
         condition: service_healthy
+
+  device-connector:
+    image: ecstasy:v.17.4
+    command: python device_connector.py
+    restart: always
+    environment:
+      DEVICE_CONNECTOR_TOKEN: "jiodjiwejdf9h2e9dfh9wqhef9hfh9h343"
 
   mysql:
     image: mysql
@@ -81,6 +119,6 @@ services:
     volumes:
       - "./data:/var/lib/mysql"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
