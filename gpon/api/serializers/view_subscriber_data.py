@@ -6,13 +6,7 @@ from rest_framework.exceptions import ValidationError
 from .address import AddressSerializer
 from .common import CustomerSerializer, End3Serializer
 from .types import ServicesType
-from ...models import (
-    Customer,
-    SubscriberConnection,
-    HouseOLTState,
-    Service,
-    TechCapability,
-)
+from ...models import Customer, SubscriberConnection, HouseOLTState, Service, TechCapability
 
 
 class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):
@@ -27,8 +21,7 @@ class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):
 
 class SubscriberConnectionSerializer(serializers.ModelSerializer):
     houseOLTState = SubscriberHouseOLTStateSerializer(
-        source="tech_capability.end3.house_olt_states.first",
-        read_only=True,
+        source="tech_capability.end3.house_olt_states", read_only=True, many=True
     )
     address = AddressSerializer()
     services: ServicesType = serializers.ListSerializer(child=serializers.CharField())
@@ -74,6 +67,12 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
         if Service.objects.filter(name__in=values).count() != len(values):
             raise ValidationError("Некоторые сервисы не существуют")
         return values
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data["houseOLTState"]:
+            data["houseOLTState"] = data["houseOLTState"][0]
+        return data
 
 
 class CustomerDetailSerializer(CustomerSerializer):

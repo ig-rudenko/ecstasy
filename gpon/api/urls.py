@@ -26,11 +26,7 @@ urlpatterns = [
         views.RetrieveUpdateHouseOLTState.as_view(),
         name="tech-data-house-olt-state",
     ),
-    path(
-        "tech-data/end3",
-        views.End3CreateAPIView.as_view(),
-        name="tech-data-end3-create",
-    ),
+    path("tech-data/end3", views.End3CreateAPIView.as_view(), name="tech-data-end3-create"),
     path(
         "tech-data/end3/<int:pk>",
         views.End3TechCapabilityAPIView.as_view(),
@@ -46,26 +42,10 @@ urlpatterns = [
         views.ViewOLTStateTechDataAPIView.as_view(),
         name="view-olt-state-tech-data",
     ),
-    path(
-        "devices-names",
-        views.DevicesNamesListAPIView.as_view(),
-        name="devices-names",
-    ),
-    path(
-        "ports-names/<str:device_name>",
-        views.DevicePortsList.as_view(),
-        name="ports-names",
-    ),
-    path(
-        "addresses/buildings",
-        views.BuildingsAddressesListAPIView.as_view(),
-        name="building-addresses",
-    ),
-    path(
-        "addresses/end3",
-        views.End3AddressesListAPIView.as_view(),
-        name="splitter-addresses",
-    ),
+    path("devices-names", views.DevicesNamesListAPIView.as_view(), name="devices-names"),
+    path("ports-names/<str:device_name>", views.DevicePortsList.as_view(), name="ports-names"),
+    path("addresses/buildings", views.BuildingsAddressesListAPIView.as_view(), name="building-addresses"),
+    path("addresses/end3", views.End3AddressesListAPIView.as_view(), name="splitter-addresses"),
 ]
 
 # ========== SUBSCRIBER DATA =============
@@ -73,16 +53,8 @@ urlpatterns = [
 # /gpon/api/
 
 urlpatterns += [
-    path(
-        "customers",
-        subscriber_view.CustomersListAPIView.as_view(),
-        name="customers-list",
-    ),
-    path(
-        "customers/<int:pk>",
-        subscriber_view.CustomerDetailAPIView.as_view(),
-        name="customer-detail",
-    ),
+    path("customers", subscriber_view.CustomersListAPIView.as_view(), name="customers-list"),
+    path("customers/<int:pk>", subscriber_view.CustomerDetailAPIView.as_view(), name="customer-detail"),
     path(
         "subscriber-data",
         subscriber_view.SubscriberConnectionListCreateAPIView.as_view(),
@@ -99,7 +71,6 @@ urlpatterns += [
         name="subscribers-data-list-create",
     ),
 ]
-
 
 # ============= STATISTIC DATA ==============
 

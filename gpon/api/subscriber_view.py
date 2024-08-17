@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from django.db import transaction
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
@@ -29,9 +30,24 @@ class CustomersListAPIView(ListAPIView):
 
 
 class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Customer.objects.all()
     permission_classes = [CustomerPermission]
     serializer_class = CustomerDetailSerializer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = Customer.objects.all().prefetch_related(
+                "connections",
+                "connections__address",
+                "connections__services",
+                "connections__tech_capability",
+                "connections__tech_capability__end3",
+                "connections__tech_capability__end3__address",
+                "connections__tech_capability__end3__house_olt_states",
+                "connections__tech_capability__end3__house_olt_states__house__address",
+                "connections__tech_capability__end3__house_olt_states__statement__device",
+            )
+            return queryset
+        return Customer.objects.all()
 
     def put(self, request: Request, *args, **kwargs) -> Response:
         cache.delete(all_subscriber_connections_cache_key)
@@ -48,7 +64,7 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [SubscriberDataPermission]
-    queryset = SubscriberConnection.objects.all()
+    queryset = SubscriberConnection.objects.all().select_related("address").prefetch_related("services")
     serializer_class = UpdateSubscriberDataSerializer
 
     @transaction.atomic
@@ -85,16 +101,18 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
 
 class SubscribersOnDevicePort(GenericAPIView):
     permission_classes = [SubscriberDataPermission]
+    queryset = SubscriberConnection.objects.all()
 
     def get(self, request: Request, *args, **kwargs) -> Response:
         device_name = self.kwargs["device_name"]
         olt_port: str = self.request.query_params.get("port", "")
-        ont_id: str = self.request.query_params.get("ont_id", "")
+        try:
+            ont_id: int = int(self.request.query_params.get("ont_id", 0))
+        except ValueError:
+            raise ValidationError("`ont_id` parameter must be an integer")
         if not olt_port:
-            return Response(
-                {"error": "Missing `port` parameter."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Missing `port` parameter.")
+
         try:
             data = get_subscribers_on_device_port(device_name, olt_port, ont_id)
         except OLTState.DoesNotExist:

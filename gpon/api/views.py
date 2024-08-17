@@ -73,12 +73,23 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
     serializer_class = ViewOLTStatesTechDataSerializer
     permission_classes = [TechDataPermission]
 
+    def get_queryset(self):
+        return (
+            OLTState.objects.all()
+            .select_related("device")
+            .prefetch_related(
+                "house_olt_states",
+                "house_olt_states__end3_set",
+                "house_olt_states__end3_set__address",
+            )
+        )
+
     def get_object(self):
         device_name = self.kwargs["device_name"]
         olt_port = self.request.GET.get("port")
 
         try:
-            return OLTState.objects.select_related("device").get(device__name=device_name, olt_port=olt_port)
+            return self.get_queryset().get(device__name=device_name, olt_port=olt_port)
         except OLTState.DoesNotExist:
             raise ValidationError(
                 f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
@@ -92,8 +103,22 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
 
 class ViewBuildingTechDataAPIView(RetrieveAPIView):
     serializer_class = ViewHouseBTechDataSerializer
-    queryset = HouseB.objects.all()
     permission_classes = [TechDataPermission]
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = (
+                HouseB.objects.all()
+                .select_related("address")
+                .prefetch_related(
+                    "house_olt_states",
+                    "house_olt_states__statement",
+                    "house_olt_states__end3_set__address",
+                    "house_olt_states__statement__device",
+                )
+            )
+            return queryset
+        return HouseB.objects.all()
 
 
 class BuildingsAddressesListAPIView(ListAPIView):
@@ -136,11 +161,7 @@ class DevicesNamesListAPIView(GenericAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        if self.request.user.is_authenticated:
-            group_ids = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
-        else:
-            group_ids = []
-        return Devices.objects.filter(group_id__in=group_ids)
+        return Devices.objects.filter(group__profile__user=self.request.user)
 
     def get(self, request, *args, **kwargs) -> Response:
         device_names = self.get_queryset().values_list("name", flat=True)
@@ -150,7 +171,7 @@ class DevicesNamesListAPIView(GenericAPIView):
 class DevicePortsList(DevicesNamesListAPIView):
     def get(self, request, *args, **kwargs) -> Response:
         try:
-            device: Devices = self.get_queryset().get(name=self.kwargs["device_name"])
+            device: Devices = self.get_queryset().only("id").get(name=self.kwargs["device_name"])
         except Devices.DoesNotExist:
             return Response({"error": "Оборудование не существует"}, status=400)
 
@@ -161,9 +182,18 @@ class DevicePortsList(DevicesNamesListAPIView):
 
 
 class End3TechCapabilityAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = End3.objects.all()
     serializer_class = End3TechCapabilitySerializer
     permission_classes = [End3Permission]
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = (
+                End3.objects.all()
+                .select_related("address")
+                .prefetch_related("techcapability_set", "techcapability_set__subscriber_connection")
+            )
+            return queryset
+        return End3.objects.all()
 
 
 class End3CreateAPIView(GenericAPIView):
@@ -179,20 +209,43 @@ class End3CreateAPIView(GenericAPIView):
 
 
 class TechCapabilityAPIView(RetrieveUpdateAPIView):
-    queryset = TechCapability.objects.all()
     serializer_class = TechCapabilitySerializer
     permission_classes = [TechCapabilityPermission]
 
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = TechCapability.objects.all().prefetch_related("subscriber_connection")
+            return queryset
+        return TechCapability.objects.all()
+
 
 class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):
-    queryset = OLTState.objects.all()
     serializer_class = UpdateRetrieveOLTStateSerializer
     permission_classes = [OLTStatePermission]
 
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = (
+                OLTState.objects.all()
+                .select_related("device")
+                .only("device__name", "olt_port", "fiber", "description")
+            )
+            return queryset
+        return OLTState.objects.all()
+
 
 class RetrieveUpdateHouseOLTState(RetrieveUpdateAPIView):
-    queryset = HouseOLTState.objects.all()
     permission_classes = [HouseOLTStatePermission]
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            queryset = (
+                HouseOLTState.objects.all()
+                .select_related("house")
+                .prefetch_related("end3_set", "end3_set__address")
+            )
+            return queryset
+        return HouseOLTState.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == "GET":
