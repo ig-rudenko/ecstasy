@@ -23,6 +23,7 @@ class End3Admin(admin.ModelAdmin):
     list_display = ("type", "capacity", "address", "location")
     list_filter = ["type", "capacity"]
     list_select_related = ["address"]
+    raw_id_fields = ("address",)
 
 
 @admin.register(HouseB)
@@ -30,6 +31,7 @@ class HouseBAdmin(admin.ModelAdmin):
     list_display = ("address", "floors", "total_entrances", "is_building")
     list_filter = ("apartment_building", "floors", "total_entrances")
     list_select_related = ["address"]
+    raw_id_fields = ("address",)
 
     @admin.display(description="Многоквартирное здание", boolean=True)
     def is_building(self, instance: HouseB) -> bool:
@@ -40,6 +42,7 @@ class HouseBAdmin(admin.ModelAdmin):
 class HouseOLTStateAdmin(admin.ModelAdmin):
     list_display = ("house", "statement", "entrances", "end3_set_count")
     list_select_related = ["house", "statement"]
+    raw_id_fields = ("house", "statement", "end3_set")
 
     @admin.display(description="кол-во splitter/rizers")
     def end3_set_count(self, obj: HouseOLTState):
@@ -61,6 +64,7 @@ class TechCapabilityAdmin(admin.ModelAdmin):
     list_display = ("end3", "status", "number")
     list_filter = ["status", "number"]
     list_select_related = ["end3"]
+    raw_id_fields = ("end3",)
 
 
 @admin.register(Customer)
@@ -75,3 +79,4 @@ class SubscriberConnectionAdmin(admin.ModelAdmin):
     list_display = ("transit", "order", "address", "customer")
     search_fields = ["transit", "order"]
     list_select_related = ["address", "customer"]
+    raw_id_fields = ("customer", "address", "tech_capability")
