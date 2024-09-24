@@ -117,6 +117,7 @@ TEMPLATES = [
                 "news.context_preprocessors.global_news",
                 "accounting.context_preprocessors.ecstasy_loop_url",
             ],
+            "builtins": ["app_settings.templatetags.customtags"],
             "libraries": {
                 "gpon_perms": "gpon.templatetags.gpon_perms",
                 "net_tools_perms": "net_tools.templatetags.net_tools_perms",
