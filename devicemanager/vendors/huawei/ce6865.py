@@ -3,7 +3,7 @@ import re
 from time import sleep
 from typing import Literal
 
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractConfigDevice
 from ..base.helpers import parse_by_template, range_to_numbers
 from ..base.types import (
     InterfaceListType,
@@ -29,7 +29,7 @@ def validate_huawei_ce6865_port(if_invalid_return=None):
     return validate_and_format_port(validator=normalize_interface_name, if_invalid_return=if_invalid_return)
 
 
-class HuaweiCE6865(BaseDevice):
+class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
     """
     # Для оборудования от производителя Huawei CE6865
     """
@@ -409,10 +409,6 @@ class HuaweiCE6865(BaseDevice):
             "status": "changed" if desc else "cleared",
             "saved": self.save_config(),
         }
-
-    @BaseDevice.lock_session
-    def virtual_cable_test(self, port: str) -> dict:
-        return {}
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:

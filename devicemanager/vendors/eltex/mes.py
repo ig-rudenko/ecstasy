@@ -4,7 +4,7 @@ from time import sleep
 
 import pexpect
 
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractConfigDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
     InterfaceListType,
@@ -17,7 +17,7 @@ from ..base.types import (
 from ..base.validators import validate_and_format_port_as_normal
 
 
-class EltexMES(BaseDevice):
+class EltexMES(BaseDevice, AbstractConfigDevice):
     """
     # Для оборудования от производителя Eltex серия **MES**
 

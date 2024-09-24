@@ -1,8 +1,10 @@
+import io
 import re
 import string
 import time
 from abc import ABC, abstractmethod
 from functools import wraps
+from pathlib import Path
 from typing import Literal
 
 import pexpect
@@ -14,6 +16,7 @@ from .types import (
     MACListType,
     SystemInfo,
     PortInfoType,
+    ArpInfoResult,
 )
 
 
@@ -86,6 +89,52 @@ class AbstractDevice(ABC):
     @abstractmethod
     def get_system_info(self):
         """Возвращает характеристики оборудования: MAC, Serial Number, Vendor, Model"""
+
+
+class AbstractSearchDevice(ABC):
+    @abstractmethod
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
+        """Ищем IP адрес в таблице ARP оборудования"""
+        pass
+
+    @abstractmethod
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
+        """Ищем MAC адрес в таблице ARP оборудования"""
+        pass
+
+
+class AbstractConfigDevice(ABC):
+    @abstractmethod
+    def get_current_configuration(self) -> io.BytesIO | Path:
+        pass
+
+
+class AbstractPOEDevice(ABC):
+    @abstractmethod
+    def set_poe_out(self, port: str, status: str):
+        pass
+
+
+class AbstractCableTestDevice(ABC):
+    @abstractmethod
+    def virtual_cable_test(self, port: str) -> dict:
+        pass
+
+
+class AbstractDSLProfileDevice(ABC):
+    @abstractmethod
+    def change_profile(self, port: str, profile_index: int):
+        pass
+
+
+class AbstractUserSessionsDevice(ABC):
+    @abstractmethod
+    def get_access_user_data(self, mac: str) -> str:
+        pass
+
+    @abstractmethod
+    def cut_access_user_session(self, mac: str) -> str:
+        pass
 
 
 class BaseDevice(AbstractDevice, ABC):

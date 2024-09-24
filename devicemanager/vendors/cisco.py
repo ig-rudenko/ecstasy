@@ -4,7 +4,7 @@ from time import sleep
 
 import textfsm
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice, AbstractSearchDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
@@ -24,7 +24,7 @@ from .base.types import (
 from .base.validators import validate_and_format_port_as_normal
 
 
-class Cisco(BaseDevice):
+class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     """
     # Для оборудования от производителя Cisco
 

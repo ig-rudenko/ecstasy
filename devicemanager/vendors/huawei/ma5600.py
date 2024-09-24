@@ -6,7 +6,7 @@ import pexpect
 from jinja2 import Environment, FileSystemLoader
 
 from devicemanager import snmp
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractDSLProfileDevice
 from ..base.types import (
     InterfaceListType,
     InterfaceVLANListType,
@@ -18,7 +18,7 @@ from ..base.types import (
 )
 
 
-class HuaweiMA5600T(BaseDevice):
+class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
     """
     # Для DSLAM оборудования MA5600T от производителя Huawei
     """

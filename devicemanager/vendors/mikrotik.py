@@ -8,7 +8,7 @@ from typing import Literal
 
 import pysftp
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice, AbstractPOEDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     InterfaceListType,
@@ -45,7 +45,7 @@ def validate_port(port: str) -> str | None:
 mikrotik_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
-class MikroTik(BaseDevice):
+class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     prompt = r"\] > $"
     space_prompt = None
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"

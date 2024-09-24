@@ -4,7 +4,7 @@ from typing import Literal
 
 import textfsm
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractCableTestDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.types import (
@@ -23,7 +23,7 @@ from .base.types import (
 from .base.validators import validate_and_format_port_only_digit
 
 
-class ZTE(BaseDevice):
+class ZTE(BaseDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя ZTE
 

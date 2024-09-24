@@ -6,7 +6,7 @@ from typing import Literal, Any
 
 import textfsm
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice, AbstractCableTestDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.types import (
@@ -57,7 +57,7 @@ def validate_port(port: str) -> str | None:
 dlink_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
-class Dlink(BaseDevice):
+class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     """
     Для оборудования от производителя D-Link
 

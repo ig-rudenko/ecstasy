@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Literal, Dict, Optional
 
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractConfigDevice, AbstractCableTestDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
@@ -28,7 +28,7 @@ class _PortInfo:
     exp: datetime
 
 
-class Huawei(BaseDevice):
+class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя Huawei
 

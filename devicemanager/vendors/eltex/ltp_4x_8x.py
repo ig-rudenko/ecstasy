@@ -5,7 +5,7 @@ from functools import wraps
 from typing import Any, TypedDict
 
 from .extra import reformat_ltp_interfaces_list, reformat_gpon_ports_state_output
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractConfigDevice
 from ..base.types import (
     InterfaceListType,
     InterfaceVLANListType,
@@ -84,7 +84,7 @@ def _validate_port(if_invalid_return: Any = None):
     return validate
 
 
-class EltexLTP(BaseDevice):
+class EltexLTP(BaseDevice, AbstractConfigDevice):
     """
     # Для станционных терминалов GPON OLT - LTP-4X, LTP-8X
 
@@ -544,6 +544,6 @@ class EltexLTP(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("show running-config", expect_command=True)
         return io.BytesIO(config.encode())

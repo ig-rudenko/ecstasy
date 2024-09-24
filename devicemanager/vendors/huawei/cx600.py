@@ -2,7 +2,7 @@ from typing import Literal
 
 import textfsm
 
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractUserSessionsDevice
 from ..base.types import (
     TEMPLATE_FOLDER,
     InterfaceListType,
@@ -13,7 +13,7 @@ from ..base.types import (
 )
 
 
-class HuaweiCX600(BaseDevice):
+class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     """
     # Для оборудования серии CX600 от производителя Huawei
     """

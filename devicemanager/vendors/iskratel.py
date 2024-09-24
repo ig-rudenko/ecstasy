@@ -7,7 +7,7 @@ from time import sleep
 
 from gathering.services.ftp import FTPCollector
 from gathering.services.ftp.exceptions import NotFound
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     InterfaceListType,
@@ -90,7 +90,7 @@ class IskratelControl(BaseDevice):
         return {}
 
 
-class IskratelMBan(BaseDevice):
+class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
     """
     # Для плат DSLAM от производителя Iskratel
 

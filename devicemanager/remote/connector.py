@@ -5,7 +5,14 @@ from typing import Literal, Type, Sequence
 import requests
 
 from devicemanager import exceptions
-from devicemanager.vendors.base.device import AbstractDevice
+from devicemanager.vendors.base.device import (
+    AbstractDevice,
+    AbstractSearchDevice,
+    AbstractPOEDevice,
+    AbstractCableTestDevice,
+    AbstractDSLProfileDevice,
+    AbstractUserSessionsDevice,
+)
 from devicemanager.vendors.base.types import (
     MACListType,
     InterfaceVLANListType,
@@ -19,7 +26,14 @@ from devicemanager.vendors.base.types import (
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
 
-class RemoteDevice(AbstractDevice):
+class RemoteDevice(
+    AbstractDevice,
+    AbstractSearchDevice,
+    AbstractPOEDevice,
+    AbstractCableTestDevice,
+    AbstractDSLProfileDevice,
+    AbstractUserSessionsDevice,
+):
     def __init__(
         self,
         ip: str,
@@ -140,8 +154,8 @@ class RemoteDevice(AbstractDevice):
     def set_poe_out(self, port: str, status: str):
         return self._remote_call("set_poe_out", port=port, status=status)
 
-    def change_profile(self, port: str, port_index: int):
-        return self._remote_call("change_profile", port=port, profile_index=port_index)
+    def change_profile(self, port: str, profile_index: int):
+        return self._remote_call("change_profile", port=port, profile_index=profile_index)
 
     def get_access_user_data(self, mac: str) -> str:
         return self._remote_call("get_access_user_data", mac=mac)

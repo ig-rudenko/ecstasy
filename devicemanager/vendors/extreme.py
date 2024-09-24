@@ -3,7 +3,7 @@ import re
 from time import sleep
 from typing import Literal, Sequence
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import range_to_numbers, parse_by_template
 from .base.types import (
@@ -20,7 +20,7 @@ from .base.validators import validate_and_format_port_only_digit
 from .. import DeviceException
 
 
-class Extreme(BaseDevice):
+class Extreme(BaseDevice, AbstractConfigDevice):
     """
     # Для оборудования от производителя Extreme
 
@@ -343,7 +343,7 @@ class Extreme(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
-    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("show configuration")
         return io.BytesIO(config.strip().encode())
 

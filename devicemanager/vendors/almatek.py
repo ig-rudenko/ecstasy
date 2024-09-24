@@ -3,7 +3,7 @@ import re
 import time
 from typing import Literal
 
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     MACListType,
@@ -18,7 +18,7 @@ from .base.types import (
 from .base.validators import validate_and_format_port_as_normal
 
 
-class Almatek(BaseDevice):
+class Almatek(BaseDevice, AbstractConfigDevice):
     prompt = r"\S+# $"
     space_prompt = r"--More--"
     mac_format = r"\S\S:\S\S\:\S\S:\S\S\:\S\S:\S\S"  # 00:11:22:33:44:55

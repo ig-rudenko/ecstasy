@@ -6,7 +6,7 @@ from packaging.version import Version
 
 from .extra import reformat_ltp_interfaces_list
 from .ltp_4x_8x import _EltexLTPPortTypes
-from ..base.device import BaseDevice
+from ..base.device import BaseDevice, AbstractConfigDevice
 from ..base.types import (
     InterfaceListType,
     InterfaceVLANListType,
@@ -74,7 +74,7 @@ def _validate_port(if_invalid_return=None):
     return validate
 
 
-class EltexLTP16N(BaseDevice):
+class EltexLTP16N(BaseDevice, AbstractConfigDevice):
     """
     # Для станционных терминалов GPON OLT - LTP-16N, LTP-16NT
 
@@ -458,6 +458,6 @@ class EltexLTP16N(BaseDevice):
         return {}
 
     @BaseDevice.lock_session
-    def get_current_configuration(self, *args, **kwargs) -> io.BytesIO:
+    def get_current_configuration(self) -> io.BytesIO:
         config = self.send_command("show running-config", expect_command=True)
         return io.BytesIO(config.encode())
