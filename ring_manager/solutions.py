@@ -72,7 +72,7 @@ class Solutions:
         )
 
     def _change_port(
-        self, device: check.models.Devices, port: str, status: Literal["up", "down"], message: str
+            self, device: check.models.Devices, port: str, status: Literal["up", "down"], message: str
     ):
         if not self.has_errors:
             self.has_only_safe_solutions = False
@@ -103,12 +103,12 @@ class Solutions:
         self._change_port(device, port, "down", message)
 
     def _change_vlans(
-        self,
-        status: Literal["add", "delete"],
-        vlans: tuple[int, ...],
-        device: check.models.Devices,
-        port: str,
-        message: str,
+            self,
+            status: Literal["add", "delete"],
+            vlans: tuple[int, ...],
+            device: check.models.Devices,
+            port: str,
+            message: str,
     ):
         if not self.has_errors:
             self.has_only_safe_solutions = False
@@ -216,7 +216,7 @@ class SolutionsPerformer:
         return self._solutions
 
     def _perform_pipeline(
-        self, solutions: Sequence[dict], counter: dict[str, int], reverse_status: bool = False
+            self, solutions: Sequence[dict], counter: dict[str, int], reverse_status: bool = False
     ):
         """
         Эта функция выполняет конвейер решений, проверяя их безопасность и выполняя их в зависимости от типа.
@@ -309,14 +309,14 @@ class SolutionsPerformer:
             ) from error
 
     def _perform_set_port_vlans(
-        self,
-        status: Literal["add", "delete"],
-        device: dict[str, str],
-        port: str,
-        vlans: Sequence[int],
-        message: str = "",
-        reverse_status: bool = False,
-        **kwargs,
+            self,
+            status: Literal["add", "delete"],
+            device: dict[str, str],
+            port: str,
+            vlans: Sequence[int],
+            message: str = "",
+            reverse_status: bool = False,
+            **kwargs,
     ):
         """
         Выполняет операции по добавлению или удалению VLAN на порту сетевого устройства с
@@ -417,20 +417,20 @@ class SolutionsPerformer:
             )
 
         for vlan in vlans:
-            if type(vlan) != int or vlan < 1 or vlan > 4096:
+            if not isinstance(vlan, int) or vlan < 1 or vlan > 4096:
                 raise SolutionsPerformerError(
                     "Параметр `vlans` должен содержать в себе список целых чисел в диапазоне от 1 до 4096,"
                     f" а были переданы `{vlans}`"
                 )
 
     def _perform_set_port_status(
-        self,
-        status: Literal["up", "down"],
-        device: dict[str, str],
-        port: str,
-        message: str = "",
-        reverse_status: bool = False,
-        **kwargs,
+            self,
+            status: Literal["up", "down"],
+            device: dict[str, str],
+            port: str,
+            message: str = "",
+            reverse_status: bool = False,
+            **kwargs,
     ):
         """
         Это функция Python, которая выполняет обновление состояния порта для заданного устройства.

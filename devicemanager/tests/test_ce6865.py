@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar  # noqa: F401
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
@@ -181,7 +181,7 @@ class TestCE6865Template(TestCase):
         )
 
     def test_vlans_find_template(self):
-        parse_data = parse_by_template(f"vlans_templates/huawei-ce6865.template", dis_cur_inter_output)
+        parse_data = parse_by_template("vlans_templates/huawei-ce6865.template", dis_cur_inter_output)
 
         self.assertListEqual(
             [

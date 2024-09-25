@@ -1,4 +1,4 @@
-from django.db.models import QuerySet, Q
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import GlobalNews
