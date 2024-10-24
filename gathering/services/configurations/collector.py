@@ -106,4 +106,4 @@ class ConfigurationGather:
         except FTPCollectorError as error:
             raise ConfigFileError(error.message) from error
         except InvalidMethod:
-            raise ConfigFileError(f"Данное оборудование не поддерживает сохранение конфигурации")
+            raise ConfigFileError("Данное оборудование не поддерживает сохранение конфигурации")

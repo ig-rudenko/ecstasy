@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from celery import Task
-from django.db.models import QuerySet
+from django.db.models import QuerySet  # noqa: F401
 
 from app_settings.models import ZabbixConfig
 from devicemanager.device import zabbix_api

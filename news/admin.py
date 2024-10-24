@@ -34,6 +34,6 @@ class GlobalNewsAdmin(admin.ModelAdmin):
         text += f"<span style=\"color: {'red' if is_expired else 'currentColor'}\">{obj.title}</span>"
 
         if is_expired:
-            text += f'<small style="color: red; margin-left: 5px;">(Срок действия сообщения истек)</small>'
+            text += '<small style="color: red; margin-left: 5px;">(Срок действия сообщения истек)</small>'
 
         return mark_safe(text)

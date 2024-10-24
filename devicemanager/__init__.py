@@ -6,3 +6,12 @@ from .exceptions import (
     DeviceLoginError,
     SSHConnectionError,
 )
+
+__all__ = [
+    "AuthException",
+    "DeviceException",
+    "UnknownDeviceError",
+    "TelnetConnectionError",
+    "DeviceLoginError",
+    "SSHConnectionError",
+]

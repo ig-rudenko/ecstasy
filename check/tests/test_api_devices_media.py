@@ -1,6 +1,6 @@
 import pathlib
 import shutil
-from typing import ClassVar
+from typing import ClassVar  # noqa: F401
 
 from django.core.files import File
 from django.test import override_settings

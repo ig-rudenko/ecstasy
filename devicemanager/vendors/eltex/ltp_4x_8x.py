@@ -112,12 +112,12 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
     vendor = "Eltex"
 
     def __init__(
-        self,
-        session,
-        ip: str,
-        auth: DeviceAuthDict,
-        model="LTP",
-        snmp_community: str = "",
+            self,
+            session,
+            ip: str,
+            auth: DeviceAuthDict,
+            model="LTP",
+            snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
 
@@ -140,15 +140,15 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.front_ports_count = 0
 
     def send_command(
-        self,
-        command: str,
-        before_catch: str | None = None,
-        expect_command=True,
-        num_of_expect=10,
-        space_prompt=None,
-        prompt=None,
-        pages_limit=None,
-        command_linesep="\r",
+            self,
+            command: str,
+            before_catch: str | None = None,
+            expect_command=True,
+            num_of_expect=10,
+            space_prompt=None,
+            prompt=None,
+            pages_limit=None,
+            command_linesep="\r",
     ) -> str:
         return super().send_command(
             command,
@@ -312,9 +312,9 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
                     # ONT ID, Status,  Equip ID, RSSI,   Serial,  Desc,    MacList
                     [line[1], line[2], line[5], line[3], line[0], line[6], []]
                     for line in re.findall(
-                        r"\s+\d+\s+(\S+)\s+(\d+)\s+\d+\s+(\S+)\s+(\S+)\s+(\S*)\s+(\S+)\s*(\S*)[\r\n]",
-                        ont_info,
-                    )
+                    r"\s+\d+\s+(\S+)\s+(\d+)\s+\d+\s+(\S+)\s+(\S+)\s+(\S*)\s+(\S+)\s*(\S*)[\r\n]",
+                    ont_info,
+                )
                 ],
                 key=lambda x: int(x[0]),  # сортируем по возрастанию ONT ID
             )
@@ -388,9 +388,9 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.session.send("do commit\r")
             self.session.expect(self.prompt)
 
-            self.session.send(f"exit\r")
+            self.session.send("exit\r")
             self.session.expect(self.prompt)
-            self.session.send(f"exit\r")
+            self.session.send("exit\r")
             self.session.expect(self.prompt)
 
             self.lock = False
@@ -417,9 +417,9 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.session.expect(self.prompt)
             self.session.send("do commit\r")
             self.session.expect(self.prompt)
-            self.session.send(f"exit\r")
+            self.session.send("exit\r")
             self.session.expect(self.prompt)
-            self.session.send(f"exit\r")
+            self.session.send("exit\r")
             self.session.expect(self.prompt)
 
             self.lock = False

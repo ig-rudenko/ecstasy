@@ -150,7 +150,7 @@ def get_zabbix_groups():
         with zabbix_api.connect() as zbx:
             # Получение всех групп узлов сети из Zabbix.
             groups = zbx.hostgroup.get(output=["name"])
-    except (RequestException, ZabbixAPIException) as exc:
+    except (RequestException, ZabbixAPIException):
         groups = []
 
     choices_groups = ((g["name"], g["name"]) for g in groups)
@@ -376,9 +376,9 @@ class LayersAdmin(admin.ModelAdmin):
             feature_types[feature_type]["count"] += 1
 
             colour = (
-                feature.get("properties", {}).get("fill", "")
-                or feature.get("properties", {}).get("marker-color", "")
-                or feature.get("properties", {}).get("stroke", "")
+                    feature.get("properties", {}).get("fill", "")
+                    or feature.get("properties", {}).get("marker-color", "")
+                    or feature.get("properties", {}).get("stroke", "")
             )
             if colour:
                 feature_types[feature_type]["colours"][colour] += 1

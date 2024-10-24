@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar  # noqa: F401
 from unittest.mock import MagicMock, patch, Mock
 
 import orjson
@@ -404,7 +404,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             resp.data,
             {
                 "detail": "Слишком длинное описание! "
-                f"Укажите не более {set_description_result.max_length} символов."
+                          f"Укажите не более {set_description_result.max_length} символов."
             },
             msg="В ответе API неверные данные",
         )

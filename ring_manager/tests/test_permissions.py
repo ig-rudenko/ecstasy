@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar  # noqa: F401
 
 from django.contrib.auth.models import Permission
 from django.test import TestCase

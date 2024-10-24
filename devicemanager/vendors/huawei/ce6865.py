@@ -122,7 +122,7 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
         self.lock = True
 
         output = self.send_command("display current-configuration interface")
-        result = parse_by_template(f"vlans_templates/huawei-ce6865.template", output)
+        result = parse_by_template("vlans_templates/huawei-ce6865.template", output)
 
         interfaces_vlans = {line[0]: range_to_numbers(line[1]) for line in result}
 
