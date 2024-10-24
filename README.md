@@ -70,14 +70,28 @@
 - `Q-Tech`
   - Проверено для: `QSW-3450-*` `QSW-8200-*`
 
-### Развертывание приложения (Ansible)
+## Запуск
+
+### Docker
+
+Самым простым способом является запуск через docker compose.
+
+```shell
+docker compose up -d;
+```
+
+### CI/CD, Jenkins
+
+Чтобы автоматизировать процесс развертывания приложения, можно использовать
+Jenkins вместе с Ansible.
 
 ![img.png](img/jenkins-ansible.png)
 
-1. Устанавливаем ansible.
-2. Копируем проект и переходим в папку `ansible`.
-3. Прописываем в файле `inventory/hosts` IP адрес и порт для подключения сервера, на который будет установлена система.
-4. В папке `roles` находятся файлы с параметрами настройки приложения:
+### Запуск через Ansible
+
+1. Копируем проект и переходим в папку `ansible`.
+2. Прописываем в файле `inventory/hosts` IP адрес и порт для подключения сервера, на который будет установлена система.
+3. В папке `roles` находятся файлы с параметрами настройки приложения:
 
 - `ecstasy-main.yaml` содержит основные переменные проекта;
 
@@ -157,6 +171,8 @@ ansible-playbook -K -i inventory/hosts playbooks/deploy-ecstasy.yaml
 
 6. Вводим пароль суперпользователя и ожидаем завершение установки.
 
+---
+
 ### Удобный поиск оборудования
 
 ![img.png](img/img_4.png)
@@ -224,6 +240,74 @@ ansible-playbook -K -i inventory/hosts playbooks/deploy-ecstasy.yaml
 ### Поиск IP или MAC адреса
 
 ![img.png](img/img_7.png)
+
+## Кастомные команды
+
+### import_from_zabbix
+
+    # python manage.py import_from_zabbix
+
+    Импорт узлов сети из zabbix
+    
+    options:
+      -h, --help            show this help message and exit
+      -g GROUPS, --groups GROUPS
+                            Имена Zabbix групп через запятую
+      -a AUTH, --auth AUTH  Имя группы авторизации для узла сети
+      -s, --save            Сохранить в базу узлы сети
+      --change-group CHANGE_GROUP
+                            Имя группы Ecstasy, которая будет использоваться для всех узлов сети. Если не указана, то будет использована оригинальная группа Zabbix
+      --all-status          Импортируем также узлы сети, которые деактивированы в Zabbix
+      --interface-scan {telnet,ssh,snmp}
+                            Протокол для сбора интерфейсов узла сети. (по умолчанию ssh)
+      --snmp-community SNMP_COMMUNITY
+                            SNMP Community (необязательно)
+      --cli-protocol {telnet,ssh}
+                            Протокол для выполнения команд узла сети. (по умолчанию ssh)
+      --name-pattern NAME_PATTERN
+                            Паттерн для имени узлов сети. Если совпадает, то будет импортирован. (необязательно)
+      --ip-pattern IP_PATTERN
+                            Паттерн для IP узла сети. Если совпадает, то будет импортирован. (необязательно)
+      --server SERVER       URL сервера Zabbix (необязательно)
+      --user USER           Имя пользователя Zabbix (необязательно)
+      --password PASSWORD   Пароль пользователя Zabbix (необязательно)
+      --debug               Выводить дополнительную информацию
+      --version             Show program's version number and exit.
+      -v {0,1,2,3}, --verbosity {0,1,2,3}
+                            Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
+      --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
+      --pythonpath PYTHONPATH
+                            A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
+      --traceback           Raise on CommandError exceptions.
+      --no-color            Don't colorize the command output.
+      --force-color         Force colorization of the command output.
+      --skip-checks         Skip system checks.
+
+> [!NOTE]
+> По умолчанию используются данные авторизации Zabbix хранимые в базе.
+> Указывается через панель администратора: `App settings -> Zabbix API settings`
+> Чтобы не сохранять в базу данных, а только протестировать какие узлы будут учитываться
+> нужно выполнять команды без параметра `--save`.
+
+### Примеры:
+
+Импорт активных узлов сети из Zabbix группы `devs` в новую группу `devs` ecstasy,
+с указанием группы авторизации `creds-1`, а также использование `telnet`
+как способа подключения к оборудованию:
+
+```shell
+python manage.py import_from_zabbix --save -g devs -a creds-1 --interface-scan=telnet --cli-protocol=telnet
+```
+
+---
+
+Импорт активных узлов сети из диапазона `172.30.0.0/24` Zabbix группы `devs` в новую группу `devs` ecstasy,
+с указанием группы авторизации `creds-1`, а также использование `ssh` (По умолчанию SSH)
+как способа подключения к оборудованию:
+
+```shell
+python manage.py import_from_zabbix --save -g devs -a creds-1 --ip-pattern='172\.30\.0\.\d+'
+```
 
 ## Создание связей моделей
 
