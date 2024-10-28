@@ -305,13 +305,7 @@ class VlanTraceroute:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device_match = re.search(
-                find_device_pattern, self.reformatting(interface.desc), flags=re.IGNORECASE
-            )
-            # Приводим к единому формату имя узла сети
-            next_device = ""
-            if next_device_match:
-                next_device = next_device_match.group()
+            next_device = self._get_next_device(find_device_pattern, interface.desc)
 
             # Пропускаем порты admin down, если включена опция only admin up
             if only_admin_up:
@@ -453,6 +447,17 @@ class VlanTraceroute:
         """Очищает результаты поиска."""
         self.result = []
 
+    def _get_next_device(self, pattern: str, description: str) -> str:
+        next_device = ""
+        # Ищем в описании порта следующий узел сети
+        next_device_match = re.search(pattern, self.reformatting(description), flags=re.IGNORECASE)
+        # Приводим к единому формату имя узла сети
+        if next_device_match:
+            next_device = next_device_match.group()
+            next_device = self._device_ip_names.get(next_device, next_device)
+
+        return next_device
+
     def _get_devices_info(self):
         cache_key = f"net_tools:{self.__class__.__name__}:devices_info"
         data = cache.get(cache_key)
@@ -469,13 +474,9 @@ class VlanTraceroute:
             self._devices_vlans_info = {dev["dev__name"]: dev["vlans"] for dev in info}
             self._device_ip_names = {dev["dev__ip"]: dev["dev__name"] for dev in info}
 
-    def _get_device_interfaces(self, device_ip_or_name: str) -> Interfaces:
+    def _get_device_interfaces(self, device_name: str) -> Interfaces:
         """Получаем список VLAN для текущего устройства"""
-        device_info = self._devices_vlans_info.get(device_ip_or_name, None)
-        if device_info is None:
-            device_name = self._device_ip_names.get(device_ip_or_name, device_ip_or_name)
-            device_info = self._devices_vlans_info.get(device_name, None)
-
+        device_info = self._devices_vlans_info.get(device_name, None)
         if device_info is not None:
             return Interfaces(orjson.loads(device_info or "[]"))
         return Interfaces()
