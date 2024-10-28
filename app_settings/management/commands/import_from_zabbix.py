@@ -117,16 +117,16 @@ class Command(BaseCommand):
         return True
 
     def import_host(
-            self,
-            host: ZabbixHostType,
-            *,
-            group: DeviceGroup,
-            interface_scan: str,
-            cli_protocol: str,
-            auth_group: AuthGroup,
-            snmp_community: str | None,
-            save: bool,
-            debug: bool = False,
+        self,
+        host: ZabbixHostType,
+        *,
+        group: DeviceGroup,
+        interface_scan: str,
+        cli_protocol: str,
+        auth_group: AuthGroup,
+        snmp_community: str | None,
+        save: bool,
+        debug: bool = False,
     ):
         host_ip = self.get_host_ip(host)
         text = (
@@ -241,7 +241,7 @@ class Command(BaseCommand):
             "--change-group",
             type=str,
             help="Имя группы Ecstasy, которая будет использоваться для всех узлов сети. "
-                 "Если не указана, то будет использована оригинальная группа Zabbix",
+            "Если не указана, то будет использована оригинальная группа Zabbix",
         )
 
         parser.add_argument(

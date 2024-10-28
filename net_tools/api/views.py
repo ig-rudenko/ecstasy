@@ -182,7 +182,19 @@ def get_vlan_traceroute(request: Request) -> Response:
     # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
-    tracert = MultipleVlanTraceroute(finder=VlanTraceroute(), devices_queryset=Devices.objects.all())
+    devices_qs = Devices.objects.all()
+    if vlan_traceroute_settings.vlan_start:
+        devices_names = tuple(map(str.strip, vlan_traceroute_settings.vlan_start.split("\n")))
+        devices_qs = devices_qs.filter(name__in=devices_names)
+    if vlan_traceroute_settings.vlan_start_regex:
+        devices_qs = devices_qs.filter(name__iregex=vlan_traceroute_settings.vlan_start_regex)
+    if vlan_traceroute_settings.ip_pattern:
+        devices_qs = devices_qs.filter(ip__iregex=vlan_traceroute_settings.ip_pattern)
+
+    tracert = MultipleVlanTraceroute(
+        finder=VlanTraceroute(cache_timeout=vlan_traceroute_settings.cache_timeout),
+        devices_queryset=devices_qs,
+    )
     result = tracert.execute_traceroute(
         vlan=vlan,
         empty_ports=empty_ports,

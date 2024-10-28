@@ -6,6 +6,7 @@ from typing import NamedTuple, TypedDict, Literal
 
 import orjson
 from django.contrib.humanize.templatetags.humanize import naturaltime
+from django.core.cache import cache
 from django.db.models import QuerySet
 
 from check.models import Devices, InterfacesComments
@@ -236,13 +237,15 @@ class VlanTraceroute:
     визуальной карты топологии сети.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cache_timeout: int = 60 * 5) -> None:
         self.result: list[VlanTracerouteResult] = []  # Итоговый список
         self._desc_name_list: list[DescNameFormat] = []
         self.passed_devices: set[str] = set()  # Множество уже пройденного оборудования
 
         # Словарь содержащий информацию об VLAN для каждого оборудования
         self._devices_vlans_info: dict[str, str | None] = {}
+        self._device_ip_names: dict[str, str] = {}  # Словарь соответствия IP-адресов и имен оборудования
+        self._cache_timeout = cache_timeout  # Время кеширования
         self._get_devices_vlans()
 
     @lru_cache(maxsize=2000)
@@ -449,17 +452,29 @@ class VlanTraceroute:
         """Очищает результаты поиска."""
         self.result = []
 
+    def _get_devices_info(self):
+        cache_key = f"net_tools:{self.__class__.__name__}:devices_info"
+        data = cache.get(cache_key)
+        if data is None:
+            data = DevicesInfo.objects.all().values("dev__name", "dev__ip", "vlans")
+            cache.set(cache_key, data, self._cache_timeout)
+        return data
+
     def _get_devices_vlans(self):
         """Получаем список всех устройств сети, содержащий информацию об VLAN для каждого"""
         if not self._devices_vlans_info:
-            self._devices_vlans_info = {
-                dev["dev__name"]: dev["vlans"]
-                for dev in DevicesInfo.objects.all().values("dev__name", "vlans")
-            }
+            info = self._get_devices_info()
 
-    def _get_device_interfaces(self, device_name: str) -> Interfaces:
+            self._devices_vlans_info = {dev["dev__name"]: dev["vlans"] for dev in info}
+            self._device_ip_names = {dev["dev__ip"]: dev["dev__name"] for dev in info}
+
+    def _get_device_interfaces(self, device_ip_or_name: str) -> Interfaces:
         """Получаем список VLAN для текущего устройства"""
-        device_info = self._devices_vlans_info.get(device_name, None)
+        device_info = self._devices_vlans_info.get(device_ip_or_name, None)
+        if device_info is None:
+            device_name = self._device_ip_names.get(device_ip_or_name, device_ip_or_name)
+            device_info = self._devices_vlans_info.get(device_name, None)
+
         if device_info is not None:
             return Interfaces(orjson.loads(device_info or "[]"))
         return Interfaces()

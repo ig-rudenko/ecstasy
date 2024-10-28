@@ -163,12 +163,33 @@ class VlanTracerouteConfig(SingletonModel):
 
     vlan_start = models.TextField(
         verbose_name="Имя оборудования для начала трассировки",
-        help_text="Разделять необходимо запятой, если требуется указать несколько",
+        help_text="Разделять необходимо переносом строки, если требуется указать несколько",
+        default="",
+        null=True,
+        blank=True,
+    )
+    vlan_start_regex = models.TextField(
+        verbose_name="Регулярное выражение",
+        help_text="Используется для того, чтобы найти оборудования, с которых начинается трассировка",
+        default="",
+        null=True,
+        blank=True,
+    )
+    ip_pattern = models.TextField(
+        verbose_name="Регулярное выражение для указания IP",
+        help_text="Используется для того, чтобы найти оборудования, с которых начинается трассировка",
+        default="",
+        null=True,
+        blank=True,
     )
     find_device_pattern = models.TextField(
         verbose_name="Регулярное выражение",
         help_text="Используется для того, "
         "чтобы найти в описании порта имя другого оборудования и продолжить трассировку",
+    )
+    cache_timeout = models.IntegerField(
+        verbose_name="Время в секундах для кеширования",
+        default=60 * 5,
     )
 
     def __str__(self):

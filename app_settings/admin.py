@@ -68,4 +68,4 @@ class VlanTracerouteConfigAdmin(admin.ModelAdmin):
     ## Админка для настроек работы VLAN Traceroute
     """
 
-    list_display = ["vlan_start", "find_device_pattern"]
+    list_display = ["find_device_pattern", "vlan_start", "vlan_start_regex", "ip_pattern", "cache_timeout"]
