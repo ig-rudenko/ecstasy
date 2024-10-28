@@ -305,12 +305,13 @@ class VlanTraceroute:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device_find: list[str] = re.findall(
+            next_device_match = re.search(
                 find_device_pattern, self.reformatting(interface.desc), flags=re.IGNORECASE
             )
-
             # Приводим к единому формату имя узла сети
-            next_device = next_device_find[0] if next_device_find else ""
+            next_device = ""
+            if next_device_match:
+                next_device = next_device_match.group()
 
             # Пропускаем порты admin down, если включена опция only admin up
             if only_admin_up:
