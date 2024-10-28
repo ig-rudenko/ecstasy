@@ -324,8 +324,10 @@ class VlanTraceroute:
                 next_dev_interfaces: Interfaces = self._get_device_interfaces(next_device)
 
                 for next_dev_interface in next_dev_interfaces:
-                    if vlan_to_find in next_dev_interface.vlan and re.findall(
-                        device, self.reformatting(next_dev_interface.desc), flags=re.IGNORECASE
+                    desc = self.reformatting(next_dev_interface.desc)
+                    if vlan_to_find in next_dev_interface.vlan and (
+                        re.search(device, desc, flags=re.IGNORECASE)
+                        or self._get_next_device(find_device_pattern, desc) == device
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)
