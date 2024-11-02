@@ -1,0 +1,51 @@
+<template>
+<div :class="formClasses" :style="formStyles" class="focus-within:shadow-xl">
+    <i class="pi pi-search text-2xl mr-4"/>
+    <input type="text" class="search-input bg-transparent  text-gray-900 dark:text-gray-300"
+           autofocus :placeholder="placeholder" @input="updateSearch"
+           @keyup.enter="$emit('submit_input')">
+</div>
+</template>
+
+
+<script lang="ts">
+import {defineComponent, PropType, StyleValue} from "vue";
+
+export default defineComponent({
+  props: {
+    updateSearch: { required: true, type: Function as PropType<(event: Event) => void> },
+    activeMode: { required: false, type: Boolean, default: false },
+    placeholder: { required: false, type: String },
+  },
+  emits: ["submit_input"],
+  computed: {
+    formClasses(): Array<string> {
+      if (this.activeMode) {
+        return ['search-form']
+      }
+      return ['search-form']
+    },
+    formStyles(): StyleValue {
+      if (this.activeMode) {
+        return {"color": "#9f9f9f", "border": "2px solid"}
+      }
+      return {}
+    }
+  }
+})
+</script>
+
+<style scoped>
+.search-input {
+  border: none;
+  outline: none;
+  flex: 1 1 auto;
+  width: 1%;
+}
+.search-form {
+  padding: 10px 12px;
+  margin: 10px;
+  border-radius: 10px;
+  display: flex;
+}
+</style>
