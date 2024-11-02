@@ -1,11 +1,12 @@
-import {tokenService} from "./token.service.ts";
-import UserService from "@/services/auth/user.service.ts";
-import {LoginUser, UserTokens} from "@/services/user.ts";
 import axios from "axios";
+
+import {tokenService} from "@/services/token.service";
+import {LoginUser, UserTokens} from "@/services/user";
+import UserService from "@/services/auth/user.service";
 
 class AuthService {
     async login(user: LoginUser) {
-        let response = await axios.post("/api/v1/auth/token", {
+        let response = await axios.post("/api/token", {
             username: user.username,
             password: user.password
         });

@@ -1,25 +1,31 @@
-import {createNewUser, User} from "@/services/user";
 import api from "@/services/api";
+import {createNewUser, User} from "@/services/user";
 
 export async function getMyselfData(): Promise<User> {
-    const resp = await api.get("/auth/myself")
+    const resp = await api.get("/api/accounts/myself")
     return createNewUser(resp.data)
 }
 
 class UserService {
+    private user: User | null = null;
+
     getUser(): User | null {
+        if (this.user) return this.user;
+
+        console.log("getUser")
         const data = localStorage.getItem("user")
-        if (data) {
-            return JSON.parse(data)
-        }
-        return null
+        if (data) this.user = JSON.parse(data)
+        return this.user;
     }
 
     setUser(user: User): void {
+        console.log("setUser", user)
+        this.user = user;
         localStorage.setItem("user", JSON.stringify(user));
     }
 
     removeUser(): void {
+        this.user = null;
         localStorage.removeItem("user");
     }
 

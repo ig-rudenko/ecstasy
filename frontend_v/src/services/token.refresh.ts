@@ -1,9 +1,10 @@
 import axios from "axios";
+
 import store from "@/store";
-import router from "@/router.ts";
+import router from "@/router";
 import {TokenService} from "@/services/token.service";
 
-const refreshTokenURL = "/api/jwt/refresh/"
+const refreshTokenURL = "/api/token/refresh/"
 
 export async function refreshAccessToken(tokenService: TokenService) {
     const refreshToken = tokenService.getLocalRefreshToken()

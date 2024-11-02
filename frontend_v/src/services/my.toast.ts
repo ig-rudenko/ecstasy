@@ -1,4 +1,4 @@
-import {app} from '@/appInstance.ts';
+import {app} from '@/appInstance';
 
 const basicLifeTime = 3000;
 

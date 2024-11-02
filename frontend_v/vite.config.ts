@@ -24,7 +24,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'https://ecstasy.noc.net92.ru',
         changeOrigin: true,
         secure: false,
         ws: true,

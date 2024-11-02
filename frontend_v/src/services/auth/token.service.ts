@@ -8,7 +8,7 @@ export async function refreshAccessToken() {
     if (!refreshToken) return;
 
     const rs = await axios.post(
-        "/api/v1/auth/token/refresh",
+        "/api/token/refresh",
         {refresh: refreshToken},
     )
 

@@ -1,4 +1,4 @@
-import {UserTokens} from "./user";
+import {UserTokens} from "@/services/user";
 
 export class TokenService {
     getLocalRefreshToken() {
