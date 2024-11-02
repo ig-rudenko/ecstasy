@@ -19,7 +19,7 @@
     </video>
 
     <form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
+        {% csrf_token %}
         <input hidden name="next" value="{{ request.GET.next }}">
 
         <h1 class="h3 mb-3 fw-normal text-white mb-4">Пожалуйста, войдите в систему Ecstasy</h1>
@@ -28,23 +28,23 @@
             {% for error in form.non_field_errors %}
                 <div class="alert bg-danger text-white">{{ error }}</div>
             {% endfor %}
-    </div>
+        </div>
 
-    <div class="form-floating">
-        <input type="text" required autofocus class="form-control" id="floatingInput" name="username">
-        <label for="floatingInput" class="text-white">Логин</label>
-    </div>
-    <div class="form-floating">
-        <input type="password" required class="form-control" id="floatingPassword" name="password">
-        <label for="floatingPassword" class="text-white">Пароль</label>
-    </div>
+        <div class="form-floating">
+            <input type="text" required autofocus class="form-control" id="floatingInput" name="username">
+            <label for="floatingInput" class="text-white">Логин</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" required class="form-control" id="floatingPassword" name="password">
+            <label for="floatingPassword" class="text-white">Пароль</label>
+        </div>
 
         <div class="d-flex p-2 pt-0">
             <a class="text-decoration-none" href="{% url 'password_reset' %}">Забыл пароль</a>
-    </div>
+        </div>
         <button class="w-100 btn btn-lg btn-outline-primary" type="submit">Войти</button>
         <p class="mt-5 mb-3 text-muted">АО "Севастополь Телеком" <br> Руденко Игорь &copy; 2022-{% now 'Y' %}</p>
-  </form>
+    </form>
 </main>
 </body>
 

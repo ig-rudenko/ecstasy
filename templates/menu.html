@@ -6,149 +6,158 @@
 {% load account_perms %}
 
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
-  <div class="container">
+    <div class="container">
 
-      <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
-          <img class="me-3 logo-96" src="{% static 'video/logo.webp' %}">
-          <h4 style="font-family: 'Century Gothic', fantasy; font-size: 2rem">Ecstasy</h4>
-      </a>
+        <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
+            <img class="me-3 logo-96" src="{% static 'video/logo.webp' %}">
+            <h4 style="font-family: 'Century Gothic', fantasy; font-size: 2rem">Ecstasy</h4>
+        </a>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
-          <ul class="d-flex flex-row flex-wrap gap-2 justify-content-around navbar-nav text-center my-3">
+        <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+            <ul class="d-flex flex-row flex-wrap gap-2 justify-content-around navbar-nav text-center my-3">
 
-              {#              LIST DEVICES #}
-              {% if request.user.profile.devices_groups.count %}
-                  <li class="nav-item text-white">
-                      <a href="{% url 'devices-list' %}" class="nav-link p-0">
-                          <img width="64" height="64" src="{% static 'img/menu/devices.png' %}"
-                               class="bi d-block mx-auto mb-1" alt="devices"/>
-              </a>
-                      <div class="d-flex flex-column">
-                          <span class="m-0 p-0" style="font-size: 0.7rem">Оборудование</span>
-                      </div>
-            </li>
-              {% endif %}
+                {# LIST DEVICES #}
+                {% if request.user.profile.devices_groups.count %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'devices-list' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/devices.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="devices"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Оборудование</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              CONSOLE #}
-        {% if request.user.profile.console_access and request.user.profile.console_url %}
-            <li class="nav-item text-white">
-                <a href="{{ request.user.profile.console_url }}&command=figlet hello {{ request.user }}!"
-                   target="_blank" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/console.png' %}" class="bi d-block mx-auto mb-1" alt="console"/>
-              </a>
-                <div class="d-flex flex-column">
-                    <span class="m-0 p-0" style="font-size: 0.7rem">Консоль</span>
-                </div>
-            </li>
-        {% endif %}
+                {# CONSOLE #}
+                {% if request.user.profile.console_access and request.user.profile.console_url %}
+                    <li class="nav-item text-white">
+                        <a href="{{ request.user.profile.console_url }}&command=figlet hello {{ request.user }}!"
+                           target="_blank" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/console.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="console"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Консоль</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-              {#              ECSTASY-LOOP #}
-              {% if request.user|has_access_ecstasy_loop_permission %}
-            <li class="nav-item text-white">
-                <a href="{{ ecstasy_loop_url }}"
-                   target="_blank" class="nav-link p-0">
-                    <img width="64" height="64" src="{% static 'img/menu/loop.png' %}" class="bi d-block mx-auto mb-1"
-                         alt="console"/>
-              </a>
-                <div class="d-flex flex-column">
-                    <span class="m-0 p-0" style="font-size: 0.7rem">Loop Detector</span>
-                </div>
-            </li>
-        {% endif %}
+                {# ECSTASY-LOOP #}
+                {% if request.user|has_access_ecstasy_loop_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{{ ecstasy_loop_url }}"
+                           target="_blank" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/loop.png' %}"
+                                 class="bi d-block mx-auto mb-1"
+                                 alt="console"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Loop Detector</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              MAPS   #}
-          {% if request.user|has_map_view_permission %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'map-home' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/map.png' %}" class="bi d-block mx-auto mb-1" alt="map"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Карты</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# MAPS #}
+                {% if request.user|has_map_view_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'map-home' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/map.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="map"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Карты</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              Search Desc #}
-          {% if request.user|has_desc_search_permission %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'find-descr' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/search.png' %}" class="bi d-block mx-auto mb-1" alt="search"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Поиск</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# Search Desc #}
+                {% if request.user|has_desc_search_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'find-descr' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/search.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="search"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Поиск</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              VLAN Traceroute #}
-          {% if request.user|has_traceroute_permission %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'traceroute' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/topology.png' %}" class="bi d-block mx-auto mb-1" alt="topology"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Traceroute</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# VLAN Traceroute #}
+                {% if request.user|has_traceroute_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'traceroute' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/topology.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="topology"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Traceroute</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              WTF Search #}
-          {% if request.user|has_wft_search_permission %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'search-wtf' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/radar.png' %}" class="bi d-block mx-auto mb-1" alt="radar"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">WTF</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# WTF Search #}
+                {% if request.user|has_wft_search_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'search-wtf' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/radar.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="radar"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">WTF</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              Ring Manager #}
-          {% if request.user|has_any_ring_permission %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'ring-manager:home' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/ring.png' %}" class="bi d-block mx-auto mb-1" alt="ring"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Кольца</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# Ring Manager #}
+                {% if request.user|has_any_ring_permission %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'ring-manager:home' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/ring.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="ring"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">Кольца</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              GPON Base #}
-          {% if request.user|has_any_gpon_permissions %}
-              <li class="nav-item text-white">
-                  <a href="{% url 'gpon:main' %}" class="nav-link p-0">
-                <img width="64" height="64" src="{% static 'img/menu/gpon.png' %}" class="bi d-block mx-auto mb-1" alt="gpon"/>
-              </a>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">GPON</span>
-                  </div>
-            </li>
-          {% endif %}
+                {# GPON Base #}
+                {% if request.user|has_any_gpon_permissions %}
+                    <li class="nav-item text-white">
+                        <a href="{% url 'gpon:main' %}" class="nav-link p-0">
+                            <img width="64" height="64" src="{% static 'img/menu/gpon.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="gpon"/>
+                        </a>
+                        <div class="d-flex flex-column">
+                            <span class="m-0 p-0" style="font-size: 0.7rem">GPON</span>
+                        </div>
+                    </li>
+                {% endif %}
 
-    {#              LOGOUT #}
-              <li class="nav-item text-white">
-                  <form action="{% url 'logout' %}" method="post" class="d-flex justify-content-center">
-                      {% csrf_token %}
-                      <button type="submit" class="nav-link p-0" style="background: none; border: none;">
-                          <img width="64" height="64" src="{% static 'img/menu/logout.png' %}"
-                               class="bi d-block mx-auto mb-1" alt="logout"/>
-                      </button>
-                  </form>
-                  <div class="d-flex flex-column">
-                      <span class="m-0 p-0" style="font-size: 0.7rem">Выйти</span>
-                  </div>
-            </li>
+                {# LOGOUT #}
+                <li class="nav-item text-white">
+                    <form action="{% url 'logout' %}" method="post" class="d-flex justify-content-center">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link p-0" style="background: none; border: none;">
+                            <img width="64" height="64" src="{% static 'img/menu/logout.png' %}"
+                                 class="bi d-block mx-auto mb-1" alt="logout"/>
+                        </button>
+                    </form>
+                    <div class="d-flex flex-column">
+                        <span class="m-0 p-0" style="font-size: 0.7rem">Выйти</span>
+                    </div>
+                </li>
 
-          </ul>
-      </div>
-  </div>
+            </ul>
+        </div>
+    </div>
 </nav>
 
 {% include 'global_news.html' %}

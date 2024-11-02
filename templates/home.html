@@ -25,202 +25,245 @@
 {% include 'menu.html' %}
 
 <main>
-  <div class="container py-4">
+    <div class="container py-4">
 
-    <div class="mb-4 p-3 bg-light rounded-4 shadow-sm">
-      <div class="container-fluid py-1">
-        <h4 class="fw-bold d-flex align-items-center">
-            <span class="me-2">Добро пожаловать, {{ request.user.first_name|default:request.user.username }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffa22b" viewBox="0 0 16 16">
-              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5M4.285 9.567a.5.5 0 0 1 .683.183A3.5 3.5 0 0 0 8 11.5a3.5 3.5 0 0 0 3.032-1.75.5.5 0 1 1 .866.5A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1-3.898-2.25.5.5 0 0 1 .183-.683M10 8c-.552 0-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5S10.552 8 10 8"></path>
-            </svg>
-        </h4>
-      </div>
-    </div>
-
-{#      GPON #}
-  {% if request.user|has_any_gpon_permissions %}
-      <a class="border rounded-5 row mb-4 p-4 shadow text-white text-decoration-none" href="{% url 'gpon:main' %}"
-         style="background-image: url('{% static 'img/gpon/sphere-global.jpeg' %}');
-                 background-position: left; background-size: cover">
-          <div>
-              <h4>База GPON</h4>
-              <div class="container-fluid py-3">
-                <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#list-icon"></use></svg>
-                    Отображение технических данных GPON
-                </p>
-                <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#splitter"></use></svg>
-                    Просмотр задействованных OLT портов
-                </p>
-                <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#building"></use></svg>
-                    Подключение строений к сети GPON
-                </p>
-                <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#people"></use></svg>
-                    Управление абонентами GPON
-                </p>
-                <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#node-plus"></use></svg>
-                    Создание и просмотр подключений абонентов
-                </p>
-              </div>
-          </div>
-      </a>
-  {% endif %}
-
-{#      DEVICE CONTROL#}
-{% if request.user.profile.devices_groups.count %}
-    <a href="{% url 'devices-list' %}" class="text-dark text-decoration-none row mb-4 p-4 border rounded-5 shadow">
-        <div class="col-md-7">
-
-          <h4 class="fw-bold">Управление оборудованием</h4>
-
-          <div class="container-fluid py-1">
-              <br>
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#list-icon"></use></svg>
-                Отображение интерфейсов оборудования в реальном времени
-            </p>
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#up-down-icon"></use></svg>
-                Управление состоянием порта
-            </p>
-
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#bar-icon"></use></svg>
-                Просмотр MAC адресов на порту
-            </p>
-
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#gear-icon"></use></svg>
-                Просмотр текущей конфигурации порта
-            </p>
-
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#journals-icon"></use></svg>
-                Перенаправление для просмотра логов в Elastic Stack
-            </p>
-
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#warning-icon"></use></svg>
-                Просмотр ошибок на порту
-            </p>
-
-            <p><svg class="bi me-2" width="16" height="16" role="img"><use xlink:href="#radios-grid-icon"></use></svg>
-                Возможность просматривать и сбрасывать текущую сессию по MAC адресу
-            </p>
-
-          </div>
+        <div class="mb-4 p-3 bg-light rounded-4 shadow-sm">
+            <div class="container-fluid py-1">
+                <h4 class="fw-bold d-flex align-items-center">
+                    <span class="me-2">Добро пожаловать, {{ request.user.first_name|default:request.user.username }}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffa22b" viewBox="0 0 16 16">
+                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5M4.285 9.567a.5.5 0 0 1 .683.183A3.5 3.5 0 0 0 8 11.5a3.5 3.5 0 0 0 3.032-1.75.5.5 0 1 1 .866.5A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1-3.898-2.25.5.5 0 0 1 .183-.683M10 8c-.552 0-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5S10.552 8 10 8"></path>
+                    </svg>
+                </h4>
+            </div>
         </div>
-        <div class="col-md-5">
-            <img style="height: 350px" src="{% static 'img/dev-box.svg' %}" alt="device">
-        </div>
-    </a>
-{% endif %}
 
-{#      MAPS #}
-{% if request.user|has_map_view_permission %}
-    <a href="{% url 'map-home' %}" class="text-dark text-decoration-none row mb-4 p-4 border rounded-5 shadow"
-         style="background-image: url('{% static 'img/maps/background.png' %}');
-                 background-position: center center; height: 200px">
-        <h4 class="fw-bold">Интерактивные карты</h4>
-    </a>
-{% endif %}
+        {#      GPON #}
+        {% if request.user|has_any_gpon_permissions %}
+            <a class="border rounded-5 row mb-4 p-4 shadow text-white text-decoration-none" href="{% url 'gpon:main' %}"
+               style="background-image: url('{% static 'img/gpon/sphere-global.jpeg' %}');
+                       background-position: left; background-size: cover">
+                <div>
+                    <h4>База GPON</h4>
+                    <div class="container-fluid py-3">
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#list-icon"></use>
+                            </svg>
+                            Отображение технических данных GPON
+                        </p>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#splitter"></use>
+                            </svg>
+                            Просмотр задействованных OLT портов
+                        </p>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#building"></use>
+                            </svg>
+                            Подключение строений к сети GPON
+                        </p>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#people"></use>
+                            </svg>
+                            Управление абонентами GPON
+                        </p>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#node-plus"></use>
+                            </svg>
+                            Создание и просмотр подключений абонентов
+                        </p>
+                    </div>
+                </div>
+            </a>
+        {% endif %}
 
-  <div class="row align-items-md-stretch">
+        {#      DEVICE CONTROL#}
+        {% if request.user.profile.devices_groups.count %}
+            <a href="{% url 'devices-list' %}"
+               class="text-dark text-decoration-none row mb-4 p-4 border rounded-5 shadow">
+                <div class="col-md-7">
 
-  {#        TRACEROUTE #}
-      {% if request.user|has_traceroute_permission %}
-      <a href="{% url 'traceroute' %}" class="text-light text-decoration-none col-md-4">
-        <div class="h-100 p-4 border rounded-5 text-center text-light shadow"
-             style="
+                    <h4 class="fw-bold">Управление оборудованием</h4>
+
+                    <div class="container-fluid py-1">
+                        <br>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#list-icon"></use>
+                            </svg>
+                            Отображение интерфейсов оборудования в реальном времени
+                        </p>
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#up-down-icon"></use>
+                            </svg>
+                            Управление состоянием порта
+                        </p>
+
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#bar-icon"></use>
+                            </svg>
+                            Просмотр MAC адресов на порту
+                        </p>
+
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#gear-icon"></use>
+                            </svg>
+                            Просмотр текущей конфигурации порта
+                        </p>
+
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#journals-icon"></use>
+                            </svg>
+                            Перенаправление для просмотра логов в Elastic Stack
+                        </p>
+
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#warning-icon"></use>
+                            </svg>
+                            Просмотр ошибок на порту
+                        </p>
+
+                        <p>
+                            <svg class="bi me-2" width="16" height="16" role="img">
+                                <use xlink:href="#radios-grid-icon"></use>
+                            </svg>
+                            Возможность просматривать и сбрасывать текущую сессию по MAC адресу
+                        </p>
+
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <img style="height: 350px" src="{% static 'img/dev-box.svg' %}" alt="device">
+                </div>
+            </a>
+        {% endif %}
+
+        {#      MAPS #}
+        {% if request.user|has_map_view_permission %}
+            <a href="{% url 'map-home' %}" class="text-dark text-decoration-none row mb-4 p-4 border rounded-5 shadow"
+               style="background-image: url('{% static 'img/maps/background.png' %}');
+                       background-position: center center; height: 200px">
+                <h4 class="fw-bold">Интерактивные карты</h4>
+            </a>
+        {% endif %}
+
+        <div class="row align-items-md-stretch">
+
+            {#        TRACEROUTE #}
+            {% if request.user|has_traceroute_permission %}
+                <a href="{% url 'traceroute' %}" class="text-light text-decoration-none col-md-4">
+                    <div class="h-100 p-4 border rounded-5 text-center text-light shadow"
+                         style="
              background-image: url('/static/img/background.png');
              background-position: center center;
              background-size: cover;
             ">
-            <h4 class="fw-bold">Traceroute</h4>
-            <br>
-            <div>
-                <svg class="bi me-2 text-warning" width="100%" height="200px" role="img" aria-label="Ecstasy">
-                <use xlink:href="#vlan-icon"></use>
-            </svg>
-            </div>
+                        <h4 class="fw-bold">Traceroute</h4>
+                        <br>
+                        <div>
+                            <svg class="bi me-2 text-warning" width="100%" height="200px" role="img"
+                                 aria-label="Ecstasy">
+                                <use xlink:href="#vlan-icon"></use>
+                            </svg>
+                        </div>
 
-          <p>
-              <br>Отображение топологии конкретного VLAN,<br>а также прохождение MAC адреса
-          </p>
+                        <p>
+                            <br>Отображение топологии конкретного VLAN,<br>а также прохождение MAC адреса
+                        </p>
+                    </div>
+                </a>
+            {% endif %}
+
+            {#        DESCRIPTION SEARCH #}
+            {% if request.user|has_desc_search_permission %}
+                <a href="{% url 'find-descr' %}" class="text-dark text-decoration-none col-md-4">
+                    <div class="text-center h-100 p-4 bg-light border rounded-5 shadow">
+                        <h4 class="fw-bold">Description search</h4>
+                        <br>
+                        <div style="max-height: 200px">
+                            <img style="width: 50%" src="{% static 'img/home-search-description.svg' %}">
+                        </div>
+                        <p><br>
+                            Поиск конкретной строки в описании порта и его комментариев на всех собранных заранее
+                            интерфейсах у каждого оборудования
+                        </p>
+                    </div>
+                </a>
+            {% endif %}
+
+            {#        IP-MAC SEARCH #}
+            {% if request.user|has_wft_search_permission %}
+                <a href="{% url 'search-wtf' %}" class="text-light text-decoration-none col-md-4">
+                    <div class="text-center h-100 p-4 text-bg-dark border rounded-5 shadow">
+                        <h4 class="fw-bold">WTF search</h4>
+                        <div style="margin-top: 40px; margin-bottom: 40px;">
+                            <br>
+                            <input id="mac-string" class="search-string" disabled type="text"
+                                   placeholder="00:00:00:00:00:00">
+                            <br>
+                            <br>
+                            <input id="ip-string" class="search-string" disabled type="text"
+                                   placeholder="00:00:00:00:00:00">
+                        </div>
+                        <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой
+                            Zabbix</p>
+
+                    </div>
+                </a>
+            {% endif %}
         </div>
-      </a>
-    {% endif %}
 
-  {#        DESCRIPTION SEARCH #}
-      {% if request.user|has_desc_search_permission %}
-      <a href="{% url 'find-descr' %}" class="text-dark text-decoration-none col-md-4">
-        <div class="text-center h-100 p-4 bg-light border rounded-5 shadow">
-            <h4 class="fw-bold">Description search</h4>
-            <br>
-            <div style="max-height: 200px">
-                <img style="width: 50%" src="{% static 'img/home-search-description.svg' %}">
-            </div>
-          <p><br>
-              Поиск конкретной строки в описании порта и его комментариев на всех собранных заранее интерфейсах у каждого оборудования
-          </p>
-        </div>
-      </a>
-    {% endif %}
-
-  {#        IP-MAC SEARCH #}
-      {% if request.user|has_wft_search_permission %}
-      <a href="{% url 'search-wtf' %}" class="text-light text-decoration-none col-md-4">
-        <div class="text-center h-100 p-4 text-bg-dark border rounded-5 shadow">
-            <h4 class="fw-bold">WTF search</h4>
-            <div style="margin-top: 40px; margin-bottom: 40px;">
-                <br>
-                <input id="mac-string" class="search-string" disabled type="text" required placeholder="00:00:00:00:00:00">
-                <br>
-                <br>
-                <input id="ip-string" class="search-string" disabled type="text" required placeholder="00:00:00:00:00:00">
-            </div>
-          <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой Zabbix</p>
-
-        </div>
-      </a>
-    {% endif %}
-  </div>
-
-{# end container #}
-</div>
+        {# end container #}
+    </div>
 
 </main>
 
 
 <div class="container">
-{% include 'footer.html' %}
+    {% include 'footer.html' %}
 </div>
 </body>
 
 {% if request.user|has_wft_search_permission %}
-<script>
-let alphabet = 'abcdef1234567890'
-function mac_generator() {
-    let random_mac = '';
-    for (let i = 0; i < 17; i++) {
-        if (i % 3 === 2){
-            random_mac += ':'
-        }
-        else {
-            random_mac += alphabet[Math.round(Math.random() * (alphabet.length - 1))];
-        }
-    }
-    document.getElementById('mac-string').placeholder = random_mac
-    timer();
-}
+    <script>
+        const alphabet = 'abcdef1234567890'
 
-function ip_generator() {
-    let random_ip = [];
-    let x = 0;
-    for (let i = 0; i < 4; i++) {
-        random_ip.push(Math.round(Math.random() * (255 - 1) + 1));
-    }
-    document.getElementById('ip-string').placeholder = random_ip.join('.');
-}
-function timer() {
-    setTimeout(mac_generator, 300);
-    setTimeout(ip_generator, 300);
-}
-timer();
-</script>
+        function mac_generator() {
+            let random_mac = '';
+            for (let i = 0; i < 17; i++) {
+                if (i % 3 === 2) {
+                    random_mac += ':'
+                } else {
+                    random_mac += alphabet[Math.round(Math.random() * (alphabet.length - 1))];
+                }
+            }
+            document.getElementById('mac-string').placeholder = random_mac
+            timer();
+        }
+
+        function ip_generator() {
+            let random_ip = [];
+            for (let i = 0; i < 4; i++) {
+                random_ip.push(Math.round(Math.random() * (255 - 1) + 1));
+            }
+            document.getElementById('ip-string').placeholder = random_ip.join('.');
+        }
+
+        function timer() {
+            setTimeout(mac_generator, 300);
+            setTimeout(ip_generator, 300);
+        }
+
+        timer();
+    </script>
 {% endif %}
 </html>

@@ -14,12 +14,13 @@
 
     {% block links %}{% endblock %}
     <style>
-    .nowrap {
-        white-space:nowrap;
-    }
-    html * {
-        font-family: 'Inter', sans-serif;
-    }
+        .nowrap {
+            white-space: nowrap;
+        }
+
+        html * {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
 
@@ -29,21 +30,21 @@
 
 <div class="h-100">
 
-{% include 'menu.html' %}
+    {% include 'menu.html' %}
 
 
-{# CONTENT #}
-<section class="{% if not disable_container %}container{% endif %} py-5" style="flex-grow: 1!important;">
-    {% block content %}{% endblock %}
-</section>
+    {# CONTENT #}
+    <section class="{% if not disable_container %}container{% endif %} py-5" style="flex-grow: 1!important;">
+        {% block content %}{% endblock %}
+    </section>
 
 
-{# FOOTER #}
-<div class="container">
-{% block footer %}
-    {% include 'footer.html' %}
-{% endblock %}
-</div>
+    {# FOOTER #}
+    <div class="container">
+        {% block footer %}
+            {% include 'footer.html' %}
+        {% endblock %}
+    </div>
 
 </div>
 {% block js %}{% endblock %}

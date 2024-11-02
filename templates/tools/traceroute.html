@@ -4,21 +4,21 @@
 {% block title %}Traceroute{% endblock %}
 
 {% block links %}
-<style>
-    body {
-        background-color: #222222;
-        background-image: url(/static/img/background.png);
-        background-repeat: no-repeat;
-    }
-</style>
+    <style>
+        body {
+            background-color: #222222;
+            background-image: url(/static/img/background.png);
+            background-repeat: no-repeat;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div id="app"></div>
+    <div id="app"></div>
 {% endblock %}
 
 {% block js %}
-<script src="{% static 'js/traceroute_v17.7.5.js' %}" type="text/javascript"></script>
+    <script src="{% static 'js/traceroute_v17.7.5.js' %}" type="text/javascript"></script>
 {% endblock %}
 
 {% block footer %}{% endblock %}

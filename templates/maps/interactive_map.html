@@ -1,65 +1,67 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ map.name }}</title>
 
     <link type="image/x-icon" rel="shortcut icon" href="{% static 'flavico.ico' %}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-    <link rel="stylesheet" type="text/css" href="{% static 'css/map.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/map.css' %}"/>
     <link rel="stylesheet" href="{% static 'leaflet/1.6.0.min.css' %}">
     <script src="{% static 'leaflet/1.6.0.min.js' %}"></script>
 
-      <style>
-          .absolute {
+    <style>
+        .absolute {
             position: absolute;
             z-index: 999;
             top: 10px;
             left: 50px;
-          }
-          .search-input {
-              border-radius: 6px 0 0 6px;
-              border: 1px solid #959595;
-              outline: none;
-              padding: 5px 10px;
-              font-size: 1.2rem;
-          }
-          .search-button {
-              border-radius: 0 6px 6px 0;
-              padding: 5px 10px;
-              height: 34px;
-              border: 1px solid #959595;
-              right: -31px;
-              cursor: pointer;
-              position: absolute;
-          }
-      </style>
+        }
 
-  </head>
+        .search-input {
+            border-radius: 6px 0 0 6px;
+            border: 1px solid #959595;
+            outline: none;
+            padding: 5px 10px;
+            font-size: 1.2rem;
+        }
 
-  <body>
+        .search-button {
+            border-radius: 0 6px 6px 0;
+            padding: 5px 10px;
+            height: 34px;
+            border: 1px solid #959595;
+            right: -31px;
+            cursor: pointer;
+            position: absolute;
+        }
+    </style>
 
-    <div style="position:relative;">
-        <div class="absolute">
-            <input id="searchInput" class="search-input" type="text">
-            <button id="searchButton"  class="search-button">🔎</button>
-        </div>
+</head>
+
+<body>
+
+<div style="position:relative;">
+    <div class="absolute">
+        <input id="searchInput" class="search-input" type="text">
+        <button id="searchButton" class="search-button">🔎</button>
     </div>
+</div>
 
-    <div id="map"></div>
-    <script src="{% static 'js/maps/render_map.js' %}"></script>
-    <script src="{% static 'js/maps/map_icons.js' %}"></script>
-    <script src="{% static 'js/maps/update_layers.js' %}"></script>
-    <script src="{% static 'js/maps/search.js' %}"></script>
-    {% if map.interactive %}
+<div id="map"></div>
+<script src="{% static 'js/maps/render_map.js' %}"></script>
+<script src="{% static 'js/maps/map_icons.js' %}"></script>
+<script src="{% static 'js/maps/update_layers.js' %}"></script>
+<script src="{% static 'js/maps/search.js' %}"></script>
+{% if map.interactive %}
     <script src="{% static 'js/maps/update_marker_status.js' %}"></script>
-    {% endif %}
+{% endif %}
 
-  <script>
+<script>
     // При загрузке
-    document.addEventListener('DOMContentLoaded', async function(){
+    document.addEventListener('DOMContentLoaded', async function () {
 
         let groups_list = await get_groups()
 
@@ -81,10 +83,10 @@
         await render_markers()
 
         {% if map.interactive %}
-        await update_status()
+            await update_status()
         {% endif %}
     });
 
-  </script>
-  </body>
+</script>
+</body>
 </html>
