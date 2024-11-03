@@ -1,23 +1,27 @@
 <template>
 <div :class="formClasses" :style="formStyles" class="focus-within:shadow-xl">
     <i class="pi pi-search text-2xl mr-4"/>
-    <input type="text" class="search-input bg-transparent  text-gray-900 dark:text-gray-300"
-           autofocus :placeholder="placeholder" @input="updateSearch"
+    <input type="text" v-model="text" class="search-input bg-transparent  text-gray-900 dark:text-gray-300"
+           autofocus :placeholder="placeholder" @input="$emit('update:modelValue', text)"
            @keyup.enter="$emit('submit_input')">
 </div>
 </template>
 
 
 <script lang="ts">
-import {defineComponent, PropType, StyleValue} from "vue";
+import {defineComponent, StyleValue} from "vue";
 
 export default defineComponent({
   props: {
-    updateSearch: { required: true, type: Function as PropType<(event: Event) => void> },
     activeMode: { required: false, type: Boolean, default: false },
     placeholder: { required: false, type: String },
   },
-  emits: ["submit_input"],
+  data() {
+    return {
+      text: ""
+    }
+  },
+  emits: ["submit_input", "update:modelValue"],
   computed: {
     formClasses(): Array<string> {
       if (this.activeMode) {

@@ -14,6 +14,7 @@ import {
     Password,
     Popover,
     Ripple,
+    ScrollTop,
     Select,
     Tooltip
 } from "primevue";
@@ -49,6 +50,7 @@ app.component("Message", Message);
 app.component("Password", Password);
 app.component("Paginator", Paginator);
 app.component("Popover", Popover);
+app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
 
 app.mount('#app');

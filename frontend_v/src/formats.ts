@@ -13,3 +13,8 @@ export function textToHtml(text: string): string {
     const r = /\n/g
     return text.replace(r, "<br>")
 }
+
+/** Выделяем тегом <mark></mark> часть в описании, которая совпадает с паттерном поиска */
+export function markText(desc: string, pattern: string): string {
+    return desc.replace(new RegExp(pattern, 'ig'), s => '<mark>'+s+'</mark>')
+}

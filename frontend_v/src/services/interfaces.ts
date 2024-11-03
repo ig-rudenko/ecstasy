@@ -1,4 +1,7 @@
 import {Device} from "@/services/devices";
+import {errorToast} from "@/services/my.toast.ts";
+import errorFmt from "@/errorFmt.ts";
+import api from "@/services/api";
 
 
 export interface InterfacesCount {
@@ -10,6 +13,41 @@ export interface InterfacesCount {
     abons_up_no_desc: number;
     abons_up_with_desc: number;
     count: number;
+}
+
+export interface DeviceLink {
+    deviceName: string;
+    url: string;
+}
+
+export interface DeviceInterface {
+    name: string;
+    status: string;
+    description: string;
+    vlans: number[];
+    comments: InterfaceComment[];
+    graphsLink?: string;
+    link?: DeviceLink;
+}
+
+export interface InterfaceComment {
+    id: number;
+    user: string;
+    text: string;
+    createdTime: string;
+}
+
+export interface InterfaceDescriptionMatchResult {
+    device: string
+    comments: InterfaceComment[]
+    interface: {
+        name: string
+        status: string
+        description: string
+        vlans: string
+        savedTime: string
+        vlansSavedTime: string
+    }
 }
 
 export function calculateInterfacesWorkload(devices: Device[]): number[] {
@@ -31,4 +69,17 @@ export function calculateInterfacesWorkload(devices: Device[]): number[] {
         systems += i.count - (i.abons_up_with_desc + i.abons_up_no_desc + i.abons_down_with_desc + i.abons_down_no_desc);
     }
     return [abonsUpWithDesc, abonsUpNoDesc, abonsDownWithDesc, abonsDownNoDesc, systems]
+}
+
+
+export async function findInterfacesByDescription(description: string): Promise<InterfaceDescriptionMatchResult[]> {
+    const url = "/tools/api/find-by-desc?pattern=" + description;
+    try {
+        const resp = await api.get<{interfaces: InterfaceDescriptionMatchResult[]}>(url)
+        return resp.data.interfaces;
+    } catch (error: any) {
+        console.error(error);
+        errorToast("Не удалось найти интерфейсы по описанию", errorFmt(error))
+        return [];
+    }
 }

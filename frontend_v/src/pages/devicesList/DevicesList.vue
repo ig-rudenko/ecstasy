@@ -64,8 +64,7 @@
 
 
     <!-- Строка поиска-->
-    <SearchInput :update-search="updateSearch" :active-mode="true" placeholder="Поиск по Имени или IP адресу"/>
-
+    <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true" placeholder="Поиск по Имени или IP адресу"/>
 
     <div class="p-4 py-2 font-mono">Найдено: {{ devices.length }}</div>
 
@@ -76,8 +75,6 @@
                       @update:data="getDevices"/>
   </div>
 
-  <ScrollTop :threshold="100"/>
-
   <Footer/>
 
 </template>
@@ -86,14 +83,14 @@
 import {defineComponent} from "vue";
 import ScrollTop from "primevue/scrolltop";
 
+import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import BarChart from "./BarChart.vue";
 import DoughnutChart from "./DoughnutChart.vue";
 import DevicesListTable from "./DevicesListTable.vue";
 import devicesService, {Device} from "@/services/devices";
 import {calculateInterfacesWorkload} from "@/services/interfaces";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 
 export default defineComponent({
   name: 'DevicesList',
@@ -129,10 +126,6 @@ export default defineComponent({
   },
 
   methods: {
-    updateSearch(event: Event): void {
-      this.search = (<HTMLInputElement>event.target).value.trim()
-    },
-
     changeImageIndex(): void {
       let min = Math.ceil(1);
       let max = Math.floor(5);

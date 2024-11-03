@@ -46,6 +46,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Поиск',
       icon: 'search',
+      url: 'tools-search',
     })
   }
 
