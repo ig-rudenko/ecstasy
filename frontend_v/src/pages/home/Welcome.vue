@@ -106,7 +106,7 @@ setTimeout(timer, 300);
         </div>
       </a>
 
-      <a href="#" class="rounded-3xl px-5 sm:px-10 py-5 border shadow flex flex-col md:flex-row justify-between gap-4">
+      <router-link :to="{name: 'devices-list'}" class="rounded-3xl px-5 sm:px-10 py-5 border shadow flex flex-col md:flex-row justify-between gap-4">
         <div class="">
           <div class="text-2xl py-5 font-bold">Управление оборудованием</div>
 
@@ -151,7 +151,7 @@ setTimeout(timer, 300);
         <div class="flex justify-center">
           <img class="h-[200px] sm:h-[350px]" src="/img/dev-box.svg" alt="device">
         </div>
-      </a>
+      </router-link>
 
       <a v-if="showMapsCard" href="#" class="p-4 rounded-3xl shadow"
          style="background-image: url('/img/maps/background.png'); background-position: center center; height: 200px">

@@ -40,7 +40,7 @@
     <div v-show="displayMode === 'interfaces_loading'" class="border my-4 rounded-xl row shadow" style="padding: 20px;">
       <!--Просмотр загрузки оборудования-->
       <div v-if="chartData.length > 0">
-        <h3 class="fs-4 font-bold">Общая загрузка интерфейсов</h3>
+        <div class="text-2xl">Общая загрузка интерфейсов</div>
         <div class="flex flex-wrap justify-center items-center">
           <div style="display: block; box-sizing: border-box; height: 270px; width: 270px;">
             <DoughnutChart :data="chartData"/>
@@ -54,7 +54,7 @@
       <!--Расшифровка цвета-->
       <div class="py-2 text-muted-color">Расшифровка цвета</div>
       <div class="flex flex-wrap text-center">
-        <div class="bg-green-700 w-full sm:w-[20%]">Активные порты с описанием</div>
+        <div class="bg-green-700 w-full sm:w-[20%] text-gray-200">Активные порты с описанием</div>
         <div class="bg-green-500 w-full sm:w-[20%]">Активные порты без описания</div>
         <div class="bg-red-300 w-full sm:w-[20%]">Неактивные порты с описанием</div>
         <div class="bg-gray-400 w-full sm:w-[20%]">Незадействованные порты</div>
@@ -78,6 +78,8 @@
 
   <ScrollTop :threshold="100"/>
 
+  <Footer/>
+
 </template>
 
 <script lang="ts">
@@ -91,11 +93,13 @@ import DevicesListTable from "./DevicesListTable.vue";
 import devicesService, {Device} from "@/services/devices";
 import {calculateInterfacesWorkload} from "@/services/interfaces";
 import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
 
 export default defineComponent({
   name: 'DevicesList',
 
   components: {
+    Footer,
     Header,
     BarChart,
     DoughnutChart,
