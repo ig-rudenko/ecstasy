@@ -6,6 +6,7 @@ import {
     DataTable,
     Dialog,
     IftaLabel,
+    InputGroup,
     InputNumber,
     InputText,
     Menubar,
@@ -16,6 +17,7 @@ import {
     Ripple,
     ScrollTop,
     Select,
+    ToggleSwitch,
     Tooltip
 } from "primevue";
 import ToastService from "primevue/toastservice";
@@ -42,6 +44,7 @@ app.component("Column", Column);
 app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);
 app.component("IftaLabel", IftaLabel);
+app.component("InputGroup", InputGroup);
 app.component("InputNumber", InputNumber);
 app.component("Image", Image);
 app.component("InputText", InputText);
@@ -52,5 +55,6 @@ app.component("Paginator", Paginator);
 app.component("Popover", Popover);
 app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
+app.component("ToggleSwitch", ToggleSwitch);
 
 app.mount('#app');

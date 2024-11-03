@@ -54,6 +54,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Трассировка',
       icon: 'topology',
+      url: 'tools-traceroute',
     })
   }
 

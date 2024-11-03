@@ -8,3 +8,11 @@
     @tailwind components;
     @tailwind utilities;
 }
+
+.traceroute-back {
+    background-color: #222222;
+    background-image: url('/img/background.png');
+    background-repeat: no-repeat;
+    background-position: top;
+    height: 100vh;
+}
