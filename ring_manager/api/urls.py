@@ -3,9 +3,9 @@ from django.urls import path
 from . import access_ring_views
 from . import views
 
-# /ring-manager/api/
+# /api/ring-manager/
 
-app_name = "api"
+app_name = "ring-manager-api"
 
 urlpatterns = [
     path(

@@ -4,7 +4,7 @@ from . import statistic_view
 from . import subscriber_view
 from . import views
 
-# /gpon/api/
+# /api/gpon/
 
 app_name = "api"
 

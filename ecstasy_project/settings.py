@@ -241,6 +241,7 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # ================= SWAGGER ==================
@@ -405,3 +406,18 @@ CONTACT_NAME = os.getenv("CONTACT_NAME")
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
 
 ECSTASY_LOOP_URL = os.getenv("ECSTASY_LOOP_URL")
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Ecstasy API",
+    "DESCRIPTION": f"""
+## Здесь вы можете посмотреть API для работы с Ecstasy
+
+Для работы с каждым endpoint `требуется токен` (JWT). Получить можно по URL `/api/token`.
+
+Время жизни access токена - `{SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]} минут`
+Время жизни refresh токена - `{SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
+        """,
+    "VERSION": "18.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # OTHER SETTINGS
+}

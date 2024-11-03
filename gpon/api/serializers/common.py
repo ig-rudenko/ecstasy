@@ -31,6 +31,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "contract",
             "phone",
         ]
+        ref_name = "CommonCustomerSerializer"
 
     def validate(self, validated_data):
         if validated_data["type"] == Customer.Type.person.value:

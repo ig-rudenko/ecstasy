@@ -44,6 +44,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "contract",
             "phone",
         ]
+        ref_name = "CreateCustomerSerializer"
 
 
 class SubscriberDataSerializer(serializers.ModelSerializer):

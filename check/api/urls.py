@@ -9,19 +9,29 @@ from .views import devices_info, device_manager, bras_manager, config_files, dev
 
 app_name = "devices-api"
 
-# /device/api/
+# /api/devices/
 
 urlpatterns = [
     # ===========================================
+    #                 Comments
+    # ===========================================
+    path("comments", device_manager.CreateInterfaceCommentAPIView.as_view()),
+    path("comments/<int:pk>", device_manager.InterfaceCommentAPIView.as_view()),
+    # ===========================================
+    #                 BRAS Manager
+    # ===========================================
+    path("session", bras_manager.BrassSessionAPIView.as_view(), name="show-session"),
+    path("cut-session", bras_manager.CutBrassSessionAPIView.as_view(), name="cut-session"),
+    # ===========================================
     #               Devices Info
     # ===========================================
+    path("", devices_info.DevicesListAPIView.as_view(), name="devices-list"),
     path(
         "workload/interfaces",
         devices_info.AllDevicesInterfacesWorkLoadAPIView.as_view(),
         name="all-devices-interfaces-workload",
     ),
     path("workload/interfaces/<device_name>", devices_info.DeviceInterfacesWorkLoadAPIView.as_view()),
-    path("list_all", devices_info.DevicesListAPIView.as_view(), name="devices-list"),
     path(
         "<device_name>/interfaces", devices_info.DeviceInterfacesAPIView.as_view(), name="device-interfaces"
     ),
@@ -66,11 +76,4 @@ urlpatterns = [
     path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),
     path("<device_name>/set-poe-out", device_manager.SetPoEAPIView.as_view()),
     path("<device_name>/change-dsl-profile", device_manager.ChangeDSLProfileAPIView.as_view()),
-    path("comments", device_manager.CreateInterfaceCommentAPIView.as_view()),
-    path("comments/<int:pk>", device_manager.InterfaceCommentAPIView.as_view()),
-    # ===========================================
-    #                 BRAS Manager
-    # ===========================================
-    path("session", bras_manager.BrassSessionAPIView.as_view(), name="show-session"),
-    path("cut-session", bras_manager.CutBrassSessionAPIView.as_view(), name="cut-session"),
 ]
