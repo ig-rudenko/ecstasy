@@ -160,7 +160,7 @@ setTimeout(timer, 300);
 
       <div class="md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
 
-        <a v-if="showTracerouteCard" href="#" class="">
+        <router-link v-if="showTracerouteCard" :to="{name: 'tools-traceroute'}" class="">
           <div class="text-center h-full p-4 py-8 rounded-3xl text-gray-200 shadow"
                style="
              background-image: url('/img/background.png');
@@ -176,9 +176,9 @@ setTimeout(timer, 300);
 
             <div class="">Отображение топологии конкретного VLAN, а также прохождение MAC адреса</div>
           </div>
-        </a>
+        </router-link>
 
-        <a href="#" v-if="showDescSearchCard">
+        <router-link :to="{name: 'tools-search'}" v-if="showDescSearchCard">
           <div class="text-center h-full p-4 py-8 border rounded-3xl shadow">
             <div class="text-2xl font-bold">Description search</div>
             <div class="py-5">
@@ -189,9 +189,9 @@ setTimeout(timer, 300);
               интерфейсах у каждого оборудования
             </p>
           </div>
-        </a>
+        </router-link>
 
-        <a href="#" v-if="showWTFCard">
+        <router-link to="/" v-if="showWTFCard">
           <div class="text-center h-full p-4 py-8 border rounded-3xl shadow bg-gray-800 text-gray-200">
             <div class="text-2xl font-bold">WTF search</div>
 
@@ -203,7 +203,7 @@ setTimeout(timer, 300);
             <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой Zabbix</p>
 
           </div>
-        </a>
+        </router-link>
       </div>
 
     </div>

@@ -5,10 +5,12 @@ import {
     Column,
     DataTable,
     Dialog,
+    Drawer,
     IftaLabel,
     InputGroup,
     InputNumber,
     InputText,
+    Image,
     Menubar,
     Message,
     Paginator,
@@ -43,6 +45,7 @@ app.component("Button", Button);
 app.component("Column", Column);
 app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);
+app.component("Drawer", Drawer);
 app.component("IftaLabel", IftaLabel);
 app.component("InputGroup", InputGroup);
 app.component("InputNumber", InputNumber);

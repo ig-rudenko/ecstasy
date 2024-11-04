@@ -47,6 +47,12 @@ export default defineConfig({
         secure: false,
         ws: true,
       },
+      '/media/': {
+        target: 'https://ecstasy.noc.net92.ru',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     }
   },
 })

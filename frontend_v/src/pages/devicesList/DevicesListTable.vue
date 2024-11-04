@@ -31,9 +31,9 @@
       <!--      НАЗВАНИЕ-->
       <Column field="name" header="Имя" :sortable="true">
         <template #body="{data}">
-          <Button text :href="'/device/' + data.name">
-            <i class="pi pi-box"/>{{ data['name'] }}
-          </Button>
+          <router-link :to="{name: 'device', params: {deviceName: data.name }}">
+            <Button text icon="pi pi-box" :label="data.name"/>
+          </router-link>
           <InterfacesWorkload class="p-2" :dev="data"/>
         </template>
       </Column>

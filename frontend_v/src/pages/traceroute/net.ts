@@ -1,8 +1,7 @@
-import * as vis from "vis-network"
-import "vis-network/dist/dist/vis-network.min.css"
+import "vis-network/dist/dist/vis-network.min.css";
 
 
-let baseVisOptions = {
+const baseVisOptions = {
     height: '900',
     locale: 'ru',
     configure: {
@@ -65,20 +64,21 @@ class TracerouteNetwork {
     }
 
     private textToDiv(html: string): HTMLDivElement {
-      const container = document.createElement("div");
-      container.innerHTML = html;
-      return container;
+        const container = document.createElement("div");
+        container.innerHTML = html;
+        return container;
     }
 
 
-    renderVisualData(nodes: Array<any>, edges: Array<any>, options=null): void {
-        new vis.Network(
+    async renderVisualData(nodes: Array<any>, edges: Array<any>) {
+        const { Network } = await import("vis-network");
+        new Network(
             (<HTMLDivElement>document.getElementById(this.elemID)),
             {
                 nodes: nodes.map(value => {return {...value, title: this.textToDiv(value.title)}}),
                 edges: edges.map(value => {return {...value, title: this.textToDiv(value.title)}})
             },
-            options || this.options
+            this.options
         );
     }
 }

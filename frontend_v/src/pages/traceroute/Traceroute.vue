@@ -307,8 +307,7 @@ export default defineComponent({
       api.get(url)
           .then(
               (resp) => {
-                let options: any = resp.data ? resp.data.options : null
-                this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions(options));
+                this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
                 this.vlanTracerouteStarted = false;
                 this.vlanTracerouteOptions.rendered = true;
               }
@@ -345,7 +344,7 @@ export default defineComponent({
       api.get(url)
           .then(
               resp => {
-                this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges, this.getVisOptions());
+                this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
                 this.macTracerouteStarted = false;
                 this.macTracerouteOptions.rendered = true;
               }
