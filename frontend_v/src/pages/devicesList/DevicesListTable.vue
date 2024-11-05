@@ -1,7 +1,7 @@
 <template>
   <div>
     <DataTable ref="dt" :value="devices" v-model:filters="filters" :paginator-position="paginatorPosition"
-               :loading="loading" class="font-mono"
+               :loading="loading" class="font-mono !bg-transparent"
                paginator :rows="50" :rowsPerPageOptions="[10, 20, 50]"
                export-filename="devices" @valueChange="filterDevices"
                filterDisplay="menu" stripedRows size="small" removableSort

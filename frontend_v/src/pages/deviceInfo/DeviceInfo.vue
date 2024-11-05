@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <Toast>
+  <Toast group="port-info">
     <template #message="slotProps">
       <div class="flex flex-col items-start" style="flex: 1">
         <div class="font-medium text-xl my-3" v-html="slotProps.message.summary"></div>
@@ -10,19 +10,17 @@
     </template>
   </Toast>
 
-  <div class="container mx-auto my-8 sm:my-12">
-    <div class="flex justify-center">
-      <!--    Имя оборудования и его статус-->
-      <DeviceStatusName
-          v-if="generalInfo"
-          :status="deviceAvailable"
-          :device-name="deviceName"
-          :device-ip="generalInfo.deviceIP"
-          :console-url="generalInfo.consoleURL"/>
-    </div>
+  <div class="container mx-auto my-8 sm:my-12 flex justify-center">
+    <!--    Имя оборудования и его статус-->
+    <DeviceStatusName
+        v-if="generalInfo"
+        :status="deviceAvailable"
+        :device-name="deviceName"
+        :device-ip="generalInfo.deviceIP"
+        :console-url="generalInfo.consoleURL"/>
   </div>
 
-  <div v-if="deviceName" class="container mx-auto my-5">
+  <div v-if="deviceName" class="container mx-auto my-5 px-2 md:px-6">
 
     <div class="hidden col-md-4">
       <div class="card shadow h-full">
@@ -50,7 +48,7 @@
 
     <div v-if="generalInfo" class="border rounded-xl shadow-xl p-3 flex flex-wrap justify-between">
 
-      <div class="p-3 flex flex-wrap items-center gap-5">
+      <div class="p-3 flex flex-wrap items-center gap-1">
         <!--    Кнопка для отображения панели с информацией Zabbix-->
         <div v-if="generalInfo.zabbixInfo">
           <ZabbixInfo :zabbix-info="generalInfo.zabbixInfo"/>
@@ -96,63 +94,64 @@
   </div>
 
   <!--    Список конфигураций-->
-  <div v-if="deviceName" v-show="configFiles.display" class="container mx-auto">
+  <div v-if="deviceName" v-show="configFiles.display" class="container mx-auto px-2 md:px-6">
     <ConfigFiles :device-name="deviceName"/>
   </div>
 
-  <!--    Загруженность интерфейсов-->
-  <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
+  <div class="container mx-auto px-2 md:px-6">
+    <!--    Загруженность интерфейсов-->
+    <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
 
-  <UserActionsButton :device-name="deviceName"/>
-
-  <div class="row mb-3">
-    <div class="col">
-      <div class="card" style="border: none">
-
-        <!--    Таблица интерфейсов-->
-        <div v-if="interfaces.length" class="table-responsive-lg">
-          <table class="table head-padding">
-            <thead>
-            <tr>
-              <th scope="col"></th>
-              <th scope="col" style="text-align: center">Порт</th>
-              <th scope="col" style="text-align: center">Статус</th>
-              <th scope="col">Описание</th>
-              <th scope="col">
-                <a style="cursor: pointer" class="text-decoration-none"
-                   @click="toggleInterfacesWithVlans">
-                  <span v-if="withVlans">NO VLAN's</span>
-                  <span v-else>+ VLAN's</span>
-                </a>
-              </th>
-            </tr>
-            </thead>
-            <tbody style="vertical-align: middle">
-
-            <template v-for="_interface in interfaces">
-              <DetailInterfaceInfo
-                  @find-mac="findMacEvent"
-                  @session-mac="sessionEvent"
-                  @toast="showToastError"
-                  :device-name="deviceName"
-                  :dynamic-opacity="dynamicOpacity"
-                  :interface="_interface"
-                  :permission-level="generalInfo.permission"
-                  :register-comment-action="registerCommentAction"
-                  :register-interface-action="registerAction"
-              />
-            </template>
-
-            </tbody>
-          </table>
-        </div>
-
-        <!--Собираем интерфейсы-->
-        <h1 v-else class="py-5" style="text-align: center;">
-          <span>Собираем интерфейсы</span>
-        </h1>
-      </div>
+    <div class="py-4">
+      <UserActionsButton v-if="deviceName" :device-name="deviceName"/>
     </div>
+  </div>
+
+  <div class="py-4 px-2 md:px-6 flex justify-evenly relative">
+
+    <!--    Таблица интерфейсов-->
+    <div v-if="interfaces.length" class="overflow-x-scroll overflow-y-visible">
+      <table class="block">
+        <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col" style="text-align: center">Порт</th>
+          <th scope="col" style="text-align: center">Статус</th>
+          <th scope="col">Описание</th>
+          <th scope="col">
+            <a style="cursor: pointer" class="text-decoration-none"
+               @click="toggleInterfacesWithVlans">
+              <span v-if="withVlans">NO VLAN's</span>
+              <span v-else>+ VLAN's</span>
+            </a>
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+
+        <template v-for="_interface in interfaces">
+          <DetailInterfaceInfo
+              @find-mac="findMacEvent"
+              @session-mac="sessionEvent"
+              @toast="showToastError"
+              :device-name="deviceName"
+              :dynamic-opacity="dynamicOpacity"
+              :interface="_interface"
+              :permission-level="generalInfo.permission"
+              :register-comment-action="registerCommentAction"
+              :register-interface-action="registerAction"
+          />
+        </template>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!--Собираем интерфейсы-->
+    <h1 v-else class="py-5" style="text-align: center;">
+      <span>Собираем интерфейсы</span>
+    </h1>
+
   </div>
 
 
@@ -160,7 +159,7 @@
 
   <CommentControl :comment="commentObject"/>
 
-  <FindMac :mac="find_mac_address"/>
+  <FindMac />
 
   <BrasSession
       @closed="sessionControl.display = false"
@@ -256,6 +255,8 @@ import {HardwareStats, newHardwareStats} from "./hardwareStats";
 import {DeviceInterface, InterfaceComment, InterfacesCount, newInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
+import devicesService, {ChangePortStatusRequest} from "@/services/devices.ts";
+import {newToast} from "@/services/my.toast.ts";
 
 export default defineComponent({
   name: 'device',
@@ -309,10 +310,12 @@ export default defineComponent({
         user: "",
         action: "" as ("add" | "update" | "delete"),
         interface: "",
-        submit: null as any
+        submit: null as any,
+        showDialog: false,
       },
 
-      find_mac_address: "",
+      findMacAddress: "",
+      findMacDialogVisible: false,
       sessionControl: {
         mac: "",
         port: "",
@@ -324,7 +327,8 @@ export default defineComponent({
         action: "" as (string | null),
         submit: null as any,
         port: "",
-        desc: ""
+        desc: "",
+        showChangePortDialog: false,
       },
 
       configFiles: {
@@ -373,7 +377,8 @@ export default defineComponent({
   methods: {
 
     findMacEvent(mac: string) {
-      this.find_mac_address = mac
+      this.findMacAddress = mac;
+      this.findMacDialogVisible = true;
     },
 
     sessionEvent(mac: string, port: string) {
@@ -482,7 +487,8 @@ export default defineComponent({
           user: '',
           action: action,
           interface: interfaceName,
-          submit: this.submitCommentAction
+          submit: this.submitCommentAction,
+          showDialog: true,
         }
       } else if (comment.id && (action === "update" || action === "delete")) {
         this.commentObject = {
@@ -491,7 +497,8 @@ export default defineComponent({
           user: comment.user,
           action: action,
           interface: interfaceName,
-          submit: this.submitCommentAction
+          submit: this.submitCommentAction,
+          showDialog: true,
         }
       }
     },
@@ -503,6 +510,7 @@ export default defineComponent({
      * @param description Описание порта
      */
     registerAction(action: "up" | "down" | "reload", port: string, description: string): void {
+
       if (["up", "down", "reload"].indexOf(action) < 0) {
         // Если неверное действие
         this.portAction = {
@@ -510,7 +518,8 @@ export default defineComponent({
           action: null,
           port: "",
           desc: "",
-          submit: null
+          submit: null,
+          showChangePortDialog: false,
         }
       }
 
@@ -528,7 +537,8 @@ export default defineComponent({
         port: port,
         desc: description,
         action: action,
-        submit: this.submitPortAction
+        submit: this.submitPortAction,
+        showChangePortDialog: true,
       }
     },
 
@@ -537,30 +547,31 @@ export default defineComponent({
      * @param saveConfig Сохранять конфигурацию?
      */
     submitPortAction(saveConfig: boolean): void {
-      let data = {
+      this.portAction.showChangePortDialog = false;
+
+      if (!this.portAction.action) return;
+
+      let data: ChangePortStatusRequest = {
         port: this.portAction.port,       // Сам порт
         desc: this.portAction.desc,       // Описание порта
         status: this.portAction.action,   // Что сделать с портом
         save: saveConfig,                 // Сохранить конфигурацию после действия?
       }
 
-      api.post("/device/api/" + this.deviceName + "/port-status", data)
+      devicesService.changePortStatus(this.deviceName, data)
           .then(
               value => {
-                if (value.data.detail) {
-                  this.$toast.add({severity: "error", summary: "ERROR", detail: value.data.detail, life: 5000})
-                } else {
-                  let status = value.data.status.toUpperCase();
-                  let className = status === "DOWN" ? "bg-danger" : (status === "RELOAD" ? "bg-warning" : "bg-success");
-                  status = status === "DOWN" ? "ADMIN DOWN" : status;
-                  this.$toast.add({
-                    severity: value.data.save ? "success" : "info",
-                    summary: `Порт: <span class="badge bg-secondary">${value.data.port}</span>`,
-                    detail: `Состояние: <span class="badge ${className}">${status}</span>
-                             Конфигурация ${value.data.save ? '' : 'НЕ '}была сохранена!`,
-                    life: 5000
-                  })
-                }
+                let status = value.status.toUpperCase();
+                let className = status === "DOWN" ? "bg-red-500" : (status === "RELOAD" ? "bg-orange-500" : "bg-green-600");
+                status = status === "DOWN" ? "ADMIN DOWN" : status;
+                newToast(
+                    `Порт: <span class="p-badge bg-gray-700 text-white">${value.port}</span>`,
+                    `Состояние: <span class="p-badge ${className}">${status}</span>
+                           Конфигурация ${value.save ? '' : 'НЕ '}была сохранена!`,
+                    value.save ? "success" : "info",
+                    5000,
+                    "port-info",
+                )
               },
               (reason: any) => this.showToastError(reason)
           )

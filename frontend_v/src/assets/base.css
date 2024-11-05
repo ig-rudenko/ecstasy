@@ -16,3 +16,54 @@
     background-position: top;
     height: 100vh;
 }
+
+
+::-webkit-scrollbar {
+    display: inline;
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track-piece {
+    background-color: var(--p-surface-0);
+    border-radius: 20px;
+    opacity: 0.2;
+}
+
+:hover::-webkit-scrollbar-track-piece {
+    background-color: var(--p-surface-200);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--p-surface-0);
+}
+
+:hover::-webkit-scrollbar-thumb {
+    background-color: var(--p-surface-400);
+    border-radius: 20px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--p-surface-700);
+}
+
+:where(.dark, .dark *)::-webkit-scrollbar-track-piece {
+    background-color: var(--p-surface-900);
+}
+
+:where(.dark, .dark *):hover::-webkit-scrollbar-track-piece {
+    background-color: var(--p-surface-700);
+}
+
+:where(.dark, .dark *)::-webkit-scrollbar-thumb {
+    background-color: var(--p-surface-900);
+}
+
+:where(.dark, .dark *):hover::-webkit-scrollbar-thumb {
+    background-color: var(--p-surface-800);
+}
+
+:where(.dark, .dark *)::-webkit-scrollbar-thumb:hover {
+    background-color: var(--p-surface-500);
+}

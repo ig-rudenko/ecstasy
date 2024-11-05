@@ -2,31 +2,31 @@
   <div v-if="dev.interfaces_count && dev.interfaces_count.count">
 
     <div style="width: 25rem;">
-      <div class="flex rounded-xl">
+      <div class="flex rounded-xl text-center">
 
         <!-- Абонентские порты UP С ОПИСАНИЕМ -->
         <div v-if="dev.interfaces_count.abons_up_with_desc" v-tooltip="'Абонентские порты (UP) с описанием'"
-             class="bg-green-700 text-center"
+             class="bg-green-700"
              :style="{width: abonsUpWithDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_up_with_desc }}</div>
         </div>
 
         <!-- Абонентские порты UP Без описания -->
-        <div class="bg-green-500 text-center"
+        <div class="bg-green-500 text-gray-900"
              v-if="dev.interfaces_count.abons_up_no_desc" v-tooltip="'Абонентские порты (UP) без описания'"
              :style="{width: abonsUpNoDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_up_no_desc }}</div>
         </div>
 
         <!-- Абонентские порты DOWN С ОПИСАНИЕМ -->
-        <div class="bg-red-300 text-center"
+        <div class="bg-red-300 text-gray-900"
              v-if="dev.interfaces_count.abons_down_with_desc" v-tooltip="'Абонентские порты (DOWN) с описанием'"
              :style="{width: abonsDownWithDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_down_with_desc }}</div>
         </div>
 
         <!-- Незадействованные порты -->
-        <div class="bg-gray-400 text-center"
+        <div class="bg-gray-300 text-gray-900"
              v-if="dev.interfaces_count.abons_down_no_desc" v-tooltip="'Незадействованные порты'"
              :style="{width: abonsDownNoDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_down_no_desc }}</div>

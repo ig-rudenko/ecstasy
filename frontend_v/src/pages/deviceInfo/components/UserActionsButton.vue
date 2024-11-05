@@ -1,55 +1,38 @@
 <template>
-  <div class="py-1">
-  <span style="cursor: pointer" data-bs-toggle="modal" data-bs-target="#userActionsModal">
+  <Button text size="small" @click="showDialog=true">
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-      <path
-          d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"></path>
+      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"></path>
     </svg>
-    <span>Actions</span>
-  </span>
-  </div>
+    <span>Пользовательские действия</span>
+  </Button>
 
 
   <!-- Modal -->
-  <div class="modal fade" id="userActionsModal" tabindex="-1" aria-labelledby="userActionsModalLabel"
-       aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="userActionsModalLabel">User actions</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <Dialog v-model:visible="showDialog" header="Пользовательские действия" modal :width="100" :height="400">
+    <div class="">
+      <Message v-if="error.status" severity="error" class="mb-2">
+        Ошибка загрузки:<br>
+        Статус: {{ error.status }}<br>
+        {{ error.msg }}
+      </Message>
+
+      <div v-for="act in actions" class="border border-gray-300 rounded-lg p-3 shadow-sm mb-3">
+
+        <div class="flex items-center gap-2 mb-3">
+          <img :src="'https://ui-avatars.com/api/?size=32&name='+act.user+'&font-size=0.33&background=random&rounded=true'"
+              :alt="act.user">
+          <span>{{ act.user }}</span>
+          <i class="pi pi-clock" />
+          <span class=" text-sm">{{ formatTime(act.time) }}</span>
         </div>
-        <div class="modal-body">
-          <div v-if="error.status" class="alert alert-danger">
-            Ошибка загрузки:<br>
-            Статус: {{ error.status }}<br>
-            {{ error.msg }}
-          </div>
 
-          <div v-for="act in actions" class="card p-3 mb-2 shadow-sm">
-
-            <div class="d-flex align-items-center py-2">
-              <img
-                  :src="'https://ui-avatars.com/api/?size=32&name='+act.user+'&font-size=0.33&background=random&rounded=true'"
-                  class="me-2" :alt="act.user">
-              <span>{{ act.user }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mx-2"
-                   viewBox="0 0 16 16">
-                <path
-                    d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-              </svg>
-              <span>{{ formatTime(act.time) }}</span>
-            </div>
-
-            <div>
-              <span v-html="formatActionPrefix(act.action)"></span>
-              {{ act.action }}
-            </div>
-          </div>
+        <div class="flex flex-wrap">
+          <span class="text-wrap" v-html="formatActionPrefix(act.action)"></span>
+          {{ act.action }}
         </div>
       </div>
     </div>
-  </div>
+  </Dialog>
 
 </template>
 
@@ -72,6 +55,7 @@ export default defineComponent({
   },
   data() {
     return {
+      showDialog: false,
       actions: [] as UserAction[],
       error: {
         status: null,

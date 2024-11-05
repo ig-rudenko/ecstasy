@@ -1,6 +1,8 @@
 <template>
 
-  <button v-tooltip.bottom="'Медиафайлы'" @click="dialogVisible=true" class="flex items-center">
+  <Button text v-tooltip.bottom="'Медиафайлы'"
+          :severity="items.length?'success':'secondary'"
+          @click="dialogVisible=true" class="flex items-center">
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" :fill="mediaToggleButtonColor" class="me-1"
          viewBox="0 0 16 16">
       <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
@@ -10,7 +12,7 @@
     <div v-if="items.length" class="rounded-full text-white px-2" :style="{backgroundColor: mediaToggleButtonColor}">
       {{ items.length }}
     </div>
-  </button>
+  </Button>
 
   <Dialog maximizable :header="'Медиафайлы оборудования '+deviceName" v-model:visible="dialogVisible" modal
           class="w-full h-full">
@@ -31,7 +33,7 @@
               <div class="flex w-full items-center justify-between relative p-2">
 
                 <div class="p-3">
-                  <!--Картинка-->
+                  <!--TODO: заменить картинку-->
                   <img v-if="item.isImage" src="https://i.ytimg.com/vi/I9HW_widuNc/maxresdefault.jpg" height="80" alt="image">
                   <!--Другой файл-->
                   <i v-else :class="['bi', fileEarmarkClass(item.name)]" style="font-size: 80px"></i>
@@ -87,6 +89,7 @@
 
           <!--Просмотр изображения-->
           <a v-if="!editForm.show && currentItem?.isImage" :href="currentItem.url" target="_blank">
+            <!--TODO: Указать медиа-->
             <img class="media-image" src="https://i.ytimg.com/vi/I9HW_widuNc/maxresdefault.jpg" alt="image">
           </a>
 

@@ -32,11 +32,11 @@ export default defineComponent({
       return {
         responsive: true,
         backgroundColor: [
-          '#198754',
-          '#74bf9c',
-          '#ffbdbd',
-          '#cfcfcf',
-          '#0dcaf0'
+          'rgb(21 128 61)',
+          'rgb(34 197 94)',
+          'rgb(252 165 165)',
+          'rgb(209 213 219)',
+          'rgb(96 165 250)'
         ],
       }
     }

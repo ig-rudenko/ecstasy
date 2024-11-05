@@ -1,19 +1,12 @@
 <template>
-  <div v-if="totalCount" class="py-4">
-    <p>Загруженность интерфейсов</p>
-    <div class="progress shadow" style="height: 25px;">
-      <div class="progress-bar bg-success" role="progressbar" :style="style_up_with_desc">
-        {{ workload.abons_up_with_desc }}
-      </div>
-      <div class="progress-bar" role="progressbar" :style="style_up_no_desc">{{ workload.abons_up_no_desc }}</div>
-      <div class="progress-bar text-dark" role="progressbar" :style="style_down_with_desc">
-        {{ workload.abons_down_with_desc }}
-      </div>
-      <div class="progress-bar text-dark" role="progressbar" :style="style_down_no_desc">
-        {{ workload.abons_down_no_desc }}
-      </div>
-      <div class="progress-bar bg-info" role="progressbar" :style="style_systems">{{ systemsInterfacesCount }}
-      </div>
+  <div v-if="totalCount">
+    <div class="pb-2">Загруженность интерфейсов</div>
+    <div class="text-center flex shadow-xl rounded">
+      <div class="bg-green-700 rounded" :style="style_up_with_desc">{{ workload.abons_up_with_desc }}</div>
+      <div class="bg-green-500 rounded" :style="style_up_no_desc">{{ workload.abons_up_no_desc }}</div>
+      <div class="bg-red-300 rounded" :style="style_down_with_desc">{{ workload.abons_down_with_desc }}</div>
+      <div class="bg-gray-300 rounded" :style="style_down_no_desc">{{ workload.abons_down_no_desc }}</div>
+      <div class="bg-blue-400 rounded" :style="style_systems">{{ systemsInterfacesCount }}</div>
     </div>
   </div>
 </template>
@@ -36,21 +29,18 @@ export default defineComponent({
     },
     style_up_no_desc() {
       return {
-        'background-color': 'rgb(116, 191, 156)',
         'width': this.workload.abons_up_no_desc / this.totalCount * 100 + '%',
         height: '25px'
       }
     },
     style_down_with_desc() {
       return {
-        'background-color': 'rgb(255, 189, 189)',
         'width': this.workload.abons_down_with_desc / this.totalCount * 100 + '%',
         height: '25px'
       }
     },
     style_down_no_desc() {
       return {
-        'background-color': 'rgb(207, 207, 207)',
         'width': this.workload.abons_down_no_desc / this.totalCount * 100 + '%',
         height: '25px'
       }

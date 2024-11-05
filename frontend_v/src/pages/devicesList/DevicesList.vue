@@ -1,7 +1,7 @@
 <template>
   <Header />
 
-  <div class="container mx-auto py-4">
+  <div class="container mx-auto p-4">
 
     <div class="flex flex-wrap justify-center md:grid sm:grid-cols-4 items-center p-4">
 
@@ -37,7 +37,7 @@
     </div>
 
     <!--Отображение подсказки по нагрузке портов-->
-    <div v-show="displayMode === 'interfaces_loading'" class="border my-4 rounded-xl row shadow" style="padding: 20px;">
+    <div v-show="displayMode === 'interfaces_loading'" class="border my-4 mx-2 rounded-xl row shadow" style="padding: 20px;">
       <!--Просмотр загрузки оборудования-->
       <div v-if="chartData.length > 0">
         <div class="text-2xl">Общая загрузка интерфейсов</div>
@@ -55,9 +55,9 @@
       <div class="py-2 text-muted-color">Расшифровка цвета</div>
       <div class="flex flex-wrap text-center">
         <div class="bg-green-700 w-full sm:w-[20%] text-gray-200">Активные порты с описанием</div>
-        <div class="bg-green-500 w-full sm:w-[20%]">Активные порты без описания</div>
-        <div class="bg-red-300 w-full sm:w-[20%]">Неактивные порты с описанием</div>
-        <div class="bg-gray-400 w-full sm:w-[20%]">Незадействованные порты</div>
+        <div class="text-gray-900 bg-green-500 w-full sm:w-[20%]">Активные порты без описания</div>
+        <div class="text-gray-900 bg-red-300 w-full sm:w-[20%]">Неактивные порты с описанием</div>
+        <div class="text-gray-900 bg-gray-300 w-full sm:w-[20%]">Незадействованные порты</div>
         <div class="text-gray-900 bg-blue-400 w-full sm:w-[20%]">Служебные порты</div>
       </div>
     </div>

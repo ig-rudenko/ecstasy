@@ -15,10 +15,12 @@ import {
     Message,
     Paginator,
     Password,
+    ProgressSpinner,
     Popover,
     Ripple,
     ScrollTop,
     Select,
+    Textarea,
     ToggleSwitch,
     Tooltip
 } from "primevue";
@@ -55,9 +57,11 @@ app.component("Menubar", Menubar);
 app.component("Message", Message);
 app.component("Password", Password);
 app.component("Paginator", Paginator);
+app.component("ProgressSpinner", ProgressSpinner);
 app.component("Popover", Popover);
 app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
+app.component("Textarea", Textarea);
 app.component("ToggleSwitch", ToggleSwitch);
 
 app.mount('#app');

@@ -19,6 +19,19 @@ export interface DevicesWithCount {
     devices_count: number;
 }
 
+export interface ChangePortStatusRequest {
+    port: string;
+    desc: string;
+    status: string;
+    save: boolean;
+}
+
+export interface ChangePortStatusResponse {
+    port: string;
+    status: string;
+    save: boolean;
+}
+
 
 export class DevicesService {
 
@@ -40,6 +53,16 @@ export class DevicesService {
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))
             return [];
+        }
+    }
+
+    async changePortStatus(deviceName: string, data: ChangePortStatusRequest) {
+        try {
+            const resp = await api.post<ChangePortStatusResponse>("/device/api/" + deviceName + "/port-status", data)
+            return resp.data;
+        } catch (reason: any) {
+            errorToast("Не удалось изменить статус порта", errorFmt(reason))
+            throw reason;
         }
     }
 

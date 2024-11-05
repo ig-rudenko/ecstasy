@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="container mx-auto py-6">
+  <div class="container mx-auto p-6 px-10">
     <div class="flex">
       <div class="text-muted-color ml-10 text-xl cursor-pointer" @click="toggleMode">
         {{ tracerouteMode === 'vlan' ? 'MAC' : 'VLAN' }} Traceroute
@@ -166,7 +166,7 @@
       </div>
     </div>
 
-    <div style="background-color: #222222; height: 100%">
+    <div style="background-color: #222222; height: 100%" class="my-4">
       <!--TRACEROUTE-->
       <div v-show="tracerouteMode === 'vlan'">
         <Button v-if="vlanTracerouteOptions.rendered" @click="toggleMaximizeVlanTraceroute"
@@ -319,6 +319,9 @@ export default defineComponent({
 
     toggleMaximizeVlanTraceroute() {
       this.vlanTracerouteOptions.maximized = !this.vlanTracerouteOptions.maximized;
+      if (this.vlanTracerouteOptions.maximized) {
+        setTimeout(() => document.getElementById("vlan-network")!.scrollIntoView({behavior: "instant", block: "end"}))
+      }
     },
     toggleMaximizeMACTraceroute() {
       this.macTracerouteOptions.maximized = !this.macTracerouteOptions.maximized;

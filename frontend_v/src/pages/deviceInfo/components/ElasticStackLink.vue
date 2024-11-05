@@ -1,5 +1,5 @@
 <template>
-  <div v-tooltip.bottom="'Логи оборудования'">
+  <Button text v-tooltip.bottom="'Логи оборудования'">
     <a style="width: 100%; text-align: left" :href="logsUrl" class="btn" target="_blank">
       <svg data-type="logoElastic" xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none"
            viewBox="0 0 32 32" class="euiIcon chrHeaderLogo__cluster css-7yvbl4-euiIcon-l" focusable="false"
@@ -8,7 +8,7 @@
           </path>
       </svg>
     </a>
-  </div>
+  </Button>
 </template>
 
 <script lang="ts">

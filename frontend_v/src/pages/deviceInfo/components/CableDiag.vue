@@ -1,16 +1,14 @@
 <template>
-  <div class="row">
+  <div class="grid grid-cols-3">
 
-    <div class="col-md-6">
-      <img src="/img/rj45-back.jpg" alt="RJ45-background" style="height: 100%; width: 100%;">
+    <div>
+      <img src="/img/rj45-back.jpg" alt="RJ45-background">
     </div>
 
-    <div class="col-md-5">
+    <div class="col-span-2">
 
       <div class="text-center">
-        <button @click="startDiagnostic" class="btn btn-lg btn-outline-success py-3" id="modal-text">
-          {{ diagnosticsStarted ? 'Диагностируем' : 'Запустить диагностику' }}
-        </button>
+        <Button @click="startDiagnostic" icon="pi pi-play" :loading="diagnosticsStarted" :label="diagnosticsStarted ? 'Диагностируем' : 'Запустить диагностику'"/>
       </div>
 
       <div v-if="diagInfo">

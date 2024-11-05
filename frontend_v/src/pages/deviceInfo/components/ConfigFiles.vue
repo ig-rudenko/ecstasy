@@ -24,25 +24,15 @@
 
         <!--  ELSE | COLLECTING-->
         <div v-else>
-          <div>
-            <h4>Собираем текущую конфигурацию</h4>
-          </div>
-          <div class="progress" role="progressbar" aria-label="Animated striped example" aria-valuenow="75"
-               aria-valuemin="0" aria-valuemax="100">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
-          </div>
+          <div class="flex justify-center gap-4 items-center text-xl">Собираем текущую конфигурацию <i class="pi pi-spin pi-spinner"/></div>
         </div>
-        <!--      -->
 
         <!--    ALERT-->
-        <div v-if="collectNew.display" :class="alertClasses">
-          <div style="padding-right: 0;">
-          <span class="me-2">
+        <div v-if="collectNew.display" :class="alertClasses" class="py-3">
+          <Message class="flex justify-center" :severity="collectNew.status">
             {{ collectNew.text }}
-          </span>
-            <button @click="collectNew.display=false" type="button" class="btn-close"
-                    style="position: sticky;vertical-align: middle;left: 100%;"></button>
-          </div>
+            <Button @click="collectNew.display=false" icon="pi pi-times" rounded text size="small" severity="danger"/>
+          </Message>
         </div>
         <!--      -->
 
@@ -145,6 +135,7 @@ import Dialog from "primevue/dialog";
 
 import ConfigFileDiff from "./ConfigFileDiff.vue";
 import api from "@/services/api";
+import errorFmt from "@/errorFmt.ts";
 
 
 interface ConfigFile {
@@ -281,7 +272,7 @@ export default defineComponent({
               },
               (reason: any) => {
                 this.collectNew.status = "error";
-                this.collectNew.text = reason.response.data.error;
+                this.collectNew.text = errorFmt(reason);
                 this.collectNew.setFree();
               }
           )

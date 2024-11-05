@@ -101,7 +101,7 @@ const toggle = () => {
 </script>
 
 <template>
-  <div class="bg-zinc-800 dark:bg-gray-950">
+  <div class="bg-zinc-800 dark:bg-gray-950 px-4">
     <Menubar :model="menuItems.value" class="container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none" :pt="{itemContent: {class: 'bg-zinc-800 dark:!bg-gray-950'}}">
       <template #start>
         <router-link :to="{name: 'home'}" class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">

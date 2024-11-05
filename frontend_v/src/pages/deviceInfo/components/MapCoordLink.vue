@@ -1,5 +1,5 @@
 <template>
-  <div v-tooltip.bottom="'Местоположение'">
+  <Button text v-tooltip.bottom="'Местоположение'">
     <a v-if="coords?.length" style="width: 100%; text-align: left" class="btn" target="_blank"
         :href="'https://yandex.ru/maps/959/sevastopol/?mode=search&sll='+coords[0]+'%2C'+coords[1]+'&text='+coords[0]+'%2C'+coords[1]+'&z=17'">
       <svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -7,7 +7,7 @@
           <path d="M12 13.079a3.079 3.079 0 1 1 0-6.158 3.079 3.079 0 0 1 0 6.158z" fill="#fff"></path>
       </svg>
     </a>
-  </div>
+  </Button>
 </template>
 
 <script lang="ts">

@@ -2,9 +2,9 @@
 
   <tr :style="interfaceStyles" :class="interfaceClasses">
 
-    <td style="text-align: right">
+    <td>
 
-      <div class="btn-group">
+      <div class="flex gap-1">
         <!--       COMMENTS-->
         <Comment :interface="interface" :register-comment-action="registerCommentAction"/>
 
@@ -14,55 +14,51 @@
 
     </td>
 
-    <!--       ПОРТ-->
+    <!--ПОРТ-->
     <td class="btn-fog" style="text-align: right">
 
-      <div class="btn-group" role="group">
+      <div class="flex items-center">
 
-        <!--        Название Интерфейса-->
-        <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
-          <span class="position-absolute top-50 start-0 translate-middle badge rounded-pill"
-                :style="portTypeStyles">
+        <!--Название Интерфейса-->
+        <div @click="toggleDetailInfo" class="font-mono cursor-pointer">
+          <span class="px-1 rounded text-gray-200" :style="portTypeStyles">
             <span v-if="complexInfo">{{ complexInfo.portType }}</span>
           </span>
-          <span class="position-relative" style="padding-left: 30px;">
-                {{ interface.name }}
-          </span>
-
+          <span class="px-8 text-xl">{{ interface.name }}</span>
         </div>
 
-        <!--        Управление состоянием интерфейсов-->
+        <!--Управление состоянием интерфейсов-->
         <PortControlButtons
             :port-action="registerInterfaceAction"
             :interface="interface"
+            :device-name="deviceName"
             :permission-level="permissionLevel"/>
 
-        <!--        Посмотреть порт -->
-        <button @click="toggleDetailInfo" class="btn btn-group" style="padding: 6px 6px 2px 6px">
+        <!--Посмотреть порт -->
+        <Button @click="toggleDetailInfo" text>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box"
                viewBox="0 0 16 16">
-            <path
-                d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+            <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
           </svg>
-        </button>
+        </Button>
 
       </div>
     </td>
 
-    <!--          Статус порта-->
-    <td data-bs-toggle="tooltip" data-bs-placement="top"
-        :style="statusStyle(interface.status)"
-        :data-bs-title="intfStatusDesc(interface.status)">
+    <!--Статус порта-->
+    <td :style="statusStyle(interface.status)" class="text-gray-950 text-nowrap px-3">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
-    <!--          Описание порта-->
+    <!--Описание порта-->
     <td>
       <ChangeDescription :device-name="deviceName" :interface="interface"/>
     </td>
 
-    <!--          VLANS-->
-    <td v-if="interface.vlans.length">{{ compressVlanRange(interface.vlans) }}</td>
+    <!--VLANS-->
+    <td v-if="interface.vlans.length" @click="toggleVlansList" class="cursor-pointer text-nowrap overflow-x-visible max-w-20">
+      {{ compressVlanRange }}
+    </td>
     <td v-else></td>
 
   </tr>
@@ -72,31 +68,31 @@
     <td v-if="complexInfo" colspan="5">
 
       <!--      DETAIL PORT INFO  -->
-      <div v-if="complexInfo.portDetailInfo" class="container row py-3">
+      <div v-if="complexInfo.portDetailInfo" class="container py-3">
 
         <div class="text-end">
-          <span v-if="collectingDetailInfo" class="text-muted text-help" style="cursor: default">Обновляю...</span>
-          <span v-else @click="getDetailInfo" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+          <span v-if="collectingDetailInfo" class="text-muted-color text-help" style="cursor: default">Обновляю...</span>
+          <span v-else @click="getDetailInfo" class="text-muted-color text-help" style="cursor: pointer">Обновить</span>
         </div>
 
-        <div v-if="complexInfo.portDetailInfo.type==='html'" class="card shadow py-3"
+        <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3 border rounded shadow py-3"
              v-html="complexInfo.portDetailInfo.data"></div>
-        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="card shadow py-3"
+        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="p-3 border rounded shadow py-3 font-mono"
              v-html="formatToHtml(complexInfo.portDetailInfo.data)"></div>
 
         <!--      MIKROTIK -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="card shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3 border rounded shadow py-3">
           <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
                                  :interface="interface"/>
         </div>
 
         <!--      ADSL -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="card shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3 border rounded shadow py-3">
           <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
         </div>
 
         <!--      GPON -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="card shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3 border rounded shadow py-3">
           <GPONInterfaceInfo
               @find-mac="findMacEvent"
               @session-mac="sessionEvent"
@@ -109,7 +105,7 @@
         </div>
 
         <!--      ELTEX OLT -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="card shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3 border rounded shadow py-3">
           <OLTInterfaceInfo
               @find-mac="findMacEvent"
               @session-mac="sessionEvent"
@@ -126,54 +122,50 @@
       <!--      ANOTHER INFO  -->
       <div v-if="complexInfo" class="container row py-3">
 
-        <div class="col-auto">
-
+        <div class="flex flex-wrap gap-1">
           <!--        BUTTON-->
           <!--        Конфигурация порта-->
           <div v-if="complexInfo.portConfig.length">
-            <button type="button"
-                    @click="portDetailMenu=portDetailMenu=='portConfig'?'':'portConfig'"
-                    :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
-              <svg class="bi me-2" width="16" height="16" role="img">
+            <Button severity="primary" size="small" @click="portDetailMenu=portDetailMenu=='portConfig'?'':'portConfig'"
+                    :outlined="portDetailMenu!=='portConfig'">
+              <svg width="16" height="16" role="img">
                 <use xlink:href="#gear-icon"></use>
               </svg>
               Конфигурация порта
-            </button>
+            </Button>
           </div>
 
           <!--        BUTTON-->
           <!--        Ошибки на порту-->
           <div v-if="complexInfo.portErrors.length">
-            <button type="button"
-                    @click="portDetailMenu=portDetailMenu=='portErrors'?'':'portErrors'"
-                    :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
-              <svg class="bi me-2" width="16" height="16" role="img">
+            <Button severity="primary" size="small" @click="portDetailMenu=portDetailMenu=='portErrors'?'':'portErrors'"
+                    :outlined="portDetailMenu!=='portErrors'">
+              <svg width="16" height="16" role="img">
                 <use xlink:href="#warning-icon"></use>
               </svg>
               Ошибки на порту
-            </button>
+            </Button>
           </div>
 
           <!--        BUTTON-->
           <!--        Диагностика кабеля-->
           <div v-if="complexInfo.hasCableDiag">
-            <button type="button"
-                    @click="portDetailMenu=portDetailMenu=='cableDiag'?'':'cableDiag'"
-                    :class="portDetailMenu==='cableDiag'?['btn', 'active']:['btn']">
-              <svg class="bi me-2" width="16" height="16" role="img">
+            <Button severity="primary" size="small" @click="portDetailMenu=portDetailMenu=='cableDiag'?'':'cableDiag'"
+                    :outlined="portDetailMenu!=='cableDiag'">
+              <svg width="16" height="16">
                 <use xlink:href="#cable-diag-icon"></use>
               </svg>
               Диагностика кабеля
-            </button>
+            </Button>
           </div>
         </div>
 
 
         <!--      Конфигурация порта -->
-        <div v-show="portDetailMenu==='portConfig'" class="col-md">
+        <div v-show="portDetailMenu==='portConfig'">
 
-          <div v-if="complexInfo.portConfig.length>0" class="card shadow" style="padding: 2rem;">
-            <span v-html="formatToHtml(complexInfo.portConfig)" style="font-family: monospace"></span>
+          <div v-if="complexInfo.portConfig.length>0" class="p-4 m-2 border rounded shadow font-mono">
+            <span v-html="formatToHtml(complexInfo.portConfig)"></span>
           </div>
 
           <div v-else class="d-flex justify-content-center">
@@ -182,10 +174,10 @@
         </div>
 
         <!--      Ошибки на порту -->
-        <div v-show="portDetailMenu==='portErrors'" class="col-md">
+        <div v-show="portDetailMenu==='portErrors'">
 
-          <div v-if="complexInfo.portErrors.length>0" class="card shadow" style="padding: 2rem;">
-            <span v-html="formatToHtml(complexInfo.portErrors)" style="font-family: monospace"></span>
+          <div v-if="complexInfo.portErrors.length>0" class="p-4 m-2 border rounded shadow font-mono">
+            <span v-html="formatToHtml(complexInfo.portErrors)"></span>
           </div>
 
           <div v-else class="d-flex justify-content-center">
@@ -195,9 +187,9 @@
         </div>
 
         <!--      Диагностика кабеля -->
-        <div v-show="portDetailMenu==='cableDiag'" class="col-md">
+        <div v-show="portDetailMenu==='cableDiag'">
 
-          <div v-if="complexInfo.hasCableDiag" class="card shadow" style="padding: 2rem;">
+          <div v-if="complexInfo.hasCableDiag" class="p-4 m-2 border rounded shadow">
             <CableDiag :device-name="deviceName" :port="interface.name"/>
           </div>
 
@@ -209,50 +201,41 @@
       <div v-if="MACs.length > 0" class="container">
         <span>Всего: {{ MACs.length }}</span>
 
-        <div class="table-responsive-lg">
+        <div>
           <div class="text-end">
             <span v-if="collectingMACs" class="text-muted text-help" style="cursor: default">Обновляю...</span>
             <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
           </div>
 
-          <table class="table">
-            <thead>
-            <tr>
-              <th></th>
-              <th scope="col">VLAN</th>
-              <th scope="col">MAC</th>
-              <th></th>
-            </tr>
-            </thead>
-            <tbody id="tbody-macs">
+          <div class="flex flex-wrap gap-4 font-mono">
+            <div v-for="row in macsUniqueVLANs" class="flex items-center gap-1">
+              <div>v {{row[0]}}:</div>
+              <div class="bg-indigo-500 text-gray-200 px-2 rounded-full text-center">{{row[1]}}</div>
+            </div>
+          </div>
 
-            <tr v-for="mac in macsPage">
-              <td></td>
+          <div class="flex justify-center">
+            <DataTable :value="MACs"
+                       class="w-fit self-center"
+                       :paginator="MACs.length>10" :rows="10" paginator-position="both">
+              <Column field="vlanID">
+                <template #body="{data}">
+                  <div class="font-mono text-xl cursor-pointer" v-tooltip.left="data.vlanName.toString()">{{data.vlanID}}</div>
+                </template>
+              </Column>
+              <Column field="mac">
+                <template #body="{data}">
+                  <div class="font-mono text-xl cursor-pointer" @click="macSearch(data.mac)" >{{data.mac}}</div>
+                </template>
+              </Column>
+              <Column field="mac">
+                <template #body="{data}">
+                  <Button size="small" text label="BRAS"></Button>
+                </template>
+              </Column>
+            </DataTable>
+          </div>
 
-              <td style="font-family: monospace; font-size: x-large;">
-                <span :id="mac.mac" :title="mac.vlanName"
-                      style="cursor: help; font-family: monospace;">{{ mac.vlanID }}</span>
-              </td>
-
-              <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                    <span @click="findMacEvent(mac.mac)" class="nowrap" style="cursor: pointer; font-family: monospace;"
-                          title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
-                        {{ mac.mac }}
-                        <svg class="bi me-2" width="24" height="24" role="img"><use
-                            xlink:href="#search-icon"></use></svg>
-                    </span>
-              </td>
-
-              <td>
-                <button @click="sessionEvent(mac.mac, interface.name)" type="button" class="btn btn-outline-primary"
-                        data-bs-toggle="modal" data-bs-target="#bras-session-modal">
-                  BRAS
-                </button>
-              </td>
-            </tr>
-
-            </tbody>
-          </table>
         </div>
 
       </div>
@@ -262,7 +245,7 @@
           <span v-if="collectingMACs" class="text-muted text-help">Обновляю...</span>
           <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
         </div>
-        <h3 class="text-center" style="padding-bottom: 40px;">Нет MAC</h3>
+        <div class="text-2xl text-center" style="padding-bottom: 40px;">Нет MAC</div>
       </div>
 
       <div v-else class="d-flex justify-content-center" style="padding: 2.2rem;">
@@ -271,12 +254,17 @@
 
     </td>
 
-    <td v-else class="d-flex justify-content-center" colspan="5">
-      <div>
-        <div class="spinner-border" role="status"></div>
+    <td v-else colspan="5">
+      <div class="flex justify-center" >
+        <ProgressSpinner />
       </div>
     </td>
   </tr>
+
+  <!--  VLANS FULL LIST-->
+  <Popover ref="vlansList">
+    <div>{{ compressVlanRange }}</div>
+  </Popover>
 
 </template>
 
@@ -298,6 +286,7 @@ import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
 import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
 import MacInfo from "@/pages/deviceInfo/mac.ts";
 import api from "@/services/api";
+import macSearch from "@/services/macSearch.ts";
 
 export default defineComponent({
   components: {
@@ -344,15 +333,14 @@ export default defineComponent({
 
   computed: {
     interfaceStyles(): any {
-      if (this.showDetailInfo) return {"background-color": "#e8efff"};
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow", "sticky-top"];
+      if (this.showDetailInfo) return ["shadow", "border", "sticky", "top-0", "bg-white", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {
-      let styles: any = {"font-size": "0.6rem"}
+      let styles: any = {"font-size": "0.8rem"}
 
       if (!this.complexInfo?.portType) return styles;
 
@@ -370,13 +358,51 @@ export default defineComponent({
       return styles
     },
 
-    macsPage() {
-      return this.MACs
-    }
+    macsUniqueVLANs() {
+      const result = new Map()
+      for (const mac of this.MACs) {
+        result.set(mac.vlanID, (result.get(mac.vlanID) || 1) + 1)
+      }
+      return result
+    },
+
+    compressVlanRange(): string {
+      const list = this.interface.vlans;
+
+      if (!list || !list.length) return "";
+
+      // сортируем список по возрастанию
+      list.sort((a: number, b: number) => a - b);
+      // инициализируем пустую строку для результата
+      let result = "";
+      // инициализируем начальное и конечное значение диапазона
+      let start = list[0];
+      let end = list[0];
+      // проходим по списку, начиная со второго элемента
+      for (let i = 1; i < list.length; i++) {
+        // если текущий элемент на единицу больше предыдущего, то продолжаем диапазон
+        if (list[i] === end + 1) {
+          end = list[i];
+        } else {
+          // иначе, добавляем текущий диапазон к результату
+          result += start === end ? start + ", " : start + "-" + end + ", ";
+          // и обновляем начальное и конечное значение диапазона
+          start = list[i];
+          end = list[i];
+        }
+      }
+      // добавляем последний диапазон к результату
+      result += start === end ? start : start + "-" + end;
+      // возвращаем результат
+      return result;
+    },
 
   },
 
   methods: {
+    macSearch(mac: string) {
+      macSearch.searchMac(mac)
+    },
 
     findMacEvent(mac: string) {
       this.$emit("find-mac", mac)
@@ -456,6 +482,11 @@ export default defineComponent({
       return ""
     },
 
+    toggleVlansList(event: Event) {
+      // @ts-ignore
+      this.$refs.vlansList.toggle(event, event.target);
+    },
+
     /** Вычисляем цвет статуса порта */
     statusStyle(status: string): any {
       status = status.toLowerCase()
@@ -473,34 +504,6 @@ export default defineComponent({
       return Object.assign({}, this.dynamicOpacity, baseStyle)
     },
 
-    compressVlanRange(list: number[]): string {
-      if (!list || !list.length) return "";
-
-      // сортируем список по возрастанию
-      list.sort((a: number, b: number) => a - b);
-      // инициализируем пустую строку для результата
-      let result = "";
-      // инициализируем начальное и конечное значение диапазона
-      let start = list[0];
-      let end = list[0];
-      // проходим по списку, начиная со второго элемента
-      for (let i = 1; i < list.length; i++) {
-        // если текущий элемент на единицу больше предыдущего, то продолжаем диапазон
-        if (list[i] === end + 1) {
-          end = list[i];
-        } else {
-          // иначе, добавляем текущий диапазон к результату
-          result += start === end ? start + ", " : start + "-" + end + ", ";
-          // и обновляем начальное и конечное значение диапазона
-          start = list[i];
-          end = list[i];
-        }
-      }
-      // добавляем последний диапазон к результату
-      result += start === end ? start : start + "-" + end;
-      // возвращаем результат
-      return result;
-    },
 
   }
 })

@@ -1,11 +1,11 @@
 <template>
 
   <div id="edit-drag-drop-area" class="align-content-center justify-content-md-center row">
-    <div class="col-md-auto">
-      <div class="file-upload">
+    <div class="">
+      <div class="">
 
-        <div class="py-2">
-          <button @click="updateItem" class="btn">
+        <div class="flex items-center justify-center gap-2">
+          <button @click="updateItem" class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor"
                  class="bi bi-cloud-arrow-up me-2" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
@@ -17,7 +17,7 @@
           </button>
 
           <!--Кнопка выхода из формы редактирования-->
-          <button @click="closeForm" class="btn">
+          <button @click="closeForm" class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-x"
                  viewBox="0 0 16 16">
               <path
@@ -27,32 +27,31 @@
           </button>
         </div>
 
-        <div class="mb-3">
+        <div>
 
-          <div class="g-0 row">
+          <!--Ошибки при загрузке-->
+          <div v-if="!errors.length" class="flex flex-col m-3">
+            <Message v-for="err in errors" severity="error">
+              <div>{{ err }}</div>
+            </Message>
+          </div>
 
-            <!--Ошибки при загрузке-->
-            <div v-if="errors.length" class="px-3">
-              <div v-for="err in errors" class="alert alert-danger m-0">
-                <div>{{ err }}</div>
-              </div>
-            </div>
-
-            <div class="col-md-6 m-3">
-              <MediaPreview :item="getCurrentItem"></MediaPreview>
-              <label for="edit-file-input" class="d-block text-center" style="cursor: pointer">
-                <span class="text-center">Заменить</span>
+          <div class="grid grid-cols-2 gap-5">
+            <div class="flex flex-col self-center gap-1">
+              <MediaPreview :item="getCurrentItem"/>
+              <label for="edit-file-input" class="text-center" style="cursor: pointer">
+                <span class="text-center p-button">Заменить</span>
               </label>
               <input hidden id="edit-file-input" multiple type="file" @change="handleFileChange"/>
             </div>
 
-            <div class="card-body col-md-5">
-              <label for="desc" class="form-label">Описание</label>
-              <textarea v-model.trim="item.description" id="desc" cols="50" rows="8" class="form-control"></textarea>
+            <div class="flex flex-col self-center gap-3">
+              <div class="form-label">Описание</div>
+              <textarea v-model.trim="item.description" cols="50" rows="8" class="border rounded p-4"></textarea>
             </div>
           </div>
-
         </div>
+
 
       </div>
     </div>
