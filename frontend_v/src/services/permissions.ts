@@ -11,7 +11,7 @@ class Permissions {
 
         api.get<{ permissions: string[] }>("/api/accounts/myself/permissions")
             .then(value => {
-                if (value.data.permissions.length === this.perms.value.length &&
+                if (value.data.permissions.length !== this.perms.value.length &&
                     this.perms.value.every((p, i) => p === value.data.permissions[i])
                 ) {
                     this.perms.value.push(...value.data.permissions)
@@ -26,9 +26,7 @@ class Permissions {
 
     private load() {
         const permissions = localStorage.getItem("permissions");
-        if (permissions) {
-            this.perms.value = JSON.parse(permissions);
-        }
+        if (permissions) this.perms.value = JSON.parse(permissions);
     }
 
     has(permission: string): boolean {

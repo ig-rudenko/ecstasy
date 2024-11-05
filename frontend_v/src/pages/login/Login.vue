@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 
 import {LoginUser} from "@/services/user";
 import {useStore} from "vuex";
@@ -7,6 +7,10 @@ import getVerboseAxiosError from "@/errorFmt";
 import router from "@/router.ts";
 
 const store = useStore();
+
+onMounted(() => {
+  if (store.state.auth.status.loggedIn) router.push({name: 'home'});
+})
 
 const user = ref(new LoginUser());
 const processing = ref(false);
@@ -23,7 +27,8 @@ function handleLogin() {
             if (value.status != 200) {
               userError.value = value.message;
             } else {
-              router.push({name: 'home'});
+              console.log("login success")
+              setTimeout(() => router.push({name: 'home'}))
             }
             processing.value = false;
           },
@@ -49,13 +54,13 @@ function handleLogin() {
 
   <div class="flex justify-start items-center h-screen">
     <div class="flex flex-col gap-3 mx-6 w-full md:mx-20 md:w-[20rem]">
-      <h1 class="mb-4 text-2xl md:w-[20rem] text-center">Пожалуйста, войдите в систему Ecstasy</h1>
+      <h1 class="mb-4 text-2xl md:w-[20rem] text-center text-gray-200">Пожалуйста, войдите в систему Ecstasy</h1>
 
       <Message v-if="userError" severity="error" icon="pi pi-exclamation-triangle" class="text-center my-4">{{userError}}</Message>
 
       <div>
         <IftaLabel>
-          <InputText id="username" @keydown.enter="handleLogin" fluid :invalid="!user.valid.username" v-model="user.username"/>
+          <InputText id="username" class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid :invalid="!user.valid.username" v-model="user.username"/>
           <label class="text-[0.85rem]" for="username">Логин</label>
         </IftaLabel>
         <Message v-if="!user.valid.username" severity="error" icon="pi pi-exclamation-triangle" class="text-center"><div class="text-xs">{{user.valid.usernameError}}</div></Message>
@@ -64,7 +69,7 @@ function handleLogin() {
 
       <div>
         <IftaLabel>
-          <Password id="password" @keydown.enter="handleLogin" fluid :feedback="false" v-model="user.password"/>
+          <Password id="password" input-class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid :feedback="false" v-model="user.password"/>
           <label class="text-[0.85rem]" for="username">Пароль</label>
         </IftaLabel>
         <Message v-if="!user.valid.password" severity="error" icon="pi pi-exclamation-triangle" class="text-center"><div class="text-xs">{{user.valid.passwordError}}</div></Message>

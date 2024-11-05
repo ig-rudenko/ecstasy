@@ -14,13 +14,13 @@ const router = createRouter({
     ],
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach((to) => {
     // redirect to login page if not logged in and trying to access a restricted page
     const publicPages = ['/account/login'];
     const authRequired = !publicPages.includes(to.path);
     const store = useStore();
 
-    if (authRequired && !store.state.auth.user) {
+    if (authRequired && !store.state.auth.status.loggedIn) {
         return '/account/login';
     }
 });
