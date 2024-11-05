@@ -1,31 +1,55 @@
-import {UserTokens} from "@/services/user.ts";
 import axios from "axios";
+
 import store from "@/store";
-import router from "@/router.ts";
+import router from "@/router";
+import {UserTokens} from "@/services/user";
 
 export async function refreshAccessToken() {
     const refreshToken = tokenService.getLocalRefreshToken()
     if (!refreshToken) return;
 
-    const rs = await axios.post(
-        "/api/token/refresh",
-        {refresh: refreshToken},
-    )
-
-    if (rs.status !== 200) {
+    const logout = async () => {
         await store.dispatch("auth/logout")
-        await router.push("/login");
-        return false
+        await router.push("/account/login");
+        return false;
     }
 
-    const {access, refresh} = rs.data;
-    // Обновляем access и refresh токены.
-    await store.dispatch('auth/refreshTokens', rs.data);
-    tokenService.updateLocalTokens(access, refresh);
-    return true
+    try {
+        const rs = await axios.post(
+            "/api/token/refresh",
+            {refresh: refreshToken},
+        )
+        if (rs.status !== 200) return logout()
+
+        const {access, refresh} = rs.data;
+        // Обновляем access и refresh токены.
+        await store.dispatch('auth/refreshTokens', rs.data);
+        tokenService.setTokens(access, refresh);
+        return true
+
+    } catch (error) {
+        console.error(error);
+        return logout();
+    }
+
 }
 
 export class TokenService {
+    private _tokens: UserTokens|null = null;
+
+    constructor() {
+        this.load();
+    }
+
+    private load() {
+        const data = localStorage.getItem("tokens")
+        if (data) this._tokens = JSON.parse(data)
+    }
+
+    private save() {
+        localStorage.setItem("tokens", JSON.stringify(this._tokens));
+    }
+
     getLocalRefreshToken() {
         const user = this.getUserTokens();
         return user.refreshToken;
@@ -36,28 +60,18 @@ export class TokenService {
         return user.accessToken;
     }
 
-    updateLocalTokens(access: string, refresh: string) {
-        let user = this.getUserTokens();
-        user.accessToken = access;
-        user.refreshToken = refresh;
-        localStorage.setItem("tokens", JSON.stringify(user));
-    }
-
-    setUser(tokens: UserTokens) {
-        localStorage.setItem("tokens", JSON.stringify(tokens));
-    }
-
-    removeUser() {
-        localStorage.removeItem("tokens");
-    }
-
     getUserTokens(): UserTokens {
-        const data = localStorage.getItem("tokens")
-        if (data) {
-            const jsonData = JSON.parse(data)
-            return new UserTokens(jsonData.accessToken, jsonData.refreshToken)
-        }
-        return new UserTokens()
+        return this._tokens || {accessToken: "", refreshToken:""}
+    }
+
+    setTokens(access: string, refresh: string) {
+        this._tokens = {accessToken: access, refreshToken: refresh};
+        this.save();
+    }
+
+    removeTokens() {
+        localStorage.removeItem("tokens");
+        this._tokens = null;
     }
 }
 const tokenService = new TokenService();

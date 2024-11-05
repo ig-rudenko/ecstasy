@@ -20,7 +20,7 @@ const setup = () => {
             if (ignoreURLs.includes(originalConfig.url) || !err.response) return Promise.reject(err);
 
             // Access Token was expired
-            if (err.response.status === 403 && !originalConfig._retry) {
+            if ([401, 403].includes(err.response.status) && !originalConfig._retry) {
                 originalConfig._retry = true;
                 originalConfig.headers["Content-Type"] = "application/json";
                 try {

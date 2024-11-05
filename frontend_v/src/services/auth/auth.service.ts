@@ -1,8 +1,8 @@
 import axios from "axios";
 
-import {tokenService} from "@/services/token.service";
-import {LoginUser, UserTokens} from "@/services/user";
+import {LoginUser} from "@/services/user";
 import UserService from "@/services/auth/user.service";
+import {tokenService} from "@/services/auth/token.service";
 
 class AuthService {
     async login(user: LoginUser) {
@@ -10,17 +10,12 @@ class AuthService {
             username: user.username,
             password: user.password
         });
-        tokenService.setUser(
-            new UserTokens(
-                response.data.access,
-                response.data.refresh
-            )
-        );
+        tokenService.setTokens(response.data.access, response.data.refresh);
         return response
     }
 
     logout() {
-        tokenService.removeUser();
+        tokenService.removeTokens();
         UserService.removeUser();
     }
 

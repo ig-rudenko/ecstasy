@@ -65,11 +65,9 @@ class User {
     ) {}
 }
 
-class UserTokens {
-    constructor(
-        public accessToken: string | null = null,
-        public refreshToken: string | null = null
-    ) {}
+export interface UserTokens {
+    accessToken: string;
+    refreshToken: string;
 }
 
 function createNewUser(data: any): User {
@@ -77,4 +75,4 @@ function createNewUser(data: any): User {
         data.first_name, data.last_name, data.email, data.date_join)
 }
 
-export {User, LoginUser, createNewUser, UserTokens}
+export {User, LoginUser, createNewUser}

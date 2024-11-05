@@ -11,15 +11,12 @@ class UserService {
 
     getUser(): User | null {
         if (this.user) return this.user;
-
-        console.log("getUser")
         const data = localStorage.getItem("user")
         if (data) this.user = JSON.parse(data)
         return this.user;
     }
 
     setUser(user: User): void {
-        console.log("setUser", user)
         this.user = user;
         localStorage.setItem("user", JSON.stringify(user));
     }
