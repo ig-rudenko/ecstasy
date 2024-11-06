@@ -11,9 +11,11 @@ export function getAvatar(username: string, image?: string, size: number = 64) {
     return `https://ui-avatars.com/api/?size=${size}&name=${username}&font-size=0.33&background=random&rounded=true`
 }
 
-export function textToHtml(text: string): string {
-    const r = /\n/g
-    return text.replace(r, "<br>")
+export function textToHtml(str: string): string {
+    let space_re = new RegExp(' ', 'g');
+    let n_re = new RegExp('\n', 'g');
+    str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
+    return str
 }
 
 /** Выделяем тегом <mark></mark> часть в описании, которая совпадает с паттерном поиска */

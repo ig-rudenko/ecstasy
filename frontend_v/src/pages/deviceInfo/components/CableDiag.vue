@@ -2,7 +2,7 @@
   <div class="flex flex-wrap justify-center">
 
     <div class="max-w-[25rem]">
-      <img src="/img/rj45-back.jpg" alt="RJ45-background">
+      <img src="/img/rj45-back.jpg" class="dark:opacity-70" alt="RJ45-background">
     </div>
 
     <div class="p-4">

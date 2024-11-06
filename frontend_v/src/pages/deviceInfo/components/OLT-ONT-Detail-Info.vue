@@ -1,67 +1,62 @@
 <template>
-
   <tr :style="lineStyle(line[1])" :class="lineClasses">
     <!--        ONT ID-->
     <td class="btn-fog" style="text-align: right">
 
-      <div class="btn-group" role="group">
+      <div class="flex items-center justify-end">
 
-        <Comment :interface="ontInterface" :register-comment-action="registerCommentAction"/>
+        <Comment :interface="ontInterface" :device-name="deviceName"/>
         <!--        Название Интерфейса-->
-        <div @click="toggleDetailInfo" class="col-auto blockquote" style="margin: 5px 10px; cursor:pointer;">
-              <span class="position-relative">
-                    {{ line[0] }}
-              </span>
-
-        </div>
+        <div @click="toggleDetailInfo" class="text-xl font-mono text-center px-4">{{ line[0] }}</div>
 
         <!--        Управление состоянием интерфейсов-->
         <PortControlButtons
-            :port-action="registerInterfaceAction"
+            :device-name="deviceName"
             :interface="ontInterface"
             :permission-level="permissionLevel"/>
 
         <!--        Посмотреть порт -->
-        <button @click="toggleDetailInfo" class="btn btn-group" style="padding: 6px 6px 2px 6px">
+        <Button @click="toggleDetailInfo" text>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box"
                viewBox="0 0 16 16">
-            <path
-                d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+            <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
           </svg>
-        </button>
+        </Button>
 
       </div>
     </td>
 
-    <td :style="statusStyles(line[1])">
+    <td :style="statusStyles(line[1])" class="font-mono">
       {{ line[1] }}
     </td>
 
     <!--            Equipment ID или АБОНЕНТ -->
     <td v-if="showSubscribersData">
       <div v-for="customer in getCustomersIDAndFullNameList(Number(line[0]))">
-        <a :href="'/gpon/subscriber-data/customers/'+customer.id" target="_blank">{{ customer.fullName }}</a>
+        <a :href="'/gpon/subscriber-data/customers/'+customer.id" target="_blank">
+          <Button text size="small" class="w-full" icon="pi pi-user" :label="customer.fullName"/>
+        </a>
       </div>
     </td>
-    <td v-else>{{ line[2] }}</td>
+    <td v-else class="font-mono">{{ line[2] }}</td>
 
     <!--            RSSI [dBm] или АДРЕС -->
-    <td v-if="showSubscribersData">
+    <td v-if="showSubscribersData" class="px-3">
       <div v-for="address in getCustomersAddressList(Number(line[0]))">{{ address }}</div>
     </td>
-    <td v-else>{{ line[3] }}</td>
+    <td v-else class="font-mono px-3">{{ line[3] }}</td>
 
     <!--            Serial или УСЛУГИ -->
-    <td v-if="showSubscribersData">
+    <td v-if="showSubscribersData" class="font-mono px-3">
       <div v-for="services in getCustomersServicesList(Number(line[0]))">{{ services }}</div>
     </td>
-    <td v-else>{{ line[4] }}</td>
+    <td v-else class="font-mono px-3">{{ line[4] }}</td>
 
     <!--            Description или ТРАНЗИТ -->
-    <td v-if="showSubscribersData">
+    <td v-if="showSubscribersData" class="font-mono px-3">
       <div v-for="transit in getCustomersTransitList(Number(line[0]))">{{ transit }}</div>
     </td>
-    <td v-else style="text-align: left">{{ line[5] }}</td>
+    <td v-else class="font-mono px-3" style="text-align: left">{{ line[5] }}</td>
 
   </tr>
 
@@ -70,125 +65,13 @@
     <td colspan="6">
 
       <!--      DETAIL PORT INFO  -->
-      <div v-if="complexInfo?.portDetailInfo" class="container row py-3">
-        <div v-if="complexInfo.portDetailInfo.type==='html'" class="card shadow py-3"
+      <div v-if="complexInfo?.portDetailInfo" class="p-3">
+        <div v-if="complexInfo.portDetailInfo.type==='html'" class="shadow py-3"
              v-html="complexInfo.portDetailInfo.data"></div>
       </div>
 
-
       <!--      ANOTHER INFO  -->
-      <div class="container row py-3">
-
-        <div class="col-auto">
-
-          <!--        BUTTON-->
-          <!--        Конфигурация порта-->
-          <div v-if="complexInfo?.portConfig">
-            <button type="button" @click="portDetailMenu=portDetailMenu==='portConfig'?'':'portConfig'"
-                    :class="portDetailMenu==='portConfig'?['btn', 'active']:['btn']">
-              <svg class="bi me-2" width="16" height="16" role="img">
-                <use xlink:href="#gear-icon"></use>
-              </svg>
-              Конфигурация порта
-            </button>
-          </div>
-
-          <!--        BUTTON-->
-          <!--        Ошибки на порту-->
-          <div v-if="complexInfo?.portErrors">
-            <button type="button" @click="portDetailMenu=portDetailMenu==='portErrors'?'':'portErrors'"
-                    :class="portDetailMenu==='portErrors'?['btn', 'active']:['btn']">
-              <svg class="bi me-2" width="16" height="16" role="img">
-                <use xlink:href="#warning-icon"></use>
-              </svg>
-              Ошибки на порту
-            </button>
-          </div>
-        </div>
-
-        <!--      Конфигурация порта -->
-        <div v-show="portDetailMenu==='portConfig'" class="col-md">
-
-          <div v-if="complexInfo?.portConfig" class="card shadow" style="padding: 2rem; text-align: left">
-            <span v-html="formatToHtml(complexInfo.portConfig)" style="font-family: monospace"></span>
-          </div>
-
-          <div v-else class="d-flex justify-content-center">
-            <div class="spinner-border" role="status"></div>
-          </div>
-        </div>
-
-        <!--      Ошибки на порту -->
-        <div v-show="portDetailMenu==='portErrors'" class="col-md">
-
-          <div v-if="complexInfo?.portErrors" class="card shadow" style="padding: 2rem;">
-            <span v-html="formatToHtml(complexInfo.portErrors)" style="font-family: monospace"></span>
-          </div>
-
-          <div v-else class="d-flex justify-content-center">
-            <div class="spinner-border" role="status"></div>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!--      МАС-->
-      <div v-if="MACs.length > 0" class="container">
-        <span>Всего: {{ MACs.length }}</span>
-
-        <div class="table-responsive-lg">
-          <table class="table">
-            <thead>
-            <tr>
-              <th></th>
-              <th scope="col">VLAN</th>
-              <th scope="col">MAC</th>
-              <th></th>
-            </tr>
-            </thead>
-            <tbody id="tbody-macs">
-
-            <tr v-for="mac in MACs">
-              <td></td>
-
-              <td style="font-family: monospace; font-size: x-large;">
-                    <span :title="mac[2]" style="cursor: help; font-family: monospace;">
-                        {{ mac[0] }}
-                    </span>
-              </td>
-
-              <td class="mac-line" style="font-family: monospace; font-size: x-large;">
-                    <span @click="findMacEvent(mac[1])" class="nowrap" style="cursor: pointer; font-family: monospace;"
-                          title="Поиск MAC" data-bs-toggle="modal" data-bs-target="#modal-find-mac">
-                        {{ mac[1] }}
-                        <svg class="bi me-2" width="24" height="24" role="img"><use
-                            xlink:href="#search-icon"></use></svg>
-                    </span>
-              </td>
-
-              <td>
-                <button @click="sessionEvent(mac[1], ontInterface.name)" type="button" class="btn btn-outline-primary"
-                        data-bs-toggle="modal" data-bs-target="#bras-session-modal">
-                  BRAS
-                </button>
-              </td>
-            </tr>
-
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-
-      <div v-else-if="MACs.length == 0" class="container">
-        <h3 class="text-center" style="padding-bottom: 40px;">Нет MAC</h3>
-      </div>
-
-      <div v-else class="d-flex justify-content-center" style="padding: 2.2rem;">
-        <div class="spinner-border" role="status"></div>
-      </div>
+      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
 
     </td>
   </tr>
@@ -202,12 +85,13 @@ import PortControlButtons from "./PortControlButtons.vue";
 import SubscribersData from "../subscribersData";
 import api from "@/services/api";
 import {AxiosResponse} from "axios";
-import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
+import {ComplexInterfaceInfoType} from "../detailInterfaceInfo";
 import Comment from "../../../components/Comment.vue";
 import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
 import {Address} from "@/types/address.ts";
 import {formatAddress} from "@/formats.ts";
 import {Customer} from "@/types/customer.ts";
+import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterfaceInfo.vue";
 
 export default defineComponent({
   props: {
@@ -215,14 +99,6 @@ export default defineComponent({
     interface: {required: true, type: Object as PropType<DeviceInterface>},
     line: {required: true, type: [] as PropType<any[]>},
     permissionLevel: {required: true, type: Number},
-    registerCommentAction: {
-      required: true,
-      type: Function as PropType<(action: ("add" | "update" | "delete"), comment: InterfaceComment, interfaceName: string) => void>
-    },
-    registerInterfaceAction: {
-      required: true,
-      type: Function as PropType<(action: ("up" | "down" | "reload"), port: string, description: string) => void>
-    },
     showSubscribersData: {required: false, type: Boolean},
     subscribersData: {
       required: false,
@@ -246,11 +122,12 @@ export default defineComponent({
       comments: this.line[7],
 
       portDetailMenu: "" as "" | "portConfig" | "portErrors",
-      complexInfo: null as ComplexInterfaceInfo | null,
+      complexInfo: null as ComplexInterfaceInfoType | null,
     }
   },
 
   components: {
+    ComplexInterfaceInfo,
     Comment,
     PortControlButtons,
   },
@@ -340,8 +217,8 @@ export default defineComponent({
       return "UNKNOWN"
     },
     lineStyle(status: string): any {
-      if (status === "OFFLINE") return {"background-color": "#ffcacf"}
-      if (this.showDetailInfo) return {"background-color": "#e8efff", "top": "56px"}
+      if (status.toLowerCase() === "offline") return {"background-color": "rgba(255,138,148,0.5)"}
+      if (this.showDetailInfo) return {"background-color": "rgba(232,239,255,0.5)", "top": "56px"}
     },
     formatToHtml(str: string): string {
       let space_re = new RegExp(' ', 'g');
@@ -361,7 +238,7 @@ export default defineComponent({
 
       api.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.ontInterface.name)
           .then(
-              (value: AxiosResponse<ComplexInterfaceInfo>) => {
+              (value: AxiosResponse<ComplexInterfaceInfoType>) => {
                 this.complexInfo = value.data;
               },
           )

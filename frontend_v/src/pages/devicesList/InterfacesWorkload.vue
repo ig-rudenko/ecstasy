@@ -6,7 +6,7 @@
 
         <!-- Абонентские порты UP С ОПИСАНИЕМ -->
         <div v-if="dev.interfaces_count.abons_up_with_desc" v-tooltip="'Абонентские порты (UP) с описанием'"
-             class="bg-green-700"
+             class="bg-green-700 text-gray-950"
              :style="{width: abonsUpWithDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_up_with_desc }}</div>
         </div>
@@ -34,7 +34,7 @@
 
         <!-- СЛУЖЕБНЫЕ порты -->
         <div v-if="systeminterfaces_count" v-tooltip="'Служебные порты'"
-             class="progress-bar bg-blue-400"
+             class="progress-bar bg-blue-400 text-gray-900"
              :style="{width: systemInterfacesPercents + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ systeminterfaces_count }}</div>
         </div>

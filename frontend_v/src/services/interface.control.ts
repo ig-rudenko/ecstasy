@@ -97,7 +97,6 @@ class InterfaceControlService {
                            Конфигурация ${value.save ? '' : 'НЕ '}была сохранена!`,
                         value.save ? "success" : "info",
                         5000,
-                        "port-info",
                     )
                 },
                 (reason: any) => errorToast("Ошибка при изменении состояния порта", errorFmt(reason))

@@ -1,7 +1,7 @@
 <template>
 
   <!--  POE   -->
-  <div v-if="data.poeStatus">
+  <div v-if="data.poeStatus" class="flex gap-2 items-center">
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" :fill="data.poeStatus==='off'?'grey':'orange'"
          class="bi bi-lightning-charge-fill me-2" viewBox="0 0 16 16">
       <path
@@ -9,18 +9,9 @@
     </svg>
     <span style="vertical-align: middle;" class="me-2">PoE:</span>
 
-    <select v-model="newPoeStatus" class="form-select" style="width: 150px; display: inline; vertical-align: middle;">
-      <option v-for="poe in data.poeChoices" :value="poe">{{ poe }}</option>
-    </select>
+    <Select v-model="newPoeStatus" :options="data.poeChoices" />
 
-    <button @click="changePoEStatus" class="btn btn-outline-success">
-      <svg v-show="!changingPoEStatusNow" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-           class="bi bi-check" viewBox="0 0 16 16">
-        <path
-            d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-      </svg>
-      <span v-show="changingPoEStatusNow" class="spinner-border" style="height: 24px;width: 24px;"></span>
-    </button>
+    <Button @click="changePoEStatus" severity="success" icon="pi pi-check" :loading="changingPoEStatusNow" />
   </div>
   <!-- / POE  -->
 
@@ -31,6 +22,8 @@ import {defineComponent, PropType} from "vue";
 import api from "@/services/api";
 import {AxiosResponse} from "axios";
 import {DeviceInterface} from "@/services/interfaces.ts";
+import {errorToast} from "@/services/my.toast.ts";
+import errorFmt from "@/errorFmt.ts";
 
 interface Poe {
   poeStatus: string
@@ -51,17 +44,17 @@ export default defineComponent({
     }
   },
   methods: {
-    changePoEStatus() {
+    async changePoEStatus() {
       let data = {port: this.interface.name, status: this.newPoeStatus}
 
       this.changingPoEStatusNow = true
-      api.post("/device/api/" + this.deviceName + "/set-poe-out", data)
-          .then(
-              (value: AxiosResponse) => {
-                this.poeChangeSuccess = value.status === 200;
-                this.changingPoEStatusNow = false
-              }
-          )
+      try {
+        await api.post("/device/api/" + this.deviceName + "/set-poe-out", data)
+        this.poeChangeSuccess = true;
+      } catch (error: any) {
+        errorToast("Ошибка измененини PoE", errorFmt(error))
+      }
+      this.changingPoEStatusNow = false
     },
   }
 })

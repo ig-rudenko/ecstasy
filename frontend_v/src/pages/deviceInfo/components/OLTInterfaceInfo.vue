@@ -1,33 +1,31 @@
 <template>
   <div class="container" id="port-info">
-    <button type="button" class="btn btn">
-      Всего <span class="badge text-bg-primary">{{ data.total_count }}</span>
-    </button>
 
-    <button type="button" class="btn me-3">
-      Online <span class="badge text-bg-success">{{ data.online_count }}</span>
-    </button>
+    <div class="flex flex-wrap gap-3 items-center">
+      <div>
+        Всего <span class="px-2 rounded-full bg-primary text-white">{{ data.total_count }}</span>
+      </div>
+      <div>
+        Online <span class="px-2 rounded-full bg-green-500 text-white">{{ data.online_count }}</span>
+      </div>
 
-    <button v-if="showSubscribersData" @click="showSubscribersData=false" type="button"
-            class="btn btn-outline-secondary">
-      Переключить на обычный вид
-    </button>
-    <button v-else @click="getSubscribersData" type="button" class="btn btn-outline-primary">
-      Переключить на просмотр абонентов
-    </button>
+      <Button v-if="showSubscribersData" @click="showSubscribersData=false"
+              icon="pi pi-list" size="small" outlined label="Переключить на обычный вид"/>
+      <Button v-else @click="getSubscribersData"
+              outlined icon="pi pi-users" size="small" label="Переключить на просмотр абонентов"/>
 
-    <br><br>
+    </div>
 
-    <div class="table-responsive-lg">
-      <table class="table" style="text-align: center">
+    <div class="flex justify-center">
+      <table class="text-center w-full">
         <thead>
         <tr>
-          <th scope="col">ONT ID</th>
-          <th scope="col">Статус</th>
-          <th scope="col">{{ showSubscribersData ? 'Абонент' : 'Equipment ID' }}</th>
-          <th scope="col">{{ showSubscribersData ? 'Адрес' : 'RSSI [dBm]' }}</th>
-          <th scope="col">{{ showSubscribersData ? 'Услуги' : 'Serial' }}</th>
-          <th scope="col">{{ showSubscribersData ? 'Транзит' : 'Описание' }}</th>
+          <th scope="col" class="px-4 py-2">ONT ID</th>
+          <th scope="col" class="px-4 py-2">Статус</th>
+          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Абонент' : 'Equipment ID' }}</th>
+          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Адрес' : 'RSSI [dBm]' }}</th>
+          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Услуги' : 'Serial' }}</th>
+          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Транзит' : 'Описание' }}</th>
         </tr>
         </thead>
         <tbody>
@@ -38,8 +36,6 @@
               @session-mac="sessionEvent"
               :device-name="deviceName"
               :interface="interface"
-              :register-interface-action="registerInterfaceAction"
-              :register-comment-action="registerCommentAction"
               :permission-level="permissionLevel"
               :line="line"
               :show-subscribers-data="showSubscribersData"
@@ -77,14 +73,6 @@ export default defineComponent({
     permissionLevel: {required: true, type: Number},
     data: {required: true, type: Object as PropType<ontData>},
     interface: {required: true, type: Object as PropType<DeviceInterface>},
-    registerCommentAction: {
-      required: true,
-      type: Function as PropType<(action: ("add" | "update" | "delete"), comment: InterfaceComment, interfaceName: string) => void>
-    },
-    registerInterfaceAction: {
-      required: true,
-      type: Function as PropType<(action: ("up" | "down" | "reload"), port: string, description: string) => void>
-    }
   },
 
   emits: ["find-mac", "session-mac"],

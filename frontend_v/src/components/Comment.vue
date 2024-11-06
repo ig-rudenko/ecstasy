@@ -2,10 +2,10 @@
   <!--Посмотреть комментарии-->
   <div v-if="interface.comments && interface.comments.length">
     <Button @click="showCommentsPopup" text severity="secondary">
-        <span style="position: absolute; text-align: center; font-size: 14px; top: 8px"
-              :style="{padding: '0 ' + (3 - String(interface.comments.length).length) * 5 + 'px'}">
-            {{ interface.comments.length }}
-        </span>
+      <span style="position: absolute; text-align: center; font-size: 14px; top: 8px"
+            :style="{padding: '0 ' + (3 - String(interface.comments.length).length) * 5 + 'px'}">
+          {{ interface.comments.length }}
+      </span>
       <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffc107" class="comment-active bi bi-chat-right-text" viewBox="0 0 16 16">
         <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
       </svg>
@@ -20,7 +20,7 @@
         <div style="text-align: right">
           <svg
               v-if="allowEdit"
-              @click="registerCommentAction('add', null, interface.name)"
+              @click="registerCommentAction('add', null)"
               data-bs-toggle="modal" data-bs-target="#modal-comment"
               xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754"
               class="bi bi-plus-circle" viewBox="0 0 16 16"
@@ -78,7 +78,7 @@
   </div>
 
   <!--Создание комментария-->
-  <Button text
+  <Button text severity="secondary"
           v-else-if="allowEdit"
           @click="registerCommentAction('add', null)">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#999" class="bi bi-chat-right-text" viewBox="0 0 16 16">

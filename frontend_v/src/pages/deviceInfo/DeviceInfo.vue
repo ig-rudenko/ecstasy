@@ -1,15 +1,6 @@
 <template>
   <Header/>
 
-  <Toast group="port-info">
-    <template #message="slotProps">
-      <div class="flex flex-col items-start" style="flex: 1">
-        <div class="font-medium text-xl my-3" v-html="slotProps.message.summary"></div>
-        <div class="font-medium text-xl my-3" v-html="slotProps.message.detail"></div>
-      </div>
-    </template>
-  </Toast>
-
   <div class="container mx-auto my-8 sm:my-12 flex justify-center">
     <!--    Имя оборудования и его статус-->
     <DeviceStatusName
@@ -146,9 +137,10 @@
     </div>
 
     <!--Собираем интерфейсы-->
-    <h1 v-else class="py-5" style="text-align: center;">
+    <div v-else class="py-5 text-xl flex justify-center flex-col">
       <span>Собираем интерфейсы</span>
-    </h1>
+      <ProgressSpinner/>
+    </div>
 
   </div>
 
@@ -159,12 +151,7 @@
 
   <FindMac />
 
-  <BrasSession
-      v-if="generalInfo"
-      @closed="sessionControl.display = false"
-      :device-name="generalInfo.deviceName"
-      :mac="sessionControl.mac"
-      :port="sessionControl.port"/>
+  <BrasSession />
 
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
     <symbol id="search-icon">
@@ -254,6 +241,7 @@ import {HardwareStats, newHardwareStats} from "./hardwareStats";
 import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
+import {errorToast} from "@/services/my.toast.ts";
 
 export default defineComponent({
   name: 'device',
@@ -472,10 +460,11 @@ export default defineComponent({
     },
 
     showToastError(reason: any, text: string = "") {
-      this.$toast.add({
-        severity: "error", summary: `<h4>ERROR! status: ${reason.response.status}</h4>`,
-        detail: text + " Причина: " + (reason.response.data?.detail || reason.response.data?.error), life: 10000
-      })
+      errorToast(
+        `ERROR! status: ${reason.response.status}`,
+        "Причина: " + (reason.response.data?.detail || reason.response.data?.error),
+        10000
+      )
     }
 
   },

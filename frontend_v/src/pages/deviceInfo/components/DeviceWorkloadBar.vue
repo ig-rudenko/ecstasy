@@ -2,11 +2,21 @@
   <div v-if="totalCount">
     <div class="pb-2">Загруженность интерфейсов</div>
     <div class="text-center flex shadow-xl rounded">
-      <div class="bg-green-700 rounded" :style="style_up_with_desc">{{ workload.abons_up_with_desc }}</div>
-      <div class="bg-green-500 rounded" :style="style_up_no_desc">{{ workload.abons_up_no_desc }}</div>
-      <div class="bg-red-300 rounded" :style="style_down_with_desc">{{ workload.abons_down_with_desc }}</div>
-      <div class="bg-gray-300 rounded" :style="style_down_no_desc">{{ workload.abons_down_no_desc }}</div>
-      <div class="bg-blue-400 rounded" :style="style_systems">{{ systemsInterfacesCount }}</div>
+      <div v-if="workload.abons_up_with_desc" class="text-white text-sm bg-green-700 rounded"
+           :style="style_up_with_desc">{{ workload.abons_up_with_desc }}
+      </div>
+      <div v-if="workload.abons_up_no_desc" class="text-sm text-gray-950 bg-green-500 rounded"
+           :style="style_up_no_desc">{{ workload.abons_up_no_desc }}
+      </div>
+      <div v-if="workload.abons_down_with_desc" class="text-sm text-gray-950 bg-red-300 rounded"
+           :style="style_down_with_desc">{{ workload.abons_down_with_desc }}
+      </div>
+      <div v-if="workload.abons_down_no_desc" class="text-sm text-gray-950 bg-gray-300 rounded"
+           :style="style_down_no_desc">{{ workload.abons_down_no_desc }}
+      </div>
+      <div v-if="systemsInterfacesCount" class="text-sm text-gray-950 bg-blue-400 rounded" :style="style_systems">
+        {{ systemsInterfacesCount }}
+      </div>
     </div>
   </div>
 </template>
@@ -25,28 +35,19 @@ export default defineComponent({
     },
 
     style_up_with_desc() {
-      return {'width': this.workload.abons_up_with_desc / this.totalCount * 100 + '%', height: '25px'}
+      return {'width': this.workload.abons_up_with_desc / this.totalCount * 100 + '%'}
     },
     style_up_no_desc() {
-      return {
-        'width': this.workload.abons_up_no_desc / this.totalCount * 100 + '%',
-        height: '25px'
-      }
+      return {'width': this.workload.abons_up_no_desc / this.totalCount * 100 + '%'}
     },
     style_down_with_desc() {
-      return {
-        'width': this.workload.abons_down_with_desc / this.totalCount * 100 + '%',
-        height: '25px'
-      }
+      return {'width': this.workload.abons_down_with_desc / this.totalCount * 100 + '%'}
     },
     style_down_no_desc() {
-      return {
-        'width': this.workload.abons_down_no_desc / this.totalCount * 100 + '%',
-        height: '25px'
-      }
+      return {'width': this.workload.abons_down_no_desc / this.totalCount * 100 + '%'}
     },
     style_systems() {
-      return {'width': this.systemsInterfacesCount / this.totalCount * 100 + '%', height: '25px'}
+      return {'width': this.systemsInterfacesCount / this.totalCount * 100 + '%'}
     },
 
     systemsInterfacesCount() {

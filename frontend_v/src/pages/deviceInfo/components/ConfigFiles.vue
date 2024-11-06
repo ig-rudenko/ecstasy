@@ -92,7 +92,7 @@
 
   <Dialog v-model:visible="visibleConfigText" modal class="h-full " maximizable :header="'Конфигурация '+selectedFile?.name">
     <div v-if="selectedFile?.content">
-      <div style="font-family: monospace; padding: 1rem" v-html="formatToHtml(selectedFile.content)"></div>
+      <div style="font-family: monospace; padding: 1rem" v-html="textToHtml(selectedFile.content)"></div>
     </div>
     <div v-else class="flex justify-center">
       <i class="pi pi-spin pi-spinner text-6xl"/>
@@ -136,6 +136,7 @@ import Dialog from "primevue/dialog";
 import ConfigFileDiff from "./ConfigFileDiff.vue";
 import api from "@/services/api";
 import errorFmt from "@/errorFmt.ts";
+import {textToHtml} from "@/formats.ts";
 
 
 interface ConfigFile {
@@ -201,6 +202,7 @@ export default defineComponent({
   },
 
   methods: {
+    textToHtml,
     fileIcon(fileName: string): string {
       if (fileName && fileName.endsWith(".txt")) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-text me-1" viewBox="0 0 16 16" style="cursor: pointer;">
@@ -231,18 +233,6 @@ export default defineComponent({
       else if (bytes < megaBytes) return (bytes / kiloBytes).toFixed(decimal) + " КБ";
       else if (bytes < marker * megaBytes) return (bytes / megaBytes).toFixed(decimal) + " МБ";
       return "1+ ГБ"
-    },
-
-    /**
-     * Превращаем строку в html, для корректного отображения
-     * @param str Строка, для форматирования.
-     * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
-     */
-    formatToHtml(str: string): string {
-      let space_re = new RegExp(' ', 'g');
-      let n_re = new RegExp('\n', 'g');
-      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return str
     },
 
     getFiles() {

@@ -1,64 +1,67 @@
 <template>
 
-  <Dialog modal>
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width: 100%; margin: 0; height: 100%">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalScrollableTitle">
-            Сессия абонента {{ current_mac }}
-          </h1>
-          <div class="text-end">
-            <span v-if="updating" class="text-muted text-help" style="cursor: progress">Обновляю...</span>
-            <span v-else @click="getSessions" class="text-muted text-help" style="cursor: pointer">Обновить</span>
-          </div>
-          <button @click="closed" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <Dialog modal v-model:visible="brasSessionsService.dialogVisible" class="w-full h-full">
+    <template #header>
+      <div class="flex items-center">
+        <div class="text-2xl">
+          Сессия абонента <span class="font-mono">"{{ brasSessionsService.current?.mac }}"</span>
         </div>
-
-        <div class="modal-header">
-
-          <!--СРЕЗАТЬ СЕССИЮ   -->
-          <!--        НОЖ-->
-          <svg v-if="cuttingNow" class="bi me-2 spinner-border icon-100" width="24" height="24" role="img">
-            <use xlink:href="#blade-handmade"></use>
-          </svg>
-
-          <button v-else @click="cutSession" class="btn btn-outline-primary">
-            <svg class="bi me-2 icon-30" role="img">
-              <use xlink:href="#blade-handmade"></use>
-            </svg>
-            Cut session
-          </button>
-
-        </div>
-
-        <div class="modal-body row">
-
-          <!--        SESSIONS-->
-          <div v-if="sessions.length">
-            <template v-if="sessions[0]">
-              <div class="d-flex justify-content-center">
-                <div class="btn btn-primary">BRAS1</div>
-              </div>
-              <div class="card p-4" v-if="sessions[0].errors.length">{{ sessions[0].errors }}</div>
-              <div class="card p-4" v-html="formatToHtml(sessions[0].session)" style="font-family: monospace;"></div>
-            </template>
-
-            <template v-if="sessions[1]">
-              <div class="d-flex justify-content-center">
-                <div class="btn btn-primary">BRAS2</div>
-              </div>
-              <div class="card p-4" v-if="sessions[1].errors.length">{{ sessions[1].errors }}</div>
-              <div class="card p-4" v-html="formatToHtml(sessions[1].session)" style="font-family: monospace;"></div>
-            </template>
-          </div>
-          <!--        LOADING SESSIONS-->
-          <div v-else class="d-flex justify-content-center" style="padding: 2.2rem;">
-            <div class="spinner-border" role="status"></div>
-          </div>
-
+        <div>
+          <span v-if="updatingSessions" class="text-muted text-help" style="cursor: progress">Обновляю...</span>
+          <span v-else @click="refreshSessions" class="text-muted text-help" style="cursor: pointer">Обновить</span>
         </div>
       </div>
+    </template>
+
+    <div>
+
+      <!--СРЕЗАТЬ СЕССИЮ   -->
+      <!--        НОЖ-->
+
+      <Button @click="cutSession" class="btn btn-outline-primary">
+        <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
+          <use xlink:href="#blade-handmade"></use>
+        </svg>
+        <svg v-else class="icon-30" >
+          <use xlink:href="#blade-handmade"></use>
+        </svg>
+        Cut session
+      </Button>
+
     </div>
+
+    <div class="">
+
+      <!--        SESSIONS-->
+      <div v-if="sessions" class="overflow-auto">
+        <template v-if="sessions.BRAS1">
+          <div class="flex justify-center">
+            <Button>BRAS1</Button>
+          </div>
+          <div class="p-4" v-if="sessions.BRAS1.errors.length">
+            {{ sessions.BRAS1.errors }}
+          </div>
+          <div class="p-4 font-mono" v-html="textToHtml(sessions.BRAS1.session)"></div>
+        </template>
+
+        <template v-if="sessions.BRAS2">
+          <div class="flex justify-center">
+            <Button>BRAS1</Button>
+          </div>
+          <div class="card p-4" v-if="sessions.BRAS2.errors.length">
+            {{ sessions.BRAS2.errors }}
+          </div>
+          <div class="card p-4 font-mono" v-html="textToHtml(sessions.BRAS2.session)"></div>
+        </template>
+      </div>
+
+      <!--        LOADING SESSIONS-->
+      <div v-else class="flex justify-center">
+        <ProgressSpinner/>
+      </div>
+
+    </div>
+
   </Dialog>
 
   <!--   ICON   -->
@@ -90,102 +93,43 @@
 
 <script lang="ts">
 import {defineComponent} from "vue";
-import {AxiosResponse} from "axios";
 
-import api from "@/services/api";
-
-class BrasData {
-  constructor(public session: string, public errors: string[]) {
-  }
-}
+import brasSessionsService from "@/services/bras.sessions";
+import brasSessions from "@/services/bras.sessions";
+import {textToHtml} from "@/formats.ts";
 
 export default defineComponent({
-  props: {
-    deviceName: {required: true, type: String},
-    mac: {required: true, type: String},
-    port: {required: true, type: String}
-  },
-  emits: ["closed"],
   data() {
     return {
-      current_mac: "",
-      sessions: [] as BrasData[],
-      cutSessionResult: null,
-      cuttingNow: false,
-      updating: false
+      brasSessionsService: brasSessionsService,
+      updatingSessions: false,
     }
   },
-  created() {
-    this.getSessions()
-  },
-  updated() {
-    // Если МАС адрес остался прежним, то не обновляем информацию
-    if (this.current_mac === this.mac) return
-    this.current_mac = this.mac
-    this.getSessions()
+
+  computed: {
+    sessions() {
+      return brasSessionsService.sessions
+    },
   },
 
   methods: {
-    closed() {
-      this.sessions = []
-      this.cutSessionResult = null
-      this.$emit("closed")
-    },
-
-    getSessions() {
-      if (!this.current_mac) return;
-      api.get("/device/api/session?mac=" + this.current_mac)
-          .then(
-              (value: AxiosResponse<any[]>) => {
-                this.updating = false
-                this.sessions = this.getBrasData(value.data)
-              }
-          )
-    },
-
-    getBrasData(data: any): BrasData[] {
-      return [
-        new BrasData(data.BRAS1.session, data.BRAS1.errors),
-        new BrasData(data.BRAS2.session, data.BRAS2.errors),
-      ]
-    },
+    textToHtml,
 
     cutSession() {
-      if (!this.current_mac) return;
-      this.cuttingNow = true
-      let data = {
-        device: this.deviceName,
-        port: this.port,
-        mac: this.current_mac
-      }
-      api.post("/device/api/cut-session", data)
-          .then(
-              (value: AxiosResponse<any>) => {
-                this.cutSessionResult = value.data;
-                this.cuttingNow = false
-              },
-              () => {
-                this.cuttingNow = false
-              }
-          )
-          .catch(() => {
-            this.cuttingNow = false
-          })
+      if (brasSessionsService.cuttingNow.value) return;
+      brasSessionsService.cutSession()
     },
 
-    /**
-     * Превращаем строку в html, для корректного отображения
-     * @param str Строка, для форматирования
-     * Заменяем перенос строки на `<br>` пробелы на `&nbsp;`
-     */
-    formatToHtml(str: string): string {
-      if (!str) return "";
-      let space_re = new RegExp(' ', 'g');
-      let n_re = new RegExp('\n', 'g');
-
-      str = str.replace(space_re, '&nbsp;').replace(n_re, '<br>')
-      return str
+    refreshSessions() {
+      if (!brasSessionsService.current.value) return;
+      this.updatingSessions = true;
+      brasSessions.getSessions(
+          brasSessionsService.current.value.mac,
+          brasSessionsService.current.value.device,
+          brasSessionsService.current.value.port
+      ).then(() => this.updatingSessions = false)
     },
+
   }
 
 })

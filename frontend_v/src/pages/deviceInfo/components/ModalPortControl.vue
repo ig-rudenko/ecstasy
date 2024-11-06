@@ -57,8 +57,8 @@
       <!--      BUTTONS-->
       <div class="flex flex-wrap gap-2 justify-end">
 
-        <Button icon="pi pi-times" label="Отмена" severity="secondary"
-                @click="() => interfaceControlService.closeDialog()"/>
+        <Button icon="pi pi-times" label="Отмена" severity="secondary" autofocus
+                @click="closeDialog"/>
 
         <Button icon="pi pi-check" v-show="interfaceControlService.portAction.action" @click="() => submitPortAction(false)"
                 label="Без сохранения конфигурации"/>
@@ -85,6 +85,9 @@ export default defineComponent({
   methods: {
     submitPortAction(save: boolean) {
       interfaceControlService.submitPortAction(save);
+    },
+    closeDialog() {
+      interfaceControlService.closeDialog();
     }
   }
 })
