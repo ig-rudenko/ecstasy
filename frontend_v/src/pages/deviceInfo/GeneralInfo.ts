@@ -1,53 +1,24 @@
-class ZabbixMapInfo {
-    constructor(
-        public sysmapid: number,
-        public name: string,
-    ) {
-    }
+export interface ZabbixMapInfo {
+    sysmapid: number,
+    name: string,
 }
 
-class ZabbixInfo {
-    constructor(
-        public description: string,
-        public inventory: any,
-        public monitoringAvailable: number,
-        public maps: ZabbixMapInfo[],
-    ) {}
+export interface ZabbixInfo {
+    description: string;
+    inventory: any;
+    monitoringAvailable: number;
+    maps: ZabbixMapInfo[];
 }
 
-class GeneralInfo {
-    constructor(
-        public coords: [string, string],
-        public deviceIP: string,
-        public deviceName: string,
-        public elasticStackLink: string,
-        public permission: number,
-        public zabbixHostID: number,
-        public zabbixInfo: ZabbixInfo,
-        public zabbixURL: string,
-        public consoleURL: string,
-        public uptime: number,
-    ) {}
+export interface GeneralInfo {
+    coords: [string, string],
+    deviceIP: string,
+    deviceName: string,
+    elasticStackLink: string,
+    permission: number,
+    zabbixHostID: number,
+    zabbixInfo: ZabbixInfo,
+    zabbixURL: string,
+    consoleURL: string,
+    uptime: number,
 }
-
-
-function newZabbixInfo(data: any): ZabbixInfo {
-    return new ZabbixInfo(data.description, data.inventory, data.monitoringAvailable, data.maps)
-}
-
-function newGeneralInfo(data: any): GeneralInfo {
-    return new GeneralInfo(
-        [data.coords[0], data.coords[1]],
-        data.deviceIP,
-        data.deviceName,
-        data.elasticStackLink,
-        data.permission,
-        data.zabbixHostID,
-        newZabbixInfo(data.zabbixInfo),
-        data.zabbixURL,
-        data.consoleURL,
-        data.uptime,
-    )
-}
-
-export {ZabbixMapInfo, ZabbixInfo, GeneralInfo, newGeneralInfo}

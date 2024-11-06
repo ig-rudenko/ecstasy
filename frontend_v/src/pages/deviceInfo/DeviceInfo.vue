@@ -20,31 +20,8 @@
         :console-url="generalInfo.consoleURL"/>
   </div>
 
-  <div v-if="deviceName" class="container mx-auto my-5 px-2 md:px-6">
+  <div v-if="generalInfo" class="container mx-auto my-5 px-2 md:px-6">
 
-    <div class="hidden col-md-4">
-      <div class="card shadow h-full">
-        <div class="card-body">
-          <!--  Время обновления интерфейсов-->
-          <InterfacesHelpText
-              @update="updateCurrentStatus"
-              :time-passed="timePassedFromLastUpdate"
-              :device-status="deviceAvailable"
-              :auto-update="autoUpdateInterfaces"
-              :current-status="currentStatus"
-              :last-interface-update="collected"/>
-
-          <!--  Обновление интерфейсов-->
-          <div style="padding: 0 10px">
-            <div v-if="currentStatus" class="form-check form-switch py-3">
-              <input v-model="autoUpdateInterfaces"
-                     class="form-check-input" type="checkbox" role="switch" id="auto-update-interfaces">
-              <label class="form-check-label" for="auto-update-interfaces">Обновлять автоматически</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <div v-if="generalInfo" class="border rounded-xl shadow-xl p-3 flex flex-wrap justify-between">
 
@@ -94,8 +71,8 @@
   </div>
 
   <!--    Список конфигураций-->
-  <div v-if="deviceName" v-show="configFiles.display" class="container mx-auto px-2 md:px-6">
-    <ConfigFiles :device-name="deviceName"/>
+  <div v-if="generalInfo" v-show="configFiles.display" class="container mx-auto px-2 md:px-6">
+    <ConfigFiles :device-name="generalInfo.deviceName"/>
   </div>
 
   <div class="container mx-auto px-2 md:px-6">
@@ -103,14 +80,38 @@
     <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
 
     <div class="py-4">
-      <UserActionsButton v-if="deviceName" :device-name="deviceName"/>
+      <UserActionsButton v-if="generalInfo" :device-name="generalInfo.deviceName"/>
+    </div>
+  </div>
+
+
+  <div class="container mx-auto px-2 md:px-6">
+    <div>
+      <div class="p-2">
+        <!--  Время обновления интерфейсов-->
+        <InterfacesHelpText
+            @update="updateCurrentStatus"
+            :time-passed="timePassedFromLastUpdate"
+            :device-status="deviceAvailable"
+            :auto-update="autoUpdateInterfaces"
+            :current-status="currentStatus"
+            :last-interface-update="collected"/>
+
+        <!--  Обновление интерфейсов-->
+        <div class="text-sm">
+          <div v-if="currentStatus" class="flex gap-2 items-center">
+            <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
+            <label for="auto-update-interfaces">Обновлять автоматически</label>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="py-4 px-2 md:px-6 flex justify-evenly relative">
 
     <!--    Таблица интерфейсов-->
-    <div v-if="interfaces.length" class="overflow-x-scroll overflow-y-visible">
+    <div v-if="interfaces.length && generalInfo" class="overflow-x-scroll overflow-y-visible">
       <table class="block">
         <thead>
         <tr>
@@ -131,15 +132,12 @@
 
         <template v-for="_interface in interfaces">
           <DetailInterfaceInfo
-              @find-mac="findMacEvent"
               @session-mac="sessionEvent"
               @toast="showToastError"
-              :device-name="deviceName"
+              :device-name="generalInfo.deviceName"
               :dynamic-opacity="dynamicOpacity"
               :interface="_interface"
               :permission-level="generalInfo.permission"
-              :register-comment-action="registerCommentAction"
-              :register-interface-action="registerAction"
           />
         </template>
 
@@ -155,13 +153,14 @@
   </div>
 
 
-  <ModalPortControl :port-action="portAction"/>
+  <ModalPortControl />
 
-  <CommentControl :comment="commentObject"/>
+  <CommentControl/>
 
   <FindMac />
 
   <BrasSession
+      v-if="generalInfo"
       @closed="sessionControl.display = false"
       :device-name="generalInfo.deviceName"
       :mac="sessionControl.mac"
@@ -250,13 +249,11 @@ import DeviceImages from "./components/DeviceImages.vue";
 import UserActionsButton from "./components/UserActionsButton.vue";
 
 import api from "@/services/api";
-import {GeneralInfo, newGeneralInfo} from "./GeneralInfo";
+import {GeneralInfo} from "./GeneralInfo";
 import {HardwareStats, newHardwareStats} from "./hardwareStats";
-import {DeviceInterface, InterfaceComment, InterfacesCount, newInterfacesList} from "@/services/interfaces";
+import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
-import devicesService, {ChangePortStatusRequest} from "@/services/devices.ts";
-import {newToast} from "@/services/my.toast.ts";
 
 export default defineComponent({
   name: 'device',
@@ -290,7 +287,7 @@ export default defineComponent({
     return {
       deviceStats: {} as HardwareStats,
       interfacesWorkload: {} as InterfacesCount,
-      generalInfo: {} as GeneralInfo,
+      generalInfo: null as GeneralInfo|null,
       interfaces: [] as DeviceInterface[],
 
       timePassedFromLastUpdate: "",
@@ -304,31 +301,12 @@ export default defineComponent({
 
       deviceName: "",
 
-      commentObject: {
-        id: -1,
-        text: "",
-        user: "",
-        action: "" as ("add" | "update" | "delete"),
-        interface: "",
-        submit: null as any,
-        showDialog: false,
-      },
-
       findMacAddress: "",
       findMacDialogVisible: false,
       sessionControl: {
         mac: "",
         port: "",
         display: false,
-      },
-
-      portAction: {
-        name: "",
-        action: "" as (string | null),
-        submit: null as any,
-        port: "",
-        desc: "",
-        showChangePortDialog: false,
       },
 
       configFiles: {
@@ -413,10 +391,10 @@ export default defineComponent({
     /** Смотрим информацию про оборудование */
     async getInfo() {
       let url = "/device/api/" + this.deviceName + "/info"
-      return api.get(url).then(
-          (value: any) => {
-            this.generalInfo = newGeneralInfo(value.data);
-            this.deviceName = this.generalInfo.deviceName
+      return api.get<GeneralInfo>(url).then(
+          value => {
+            this.generalInfo = value.data;
+            this.deviceName = value.data.deviceName
           },
           (reason: any) => this.showToastError(reason)
       ).catch(
@@ -469,155 +447,6 @@ export default defineComponent({
         this.getInterfaces(false);
         this.currentStatus = true;
       }
-    },
-
-    /**
-     * Регистрируем новое действие над комментариями.
-     * Обновляем объект `commentObject`
-     *
-     * @param action Действие: ('add', 'update' или 'delete')
-     * @param comment Объект комментария из БД ('id', 'text', 'username')
-     * @param interfaceName Название интерфейса
-     */
-    registerCommentAction(action: "add" | "update" | "delete", comment: InterfaceComment, interfaceName: string) {
-      if (action === "add") {
-        this.commentObject = {
-          id: -1,
-          text: '',
-          user: '',
-          action: action,
-          interface: interfaceName,
-          submit: this.submitCommentAction,
-          showDialog: true,
-        }
-      } else if (comment.id && (action === "update" || action === "delete")) {
-        this.commentObject = {
-          id: comment.id,
-          text: comment.text,
-          user: comment.user,
-          action: action,
-          interface: interfaceName,
-          submit: this.submitCommentAction,
-          showDialog: true,
-        }
-      }
-    },
-
-    /**
-     * Регистрируем действие над состоянием порта.
-     * @param action Действие: ("up", "down", "reload")
-     * @param port Название порта
-     * @param description Описание порта
-     */
-    registerAction(action: "up" | "down" | "reload", port: string, description: string): void {
-
-      if (["up", "down", "reload"].indexOf(action) < 0) {
-        // Если неверное действие
-        this.portAction = {
-          name: "",
-          action: null,
-          port: "",
-          desc: "",
-          submit: null,
-          showChangePortDialog: false,
-        }
-      }
-
-      let actionName: string
-      if (action === "up") {
-        actionName = "включить"
-      } else if (action === "down") {
-        actionName = "выключить"
-      } else {
-        actionName = "перезагрузить"
-      }
-
-      this.portAction = {
-        name: actionName,
-        port: port,
-        desc: description,
-        action: action,
-        submit: this.submitPortAction,
-        showChangePortDialog: true,
-      }
-    },
-
-    /**
-     * Подтверждаем действие над выбранным портом
-     * @param saveConfig Сохранять конфигурацию?
-     */
-    submitPortAction(saveConfig: boolean): void {
-      this.portAction.showChangePortDialog = false;
-
-      if (!this.portAction.action) return;
-
-      let data: ChangePortStatusRequest = {
-        port: this.portAction.port,       // Сам порт
-        desc: this.portAction.desc,       // Описание порта
-        status: this.portAction.action,   // Что сделать с портом
-        save: saveConfig,                 // Сохранить конфигурацию после действия?
-      }
-
-      devicesService.changePortStatus(this.deviceName, data)
-          .then(
-              value => {
-                let status = value.status.toUpperCase();
-                let className = status === "DOWN" ? "bg-red-500" : (status === "RELOAD" ? "bg-orange-500" : "bg-green-600");
-                status = status === "DOWN" ? "ADMIN DOWN" : status;
-                newToast(
-                    `Порт: <span class="p-badge bg-gray-700 text-white">${value.port}</span>`,
-                    `Состояние: <span class="p-badge ${className}">${status}</span>
-                           Конфигурация ${value.save ? '' : 'НЕ '}была сохранена!`,
-                    value.save ? "success" : "info",
-                    5000,
-                    "port-info",
-                )
-              },
-              (reason: any) => this.showToastError(reason)
-          )
-          .catch(
-              (reason: any) => this.showToastError(reason)
-          )
-    },
-
-    /**
-     * Подтверждаем действие над выбранным комментарием
-     */
-    submitCommentAction() {
-      let new_comment = this.commentObject.text
-      let method: "post" | "patch" | "delete"
-      let data: any
-      let url: string = "/device/api/comments"
-
-      // Добавляем новый комментарий
-      if (this.commentObject.action === "add" && new_comment.length) {
-        method = "post"
-        data = {
-          device: this.deviceName,
-          comment: new_comment,
-          interface: this.commentObject.interface
-        }
-      } else if (this.commentObject.action === "update" && new_comment.length) {
-        // Обновление комментария на порту
-        url = "/device/api/comments/" + this.commentObject.id
-        method = "patch"
-        data = {comment: new_comment}
-      } else {
-        // Удаление комментария на порту
-        url = "/device/api/comments/" + this.commentObject.id
-        method = "delete"
-        data = {}
-      }
-
-      api[method](url, data)
-          .then(
-              () => {
-                let message: string = method === "patch" ? "обновлен" : method === "post" ? "создан" : "удален"
-                this.$toast.add({severity: "success", summary: "ОК", detail: "Комментарий был " + message, life: 5000})
-              },
-              (reason: any) => this.showToastError(reason)
-          )
-          .catch((reason: any) => this.showToastError(reason))
     },
 
     /**

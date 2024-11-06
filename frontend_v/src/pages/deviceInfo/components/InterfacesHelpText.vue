@@ -1,7 +1,7 @@
 <template>
-<div style="padding: 0 10px">
+<div class="pb-2">
 
-    <blockquote class="blockquote">
+    <div class="text-sm">
 
         <p v-if="deviceStatus === 1 && currentStatus && autoUpdate">
           Актуальное состояние интерфейсов
@@ -11,9 +11,6 @@
           <div>
             Опрашиваем интерфейсы
           </div>
-          <div class="spinner-grow text-primary" role="status" style="height: 80px; width: 80px;">
-            <span class="visually-hidden">Loading...</span>
-          </div>
         </div>
 
         <p v-else-if="currentStatus && autoUpdate">
@@ -21,19 +18,12 @@
         </p>
 
         <p v-else-if="currentStatus">
-          Данные интерфейсы были опрошены <br>{{ timePassed }}
+          Данные интерфейсы были опрошены {{ timePassed }}
         </p>
 
         <p v-else>
           Интерфейсы были взяты <br>@{{ lastInterfaceUpdate || " которого не было" }}
         </p>
-    </blockquote>
-
-    <div v-if="!currentStatus">
-      <a class="btn" style="background-color: #93c4ff" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-         @click="$emit('update')">
-          Посмотреть текущее состояние портов
-      </a>
     </div>
 
 </div>

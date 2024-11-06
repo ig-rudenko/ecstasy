@@ -3,7 +3,7 @@
 
     <!--     ВКЛЮЧИТЬ ПОРТ -->
     <Button class="text-green-600" text style="height: 16px; font-size: 10px;"
-            @click="portAction('up', interface.name, interface.description)">
+            @click="() => registerAction('up', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                  class="bi bi-caret-up-fill" viewBox="0 0 16 16">
@@ -15,7 +15,7 @@
 
     <!--     ВЫКЛЮЧИТЬ ПОРТ -->
     <Button class="text-red-600" text style="height: 16px; font-size: 10px; padding: 0"
-            @click="portAction('down', interface.name, interface.description)">
+            @click="() => registerAction('down', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                  class="bi bi-caret-down-fill" viewBox="0 0 16 16">
@@ -27,7 +27,8 @@
   </div>
 
   <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
-  <Button v-if="permissionLevel >= 1" text @click="portAction('reload', interface.name, interface.description)"
+  <Button v-if="permissionLevel >= 1" text
+          @click="() => registerAction('reload', interface.name, interface.description, deviceName)"
           class="text-orange-500">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" class="bi bi-arrow-clockwise"
          viewBox="0 0 16 16">
@@ -44,12 +45,18 @@
 import {defineComponent, PropType} from "vue";
 
 import {DeviceInterface} from "@/services/interfaces";
+import interfaceControlService from "@/services/interface.control";
 
 export default defineComponent({
+  methods: {
+    registerAction(action: "up" | "down" | "reload", port: string, description: string, device: string) {
+      interfaceControlService.registerAction(action, port, description, device)
+    }
+  },
   props: {
-    permissionLevel: { required: true, type: Number },
-    interface: { required: true, type: Object as PropType<DeviceInterface> },
-    portAction: { required: true, type: Function as PropType<(action: ("up"|"down"|"reload"), port: string, description: string) => void> }
-  }
+    permissionLevel: {required: true, type: Number},
+    deviceName: {required: true, type: String},
+    interface: {required: true, type: Object as PropType<DeviceInterface>},
+  },
 })
 </script>

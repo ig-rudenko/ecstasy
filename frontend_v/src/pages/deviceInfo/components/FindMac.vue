@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:visible="macSearch.dialogVisible" @hide="$emit('hide')">
+  <Dialog v-model:visible="macSearch.dialogVisible">
 
     <!--      HEADER-->
     <template #header>

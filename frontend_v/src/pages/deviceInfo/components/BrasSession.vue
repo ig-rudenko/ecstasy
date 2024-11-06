@@ -1,7 +1,6 @@
 <template>
 
-  <div class="modal fade" id="bras-session-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-       aria-modal="true">
+  <Dialog modal>
     <div class="modal-dialog modal-dialog-scrollable" style="max-width: 100%; margin: 0; height: 100%">
       <div class="modal-content">
         <div class="modal-header">
@@ -60,7 +59,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </Dialog>
 
   <!--   ICON   -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">

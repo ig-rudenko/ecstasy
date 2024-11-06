@@ -1,11 +1,11 @@
 <template>
-  <div class="grid grid-cols-3">
+  <div class="flex flex-wrap justify-center">
 
-    <div>
+    <div class="max-w-[25rem]">
       <img src="/img/rj45-back.jpg" alt="RJ45-background">
     </div>
 
-    <div class="col-span-2">
+    <div class="p-4">
 
       <div class="text-center">
         <Button @click="startDiagnostic" icon="pi pi-play" :loading="diagnosticsStarted" :label="diagnosticsStarted ? 'Диагностируем' : 'Запустить диагностику'"/>

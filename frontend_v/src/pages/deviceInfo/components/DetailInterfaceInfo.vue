@@ -6,7 +6,7 @@
 
       <div class="flex gap-1">
         <!--       COMMENTS-->
-        <Comment :interface="interface" :register-comment-action="registerCommentAction"/>
+        <Comment :interface="interface" :device-name="deviceName" :allow-edit="true" />
 
         <!-- Ссылка на графики в Zabbix -->
         <GraphsLink :interface="interface"/>
@@ -29,7 +29,6 @@
 
         <!--Управление состоянием интерфейсов-->
         <PortControlButtons
-            :port-action="registerInterfaceAction"
             :interface="interface"
             :device-name="deviceName"
             :permission-level="permissionLevel"/>
@@ -94,26 +93,24 @@
         <!--      GPON -->
         <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3 border rounded shadow py-3">
           <GPONInterfaceInfo
-              @find-mac="findMacEvent"
               @session-mac="sessionEvent"
               :device-name="deviceName"
               :gpon-data="complexInfo.portDetailInfo.data"
               :permission-level="permissionLevel"
-              :register-comment-action="registerCommentAction"
-              :register-interface-action="registerInterfaceAction"
+              :register-comment-action="() => {}"
+              :register-interface-action="() => {}"
               :interface="interface"/>
         </div>
 
         <!--      ELTEX OLT -->
         <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3 border rounded shadow py-3">
           <OLTInterfaceInfo
-              @find-mac="findMacEvent"
               @session-mac="sessionEvent"
               :device-name="deviceName"
               :data="complexInfo.portDetailInfo.data"
               :permission-level="permissionLevel"
-              :register-comment-action="registerCommentAction"
-              :register-interface-action="registerInterfaceAction"
+              :register-comment-action="() => {}"
+              :register-interface-action="() => {}"
               :interface="interface"/>
         </div>
 
@@ -189,7 +186,7 @@
         <!--      Диагностика кабеля -->
         <div v-show="portDetailMenu==='cableDiag'">
 
-          <div v-if="complexInfo.hasCableDiag" class="p-4 m-2 border rounded shadow">
+          <div v-if="complexInfo.hasCableDiag" class="px-4 m-2 border rounded shadow">
             <CableDiag :device-name="deviceName" :port="interface.name"/>
           </div>
 
@@ -214,7 +211,7 @@
             </div>
           </div>
 
-          <div class="flex justify-center">
+          <div class="flex justify-center pb-10">
             <DataTable :value="MACs"
                        class="w-fit self-center"
                        :paginator="MACs.length>10" :rows="10" paginator-position="both">
@@ -229,7 +226,7 @@
                 </template>
               </Column>
               <Column field="mac">
-                <template #body="{data}">
+                <template #body>
                   <Button size="small" text label="BRAS"></Button>
                 </template>
               </Column>
@@ -282,11 +279,12 @@ import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
 import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
 import GraphsLink from "./GraphsLink.vue";
-import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
-import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
-import MacInfo from "@/pages/deviceInfo/mac.ts";
+
 import api from "@/services/api";
-import macSearch from "@/services/macSearch.ts";
+import {ComplexInterfaceInfo} from "../detailInterfaceInfo";
+import {DeviceInterface} from "@/services/interfaces";
+import MacInfo from "@/pages/deviceInfo/mac";
+import macSearch from "@/services/macSearch";
 
 export default defineComponent({
   components: {
@@ -301,20 +299,12 @@ export default defineComponent({
     MikrotikInterfaceInfo,
   },
 
-  emits: ["toast", "find-mac", "session-mac"],
+  emits: ["toast", "session-mac"],
 
   props: {
     deviceName: {required: true, type: String},
     interface: {required: true, type: Object as PropType<DeviceInterface>},
     permissionLevel: {required: true, type: Number},
-    registerCommentAction: {
-      required: true,
-      type: Function as PropType<(action: "add" | "update" | "delete", comment: InterfaceComment, interfaceName: string) => void>
-    },
-    registerInterfaceAction: {
-      required: true,
-      type: Function as PropType<(action: "up" | "down" | "reload", port: string, description: string) => void>
-    },
     dynamicOpacity: {required: true, type: Object as PropType<{ opacity: Number }>},
   },
 
@@ -402,10 +392,6 @@ export default defineComponent({
   methods: {
     macSearch(mac: string) {
       macSearch.searchMac(mac)
-    },
-
-    findMacEvent(mac: string) {
-      this.$emit("find-mac", mac)
     },
 
     sessionEvent(mac: string, port: string) {

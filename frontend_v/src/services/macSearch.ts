@@ -1,5 +1,4 @@
 import api from "@/services/api";
-import {AxiosResponse} from "axios";
 import {Ref, ref} from "vue";
 
 export interface MACDetail {
@@ -23,7 +22,10 @@ class MacSearch {
             const resp= await api.get<MACDetail>("/tools/api/mac-vendor/" + mac)
             this.lastSearch.value = resp.data;
         } catch (error) {
-            this.lastSearch.value = "Не удалось определить"
+            this.lastSearch.value = {
+                vendor: "Не удалось определить",
+                address: "Не удалось определить"
+            }
         }
         return this.lastSearch.value;
     }
@@ -31,7 +33,7 @@ class MacSearch {
     async getMacDetail(mac: string) {
         this.lastMacDetail.value = null;
         try {
-            const resp= await api.get<MACDetail>("/tools/api/ip-mac-info/" + mac);
+            const resp= await api.get<string>("/tools/api/ip-mac-info/" + mac);
             this.lastMacDetail.value = resp.data;
         } catch (error) {
             this.lastMacDetail.value = "Не удалось определить";

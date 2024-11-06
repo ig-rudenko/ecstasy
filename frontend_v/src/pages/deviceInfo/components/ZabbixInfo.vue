@@ -37,7 +37,7 @@ import {ZabbixInfo} from "../GeneralInfo";
 
 export default defineComponent({
   props: {
-    zabbixInfo: {required: true, type: {} as PropType<ZabbixInfo>}
+    zabbixInfo: {required: true, type: Object as PropType<ZabbixInfo>}
   },
   components: {Image},
   data() {
@@ -57,11 +57,14 @@ export default defineComponent({
         const url = "/img/devices/" +
             this.zabbixInfo.inventory.vendor.toLowerCase() + "/" + this.zabbixInfo.inventory.model.toUpperCase().replace("/", "-")
             + "_" + i + ".png"
-        await api.head(url)
-            .then((value: AxiosResponse<any>) => {
-              if (value.status !== 200) i = 10;
-              this.images.push(url)
-            })
+        try {
+          const resp = await api.head(url)
+          console.log(url, resp.status)
+          if (resp.status !== 200) break;
+          this.images.push(url)
+        } catch (e) {
+          break;
+        }
       }
     },
   }

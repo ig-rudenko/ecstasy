@@ -19,7 +19,7 @@
         <!--Добавить новый-->
         <div style="text-align: right">
           <svg
-              v-if="registerCommentAction"
+              v-if="allowEdit"
               @click="registerCommentAction('add', null, interface.name)"
               data-bs-toggle="modal" data-bs-target="#modal-comment"
               xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754"
@@ -34,10 +34,10 @@
         <!--Комментарии-->
         <div v-for="comment in interface.comments" class="flex" style="margin: 10px 15px;">
 
-          <div class="col-1" v-if="registerCommentAction">
+          <div class="col-1" v-if="allowEdit">
 
             <!--Изменить-->
-            <div @click="registerCommentAction('update', comment, interface.name)"
+            <div @click="registerCommentAction('update', comment)"
                  data-bs-toggle="modal" style="cursor: pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#0d6efd" class="bi bi-pencil-square"
                    viewBox="0 0 16 16">
@@ -49,7 +49,7 @@
             </div>
 
             <!--Удалить-->
-            <div @click="registerCommentAction('delete', comment, interface.name)"
+            <div @click="registerCommentAction('delete', comment)"
                  data-bs-toggle="modal" data-bs-target="#modal-comment"
                  style="cursor: pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#dc3545" class="bi bi-x-lg"
@@ -79,8 +79,8 @@
 
   <!--Создание комментария-->
   <Button text
-          v-else-if="registerCommentAction"
-          @click="registerCommentAction('add', interface.comments, interface.name)">
+          v-else-if="allowEdit"
+          @click="registerCommentAction('add', null)">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#999" class="bi bi-chat-right-text" viewBox="0 0 16 16">
       <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
       <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
@@ -92,17 +92,15 @@
 import {defineComponent, PropType} from "vue";
 
 import {markText, textToHtml} from "@/formats";
-import {DeviceInterface} from "@/services/interfaces";
+import {DeviceInterface, InterfaceComment} from "@/services/interfaces";
+import commentService, {CommentAction} from "@/services/comments.ts";
 
 export default defineComponent({
   props: {
-    registerCommentAction: {
-      required: false,
-      type: Function,
-      default: null
-    },
+    deviceName: {required: true, type: String},
     interface: {required: true, type: Object as PropType<DeviceInterface>},
     markedText: {required: false, type: String, default: ""},
+    allowEdit: {required: false, type: Boolean, default: false},
   },
   methods: {
     textToHtml,
@@ -110,6 +108,10 @@ export default defineComponent({
     showCommentsPopup(event: Event) {
       // @ts-ignore
       this.$refs.comment.toggle(event)
+    },
+
+    registerCommentAction(action: CommentAction, comments: InterfaceComment|null) {
+      commentService.registerCommentAction(action, comments, this.interface.name, this.deviceName)
     },
 
     formatDatetime(datetime: string): string {

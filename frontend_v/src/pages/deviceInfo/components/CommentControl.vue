@@ -1,7 +1,7 @@
 <template>
 
   <!-- Modal -->
-  <Dialog modal v-model:visible="comment.showDialog">
+  <Dialog modal v-model:visible="commentService.dialogVisible">
     <template #header>
       <div class="flex items-center gap-3 px-4">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"
@@ -18,13 +18,13 @@
 
     <!--      DESCRIPTION-->
     <div>
-      <div v-if="comment.action === 'add' || comment.action === 'update'">
-        <Textarea class="w-full p-3" autoResize autofocus v-model="comment.text" style="height: 170px;"></Textarea>
+      <div v-if="commentService.commentObject.action === 'add' || commentService.commentObject.action === 'update'">
+        <Textarea class="w-full p-3" autoResize autofocus v-model="commentService.commentObject.text" style="height: 170px;"></Textarea>
       </div>
 
-      <div v-else-if="comment.action === 'delete'" class="text-center">
+      <div v-else-if="commentService.commentObject.action === 'delete'" class="text-center">
         <div class="text-xl font-bold">Вы уверены, что хотите удалить комментарий?</div>
-        <div class="whitespace-break-spaces text-left p-3 border rounded-xl m-3">{{ comment.text }}</div>
+        <div class="whitespace-break-spaces text-left p-3 border rounded-xl m-3">{{ commentService.commentObject.text }}</div>
       </div>
 
       <div v-else>
@@ -34,45 +34,50 @@
 
     <!--      BUTTONS-->
     <div class="flex justify-end gap-2">
-      <Button label="Нет" autofocus @click="comment.showDialog = false" icon="pi pi-times" severity="secondary" />
+      <Button label="Нет" autofocus @click="commentService.dialogVisible = false" icon="pi pi-times" severity="secondary" />
 
-      <Button v-if="comment.action === 'delete'" @click="() => {comment.submit();comment.showDialog = false}" icon="pi pi-trash" label="Да" severity="danger" />
-      <Button v-else @click="() => {comment.submit();comment.showDialog = false}" icon="pi pi-check" label="Да"  severity="success" />
+      <Button v-if="commentService.commentObject.action === 'delete'" icon="pi pi-trash" label="Да" severity="danger"
+              @click="() => submit()" />
+      <Button v-else @click="() => submit()" icon="pi pi-check" label="Да"  severity="success" />
     </div>
 
   </Dialog>
 </template>
 
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
-
-interface CommentControl {
-  id: number;
-  text: string;
-  user: string;
-  action: ("" | "add" | "update" | "delete");
-  interface: string;
-  submit: Function | null;
-  showDialog: boolean
-}
+import {defineComponent} from "vue";
+import commentService from "@/services/comments.ts";
 
 export default defineComponent({
-  props: {
-    comment: {
-      required: true,
-      type: Object as PropType<CommentControl>
+  data() {
+    return {
+      commentService: commentService
     }
   },
   computed: {
     modalTitle: function () {
-      if (this.comment.action === "add") return "Создать комментарий для порта " + this.comment.interface
-      if (this.comment.action === "update") return "Обновить комментарий порта " + this.comment.interface
-      if (this.comment.action === "delete") return "Удалить комментарий порта " + this.comment.interface
+      if (commentService.commentObject.value.action === "add") {
+        return "Создать комментарий для порта " + commentService.commentObject.value.interface;
+      }
+      if (commentService.commentObject.value.action === "update") {
+        return "Обновить комментарий порта " + commentService.commentObject.value.interface;
+      }
+      if (commentService.commentObject.value.action === "delete") {
+        return "Удалить комментарий порта " + commentService.commentObject.value.interface;
+      }
     },
+
     iconColor: function () {
-      if (this.comment.action === "add") return "#198754"
-      if (this.comment.action === "update") return "#0d6efd"
-      if (this.comment.action === "delete") return "#dc3545"
+      if (commentService.commentObject.value.action === "add") return "#198754"
+      if (commentService.commentObject.value.action === "update") return "#0d6efd"
+      if (commentService.commentObject.value.action === "delete") return "#dc3545"
+    }
+
+  },
+
+  methods: {
+    submit() {
+      commentService.submitCommentAction();
     }
   }
 })

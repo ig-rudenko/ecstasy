@@ -28,7 +28,7 @@
 
 
   <!-- Modal -->
-  <Dialog modal v-model:visible="portAction.showChangePortDialog" header="Внимание">
+  <Dialog modal v-model:visible="interfaceControlService.dialogVisible" header="Внимание">
     <template #header>
       <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" class="fill-red-500" viewBox="0 0 16 16">
         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
@@ -40,15 +40,15 @@
       </div>
     </template>
     <div>
-      <div class="flex flex-wrap gap-2 py-6 justify-center text-2xl" v-if="portAction.action">
-        <div>Вы уверены, что хотите {{ portAction.name }}</div>
+      <div class="flex flex-wrap gap-2 py-6 justify-center text-2xl" v-if="interfaceControlService.portAction.action">
+        <div>Вы уверены, что хотите {{ interfaceControlService.portAction.name }}</div>
         <svg class="" width="24" height="24">
-          <use v-if="portAction.name === 'включить'" xlink:href="#port-up-icon"></use>
-          <use v-else-if="portAction.name === 'выключить'" xlink:href="#port-down-icon"></use>
-          <use v-else-if="portAction.name === 'перезагрузить'" xlink:href="#port-reload-icon"></use>
+          <use v-if="interfaceControlService.portAction.name === 'включить'" xlink:href="#port-up-icon"></use>
+          <use v-else-if="interfaceControlService.portAction.name === 'выключить'" xlink:href="#port-down-icon"></use>
+          <use v-else-if="interfaceControlService.portAction.name === 'перезагрузить'" xlink:href="#port-reload-icon"></use>
         </svg>
-        <div>{{ portAction.port }}</div>
-        <div>{{ portAction.desc }}?</div>
+        <div>{{ interfaceControlService.portAction.port }}</div>
+        <div>{{ interfaceControlService.portAction.desc }}?</div>
       </div>
       <div v-else class="text-center textl-xl">
         Неверное действие
@@ -58,42 +58,33 @@
       <div class="flex flex-wrap gap-2 justify-end">
 
         <Button icon="pi pi-times" label="Отмена" severity="secondary"
-                @click="portAction.showChangePortDialog = false"/>
+                @click="() => interfaceControlService.closeDialog()"/>
 
-        <Button icon="pi pi-check" v-show="portAction.action" @click="submit_portAction(false)"
+        <Button icon="pi pi-check" v-show="interfaceControlService.portAction.action" @click="() => submitPortAction(false)"
                 label="Без сохранения конфигурации"/>
 
-        <Button icon="pi pi-check" severity="success" label="Сохранить конфигурацию после" v-show="portAction.action"
-                @click="submit_portAction(true)"/>
+        <Button icon="pi pi-check" severity="success" label="Сохранить конфигурацию после" v-show="interfaceControlService.portAction.action"
+                @click="() => submitPortAction(true)"/>
       </div>
     </div>
   </Dialog>
 </template>
 
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
+import {defineComponent} from "vue";
 
-interface PortAction {
-  name: string;
-  action: string | null;
-  submit: Function | null;
-  port: string;
-  desc: string;
-  showChangePortDialog: boolean;
-}
+import interfaceControlService from "@/services/interface.control";
+
 
 export default defineComponent({
-  props: {
-    portAction: {
-      required: true,
-      type: Object as PropType<PortAction>
+  data() {
+    return {
+      interfaceControlService: interfaceControlService
     }
   },
   methods: {
-    submit_portAction(save: boolean) {
-      if (this.portAction.submit) {
-        this.portAction.submit(save)
-      }
+    submitPortAction(save: boolean) {
+      interfaceControlService.submitPortAction(save);
     }
   }
 })
