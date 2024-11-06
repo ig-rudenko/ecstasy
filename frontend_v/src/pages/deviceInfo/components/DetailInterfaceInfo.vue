@@ -21,7 +21,7 @@
 
         <!--Название Интерфейса-->
         <div @click="toggleDetailInfo" class="flex items-center cursor-pointer">
-          <span class="pl-8 text-xl">{{ interface.name }}</span>
+          <span class="pl-8 pr-4 text-xl">{{ interface.name }}</span>
         </div>
 
         <!--Управление состоянием интерфейсов-->
@@ -49,7 +49,7 @@
     <!--Статус порта-->
     <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 text-nowrap px-3 font-mono">
+        class="text-gray-950 text-nowrap text-center min-w-[6rem] px-3 font-mono">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
@@ -99,7 +99,6 @@
         <!--      GPON -->
         <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3 border rounded shadow py-3">
           <GPONInterfaceInfo
-              @session-mac="sessionEvent"
               :device-name="deviceName"
               :gpon-data="complexInfo.portDetailInfo.data"
               :permission-level="permissionLevel"
@@ -109,7 +108,6 @@
         <!--      ELTEX OLT -->
         <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3 border rounded shadow py-3">
           <OLTInterfaceInfo
-              @session-mac="sessionEvent"
               :device-name="deviceName"
               :data="complexInfo.portDetailInfo.data"
               :permission-level="permissionLevel"
@@ -173,8 +171,6 @@ export default defineComponent({
     OLTInterfaceInfo,
     MikrotikInterfaceInfo,
   },
-
-  emits: ["toast", "session-mac"],
 
   props: {
     deviceName: {required: true, type: String},
@@ -259,10 +255,6 @@ export default defineComponent({
   methods: {
     textToHtml,
 
-    sessionEvent(mac: string, port: string) {
-      this.$emit("session-mac", mac, port)
-    },
-
     formatStatus(status: string): string {
       if (status === "dormant") return "activating..."
       return status
@@ -315,10 +307,10 @@ export default defineComponent({
       status = status.toLowerCase()
       let baseStyle = {};
 
-      if (status === "admin down") status["background-color"] = "#ffb4bb";
-      if (status === "notpresent") status["background-color"] = "#c1c1c1";
-      if (status === "dormant") status["background-color"] = "#ffe389";
-      if (status === "up") status["background-color"] = "#22e58b";
+      if (status === "admin down") baseStyle["background-color"] = "#ffb4bb";
+      if (status === "notpresent") baseStyle["background-color"] = "#c1c1c1";
+      if (status === "dormant") baseStyle["background-color"] = "#ffe389";
+      if (status === "up") baseStyle["background-color"] = "#22e58b";
 
       return Object.assign({}, this.dynamicOpacity, baseStyle)
     },

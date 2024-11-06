@@ -35,7 +35,7 @@
         </div>
 
         <!--    Ссылка на карту-->
-        <div>
+        <div v-if="generalInfo.coords.length">
           <MapCoordLink :coords="generalInfo.coords"/>
         </div>
 
@@ -51,6 +51,20 @@
         <!--    Карты Zabbix-->
         <div v-if="generalInfo.zabbixInfo?.maps.length > 0">
           <ZabbixMapsDropdown :zabbix-url="generalInfo.zabbixURL" :maps-data="generalInfo.zabbixInfo.maps"/>
+        </div>
+
+        <div class="py-4">
+          <UserActionsButton v-if="generalInfo" :device-name="generalInfo.deviceName"/>
+        </div>
+
+        <div v-if="generalInfo.consoleURL.length">
+          <a :href="generalInfo.consoleURL" target="_blank" class="text-dark">
+            <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"></path>
+              </svg>
+            </Button>
+          </a>
         </div>
 
       </div>
@@ -70,9 +84,6 @@
     <!--    Загруженность интерфейсов-->
     <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
 
-    <div class="py-4">
-      <UserActionsButton v-if="generalInfo" :device-name="generalInfo.deviceName"/>
-    </div>
   </div>
 
 
@@ -123,13 +134,10 @@
 
         <template v-for="_interface in interfaces">
           <DetailInterfaceInfo
-              @session-mac="sessionEvent"
-              @toast="showToastError"
               :device-name="generalInfo.deviceName"
               :dynamic-opacity="dynamicOpacity"
               :interface="_interface"
-              :permission-level="generalInfo.permission"
-          />
+              :permission-level="generalInfo.permission" />
         </template>
 
         </tbody>
@@ -144,14 +152,17 @@
 
   </div>
 
-
-  <ModalPortControl />
+  <ModalPortControl/>
 
   <CommentControl/>
 
-  <FindMac />
+  <FindMac/>
 
-  <BrasSession />
+  <BrasSession/>
+
+  <ScrollTop/>
+
+  <Footer/>
 
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
     <symbol id="search-icon">
@@ -202,10 +213,6 @@
       </svg>
     </symbol>
   </svg>
-
-  <ScrollTop/>
-
-  <Footer/>
 
 </template>
 
@@ -341,15 +348,6 @@ export default defineComponent({
   },
 
   methods: {
-
-    findMacEvent(mac: string) {
-      this.findMacAddress = mac;
-      this.findMacDialogVisible = true;
-    },
-
-    sessionEvent(mac: string, port: string) {
-      this.sessionControl = {mac: mac, port: port, display: true}
-    },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {

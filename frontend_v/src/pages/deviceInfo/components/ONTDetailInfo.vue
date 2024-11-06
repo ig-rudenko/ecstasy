@@ -76,7 +76,6 @@ import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterface
 
 import api from "@/services/api";
 import {verboseDatetime} from "@/formats";
-import MacInfo from "@/pages/deviceInfo/mac";
 import {DeviceInterface} from "@/services/interfaces";
 import {ComplexInterfaceInfoType} from "../detailInterfaceInfo";
 
@@ -117,14 +116,6 @@ export default defineComponent({
   },
   methods: {
     verboseDatetime,
-
-    findMacEvent(mac: string) {
-      this.$emit("find-mac", mac)
-    },
-
-    sessionEvent(mac: string, port: string) {
-      this.$emit("session-mac", mac, port)
-    },
 
     statusStyles(status: string): any {
       if (status === "online") return {"background-color": "#22e58b"}

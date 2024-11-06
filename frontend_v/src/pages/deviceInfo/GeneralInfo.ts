@@ -11,7 +11,7 @@ export interface ZabbixInfo {
 }
 
 export interface GeneralInfo {
-    coords: [string, string],
+    coords: string[],
     deviceIP: string,
     deviceName: string,
     elasticStackLink: string,

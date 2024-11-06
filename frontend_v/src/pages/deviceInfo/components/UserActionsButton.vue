@@ -1,11 +1,9 @@
 <template>
-  <Button text size="small" @click="openDialog">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+  <Button text @click="openDialog" v-tooltip.bottom="'Пользовательские действия'" >
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
       <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"></path>
     </svg>
-    <span>Пользовательские действия</span>
   </Button>
-
 
   <!-- Modal -->
   <Dialog v-model:visible="showDialog" header="Пользовательские действия" modal :width="100" :height="400">
@@ -16,7 +14,7 @@
         {{ error.msg }}
       </Message>
 
-      <div v-if="actions" v-for="act in actions" class="border border-gray-300 rounded-lg p-3 shadow-sm mb-3">
+      <div v-if="actions?.length" v-for="act in actions" class="border border-gray-300 rounded-lg p-3 shadow-sm mb-3">
 
         <div class="flex items-center gap-2 mb-3">
           <img :src="'https://ui-avatars.com/api/?size=32&name='+act.user+'&font-size=0.33&background=random&rounded=true'"
@@ -30,6 +28,10 @@
           <span class="text-wrap" v-html="formatActionPrefix(act.action)"></span>
           {{ act.action }}
         </div>
+      </div>
+
+      <div v-else-if="actions" class="flex justify-center p-2">
+        Нет никаких действий пользователей
       </div>
 
       <div v-else class="flex justify-center p-2">

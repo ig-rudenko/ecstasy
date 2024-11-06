@@ -32,8 +32,6 @@
 
         <template v-for="line in data.onts_lines">
           <OLT_ONT_Detail_info
-              @find-mac="findMacEvent"
-              @session-mac="sessionEvent"
               :device-name="deviceName"
               :interface="interface"
               :permission-level="permissionLevel"
@@ -75,8 +73,6 @@ export default defineComponent({
     interface: {required: true, type: Object as PropType<DeviceInterface>},
   },
 
-  emits: ["find-mac", "session-mac"],
-
   data() {
     return {
       showDetailInfo: false,
@@ -111,13 +107,6 @@ export default defineComponent({
         }
         this.subscribersData[sub.ont_id].push(newSubscriberData(sub))
       }
-    },
-
-    findMacEvent(mac: string) {
-      this.$emit("find-mac", mac)
-    },
-    sessionEvent(mac: string, port: string) {
-      this.$emit("session-mac", mac, port)
     },
 
     isEmpty(obj: any): boolean {

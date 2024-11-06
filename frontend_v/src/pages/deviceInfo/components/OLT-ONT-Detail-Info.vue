@@ -204,13 +204,6 @@ export default defineComponent({
       return result
     },
 
-    findMacEvent(mac: string) {
-      this.$emit("find-mac", mac)
-    },
-    sessionEvent(mac: string, port: string) {
-      this.$emit("session-mac", mac, port)
-    },
-
     statusStyles(status: string): any {
       if (status === "OK") return {"background-color": "#22e58b"}
       if (status === "OFFLINE") return {"background-color": "#ffcacf"}

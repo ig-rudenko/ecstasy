@@ -27,15 +27,12 @@
         <template v-for="line in gponData.onts_lines">
 
           <ONTDetailInfo
-              @find-mac="findMacEvent"
-              @session-mac="sessionEvent"
               :device-name="deviceName"
               :line="line"
               :interface="interface"
               :permission-level="permissionLevel"
               :register-comment-action="registerCommentAction"
-              :register-interface-action="registerInterfaceAction"
-          />
+              :register-interface-action="registerInterfaceAction" />
 
         </template>
         </tbody>
@@ -72,16 +69,5 @@ export default defineComponent({
       showDetailInfo: false
     }
   },
-  methods: {
-
-    findMacEvent(mac: string) {
-      this.$emit("find-mac", mac)
-    },
-
-    sessionEvent(mac: string, port: string) {
-      this.$emit("session-mac", mac, port)
-    },
-
-  }
 })
 </script>
