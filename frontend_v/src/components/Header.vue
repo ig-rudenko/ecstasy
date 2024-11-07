@@ -117,8 +117,9 @@ const toggle = () => {
 
       <template #item="{ item }">
         <router-link :to="{name: item.url}">
-          <div :class="currentRouteName==item.url?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
-               class="ps-4 md:ps-0 flex items-center md:block">
+          <div
+              :class="currentRouteName?.toString().startsWith(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
+              class="ps-4 md:ps-0 flex items-center md:block">
             <img :src="'/img/menu/'+item.icon+'.png'" class="md:mx-auto w-[48px] md:w-[54px] xl:w-[64px] mb-1"
                  :alt="item.icon"/>
             <div class="flex flex-col">
