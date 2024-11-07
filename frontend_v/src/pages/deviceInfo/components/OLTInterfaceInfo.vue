@@ -50,11 +50,13 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
+
 import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue"
-import SubscribersData, {newSubscriberData} from "../subscribersData";
-import {AxiosResponse} from "axios";
-import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
+
 import api from "@/services/api";
+import {AxiosResponse} from "axios";
+import {DeviceInterface} from "@/services/interfaces";
+import SubscribersData, {newSubscriberData} from "../subscribersData";
 
 type ontData = {
   total_count: number,

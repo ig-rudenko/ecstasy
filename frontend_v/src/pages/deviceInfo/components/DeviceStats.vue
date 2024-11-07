@@ -104,7 +104,7 @@ import {HardwareStats} from "../hardwareStats";
 export default defineComponent({
   props: {
     stats: {required: true, type: Object as PropType<HardwareStats>},
-    uptime: {required: false, type: String, default: -1}
+    uptime: {required: false, type: Number, default: -1}
   },
   methods: {
     valueColor(value: number): string {

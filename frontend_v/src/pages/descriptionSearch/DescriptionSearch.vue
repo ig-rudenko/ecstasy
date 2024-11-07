@@ -7,7 +7,8 @@
         <div>
           <div class="text-3xl font-bold">Description search</div>
           <div class="py-3">Поиск конкретной строки в описании порта и его комментариев на
-            всех собранных заранее интерфейсах у каждого оборудования</div>
+            всех собранных заранее интерфейсах у каждого оборудования
+          </div>
         </div>
 
         <img class="h-[100px]" src="/img/search-description-2.svg" alt="search-description-image">
@@ -32,36 +33,39 @@
 
           <template #paginatorend>
             <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" fluid outlined
-                    v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'" label="export csv" />
+                    v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'" label="export csv"/>
           </template>
 
           <Column field="device" header="Оборудование" :sortable="true" class="font-mono">
             <template #body="{data}">
               <router-link :to="'/device/' + data.device">
-                <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']" />
+                <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']"/>
               </router-link>
             </template>
             <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск по имени" />
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
+                         placeholder="Поиск по имени"/>
             </template>
           </Column>
 
           <Column field="interface.name" filter-field="interface.name" header="Порт" :sortable="true" class="font-mono">
             <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск порта" />
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск порта"/>
             </template>
           </Column>
 
           <Column field="interface.status" header="Статус" :sortable="true" class="font-mono">
             <template #body="{data}">
-              <div v-tooltip="'Время опроса: ' + data.interface.savedTime.toString()" class="text-nowrap p-2 flex items-center justify-center rounded"
+              <div v-tooltip="'Время опроса: ' + data.interface.savedTime.toString()"
+                   class="text-nowrap p-2 flex items-center justify-center rounded"
                    :style="statusStyle(data.interface.status)">
                 <span class="me-1">{{ data.interface.status }}</span>
                 <i class="pi pi-clock"/>
               </div>
             </template>
             <template #filter="{ filterModel, filterCallback }">
-              <Select v-model="filterModel.value" @change="filterCallback()" placeholder="Выберите статус" :options="['up','down','admin down', 'noPresent']" />
+              <Select v-model="filterModel.value" @change="filterCallback()" placeholder="Выберите статус"
+                      :options="['up','down','admin down', 'noPresent']"/>
             </template>
           </Column>
 
@@ -70,13 +74,13 @@
               <div v-html="markDescription(data.interface.description)"></div>
             </template>
             <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск" />
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск"/>
             </template>
           </Column>
 
           <Column field="comments.0.text" header="Комментарии" :sortable="true" class="font-mono">
             <template #body="{data}">
-              <Comment :interface="getInterface(data)" :markedText="lastPattern" />
+              <Comment :interface="getInterface(data)" :markedText="lastPattern" :device-name="data.device"/>
             </template>
           </Column>
 
@@ -87,7 +91,7 @@
               </div>
             </template>
             <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск VLAN" />
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск VLAN"/>
             </template>
           </Column>
 
@@ -102,9 +106,11 @@
         </h4>
         <br>
         <div class="container text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" fill="currentColor" class="bi bi-emoji-frown" viewBox="0 0 16 16">
+          <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" fill="currentColor" class="bi bi-emoji-frown"
+               viewBox="0 0 16 16">
             <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-            <path d="M4.285 12.433a.5.5 0 0 0 .683-.183A3.498 3.498 0 0 1 8 10.5c1.295 0 2.426.703 3.032 1.75a.5.5 0 0 0 .866-.5A4.498 4.498 0 0 0 8 9.5a4.5 4.5 0 0 0-3.898 2.25.5.5 0 0 0 .183.683zM7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5z"/>
+            <path
+                d="M4.285 12.433a.5.5 0 0 0 .683-.183A3.498 3.498 0 0 1 8 10.5c1.295 0 2.426.703 3.032 1.75a.5.5 0 0 0 .866-.5A4.498 4.498 0 0 0 8 9.5a4.5 4.5 0 0 0-3.898 2.25.5.5 0 0 0 .183.683zM7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5z"/>
           </svg>
         </div>
       </div>
@@ -120,7 +126,7 @@
 
   <!--  VLANS FULL LIST-->
   <Popover ref="vlansList">
-    <div class="text-sm text-muted-color pb-4"><i class="pi pi-clock me-2 text-sm" />{{ selectedVlansTime }}</div>
+    <div class="text-sm text-muted-color pb-4"><i class="pi pi-clock me-2 text-sm"/>{{ selectedVlansTime }}</div>
     <div>{{ selectedVlans }}</div>
   </Popover>
 
@@ -153,11 +159,11 @@ export default defineComponent({
       selectedVlans: "",
       selectedVlansTime: "",
       filters: {
-        device: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        'interface.name': { value: null, matchMode: FilterMatchMode.CONTAINS },
-        'interface.status': { value: null, matchMode: FilterMatchMode.EQUALS },
-        'interface.description': { value: null, matchMode: FilterMatchMode.CONTAINS },
-        'interface.vlans': { value: null, matchMode: FilterMatchMode.CONTAINS },
+        device: {value: null, matchMode: FilterMatchMode.CONTAINS},
+        'interface.name': {value: null, matchMode: FilterMatchMode.CONTAINS},
+        'interface.status': {value: null, matchMode: FilterMatchMode.EQUALS},
+        'interface.description': {value: null, matchMode: FilterMatchMode.CONTAINS},
+        'interface.vlans': {value: null, matchMode: FilterMatchMode.CONTAINS},
       },
     }
   },
@@ -179,12 +185,12 @@ export default defineComponent({
 
       findInterfacesByDescription(this.pattern)
           .then(
-            data => {
-              this.interfaces = data
-              this.lastPattern = this.pattern
-              this.waitResult = false
-            },
-            () => this.waitResult = false
+              data => {
+                this.interfaces = data
+                this.lastPattern = this.pattern
+                this.waitResult = false
+              },
+              () => this.waitResult = false
           )
           .catch(() => this.waitResult = false)
     },
@@ -209,7 +215,7 @@ export default defineComponent({
         style['background-color'] = "#22e58b"
       }
 
-      style.color = style['background-color']? "black" : ""
+      style.color = style['background-color'] ? "black" : ""
 
       return style
     },

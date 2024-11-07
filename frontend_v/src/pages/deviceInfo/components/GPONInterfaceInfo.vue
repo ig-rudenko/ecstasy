@@ -30,9 +30,7 @@
               :device-name="deviceName"
               :line="line"
               :interface="interface"
-              :permission-level="permissionLevel"
-              :register-comment-action="registerCommentAction"
-              :register-interface-action="registerInterfaceAction" />
+              :permission-level="permissionLevel"/>
 
         </template>
         </tbody>
@@ -45,7 +43,7 @@
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
 import ONTDetailInfo from "./ONTDetailInfo.vue";
-import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
+import {DeviceInterface} from "@/services/interfaces";
 
 type ontData = {
   total_count: string,

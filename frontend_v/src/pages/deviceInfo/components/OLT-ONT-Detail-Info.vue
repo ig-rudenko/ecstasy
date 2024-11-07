@@ -71,7 +71,7 @@
       </div>
 
       <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
+      <ComplexInterfaceInfo v-if="complexInfo" :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
 
     </td>
   </tr>
@@ -80,18 +80,19 @@
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
-import PortControlButtons from "./PortControlButtons.vue";
-
-import SubscribersData from "../subscribersData";
-import api from "@/services/api";
 import {AxiosResponse} from "axios";
-import {ComplexInterfaceInfoType} from "../detailInterfaceInfo";
-import Comment from "../../../components/Comment.vue";
-import {DeviceInterface, InterfaceComment} from "@/services/interfaces.ts";
-import {Address} from "@/types/address.ts";
-import {formatAddress} from "@/formats.ts";
-import {Customer} from "@/types/customer.ts";
+
+import Comment from "@/components/Comment.vue";
+import PortControlButtons from "./PortControlButtons.vue";
 import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterfaceInfo.vue";
+
+import api from "@/services/api";
+import {Address} from "@/types/address";
+import {formatAddress} from "@/formats";
+import {Customer} from "@/types/customer";
+import SubscribersData from "../subscribersData";
+import {DeviceInterface} from "@/services/interfaces";
+import {ComplexInterfaceInfoType} from "../detailInterfaceInfo";
 
 export default defineComponent({
   props: {

@@ -2,16 +2,17 @@
 
   <!--  POE   -->
   <div v-if="data.poeStatus" class="flex gap-2 items-center">
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" :fill="data.poeStatus==='off'?'grey':'orange'"
-         class="bi bi-lightning-charge-fill me-2" viewBox="0 0 16 16">
+    <svg :fill="data.poeStatus==='off'?'grey':'orange'" class="bi bi-lightning-charge-fill me-2" height="32"
+         viewBox="0 0 16 16"
+         width="32" xmlns="http://www.w3.org/2000/svg">
       <path
           d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"></path>
     </svg>
-    <span style="vertical-align: middle;" class="me-2">PoE:</span>
+    <span class="me-2" style="vertical-align: middle;">PoE:</span>
 
-    <Select v-model="newPoeStatus" :options="data.poeChoices" />
+    <Select v-model="newPoeStatus" :options="data.poeChoices"/>
 
-    <Button @click="changePoEStatus" severity="success" icon="pi pi-check" :loading="changingPoEStatusNow" />
+    <Button :loading="changingPoEStatusNow" icon="pi pi-check" severity="success" @click="changePoEStatus"/>
   </div>
   <!-- / POE  -->
 
@@ -20,10 +21,9 @@
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
 import api from "@/services/api";
-import {AxiosResponse} from "axios";
 import {DeviceInterface} from "@/services/interfaces.ts";
-import {errorToast} from "@/services/my.toast.ts";
-import errorFmt from "@/errorFmt.ts";
+import errorFmt from "@/errorFmt";
+import {errorToast} from "@/services/my.toast";
 
 interface Poe {
   poeStatus: string

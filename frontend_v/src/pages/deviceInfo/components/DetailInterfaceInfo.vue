@@ -59,7 +59,8 @@
     </td>
 
     <!--VLANS-->
-    <td v-if="interface.vlans.length" @click="toggleVlansList" class="cursor-pointer text-nowrap overflow-x-visible max-w-20">
+    <td v-if="interface.vlans.length" @click="toggleVlansList"
+        class="cursor-pointer text-nowrap overflow-x-visible max-w-20">
       {{ compressVlanRange }}
     </td>
     <td v-else></td>
@@ -277,7 +278,7 @@ export default defineComponent({
         this.showDetailInfo = false;
       }
 
-      api.get<ComplexInterfaceInfo>("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
+      api.get<ComplexInterfaceInfoType>("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
           .then(
               value => {
                 this.complexInfo = value.data;
@@ -305,7 +306,7 @@ export default defineComponent({
     /** Вычисляем цвет статуса порта */
     statusStyle(status: string): any {
       status = status.toLowerCase()
-      let baseStyle = {};
+      let baseStyle: any = {};
 
       if (status === "admin down") baseStyle["background-color"] = "#ffb4bb";
       if (status === "notpresent") baseStyle["background-color"] = "#c1c1c1";
@@ -321,19 +322,6 @@ export default defineComponent({
 </script>
 
 <style>
-.mac-line:hover bi {
-  visibility: visible;
-  color: #558af1;
-}
-
-.mac-line:hover span {
-  color: #558af1;
-}
-
-.mac-line:not(:hover) .bi {
-  visibility: hidden;
-}
-
 .text-help {
   border-bottom: solid #d1d1d1 1px;
   border-radius: 0;

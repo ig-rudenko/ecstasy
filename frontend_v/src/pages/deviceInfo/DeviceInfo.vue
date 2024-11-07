@@ -457,7 +457,7 @@ export default defineComponent({
       setTimeout(this.timer, 1000)
     },
 
-    showToastError(reason: any, text: string = "") {
+    showToastError(reason: any) {
       errorToast(
         `ERROR! status: ${reason.response.status}`,
         "Причина: " + (reason.response.data?.detail || reason.response.data?.error),
