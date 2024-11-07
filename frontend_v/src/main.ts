@@ -7,16 +7,17 @@ import {
     Dialog,
     Drawer,
     IftaLabel,
+    Image,
     InputGroup,
     InputNumber,
     InputText,
-    Image,
     Menubar,
     Message,
     Paginator,
     Password,
-    ProgressSpinner,
     Popover,
+    ProgressSpinner,
+    RadioButton,
     Ripple,
     ScrollTop,
     Select,
@@ -59,6 +60,7 @@ app.component("Password", Password);
 app.component("Paginator", Paginator);
 app.component("ProgressSpinner", ProgressSpinner);
 app.component("Popover", Popover);
+app.component("RadioButton", RadioButton);
 app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
 app.component("Textarea", Textarea);
