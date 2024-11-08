@@ -7,6 +7,7 @@ import {
     DatePicker,
     Dialog,
     Drawer,
+    Fieldset,
     IftaLabel,
     Image,
     InputGroup,
@@ -56,6 +57,7 @@ app.component("InputGroup", InputGroup);
 app.component("InputNumber", InputNumber);
 app.component("Image", Image);
 app.component("InputText", InputText);
+app.component("Fieldset", Fieldset);
 app.component("Menubar", Menubar);
 app.component("Message", Message);
 app.component("Password", Password);

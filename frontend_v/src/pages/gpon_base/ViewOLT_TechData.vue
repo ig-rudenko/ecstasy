@@ -148,7 +148,23 @@
       </div>
 
 
-      <template v-for="(building, BIndex) in detailData.structures">
+      <Fieldset v-for="(building, BIndex) in detailData.structures" :toggleable="true" class="my-2">
+        <template #legend="{toggleCallback}">
+          <div class="flex items-center p-1">
+            <svg width="32" height="32" fill="#633BBC" @click="toggleCallback" viewBox="0 0 16 16"
+                 class="cursor-pointer">
+              <circle cx="8" cy="8" r="8"/>
+            </svg>
+            <div class="text-xl font-semibold m-0 me-3">
+              <span class="p-2">Адрес:</span>
+              <a :href="'/gpon/tech-data/building/'+building.address.id">
+                <Button outlined rounded
+                        :icon="building.address.building_type === 'building'?'pi pi-building':'pi pi-home'"
+                        :label="getFullAddress(building.address)"/>
+              </a>
+            </div>
+          </div>
+        </template>
 
         <!-- АДРЕС -->
         <div class="py-3">
@@ -182,7 +198,7 @@
           </div>
 
         </div>
-      </template>
+      </Fieldset>
 
 
     </div>

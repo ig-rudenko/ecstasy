@@ -1,18 +1,6 @@
 <template>
-  <Toast/>
-
   <div class="flex items-center py-3">
-    <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
-      <circle cx="8" cy="8" r="8"/>
-    </svg>
-    <div class="text-xl font-semibold m-0 me-3">
-      <span class="p-2">Адрес:</span>
-      <a :href="'/gpon/tech-data/building/'+buildingData.address.id">
-        <Button outlined rounded
-                :icon="buildingData.address.building_type === 'building'?'pi pi-building':'pi pi-home'"
-                :label="getFullAddress(buildingData.address)"/>
-      </a>
-    </div>
+
 
     <!-- Сохранить изменения -->
     <Button v-if="editMode && (hasPermissionToUpdateHouseB || hasPermissionToUpdateHouseOLTState)" text
@@ -25,7 +13,7 @@
     </Button>
   </div>
 
-  <div class="md:ml-20">
+  <div class="md:ml-10">
 
     <div class="flex items-center gap-2 py-4">
 
@@ -69,7 +57,6 @@
     </div>
 
   </div>
-
 </template>
 
 <script>
