@@ -51,7 +51,7 @@ setTimeout(timer, 300);
 
 <template>
 
-  <main class="container mx-auto p-5">
+  <main class="container mx-auto py-5">
     <div class="flex flex-col gap-4">
 
       <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-3xl shadow">

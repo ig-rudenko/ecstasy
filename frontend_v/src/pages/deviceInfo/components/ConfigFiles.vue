@@ -5,16 +5,19 @@
 
         <!--  HEADER-->
         <div v-if="!collectNew.active" class="py-2 flex justify-between items-center">
-          <div class="text-xl m-0">Конфигурации</div>
+          <div class="text-xl px-2">Конфигурации</div>
 
           <!-- ADD NEW -->
-          <div class="flex gap-2">
+          <div class="flex flex-wrap justify-end gap-2">
             <Button @click="collectConfig" icon="pi pi-plus" label="Собрать новую" severity="success"
-                    class="hover:bg-green-500 hover:text-primary-contrast" size="small" outlined />
-            <Button @click="showDiffDialog=true" size="small" outlined class="hover:bg-primary hover:text-primary-contrast">
+                    class="hover:bg-green-500 hover:text-primary-contrast" size="small" outlined/>
+            <Button @click="showDiffDialog=true" size="small" outlined
+                    class="hover:bg-primary hover:text-primary-contrast">
               <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                  <path d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm5 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2v5a2 2 0 0 1-2 2H5zm6-8V2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2V6a2 2 0 0 1 2-2h5z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2"
+                     viewBox="0 0 16 16">
+                  <path
+                      d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm5 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2v5a2 2 0 0 1-2 2H5zm6-8V2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2V6a2 2 0 0 1 2-2h5z"/>
                 </svg>
                 <span>Сравнение</span>
               </div>
@@ -24,7 +27,8 @@
 
         <!--  ELSE | COLLECTING-->
         <div v-else>
-          <div class="flex justify-center gap-4 items-center text-xl">Собираем текущую конфигурацию <i class="pi pi-spin pi-spinner"/></div>
+          <div class="flex justify-center gap-4 items-center text-xl">Собираем текущую конфигурацию <i
+              class="pi pi-spin pi-spinner"/></div>
         </div>
 
         <!--    ALERT-->
@@ -36,7 +40,7 @@
         </div>
         <!--      -->
 
-        <div>
+        <div class="overflow-auto">
           <table class="w-full">
             <tbody>
 
@@ -48,31 +52,34 @@
                     <!--        DOWNLOAD-->
                     <div @click="downloadFile(file)" class="cursor-pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-                           class="bi bi-download" viewBox="0 0 16 16">
-                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
-                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
+                           viewBox="0 0 16 16">
+                        <path
+                            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
+                        <path
+                            d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
                       </svg>
                     </div>
 
                     <!--        DELETE-->
                     <div @click="() => showDeleteDialog(file)" class="cursor-pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="red" viewBox="0 0 16 16">
-                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"></path>
+                        <path
+                            d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"></path>
                       </svg>
                     </div>
                   </div>
                 </td>
 
-                <td>
+                <td class="px-2 text-nowrap">
                   <div class="flex gap-2 items-center">
                     <span v-html="fileIcon(file.name)"></span>
                     <span @click="toggleFileDisplay(file)" style="cursor: pointer;">{{ file.name }}</span>
                   </div>
                 </td>
 
-                <td>{{ formatBytes(file.size) }}</td>
+                <td class="px-2 text-nowrap">{{ formatBytes(file.size) }}</td>
 
-                <td>
+                <td class="px-2 text-nowrap">
                   <div class="flex items-center gap-2">
                     <i class="pi pi-clock"/>
                     <span>{{ file.modTime }}</span>
@@ -90,7 +97,10 @@
     </div>
   </div>
 
-  <Dialog v-model:visible="visibleConfigText" modal class="h-full " maximizable :header="'Конфигурация '+selectedFile?.name">
+  <Dialog v-model:visible="visibleConfigText" modal class="h-full w-full" maximizable>
+    <template #header>
+      <div class="flex-wrap break-all px-2">Конфигурация <br> {{ selectedFile?.name }}</div>
+    </template>
     <div v-if="selectedFile?.content">
       <div style="font-family: monospace; padding: 1rem" v-html="textToHtml(selectedFile.content)"></div>
     </div>
@@ -113,7 +123,8 @@
       <p v-if="selectedFile">{{ selectedFile.name }}</p>
       <div class="p-4 flex gap-2 justify-center">
         <Button icon="pi pi-times" label="Отмена" @click="visibleDeleteDialog = false"/>
-        <Button v-if="selectedFile" @click="deleteFile(selectedFile)" icon="pi pi-trash" severity="danger" label="Удалить"/>
+        <Button v-if="selectedFile" @click="deleteFile(selectedFile)" icon="pi pi-trash" severity="danger"
+                label="Удалить"/>
       </div>
     </div>
   </Dialog>
@@ -122,8 +133,7 @@
     <ConfigFileDiff
         :config-files="files"
         :device-name="deviceName"
-        :formatted-config-function="formatConfigFile"
-    />
+        :formatted-config-function="formatConfigFile"/>
   </Dialog>
 
 </template>

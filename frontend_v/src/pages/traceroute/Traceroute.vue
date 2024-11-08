@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="container mx-auto p-6 px-10">
+  <div class="container mx-auto py-6">
     <div class="flex">
       <div class="text-muted-color ml-10 text-xl cursor-pointer" @click="toggleMode">
         {{ tracerouteMode === 'vlan' ? 'MAC' : 'VLAN' }} Traceroute
@@ -31,7 +31,8 @@
               <svg style="cursor: pointer" @click="vlanScanStatus.run_vlans_scan" xmlns="http://www.w3.org/2000/svg"
                    width="24" height="24" fill="white" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"></path>
+                <path
+                    d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"></path>
               </svg>
             </div>
 
@@ -40,7 +41,8 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-x-circle"
                    viewBox="0 0 16 16">
                 <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                <path
+                    d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
               </svg>
             </div>
 
@@ -54,11 +56,13 @@
                          input-class="w-24 bg-transparent text-gray-200 text-center rounded-full font-mono text-xl"
                          :min="1" :max="4096"
                          v-model="input.vlan"
-                         placeholder="vlan" />
+                         placeholder="vlan"/>
           </div>
-          <Button @click="load_vlan_traceroute" text severity="secondary" :loading="vlanTracerouteStarted" >
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bezier2" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 2.5A1.5 1.5 0 0 1 2.5 1h1A1.5 1.5 0 0 1 5 2.5h4.134a1 1 0 1 1 0 1h-2.01c.18.18.34.381.484.605.638.992.892 2.354.892 3.895 0 1.993.257 3.092.713 3.7.356.476.895.721 1.787.784A1.5 1.5 0 0 1 12.5 11h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5H6.866a1 1 0 1 1 0-1h1.711a2.839 2.839 0 0 1-.165-.2C7.743 11.407 7.5 10.007 7.5 8c0-1.46-.246-2.597-.733-3.355-.39-.605-.952-1-1.767-1.112A1.5 1.5 0 0 1 3.5 5h-1A1.5 1.5 0 0 1 1 3.5v-1zM2.5 2a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10 10a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+          <Button @click="load_vlan_traceroute" text severity="secondary" :loading="vlanTracerouteStarted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bezier2"
+                 viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                    d="M1 2.5A1.5 1.5 0 0 1 2.5 1h1A1.5 1.5 0 0 1 5 2.5h4.134a1 1 0 1 1 0 1h-2.01c.18.18.34.381.484.605.638.992.892 2.354.892 3.895 0 1.993.257 3.092.713 3.7.356.476.895.721 1.787.784A1.5 1.5 0 0 1 12.5 11h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5H6.866a1 1 0 1 1 0-1h1.711a2.839 2.839 0 0 1-.165-.2C7.743 11.407 7.5 10.007 7.5 8c0-1.46-.246-2.597-.733-3.355-.39-.605-.952-1-1.767-1.112A1.5 1.5 0 0 1 3.5 5h-1A1.5 1.5 0 0 1 1 3.5v-1zM2.5 2a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10 10a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
             </svg>
           </Button>
           <div v-if="inputVlanInfo.name" class="text-light fs-4">
@@ -91,10 +95,11 @@
 
       <div class="flex gap-3 items-center pt-4">
         <InputGroup unstyled>
-          <Button icon="pi pi-minus" text @click="vlanTracerouteOptions.graphMinLength>1?vlanTracerouteOptions.graphMinLength--:null"/>
+          <Button icon="pi pi-minus" text
+                  @click="vlanTracerouteOptions.graphMinLength>1?vlanTracerouteOptions.graphMinLength--:null"/>
           <InputNumber v-model="vlanTracerouteOptions.graphMinLength" :min="1" :max="100"
                        input-class="w-10 bg-transparent text-gray-200 text-center border-0 font-mono text-xl"/>
-          <Button icon="pi pi-plus" text @click="vlanTracerouteOptions.graphMinLength++" />
+          <Button icon="pi pi-plus" text @click="vlanTracerouteOptions.graphMinLength++"/>
         </InputGroup>
         <div>Минимальное количество узлов в одном графе</div>
       </div>
@@ -143,9 +148,10 @@
         <div class="my-3 flex items-center gap-3">
           <div>
             <InputText @keyup.enter="load_mac_traceroute"
-                         class="w-50 bg-transparent text-gray-200 text-center rounded-full font-mono text-xl" :min="1" :max="4096"
-                         v-model="input.mac"
-                         placeholder="MAC" />
+                       class="w-50 bg-transparent text-gray-200 text-center rounded-full font-mono text-xl" :min="1"
+                       :max="4096"
+                       v-model="input.mac"
+                       placeholder="MAC"/>
           </div>
           <Button v-if="!macTracerouteStarted" @click="load_mac_traceroute" text>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bezier2"

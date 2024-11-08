@@ -1,7 +1,7 @@
 <template>
-  <Header />
+  <Header/>
 
-  <div class="container mx-auto p-4">
+  <div class="container mx-auto py-4">
 
     <div class="flex flex-wrap justify-center md:grid sm:grid-cols-4 items-center p-4">
 
@@ -10,7 +10,7 @@
       <!--Переключение режимов работы-->
       <!--Нагрузка по портам-->
       <div v-if="displayMode === 'default'" class=" py-2">
-        <Button @click="getDeviceWithStats" text >
+        <Button @click="getDeviceWithStats" text>
           <img src="/img/loading_circle.svg" class="me-2 w-[50px]" alt="loading-circle">
           Нагрузка по портам
         </Button>
@@ -25,7 +25,7 @@
       <!--Обычный режим-->
       <div v-if="displayMode === 'interfaces_loading'" class=" py-2">
         <Button @click="getDevices" text>
-          <img src="/img/default_view.svg"  class="me-2 w-[50px]" alt="default-view">
+          <img src="/img/default_view.svg" class="me-2 w-[50px]" alt="default-view">
           Обычный вид
         </Button>
       </div>
@@ -37,7 +37,8 @@
     </div>
 
     <!--Отображение подсказки по нагрузке портов-->
-    <div v-show="displayMode === 'interfaces_loading'" class="border my-4 mx-2 rounded-xl row shadow" style="padding: 20px;">
+    <div v-show="displayMode === 'interfaces_loading'" class="border my-4 mx-2 rounded-xl row shadow"
+         style="padding: 20px;">
       <!--Просмотр загрузки оборудования-->
       <div v-if="chartData.length > 0">
         <div class="text-2xl">Общая загрузка интерфейсов</div>
@@ -64,7 +65,8 @@
 
 
     <!-- Строка поиска-->
-    <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true" placeholder="Поиск по Имени или IP адресу"/>
+    <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true"
+                 placeholder="Поиск по Имени или IP адресу"/>
 
     <div class="p-4 py-2 font-mono">Найдено: {{ devices.length }}</div>
 
@@ -171,12 +173,12 @@ export default defineComponent({
       let devices_models: Array<string> = []
       // Определяем список уникальных имен вендоров и групп
       for (let dev of this.devices) {
-          if (dev.group && devices_groups.indexOf(dev.group) === -1){
-              devices_groups.push(dev.group || "")
-          }
-          if (dev.vendor && devices_vendors.indexOf(dev.vendor) === -1){
-              devices_vendors.push(dev.vendor)
-          }
+        if (dev.group && devices_groups.indexOf(dev.group) === -1) {
+          devices_groups.push(dev.group || "")
+        }
+        if (dev.vendor && devices_vendors.indexOf(dev.vendor) === -1) {
+          devices_vendors.push(dev.vendor)
+        }
         if (dev.model && devices_models.indexOf(dev.model) === -1) {
           devices_models.push(dev.model)
         }
@@ -187,7 +189,7 @@ export default defineComponent({
     },
 
     calculateInterfacesWorkload(devices: Device[]) {
-      if (this.displayMode!=='interfaces_loading' || !devices.length) {
+      if (this.displayMode !== 'interfaces_loading' || !devices.length) {
         this.chartData = []
       } else {
         this.chartData = calculateInterfacesWorkload(this.devices)

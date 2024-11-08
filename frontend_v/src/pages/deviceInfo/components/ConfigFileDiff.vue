@@ -1,11 +1,13 @@
 <template>
 
-  <div>
+  <div class="relative">
 
     <div class="flex items-center pb-5">
       <Button @click="compareConfigs" size="small" outlined>
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-          <path d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm5 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2v5a2 2 0 0 1-2 2H5zm6-8V2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2V6a2 2 0 0 1 2-2h5z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="me-2"
+             viewBox="0 0 16 16">
+          <path
+              d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm5 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2v5a2 2 0 0 1-2 2H5zm6-8V2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2V6a2 2 0 0 1 2-2h5z"/>
         </svg>
         <span>Сравнить</span>
       </Button>
@@ -16,7 +18,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 pb-3">
+    <div class="grid grid-cols-2 gap-2 sticky pb-3">
       <Select @change="e => getConfigContent(e.value)" optionLabel="modTime" placeholder="Новая конфигурация"
               class=" md:w-14rem"
               v-model="config1"
@@ -28,15 +30,15 @@
     </div>
 
     <div v-if="differences.length > 0">
-      <div v-for="(diff, index) in differences" :key="index" class="grid grid-cols-2">
-        <div class="">
+      <div v-for="(diff, index) in differences" :key="index" class="grid grid-cols-2 gap-2 text-xs sm:text-base">
+        <div class="overflow-auto sm:px-2">
           <template v-if="diff[0]">
             <div v-if="diff[0].removed || diff[0].added" :class="{ removed: diff[0].removed, added: diff[0].added }"
                  v-html="format_to_html(diff[0].value)"></div>
             <div v-else-if="!showOnlyDiff" v-html="format_to_html(diff[0].value)"></div>
           </template>
         </div>
-        <div class="">
+        <div class="overflow-auto sm:px-2">
           <template v-if="diff[1]">
             <div v-if="diff[1].removed || diff[1].added" :class="{ removed: diff[1].removed, added: diff[1].added }"
                  v-html="format_to_html(diff[1].value)"></div>

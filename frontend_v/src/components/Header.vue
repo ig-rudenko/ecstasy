@@ -102,14 +102,16 @@ const toggle = () => {
 </script>
 
 <template>
-  <div class="bg-zinc-800 dark:bg-gray-950 px-4">
-    <Menubar :model="menuItems.value" class="container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
+  <div class="bg-zinc-800 dark:bg-gray-950">
+    <Menubar :model="menuItems.value"
+             class="container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
              :pt="{itemContent: {class: 'bg-zinc-800 dark:!bg-gray-950'}}">
       <template #start>
         <router-link :to="{name: 'home'}"
-                     class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
-          <img class="me-3 w-[96px] h-[96px] rounded-full" src="/video/logo.webp" alt="logo">
-          <div style="font-family: 'Century Gothic', fantasy;" class="ps-4 pr-10 text-gray-300 text-2xl sm:text-[2rem]">
+                     class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none z-10">
+          <img class="me-3 !w-[96px] !h-[96px] rounded-full" src="/video/logo.webp" alt="logo">
+          <div style="font-family: 'Century Gothic', fantasy;"
+               class="hidden sm:block ps-4 pr-10 text-gray-300 text-2xl sm:text-[2rem]">
             Ecstasy
           </div>
         </router-link>
@@ -131,6 +133,10 @@ const toggle = () => {
 
       <template #end>
         <div class="flex items-center gap-2">
+          <a href="/admin/">
+            <Button v-if="user && user.isStaff" icon="pi pi-cog" size="large" text
+                    v-tooltip.bottom="'Панель администратора'"/>
+          </a>
           <Avatar v-if="user" :image="getAvatar(user.username)" v-tooltip.bottom="user.firstName" shape="circle"
                   :size="'large'"/>
           <div class="flex flex-col">
@@ -154,7 +160,3 @@ const toggle = () => {
   </div>
 
 </template>
-
-<style scoped>
-
-</style>

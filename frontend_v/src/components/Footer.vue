@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="container mx-auto dark:text-gray-300 relative">
+  <div class="container mx-auto dark:text-gray-300 relative mt-16">
     <footer class="sticky bottom-0 p-5">
 
       <hr class="dark:border-gray-700 border-gray-400 py-3">

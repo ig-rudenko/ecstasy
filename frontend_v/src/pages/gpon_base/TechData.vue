@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="container mx-auto px-2 sm:px-10">
+  <div class="container mx-auto">
 
     <div class="flex gap-2 justify-around items-center py-5">
       <div class="text-3xl font-semibold px-3">Технические данные</div>

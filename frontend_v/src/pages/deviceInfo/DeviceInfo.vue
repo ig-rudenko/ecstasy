@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto my-8 sm:my-12 flex justify-center">
+  <div class="container mx-auto my-5 sm:my-10 flex justify-center">
     <!--    Имя оборудования и его статус-->
     <DeviceStatusName
         v-if="generalInfo"
@@ -11,10 +11,10 @@
         :console-url="generalInfo.consoleURL"/>
   </div>
 
-  <div v-if="generalInfo" class="container mx-auto my-5 px-2 md:px-6">
+  <div v-if="generalInfo" class="sm:container mx-auto my-3">
 
-
-    <div v-if="generalInfo" class="border rounded-xl shadow-xl p-3 flex flex-wrap justify-between">
+    <div v-if="generalInfo"
+         class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
 
       <div class="p-3 flex flex-wrap items-center gap-1">
         <!--    Кнопка для отображения панели с информацией Zabbix-->
@@ -61,7 +61,8 @@
           <a :href="generalInfo.consoleURL" target="_blank" class="text-dark">
             <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'">
               <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"></path>
+                <path
+                    d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"></path>
               </svg>
             </Button>
           </a>
@@ -76,18 +77,18 @@
   </div>
 
   <!--    Список конфигураций-->
-  <div v-if="generalInfo" v-show="configFiles.display" class="container mx-auto px-2 md:px-6">
+  <div v-if="generalInfo" v-show="configFiles.display" class="container mx-auto">
     <ConfigFiles :device-name="generalInfo.deviceName"/>
   </div>
 
-  <div class="container mx-auto px-2 md:px-6">
+  <div class="container mx-auto">
     <!--    Загруженность интерфейсов-->
     <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
 
   </div>
 
 
-  <div class="container mx-auto px-2 md:px-6">
+  <div class="container">
     <div>
       <div class="p-2">
         <!--  Время обновления интерфейсов-->
@@ -110,7 +111,7 @@
     </div>
   </div>
 
-  <div class="py-4 px-2 md:px-6 flex justify-evenly relative">
+  <div class="container py-4 flex justify-evenly relative">
 
     <!--    Таблица интерфейсов-->
     <div v-if="interfaces.length && generalInfo" class="overflow-x-scroll overflow-y-visible">
@@ -137,7 +138,7 @@
               :device-name="generalInfo.deviceName"
               :dynamic-opacity="dynamicOpacity"
               :interface="_interface"
-              :permission-level="generalInfo.permission" />
+              :permission-level="generalInfo.permission"/>
         </template>
 
         </tbody>
@@ -282,7 +283,7 @@ export default defineComponent({
     return {
       deviceStats: {} as HardwareStats,
       interfacesWorkload: {} as InterfacesCount,
-      generalInfo: null as GeneralInfo|null,
+      generalInfo: null as GeneralInfo | null,
       interfaces: [] as DeviceInterface[],
 
       timePassedFromLastUpdate: "",
@@ -459,9 +460,9 @@ export default defineComponent({
 
     showToastError(reason: any) {
       errorToast(
-        `ERROR! status: ${reason.response.status}`,
-        "Причина: " + (reason.response.data?.detail || reason.response.data?.error),
-        10000
+          `ERROR! status: ${reason.response.status}`,
+          "Причина: " + (reason.response.data?.detail || reason.response.data?.error),
+          10000
       )
     }
 
