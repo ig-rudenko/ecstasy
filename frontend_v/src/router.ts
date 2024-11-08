@@ -36,6 +36,11 @@ const router = createRouter({
             component: () => import("@/pages/gpon_base/ViewBuildingTechData.vue"),
             name: "gpon-building-tech-data"
         },
+        {
+            path: "/gpon/tech-data/end3/:id",
+            component: () => import("@/pages/gpon_base/ViewEnd3TechData.vue"),
+            name: "gpon-end3-tech-data"
+        },
     ],
 });
 

@@ -26,7 +26,7 @@
           <Button icon="pi pi-user" text :label="subscriber.customerName"></Button>
         </a>
         <div v-else>{{ subscriber.customerName }}</div>
-        <div class="font-mono">{{ subscriber.transit }}</div>
+        <div class="font-mono p-2" v-tooltip="'Транзит'">{{ subscriber.transit }}</div>
       </div>
       <div class="text-muted items-center flex gap-3" v-if="!port.subscribers.length">
         <span>нет абонента</span>
