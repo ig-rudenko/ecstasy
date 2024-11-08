@@ -1,169 +1,161 @@
 <template>
   <div class="table-plate">
     <div>
-      <div class="d-flex align-items-center">
-        <button @click="show_filter = !show_filter" class="filter-button me-5">
-          <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-               fill="#8B83BA" class="me-1" viewBox="0 0 16 16">
-            <path
-                d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z"/>
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#8B83BA" class="me-1"
-               viewBox="0 0 16 16">
-            <path
-                d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2h-11z"/>
-          </svg>
-          Фильтрация
-        </button>
-
-        <div class="w-100 px-4 pb-3">
-          <input style="height: 40px" id="filter-region" v-model.trim="filter.general" type="text"
-                 @keypress.enter="doFilter" placeholder="ФИО, транзит или номер телефона"
-                 class="form-control">
+      <div class="flex items-center px-2">
+        <div>
+          <Button @click="show_filter = !show_filter" class="filter-button" outlined>
+            <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                 fill="#8B83BA" viewBox="0 0 16 16">
+              <path
+                  d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#8B83BA" class="me-1"
+                 viewBox="0 0 16 16">
+              <path
+                  d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2h-11z"/>
+            </svg>
+            <div>Фильтрация</div>
+          </Button>
         </div>
+
+        <InputText id="filter-region" v-model.trim="filter.general" fluid
+                   @keydown.enter="doFilter" placeholder="ФИО, транзит или номер телефона"/>
       </div>
 
       <!-- ФИЛЬТР -->
-      <div v-show="show_filter" id="filter" class="table-plate filter-plate p-4">
-        <div class="d-flex flex-wrap">
+      <div v-show="show_filter" id="filter"
+           class="table-plate rounded-xl filter-plate border bg-gray-50 dark:bg-gray-900 p-4">
+        <div class="flex flex-wrap">
           <div style="width: 200px" class="me-2">
-            <label for="filter-region" class="mx-2 form-check-label">Регион</label>
-            <input style="width: 200px" id="filter-region" v-model.trim="filter.address.region" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <label for="filter-region" class="mx-2">Регион</label>
+            <InputText style="width: 200px" id="filter-region" v-model.trim="filter.address.region" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
           <div style="width: 200px" class="me-2">
-            <label for="filter-settlement" class="mx-2 form-check-label">Населенный пункт</label>
-            <input style="width: 200px" id="filter-settlement" v-model.trim="filter.address.settlement" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <label for="filter-settlement" class="mx-2">Населенный пункт</label>
+            <InputText style="width: 200px" id="filter-settlement" v-model.trim="filter.address.settlement" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
           <div style="width: 200px" class="me-2">
-            <label for="filter-planStructure" class="mx-2 form-check-label">СНТ/ТСН</label>
-            <input style="width: 200px" id="filter-planStructure" v-model.trim="filter.address.planStructure"
-                   @keypress.enter="doFilter"
-                   type="text"
-                   class="form-control">
+            <label for="filter-planStructure" class="mx-2">СНТ/ТСН</label>
+            <InputText style="width: 200px" id="filter-planStructure" v-model.trim="filter.address.planStructure"
+                       @keydown.enter="doFilter"/>
           </div>
         </div>
 
-        <div class="d-flex flex-wrap">
+        <div class="flex flex-wrap">
           <div style="width: 300px" class="me-2">
             <label for="filter-street" class="mx-2 form-check-label">Улица/проспект</label>
-            <input style="width: 300px" id="filter-street" v-model.trim="filter.address.street" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <InputText style="width: 300px" id="filter-street" v-model.trim="filter.address.street" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
           <div style="width: 100px" class="me-2">
             <label for="filter-house" class="mx-2 form-check-label">Дом</label>
-            <input style="width: 100px" id="filter-house" v-model.trim="filter.address.house" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <InputText style="width: 100px" id="filter-house" v-model.trim="filter.address.house" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
           <div style="width: 100px" class="me-2">
             <label for="filter-block" class="mx-2 form-check-label">Корпус</label>
-            <input style="width: 100px" id="filter-block" v-model.number="filter.address.block" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <InputText style="width: 100px" id="filter-block" v-model.number="filter.address.block" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
         </div>
 
-        <div class="d-flex flex-wrap">
+        <div class="flex flex-wrap">
           <div style="width: 300px" class="me-2">
-            <label for="filter-deviceName" class="mx-2 form-check-label">ФИО</label>
-            <input style="width: 300px" id="filter-deviceName" v-model.trim="filter.customerName" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <label for="filter-deviceName" class="mx-2">ФИО</label>
+            <InputText style="width: 300px" id="filter-deviceName" v-model.trim="filter.customerName" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
           <div style="width: 200px" class="me-2">
             <label for="filter-devicePort" class="mx-2 form-check-label">Номер контракта</label>
-            <input style="width: 200px" id="filter-devicePort" v-model="filter.devicePort" type="text"
-                   @keypress.enter="doFilter"
-                   class="form-control">
+            <InputText style="width: 200px" id="filter-devicePort" v-model="filter.devicePort" type="text"
+                       @keydown.enter="doFilter"/>
           </div>
-          <div class="me-2">
-            <button class="search-button" @click="doFilter">Поиск</button>
-          </div>
+          <Button class="search-button dark:!text-white" outlined severity="success" @click="doFilter">Поиск</Button>
         </div>
       </div>
 
     </div>
 
     <!-- TABLE -->
-    <div class="table-responsive-lg">
-      <table :style="{opacity: show_filter?0.4:1}" class="table">
-        <thead>
+    <div class="overflow-auto">
+      <table :style="{opacity: show_filter?0.4:1}" class="w-full">
+        <thead class="dark:border-gray-600 border-b-2">
         <tr>
-          <th scope="col"></th>
-          <th scope="col">Абонент</th>
-          <th scope="col">Адрес</th>
-          <th scope="col">Данные абонента</th>
-          <th scope="col">Услуги</th>
+          <th scope="col" class="py-2">Абонент</th>
+          <th scope="col" class="py-2">Адрес</th>
+          <th scope="col" class="py-2">Данные абонента</th>
+          <th scope="col" class="py-2">Услуги</th>
         </tr>
         </thead>
 
-      <tbody>
-      <tr v-for="line in tableData">
-        <td></td>
+        <tbody>
+        <tr v-for="line in tableData"
+            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
 
-        <!-- АБОНЕНТ -->
-        <td class="fw-bold">
-          <a class="text-decoration-none text-dark active-hover" :href="'/gpon/subscriber-data/customers/'+line.customer.id">
-            {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
-            {{ line.customer.companyName }}
-          </a>
-          <br>
-          <div class="secondary-text d-flex">
-            <div class="d-flex align-items-center me-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
-              </svg>
-              {{ line.customer.contract }}
+          <!-- АБОНЕНТ -->
+          <td class="flex items-center font-bold py-2 px-10 gap-3 dark:text-gray-300">
+            <a class="hover:text-primary" :href="'/gpon/subscriber-data/customers/'+line.customer.id">
+              {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
+              {{ line.customer.companyName }}
+            </a>
+            <div class="secondary-text flex">
+              <div v-if="line.customer.contract" class="flex items-center me-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
+                     viewBox="0 0 16 16">
+                  <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                  <path
+                      d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
+                </svg>
+                <span class="font-mono">{{ line.customer.contract }}</span>
+              </div>
+              <div v-if="line.customer.phone" class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
+                     viewBox="0 0 16 16">
+                  <path fill-rule="evenodd"
+                        d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+                </svg>
+                <span class="font-mono">{{ line.customer.phone }}</span>
+              </div>
             </div>
-            <div class="d-flex align-items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
-              </svg>
-              {{ line.customer.phone }}
+          </td>
+
+          <!-- АДРЕС -->
+          <td class="dark:text-gray-300">
+            <div>
+              <span class="me-2">{{ getFullAddress(line.address) }}</span>
+              <span v-if="line.address.apartment">кв. {{ line.address.apartment }}</span>
+              <br>
+              <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
             </div>
-          </div>
-        </td>
+          </td>
 
-        <!-- АДРЕС -->
-        <td class="fw-bold">
-          <div class="active-hover">
-            <span class="me-2">{{ getFullAddress(line.address) }}</span>
-            <span v-if="line.address.apartment">кв. {{ line.address.apartment }}</span>
-            <br>
-            <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
-          </div>
-        </td>
-
-        <!-- Данные абонента -->
-        <td>
-          <Pill :text="customerTypeName(line.customer.type)"
-                :color="customerTypeColor(line.customer.type)"
-                :back-color="customerTypeBackColor(line.customer.type)">
-          </Pill>
-          <span class="secondary-text">
-            <span>Транзит: {{ line.transit }}</span>
+          <!-- Данные абонента -->
+          <td>
+            <Pill :text="customerTypeName(line.customer.type)"
+                  :color="customerTypeColor(line.customer.type)"
+                  :back-color="customerTypeBackColor(line.customer.type)">
+            </Pill>
+            <span class="secondary-text">
+            <span>Транзит: <span class="font-mono">{{ line.transit }}</span></span>
           </span>
-        </td>
-        <!-- УСЛУГИ -->
-        <td>
-          <span class="secondary-text" v-for="service in line.services">
-            <span>{{ service }}</span> <br>
-          </span>
-        </td>
+          </td>
 
-      </tr>
-      </tbody>
+          <!-- УСЛУГИ -->
+          <td>
+            <div class="flex flex-col gap-1">
+              <span v-for="service in line.services" class="secondary-text font-mono">{{ service }}</span>
+            </div>
+          </td>
+
+        </tr>
+        </tbody>
       </table>
     </div>
 
     <!-- TABLE FOOTER -->
-    <Paginator :paginator="paginator" :data-length="filteredData.length" />
+    <Paginator :paginator="paginator" :data-length="filteredData.length"/>
 
   </div>
 </template>
@@ -305,7 +297,7 @@ export default {
       }
     },
 
-    goToDetailSubscriberView(){
+    goToDetailSubscriberView() {
       window.location.href = `/gpon/subscriber-data/`
     },
 
@@ -315,25 +307,10 @@ export default {
 
 <style scoped>
 
-.active-hover {
-  cursor: pointer;
-}
-
-.active-hover:hover {
-  color: #2198ff!important;
-}
-
-.olt-port-badge:hover {
-  cursor: pointer;
-  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-  border: 1px solid #a48eff;
-}
-
 .search-button {
   font-size: 14px;
   margin-top: 23px;
   border: 1px solid green;
-  background-color: white;
   padding: 6px 30px;
   border-radius: 14px;
 }
@@ -357,7 +334,6 @@ table {
 }
 
 thead {
-  background-color: #F4F2FF;
   color: #6E6893;
   font-size: 12px;
   text-transform: uppercase;
@@ -371,20 +347,10 @@ tr, tr * {
   text-wrap: nowrap;
 }
 
-tr:hover {
-  background-color: #F4F2FF;
-}
-
 .filter-button {
   margin: 15px;
   padding: 7px 10px;
-  background: white;
   border-radius: 6px;
-  border: 0 #6D5BD0 solid;
-}
-
-.filter-button:hover {
-  box-shadow: 0 0 3px #6D5BD0;
 }
 
 .secondary-text {
@@ -393,13 +359,15 @@ tr:hover {
   font-weight: 500;
 }
 
+.secondary-text:where(.dark, .dark *) {
+  color: #9088c3;
+}
+
 .table-plate {
   box-shadow: 0 10px 50px rgba(0, 0, 0, 0.20);
-  border-radius: 8px;
 }
 
 .filter-plate {
-  background-color: white;
   width: max-content;
   position: absolute;
   z-index: 10;

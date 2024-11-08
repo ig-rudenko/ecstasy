@@ -76,7 +76,6 @@
       <table :style="{opacity: show_filter?0.4:1}" class="w-full">
         <thead class="dark:border-gray-600 border-b-2">
         <tr>
-          <th scope="col" class="py-2"></th>
           <th scope="col" class="py-2">Адрес</th>
           <th scope="col" class="py-2">Порт olt</th>
           <th scope="col" class="py-2">Абонентская линия</th>
@@ -87,11 +86,10 @@
         <tbody>
         <tr v-for="line in tableData"
             class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
-          <td></td>
 
           <!-- АДРЕС -->
           <td class="items-center flex font-bold py-2 px-10 gap-3">
-            <BuildingIcon :type="line.building_type" width="32" height="32"></BuildingIcon>
+            <BuildingIcon :type="line.building_type" width="32" height="32"/>
             <div>
               <span @click="goToBuildingDetailView(line.building_id)"
                     class="address-name dark:text-gray-300">{{ getFullAddress(line.address) }}</span>

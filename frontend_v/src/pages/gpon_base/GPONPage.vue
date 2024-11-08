@@ -12,10 +12,10 @@ import Footer from "@/components/Footer.vue";
       <div class="xl:max-w-[70%] sm:grid sm:grid-cols-2 gap-10">
 
         <div class="p-4 sm:p-10 sm:pr-2 hover:scale-[1.02] group">
-          <a class="relative" href="/gpon/subscriber-data/">
+          <router-link :to="{name: 'gpon-subscribers-data'}" class="relative">
             <img class="w-full rounded-xl group-hover:shadow-xl" src="/img/gpon/left.png" alt="">
             <div class="absolute text-2xl font-bold top-8 left-8">Абонентские данные</div>
-          </a>
+          </router-link>
         </div>
 
         <div class="p-4 sm:p-10 sm:pl-2 hover:scale-[1.02] group">
