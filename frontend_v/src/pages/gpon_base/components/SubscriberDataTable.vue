@@ -96,10 +96,11 @@
 
           <!-- АБОНЕНТ -->
           <td class="flex items-center font-bold p-4 px-10 gap-3 dark:text-gray-300">
-            <a class="hover:text-primary" :href="'/gpon/subscriber-data/customers/'+line.customer.id">
+            <router-link :to="{name: 'gpon-view-subscriber', params: {id: line.customer.id}}"
+                         class="hover:text-primary">
               {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
               {{ line.customer.companyName }}
-            </a>
+            </router-link>
             <div class="secondary-text flex">
               <div v-if="line.customer.contract" class="flex items-center me-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"

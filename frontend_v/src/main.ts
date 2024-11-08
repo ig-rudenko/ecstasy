@@ -4,6 +4,8 @@ import {
     Button,
     Checkbox,
     Column,
+    ConfirmationService,
+    ConfirmPopup,
     DataTable,
     DatePicker,
     Dialog,
@@ -43,6 +45,7 @@ setupInterceptors();
 app.directive('ripple', Ripple);
 app.directive('tooltip', Tooltip);
 app.use(ToastService);
+app.use(ConfirmationService);
 app.use(store);
 app.use(router);
 
@@ -51,6 +54,7 @@ app.component("Badge", Badge);
 app.component("Button", Button);
 app.component("Checkbox", Checkbox);
 app.component("Column", Column);
+app.component("ConfirmPopup", ConfirmPopup);
 app.component("DatePicker", DatePicker);
 app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);

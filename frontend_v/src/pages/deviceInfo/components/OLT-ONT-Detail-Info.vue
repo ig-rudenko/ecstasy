@@ -19,7 +19,8 @@
         <Button @click="toggleDetailInfo" text>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box"
                viewBox="0 0 16 16">
-            <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+            <path
+                d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
           </svg>
         </Button>
 
@@ -30,12 +31,12 @@
       {{ line[1] }}
     </td>
 
-    <!--            Equipment ID или АБОНЕНТ -->
+    <!--            Equipment ID или АБОНЕНТ `Subscriber` -->
     <td v-if="showSubscribersData">
       <div v-for="customer in getCustomersIDAndFullNameList(Number(line[0]))">
-        <a :href="'/gpon/subscriber-data/customers/'+customer.id" target="_blank">
+        <router-link :to="{ name: 'gpon-view-subscriber', params: { id: customer.id } }" target="_blank">
           <Button text size="small" class="w-full" icon="pi pi-user" :label="customer.fullName"/>
-        </a>
+        </router-link>
       </div>
     </td>
     <td v-else class="font-mono">{{ line[2] }}</td>
@@ -71,7 +72,8 @@
       </div>
 
       <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo v-if="complexInfo" :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
+      <ComplexInterfaceInfo v-if="complexInfo" :complex-info="complexInfo" :interface="interface"
+                            :device-name="deviceName"/>
 
     </td>
   </tr>

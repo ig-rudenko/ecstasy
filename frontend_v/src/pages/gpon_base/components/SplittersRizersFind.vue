@@ -8,9 +8,9 @@
           :class="valid?['w-full']:['p-invalid', 'w-full']"
           :virtualScrollerOptions="{ itemSize: 38 }"
           @change="e => $emit('change', e)"
-          :optionLabel="getFullAddress" placeholder="Выберите" class="w-full">
+          :optionLabel="getFullAddress" placeholder="Выберите">
     <template #value="slotProps">
-      <div v-if="slotProps.value" class="flex items-center">
+      <div v-if="slotProps.value" class="flex items-center text-wrap">
         <div>{{ getFullAddress(slotProps.value) }}</div>
       </div>
       <span v-else>
@@ -18,7 +18,7 @@
     </span>
     </template>
     <template #option="slotProps">
-      <div v-if="slotProps.option" class="items-center flex">
+      <div v-if="slotProps.option" class="items-center flex text-wrap">
         <div>{{ getFullAddress(slotProps.option) }}</div>
       </div>
     </template>
