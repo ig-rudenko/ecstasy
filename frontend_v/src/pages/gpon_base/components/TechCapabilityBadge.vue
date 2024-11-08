@@ -1,26 +1,25 @@
 <template>
-<span :class="getStatusClasses">{{status}}</span>
+  <span class="px-2 rounded font-mono" :class="getStatusClasses">{{ status }}</span>
 </template>
 
 <script>
 export default {
-  name: "TechCapabilityBadge.vue",
+  name: "TechCapabilityBadge",
   props: {
     status: {required: true, type: String}
   },
-  data (){
+  data() {
     return {
       lineStatuses: [
-        {name: "empty", classes: ["badge", "bg-secondary"]},
-        {name: "active", classes: ["badge", "bg-success"]},
-        {name: "pause", classes: ["badge", "bg-warning"]},
-        {name: "reserved", classes: ["badge", "bg-primary"]},
-        {name: "bad", classes: ["badge", "bg-danger"]},
+        {name: "active", classes: ['bg-green-500', 'text-gray-950']},
+        {name: "pause", classes: ['bg-yellow-500', 'text-gray-950']},
+        {name: "reserved", classes: ['bg-blue-500', 'text-gray-950']},
+        {name: "bad", classes: ['bg-red-500', 'text-gray-950']},
       ]
     }
   },
   computed: {
-    getStatusClasses(){
+    getStatusClasses() {
       for (let lineStatus of this.lineStatuses) {
         if (lineStatus.name === this.status) return lineStatus.classes
       }

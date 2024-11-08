@@ -4,6 +4,7 @@ import {
     Button,
     Column,
     DataTable,
+    DatePicker,
     Dialog,
     Drawer,
     IftaLabel,
@@ -46,6 +47,7 @@ app.component("Avatar", Avatar);
 app.component("Badge", Badge);
 app.component("Button", Button);
 app.component("Column", Column);
+app.component("DatePicker", DatePicker);
 app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);
 app.component("Drawer", Drawer);

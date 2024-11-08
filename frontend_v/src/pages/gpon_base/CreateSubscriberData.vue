@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class="header">
-      <img class="header-image" src="/static/img/gpon/subscriber-data.svg" alt="create-tech-data-image">
+      <img class="header-image" src="/img/gpon/subscriber-data.svg" alt="create-tech-data-image">
       <h2>Добавление абонентского подключения</h2>
     </div>
 
@@ -23,16 +23,16 @@
             <h6 class="px-2">OLT оборудование
               <Asterisk/>
             </h6>
-            <Dropdown v-model="formData.techData.deviceName" :options="devicesList" filter
-                      :option-label="x => x"
-                      :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
-                      @change="deviceHasChanged" placeholder="Выберите устройство">
+            <Select v-model="formData.techData.deviceName" :options="devicesList" filter
+                    :option-label="x => x"
+                    :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
+                    @change="deviceHasChanged" placeholder="Выберите устройство">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
                 <span v-else>{{ slotProps.placeholder }}</span>
               </template>
               <template #option="slotProps">{{ slotProps.option }}</template>
-            </Dropdown>
+            </Select>
           </div>
 
           <!-- ПОИСК ПОРТОВ У ВЫБРАННОГО ОБОРУДОВАНИЯ -->
@@ -40,11 +40,11 @@
             <h6 class="px-2">Порт
               <Asterisk/>
             </h6>
-            <Dropdown v-model="formData.techData.devicePort" :options="devicePortList" filter
-                      :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
-                      :option-label="x => x"
-                      @change="portHasChanged"
-                      optionLabel="name" placeholder="Выберите порт">
+            <Select v-model="formData.techData.devicePort" :options="devicePortList" filter
+                    :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
+                    :option-label="x => x"
+                    @change="portHasChanged"
+                    optionLabel="name" placeholder="Выберите порт">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
                 <span v-else>{{ slotProps.placeholder }}</span>
@@ -52,7 +52,7 @@
               <template #option="slotProps">
                 <div>{{ slotProps.option }}</div>
               </template>
-            </Dropdown>
+            </Select>
           </div>
         </div>
 
@@ -104,10 +104,10 @@
         <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber">Указать вручную</Button>
 
         <div class="p-2">
-          <Dropdown v-if="!formState.secondStep.selected"
-                    v-model="formData.customer.type"
-                    :options="['person','company','contract']" style="width: 100%"
-                    placeholder="Выберите тип абонента" class="w-full md:w-14rem">
+          <Select v-if="!formState.secondStep.selected"
+                  v-model="formData.customer.type"
+                  :options="['person','company','contract']" style="width: 100%"
+                  placeholder="Выберите тип абонента" class="w-full md:w-14rem">
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex align-items-center"
                    v-html="subscriberVerbose(slotProps.value)"></div>
@@ -116,7 +116,7 @@
             <template #option="slotProps">
               <div class="flex align-items-center" v-html="subscriberVerbose(slotProps.option)"></div>
             </template>
-          </Dropdown>
+          </Select>
           <div v-else>
             <div class="p-3 border rounded" v-html="subscriberVerbose(formData.customer.type)"></div>
           </div>
@@ -273,8 +273,9 @@
           </div>
           <div class="input-part">
             <h6 class="px-2">Дата подключения</h6>
-            <Calendar id="calendar-24h" dateFormat="dd/mm/yy" v-model="formData.connected_at" showTime show-icon hourFormat="24"
-                      style="width: 100%"/>
+            <DatePicker id="calendar-24h" dateFormat="dd/mm/yy" v-model="formData.connected_at" showTime show-icon
+                        hourFormat="24"
+                        style="width: 100%"/>
             <InlineMessage v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</InlineMessage>
           </div>
         </div>
@@ -282,7 +283,8 @@
         <div class="d-flex flex-wrap py-2">
           <h6 class="px-2">Описание подключения</h6>
           <div class="px-2" style="width: 100%;">
-            <textarea v-model.trim="formData.description" class="p-component p-inputtext px-2" style="height: 94px; width: 100%;"></textarea>
+            <textarea v-model.trim="formData.description" class="p-component p-inputtext px-2"
+                      style="height: 94px; width: 100%;"></textarea>
           </div>
         </div>
 
@@ -563,18 +565,6 @@
 </template>
 
 <script>
-import Button from "primevue/button/Button.vue";
-import Calendar from "primevue/calendar/Calendar.vue";
-import Checkbox from "primevue/checkbox/Checkbox.vue";
-import Dialog from "primevue/dialog/Dialog.vue";
-import Dropdown from "primevue/dropdown/Dropdown.vue";
-import InputText from "primevue/inputtext/InputText.vue";
-import InputMask from "primevue/inputmask/InputMask.vue";
-import InlineMessage from "primevue/inlinemessage/InlineMessage.vue";
-import Message from "primevue/message/Message.vue";
-import RadioButton from "primevue/radiobutton/RadioButton.vue";
-import Textarea from "primevue/textarea/Textarea.vue";
-
 import AddressForm from "./components/AddressForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import Asterisk from "./components/Asterisk.vue";
@@ -586,9 +576,10 @@ import SelectSplitterRizerPort from "./components/SelectSplitterRizerPort.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 import StepMenu from "./components/StepMenu.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
-import formatAddress from "../helpers/address";
-import api_request from "../api_request";
-import getSubscriberTypeVerbose from "../helpers/subscribers";
+
+import api from "@/services/api";
+import {formatAddress} from "@/formats";
+import getSubscriberTypeVerbose from "@/helpers/subscribers";
 
 export default {
   name: "Gpon_base.vue",
@@ -597,24 +588,13 @@ export default {
     AddressForm,
     Asterisk,
     BuildingIcon,
-    Button,
-    Checkbox,
-    Calendar,
     CustomerSearch,
-    Dialog,
-    Dropdown,
-    InlineMessage,
-    InputMask,
-    InputText,
-    Message,
-    RadioButton,
     RizerFiberColorExample,
     TechCapabilityBadge,
     End3AddForm,
     SplittersRizersFind,
     SelectSplitterRizerPort,
     StepMenu,
-    Textarea,
   },
   props: {
     initDeviceName: {required: false, default: null},
@@ -829,11 +809,11 @@ export default {
   methods: {
 
     getDeviceNames() {
-      api_request.get("/gpon/api/devices-names")
+      api.get("/gpon/api/devices-names")
           .then(res => this._deviceNames = Array.from(res.data))
     },
     getPortsNames() {
-      api_request.get("/gpon/api/ports-names/" + this.formData.techData.deviceName)
+      api.get("/gpon/api/ports-names/" + this.formData.techData.deviceName)
           .then(res => this._portsNames = Array.from(res.data))
     },
 
@@ -942,7 +922,7 @@ export default {
         connected_at: this.formData.connected_at,
       }
 
-      api_request.post("/gpon/api/subscriber-data", data)
+      api.post("/gpon/api/subscriber-data", data)
           .then(resp => {
                 if (resp.status === 201) {
                   this.form_submitted_successfully = true

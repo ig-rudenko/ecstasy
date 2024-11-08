@@ -1,7 +1,9 @@
 <template>
-  <div id="app" class="w-75" style="margin: auto;">
+  <Header/>
 
-    <Toast />
+  <div class="container mx-auto py-5 xl:w-2/3" style="margin: auto;">
+
+    <Toast/>
 
     <ViewPrintEditButtons
         @print="printData"
@@ -9,33 +11,32 @@
         title="Технические данные - дом"
         exitButtonURL="/gpon/tech-data"
         :has-permission-to-edit="hasAnyPermissionToUpdate"
-        :is-mobile="isMobile"
-    />
+        :is-mobile="isMobile"/>
 
     <!-- ОШИБКА ЗАГРУЗКИ -->
-    <div v-if="errorStatus" class="alert alert-danger">
+    <Message v-if="errorStatus" severity="error" class="my-2 rounded-xl p-2">
       Ошибка при загрузке данных.
-      <br> {{errorMessage||''}}
-      <br> Статус: {{errorStatus}}
-    </div>
+      <br> {{ errorMessage || '' }}
+      <br> Статус: {{ errorStatus }}
+    </Message>
 
     <div v-if="detailData" id="tech-data-block" class="plate">
 
       <!-- ДАННЫЕ ДОМА -->
       <div class="py-3">
 
-        <div class="d-flex align-items-center py-3">
+        <div class="flex items-center py-3">
           <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
             <circle cx="8" cy="8" r="8"/>
           </svg>
-          <h4 class="m-0 me-3">Адрес: {{ getFullAddress(detailDataAddress) }}</h4>
+          <div class="text-xl font-semibold m-0 me-3">Адрес: {{ getFullAddress(detailDataAddress) }}</div>
         </div>
 
-        <div class="ml-40 row align-items-center">
+        <div class="ml-40 items-center">
           <div class="col-auto">
             <BuildingIcon class="m-3" :type="detailData.building_type" width="64" height="64"/>
           </div>
-          <div class="col-8">
+          <div class="">
             <template v-if="detailData.building_type === 'building'">
               Многоквартирный дом. Количество этажей: {{ detailData.floors }} /
               Количество подъездов: {{ detailData.total_entrances }}
@@ -51,32 +52,37 @@
 
       <template v-for="(oltState, oltID) in detailData.oltStates">
 
-        <div class="d-flex align-items-center py-3">
+        <div class="flex items-center py-3">
           <svg width="32" height="32" fill="#633BBC" viewBox="0 0 16 16" class="me-2">
             <circle cx="8" cy="8" r="8"/>
           </svg>
-          <h4 class="m-0 me-3">Задействованные подъезды: {{ oltState.entrances }}</h4>
+          <div class="text-xl font-semibold m-0 me-3">Задействованные подъезды: {{ oltState.entrances }}</div>
         </div>
 
         <div class="ml-40">
 
           <!-- ОПИСАНИЕ 2 -->
-          <div class="py-2 row align-items-center">
-            <div class="col-5 fw-bold">Описание сплиттера 2го каскада</div>
-            <div v-if="!editMode" class="col-auto">{{ oltState.description }}</div>
-            <Textarea v-else class="w-100 my-1" v-model="oltState.description" rows="5"/>
+          <div class="py-2 grid grid-cols-2">
+            <div>Описание сплиттера 2го каскада</div>
+            <div v-if="!editMode">{{ oltState.description }}</div>
+            <Textarea v-else fluid auto-resize v-model="oltState.description" rows="5"/>
           </div>
 
-
           <!-- ОБОРУДОВАНИЕ -->
-          <div class="py-2 row align-items-center grey-back">
-            <div class="col-4 fw-bold">OLT оборудование</div>
-            <div class="col-auto">
-              <span id="deviceName" class="badge fs-6" style="color: black">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                  <path d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
-                </svg>
-                <span class="me-2">{{oltState.statement.deviceName}}</span>
+          <div class="py-2 grid grid-cols-2 bg-gray-200 dark:bg-gray-800">
+            <div class="p-2">OLT оборудование</div>
+            <div>
+              <span id="deviceName" class="flex items-center gap-3 text-primary font-mono">
+                <a :href="'/device/'+oltState.statement.deviceName" target="_blank">
+                  <Button text>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                         viewBox="0 0 16 16">
+                      <path
+                          d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
+                    </svg>
+                  </Button>
+                </a>
+                <span>{{ oltState.statement.deviceName }}</span>
                 <OltPortsSubscriberStatistic :device-name="oltState.statement.deviceName"/>
               </span>
             </div>
@@ -84,28 +90,34 @@
           </div>
 
           <!-- ПОРТ -->
-          <div class="py-2 row align-items-center ">
-            <div class="col-4 fw-bold">Порт</div>
-            <div class="d-flex col-auto fw-bold align-items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
-                <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-              </svg>
-              <a :href="getOLTTechDataURL(oltState.statement)" class="me-2">{{ oltState.statement.devicePort }}</a>
-              <button class="btn btn-outline-primary rounded-5 py-1">status</button>
+          <div class="py-2 grid grid-cols-2">
+            <div class="p-2">Порт</div>
+            <div>
+              <a :href="getOLTTechDataURL(oltState.statement)">
+                <Button text class="font-mono">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                       viewBox="0 0 16 16">
+                    <path fill-rule="evenodd"
+                          d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+                    <path fill-rule="evenodd"
+                          d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                  </svg>
+                  {{ oltState.statement.devicePort }}
+                </Button>
+              </a>
             </div>
           </div>
 
           <!-- ВОЛОКНО -->
-          <div class="py-2 row align-items-center grey-back">
-            <div class="col-4 fw-bold">Волокно</div>
-            <div class="col-auto">{{ oltState.statement.fiber }}</div>
+          <div class="py-2 grid grid-cols-2 bg-gray-200 dark:bg-gray-800">
+            <div class="p-2">Волокно</div>
+            <div class="p-2">{{ oltState.statement.fiber }}</div>
           </div>
 
           <!-- ОПИСАНИЕ -->
-          <div class="py-2 row align-items-center ">
-            <div class="col-4 fw-bold">Описание сплиттера 1го каскада</div>
-            <div class="col-auto">{{ oltState.statement.description }}</div>
+          <div class="py-2 grid grid-cols-2">
+            <div class="p-2">Описание сплиттера 1го каскада</div>
+            <div class="p-2">{{ oltState.statement.description }}</div>
           </div>
 
         </div>
@@ -113,9 +125,7 @@
         <!-- Абонентская линия -->
         <div class="py-3">
 
-          <div class="d-flex">
-            <h4 class="px-5">Абонентская линия</h4>
-          </div>
+          <div class="text-xl font-semibold p-5">Абонентская линия</div>
 
           <div class="ml-40">
             <End3CollapsedView
@@ -142,42 +152,35 @@
 
   </div>
 
-  <ScrollTop />
+  <Footer/>
+
 </template>
 
 <script>
-import Dropdown from "primevue/dropdown"
-import InlineMessage from "primevue/inlinemessage"
-import InputText from "primevue/inputtext"
-import ScrollTop from "primevue/scrolltop";
-import Textarea from "primevue/textarea";
-import Toast from "primevue/toast"
-
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import BuildingIcon from "./components/BuildingIcon.vue"
 import End3CollapsedView from "./components/End3CollapsedView.vue";
-import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
+import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
-import api_request from "../api_request";
-import formatAddress from "../helpers/address";
-import printElementById from "../helpers/print";
+
+import api from "@/services/api";
+import {formatAddress} from "@/formats";
+import printElementById from "@/helpers/print";
+import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
 
 export default {
-  name: "Gpon_base.vue",
+  name: "ViewBuildingTechData",
   components: {
+    Footer,
+    Header,
     OltPortsSubscriberStatistic,
     ViewPrintEditButtons,
     End3CollapsedView,
     AddressGetCreate,
     BuildingIcon,
-    Dropdown,
-    InlineMessage,
-    InputText,
-    ScrollTop,
     TechCapabilityBadge,
-    Textarea,
-    Toast,
   },
   data() {
     return {
@@ -190,7 +193,9 @@ export default {
     }
   },
   mounted() {
-    api_request.get("/gpon/api/permissions").then(resp => {this.userPermissions = resp.data})
+    api.get("/gpon/api/permissions").then(resp => {
+      this.userPermissions = resp.data
+    })
     this.getTechData()
     window.addEventListener('resize', () => {
       this.windowWidth = window.innerWidth
@@ -217,19 +222,19 @@ export default {
       }
     },
 
-    hasPermissionToUpdateOLTState(){
+    hasPermissionToUpdateOLTState() {
       return this.userPermissions.includes("gpon.change_oltstate")
     },
 
-    hasPermissionToUpdateHouseOLTState(){
+    hasPermissionToUpdateHouseOLTState() {
       return this.userPermissions.includes("gpon.change_houseoltstate")
     },
 
-    hasPermissionToUpdateHouseB(){
+    hasPermissionToUpdateHouseB() {
       return this.userPermissions.includes("gpon.change_houseb")
     },
 
-    hasAnyPermissionToUpdate(){
+    hasAnyPermissionToUpdate() {
       return this.hasPermissionToUpdateOLTState || this.hasPermissionToUpdateHouseOLTState || this.hasPermissionToUpdateHouseB
     },
 
@@ -240,7 +245,7 @@ export default {
     getTechData() {
       let url = window.location.href
       // /gpon/api/tech-data/building/{device_name}?port={olt_port}
-      api_request.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+      api.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
           .then(resp => this.detailData = resp.data)
           .catch(reason => {
             this.errorStatus = reason.response.status
@@ -252,13 +257,13 @@ export default {
       return formatAddress(address)
     },
 
-    getOLTTechDataURL(statement){
+    getOLTTechDataURL(statement) {
       return "/gpon/tech-data/" + statement.deviceName + "?port=" + statement.devicePort
     },
 
     getEnd3DetailInfo(oltID, end3Index) {
       const end3ID = this.detailData.oltStates[oltID].customerLines[end3Index].id
-      api_request.get("/gpon/api/tech-data/end3/" + end3ID)
+      api.get("/gpon/api/tech-data/end3/" + end3ID)
           .then(resp => this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = resp.data.capability)
           .catch(reason => {
             this.detailData.oltStates[oltID].customerLines[end3Index].errorStatus = reason.response.status
@@ -270,7 +275,9 @@ export default {
       this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = null
     },
 
-    printData() {printElementById('tech-data-block')},
+    printData() {
+      printElementById('tech-data-block')
+    },
 
     deleteEnd3FromList(oltID, end3Index) {
       this.detailData.oltStates[oltID].customerLines.splice(end3Index, 1)
@@ -287,7 +294,7 @@ export default {
         end3: newEnd3,
       }
       this.handleRequest(
-          api_request.post("/gpon/api/tech-data/end3", data), "Успешно создано"
+          api.post("/gpon/api/tech-data/end3", data), "Успешно создано"
       ).then(() => {
         // Обновляем все данные, чтобы загрузить новый перечень End3
         this.getTechData();
@@ -301,14 +308,21 @@ export default {
      * @param {Promise} request
      * @param {String} successInfo
      */
-    handleRequest(request, successInfo){
+    handleRequest(request, successInfo) {
       return request.then(
-           () => { this.$toast.add({severity: 'success', summary: 'Обновлено', detail: successInfo, life: 3000}); }
-          )
+          () => {
+            this.$toast.add({severity: 'success', summary: 'Обновлено', detail: successInfo, life: 3000});
+          }
+      )
           .catch(
               reason => {
                 const status = reason.response.status;
-                this.$toast.add({severity: 'error', summary: `Ошибка ${status}`, detail: reason.response.data, life: 5000});
+                this.$toast.add({
+                  severity: 'error',
+                  summary: `Ошибка ${status}`,
+                  detail: reason.response.data,
+                  life: 5000
+                });
               }
           )
     },
@@ -340,9 +354,9 @@ export default {
 
 @media (max-width: 835px) {
   .container {
-    margin-left: 0!important;
-    margin-right: 0!important;
-    max-width: 100%!important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
   }
 
   .w-75, .col-5 {
