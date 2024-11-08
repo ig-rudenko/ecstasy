@@ -1,13 +1,14 @@
 <template>
-  <h6 class="px-2">Выберите {{ verboseType }}
+  <h6 class="px-2 flex items-center gap-1 pb-2">
+    Выберите {{ verboseType }}
     <Asterisk/>
   </h6>
   <Select v-model="selectedPort" :options="capability" filter showClear
           @change="e => $emit('change', e)"
-          :class="valid?['w-100']:['p-invalid', 'w-100']"
-          optionLabel="port" placeholder="Выберите" class="w-100">
+          :class="valid?'':'p-invalid'"
+          optionLabel="port" placeholder="Выберите">
     <template #value="slotProps">
-      <div v-if="slotProps.value" class="flex align-items-center d-flex">
+      <div v-if="slotProps.value" class="flex items-center">
         <div>{{ slotProps.value.number }}
           <TechCapabilityBadge :status="slotProps.value.status"/>
         </div>
@@ -17,7 +18,7 @@
     </span>
     </template>
     <template #option="slotProps">
-      <div v-if="slotProps.option" class="flex align-items-center d-flex">
+      <div v-if="slotProps.option" class="flex items-center">
         <div>{{ slotProps.option.number }}
           <TechCapabilityBadge :status="slotProps.option.status"/>
         </div>
@@ -33,7 +34,7 @@ import Asterisk from "./Asterisk.vue";
 import api from "@/services/api";
 
 export default {
-  name: "SelectSplittersRizersPort.vue",
+  name: "SelectSplittersRizersPort",
   components: {
     Asterisk,
     TechCapabilityBadge,

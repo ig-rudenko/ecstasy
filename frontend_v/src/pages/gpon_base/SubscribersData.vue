@@ -7,7 +7,7 @@
     <div class="flex gap-2 justify-around items-center py-5">
       <div class="text-3xl font-semibold px-3">Абонентские данные</div>
 
-      <a v-if="hasPermissionsToCreate" href="/gpon/subscriber-data/create">
+      <router-link :to="{name: 'gpon-create-subscriber-data'}" v-if="hasPermissionsToCreate">
         <Button outlined class="add-button">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#6D5BD0" viewBox="0 0 16 16">
             <path fill-rule="evenodd"
@@ -17,7 +17,7 @@
           </svg>
           <span>Добавить</span>
         </Button>
-      </a>
+      </router-link>
     </div>
 
     <!-- ОШИБКА ЗАГРУЗКИ -->

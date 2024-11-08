@@ -1,7 +1,7 @@
 <template>
   <div class="table-plate">
     <div>
-      <div class="flex items-center px-2">
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-4 p-4">
         <div>
           <Button @click="show_filter = !show_filter" class="filter-button" outlined>
             <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -83,10 +83,10 @@
       <table :style="{opacity: show_filter?0.4:1}" class="w-full">
         <thead class="dark:border-gray-600 border-b-2">
         <tr>
-          <th scope="col" class="py-2">Абонент</th>
-          <th scope="col" class="py-2">Адрес</th>
-          <th scope="col" class="py-2">Данные абонента</th>
-          <th scope="col" class="py-2">Услуги</th>
+          <th scope="col" class="p-2 px-10 text-left">Абонент</th>
+          <th scope="col" class="p-2 text-left">Адрес подключения</th>
+          <th scope="col" class="p-2 text-left">Данные подключения</th>
+          <th scope="col" class="p-2 text-left">Услуги</th>
         </tr>
         </thead>
 
@@ -95,7 +95,7 @@
             class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
 
           <!-- АБОНЕНТ -->
-          <td class="flex items-center font-bold py-2 px-10 gap-3 dark:text-gray-300">
+          <td class="flex items-center font-bold p-4 px-10 gap-3 dark:text-gray-300">
             <a class="hover:text-primary" :href="'/gpon/subscriber-data/customers/'+line.customer.id">
               {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
               {{ line.customer.companyName }}
@@ -122,17 +122,17 @@
           </td>
 
           <!-- АДРЕС -->
-          <td class="dark:text-gray-300">
+          <td class="dark:text-gray-300 p-2">
             <div>
-              <span class="me-2">{{ getFullAddress(line.address) }}</span>
-              <span v-if="line.address.apartment">кв. {{ line.address.apartment }}</span>
+              <span class="font-bold me-2">{{ getFullAddress(line.address) }}</span>
+              <span class="font-bold" v-if="line.address.apartment">кв. {{ line.address.apartment }}</span>
               <br>
               <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
             </div>
           </td>
 
           <!-- Данные абонента -->
-          <td>
+          <td class="p-2">
             <Pill :text="customerTypeName(line.customer.type)"
                   :color="customerTypeColor(line.customer.type)"
                   :back-color="customerTypeBackColor(line.customer.type)">
@@ -144,7 +144,7 @@
 
           <!-- УСЛУГИ -->
           <td>
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col gap-1 px-3">
               <span v-for="service in line.services" class="secondary-text font-mono">{{ service }}</span>
             </div>
           </td>
@@ -348,7 +348,6 @@ tr, tr * {
 }
 
 .filter-button {
-  margin: 15px;
   padding: 7px 10px;
   border-radius: 6px;
 }

@@ -2,6 +2,7 @@ import {
     Avatar,
     Badge,
     Button,
+    Checkbox,
     Column,
     DataTable,
     DatePicker,
@@ -11,6 +12,7 @@ import {
     IftaLabel,
     Image,
     InputGroup,
+    InputMask,
     InputNumber,
     InputText,
     Menubar,
@@ -47,6 +49,7 @@ app.use(router);
 app.component("Avatar", Avatar);
 app.component("Badge", Badge);
 app.component("Button", Button);
+app.component("Checkbox", Checkbox);
 app.component("Column", Column);
 app.component("DatePicker", DatePicker);
 app.component("DataTable", DataTable);
@@ -56,6 +59,7 @@ app.component("IftaLabel", IftaLabel);
 app.component("InputGroup", InputGroup);
 app.component("InputNumber", InputNumber);
 app.component("Image", Image);
+app.component("InputMask", InputMask);
 app.component("InputText", InputText);
 app.component("Fieldset", Fieldset);
 app.component("Menubar", Menubar);

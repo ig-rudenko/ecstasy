@@ -46,6 +46,11 @@ const router = createRouter({
             component: () => import("@/pages/gpon_base/SubscribersData.vue"),
             name: "gpon-subscribers-data"
         },
+        {
+            path: "/gpon/subscribers-data/create",
+            component: () => import("@/pages/gpon_base/CreateSubscriberData.vue"),
+            name: "gpon-create-subscriber-data"
+        },
     ],
 });
 

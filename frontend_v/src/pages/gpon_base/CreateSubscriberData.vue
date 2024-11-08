@@ -1,11 +1,14 @@
 <template>
-  <div id="app">
-    <div class="header">
+
+  <Header/>
+
+  <div>
+    <div class="flex items-center flex-wrap justify-center my-5">
       <img class="header-image" src="/img/gpon/subscriber-data.svg" alt="create-tech-data-image">
-      <h2>Добавление абонентского подключения</h2>
+      <div class="text-2xl sm:text-4xl">Добавление абонентских данных</div>
     </div>
 
-    <div class="plate shadow py-4 w-75 container">
+    <div class="md:border rounded-xl md:shadow py-4 px-2 xl:w-2/3 mx-auto">
 
       <StepMenu
           class="p-2"
@@ -18,14 +21,15 @@
       <div v-if="current_step===1" class="p-4">
 
         <!-- ВЫБИРАЕМ -->
-        <div class="d-flex align-items-center flex-wrap">
-          <div class="py-2 w-100">
-            <h6 class="px-2">OLT оборудование
+        <div class="flex items-center flex-wrap gap-3">
+          <div class="py-2 w-full sm:w-1/2">
+            <div class="px-2 flex items-center gap-1 pb-2">OLT оборудование
               <Asterisk/>
-            </h6>
+            </div>
             <Select v-model="formData.techData.deviceName" :options="devicesList" filter
-                    :option-label="x => x"
-                    :class="formState.firstStep.deviceName.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
+                    :option-label="x => x" fluid
+                    :virtualScrollerOptions="{ itemSize: 38 }"
+                    :class="formState.firstStep.deviceName.valid?'':'p-invalid'"
                     @change="deviceHasChanged" placeholder="Выберите устройство">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
@@ -36,13 +40,14 @@
           </div>
 
           <!-- ПОИСК ПОРТОВ У ВЫБРАННОГО ОБОРУДОВАНИЯ -->
-          <div v-if="formData.techData.deviceName" class="w-100">
-            <h6 class="px-2">Порт
+          <div v-if="formData.techData.deviceName" class="w-full sm:w-1/3">
+            <div class="px-2 flex items-center gap-1 pb-2">Порт
               <Asterisk/>
-            </h6>
+            </div>
             <Select v-model="formData.techData.devicePort" :options="devicePortList" filter
-                    :class="formState.firstStep.devicePort.valid?['w-100']:['p-invalid', 'w-100']"
-                    :option-label="x => x"
+                    :class="formState.firstStep.devicePort.valid?'':'p-invalid'"
+                    :option-label="x => x" fluid
+                    :virtualScrollerOptions="{ itemSize: 38 }"
                     @change="portHasChanged"
                     optionLabel="name" placeholder="Выберите порт">
               <template #value="slotProps">
@@ -58,7 +63,7 @@
 
         <br>
 
-        <div v-if="formData.techData.devicePort" class="w-100">
+        <div v-if="formData.techData.devicePort">
           <!-- ПОИСК ВСЕХ ДОМОВ ДЛЯ ВЫБРАННОГО OLT ПОРТА -->
           <AddressGetCreate @change="addressHasChanged" :is-mobile="isMobile" :allow-create="false"
                             :valid="formState.firstStep.address.valid"
@@ -99,72 +104,71 @@
       <!-- SECOND STEP -->
       <div v-else-if="current_step===2" class="p-4">
 
-        <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile"/>
-
-        <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber">Указать вручную</Button>
-
         <div class="p-2">
-          <Select v-if="!formState.secondStep.selected"
-                  v-model="formData.customer.type"
+          <div class="flex gap-1 py-1">
+            <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile"/>
+            <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber"
+                    label="Указать вручную"/>
+          </div>
+
+          <Select v-model="formData.customer.type" :disabled="formState.secondStep.selected"
                   :options="['person','company','contract']" style="width: 100%"
-                  placeholder="Выберите тип абонента" class="w-full md:w-14rem">
+                  placeholder="Выберите тип абонента" fluid>
             <template #value="slotProps">
-              <div v-if="slotProps.value" class="flex align-items-center"
+              <div v-if="slotProps.value" class="flex justify-center items-center"
                    v-html="subscriberVerbose(slotProps.value)"></div>
               <span v-else>{{ slotProps.placeholder }}</span>
             </template>
             <template #option="slotProps">
-              <div class="flex align-items-center" v-html="subscriberVerbose(slotProps.option)"></div>
+              <div class="flex items-center" v-html="subscriberVerbose(slotProps.option)"></div>
             </template>
           </Select>
-          <div v-else>
-            <div class="p-3 border rounded" v-html="subscriberVerbose(formData.customer.type)"></div>
-          </div>
         </div>
 
-        <div v-if="formData.customer.type==='person'" class="d-flex flex-wrap py-2">
+        <div v-if="formData.customer.type==='person'" class="flex flex-wrap">
           <div class="input-part">
-            <h6 class="px-2">Фамилия
+            <div class="px-2 flex items-center gap-1 pb-2">
+              Фамилия
               <Asterisk/>
-            </h6>
-            <InputText v-if="!formState.secondStep.selected"
-                       v-model.trim="formData.customer.surname" type="text" style="width: 100%"
-                       :class="!formState.secondStep.person.surname.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{ formData.customer.surname }}</div>
+            </div>
+            <InputText :disabled="formState.secondStep.selected"
+                       v-model.trim="formData.customer.surname" fluid
+                       :class="!formState.secondStep.person.surname.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerFirstNameError" severity="error">{{ customerFirstNameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
-            <h6 class="px-2">Имя
+            <div class="px-2 flex items-center gap-1 pb-2">
+              Имя
               <Asterisk/>
-            </h6>
-            <InputText v-if="!formState.secondStep.selected"
-                       v-model.trim="formData.customer.firstName" type="text" style="width: 100%"
-                       :class="!formState.secondStep.person.firstName.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{ formData.customer.firstName }}</div>
+            </div>
+            <InputText :disabled="formState.secondStep.selected"
+                       v-model.trim="formData.customer.firstName" fluid
+                       :class="!formState.secondStep.person.firstName.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerSurnameError" severity="error">{{ customerSurnameError }}</InlineMessage>
           </div>
 
           <div class="input-part">
-            <h6 class="px-2">Отчество
+            <div class="px-2 flex items-center gap-1 pb-2">
+              Отчество
               <Asterisk/>
-            </h6>
-            <InputText v-if="!formState.secondStep.selected"
-                       v-model.trim="formData.customer.lastName" type="text" style="width: 100%"
-                       :class="!formState.secondStep.person.lastName.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{ formData.customer.lastName }}</div>
+            </div>
+            <InputText :disabled="formState.secondStep.selected"
+                       v-model.trim="formData.customer.lastName" fluid
+                       :class="!formState.secondStep.person.lastName.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerLastNameError" severity="error">{{ customerLastNameError }}</InlineMessage>
           </div>
         </div>
 
-        <div v-else class="d-flex py-2">
-          <div class="p-2 w-100">
-            <h6 class="px-2">Название кампании
+        <div v-else class="flex">
+          <div class="p-2 w-full">
+            <div class="px-2 flex items-center gap-1 pb-2">
+              Название кампании
               <Asterisk/>
-            </h6>
+            </div>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
-                       :class="!formState.secondStep.companyName.valid?['p-invalid']:[]"/>
+                       :class="!formState.secondStep.companyName.valid?'p-invalid':''"/>
             <div v-else class="w-100 p-3 border rounded-2">{{ formData.customer.companyName }}</div>
             <InlineMessage v-if="customerCompanyNameError" severity="error">{{
                 customerCompanyNameError
@@ -173,58 +177,59 @@
           </div>
         </div>
 
-        <div class="d-flex flex-wrap py-2">
+        <div class="flex flex-wrap py-2">
           <div class="input-part">
-            <h6 class="px-2">Лицевой счет
+            <div class="px-2 flex items-center gap-1 pb-2">Лицевой счет
               <Asterisk/>
-            </h6>
-            <InputText v-if="!formState.secondStep.selected"
+            </div>
+            <InputText :disabled="formState.secondStep.selected"
                        v-model.number="formData.customer.contract" type="number" style="width: 100%"
-                       :class="!formState.secondStep.contract.valid?['p-invalid']:[]"/>
-            <div v-else class="p-3 border rounded-2">{{ formData.customer.contract }}</div>
+                       :class="!formState.secondStep.contract.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerContractError" severity="error">{{ customerContractError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">Транзит</h6>
+            <div class="px-2 flex items-center gap-1 pb-2">
+              Транзит
+              <Asterisk/>
+            </div>
             <InputText v-model.number="formData.transit"
                        @change="() => formState.secondStep.transit.valid = true"
-                       :class="formState.secondStep.transit.valid?['flex-wrap', 'w-100']:['flex-wrap', 'w-100', 'p-invalid']"
+                       :class="!formState.secondStep.transit.valid?'p-invalid':''"
                        style="width: 100%" type="number"/>
             <InlineMessage v-if="transitError" severity="error">{{ transitError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">Контактный номер</h6>
+            <div class="px-2 pb-2">Контактный номер</div>
             <div class="flex-auto">
-              <InputMask v-if="!formState.secondStep.selected"
+              <InputMask :disabled="formState.secondStep.selected"
                          v-model="formData.customer.phone" date="phone" style="width: 100%"
-                         :class="!formState.secondStep.phone.valid?['p-invalid']:[]"
-                         mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
-              <div v-else class="p-3 border rounded-2">{{ formData.customer.phone }}</div>
+                         :class="!formState.secondStep.phone.valid?'p-invalid':''"
+                         mask="+7 (999) 999-99-99"/>
               <InlineMessage v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</InlineMessage>
             </div>
           </div>
         </div>
 
 
-        <h6 class="p-2">Выберите услуги</h6>
+        <div class="p-2">Выберите услуги</div>
 
         <InlineMessage v-if="servicesError" severity="error">{{ servicesError }}</InlineMessage>
-        <div class="d-flex flex-wrap p-2">
-          <div class="me-2 d-flex align-items-center">
-            <Checkbox class="me-2" v-model="formData.services" inputId="service-internet" value="internet"/>
-            <label for="service-internet" class="ml-2"> Интернет </label>
+        <div class="flex flex-wrap gap-4 p-2">
+          <div class="flex items-center gap-2 select-none">
+            <Checkbox v-model="formData.services" input-id="service-internet" value="internet"/>
+            <label for="service-internet" class="cursor-pointer"> Интернет </label>
           </div>
-          <div class="me-2 d-flex align-items-center">
-            <Checkbox class="me-2" v-model="formData.services" inputId="service-tv" value="tv"/>
-            <label for="service-tv" class="ml-2"> Телевидение </label>
+          <div class="flex items-center gap-2 select-none">
+            <Checkbox v-model="formData.services" input-id="service-tv" value="tv"/>
+            <label for="service-tv" class="cursor-pointer"> Телевидение </label>
           </div>
-          <div class="me-2 d-flex align-items-center">
-            <Checkbox class="me-2" v-model="formData.services" inputId="service-voip" value="voip"/>
-            <label for="service-voip" class="ml-2"> VOIP </label>
+          <div class="flex items-center gap-2 select-none">
+            <Checkbox v-model="formData.services" input-id="service-voip" value="voip"/>
+            <label for="service-voip" class="cursor-pointer"> VOIP </label>
           </div>
-          <div class="me-2 d-flex align-items-center">
-            <Checkbox class="me-2" v-model="formData.services" inputId="service-static" value="static"/>
-            <label for="service-static" class="ml-2"> Статический IP </label>
+          <div class="flex items-center gap-2 select-none">
+            <Checkbox v-model="formData.services" input-id="service-static" value="static"/>
+            <label for="service-static" class="cursor-pointer"> Статический IP </label>
           </div>
         </div>
 
@@ -239,40 +244,41 @@
           <InlineMessage v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</InlineMessage>
         </div>
 
-        <div class="d-flex flex-wrap py-2">
+        <div class="flex flex-wrap">
           <div class="input-part">
-            <h6 class="px-2">ONT ID
+            <div class="px-2 flex items-center gap-1 pb-2">
+              ONT ID
               <Asterisk/>
-            </h6>
+            </div>
             <InputText v-model.number="formData.ont_id" type="number" style="width: 100%"
                        :class="formState.thirdStep.ont_id.valid?[]:['p-invalid']"/>
             <InlineMessage v-if="ontIDError" severity="error">{{ ontIDError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">Серийный номер ONT</h6>
+            <div class="px-2 pb-2">Серийный номер ONT</div>
             <InputText v-model.trim="formData.ont_serial" type="text" style="width: 100%"/>
             <InlineMessage v-if="ontSerialError" severity="error">{{ ontSerialError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">MAC адрес ONT</h6>
+            <div class="px-2 pb-2">MAC адрес ONT</div>
             <InputText v-model.trim="formData.ont_mac" type="text" style="width: 100%"/>
             <InlineMessage v-if="ontMACError" severity="error">{{ ontMACError }}</InlineMessage>
           </div>
         </div>
 
-        <div class="d-flex flex-wrap py-2">
+        <div class="flex flex-wrap">
           <div class="input-part">
-            <h6 class="px-2">IP Адрес</h6>
+            <div class="px-2 pb-2">IP Адрес</div>
             <InputText v-model.trim="formData.ip" type="text" style="width: 100%"/>
             <InlineMessage v-if="ontIPError" severity="error">{{ ontIPError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">Номер наряда</h6>
+            <div class="px-2 pb-2">Номер наряда</div>
             <InputText v-model.number="formData.order" type="number" style="width: 100%"/>
             <InlineMessage v-if="orderError" severity="error">{{ orderError }}</InlineMessage>
           </div>
           <div class="input-part">
-            <h6 class="px-2">Дата подключения</h6>
+            <div class="px-2 pb-2">Дата подключения</div>
             <DatePicker id="calendar-24h" dateFormat="dd/mm/yy" v-model="formData.connected_at" showTime show-icon
                         hourFormat="24"
                         style="width: 100%"/>
@@ -281,44 +287,42 @@
         </div>
 
         <div class="d-flex flex-wrap py-2">
-          <h6 class="px-2">Описание подключения</h6>
+          <div class="px-2 pb-2">Описание подключения</div>
           <div class="px-2" style="width: 100%;">
-            <textarea v-model.trim="formData.description" class="p-component p-inputtext px-2"
-                      style="height: 94px; width: 100%;"></textarea>
+            <Textarea v-model.trim="formData.description" auto-resize fluid/>
           </div>
         </div>
 
       </div>
 
       <!-- LAST STEP -->
-      <div v-else-if="current_step===4" class="p-4">
-        <h4 class="text-center">Внимательно проверьте введенные данные</h4>
+      <div v-else-if="current_step===4" class="p-4 flex justify-center flex-col">
+        <div class="text-3xl text-center p-3 ">Внимательно проверьте введенные данные</div>
 
-        <h5 class="py-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2"
-               viewBox="0 0 16 16">
+        <div class="text-2xl p-3 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path
                 d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
           </svg>
-          Технические данные
-        </h5>
+          <span>Технические данные</span>
+        </div>
 
-        <table class="table table-striped">
-          <tbody>
-          <tr>
-            <td>Оборудование</td>
-            <td>{{ formData.techData.deviceName }}</td>
+        <table>
+          <tbody class="text-[1.1rem]">
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Оборудование</td>
+            <td class="p-2">{{ formData.techData.deviceName }}</td>
           </tr>
 
           <tr>
-            <td>OLT порт</td>
-            <td>{{ formData.techData.devicePort }}</td>
+            <td class="p-2">OLT порт</td>
+            <td class="p-2">{{ formData.techData.devicePort }}</td>
           </tr>
 
-          <tr>
-            <td>Дом</td>
-            <td>
-              <BuildingIcon :type="formData.techData.address.building_type" width="24" height="24"></BuildingIcon>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Дом</td>
+            <td class="flex items-center gap-2 p-2">
+              <BuildingIcon :type="formData.techData.address.building_type" width="32" height="32"/>
               {{ getFullAddress(formData.techData.address) }}
               <br>
               <template v-if="formData.techData.address.building_type === 'building'">
@@ -332,17 +336,17 @@
           </tr>
 
           <tr>
-            <td>Существующий {{ formData.techData.end3.type }}</td>
-            <td>
-              {{ getFullAddress(formData.techData.end3.address) }} <br>
+            <td class="p-2">Существующий {{ formData.techData.end3.type }}</td>
+            <td class="p-2">
+              {{ getFullAddress(formData.techData.end3.address) }}.
               Локация: {{ formData.techData.end3.location }}. <br>
               Кол-во портов: {{ formData.techData.end3.capacity }}
             </td>
           </tr>
 
-          <tr>
-            <td>{{ formData.techData.end3.type === 'splitter' ? "Порт сплиттера" : "Волокно райзера" }}</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">{{ formData.techData.end3.type === 'splitter' ? "Порт сплиттера" : "Волокно райзера" }}</td>
+            <td class="p-2">
               {{ formData.techData.end3Port.number }}
               <TechCapabilityBadge :status="formData.techData.end3Port.status"/>
               <Message v-if="techCapabilityError" severity="error">{{ techCapabilityError }}</Message>
@@ -351,54 +355,54 @@
           </tbody>
         </table>
 
-        <h5 class="py-3" v-html="subscriberVerbose(formData.customer.type)"></h5>
-        <table class="table table-striped">
-          <tbody>
+        <div class="p-3 flex text-2xl mt-3" v-html="subscriberVerbose(formData.customer.type)"></div>
+        <table>
+          <tbody class="text-[1.1rem]">
 
-          <tr v-if="formData.customer.type==='person'">
-            <td class="col-md-3">ФИО</td>
-            <td>
+          <tr v-if="formData.customer.type==='person'" class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">ФИО</td>
+            <td class="p-2">
               {{ formData.customer.firstName }} {{ formData.customer.surname }} {{ formData.customer.lastName }}
               <Message v-if="customerFirstNameError || customerSurnameError || customerLastNameError" severity="error">
                 {{ customerFirstNameError }} {{ customerSurnameError }} {{ customerLastNameError }}
               </Message>
             </td>
           </tr>
-          <tr v-else>
-            <td class="col-md-3">Название кампании</td>
-            <td>
+          <tr v-else class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Название компании</td>
+            <td class="p-2">
               {{ formData.customer.companyName }}
               <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
             </td>
           </tr>
 
           <tr>
-            <td class="col-md-3">Лицевой счет</td>
-            <td>
+            <td class="p-2">Лицевой счет</td>
+            <td class="p-2 font-mono">
               {{ formData.customer.contract }}
               <Message v-if="customerCompanyNameError" severity="error">{{ customerCompanyNameError }}</Message>
             </td>
           </tr>
 
-          <tr>
-            <td class="col-md-3">Транзит</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Транзит</td>
+            <td class="p-2 font-mono">
               {{ formData.transit }}
               <Message v-if="transitError" severity="error">{{ transitError }}</Message>
             </td>
           </tr>
 
           <tr>
-            <td class="col-md-3">Контактный номер</td>
-            <td>
+            <td class="p-2">Контактный номер</td>
+            <td class="p-2">
               {{ formData.customer.phone }}
               <Message v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</Message>
             </td>
           </tr>
 
-          <tr>
-            <td class="col-md-3">Услуги</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Услуги</td>
+            <td class="p-2">
               {{ formData.services.join(", ") }}
               <Message v-if="servicesError" severity="error">{{ servicesError }}</Message>
             </td>
@@ -407,9 +411,8 @@
           </tbody>
         </table>
 
-        <h5 class="py-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-2"
-               viewBox="0 0 16 16">
+        <h5 class="text-2xl mt-3 p-3 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path
                 d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707Z"/>
             <path d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"/>
@@ -419,12 +422,12 @@
           </svg>
           Подключение
         </h5>
-        <table class="table table-striped">
-          <tbody>
-          <tr>
-            <td>Адрес подключения</td>
-            <td>
-              <BuildingIcon :type="formData.address.building_type" width="24" height="24"></BuildingIcon>
+        <table>
+          <tbody class="text-[1.1rem]">
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Адрес подключения</td>
+            <td class="p-2 flex items-center gap-2">
+              <BuildingIcon :type="formData.address.building_type" width="32" height="32"></BuildingIcon>
               {{ getFullAddress(formData.address) }}
               <br>
               <template v-if="formData.address.building_type === 'building'">
@@ -436,43 +439,43 @@
           </tr>
 
           <tr>
-            <td class="col-md-3">ONT ID</td>
-            <td>
+            <td class="p-2">ONT ID</td>
+            <td class="p-2">
               {{ formData.ont_id }}
               <Message v-if="ontIDError" severity="error">{{ ontIDError }}</Message>
             </td>
           </tr>
-          <tr>
-            <td class="col-md-3">IP адрес</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">IP адрес</td>
+            <td class="p-2">
               {{ formData.ip }}
               <Message v-if="ontIPError" severity="error">{{ ontIPError }}</Message>
             </td>
           </tr>
           <tr>
-            <td class="col-md-3">Серийный номер ONT</td>
-            <td>
+            <td class="p-2">Серийный номер ONT</td>
+            <td class="p-2">
               {{ formData.ont_serial }}
               <Message v-if="ontSerialError" severity="error">{{ ontSerialError }}</Message>
             </td>
           </tr>
-          <tr>
-            <td class="col-md-3">MAC адрес ONT</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">MAC адрес ONT</td>
+            <td class="p-2">
               {{ formData.ont_mac }}
               <Message v-if="ontMACError" severity="error">{{ ontMACError }}</Message>
             </td>
           </tr>
           <tr>
-            <td class="col-md-3">Номер наряда</td>
-            <td>
+            <td class="p-2">Номер наряда</td>
+            <td class="p-2">
               {{ formData.order }}
               <Message v-if="orderError" severity="error">{{ orderError }}</Message>
             </td>
           </tr>
-          <tr>
-            <td class="col-md-3">Дата подключения</td>
-            <td>
+          <tr class="bg-gray-200 dark:bg-gray-700">
+            <td class="p-2">Дата подключения</td>
+            <td class="p-2">
               {{ formData.connected_at }}
               <Message v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</Message>
             </td>
@@ -484,36 +487,33 @@
       </div>
 
       <!-- Ошибки в форме -->
-      <div v-if="errors" class="alert alert-danger p-2 text-center">
-        <div class="py-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-3"
-               viewBox="0 0 16 16">
+      <Message v-if="errors" severity="error" class="text-center m-4">
+        <div class="flex gap-2 items-center py-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path
                 d="M7.005 3.1a1 1 0 1 1 1.99 0l-.388 6.35a.61.61 0 0 1-1.214 0L7.005 3.1ZM7 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"/>
           </svg>
-          <span v-if="errors.serverError">{{ errors.serverError }}</span>
+          <span v-if="errors?.serverError">{{ errors.serverError }}</span>
           <span v-else>Были замечены ошибки. Проверьте правильность введенных данных</span> <br>
         </div>
-      </div>
+      </Message>
 
       <!-- Кнопки -->
-      <div v-if="!form_submitted_successfully" class="d-flex justify-content-between mx-5">
+      <div v-if="!form_submitted_successfully" class="flex justify-between mx-5">
 
-        <Button v-if="!isModalView" @click="goToSubscriberDataURL" severity="secondary" rounded>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
-               viewBox="0 0 16 16">
-            <path
-                d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
-          </svg>
-          {{ isMobile ? '' : 'Отмена' }}
-        </Button>
-
+        <router-link :to="{name: 'gpon-subscribers-data'}">
+          <Button severity="secondary" rounded>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+              <path
+                  d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+            </svg>
+            <span>{{ isMobile ? '' : 'Отмена' }}</span>
+          </Button>
+        </router-link>
 
         <div>
-
-          <Button class="me-2" v-if="current_step!==1" severity="secondary" @click="prevStep" rounded>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
-                 viewBox="0 0 16 16">
+          <Button v-if="current_step!==1" severity="secondary" @click="prevStep" rounded>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
               <path
                   d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
             </svg>
@@ -521,8 +521,7 @@
           </Button>
 
           <Button v-if="current_step<4" @click="nextStep" severity="success" rounded>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-1"
-                 viewBox="0 0 16 16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
               <path
                   d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
             </svg>
@@ -530,8 +529,7 @@
           </Button>
 
           <Button v-if="current_step===4" @click="submitForm" severity="success" rounded>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2"
-                 viewBox="0 0 16 16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
               <path
                   d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
             </svg>
@@ -543,25 +541,31 @@
       </div>
 
       <!-- Успешно создано -->
-      <div v-else class="alert alert-success p-2 text-center">
-        <div class="py-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="me-3"
-               viewBox="0 0 16 16">
-            <path
-                d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514ZM8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1Z"></path>
-            <path
-                d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12.31 12.31 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7Zm6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.552 4.552 0 0 1 .23-2.002Zm-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.507 4.507 0 0 1-1.3-1.905Z"></path>
-          </svg>
-          <span>Данные добавлены</span>
-
-        </div>
-        <div v-if="!isModalView" class="text-center">
-          <a href="/gpon/subscriber-data" class="btn btn-outline-success">Вернуться к перечню</a>
-        </div>
+      <div v-else class="p-2 m-4 flex items-center justify-between gap-4">
+        <router-link v-if="!isModalView" :to="{name: 'gpon-tech-data'}">
+          <Button class="w-full" outlined icon="pi pi-arrow-left" label="Вернуться к перечню"/>
+        </router-link>
+        <Message severity="success">
+          <div class="flex flex-wrap gap-4">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514ZM8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1Z"></path>
+                <path
+                    d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12.31 12.31 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7Zm6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.552 4.552 0 0 1 .23-2.002Zm-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.507 4.507 0 0 1-1.3-1.905Z"></path>
+              </svg>
+              <span>Данные добавлены</span>
+            </div>
+          </div>
+        </Message>
       </div>
+
     </div>
 
   </div>
+
+  <Footer/>
+
 </template>
 
 <script>
@@ -580,10 +584,14 @@ import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import api from "@/services/api";
 import {formatAddress} from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
+import Header from "@/components/Header.vue";
+import Footer from "@/components/Footer.vue";
 
 export default {
   name: "Gpon_base.vue",
   components: {
+    Footer,
+    Header,
     AddressGetCreate,
     AddressForm,
     Asterisk,
@@ -902,10 +910,6 @@ export default {
       return formatAddress(address)
     },
 
-    goToSubscriberDataURL() {
-      window.location.href = "/gpon/subscriber-data/"
-    },
-
     submitForm() {
       const data = {
         customer: this.formData.customer,
@@ -959,7 +963,6 @@ export default {
 .header {
   margin: auto;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 75% !important;
