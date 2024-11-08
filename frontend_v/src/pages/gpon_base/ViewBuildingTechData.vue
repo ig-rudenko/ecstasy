@@ -8,8 +8,8 @@
     <ViewPrintEditButtons
         @print="printData"
         @changeMode="mode => editMode = mode"
+        @exit="() => $router.push({name: 'gpon-tech-data'})"
         title="Технические данные - дом"
-        exitButtonURL="/gpon/tech-data"
         :has-permission-to-edit="hasAnyPermissionToUpdate"
         :is-mobile="isMobile"/>
 
@@ -148,6 +148,10 @@
       </template>
 
 
+    </div>
+
+    <div v-else class="flex justify-center p-4">
+      <ProgressSpinner/>
     </div>
 
   </div>

@@ -1,10 +1,13 @@
 <template>
   <div class="header">
-    <div class="text-2xl font-semibold p-3">{{ title }}</div>
+    <div class="p-3">
+      <div class="text-3xl font-semibold">{{ title }}</div>
+      <div class="text-xl font-semibold">{{ subTitle }}</div>
+    </div>
 
     <!-- ДЕЙСТВИЯ -->
     <div class="flex gap-2 py-2">
-      <Button @click="exitURL" class="back-button dark:!text-gray-300" text>
+      <Button @click="()=>$emit('exit')" class="back-button dark:!text-gray-300" text>
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
           <path
               d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
@@ -54,8 +57,10 @@ export default {
     title: {required: true, type: String},
     isMobile: {required: true, type: Boolean},
     hasPermissionToEdit: {required: true, type: Boolean},
-    exitButtonURL: {required: true, type: String},
+    subTitle: {required: false, type: String, default: ""},
   },
+
+  emits: ["exit", "changeMode"],
 
   data() {
     return {
@@ -73,14 +78,6 @@ export default {
         this.$emit("changeMode", value)
       }
     }
-  },
-
-  methods: {
-
-    exitURL() {
-      window.location.href = this.exitButtonURL
-    },
-
   },
 }
 </script>

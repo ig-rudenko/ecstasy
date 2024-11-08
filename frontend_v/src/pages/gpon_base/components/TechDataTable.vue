@@ -91,8 +91,9 @@
           <td class="items-center flex font-bold py-2 px-10 gap-3">
             <BuildingIcon :type="line.building_type" width="32" height="32"/>
             <div>
-              <span @click="goToBuildingDetailView(line.building_id)"
-                    class="address-name dark:text-gray-300">{{ getFullAddress(line.address) }}</span>
+              <router-link :to="{name: 'gpon-building-tech-data', params: {id: line.building_id}}"
+                           class="address-name dark:text-gray-300">{{ getFullAddress(line.address) }}
+              </router-link>
               <br>
               <span class="secondary-text">{{ line.address.settlement || line.address.region }}</span>
             </div>
@@ -102,8 +103,10 @@
           <td>
             <div class="items-center flex gap-2 px-10">
               <span class="secondary-text">{{ line.deviceName }}</span>
-              <Pill @click="goToOLTDetailView(line.deviceName, line.devicePort)" :hover="true"
-                    :text="line.devicePort"/>
+              <router-link
+                  :to="{name: 'gpon-olt-tech-data', params: {deviceName: line.deviceName}, query: {port: line.devicePort}}">
+                <Pill :hover="true" :text="line.devicePort"/>
+              </router-link>
               <span class="secondary-text">
                 <span class="me-2">подъезды:</span>
                 <span class="font-mono font-bold text-[0.9rem]">{{ line.entrances }}</span>

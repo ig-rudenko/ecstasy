@@ -7,11 +7,11 @@
     <div
         class="flex flex-wrap justify-center sm:justify-start items-center gap-x-10 gap-y-4 p-2 odd:bg-gray-200 dark:odd:bg-gray-800">
 
-      <a :href="'/gpon/tech-data/end3/' + line.id">
+      <router-link :to="{name: 'gpon-end3-tech-data', params: {id: line.id}, query: {backref: $route.href}}">
         <Button text class="font-bold">
           {{ customerLineTypeName(line.type) }} {{ index + 1 }}
         </Button>
-      </a>
+      </router-link>
 
       <div>
         {{ getFullAddress(line.address) }}
@@ -173,6 +173,8 @@ export default {
     buildingAddress: {required: false, default: null, type: Object},
     editMode: {required: false, default: false, type: Boolean},
   },
+
+  emits: ["getInfo", "deleteInfo", "deletedEnd3", "createNewEnd3"],
 
   data() {
     return {

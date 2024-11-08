@@ -6,8 +6,9 @@
     <ViewPrintEditButtons
         @print="printData"
         @changeMode="mode => editMode = mode"
-        title="Технические данные - OLT"
-        exitButtonURL="/gpon/tech-data"
+        @exit="() => $router.push({name: 'gpon-tech-data'})"
+        title="Технические данные"
+        :sub-title="deviceName"
         :has-permission-to-edit="hasAnyPermissionToUpdate"
         :is-mobile="isMobile"
     />
@@ -203,6 +204,11 @@
 
     </div>
 
+    <div v-else class="flex justify-center p-4">
+      <ProgressSpinner/>
+    </div>
+
+
   </div>
 
   <Footer/>
@@ -253,7 +259,6 @@ export default {
     }
   },
   mounted() {
-    console.log(this.$route)
     this.deviceName = this.$route.params.deviceName;
     this.oltPort = this.$route.query.port;
 

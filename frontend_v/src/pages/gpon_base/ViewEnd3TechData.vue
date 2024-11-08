@@ -6,8 +6,8 @@
     <ViewPrintEditButtons
         @print="printData"
         @changeMode="mode => editMode = mode"
+        @exit="() => $router.push($route.query.backref||{name: 'gpon-tech-data'})"
         title="Техническая возможность"
-        exitButtonURL="/gpon/tech-data"
         :has-permission-to-edit="hasAnyPermissionToUpdate"
         :is-mobile="isMobile"/>
 

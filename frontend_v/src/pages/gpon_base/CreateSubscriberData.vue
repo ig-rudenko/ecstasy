@@ -1,6 +1,6 @@
 <template>
 
-  <Header/>
+  <Header v-if="!isModalView"/>
 
   <div>
     <div class="flex items-center flex-wrap justify-center my-5">
@@ -564,7 +564,7 @@
 
   </div>
 
-  <Footer/>
+  <Footer v-if="!isModalView"/>
 
 </template>
 

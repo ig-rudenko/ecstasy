@@ -1,6 +1,4 @@
 <template>
-  <Toast/>
-
   <div v-for="port in end3PortsArray" class="items-center flex flex-row gap-10 py-1">
     <div class="col-1">{{ port.number }}</div>
     <div>
@@ -72,6 +70,7 @@ export default {
     TechCapabilityBadge,
     CreateSubscriberData,
   },
+  emits: ["getInfo"],
   props: {
     end3Object: {required: true, type: Object},
     end3PortsArray: {required: true, type: Array},
