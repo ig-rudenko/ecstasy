@@ -27,7 +27,7 @@
       <br> Статус: {{ errorStatus }}
     </Message>
 
-    <div v-if="gponTechData" class="flex justify-center">
+    <div v-if="gponTechData">
       <TechDataTable :data="gponTechData"/>
     </div>
 

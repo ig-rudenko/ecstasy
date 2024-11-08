@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto py-5 xl:w-2/3" style="margin: auto;">
+  <div class="container mx-auto py-5 xl:w-2/3">
 
     <Toast/>
 
@@ -36,7 +36,7 @@
           <div class="col-auto">
             <BuildingIcon class="m-3" :type="detailData.building_type" width="64" height="64"/>
           </div>
-          <div class="">
+          <div>
             <template v-if="detailData.building_type === 'building'">
               Многоквартирный дом. Количество этажей: {{ detailData.floors }} /
               Количество подъездов: {{ detailData.total_entrances }}

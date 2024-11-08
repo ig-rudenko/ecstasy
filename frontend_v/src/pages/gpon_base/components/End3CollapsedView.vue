@@ -4,7 +4,8 @@
 
   <template v-for="(line, index) in customerLines">
 
-    <div class="flex items-center gap-10 p-2 odd:bg-gray-200 dark:odd:bg-gray-800">
+    <div
+        class="flex flex-wrap justify-center sm:justify-start items-center gap-x-10 gap-y-4 p-2 odd:bg-gray-200 dark:odd:bg-gray-800">
 
       <a :href="'/gpon/tech-data/end3/' + line.id">
         <Button text class="font-bold">
@@ -38,7 +39,7 @@
       <br> {{ line.errorMessage || '' }} <br> Статус: {{ line.errorStatus }}
     </div>
 
-    <div v-if="line.detailInfo" class="px-3 rounded-0">
+    <div v-if="line.detailInfo" class="px-3 rounded-0 overflow-auto">
 
       <End3PortsViewEdit
           @getInfo="$emit('getInfo', index)"

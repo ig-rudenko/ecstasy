@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <div class="text-2xl font-semibold py-3">{{ title }}</div>
+    <div class="text-2xl font-semibold p-3">{{ title }}</div>
 
     <!-- ДЕЙСТВИЯ -->
     <div class="flex gap-2 py-2">

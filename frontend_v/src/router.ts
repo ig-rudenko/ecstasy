@@ -27,6 +27,11 @@ const router = createRouter({
             name: "gpon-create-tech-data"
         },
         {
+            path: "/gpon/tech-data/:deviceName",
+            component: () => import("@/pages/gpon_base/ViewOLT_TechData.vue"),
+            name: "gpon-olt-tech-data"
+        },
+        {
             path: "/gpon/tech-data/building/:id",
             component: () => import("@/pages/gpon_base/ViewBuildingTechData.vue"),
             name: "gpon-building-tech-data"

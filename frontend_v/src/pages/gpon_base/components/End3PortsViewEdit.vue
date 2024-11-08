@@ -32,7 +32,7 @@
         <span>нет абонента</span>
 
         <template v-if="hasPermissionsToCreateSubscriberData">
-          <Button text size="small" v-tooltip="'Добавить абонента'"
+          <Button text size="small" v-tooltip="'Добавить абонента'" severity="success"
                   @click="showCreateSubscriberDataDialog[port.number]=!showCreateSubscriberDataDialog[port.number]">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754" viewBox="0 0 16 16">
               <path
@@ -42,8 +42,7 @@
             </svg>
           </Button>
 
-          <Dialog v-model:visible="showCreateSubscriberDataDialog[port.number]"
-                  style="max-height: 100%; width: 100vw; height: 100vw;" modal
+          <Dialog v-model:visible="showCreateSubscriberDataDialog[port.number]" class="w-full h-full" modal
                   header="Добавление абонентского подключения">
             <CreateSubscriberData
                 @successfullyCreated="() => createdNewSubscriberConnection(port.number)"

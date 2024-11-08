@@ -1,5 +1,5 @@
 <template>
-  <div class="table-plate shadow-xl dark:shadow-gray-500 rounded w-fit">
+  <div class="table-plate shadow-xl dark:shadow-gray-500 rounded">
     <div>
       <Button @click="show_filter = !show_filter" class="filter-button" outlined>
         <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -72,8 +72,8 @@
     </div>
 
     <!-- TABLE -->
-    <div class="flex justify-center">
-      <table :style="{opacity: show_filter?0.4:1}" class="table ">
+    <div class="overflow-auto">
+      <table :style="{opacity: show_filter?0.4:1}" class="w-full">
         <thead class="dark:border-gray-600 border-b-2">
         <tr>
           <th scope="col" class="py-2"></th>
@@ -85,7 +85,8 @@
         </thead>
 
         <tbody>
-        <tr v-for="line in tableData" class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
+        <tr v-for="line in tableData"
+            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
           <td></td>
 
           <!-- АДРЕС -->
@@ -103,7 +104,8 @@
           <td>
             <div class="items-center flex gap-2 px-10">
               <span class="secondary-text">{{ line.deviceName }}</span>
-              <Pill @click="goToOLTDetailView(line.deviceName, line.devicePort)" :hover="true" :text="line.devicePort"/>
+              <Pill @click="goToOLTDetailView(line.deviceName, line.devicePort)" :hover="true"
+                    :text="line.devicePort"/>
               <span class="secondary-text">
                 <span class="me-2">подъезды:</span>
                 <span class="font-mono font-bold text-[0.9rem]">{{ line.entrances }}</span>
