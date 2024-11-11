@@ -1,13 +1,21 @@
 from django.urls import path
 
 from .crud_views import LayerListView, LayerUpdateView
-from .views import UpdateInteractiveMapAPIView, MapLayersListAPIView, InteractiveMapAPIView
+from .views import (
+    UpdateInteractiveMapAPIView,
+    MapLayersListAPIView,
+    InteractiveMapAPIView,
+    MapListAPIView,
+    MapRetrieveAPIView,
+)
 
-# /api/maps/
+# /api/v1/maps/
 
 app_name = "maps-api"
 
 urlpatterns = [
+    path("", MapListAPIView.as_view()),
+    path("<int:pk>", MapRetrieveAPIView.as_view()),
     path("layers/", LayerListView.as_view()),
     path("layers/<int:pk>/", LayerUpdateView.as_view()),
     # Обновление точек на интерактивной карте

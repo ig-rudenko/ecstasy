@@ -1,11 +1,27 @@
 from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from maps.models import Maps
 from .permissions import MapPermission
-from .serializers import MapLayerSerializer
+from .serializers import MapLayerSerializer, MapSerializer, MapDetailSerializer
 from ..services.maps import get_map_layers_geo_data, get_zabbix_problems_on_map
+
+
+class MapPageNumberPagination(PageNumberPagination):
+    page_size = 100
+
+
+class MapListAPIView(generics.ListAPIView):
+    queryset = Maps.objects.all()
+    serializer_class = MapSerializer
+    pagination_class = MapPageNumberPagination
+
+
+class MapRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Maps.objects.all()
+    serializer_class = MapDetailSerializer
 
 
 class MapLayersListAPIView(generics.RetrieveAPIView):

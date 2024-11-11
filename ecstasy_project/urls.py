@@ -50,9 +50,6 @@ urlpatterns = [
     path("api/redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]
 
-handler404 = "app_settings.errors_views.page404"
-handler500 = "app_settings.errors_views.page500"
-
 protected_serve.add_limitation(LoginRequiredLimitation())
 protected_serve.add_limitation(MapMediaServeLimitation())
 urlpatterns += (

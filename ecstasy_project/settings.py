@@ -40,7 +40,11 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
 
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
 if trusted_origins is not None:
@@ -72,6 +76,7 @@ INSTALLED_APPS = [
     "accounting",
     "news",
     "import_export",
+    "corsheaders",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -91,9 +96,11 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "ecstasy_project.authentication.JWTAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -233,8 +240,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PARSER_CLASSES": [
         "drf_orjson_renderer.parsers.ORJSONParser",
@@ -326,8 +333,8 @@ if not DEBUG:
 # ================= JWT ===================
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,

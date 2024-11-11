@@ -9,7 +9,7 @@ class Permissions {
     constructor() {
         this.load();
 
-        api.get<{ permissions: string[] }>("/api/accounts/myself/permissions")
+        api.get<{ permissions: string[] }>("/api/v1/accounts/myself/permissions")
             .then(value => {
                 if (value.data.permissions.length !== this.perms.value.length &&
                     this.perms.value.every((p, i) => p === value.data.permissions[i])

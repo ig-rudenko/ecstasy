@@ -39,6 +39,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Карты',
       icon: 'map',
+      url: 'maps',
     })
   }
 

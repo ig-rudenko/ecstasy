@@ -19,6 +19,10 @@ const router = createRouter({
             name: "tools-traceroute"
         },
         {path: "/account/login", component: () => import("@/pages/login/Login.vue"), name: "login"},
+
+        {path: "/maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps"},
+        {path: "/maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view"},
+
         {path: "/gpon", component: () => import("@/pages/gpon_base/GPONPage.vue"), name: "gpon"},
         {path: "/gpon/tech-data", component: () => import("@/pages/gpon_base/TechData.vue"), name: "gpon-tech-data"},
         {
@@ -56,6 +60,8 @@ const router = createRouter({
             component: () => import("@/pages/gpon_base/CustomerView.vue"),
             name: "gpon-view-subscriber"
         },
+
+        {path: "/:pathMatch(.*)*", redirect: "/"},
     ],
 });
 

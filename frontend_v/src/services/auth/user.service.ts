@@ -2,7 +2,7 @@ import api from "@/services/api";
 import {createNewUser, User} from "@/services/user";
 
 export async function getMyselfData(): Promise<User> {
-    const resp = await api.get("/api/accounts/myself")
+    const resp = await api.get("/api/v1/accounts/myself")
     return createNewUser(resp.data)
 }
 
