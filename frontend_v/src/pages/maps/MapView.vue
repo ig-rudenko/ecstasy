@@ -3,11 +3,13 @@ import "leaflet/dist/leaflet.css";
 import {onMounted, onUnmounted, ref} from "vue";
 import {useRoute} from "vue-router";
 
-import {MapDetail, MapService} from "@/pages/maps/maps";
 import api from "@/services/api";
+import {MapDetail, MapService} from "@/pages/maps/maps";
 
 const route = useRoute();
 const mapId = route.params.id.toString();
+const search = ref("");
+const showSearch = ref(false);
 
 let mapService: MapService | null = null;
 const mapData = ref<MapDetail | null>(null)
@@ -15,6 +17,11 @@ const mapData = ref<MapDetail | null>(null)
 onMounted(async () => {
 
   mapService = new MapService(mapId, "map");
+
+  mapService.map.locate()
+      .on("locationfound", (e) => mapService?.map.setView(e.latlng, 14))
+      .on("locationerror", () => mapService?.map.setView([44.6, 33.5], 12));
+
   mapData.value = await mapService.getMapData();
 
   if (mapData.value?.type == "external") {
@@ -25,11 +32,8 @@ onMounted(async () => {
 
   if (mapData.value?.type == "file") {
     api.get(mapData.value.from_file).then(value => {
-      const getBlobURL = (code: string, type: string) => {
-        const blob = new Blob([code], {type});
-        return URL.createObjectURL(blob);
-      };
-      const url = getBlobURL(value.data, 'text/html');
+      const blob = new Blob([value.data], {type: "text/html"});
+      const url = URL.createObjectURL(blob);
       const iframe = document.createElement("iframe");
       iframe.src = url;
       iframe.classList.add("h-screen", "w-screen")
@@ -48,9 +52,7 @@ onMounted(async () => {
     mapService.renderMarkers()
   }
 
-  mapService.map.locate()
-      .on("locationfound", (e) => mapService?.map.setView(e.latlng, 14))
-      .on("locationerror", () => mapService?.map.setView([44.6, 33.5], 12));
+  showSearch.value = true;
 
 })
 
@@ -58,8 +60,19 @@ onUnmounted(() => {
   mapService?.stopUpdate();
 })
 
+function searchElement() {
+  if (search.value.length < 4) return;
+  mapService?.searchPoint(search.value);
+}
+
 </script>
 
 <template>
   <div id="map" class="h-screen w-screen"></div>
+  <div v-if="showSearch" class="absolute top-5 left-14" style="z-index: 99999">
+    <div class="flex items-center">
+      <InputText v-model="search" placeholder="Поиск" @keydown.enter="searchElement"/>
+      <Button @click="searchElement" icon="pi pi-search"/>
+    </div>
+  </div>
 </template>

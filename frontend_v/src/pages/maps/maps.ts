@@ -61,6 +61,13 @@ interface PointData {
     hasProblems: boolean;
 }
 
+interface StaticPointData {
+    latlng: LatLngExpression;
+    name?: string;
+    description?: string;
+    element: any;
+}
+
 
 export type MapsPage = Paginator<MapBrief>;
 
@@ -77,8 +84,11 @@ export class MapService {
 
     private updateTimeout?: number;
 
-    /* Пустой объект, который будет использоваться для хранения всех маркеров, добавленных на карту. */
+    // Объект для хранения всех динамических маркеров, добавленных на карту.
     public points: Map<string, PointData> = new Map();
+
+    // Объект для хранения всех статических элементов.
+    public staticElements: StaticPointData[] = [];
 
     /* Переменная, используемая для хранения всех слоев, добавляемых на карту. */
     public overlays: LayersObject = {};
@@ -187,30 +197,54 @@ export class MapService {
 
             /* Создание маркера из объекта GeoJSON */
             if (features[j].geometry.type === "Point") {
-                createMarker(
+                let point = createMarker(
                     features[j],
                     GeoJSON.coordsToLatLng(features[j].geometry.coordinates),
                     defaultSettings.Marker
                     // @ts-ignore
                 ).addTo(layer)
+                this.staticElements.push(
+                    {
+                        element: point,
+                        latlng: point.getLatLng(),
+                        name: features[j].properties.name,
+                        description: features[j].properties.description,
+                    }
+                )
 
                 /* Создание полилинии из объекта GeoJSON */
             } else if (features[j].geometry.type === "LineString") {
-                createPolyline(
+                let polyline = createPolyline(
                     features[j],
                     GeoJSON.coordsToLatLngs(features[j].geometry.coordinates),
                     defaultSettings.Polygon
                     // @ts-ignore
                 ).addTo(layer)
+                this.staticElements.push(
+                    {
+                        element: polyline,
+                        latlng: polyline.getCenter(),
+                        name: features[j].properties.name,
+                        description: features[j].properties.description,
+                    }
+                )
 
                 /* Создание многоугольника из объекта GeoJSON */
             } else if (features[j].geometry.type === "Polygon") {
-                createPolygon(
+                let polygon = createPolygon(
                     features[j],
                     GeoJSON.coordsToLatLngs(features[j].geometry.coordinates[0]),
                     defaultSettings.Polygon
                     // @ts-ignore
                 ).addTo(layer)
+                this.staticElements.push(
+                    {
+                        element: polygon,
+                        latlng: polygon.getCenter(),
+                        name: features[j].properties.name,
+                        description: features[j].properties.description,
+                    }
+                )
             }
         }
     }
@@ -287,19 +321,8 @@ export class MapService {
             } else {
                 // Новое недоступное оборудование
                 marker.hasProblems = true;
-
-                // Удаляем из карты
-                // @ts-ignore
-                marker.point.removeFrom(marker.layer)
-                marker.point.options.fillColor = "red" // Меняем цвет
-                marker.point.bindPopup(  // Меняем описание
-                    marker._origin.popupContent + problems_text,
-                    {"maxWidth": 500}
-                )
-
-                // Добавляем метку на её слой
-                // @ts-ignore
-                marker.point.addTo(marker.layer)
+                marker.point.setStyle({fillColor: "red"})
+                marker.point.setPopupContent(marker._origin.popupContent + problems_text)
             }
 
             // Удаляем маркер, так как он ещё проблемный.
@@ -309,14 +332,9 @@ export class MapService {
         /* Восстановление устройств, которые раньше были отключены, а теперь работают. */
         problemsPointsBeforeUpdate.forEach((value) => {
             if (!value._origin) return;
-
-            // @ts-ignore
-            value.point.removeFrom(value._origin.layer)
-            value.point.options.fillColor = value._origin.fillColor  // Восстанавливаем цвет
-            value.point.bindPopup(value._origin.popupContent, {"maxWidth": 500})  // Восстанавливаем описание
-            // @ts-ignore
-            value.point.addTo(value._origin.layer)  // Добавляем метку на её слой
-
+            value.point.setStyle({fillColor: value._origin.fillColor})   // Восстанавливаем цвет
+            value.point.setPopupContent(value._origin.popupContent)
+            // value.point.bindPopup(value._origin.popupContent, {"maxWidth": 500})  // Восстанавливаем описание
             value._origin = undefined;
             value.hasProblems = false;
         });
@@ -324,6 +342,51 @@ export class MapService {
         // @ts-ignore
         this.updateTimeout = setTimeout(() => this.startUpdate(), this.updateInterval)
 
+    }
+
+    searchPoint(text: string) {
+        text = text.toString().toLowerCase()
+        let marker = null
+        for (let point of this.points.values()) {
+            let name = point.point.getTooltip()?.getContent()?.toString()
+            let desc = point.point.getPopup()?.getContent()?.toString()
+            if (name && name.toLowerCase().includes(text) || desc && desc.toLowerCase().includes(text)) {
+                if (!marker) {
+                    this.map.flyTo(point.point.getLatLng(), 17)
+                    marker = point
+                }
+                this.highlightMarker(point.point)
+            }
+        }
+
+        for (let element of this.staticElements) {
+            if (element.name && element.name.toLowerCase().includes(text) || element.description && element.description.toLowerCase().includes(text)) {
+                if (!marker) {
+                    this.map.flyTo(element.latlng, 17)
+                    marker = element
+                }
+                this.highlightMarker(element.element)
+            }
+        }
+
+        return marker;
+    }
+
+    private highlightMarker(marker: any) {
+        if (!marker._path) return;
+
+        if (!marker.options._originFillColor) {
+            marker.options._originFillColor = marker.options.fillColor
+        }
+
+        for (let i = 1; i <= 20; i++) {
+            setTimeout(() => {
+                marker._path.style.fill = i % 2 === 0 ? marker.options._originFillColor : "orange";
+                marker._path.style.fill = i % 2 === 0 ? marker.options._originFillColor : "orange";
+            }, 250 * i)
+        }
+
+        setTimeout(() => marker._path.style.fill = marker.options._originFillColor, 5100)
     }
 
 }
