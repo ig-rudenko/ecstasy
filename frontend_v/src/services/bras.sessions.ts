@@ -37,7 +37,7 @@ class BrasSessionsService {
         };
         this.dialogVisible.value = true;
         try {
-            const resp = await api.get<BrasData>("/device/api/session?mac=" + mac)
+            const resp = await api.get<BrasData>("/api/v1/devices/session?mac=" + mac)
             this.lastSessions.value = resp.data
         } catch (error: any) {
             errorToast("Ошибка", errorFmt(error))
@@ -62,7 +62,7 @@ class BrasSessionsService {
             mac: this.currentMac
         }
         try {
-            const resp = await api.post<string>("/device/api/cut-session", data)
+            const resp = await api.post<string>("/api/v1/devices/cut-session", data)
             this.cutSessionResult.value = resp.data;
         } catch (error: any) {
             errorToast("Ошибка", errorFmt(error))

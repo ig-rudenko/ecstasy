@@ -1,9 +1,9 @@
 import {ref, Ref} from "vue";
 
 import api from "@/services/api";
+import errorFmt from "@/errorFmt";
 import {InterfaceComment} from "@/services/interfaces";
-import {errorToast, successToast} from "@/services/my.toast.ts";
-import errorFmt from "@/errorFmt.ts";
+import {errorToast, successToast} from "@/services/my.toast";
 
 
 export type CommentAction = "add" | "update" | "delete";
@@ -79,7 +79,7 @@ class CommentService {
         let new_comment = this.commentObject.value.text
         let method: "post" | "patch" | "delete"
         let data: any
-        let url: string = "/device/api/comments"
+        let url: string = "/api/v1/devices/comments"
 
         // Добавляем новый комментарий
         if (this.commentObject.value.action === "add" && new_comment.length) {
@@ -91,12 +91,12 @@ class CommentService {
             }
         } else if (this.commentObject.value.action === "update" && new_comment.length) {
             // Обновление комментария на порту
-            url = "/device/api/comments/" + this.commentObject.value.id
+            url = "/api/v1/devices/comments/" + this.commentObject.value.id
             method = "patch"
             data = {comment: new_comment}
         } else {
             // Удаление комментария на порту
-            url = "/device/api/comments/" + this.commentObject.value.id
+            url = "/api/v1/devices/comments/" + this.commentObject.value.id
             method = "delete"
             data = {}
         }

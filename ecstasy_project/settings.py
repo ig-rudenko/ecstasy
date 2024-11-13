@@ -39,6 +39,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
+ENV = os.getenv("DJANGO_ENV", "dev")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
 
@@ -136,6 +137,9 @@ TEMPLATES = [
     },
 ]
 
+if ENV == "dev":
+    TEMPLATES[0]["DIRS"].append(BASE_DIR / "frontend_v/dist")
+
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
 DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", ""))
@@ -188,7 +192,10 @@ STATIC_URL = "static/"
 if os.getenv("DJANGO_COLLECT_STATIC", "0") == "1":
     STATIC_ROOT = BASE_DIR / "static"
 else:
-    STATICFILES_DIRS = [BASE_DIR / "static"]
+    STATICFILES_DIRS = [
+        BASE_DIR / "static",
+        BASE_DIR / "frontend_v/dist",
+    ]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

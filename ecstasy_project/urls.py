@@ -17,6 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.views.generic import TemplateView
 from django.views.static import serve
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -66,3 +67,13 @@ urlpatterns += (
         {"document_root": settings.MEDIA_ROOT},
     ),
 )
+
+if settings.ENV == "dev":
+    urlpatterns += [
+        re_path(
+            r"^(?P<path>(?:assets|img|video).*)$",
+            serve,
+            {"document_root": settings.STATICFILES_DIRS[1]},
+        ),
+        re_path("^.*$", TemplateView.as_view(template_name="index.html"), name="index"),
+    ]

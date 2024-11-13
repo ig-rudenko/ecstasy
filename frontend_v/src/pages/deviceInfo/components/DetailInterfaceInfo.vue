@@ -278,7 +278,7 @@ export default defineComponent({
         this.showDetailInfo = false;
       }
 
-      api.get<ComplexInterfaceInfoType>("/device/api/" + this.deviceName + "/interface-info?port=" + this.interface.name)
+      api.get<ComplexInterfaceInfoType>("/api/v1/devices/" + this.deviceName + "/interface-info?port=" + this.interface.name)
           .then(
               value => {
                 this.complexInfo = value.data;

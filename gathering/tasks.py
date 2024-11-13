@@ -73,6 +73,7 @@ def check_scanning_status() -> dict:
 
     return {
         "status": None,
+        "progress": None,
     }
 
 

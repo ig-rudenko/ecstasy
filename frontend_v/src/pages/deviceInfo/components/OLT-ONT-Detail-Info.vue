@@ -232,7 +232,7 @@ export default defineComponent({
     getDetailInfo() {
       if (!this.showDetailInfo) return
 
-      api.get("/device/api/" + this.deviceName + "/interface-info?port=" + this.ontInterface.name)
+      api.get("/api/v1/devices/" + this.deviceName + "/interface-info?port=" + this.ontInterface.name)
           .then(
               (value: AxiosResponse<ComplexInterfaceInfoType>) => {
                 this.complexInfo = value.data;

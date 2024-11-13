@@ -187,7 +187,7 @@ export default defineComponent({
     },
 
     loadMedia(): void {
-      api.get(`/device/api/${this.deviceName}/media`)
+      api.get(`/api/v1/devices/${this.deviceName}/media`)
           .then(
               (value: any) => {
                 this.items = newMediaFileInfoList(value.data);
@@ -241,7 +241,7 @@ export default defineComponent({
 
     deleteCurrentItem() {
       if (!this.currentItem) return;
-      api.delete(`/device/api/${this.deviceName}/media/${this.currentItem.id}`)
+      api.delete(`/api/v1/devices/${this.deviceName}/media/${this.currentItem.id}`)
           .then(
               () => {
                 this.removeElement(this.items, this.currentItem)

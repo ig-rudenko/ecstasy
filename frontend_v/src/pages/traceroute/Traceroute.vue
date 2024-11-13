@@ -211,8 +211,8 @@ export default defineComponent({
     return {
       macScanIcon: "" as string,
 
-      vlanScanStatus: new ScanStatus("/tools/api/vlans-scan/check", "/tools/api/vlans-scan/run"),
-      macScanStatus: new ScanStatus("/gather/mac-scan/check", "/gather/mac-scan/run"),
+      vlanScanStatus: new ScanStatus("/api/v1/tools/vlans-scan/check", "/api/v1/tools/vlans-scan/run"),
+      macScanStatus: new ScanStatus("/api/v1/gather/mac-address/scan/check", "/api/v1/gather/mac-address/scan/run"),
 
       vlanTracerouteStarted: false,
       macTracerouteStarted: false,
@@ -348,7 +348,7 @@ export default defineComponent({
       if (!valid_mac.length) return
 
       this.macTracerouteStarted = true
-      const url = '/gather/api/traceroute/mac-address/' + valid_mac + "/"
+      const url = '/api/v1/gather/traceroute/mac-address/' + valid_mac + "/"
 
       api.get(url)
           .then(

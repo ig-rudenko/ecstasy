@@ -38,7 +38,7 @@ export class DevicesService {
 
     async getDevicesList(): Promise<Device[]> {
         try {
-            let resp = await api.get<Device[]>("/device/api/list_all");
+            let resp = await api.get<Device[]>("/api/v1/devices/");
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))
@@ -48,7 +48,7 @@ export class DevicesService {
 
     async getDevicesListWithInterfacesWorkload(): Promise<Device[]> {
         try {
-            let resp = await api.get<DevicesWithCount>("/device/api/workload/interfaces");
+            let resp = await api.get<DevicesWithCount>("/api/v1/devices/workload/interfaces");
             return resp.data.devices;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))
@@ -58,7 +58,7 @@ export class DevicesService {
 
     async changePortStatus(deviceName: string, data: ChangePortStatusRequest) {
         try {
-            const resp = await api.post<ChangePortStatusResponse>("/device/api/" + deviceName + "/port-status", data)
+            const resp = await api.post<ChangePortStatusResponse>("/api/devices/" + deviceName + "/port-status", data)
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось изменить статус порта", errorFmt(reason))

@@ -220,7 +220,7 @@ export default defineComponent({
       let formData = new FormData();
       formData.append("file", mediaFile.file);
       formData.append("description", mediaFile.description)
-      return api.post(`/device/api/${this.deviceName}/media`, formData)
+      return api.post(`/api/v1/devices/${this.deviceName}/media`, formData)
           .then(
               (value: AxiosResponse<any>) => {
                 this.deleteFile(mediaFile)

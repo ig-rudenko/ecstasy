@@ -109,7 +109,7 @@ export default defineComponent({
       }
 
       try {
-        await api.post("/device/api/" + this.deviceName + "/change-dsl-profile", data)
+        await api.post("/api/v1/devices/" + this.deviceName + "/change-dsl-profile", data)
         successToast("OK", 'Профиль был изменен на ' + profile_name)
       } catch (error: any) {
         errorToast("Ошибка при изменении профиля", errorFmt(error))

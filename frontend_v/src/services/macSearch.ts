@@ -1,5 +1,6 @@
-import api from "@/services/api";
 import {Ref, ref} from "vue";
+
+import api from "@/services/api";
 
 export interface MACDetail {
     vendor: string;
@@ -19,7 +20,7 @@ class MacSearch {
         this.lastSearch.value = null;
         this.getMacDetail(mac);
         try {
-            const resp= await api.get<MACDetail>("/tools/api/mac-vendor/" + mac)
+            const resp = await api.get<MACDetail>("/api/v1/tools/mac-vendor/" + mac)
             this.lastSearch.value = resp.data;
         } catch (error) {
             this.lastSearch.value = {
@@ -33,7 +34,7 @@ class MacSearch {
     async getMacDetail(mac: string) {
         this.lastMacDetail.value = null;
         try {
-            const resp= await api.get<string>("/tools/api/ip-mac-info/" + mac);
+            const resp = await api.get<string>("/api/v1/tools/ip-mac-info/" + mac);
             this.lastMacDetail.value = resp.data;
         } catch (error) {
             this.lastMacDetail.value = "Не удалось определить";

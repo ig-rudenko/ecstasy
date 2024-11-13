@@ -49,7 +49,7 @@ export default defineComponent({
 
       this.changingPoEStatusNow = true
       try {
-        await api.post("/device/api/" + this.deviceName + "/set-poe-out", data)
+        await api.post("/api/v1/devices/" + this.deviceName + "/set-poe-out", data)
         this.poeChangeSuccess = true;
       } catch (error: any) {
         errorToast("Ошибка измененини PoE", errorFmt(error))

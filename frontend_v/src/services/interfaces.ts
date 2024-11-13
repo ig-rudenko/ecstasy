@@ -1,7 +1,7 @@
-import {Device} from "@/services/devices";
-import {errorToast} from "@/services/my.toast.ts";
-import errorFmt from "@/errorFmt.ts";
 import api from "@/services/api";
+import errorFmt from "@/errorFmt";
+import {Device} from "@/services/devices";
+import {errorToast} from "@/services/my.toast";
 
 
 export interface InterfacesCount {
@@ -73,7 +73,7 @@ export function calculateInterfacesWorkload(devices: Device[]): number[] {
 
 
 export async function findInterfacesByDescription(description: string): Promise<InterfaceDescriptionMatchResult[]> {
-    const url = "/tools/api/find-by-desc?pattern=" + description;
+    const url = "/api/v1/tools/find-by-desc?pattern=" + description;
     try {
         const resp = await api.get<{ interfaces: InterfaceDescriptionMatchResult[] }>(url)
         return resp.data.interfaces;

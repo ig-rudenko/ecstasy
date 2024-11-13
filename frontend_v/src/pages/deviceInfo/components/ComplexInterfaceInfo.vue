@@ -38,7 +38,7 @@ function searchMacAddress(mac: string) {
 async function getMacs() {
   collectingMACs.value = true
 
-  const url = "/device/api/" + props.deviceName + "/macs?port=" + props.interface.name;
+  const url = "/api/v1/devices/" + props.deviceName + "/macs?port=" + props.interface.name;
 
   try {
     const resp = await api.get<{ result: MacInfo[], count: number }>(url)

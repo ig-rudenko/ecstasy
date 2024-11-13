@@ -246,7 +246,7 @@ export default defineComponent({
     },
 
     getFiles() {
-      api.get("/device/api/" + this.deviceName + "/configs")
+      api.get("/api/v1/devices/" + this.deviceName + "/configs")
           .then(
               (value: AxiosResponse<ConfigFile[]>) => {
                 this.files = value.data
@@ -262,7 +262,7 @@ export default defineComponent({
       if (this.collectNew.active) return
 
       this.collectNew.active = true
-      api.post("/device/api/" + this.deviceName + "/collect-config")
+      api.post("/api/v1/devices/" + this.deviceName + "/collect-config")
           .then(
               (value: AxiosResponse) => {
                 this.getFiles();
@@ -291,7 +291,7 @@ export default defineComponent({
     },
 
     deleteFile(file: ConfigFile) {
-      api.delete("/device/api/" + this.deviceName + "/config/" + file.name)
+      api.delete("/api/v1/devices/" + this.deviceName + "/config/" + file.name)
           .then(
               (value: AxiosResponse) => {
                 if (value.status === 204) this.getFiles();
@@ -304,7 +304,7 @@ export default defineComponent({
       this.selectedFile = file;
 
       if (!file.content) {
-        api.get("/device/api/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
+        api.get("/api/v1/devices/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
             .then(
                 (value: AxiosResponse<Blob>) => {
                   return value.data.text()
@@ -331,7 +331,7 @@ export default defineComponent({
     },
 
     downloadFile(file: ConfigFile) {
-      api.get("/device/api/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
+      api.get("/api/v1/devices/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
           .then((response) => {
             // create file link in browser's memory
             const href = URL.createObjectURL(response.data);

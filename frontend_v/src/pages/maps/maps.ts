@@ -72,6 +72,7 @@ interface StaticPointData {
 export type MapsPage = Paginator<MapBrief>;
 
 const geoGoogle = tileLayer('https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {attribution: 'google'});
+const arcgisonline = tileLayer('http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 
 export class MapService {
@@ -94,7 +95,7 @@ export class MapService {
     public overlays: LayersObject = {};
 
     constructor(public mapID: string, public mapHTMLElementID: string) {
-        this.map = new LMap(mapHTMLElementID, {layers: [geoGoogle, osm], minZoom: 5});
+        this.map = new LMap(mapHTMLElementID, {layers: [geoGoogle, arcgisonline, osm], minZoom: 5});
         this.map.attributionControl.getContainer()?.remove();
 
         this.map.addControl(new Control.Scale());
@@ -133,7 +134,7 @@ export class MapService {
         }
 
         this.map.addControl(new Control.Layers(
-            {"Спутник": geoGoogle, "Схема": osm},
+            {"Спутник": geoGoogle, "Спутник 2": arcgisonline, "Схема": osm},
             this.overlays,
             {autoZIndex: true, collapsed: true, position: "topright", sortLayers: true})
         );

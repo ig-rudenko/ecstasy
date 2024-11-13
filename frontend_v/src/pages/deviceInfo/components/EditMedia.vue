@@ -155,7 +155,7 @@ export default defineComponent({
       }
       formData.append("description", this.item.description)
 
-      api.patch(`/device/api/${this.deviceName}/media/${this.item.id}`, formData)
+      api.patch(`/api/v1/devices/${this.deviceName}/media/${this.item.id}`, formData)
           .then(
               (value: AxiosResponse) => {
                 // Обновляем старую информацию на новую

@@ -74,7 +74,7 @@ export default defineComponent({
   methods: {
     openDialog() {
       this.showDialog = true;
-      api.get("/device/api/" + this.deviceName + "/actions").then(
+      api.get("/api/v1/devices/" + this.deviceName + "/actions").then(
           (resp: AxiosResponse<UserAction[]>) => {
             this.actions = resp.data
           }

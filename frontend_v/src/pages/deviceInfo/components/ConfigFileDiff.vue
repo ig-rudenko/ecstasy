@@ -86,7 +86,7 @@ export default {
     },
     getConfigContent(config) {
       if (!config.content) {
-        api.get("/device/api/" + this.deviceName + "/config/" + config.name).then(
+        api.get("/api/v1/devices/" + this.deviceName + "/config/" + config.name).then(
             resp => config.content = this.formattedConfigFunction(resp.data)
         )
       }

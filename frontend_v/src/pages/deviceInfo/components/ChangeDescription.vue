@@ -75,7 +75,7 @@ export default defineComponent({
         description: this.newDesc,
       }
 
-      api.post("/device/api/" + this.deviceName + "/change-description", data)
+      api.post("/api/v1/devices/" + this.deviceName + "/change-description", data)
           .then(
               (value: AxiosResponse<{ description: string }>) => {
                 // Отображаем новое описание

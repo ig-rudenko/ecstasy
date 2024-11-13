@@ -72,13 +72,12 @@ export default defineComponent({
       let info = null
       try {
         let response = await fetch(
-            "/device/api/" + this.deviceName + "/cable-diag?port=" + this.port
+            "/api/v1/devices/" + this.deviceName + "/cable-diag?port=" + this.port
         )
         if (response.status === 200) info = await response.json()
       } catch (err) {
-        console.log(err)
+        console.error(err)
       }
-      console.log(info)
       this.diagnosticsStarted = false
       this.diagInfo = info
     },

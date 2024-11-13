@@ -1,6 +1,6 @@
 """
 URL Configuration для API
-Расширенное от /device/api/
+Расширенное от /api/v1/devices/
 """
 
 from django.urls import path
@@ -9,7 +9,7 @@ from .views import devices_info, device_manager, bras_manager, config_files, dev
 
 app_name = "devices-api"
 
-# /api/devices/
+# /api/v1/devices/
 
 urlpatterns = [
     # ===========================================

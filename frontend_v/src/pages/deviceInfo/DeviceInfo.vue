@@ -245,7 +245,7 @@ import UserActionsButton from "./components/UserActionsButton.vue";
 
 import api from "@/services/api";
 import {GeneralInfo} from "./GeneralInfo";
-import {HardwareStats, newHardwareStats} from "./hardwareStats";
+import {HardwareStats} from "./hardwareStats";
 import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
@@ -281,7 +281,7 @@ export default defineComponent({
 
   data() {
     return {
-      deviceStats: {} as HardwareStats,
+      deviceStats: null as HardwareStats | null,
       interfacesWorkload: {} as InterfacesCount,
       generalInfo: null as GeneralInfo | null,
       interfaces: [] as DeviceInterface[],
@@ -352,19 +352,17 @@ export default defineComponent({
 
     /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
-      let url = "/device/api/" + this.deviceName + "/stats"
-      return api.get(url).then(
-          (value: any) => {
-            this.deviceStats = newHardwareStats(value.data)
-          },
-          (reason: any) => this.showToastError(reason)
-      ).catch(
-          (reason: any) => this.showToastError(reason)
-      )
+      let url = "/api/v1/devices/" + this.deviceName + "/stats"
+      try {
+        const resp = await api.get<HardwareStats>(url)
+        this.deviceStats = resp.data;
+      } catch (error: any) {
+        this.showToastError(error)
+      }
     },
 
     async getInterfacesWorkload() {
-      let url = "/device/api/workload/interfaces/" + this.deviceName
+      let url = "/api/v1/devices/workload/interfaces/" + this.deviceName
       return api.get(url).then(
           (value: any) => {
             this.interfacesWorkload = value.data
@@ -377,7 +375,7 @@ export default defineComponent({
 
     /** Смотрим информацию про оборудование */
     async getInfo() {
-      let url = "/device/api/" + this.deviceName + "/info"
+      let url = "/api/v1/devices/" + this.deviceName + "/info"
       return api.get<GeneralInfo>(url).then(
           value => {
             this.generalInfo = value.data;
@@ -399,7 +397,7 @@ export default defineComponent({
         return
       }
 
-      let url = "/device/api/" + this.deviceName + "/interfaces?"
+      let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
       if (this.withVlans) {
         url += "vlans=1"
       } else {
