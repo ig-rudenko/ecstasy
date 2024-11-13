@@ -2,19 +2,24 @@
   <div v-if="totalCount">
     <div class="pb-2">Загруженность интерфейсов</div>
     <div class="text-center flex shadow-xl rounded">
-      <div v-if="workload.abons_up_with_desc" class="text-white text-sm bg-green-700 rounded"
+      <div v-if="workload.abons_up_with_desc"
+           class="text-white text-sm bg-green-700 first:rounded-l-xl last:rounded-r-xl"
            :style="style_up_with_desc">{{ workload.abons_up_with_desc }}
       </div>
-      <div v-if="workload.abons_up_no_desc" class="text-sm text-gray-950 bg-green-500 rounded"
+      <div v-if="workload.abons_up_no_desc"
+           class="text-sm text-gray-950 bg-green-500 first:rounded-l-xl last:rounded-r-xl"
            :style="style_up_no_desc">{{ workload.abons_up_no_desc }}
       </div>
-      <div v-if="workload.abons_down_with_desc" class="text-sm text-gray-950 bg-red-300 rounded"
+      <div v-if="workload.abons_down_with_desc"
+           class="text-sm text-gray-950 bg-red-300 first:rounded-l-xl last:rounded-r-xl"
            :style="style_down_with_desc">{{ workload.abons_down_with_desc }}
       </div>
-      <div v-if="workload.abons_down_no_desc" class="text-sm text-gray-950 bg-gray-300 rounded"
+      <div v-if="workload.abons_down_no_desc"
+           class="text-sm text-gray-950 bg-gray-300 first:rounded-l-xl last:rounded-r-xl"
            :style="style_down_no_desc">{{ workload.abons_down_no_desc }}
       </div>
-      <div v-if="systemsInterfacesCount" class="text-sm text-gray-950 bg-blue-400 rounded" :style="style_systems">
+      <div v-if="systemsInterfacesCount" class="text-sm text-gray-950 bg-blue-400 first:rounded-l-xl last:rounded-r-xl"
+           :style="style_systems">
         {{ systemsInterfacesCount }}
       </div>
     </div>

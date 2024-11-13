@@ -6,27 +6,27 @@
 
         <!-- Абонентские порты UP С ОПИСАНИЕМ -->
         <div v-if="dev.interfaces_count.abons_up_with_desc" v-tooltip="'Абонентские порты (UP) с описанием'"
-             class="bg-green-700 text-gray-950"
+             class="bg-green-700 text-gray-950 text-xs first:rounded-l last:rounded-r"
              :style="{width: abonsUpWithDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_up_with_desc }}</div>
         </div>
 
         <!-- Абонентские порты UP Без описания -->
-        <div class="bg-green-500 text-gray-900"
+        <div class="bg-green-500 text-gray-900 text-xs first:rounded-l last:rounded-r"
              v-if="dev.interfaces_count.abons_up_no_desc" v-tooltip="'Абонентские порты (UP) без описания'"
              :style="{width: abonsUpNoDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_up_no_desc }}</div>
         </div>
 
         <!-- Абонентские порты DOWN С ОПИСАНИЕМ -->
-        <div class="bg-red-300 text-gray-900"
+        <div class="bg-red-300 text-gray-900 text-xs first:rounded-l last:rounded-r"
              v-if="dev.interfaces_count.abons_down_with_desc" v-tooltip="'Абонентские порты (DOWN) с описанием'"
              :style="{width: abonsDownWithDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_down_with_desc }}</div>
         </div>
 
         <!-- Незадействованные порты -->
-        <div class="bg-gray-300 text-gray-900"
+        <div class="bg-gray-300 text-gray-900 text-xs first:rounded-l last:rounded-r"
              v-if="dev.interfaces_count.abons_down_no_desc" v-tooltip="'Незадействованные порты'"
              :style="{width: abonsDownNoDescPercent + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ dev.interfaces_count.abons_down_no_desc }}</div>
@@ -34,7 +34,7 @@
 
         <!-- СЛУЖЕБНЫЕ порты -->
         <div v-if="systeminterfaces_count" v-tooltip="'Служебные порты'"
-             class="progress-bar bg-blue-400 text-gray-900"
+             class="progress-bar bg-blue-400 text-gray-900 text-xs first:rounded-l last:rounded-r"
              :style="{width: systemInterfacesPercents + '%'}" :aria-valuemax="totalCount">
           <div class="z-10 relative">{{ systeminterfaces_count }}</div>
         </div>

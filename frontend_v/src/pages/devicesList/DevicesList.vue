@@ -55,11 +55,11 @@
       <!--Расшифровка цвета-->
       <div class="py-2 text-muted-color">Расшифровка цвета</div>
       <div class="flex flex-wrap text-center">
-        <div class="bg-green-700 w-full sm:w-[20%] text-gray-200">Активные порты с описанием</div>
+        <div class="rounded-l-xl bg-green-700 w-full sm:w-[20%] text-gray-200">Активные порты с описанием</div>
         <div class="text-gray-900 bg-green-500 w-full sm:w-[20%]">Активные порты без описания</div>
         <div class="text-gray-900 bg-red-300 w-full sm:w-[20%]">Неактивные порты с описанием</div>
         <div class="text-gray-900 bg-gray-300 w-full sm:w-[20%]">Незадействованные порты</div>
-        <div class="text-gray-900 bg-blue-400 w-full sm:w-[20%]">Служебные порты</div>
+        <div class="rounded-r-xl text-gray-900 bg-blue-400 w-full sm:w-[20%]">Служебные порты</div>
       </div>
     </div>
 
