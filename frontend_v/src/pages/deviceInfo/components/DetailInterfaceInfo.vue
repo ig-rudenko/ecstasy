@@ -3,7 +3,6 @@
   <tr :style="interfaceStyles" :class="interfaceClasses" class="hover:bg-gray-100 dark:hover:bg-gray-800">
 
     <td>
-
       <div class="flex gap-1 px-2">
         <!--       COMMENTS-->
         <Comment :interface="interface" :device-name="deviceName" :allow-edit="true"/>
@@ -11,7 +10,6 @@
         <!-- Ссылка на графики в Zabbix -->
         <GraphsLink :interface="interface"/>
       </div>
-
     </td>
 
     <!--ПОРТ-->
@@ -21,27 +19,51 @@
 
         <!--Название Интерфейса-->
         <div @click="toggleDetailInfo" class="flex items-center cursor-pointer">
-          <span class="pl-8 pr-4 text-xl">{{ interface.name }}</span>
+          <span class="sm:pl-8 pr-4 text-xl">{{ interface.name }}</span>
         </div>
 
-        <!--Управление состоянием интерфейсов-->
-        <PortControlButtons
-            :interface="interface"
-            :device-name="deviceName"
-            :permission-level="permissionLevel"/>
+        <div class="hidden sm:flex items-center">
+          <!--Управление состоянием интерфейсов-->
+          <PortControlButtons
+              :interface="interface"
+              :device-name="deviceName"
+              :permission-level="permissionLevel"/>
 
-        <!--Посмотреть порт -->
-        <Button @click="toggleDetailInfo" text>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box"
-               viewBox="0 0 16 16">
-            <path
-                d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
-          </svg>
-        </Button>
+          <!--Посмотреть порт -->
+          <Button @click="toggleDetailInfo" text>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+              <path
+                  d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+            </svg>
+          </Button>
 
-        <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
-          {{ complexInfo.portType }}
-        </span>
+          <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+            {{ complexInfo.portType }}
+          </span>
+        </div>
+
+        <Button icon="pi pi-info-circle" size="small" class="sm:hidden" outlined @click="showPortControlsPopover"/>
+        <Popover ref="portControls">
+          <div class="flex items-center">
+            <!--Управление состоянием интерфейсов-->
+            <PortControlButtons
+                :interface="interface"
+                :device-name="deviceName"
+                :permission-level="permissionLevel"/>
+
+            <!--Посмотреть порт -->
+            <Button @click="toggleDetailInfo" text>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+              </svg>
+            </Button>
+
+            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+              {{ complexInfo.portType }}
+            </span>
+          </div>
+        </Popover>
 
       </div>
     </td>
@@ -49,7 +71,7 @@
     <!--Статус порта-->
     <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 text-nowrap text-center min-w-[6rem] px-3 font-mono">
+        class="text-gray-950 text-nowrap text-sm sm:text-base text-center sm:min-w-[6rem] px-3 font-mono">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
@@ -301,6 +323,11 @@ export default defineComponent({
     toggleVlansList(event: Event) {
       // @ts-ignore
       this.$refs.vlansList.toggle(event, event.target);
+    },
+
+    showPortControlsPopover(event: Event) {
+      // @ts-ignore
+      this.$refs.portControls.toggle(event, event.target);
     },
 
     /** Вычисляем цвет статуса порта */

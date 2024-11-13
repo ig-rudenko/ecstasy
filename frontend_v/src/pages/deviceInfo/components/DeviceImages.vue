@@ -4,9 +4,11 @@
           :severity="items.length?'success':'secondary'" @click="dialogVisible=true">
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" :fill="mediaToggleButtonColor" viewBox="0 0 16 16">
       <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-      <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
+      <path
+          d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
     </svg>
-    <div v-if="items.length" class="rounded-full font-mono text-white px-2" :style="{backgroundColor: mediaToggleButtonColor}">
+    <div v-if="items.length" class="rounded-full font-mono text-white px-2"
+         :style="{backgroundColor: mediaToggleButtonColor}">
       {{ items.length }}
     </div>
   </Button>
@@ -19,31 +21,38 @@
         <div class="py-2 flex justify-center">
 
           <!--Кнопка добавить новый медиа-->
-          <Button @click="() => setCurrentItem()" icon="pi pi-plus" rounded outlined label="Добавить" />
+          <Button @click="() => setCurrentItem()" icon="pi pi-plus" rounded outlined label="Добавить"/>
 
         </div>
 
         <div v-if="items.length" class="flex flex-wrap">
           <div v-for="(item, index) in items" @click="() => setCurrentItem(item)" :class="itemClasses(item)"
                class="cursor-pointer border-b-2">
-              <div class="flex w-full items-center justify-between relative p-2">
+            <div class="flex w-full items-center justify-between relative p-2">
 
-                <div class="p-3">
-                  <img v-if="item.isImage" :src="item.url" height="80" alt="image">
-                  <!--Другой файл-->
-                  <i v-else :class="['bi', fileEarmarkClass(item.name)]" style="font-size: 80px"></i>
+              <div class="p-3">
+                <img v-if="item.isImage" :src="item.url" height="80" alt="image">
+                <!--Другой файл-->
+                <div v-else class="flex flex-col items-center justify-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor"
+                       viewBox="0 0 16 16">
+                    <path
+                        d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                  </svg>
+                  <div>{{ item.name }}</div>
                 </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <Button @click="showDeleteFrom" severity="danger" icon="pi pi-trash" rounded outlined />
-                  <Button @click="showEditForm(index);" severity="warn" icon="pi pi-pencil" rounded outlined />
-                </div>
-
               </div>
+
+              <div class="flex flex-wrap gap-2">
+                <Button @click="showDeleteFrom" severity="danger" icon="pi pi-trash" rounded outlined/>
+                <Button @click="showEditForm(index);" severity="warn" icon="pi pi-pencil" rounded outlined/>
+              </div>
+
+            </div>
             <div class="text-sm flex items-center gap-2"><i class="pi pi-clock"/>{{ parseDateTimeString(item.modTime) }}
             </div>
-              <div>{{ item.description }}</div>
-            </div>
+            <div>{{ item.description }}</div>
+          </div>
 
         </div>
       </div>
@@ -91,10 +100,24 @@
           <div v-else-if="!editForm.show && currentItem" class="content-center justify-center h-full">
             <div>
               <div class="file-link">
-                <a :href="currentItem.url" target="_blank">
-                  <i :class="['bi', fileEarmarkClass(currentItem.name)]" style="font-size: 150px"></i>
-                </a>
-                <span>{{ currentItem.name }}</span>
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" fill="currentColor"
+                       viewBox="0 0 16 16">
+                    <path
+                        d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                  </svg>
+                </div>
+
+                <div class="text-xl flex gap-2 items-center p-2">
+                  <i v-if="!downloadInProgress" class="pi pi-download cursor-pointer hover:text-indigo-500 text-xl"
+                     @click="downloadFile(currentItem.url)"/>
+                  <div>{{ currentItem.name }}</div>
+                </div>
+
+                <div v-if="downloadInProgress" class="flex justify-center">
+                  <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" fill="transparent"
+                                   animationDuration=".5s" aria-label="downloading"/>
+                </div>
               </div>
             </div>
           </div>
@@ -112,12 +135,13 @@ import {defineComponent} from "vue";
 
 import LoadMedia from "./LoadMedia.vue";
 import EditMedia from "./EditMedia.vue";
+
 import api from "@/services/api";
-import getFileEarmarkClass from "../fileFormat";
+import errorFmt from "@/errorFmt";
+import {downloadFile} from "@/services/files";
+import {errorToast} from "@/services/my.toast";
+import {getProtectedImage} from "@/helpers/images";
 import {MediaFileInfo, newMediaFileInfoList} from "../files";
-import {errorToast} from "@/services/my.toast.ts";
-import errorFmt from "@/errorFmt.ts";
-import {getProtectedImage} from "@/helpers/images.ts";
 
 export default defineComponent({
   components: {EditMedia, LoadMedia},
@@ -134,6 +158,7 @@ export default defineComponent({
         show: false,
         itemIndex: 0,
       },
+      downloadInProgress: false,
       deleteForm: {
         show: false,
         notification: {
@@ -154,6 +179,11 @@ export default defineComponent({
     }
   },
   methods: {
+    downloadFile(url: string) {
+      this.downloadInProgress = true
+      downloadFile(url, () => this.downloadInProgress = false)
+    },
+
     setCurrentItem(item?: MediaFileInfo): void {
       if (item) {
         this.currentItem = item
@@ -171,10 +201,6 @@ export default defineComponent({
       this.deleteForm.show = false
       this.editForm.show = true
       this.editForm.itemIndex = itemIndex
-    },
-
-    fileEarmarkClass(filename: string): string {
-      return getFileEarmarkClass(filename)
     },
 
     itemClasses(item: MediaFileInfo): Array<string> {

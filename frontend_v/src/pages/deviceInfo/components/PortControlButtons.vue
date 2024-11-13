@@ -1,8 +1,7 @@
 <template>
-  <div v-if="permissionLevel >= 2" class="flex flex-col gap-2 my-2">
-
+  <div v-if="permissionLevel >= 2" class="flex sm:flex-col gap-1 my-2">
     <!--     ВКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-green-600" text style="height: 16px; font-size: 10px;"
+    <Button class="text-green-600 sm:h-[20px]" text
             @click="() => registerAction('up', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -14,7 +13,7 @@
     </Button>
 
     <!--     ВЫКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-red-600" text style="height: 16px; font-size: 10px; padding: 0"
+    <Button class="text-red-600 sm:h-[20px]" text
             @click="() => registerAction('down', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
