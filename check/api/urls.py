@@ -12,6 +12,7 @@ app_name = "devices-api"
 # /api/v1/devices/
 
 urlpatterns = [
+    path("by-zabbix/<int:host_id>", devices_info.GetDeviceByZabbixHostIDAPIView.as_view(), name="by-zabbix"),
     # ===========================================
     #                 Comments
     # ===========================================

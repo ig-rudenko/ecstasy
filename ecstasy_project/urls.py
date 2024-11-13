@@ -25,14 +25,12 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from check import views
 from maps.protected_serve import MapMediaServeLimitation
 from .protected_serve import protected_serve, LoginRequiredLimitation
 from .swagger import schema_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("by-zabbix/<host_id>", views.by_zabbix_host_id, name="by-zabbix-hostid"),
     # API Endpoints
     path("api/v1/devices/", include("check.api.urls")),
     path("api/v1/tools/", include("net_tools.api.urls")),
@@ -75,5 +73,5 @@ if settings.ENV == "dev":
             serve,
             {"document_root": settings.STATICFILES_DIRS[1]},
         ),
-        re_path("^.*$", TemplateView.as_view(template_name="index.html"), name="index"),
+        re_path(".*", TemplateView.as_view(template_name="index.html"), name="index"),
     ]
