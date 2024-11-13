@@ -295,6 +295,7 @@ export default defineComponent({
           .then(
               (value: AxiosResponse) => {
                 if (value.status === 204) this.getFiles();
+                this.visibleDeleteDialog = false;
               }
           )
     },

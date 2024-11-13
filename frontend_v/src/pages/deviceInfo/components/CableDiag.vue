@@ -11,6 +11,8 @@
         <Button @click="startDiagnostic" icon="pi pi-play" :loading="diagnosticsStarted" :label="diagnosticsStarted ? 'Диагностируем' : 'Запустить диагностику'"/>
       </div>
 
+      <Message v-if="error" class="m-2" severity="error">{{ error }}</Message>
+
       <div v-if="diagInfo">
         <div v-if="diagInfo.len" class="py-3">
           Длина кабеля: {{ diagInfo.len }}
@@ -51,8 +53,10 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {defineComponent} from "vue";
+import api from "@/services/api";
+import errorFmt from "@/errorFmt.ts";
 
 export default defineComponent({
   props: {
@@ -61,28 +65,31 @@ export default defineComponent({
   },
   data() {
     return {
-      diagInfo: null,
-      diagnosticsStarted: false
+      diagInfo: null as any | null,
+      diagnosticsStarted: false,
+      error: "",
     }
   },
   methods: {
     async startDiagnostic() {
       this.diagInfo = null
       this.diagnosticsStarted = true
+      this.error = ""
       let info = null
       try {
-        let response = await fetch(
+        const response = await api.get(
             "/api/v1/devices/" + this.deviceName + "/cable-diag?port=" + this.port
         )
-        if (response.status === 200) info = await response.json()
-      } catch (err) {
-        console.error(err)
+        info = response.data
+      } catch (error: any) {
+        console.error(error)
+        this.error = errorFmt(error)
       }
       this.diagnosticsStarted = false
       this.diagInfo = info
     },
-    statusColor(status) {
-      let status_color = {
+    statusColor(status: string) {
+      let status_color: any = {
         'Up': '#39d286',
         'Down': '#ff4b4d',
         'Empty': '#19b7f4',
