@@ -304,7 +304,7 @@ export default defineComponent({
 
       this.vlanTracerouteStarted = true
 
-      let url = '/tools/api/vlan-traceroute?vlan=' + this.input.vlan +
+      let url = '/api/v1/tools/vlan-traceroute?vlan=' + this.input.vlan +
           '&ep=' + this.vlanTracerouteOptions.showEmptyPorts +
           '&ad=' + this.vlanTracerouteOptions.adminDownPorts +
           '&double_check=' + this.vlanTracerouteOptions.doubleCheckVlan +

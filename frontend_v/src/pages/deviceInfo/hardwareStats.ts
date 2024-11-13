@@ -1,5 +1,7 @@
 export interface HardwareStats {
-    cpu?: number[]
+    cpu?: {
+        util: number[],
+    },
     flash?: {
         util: number,
     }
