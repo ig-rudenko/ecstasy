@@ -43,12 +43,11 @@
         </label>
         <input hidden id="file-input" multiple type="file" @change="handleFileChange"/>
       </div>
-
-      <div v-if="loadingBar.active" class="py-3 w-100">
-        <div class="progress">
-          <div v-for="part in loadingBar.progress" :class="['progress-bar', part.className]"
-               :style="{width: `${loadingBar.partWidth}%`}"
-               role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+      <div v-if="loadingBar.active" class="py-3 w-full">
+        <div class="w-full flex flex-row">
+          <div v-for="part in loadingBar.progress" :class="part.className"
+               class="py-2 bg-indigo-500 w-full first:rounded-l-xl last:rounded-r-xl"
+               :style="{width: `${loadingBar.partWidth}%`}"></div>
         </div>
       </div>
 
@@ -64,9 +63,7 @@
 
             <!--Ошибки при загрузке-->
             <div v-if="file_obj.errors.length" class="px-3">
-              <div v-for="err in file_obj.errors" class="alert alert-danger m-0">
-                <div>{{ err }}</div>
-              </div>
+              <Message v-for="err in file_obj.errors" severity="error" class="w-fit">{{ err }}</Message>
             </div>
 
             <div class="grid grid-cols-2">
@@ -98,6 +95,7 @@ import MediaPreview from "./MediaPreview.vue";
 import {MediaFile, newMediaFileInfo} from "../files";
 import api from "@/services/api";
 import {AxiosResponse} from "axios";
+import errorFmt from "@/errorFmt.ts";
 
 export default defineComponent({
   name: "LoadMedia",
@@ -199,7 +197,7 @@ export default defineComponent({
         await this.uploadFile(files[i])
         // Добавляем статус загрузки файла (смотрим, нет ли ошибок)
         this.loadingBar.progress.push({
-          className: files[i].errors.length > 0 ? "bg-danger" : "bg-primary"
+          className: files[i].errors.length > 0 ? "bg-red-500" : "bg-indigo-500"
         })
       }
 
@@ -220,16 +218,20 @@ export default defineComponent({
       let formData = new FormData();
       formData.append("file", mediaFile.file);
       formData.append("description", mediaFile.description)
-      return api.post(`/api/v1/devices/${this.deviceName}/media`, formData)
+      return api.post(`/api/v1/devices/${this.deviceName}/media`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
           .then(
               (value: AxiosResponse<any>) => {
                 this.deleteFile(mediaFile)
                 this.$emit("loadedmedia", newMediaFileInfo(value.data))
               },
-              (reason: any) => mediaFile.errors.push(this.handleUploadFileError(reason.response.data))
+              (reason: any) => mediaFile.errors.push(errorFmt(reason))
           )
           .catch(
-              (reason: any) => mediaFile.errors.push(this.handleUploadFileError(reason.response.data))
+              (reason: any) => mediaFile.errors.push(errorFmt(reason))
           )
     },
   }

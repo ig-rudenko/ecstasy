@@ -88,30 +88,28 @@
   </div>
 
 
-  <div class="container">
-    <div>
-      <div class="p-2">
-        <!--  Время обновления интерфейсов-->
-        <InterfacesHelpText
-            @update="updateCurrentStatus"
-            :time-passed="timePassedFromLastUpdate"
-            :device-status="deviceAvailable"
-            :auto-update="autoUpdateInterfaces"
-            :current-status="currentStatus"
-            :last-interface-update="collected"/>
+  <div class="container mx-auto">
+    <div class="py-2">
+      <!--  Время обновления интерфейсов-->
+      <InterfacesHelpText
+          @update="updateCurrentStatus"
+          :time-passed="timePassedFromLastUpdate"
+          :device-status="deviceAvailable"
+          :auto-update="autoUpdateInterfaces"
+          :current-status="currentStatus"
+          :last-interface-update="collected"/>
 
-        <!--  Обновление интерфейсов-->
-        <div class="text-sm">
-          <div v-if="currentStatus" class="flex gap-2 items-center">
-            <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
-            <label for="auto-update-interfaces">Обновлять автоматически</label>
-          </div>
+      <!--  Обновление интерфейсов-->
+      <div class="text-sm">
+        <div v-if="currentStatus" class="flex gap-2 items-center">
+          <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
+          <label for="auto-update-interfaces">Обновлять автоматически</label>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="container py-4 flex justify-evenly relative">
+  <div class="container mx-auto py-4 flex justify-evenly relative">
 
     <!--    Таблица интерфейсов-->
     <div v-if="interfaces.length && generalInfo" class="overflow-x-scroll overflow-y-visible">

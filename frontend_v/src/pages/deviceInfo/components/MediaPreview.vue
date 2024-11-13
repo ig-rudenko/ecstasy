@@ -1,7 +1,6 @@
 <template>
   <!--Предпросмотр изображения-->
   <Image v-if="item.isImage && item.imageSrc" class="rounded-3" :src="item.imageSrc" preview alt="Предпросмотр изображения"/>
-<!--  <Image v-if="item.isImage && item.imageSrc" class="rounded-3" src="https://i.ytimg.com/vi/I9HW_widuNc/maxresdefault.jpg" preview alt="Предпросмотр изображения"/>-->
 
   <!--Отображение иконки файла-->
   <div v-else class="align-items-md-center d-flex flex-column py-4">

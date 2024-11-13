@@ -17,7 +17,7 @@
 
         <div class="py-2 flex flex-col gap-2">
           <div class="text-xl font-semibold">Документация</div>
-          <div><a class="link-secondary text-decoration-none" target="_blank" href="/swagger/">API</a></div>
+          <div><a class="link-secondary text-decoration-none" target="_blank" href="/api/swagger/">API</a></div>
         </div>
 
         <div class="py-2 flex flex-col gap-2">

@@ -1,3 +1,5 @@
+import {getProtectedImage} from "@/helpers/images.ts";
+
 class MediaFile {
     public file: File
     public description: string
@@ -49,9 +51,10 @@ function newMediaFileInfo(data: any): MediaFileInfo {
 }
 
 
-function newMediaFileInfoList(data: Array<any>): Array<MediaFileInfo> {
+async function newMediaFileInfoList(data: Array<any>): Promise<MediaFileInfo[]> {
     let res: Array<MediaFileInfo> = []
     for (const datum of data) {
+        if (datum.is_image) datum.url = await getProtectedImage(datum.url)
         res.push(new MediaFileInfo(
             datum.description,
             datum.file_type,

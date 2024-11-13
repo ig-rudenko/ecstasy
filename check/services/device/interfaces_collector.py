@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import TypeVar, TypedDict
 
 import orjson
-from django.urls import reverse
 from django.utils import timezone
 from requests import RequestException
 
@@ -223,7 +222,7 @@ class InterfacesBuilder:
                 if dev_name in intf["Description"]:
                     intf["Link"] = {
                         "device_name": dev_name,
-                        "url": reverse("device_info", args=[dev_name]),
+                        "url": f"/device/{dev_name}",
                     }
 
         return interfaces

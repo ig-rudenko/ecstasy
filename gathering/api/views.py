@@ -1,6 +1,6 @@
 from django.core.cache import cache
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from gathering.services.mac.traceroute import MacTraceroute
 from .serializers import MacGatherStatusSerializer, MacGatherScanTaskSerializer
@@ -8,7 +8,7 @@ from .swagger.schemas import mac_traceroute_api_doc
 from ..tasks import check_scanning_status, mac_table_gather_task
 
 
-class MacTracerouteAPIView(APIView):
+class MacTracerouteAPIView(GenericAPIView):
     """
     # Находит все записи в базе данных, которые содержат необходимый MAC-адрес,
     а затем строит граф связей между этими MAC.
@@ -20,7 +20,7 @@ class MacTracerouteAPIView(APIView):
         return Response(traceroute.get_mac_graph(mac))
 
 
-class MacGatherStatusAPIView(APIView):
+class MacGatherStatusAPIView(GenericAPIView):
     serializer_class = MacGatherStatusSerializer
 
     def get(self, request):
@@ -28,7 +28,7 @@ class MacGatherStatusAPIView(APIView):
         return Response(check_scanning_status())
 
 
-class MacGatherScanRunAPIView(APIView):
+class MacGatherScanRunAPIView(GenericAPIView):
     serializer_class = MacGatherScanTaskSerializer
 
     def post(self, request):
