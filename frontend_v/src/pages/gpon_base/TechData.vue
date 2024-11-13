@@ -60,11 +60,11 @@ export default {
     }
   },
   mounted() {
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     })
 
-    api.get("/gpon/api/tech-data")
+    api.get("/api/v1/gpon/tech-data")
         .then(resp => this.gponTechData = resp.data)
         .catch(reason => {
           this.errorStatus = reason.response.status

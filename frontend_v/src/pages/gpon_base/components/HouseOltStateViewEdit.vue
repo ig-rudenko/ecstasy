@@ -97,7 +97,7 @@ export default {
 
     updateBuildingInfo() {
       this.handleRequest(
-          api.put("/gpon/api/tech-data/house-olt-state/" + this.buildingData.id, this.buildingData),
+          api.put("/api/v1/gpon/tech-data/house-olt-state/" + this.buildingData.id, this.buildingData),
           'Данные дома были обновлены'
       )
     },

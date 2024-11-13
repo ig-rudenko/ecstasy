@@ -77,7 +77,7 @@ export default defineComponent({
       if (this.updatePortStatisticData) return;
 
       this.updatePortStatisticData = true;
-      api.get("/gpon/api/statistic/subscribers-count/" + this.deviceName)
+      api.get("/api/v1/gpon/statistic/subscribers-count/" + this.deviceName)
           .then(
               (value: AxiosResponse<PortsStatistic[]>) => {
                 this.portStatisticData = value.data;

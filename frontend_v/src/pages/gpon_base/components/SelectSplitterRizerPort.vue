@@ -92,7 +92,7 @@ export default {
   },
   methods: {
     getPorts() {
-      api.get("/gpon/api/tech-data/end3/" + this.end3ID)
+      api.get("/api/v1/gpon/tech-data/end3/" + this.end3ID)
           .then(
               resp => this._capability = Array.from(resp.data.capability)
           )

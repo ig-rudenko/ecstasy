@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="container mx-auto py-5 xl:w-2/3">
+  <div class="container mx-auto py-5">
 
     <ConfirmPopup/>
 
@@ -96,7 +96,7 @@
             </svg>
             <InputMask v-if="editMode" v-model="customer.phone" date="phone" style="width: 100%"
                        mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
-            <div class="text-xl font-mono" v-else>{{ customer.phone }}</div>
+            <div class="text-xl font-mono" v-else>{{ customer.phone || '-' }}</div>
           </div>
 
           <!-- НОМЕР КОНТРАКТА -->
@@ -107,7 +107,7 @@
                   d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
             </svg>
             <InputText v-if="editMode" v-model.trim="customer.contract" type="text" style="width: 100%"/>
-            <div class="text-xl font-mono" v-else>{{ customer.contract }}</div>
+            <div class="text-xl font-mono" v-else>{{ customer.contract || '-' }}</div>
           </div>
 
           <!-- Сохранить изменения -->
@@ -124,7 +124,7 @@
         </div>
       </div>
 
-      <div>
+      <div class="mx-auto xl:w-3/4">
         <div v-if="customer">
           <div class="text-xl p-4">Подключения:</div>
 
@@ -431,7 +431,7 @@ export default {
     window.addEventListener('resize', () => {
       this.windowWidth = window.innerWidth
     });
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     });
     this.getSubscriberData();
@@ -483,7 +483,7 @@ export default {
     },
 
     getSubscriberData() {
-      api.get("/gpon/api/customers/" + this.subscriberID)
+      api.get("/api/v1/gpon/customers/" + this.subscriberID)
           .then(resp => this.customer = resp.data)
           .catch(reason => {
             this.error.status = reason.response.status
@@ -517,7 +517,7 @@ export default {
         contract: this.customer.contract,
       }
       this.handleRequest(
-          api.put("/gpon/api/customers/" + this.customer.id, data),
+          api.put("/api/v1/gpon/customers/" + this.customer.id, data),
           "Данные абонента были успешно обновлены"
       )
     },
@@ -525,7 +525,7 @@ export default {
     updateCustomerConnection(connection) {
       connection.customer = this.customer.id
       this.handleRequest(
-          api.put("/gpon/api/subscriber-connection/" + connection.id, connection),
+          api.put("/api/v1/gpon/subscriber-connection/" + connection.id, connection),
           "Данные абонентского подключения были успешно обновлены"
       ).then(value => connection = value)
     },
@@ -540,7 +540,7 @@ export default {
         acceptClass: 'p-button-danger p-button-sm',
         defaultFocus: "reject",
         accept: () => {
-          api.delete("/gpon/api/subscriber-connection/" + connection.id).then(
+          api.delete("/api/v1/gpon/subscriber-connection/" + connection.id).then(
               () => {
                 this.$toast.add({
                   severity: 'error',

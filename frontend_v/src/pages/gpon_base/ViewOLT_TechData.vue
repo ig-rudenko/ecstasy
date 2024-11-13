@@ -262,7 +262,7 @@ export default {
     this.deviceName = this.$route.params.deviceName;
     this.oltPort = this.$route.query.port;
 
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     })
 
@@ -309,8 +309,8 @@ export default {
 
     getTechData() {
       let url = window.location.href
-      // /gpon/api/tech-data/{device_name}?port={olt_port}
-      api.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+      // /api/v1/gpon/tech-data/{device_name}?port={olt_port}
+      api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
           .then(resp => this.detailData = resp.data)
           .catch(reason => {
             this.errorStatus = reason.response.status
@@ -329,7 +329,7 @@ export default {
      */
     getEnd3DetailInfo(BIndex, end3Index) {
       const end3ID = this.detailData.structures[BIndex].customerLines[end3Index].id
-      api.get("/gpon/api/tech-data/end3/" + end3ID)
+      api.get("/api/v1/gpon/tech-data/end3/" + end3ID)
           .then(resp => this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = resp.data.capability)
           .catch(reason => {
             this.detailData.structures[BIndex].customerLines[end3Index].errorStatus = reason.response.status
@@ -356,7 +356,7 @@ export default {
         end3: newEnd3,
       }
       this.handleRequest(
-          api.post("/gpon/api/tech-data/end3", data), "Успешно создано"
+          api.post("/api/v1/gpon/tech-data/end3", data), "Успешно создано"
       ).then(() => {
         // Обновляем все данные, чтобы загрузить новый перечень End3
         this.getTechData();
@@ -379,7 +379,7 @@ export default {
       const olt_id = this.detailData.id
 
       this.handleRequest(
-          api.put("/gpon/api/tech-data/olt-state/" + olt_id, data),
+          api.put("/api/v1/gpon/tech-data/olt-state/" + olt_id, data),
           'Станционные данные были обновлены'
       )
     },
@@ -409,11 +409,11 @@ export default {
     },
 
     getDeviceNames() {
-      api.get("/gpon/api/devices-names")
+      api.get("/api/v1/gpon/devices-names")
           .then(res => this._deviceNames = Array.from(res.data))
     },
     getPortsNames() {
-      api.get("/gpon/api/ports-names/" + this.detailData.deviceName)
+      api.get("/api/v1/gpon/ports-names/" + this.detailData.deviceName)
           .then(res => this._devicesPorts = Array.from(res.data))
     },
 

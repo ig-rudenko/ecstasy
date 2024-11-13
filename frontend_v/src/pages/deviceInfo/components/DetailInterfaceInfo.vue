@@ -71,7 +71,7 @@
     <!--Статус порта-->
     <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 text-nowrap text-sm sm:text-base text-center sm:min-w-[6rem] px-3 font-mono">
+        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm sm:text-base text-center sm:min-w-[6rem] px-3 font-mono">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
@@ -82,7 +82,7 @@
 
     <!--VLANS-->
     <td v-if="interface.vlans.length" @click="toggleVlansList"
-        class="cursor-pointer text-nowrap overflow-x-visible max-w-20">
+        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3">
       {{ compressVlanRange }}
     </td>
     <td v-else></td>

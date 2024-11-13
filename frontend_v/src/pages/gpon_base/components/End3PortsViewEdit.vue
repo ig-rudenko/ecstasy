@@ -19,10 +19,10 @@
 
     <div>
       <div class="flex items-center gap-3" v-for="subscriber in port.subscribers">
-        <a v-if="hasPermissionsToViewSubscriber"
-           :href="'/gpon/subscriber-data/customers/'+subscriber.customerID">
+        <router-link v-if="hasPermissionsToViewSubscriber"
+                     :to="{name: 'gpon-view-subscriber', params: {id: subscriber.customerID}}">
           <Button icon="pi pi-user" text :label="subscriber.customerName"></Button>
-        </a>
+        </router-link>
         <div v-else>{{ subscriber.customerName }}</div>
         <div class="font-mono p-2" v-tooltip="'Транзит'">{{ subscriber.transit }}</div>
       </div>
@@ -118,7 +118,7 @@ export default {
     updateTechCapabilityStatus(capability) {
       const data = {status: capability.status}
       this.handleRequest(
-          api.patch("/gpon/api/tech-data/tech-capability/" + capability.id, data)
+          api.patch("/api/v1/gpon/tech-data/tech-capability/" + capability.id, data)
       )
       this.$emit("changeStatus", capability.status)
     },

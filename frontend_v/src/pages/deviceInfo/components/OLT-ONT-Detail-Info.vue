@@ -27,7 +27,7 @@
       </div>
     </td>
 
-    <td :style="statusStyles(line[1])" class="font-mono">
+    <td :style="statusStyles(line[1])" class="font-mono dark:text-gray-950 dark:opacity-70">
       {{ line[1] }}
     </td>
 

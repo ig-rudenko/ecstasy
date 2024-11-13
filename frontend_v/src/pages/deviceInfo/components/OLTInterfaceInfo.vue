@@ -3,10 +3,10 @@
 
     <div class="flex flex-wrap gap-3 items-center">
       <div>
-        Всего <span class="px-2 rounded-full bg-primary text-white">{{ data.total_count }}</span>
+        Всего <span class="px-2 rounded-full bg-primary text-white dark:text-gray-950">{{ data.total_count }}</span>
       </div>
       <div>
-        Online <span class="px-2 rounded-full bg-green-500 text-white">{{ data.online_count }}</span>
+        Online <span class="px-2 rounded-full bg-green-500 text-white dark:text-gray-950">{{ data.online_count }}</span>
       </div>
 
       <Button v-if="showSubscribersData" @click="showSubscribersData=false"
@@ -87,7 +87,7 @@ export default defineComponent({
 
     getSubscribersData() {
       if (this.isEmpty(this.subscribersData)) {
-        api.get("/gpon/api/subscribers-on-device/" + this.deviceName + "?port=" + this.interface.name)
+        api.get("/api/v1/gpon/subscribers-on-device/" + this.deviceName + "?port=" + this.interface.name)
             .then(
                 (resp: AxiosResponse<any[]>) => {
                   this.addSubscribersData(resp.data)

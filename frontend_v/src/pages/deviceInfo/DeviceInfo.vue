@@ -116,16 +116,15 @@
       <table class="block">
         <thead>
         <tr>
-          <th scope="col"></th>
-          <th scope="col" style="text-align: center">Порт</th>
-          <th scope="col" style="text-align: center">Статус</th>
-          <th scope="col">Описание</th>
-          <th scope="col">
-            <a style="cursor: pointer" class="text-decoration-none"
-               @click="toggleInterfacesWithVlans">
-              <span v-if="withVlans">NO VLAN's</span>
+          <th class="px-3"></th>
+          <th class="px-3">Порт</th>
+          <th class="px-3">Статус</th>
+          <th class="px-3">Описание</th>
+          <th class="px-3">
+            <Button class="cursor-pointer mx-3" outlined size="small" @click="toggleInterfacesWithVlans">
+              <span v-if="withVlans">no VLAN's</span>
               <span v-else>+ VLAN's</span>
-            </a>
+            </Button>
           </th>
         </tr>
         </thead>

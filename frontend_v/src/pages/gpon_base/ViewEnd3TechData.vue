@@ -168,12 +168,12 @@ export default {
     }
   },
   mounted() {
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     })
 
     let url = window.location.href
-    api.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+    api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
         .then(resp => this.detailData = resp.data)
         .catch(reason => {
           this.errorStatus = reason.response.status
@@ -232,7 +232,7 @@ export default {
 
     updateEnd3Info() {
       this.handleRequest(
-          api.patch("/gpon/api/tech-data/end3/" + this.detailData.id, this.detailData)
+          api.patch("/api/v1/gpon/tech-data/end3/" + this.detailData.id, this.detailData)
       )
     },
 

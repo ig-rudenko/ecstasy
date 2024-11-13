@@ -248,7 +248,7 @@ export default {
         acceptClass: 'p-button-danger p-button-sm',
         defaultFocus: "reject",
         accept: () => {
-          api.delete("/gpon/api/tech-data/end3/" + end3.id).then(
+          api.delete("/api/v1/gpon/tech-data/end3/" + end3.id).then(
               () => {
                 this.$toast.add({
                   severity: 'error',

@@ -142,7 +142,7 @@ export default {
     },
 
     getAddresses() {
-      let url = "/gpon/api/addresses/buildings"
+      let url = "/api/v1/gpon/addresses/buildings"
       if (this.getFromDevicePort) {
         url += `?device=${this.getFromDevicePort.deviceName}&port=${this.getFromDevicePort.devicePort}`
       }

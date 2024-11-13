@@ -817,11 +817,11 @@ export default {
   methods: {
 
     getDeviceNames() {
-      api.get("/gpon/api/devices-names")
+      api.get("/api/v1/gpon/devices-names")
           .then(res => this._deviceNames = Array.from(res.data))
     },
     getPortsNames() {
-      api.get("/gpon/api/ports-names/" + this.formData.techData.deviceName)
+      api.get("/api/v1/gpon/ports-names/" + this.formData.techData.deviceName)
           .then(res => this._portsNames = Array.from(res.data))
     },
 
@@ -926,7 +926,7 @@ export default {
         connected_at: this.formData.connected_at,
       }
 
-      api.post("/gpon/api/subscriber-data", data)
+      api.post("/api/v1/gpon/subscriber-data", data)
           .then(resp => {
                 if (resp.status === 201) {
                   this.form_submitted_successfully = true

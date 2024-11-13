@@ -197,7 +197,7 @@ export default {
     }
   },
   mounted() {
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     })
     this.getTechData()
@@ -248,8 +248,8 @@ export default {
 
     getTechData() {
       let url = window.location.href
-      // /gpon/api/tech-data/building/{device_name}?port={olt_port}
-      api.get("/gpon/api/" + url.match(/tech-data\S+/)[0])
+      // /api/v1/gpon/tech-data/building/{device_name}?port={olt_port}
+      api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
           .then(resp => this.detailData = resp.data)
           .catch(reason => {
             this.errorStatus = reason.response.status
@@ -267,7 +267,7 @@ export default {
 
     getEnd3DetailInfo(oltID, end3Index) {
       const end3ID = this.detailData.oltStates[oltID].customerLines[end3Index].id
-      api.get("/gpon/api/tech-data/end3/" + end3ID)
+      api.get("/api/v1/gpon/tech-data/end3/" + end3ID)
           .then(resp => this.detailData.oltStates[oltID].customerLines[end3Index].detailInfo = resp.data.capability)
           .catch(reason => {
             this.detailData.oltStates[oltID].customerLines[end3Index].errorStatus = reason.response.status
@@ -298,7 +298,7 @@ export default {
         end3: newEnd3,
       }
       this.handleRequest(
-          api.post("/gpon/api/tech-data/end3", data), "Успешно создано"
+          api.post("/api/v1/gpon/tech-data/end3", data), "Успешно создано"
       ).then(() => {
         // Обновляем все данные, чтобы загрузить новый перечень End3
         this.getTechData();

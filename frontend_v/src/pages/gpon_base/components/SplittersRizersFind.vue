@@ -58,7 +58,7 @@ export default {
     }
   },
   mounted() {
-    let url = "/gpon/api/addresses/end3"
+    let url = "/api/v1/gpon/addresses/end3"
     if (this.fromAddressID) {
       url += "?address_id=" + this.fromAddressID
     }

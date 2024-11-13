@@ -114,7 +114,7 @@ export default {
     },
   },
   mounted() {
-    api.get("/gpon/api/customers")
+    api.get("/api/v1/gpon/customers")
         .then(resp => this._subscribers = resp.data)
         .catch(
             reason => {

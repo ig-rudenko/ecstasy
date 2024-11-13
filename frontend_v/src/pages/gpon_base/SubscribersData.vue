@@ -58,11 +58,11 @@ export default {
     }
   },
   mounted() {
-    api.get("/gpon/api/permissions").then(resp => {
+    api.get("/api/v1/gpon/permissions").then(resp => {
       this.userPermissions = resp.data
     })
 
-    api.get("/gpon/api/subscriber-data")
+    api.get("/api/v1/gpon/subscriber-data")
         .then(resp => this.gponSubscriberData = resp.data)
         .catch(reason => {
           this.errorStatus = reason.response.status
