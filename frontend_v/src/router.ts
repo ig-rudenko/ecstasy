@@ -18,6 +18,11 @@ const router = createRouter({
             component: () => import("@/pages/traceroute/Traceroute.vue"),
             name: "tools-traceroute"
         },
+        {
+            path: "/tools/wtf",
+            component: () => import("@/pages/wtf/WTFView.vue"),
+            name: "tools-wtf"
+        },
         {path: "/account/login", component: () => import("@/pages/login/Login.vue"), name: "login"},
 
         {path: "/maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps"},

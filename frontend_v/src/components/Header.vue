@@ -63,6 +63,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'WTF',
       icon: 'radar',
+      url: 'tools-wtf'
     })
   }
 

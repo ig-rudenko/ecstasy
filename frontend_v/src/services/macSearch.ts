@@ -54,6 +54,7 @@ class MacSearch {
     }
 
     async getMacDetail(mac: string) {
+        this.dialogVisible.value = true;
         this.lastMacDetail.value = null;
         try {
             const resp = await api.get<IPMACInfoResult>("/api/v1/tools/ip-mac-info/" + mac);
