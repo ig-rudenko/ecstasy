@@ -8,10 +8,32 @@ export interface MACDetail {
 }
 
 
+export interface IPMACInfoResult {
+    info: {
+        device: {
+            name: string;
+            ip: string;
+        };
+        results: {
+            mac: string;
+            ip: string;
+            vlan: string;
+            device_name: string;
+            port: string;
+        }[]
+    }[];
+    zabbix: {
+        name: string;
+        hostid: string;
+    }[];
+    zabbix_url: string;
+}
+
+
 class MacSearch {
-    public lastSearch: Ref<MACDetail|null> = ref(null);
-    public lastMac: Ref<string|null> = ref(null);
-    public lastMacDetail: Ref<string|null> = ref(null);
+    public lastSearch: Ref<MACDetail | null> = ref(null);
+    public lastMac: Ref<string | null> = ref(null);
+    public lastMacDetail: Ref<IPMACInfoResult | null> = ref(null);
     public dialogVisible: Ref<boolean> = ref(false);
 
     async searchMac(mac: string) {
@@ -34,10 +56,10 @@ class MacSearch {
     async getMacDetail(mac: string) {
         this.lastMacDetail.value = null;
         try {
-            const resp = await api.get<string>("/api/v1/tools/ip-mac-info/" + mac);
+            const resp = await api.get<IPMACInfoResult>("/api/v1/tools/ip-mac-info/" + mac);
             this.lastMacDetail.value = resp.data;
         } catch (error) {
-            this.lastMacDetail.value = "Не удалось определить";
+            this.lastMacDetail.value = null;
         }
         return this.lastMacDetail.value;
     }
