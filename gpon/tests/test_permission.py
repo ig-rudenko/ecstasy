@@ -7,7 +7,7 @@ User = get_user_model()
 
 
 class TestTechDataListCreateAPIView(APITestCase):
-    url = reverse("gpon:api:tech-data")
+    url = reverse("gpon-api:tech-data")
     view_permission_codenames = [
         "view_oltstate",
         "view_houseoltstate",
@@ -25,9 +25,7 @@ class TestTechDataListCreateAPIView(APITestCase):
         self.superuser = User.objects.create_superuser(
             username=f"{self.__class__.__name__}-superuser", password="password"
         )
-        self.user = User.objects.create_user(
-            username=f"{self.__class__.__name__}-user", password="password"
-        )
+        self.user = User.objects.create_user(username=f"{self.__class__.__name__}-user", password="password")
         self.view_group = Group.objects.create(name=f"view-{self.__class__.__name__}")
         perms = Permission.objects.filter(codename__in=self.view_permission_codenames)
         self.view_group.permissions.set(perms)
@@ -40,7 +38,7 @@ class TestTechDataListCreateAPIView(APITestCase):
 
     def test_api_view_access_by_anonymous(self):
         resp = self.client.get(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_api_view_access_by_user_without_permissions(self):
         self.client.force_login(self.user)
@@ -63,7 +61,7 @@ class TestTechDataListCreateAPIView(APITestCase):
 
     def test_api_create_access_by_anonymous(self):
         resp = self.client.post(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_api_create_access_by_user_without_permissions(self):
         self.client.force_login(self.user)
@@ -91,7 +89,7 @@ class TestTechDataListCreateAPIView(APITestCase):
 
 
 class TestViewBuildingTechDataAPIView(APITestCase):
-    url = reverse("gpon:api:view-building-tech-data", args=(1,))
+    url = reverse("gpon-api:view-building-tech-data", args=(1,))
     view_permission_codenames = [
         "view_oltstate",
         "view_houseoltstate",
@@ -103,9 +101,7 @@ class TestViewBuildingTechDataAPIView(APITestCase):
         self.superuser = User.objects.create_superuser(
             username=f"{self.__class__.__name__}-superuser", password="password"
         )
-        self.user = User.objects.create_user(
-            username=f"{self.__class__.__name__}-user", password="password"
-        )
+        self.user = User.objects.create_user(username=f"{self.__class__.__name__}-user", password="password")
         self.view_group = Group.objects.create(name=f"view-{self.__class__.__name__}")
         perms = Permission.objects.filter(codename__in=self.view_permission_codenames)
         self.view_group.permissions.set(perms)
@@ -114,7 +110,7 @@ class TestViewBuildingTechDataAPIView(APITestCase):
 
     def test_api_view_access_by_anonymous(self):
         resp = self.client.get(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_api_view_access_by_user_without_permissions(self):
         self.client.force_login(self.user)
@@ -135,11 +131,11 @@ class TestViewBuildingTechDataAPIView(APITestCase):
 
 
 class TestViewOLTStateTechDataAPIView(TestViewBuildingTechDataAPIView):
-    url = reverse("gpon:api:tech-data-olt-state", args=(1,))
+    url = reverse("gpon-api:tech-data-olt-state", args=(1,))
 
 
 class TestViewUpdateEnd3TechCapabilityAPIView(APITestCase):
-    url = reverse("gpon:api:tech-data-end3-capability", args=(1,))
+    url = reverse("gpon-api:tech-data-end3-capability", args=(1,))
     view_permission_codename = "view_end3"
     update_permission_codename = "change_end3"
 
@@ -147,9 +143,7 @@ class TestViewUpdateEnd3TechCapabilityAPIView(APITestCase):
         self.superuser = User.objects.create_superuser(
             username=f"{self.__class__.__name__}-superuser", password="password"
         )
-        self.user = User.objects.create_user(
-            username=f"{self.__class__.__name__}-user", password="password"
-        )
+        self.user = User.objects.create_user(username=f"{self.__class__.__name__}-user", password="password")
         self.view_group = Group.objects.create(name=f"view-{self.__class__.__name__}")
         perms = Permission.objects.get(codename=self.view_permission_codename)
         self.view_group.permissions.add(perms)
@@ -162,7 +156,7 @@ class TestViewUpdateEnd3TechCapabilityAPIView(APITestCase):
 
     def test_api_view_access_by_anonymous(self):
         resp = self.client.get(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_api_view_access_by_user_without_permissions(self):
         self.client.force_login(self.user)
@@ -185,7 +179,7 @@ class TestViewUpdateEnd3TechCapabilityAPIView(APITestCase):
 
     def test_api_update_access_by_anonymous(self):
         resp = self.client.put(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_api_update_access_by_user_without_permissions(self):
         self.client.force_login(self.user)
@@ -206,27 +200,28 @@ class TestViewUpdateEnd3TechCapabilityAPIView(APITestCase):
 
 
 class TestTechCapabilityAPIView(TestViewUpdateEnd3TechCapabilityAPIView):
-    url = reverse("gpon:api:tech-data-tech-capability", args=(1,))
+    url = reverse("gpon-api:tech-data-tech-capability", args=(1,))
     view_permission_codename = "view_techcapability"
     update_permission_codename = "change_techcapability"
 
 
 class TestRetrieveUpdateOLTStateAPIView(TestViewUpdateEnd3TechCapabilityAPIView):
-    url = reverse("gpon:api:tech-data-olt-state", args=(1,))
+    url = reverse("gpon-api:tech-data-olt-state", args=(1,))
     view_permission_codename = "view_oltstate"
     update_permission_codename = "change_oltstate"
 
 
 class TestRetrieveUpdateHouseOLTState(TestViewUpdateEnd3TechCapabilityAPIView):
-    url = reverse("gpon:api:tech-data-house-olt-state", args=(1,))
+    url = reverse("gpon-api:tech-data-house-olt-state", args=(1,))
     view_permission_codename = "view_houseoltstate"
     update_permission_codename = "change_houseoltstate"
 
 
 # ============== SUBSCRIBER DATA ===============
 
+
 class TestSubscriberConnectionListCreateAPIView(TestTechDataListCreateAPIView):
-    url = reverse("gpon:api:subscribers-data-list-create")
+    url = reverse("gpon-api:subscribers-data-list-create")
     view_permission_codenames = [
         "view_customer",
         "view_subscriberconnection",
@@ -238,11 +233,11 @@ class TestSubscriberConnectionListCreateAPIView(TestTechDataListCreateAPIView):
 
 
 class TestRetrieveUpdateCustomerDetailAPIView(TestViewUpdateEnd3TechCapabilityAPIView):
-    url = reverse("gpon:api:customer-detail", args=(1,))
+    url = reverse("gpon-api:customer-detail", args=(1,))
     view_permission_codename = "view_customer"
     update_permission_codename = "change_customer"
 
 
 class TestViewListAPIView(TestViewBuildingTechDataAPIView):
-    url = reverse("gpon:api:customers-list")
+    url = reverse("gpon-api:customers-list")
     view_permission_codenames = ["view_customer"]

@@ -35,18 +35,18 @@ class TestTechDataAPIView(APITestCase):
 
     def test_api(self):
         self.client.force_login(self.user)
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
         self.assertEqual(resp.status_code, 201)
 
         self.data["oltState"]["devicePort"] = "0/1/1"
-        resp = self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+        resp = self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
         self.assertEqual(resp.status_code, 201)
 
         self.data["oltState"]["devicePort"] = "0/1/2"
         for _ in range(8):
-            self.client.post(path=reverse("gpon:api:tech-data"), data=self.data, format="json")
+            self.client.post(path=reverse("gpon-api:tech-data"), data=self.data, format="json")
 
         with self.assertNumQueries(14):
-            resp = self.client.get(path=reverse("gpon:api:tech-data"))
+            resp = self.client.get(path=reverse("gpon-api:tech-data"))
             self.assertEqual(resp.status_code, 200)
             pprint(resp.data)

@@ -15,9 +15,9 @@ class CustomJWTAuthentication(JWTAuthentication):
                 return request.user
             user, token = data
             request._force_auth_token = token
-            request._force_auth_user = user or request.user
+            request._force_auth_user = user
         # print("CustomJWTAuthentication", request._force_auth_user)
-        return request._force_auth_user
+        return request._force_auth_user or request.user
 
 
 class JWTAuthenticationMiddleware(MiddlewareMixin):

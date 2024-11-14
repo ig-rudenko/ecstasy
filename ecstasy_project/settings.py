@@ -138,7 +138,7 @@ TEMPLATES = [
 ]
 
 if ENV == "dev":
-    TEMPLATES[0]["DIRS"].append(BASE_DIR / "frontend_v/dist")
+    TEMPLATES[0]["DIRS"].append(BASE_DIR / "frontend_v/dist")  # type: ignore
 
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
@@ -328,13 +328,6 @@ if not DEBUG:
             "handlers": ["console", "file"],
             "propagate": True,
         },
-        # "loggers": {
-        #     "django": {
-        #         "level": "INFO",
-        #         "handlers": ["file", "console"],
-        #         "propagate": True,
-        #     }
-        # },
     }
 
 # ================= JWT ===================
@@ -419,18 +412,3 @@ CONTACT_NAME = os.getenv("CONTACT_NAME")
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
 
 ECSTASY_LOOP_URL = os.getenv("ECSTASY_LOOP_URL")
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Ecstasy API",
-    "DESCRIPTION": f"""
-## Здесь вы можете посмотреть API для работы с Ecstasy
-
-Для работы с каждым endpoint `требуется токен` (JWT). Получить можно по URL `/api/token`.
-
-Время жизни access токена - `{SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]} минут`
-Время жизни refresh токена - `{SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
-        """,
-    "VERSION": "18.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-    # OTHER SETTINGS
-}

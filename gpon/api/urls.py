@@ -6,7 +6,7 @@ from . import views
 
 # /api/gpon/
 
-app_name = "api"
+app_name = "gpon-api"
 
 urlpatterns = [
     path("permissions", views.ListUserPermissions.as_view(), name="user-permissions"),

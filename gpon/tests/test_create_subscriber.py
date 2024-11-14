@@ -71,7 +71,7 @@ class TestSubscriberDataCreation(APITestCase):
     def test_create_api_view(self):
         self.client.force_login(self.superuser)
         resp = self.client.post(
-            reverse("gpon:api:subscribers-data-list-create"), data=self.data, format="json"
+            reverse("gpon-api:subscribers-data-list-create"), data=self.data, format="json"
         )
         self.assertEqual(resp.status_code, 201)
         self._after_created()
