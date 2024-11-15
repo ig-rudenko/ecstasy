@@ -19,19 +19,24 @@ const items = ref<MenuItem[]>([
     label: 'Оборудование',
     icon: 'devices',
     url: "/devices",
-  },
-  {
-    label: 'Консоль',
-    icon: 'console',
   }
 ]);
 
 
 const menuItems = computed(() => {
-  if (permissions.has("auth.access_ecstasy_loop")) {
+  if (permissions.hasConsoleAccess()) {
+    items.value.push({
+      label: 'Консоль',
+      icon: 'console',
+      url: permissions.getConsoleUrl() || "#",
+    })
+  }
+
+  if (permissions.hasEcstasyLoopPermission()) {
     items.value.push({
       label: 'Loop Detector',
       icon: 'loop',
+      url: permissions.getEcstasyLoopUrl() || "#",
     })
   }
 

@@ -3,18 +3,31 @@ import {ref} from "vue";
 import api from "@/services/api";
 
 
+interface PermissionResponse {
+    permissions: string[];
+    console: string | null;
+    ecstasy_loop_url: string | null;
+}
+
+
 class Permissions {
-    private perms = ref<string[]>([]);
+    private perms = ref<PermissionResponse>({
+            permissions: [], console: null, ecstasy_loop_url: null
+        }
+    );
 
     constructor() {
         this.load();
 
-        api.get<{ permissions: string[] }>("/api/v1/accounts/myself/permissions")
+        api.get<PermissionResponse>("/api/v1/accounts/myself/permissions")
             .then(value => {
-                if (value.data.permissions.length !== this.perms.value.length &&
-                    this.perms.value.every((p, i) => p === value.data.permissions[i])
+                if (
+                    value.data.permissions.length !== this.perms.value.permissions?.length &&
+                    this.perms.value.permissions?.every((p, i) => p === value.data.permissions[i]) ||
+                    this.perms.value.console !== value.data.console ||
+                    this.perms.value.ecstasy_loop_url !== value.data.ecstasy_loop_url
                 ) {
-                    this.perms.value.push(...value.data.permissions)
+                    this.perms.value = value.data;
                     this.save();
                 }
             })
@@ -30,11 +43,27 @@ class Permissions {
     }
 
     has(permission: string): boolean {
-        return this.perms.value.includes(permission);
+        return this.perms.value.permissions.includes(permission);
+    }
+
+    hasEcstasyLoopPermission(): boolean {
+        return this.perms.value.ecstasy_loop_url !== null;
+    }
+
+    getEcstasyLoopUrl(): string | null {
+        return this.perms.value.ecstasy_loop_url;
+    }
+
+    hasConsoleAccess(): boolean {
+        return this.perms.value.console !== null;
+    }
+
+    getConsoleUrl(): string | null {
+        return this.perms.value.console;
     }
 
     hasGPONAnyPermission(): boolean {
-        return this.perms.value.find(permission => permission.startsWith("gpon")) !== undefined;
+        return this.perms.value.permissions.find(permission => permission.startsWith("gpon")) !== undefined;
     }
 
 }
