@@ -25,12 +25,6 @@ function getMaps() {
 
 onMounted(() => {
   getMaps()
-//   const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
-//   const map = new Map("map", {layers: [osm], minZoom: 5});
-//   map.zoomControl.getContainer()?.remove()
-//   map.attributionControl.getContainer()?.remove()
-//   // map.addControl(new Control.Attribution());
-//   map.setView([44.61, 33.5], 13)
 })
 
 </script>
@@ -40,19 +34,17 @@ onMounted(() => {
 
   <div class="container mx-auto">
     <div v-if="maps" class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 py-5">
-      <div v-for="map in maps.results" :key="map.id" class="">
+      <div v-for="map in maps.results" :key="map.id">
         <div class="border rounded-xl shadow-sm h-full">
 
-          <router-link :to="{name: 'map-view', params: {id: map.id}}">
-            <div v-if="map.preview_image"
-                 class="rounded-t-xl"
-                 :style="{backgroundImage: 'url('+map.preview_image+')'}"
+          <a :href="'/maps/'+map.id">
+            <div v-if="map.preview_image" class="rounded-t-xl" :style="{backgroundImage: 'url('+map.preview_image+')'}"
                  style="max-height: 255px; min-height: 255px; background-size: cover;"></div>
             <svg v-else class="rounded-t-xl" width="100%" height="255"
                  xmlns="http://www.w3.org/2000/svg">
               <rect width="100%" height="100%" fill="#55595c"></rect>
             </svg>
-          </router-link>
+          </a>
 
           <div class="p-2">
             <div class="flex items-center justify-between">

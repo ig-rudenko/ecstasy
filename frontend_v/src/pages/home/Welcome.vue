@@ -68,49 +68,8 @@ setTimeout(timer, 300);
         </div>
       </div>
 
-      <router-link :to="{name: 'gpon'}" v-if="showGPONCard">
-        <div class="rounded-3xl shadow w-full text-gray-100"
-             style="background-image: url('/img/gpon/sphere-global.jpeg'); background-position: left; background-size: cover">
-          <div class="p-10">
-            <div class="text-2xl font-bold">База GPON</div>
-            <div class="flex flex-col gap-3 py-3">
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#list-icon"></use>
-                </svg>
-                <div>Отображение технических данных GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#splitter"></use>
-                </svg>
-                <div>Просмотр задействованных OLT портов</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#building"></use>
-                </svg>
-                <div>Подключение строений к сети GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#people"></use>
-                </svg>
-                <div>Управление абонентами GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#node-plus"></use>
-                </svg>
-                <div>Создание и просмотр подключений абонентов</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </router-link>
-
-      <router-link :to="{name: 'devices-list'}"
-                   class="rounded-3xl px-5 sm:px-10 py-5 border shadow flex flex-col md:flex-row justify-between gap-4">
+      <a href="/devices"
+         class="rounded-3xl px-5 sm:px-10 py-5 border shadow flex flex-col md:flex-row justify-between gap-4">
         <div class="">
           <div class="text-2xl py-5 font-bold">Управление оборудованием</div>
 
@@ -183,16 +142,57 @@ setTimeout(timer, 300);
         <div class="flex justify-center">
           <img class="h-[200px] sm:h-[350px]" src="/img/dev-box.svg" alt="device">
         </div>
-      </router-link>
+      </a>
 
-      <a v-if="showMapsCard" href="#" class="p-4 rounded-3xl shadow"
+      <a href="/gpon" v-if="showGPONCard">
+        <div class="rounded-3xl shadow w-full text-gray-100"
+             style="background-image: url('/img/gpon/sphere-global.jpeg'); background-position: left; background-size: cover">
+          <div class="p-10">
+            <div class="text-2xl font-bold">База GPON</div>
+            <div class="flex flex-col gap-3 py-3">
+              <div class="flex gap-2 items-center">
+                <svg class="bi me-2" width="16" height="16" role="img">
+                  <use xlink:href="#list-icon"></use>
+                </svg>
+                <div>Отображение технических данных GPON</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <svg class="bi me-2" width="16" height="16" role="img">
+                  <use xlink:href="#splitter"></use>
+                </svg>
+                <div>Просмотр задействованных OLT портов</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <svg class="bi me-2" width="16" height="16" role="img">
+                  <use xlink:href="#building"></use>
+                </svg>
+                <div>Подключение строений к сети GPON</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <svg class="bi me-2" width="16" height="16" role="img">
+                  <use xlink:href="#people"></use>
+                </svg>
+                <div>Управление абонентами GPON</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <svg class="bi me-2" width="16" height="16" role="img">
+                  <use xlink:href="#node-plus"></use>
+                </svg>
+                <div>Создание и просмотр подключений абонентов</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <a href="/maps" v-if="showMapsCard" class="p-4 rounded-3xl shadow"
          style="background-image: url('/img/maps/background.png'); background-position: center center; height: 200px">
         <div class="text-2xl text-gray-900 font-bold">Интерактивные карты</div>
       </a>
 
       <div class="md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
 
-        <router-link v-if="showTracerouteCard" :to="{name: 'tools-traceroute'}" class="">
+        <a href="/tools/traceroute" v-if="showTracerouteCard">
           <div class="text-center h-full p-4 py-8 rounded-3xl text-gray-200 shadow"
                style="
              background-image: url('/img/background.png');
@@ -208,9 +208,9 @@ setTimeout(timer, 300);
 
             <div class="">Отображение топологии конкретного VLAN, а также прохождение MAC адреса</div>
           </div>
-        </router-link>
+        </a>
 
-        <router-link :to="{name: 'tools-search'}" v-if="showDescSearchCard">
+        <a href="/tools/search" v-if="showDescSearchCard">
           <div class="text-center h-full p-4 py-8 border rounded-3xl shadow">
             <div class="text-2xl font-bold">Description search</div>
             <div class="py-5">
@@ -221,9 +221,9 @@ setTimeout(timer, 300);
               интерфейсах у каждого оборудования
             </p>
           </div>
-        </router-link>
+        </a>
 
-        <router-link to="/" v-if="showWTFCard">
+        <a href="/tools/wtf" v-if="showWTFCard">
           <div class="text-center h-full p-4 py-8 border rounded-3xl shadow bg-gray-800 text-gray-200">
             <div class="text-2xl font-bold">WTF search</div>
 
@@ -235,7 +235,7 @@ setTimeout(timer, 300);
             <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой Zabbix</p>
 
           </div>
-        </router-link>
+        </a>
       </div>
 
     </div>

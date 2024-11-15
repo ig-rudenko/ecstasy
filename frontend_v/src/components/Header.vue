@@ -8,7 +8,7 @@ import {getAvatar} from "@/formats";
 import {User} from "@/services/user";
 import permissions from "@/services/permissions";
 import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
-import router from "@/router.ts";
+import router from "@/router";
 import {MenuItem} from "primevue/menuitem";
 
 const store = useStore()
@@ -18,7 +18,7 @@ const items = ref<MenuItem[]>([
   {
     label: 'Оборудование',
     icon: 'devices',
-    url: "devices-list",
+    url: "/devices",
   },
   {
     label: 'Консоль',
@@ -39,7 +39,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Карты',
       icon: 'map',
-      url: 'maps',
+      url: '/maps',
     })
   }
 
@@ -47,7 +47,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Поиск',
       icon: 'search',
-      url: 'tools-search',
+      url: '/tools/search',
     })
   }
 
@@ -55,7 +55,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'Трассировка',
       icon: 'topology',
-      url: 'tools-traceroute',
+      url: '/tools/traceroute',
     })
   }
 
@@ -63,7 +63,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'WTF',
       icon: 'radar',
-      url: 'tools-wtf'
+      url: '/tools/wtf'
     })
   }
 
@@ -78,7 +78,7 @@ const menuItems = computed(() => {
     items.value.push({
       label: 'GPON',
       icon: 'gpon',
-      url: 'gpon',
+      url: '/gpon',
     })
   }
 
@@ -109,18 +109,17 @@ const toggle = () => {
              class="container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
              :pt="{itemContent: {class: 'bg-zinc-800 dark:!bg-gray-950'}}">
       <template #start>
-        <router-link :to="{name: 'home'}"
-                     class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none z-10">
+        <a href="/" class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none z-10">
           <img class="me-3 !w-[96px] !h-[96px] rounded-full" src="/video/logo.webp" alt="logo">
           <div style="font-family: 'Century Gothic', fantasy;"
                class="hidden sm:block ps-4 pr-10 text-gray-300 text-2xl sm:text-[2rem]">
             Ecstasy
           </div>
-        </router-link>
+        </a>
       </template>
 
       <template #item="{ item }">
-        <router-link :to="{name: item.url}">
+        <a :href="item.url">
           <div
               :class="currentRouteName?.toString().startsWith(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
               class="ps-4 md:ps-0 flex items-center md:block">
@@ -130,7 +129,7 @@ const toggle = () => {
               <span class="m-0 p-0 text-xl md:text-[0.7rem] text-gray-300 text-center">{{ item.label }}</span>
             </div>
           </div>
-        </router-link>
+        </a>
       </template>
 
       <template #end>

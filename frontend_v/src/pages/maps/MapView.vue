@@ -45,9 +45,7 @@ onMounted(async () => {
   await mapService.renderMapGroups();
 
   if (mapData.value?.interactive) {
-    mapService.renderMarkers().then(() => {
-      mapService?.startUpdate()
-    });
+    mapService.renderMarkers().then(() => update());
   } else {
     mapService.renderMarkers()
   }
@@ -56,8 +54,15 @@ onMounted(async () => {
 
 })
 
+function update() {
+  mapService?.update().then(
+      () => setTimeout(() => mapService?.update(), 15000)
+  );
+}
+
+
 onUnmounted(() => {
-  mapService?.stopUpdate();
+  mapService = null;
 })
 
 function searchElement() {

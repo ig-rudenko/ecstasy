@@ -38,9 +38,9 @@
 
           <Column field="device" header="Оборудование" :sortable="true" class="font-mono">
             <template #body="{data}">
-              <router-link :to="'/device/' + data.device">
+              <a :href="'/device/' + data.device">
                 <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']"/>
-              </router-link>
+              </a>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()"

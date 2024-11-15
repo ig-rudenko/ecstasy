@@ -78,12 +78,8 @@ const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 export class MapService {
     public mapData: MapBrief | null = null;
     public mapGroups: string[] = [];
-    // В микросекундах.
-    public updateInterval: number = 15000;
 
     public map: LMap;
-
-    private updateTimeout?: number;
 
     // Объект для хранения всех динамических маркеров, добавленных на карту.
     public points: Map<string, PointData> = new Map();
@@ -260,18 +256,9 @@ export class MapService {
         }
     }
 
-    stopUpdate() {
-        clearTimeout(this.updateTimeout)
-    }
-
-    async startUpdate() {
+    async update() {
         const problems = await this.getProblems();
-
-        // Если есть проблемные узлы сети
-        if (!problems.length) {
-            setTimeout(() => this.startUpdate(), this.updateInterval);
-            return;
-        }
+        if (!problems.length) return;
 
         // Список из точек текущих недоступных узлов сети на карте
         let problemsPointsBeforeUpdate: Map<string, PointData> = new Map();
@@ -339,9 +326,6 @@ export class MapService {
             value._origin = undefined;
             value.hasProblems = false;
         });
-
-        // @ts-ignore
-        this.updateTimeout = setTimeout(() => this.startUpdate(), this.updateInterval)
 
     }
 
