@@ -28,6 +28,7 @@ const menuItems = computed(() => {
       label: 'Консоль',
       icon: 'console',
       url: permissions.getConsoleUrl() || "#",
+      newPage: true,
     })
   }
 
@@ -36,6 +37,7 @@ const menuItems = computed(() => {
       label: 'Loop Detector',
       icon: 'loop',
       url: permissions.getEcstasyLoopUrl() || "#",
+      newPage: true,
     })
   }
 
@@ -121,7 +123,7 @@ const toggle = () => {
       </template>
 
       <template #item="{ item }">
-        <a :href="item.url">
+        <a :href="item.url" :target="item.newPage?'_blank':''">
           <div
               :class="isCurrent(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
               class="ps-4 md:ps-0 flex items-center md:block">

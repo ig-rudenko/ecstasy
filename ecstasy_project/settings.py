@@ -44,7 +44,7 @@ ENV = os.getenv("DJANGO_ENV", "dev")
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5174",
 ]
 
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
