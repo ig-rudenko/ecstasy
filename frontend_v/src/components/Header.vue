@@ -8,7 +8,6 @@ import {getAvatar} from "@/formats";
 import {User} from "@/services/user";
 import permissions from "@/services/permissions";
 import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
-import router from "@/router";
 import {MenuItem} from "primevue/menuitem";
 
 const store = useStore()
@@ -91,11 +90,9 @@ const menuItems = computed(() => {
 
 });
 
-
-const currentRouteName = computed(() => {
-  return router.currentRoute.value.name
-});
-
+function isCurrent(url: string) {
+  return location.pathname.startsWith(url);
+}
 
 const currentTheme = ref<ThemesValues>(getCurrentTheme());
 
@@ -126,7 +123,7 @@ const toggle = () => {
       <template #item="{ item }">
         <a :href="item.url">
           <div
-              :class="currentRouteName?.toString().startsWith(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
+              :class="isCurrent(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
               class="ps-4 md:ps-0 flex items-center md:block">
             <img :src="'/img/menu/'+item.icon+'.png'" class="md:mx-auto w-[48px] md:w-[54px] xl:w-[64px] mb-1"
                  :alt="item.icon"/>
