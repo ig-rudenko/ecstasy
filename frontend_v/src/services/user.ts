@@ -5,9 +5,9 @@ class LoginUserIsValid {
     passwordError: string = ""
 
     validateUsername(value: string): void {
-        if (value.length <= 3) {
+        if (value.length <= 2) {
             this.username = false;
-            this.usernameError = "Укажите более 3 символов";
+            this.usernameError = "Укажите более 2 символов";
             return;
         }
         this.username = true;
