@@ -5,6 +5,7 @@ import {
     divIcon,
     featureGroup,
     GeoJSON,
+    LatLng,
     LatLngExpression,
     Layer,
     Map as LMap,
@@ -220,7 +221,7 @@ export class MapService {
                 this.staticElements.push(
                     {
                         element: polyline,
-                        latlng: polyline.getCenter(),
+                        latlng: <LatLngExpression>polyline.getLatLngs()[0],
                         name: features[j].properties.name,
                         description: features[j].properties.description,
                     }
@@ -234,10 +235,11 @@ export class MapService {
                     defaultSettings.Polygon
                     // @ts-ignore
                 ).addTo(layer)
+                console.log(polygon.getLatLngs())
                 this.staticElements.push(
                     {
                         element: polygon,
-                        latlng: polygon.getCenter(),
+                        latlng: <LatLngExpression>(<LatLng[]>polygon.getLatLngs()[0])[0],
                         name: features[j].properties.name,
                         description: features[j].properties.description,
                     }
