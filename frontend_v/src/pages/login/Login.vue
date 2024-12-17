@@ -31,10 +31,6 @@ function handleLogin() {
               setTimeout(() => router.push({name: 'home'}))
             }
             processing.value = false;
-          },
-          () => {
-            userError.value = 'Неверный логин или пароль'
-            processing.value = false;
           }
       )
       .catch(
