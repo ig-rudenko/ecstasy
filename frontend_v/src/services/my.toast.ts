@@ -6,14 +6,12 @@ export function newToast(
     title: string, body: string,
     severity: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast' | undefined,
     lifeTime: number = basicLifeTime,
-    group: string = 'toast',
 ): void {
     app.config.globalProperties.$toast.add({
         severity: severity,
         summary: title,
         detail: body,
         life: lifeTime,
-        group: group
     });
 }
 
