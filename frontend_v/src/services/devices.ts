@@ -58,7 +58,7 @@ export class DevicesService {
 
     async changePortStatus(deviceName: string, data: ChangePortStatusRequest) {
         try {
-            const resp = await api.post<ChangePortStatusResponse>("/api/devices/" + deviceName + "/port-status", data)
+            const resp = await api.post<ChangePortStatusResponse>("/api/v1/devices/" + deviceName + "/port-status", data)
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось изменить статус порта", errorFmt(reason))
