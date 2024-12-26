@@ -5,6 +5,7 @@ import pexpect.exceptions
 from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from pyzabbix.api import logger
 
 from check.models import Devices
@@ -49,9 +50,22 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         finally:
             self.update_state()
 
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="0",
+            hour="1,3,5,7,9,11,13,15,17,19,21,23",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Сбор MAC адресов",
+            task=cls.name,
+            crontab=crontab,
+        )
+
 
 # Регистрация задачи в приложении Celery.
 mac_table_gather_task = app.register_task(MacTablesGatherTask())
+MacTablesGatherTask.register_task()
 
 
 def check_scanning_status() -> dict:
@@ -101,6 +115,19 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
 
         self.update_state()
 
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="30",
+            hour="4",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Сбор файлов конфигураций",
+            task=cls.name,
+            crontab=crontab,
+        )
+
 
 # Регистрация задачи в приложении Celery.
 configuration_gather_task = app.register_task(ConfigurationGatherTask())
+ConfigurationGatherTask.register_task()

@@ -3,6 +3,7 @@ import logging
 from celery.result import AsyncResult
 from django.core.cache import cache
 from pyzabbix.api import logger
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
 from check.models import Devices as ModelDevices
 from check.services.device.interfaces_collector import DeviceDBSynchronizer
@@ -44,8 +45,21 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
         self.update_state()
 
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="0",
+            hour="*/2",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Опрос интерфейсов оборудования",
+            task=cls.name,
+            crontab=crontab,
+        )
+
 
 interfaces_scan = app.register_task(InterfacesScanTask())
+InterfacesScanTask.register_task()
 
 
 def check_scanning_status() -> dict:
