@@ -13,8 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="bras",
             name="ip",
-            field=models.GenericIPAddressField(
-                protocol="ipv4", unique=True, verbose_name="IP адрес"
-            ),
+            field=models.GenericIPAddressField(protocol="ipv4", unique=True, verbose_name="IP адрес"),
         ),
     ]

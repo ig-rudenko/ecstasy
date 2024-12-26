@@ -3,6 +3,7 @@
 # Модели для оборудования
 
 """
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
@@ -19,9 +20,7 @@ class DeviceGroup(models.Model):
     """Группа для оборудования"""
 
     name = models.CharField(max_length=100, verbose_name="Название")
-    description = models.TextField(
-        max_length=255, null=True, blank=True, verbose_name="Описание"
-    )
+    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
 
     def __str__(self):
         return f"[ {self.name} ]"
@@ -45,9 +44,7 @@ class AuthGroup(models.Model):
         blank=True,
         verbose_name="Пароль от привилегированного режима",
     )
-    description = models.TextField(
-        max_length=255, null=True, blank=True, verbose_name="Описание"
-    )
+    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
 
     def __str__(self):
         return f"< {self.name} >"
@@ -64,9 +61,7 @@ class Devices(models.Model):
 
     PROTOCOLS = (("snmp", "snmp"), ("telnet", "telnet"), ("ssh", "ssh"))
 
-    group = models.ForeignKey(
-        DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name="Группа"
-    )
+    group = models.ForeignKey(DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name="Группа")
     ip = models.GenericIPAddressField(
         protocol="ipv4",
         null=False,
@@ -95,6 +90,13 @@ class Devices(models.Model):
         verbose_name="Производитель",
         help_text="Если не указано, то обновится автоматически при подключении к устройству",
     )
+    serial_number = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="Серийный номер",
+        help_text="Если не указано, то обновится автоматически при подключении к устройству",
+    )
     auth_group = models.ForeignKey(
         AuthGroup,
         on_delete=models.SET_NULL,
@@ -111,8 +113,7 @@ class Devices(models.Model):
         null=True,
         blank=True,
         verbose_name="SNMP community",
-        help_text="Версия - v2c. Используется для сбора интерфейсов, если указан "
-        "протокол - SNMP",
+        help_text="Версия - v2c. Используется для сбора интерфейсов, если указан " "протокол - SNMP",
     )
     port_scan_protocol = models.CharField(
         choices=PROTOCOLS,
@@ -120,8 +121,7 @@ class Devices(models.Model):
         default="telnet",
         null=False,
         verbose_name="Протокол для поиска интерфейсов",
-        help_text="Выберите протокол, с помощью которого будет "
-        "осуществляться сканирование интерфейсов",
+        help_text="Выберите протокол, с помощью которого будет " "осуществляться сканирование интерфейсов",
     )
     cmd_protocol = models.CharField(
         choices=PROTOCOLS[1:],
@@ -132,6 +132,36 @@ class Devices(models.Model):
         help_text="Выберите протокол, с помощью которого будет "
         "осуществляться подключение для вызова команд "
         "(например: поиск MAC адресов или сброс порта)",
+    )
+    interface_pattern = models.CharField(
+        default="",
+        blank=True,
+        max_length=255,
+        verbose_name="Паттерн имени интерфейса",
+        help_text=r"Паттерн, по которому отфильтрованы интерфейсы. "
+                  r"Например `^gi\S+|^eth\S+`. По умолчанию все интерфейсы.",
+    )
+    active = models.BooleanField(
+        default=True,
+        verbose_name="Активно",
+    )
+    collect_interfaces = models.BooleanField(
+        default=True,
+        verbose_name="Сбор интерфейсов",
+        help_text="Если включено, то будут собраны интерфейсы "
+                  'во время периодической задачи "interfaces_scan"',
+    )
+    collect_mac_addresses = models.BooleanField(
+        default=True,
+        verbose_name="Сбор MAC адресов",
+        help_text="Если включено, то будут собраны MAC адреса "
+                  'во время периодической задачи "mac_table_gather_task"',
+    )
+    collect_configurations = models.BooleanField(
+        default=True,
+        verbose_name="Сбор конфигураций",
+        help_text="Если включено, то будут собраны конфигурации "
+                  'во время периодической задачи "configuration_gather_task"',
     )
 
     def __str__(self):
@@ -207,9 +237,7 @@ class Bras(models.Model):
     """
 
     name = models.CharField(max_length=10, null=False, verbose_name="Название")
-    ip = models.GenericIPAddressField(
-        protocol="ipv4", null=False, unique=True, verbose_name="IP адрес"
-    )
+    ip = models.GenericIPAddressField(protocol="ipv4", null=False, unique=True, verbose_name="IP адрес")
     login = models.CharField(max_length=64, null=False, verbose_name="Логин")
     password = models.CharField(max_length=64, null=False, verbose_name="Пароль")
     secret = models.CharField(
@@ -259,15 +287,9 @@ class Profile(models.Model):
         (UP_DOWN, "Изменение состояния порта"),
         (BRAS, "Сброс сессий клиента"),
     )
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, primary_key=True, verbose_name="Пользователь"
-    )
-    permissions = models.CharField(
-        choices=PERMS, default=READ, max_length=15, verbose_name="Уровень доступа"
-    )
-    devices_groups = models.ManyToManyField(
-        DeviceGroup, verbose_name="Доступные группы оборудования"
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, verbose_name="Пользователь")
+    permissions = models.CharField(choices=PERMS, default=READ, max_length=15, verbose_name="Уровень доступа")
+    devices_groups = models.ManyToManyField(DeviceGroup, verbose_name="Доступные группы оборудования")
     port_guard_pattern = models.CharField(
         max_length=500,
         null=True,
@@ -281,9 +303,7 @@ class Profile(models.Model):
         verbose_name="Доступ к консоли",
         help_text="Доступ к консоли сервера удаленных подключений",
     )
-    console_url = models.CharField(
-        default="", max_length=500, blank=True, verbose_name="URL консоли"
-    )
+    console_url = models.CharField(default="", max_length=500, blank=True, verbose_name="URL консоли")
 
     @property
     def perm_level(self) -> int:
@@ -303,12 +323,8 @@ class UsersActions(models.Model):
     """Логирование действий пользователя"""
 
     time = models.DateTimeField(auto_now_add=True, verbose_name="Дата/время")
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Пользователь"
-    )
-    device = models.ForeignKey(
-        Devices, on_delete=models.CASCADE, null=True, verbose_name="Оборудование"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    device = models.ForeignKey(Devices, on_delete=models.CASCADE, null=True, verbose_name="Оборудование")
     action = models.TextField(max_length=1024, verbose_name="Действия")
 
     class Meta:

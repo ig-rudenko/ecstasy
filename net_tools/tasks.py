@@ -14,7 +14,7 @@ from ecstasy_project.task import ThreadUpdatedStatusTask
 class InterfacesScanTask(ThreadUpdatedStatusTask):
     max_workers = 80
     name = "interfaces_scan"
-    queryset = ModelDevices.objects.all()
+    queryset = ModelDevices.objects.filter(active=True, collect_interfaces=True)
 
     def pre_run(self):
         super().pre_run()

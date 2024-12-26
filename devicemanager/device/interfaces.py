@@ -316,4 +316,8 @@ class Interfaces:
 
     def filter_by_desc(self, pattern: str):
         """Интерфейсы, описание которых совпадает с шаблоном"""
-        return Interfaces([i for i in self.__interfaces if re.findall(pattern, i.desc)])
+        return Interfaces([i for i in self.__interfaces if re.match(pattern, i.desc)])
+
+    def filter_by_name(self, pattern: str):
+        """Интерфейсы, имя которых совпадает с шаблоном"""
+        return Interfaces([i for i in self.__interfaces if re.match(pattern, i.name)])

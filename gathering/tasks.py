@@ -25,7 +25,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
     """
 
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all()
+    queryset = Devices.objects.filter(active=True, collect_mac_addresses=True)
     max_workers = 80
 
     def pre_run(self):
@@ -87,7 +87,7 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     """
 
     name = "configuration_gather_task"
-    queryset = Devices.objects.all()
+    queryset = Devices.objects.filter(active=True, collect_configurations=True)
 
     def thread_task(self, obj: Devices, **kwargs):
         storage = LocalConfigStorage(obj)

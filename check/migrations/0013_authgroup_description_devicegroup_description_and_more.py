@@ -16,16 +16,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="authgroup",
             name="description",
-            field=models.TextField(
-                blank=True, max_length=255, null=True, verbose_name="Описание"
-            ),
+            field=models.TextField(blank=True, max_length=255, null=True, verbose_name="Описание"),
         ),
         migrations.AddField(
             model_name="devicegroup",
             name="description",
-            field=models.TextField(
-                blank=True, max_length=255, null=True, verbose_name="Описание"
-            ),
+            field=models.TextField(blank=True, max_length=255, null=True, verbose_name="Описание"),
         ),
         migrations.AlterField(
             model_name="authgroup",
@@ -115,16 +111,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="devices",
             name="model",
-            field=models.CharField(
-                blank=True, max_length=100, null=True, verbose_name="Модель"
-            ),
+            field=models.CharField(blank=True, max_length=100, null=True, verbose_name="Модель"),
         ),
         migrations.AlterField(
             model_name="devices",
             name="name",
-            field=models.CharField(
-                max_length=100, unique=True, verbose_name="Имя оборудования"
-            ),
+            field=models.CharField(max_length=100, unique=True, verbose_name="Имя оборудования"),
         ),
         migrations.AlterField(
             model_name="devices",
@@ -149,9 +141,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="devices",
             name="vendor",
-            field=models.CharField(
-                max_length=100, null=True, verbose_name="Производитель"
-            ),
+            field=models.CharField(max_length=100, null=True, verbose_name="Производитель"),
         ),
         migrations.AlterField(
             model_name="profile",

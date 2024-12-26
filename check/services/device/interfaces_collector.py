@@ -38,6 +38,10 @@ class DeviceInterfacesGather:
             raise_exception=True,
             make_session_global=make_session_global,
         )
+        if self.device.interface_pattern:
+            self.device_collector.interfaces = self.device_collector.interfaces.filter_by_name(
+                self.device.interface_pattern
+            )
 
     def get_last_interfaces(self) -> tuple[list, datetime]:
         """
@@ -71,17 +75,21 @@ class DeviceInterfacesGather:
 class DeviceDBSynchronizer(DeviceInterfacesGather):
     def sync_device_info_to_db(self) -> None:
         """
-        ## Обновляем информацию об устройстве (вендор, модель) в БД.
+        ## Обновляем информацию об устройстве (вендор, модель, серийный номер) в БД.
         """
         actual_inventory: ZabbixInventory = self.device_collector.zabbix_info.inventory
 
-        for field_name in ["vendor", "model"]:
-            inventory_field_value = getattr(actual_inventory, field_name)
-            dev_field_value = getattr(self.device, field_name)
+        if self.device_collector.zabbix_info.inventory.model != self.device.model:
+            self.device.model = actual_inventory.model
+            self.model_update_fields.append("model")
 
-            if inventory_field_value and inventory_field_value != dev_field_value:
-                setattr(self.device, field_name, inventory_field_value)
-                self.model_update_fields.append(field_name)
+        if self.device_collector.zabbix_info.inventory.vendor != self.device.vendor:
+            self.device.vendor = actual_inventory.vendor
+            self.model_update_fields.append("vendor")
+
+        if self.device_collector.zabbix_info.inventory.serialno_a != self.device.serial_number:
+            self.device.serial_number = actual_inventory.serialno_a
+            self.model_update_fields.append("serial_number")
 
         # Сохраняем изменения
         if self.model_update_fields:

@@ -29,9 +29,7 @@ class Migration(migrations.Migration):
                 ("comment", models.TextField()),
                 (
                     "device",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="check.devices"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="check.devices"),
                 ),
                 (
                     "user",

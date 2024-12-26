@@ -1,6 +1,7 @@
 """
 Модуль предоставляет функциональность для создания Excel-файлов на основе переданной выборки из модели.
 """
+
 import orjson
 import xlwt
 from django.db.models import QuerySet
@@ -67,9 +68,7 @@ class ExcelExport:
         в которой будут отображаться значения для некоторых колонок.
         """
         for column_name, total_value in self.total.items():
-            self._sheet.write(
-                to_row, self.excel_headers.index(column_name), f"Всего: {total_value}"
-            )
+            self._sheet.write(to_row, self.excel_headers.index(column_name), f"Всего: {total_value}")
 
     def _get_query_value_data(self, query_data: dict, value: str) -> dict:
         return getattr(self, f"get_{value}")(query_data)
@@ -149,9 +148,7 @@ class DevicesInterfacesWorkloadExcelExport(ExcelExport):
         Получение количества интерфейсов,
         абонентских портов и задействованных абонентских портов устройства.
         """
-        interfaces = Interfaces(
-            orjson.loads(query_element.get("devicesinfo__interfaces") or "[]")
-        )
+        interfaces = Interfaces(orjson.loads(query_element.get("devicesinfo__interfaces") or "[]"))
         interfaces = interfaces.physical()
 
         non_system = interfaces.non_system()
