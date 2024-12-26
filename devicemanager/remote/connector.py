@@ -72,20 +72,26 @@ class RemoteDevice(
 
     def _remote_call(self, method: str, **params):
         url = f"{self._remote_connector_address}/connector/{self.ip}/{method}"
-        resp = self._session.post(
-            url=url,
-            json={
-                "connection": {
-                    "cmd_protocol": self._cmd_protocol,
-                    "port_scan_protocol": self._port_scan_protocol,
-                    "snmp_community": self._snmp_community,
-                    "make_session_global": self._make_session_global,
+        try:
+            resp = self._session.post(
+                url=url,
+                json={
+                    "connection": {
+                        "cmd_protocol": self._cmd_protocol,
+                        "port_scan_protocol": self._port_scan_protocol,
+                        "snmp_community": self._snmp_community,
+                        "make_session_global": self._make_session_global,
+                    },
+                    "auth": self._remote_auth,
+                    "params": params,
                 },
-                "auth": self._remote_auth,
-                "params": params,
-            },
-            timeout=self._timeout,
-        )
+                timeout=self._timeout,
+            )
+        except requests.exceptions.ConnectionError:
+            raise requests.exceptions.ConnectionError(f"Не удалось подключиться к DeviceConnector")
+        except requests.exceptions.Timeout:
+            raise requests.exceptions.ConnectTimeout(f"Время ожидания ответа от DeviceConnector")
+
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
         elif resp.status_code == 401:

@@ -5,6 +5,7 @@ import pexpect.exceptions
 from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from pyzabbix.api import logger
 
 from check.models import Devices
@@ -25,7 +26,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
     """
 
     name = "mac_table_gather_task"
-    queryset = Devices.objects.all()
+    queryset = Devices.objects.filter(active=True, collect_mac_addresses=True)
     max_workers = 80
 
     def pre_run(self):
@@ -48,6 +49,18 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
             print(f"{obj} --> {error}")
         finally:
             self.update_state()
+
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="0",
+            hour="1,3,5,7,9,11,13,15,17,19,21,23",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Сбор MAC адресов",
+            task=cls.name,
+            crontab=crontab,
+        )
 
 
 # Регистрация задачи в приложении Celery.
@@ -73,6 +86,7 @@ def check_scanning_status() -> dict:
 
     return {
         "status": None,
+        "progress": None,
     }
 
 
@@ -86,7 +100,7 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     """
 
     name = "configuration_gather_task"
-    queryset = Devices.objects.all()
+    queryset = Devices.objects.filter(active=True, collect_configurations=True)
 
     def thread_task(self, obj: Devices, **kwargs):
         storage = LocalConfigStorage(obj)
@@ -99,6 +113,18 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
             print(f"configuration_gather_task {error.message} {obj}")
 
         self.update_state()
+
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="30",
+            hour="4",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Сбор файлов конфигураций",
+            task=cls.name,
+            crontab=crontab,
+        )
 
 
 # Регистрация задачи в приложении Celery.

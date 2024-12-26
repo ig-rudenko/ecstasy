@@ -1,0 +1,2 @@
+clear;
+telnet "$1";

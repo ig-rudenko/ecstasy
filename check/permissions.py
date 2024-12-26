@@ -34,10 +34,7 @@ def profile_permission(required_perm=models.Profile.READ):
             required_perm_idx = all_permissions.index(required_perm)
 
             # Если суперпользователь или его уровень привилегий равен или выше требуемых
-            if (
-                request.user.is_superuser
-                or request.user.profile.perm_level >= required_perm_idx
-            ):
+            if request.user.is_superuser or request.user.profile.perm_level >= required_perm_idx:
                 return func(request, *args, **kwargs)  # Выполняем функцию
 
             return HttpResponseForbidden()  # Недостаточно прав

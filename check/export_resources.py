@@ -17,5 +17,5 @@ class DevicesResource(resources.ModelResource):
 
     class Meta:
         model = Devices
-        fields = ('ip', 'name', 'vendor', 'model', 'auth_group', 'group')
-        export_order = ('ip', 'name', 'vendor', 'model', 'auth_group', 'group')
+        fields = ("ip", "name", "vendor", "model", "auth_group", "group")
+        export_order = ("ip", "name", "vendor", "model", "auth_group", "group")

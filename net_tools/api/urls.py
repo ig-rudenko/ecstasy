@@ -1,7 +1,8 @@
 from django.urls import path
+
 from net_tools.api import views
 
-# /tools/api/
+# /api/v1/tools/
 
 urlpatterns = [
     path("find-by-desc", views.find_by_description),

@@ -82,3 +82,7 @@ class ThreadUpdatedStatusTask(Task):
             meta=meta or {"progress": int(self.objects_scanned / self.objects_count * 100)},
             **kwargs
         )
+
+    @classmethod
+    def register_task(cls):
+        pass

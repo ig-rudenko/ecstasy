@@ -5,7 +5,6 @@ from typing import cast
 import orjson
 from django import forms
 from django.contrib import admin
-from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import SafeString, mark_safe
 from pyzabbix import ZabbixAPIException
@@ -376,9 +375,9 @@ class LayersAdmin(admin.ModelAdmin):
             feature_types[feature_type]["count"] += 1
 
             colour = (
-                    feature.get("properties", {}).get("fill", "")
-                    or feature.get("properties", {}).get("marker-color", "")
-                    or feature.get("properties", {}).get("stroke", "")
+                feature.get("properties", {}).get("fill", "")
+                or feature.get("properties", {}).get("marker-color", "")
+                or feature.get("properties", {}).get("stroke", "")
             )
             if colour:
                 feature_types[feature_type]["colours"][colour] += 1
@@ -416,9 +415,8 @@ class MapsAdmin(admin.ModelAdmin):
 
     @admin.display(description="Открыть")
     def url(self, instance: Maps):
-        url = reverse("interactive-map-show", args=[instance.pk])
         return format_html(
-            f"""<a href='{url}' target='_blank'><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+            f"""<a href='/maps/{instance.id}' target='_blank'><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
               <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
               <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
             </svg></a>""",

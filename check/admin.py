@@ -55,6 +55,7 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 @admin.register(Devices)
 class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     """Управление оборудованием"""
+
     resource_class = DevicesResource
 
     list_display = [
@@ -85,14 +86,26 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     list_per_page = 50
 
     fieldsets = (
-        ("Характеристика", {"fields": ("ip", "name"), "classes": ("wide",)}),
-        ("Тип", {"fields": ("vendor", "model")}),
-        ("Принадлежность", {"fields": ("group", "auth_group")}),
+        (
+            "Характеристика",
+            {"fields": ("ip", "name", "active"), "classes": ("wide",)},
+        ),
+        (
+            "Тип",
+            {"fields": ("vendor", "model", "serial_number")},
+        ),
+        (
+            "Принадлежность",
+            {"fields": ("group", "auth_group")},
+        ),
         (
             "Удаленное подключение",
             {"fields": ("snmp_community", "port_scan_protocol", "cmd_protocol")},
         ),
-        ("Интерфейсы", {"fields": ("show_interfaces",)}),
+        (
+            "Интерфейсы",
+            {"fields": ("interface_pattern", "show_interfaces")},
+        ),
     )
     actions = [
         "excel_interfaces_export",
@@ -142,9 +155,16 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         interfaces = (
             str(Interfaces(orjson.loads(obj.devicesinfo.interfaces or "[]")))
             .replace("\n", "<br>")
-            .replace(" ", "&nbsp; ")
+            .replace(" ", "&nbsp;")
         )
-        return format_html(f"<div>{interfaces}</div>")
+        return format_html(
+            f"""
+            <div style"overflow-x: scroll;">
+                <div style="font-family: monospace; white-space: nowrap;">
+                    {interfaces}
+                </div>
+            </div>"""
+        )
 
     @admin.display(description="Посмотреть")
     def show_device(self, obj: Devices):
@@ -204,10 +224,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
 
         datetime_part = datetime.now().strftime("%d %b %Y %Hh %Mm")
 
-        zip_file_path = (
-            archive_storage_dir
-            / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
-        )
+        zip_file_path = archive_storage_dir / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
 
         with zipfile.ZipFile(zip_file_path, "w") as my_zip:
             for file in config_files_path_list:
@@ -217,13 +234,9 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
                     file_path = str(file.absolute().as_posix())
 
                 file_name_with_parent_folder = file_path.split("/")[-2:]
-                my_zip.write(
-                    filename=file, arcname="/".join(file_name_with_parent_folder)
-                )
+                my_zip.write(filename=file, arcname="/".join(file_name_with_parent_folder))
 
-        response = HttpResponse(
-            zip_file_path.open("rb"), content_type="application/x-zip-compressed"
-        )
+        response = HttpResponse(zip_file_path.open("rb"), content_type="application/x-zip-compressed")
         response["Content-Disposition"] = f"attachment; filename={zip_file_path.name}"
         zip_file_path.unlink()
         return response
@@ -255,6 +268,7 @@ class ProfileAdmin(admin.ModelAdmin):
 
     list_display = ["user", "permissions", "dev_groups", "console_access"]
     list_select_related = ["user"]
+    filter_horizontal = ["devices_groups"]
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):

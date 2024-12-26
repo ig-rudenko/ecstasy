@@ -5,7 +5,6 @@ import requests as requests_lib
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.cache import cache
 from django.http import HttpResponse
-from django.shortcuts import render
 from pyvis.network import Network
 from requests import RequestException
 from rest_framework.decorators import api_view
@@ -82,6 +81,7 @@ def find_by_description(request):
     return Response({"interfaces": result})
 
 
+@api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_wtf_search", raise_exception=True)
 def ip_mac_info(request, ip_or_mac: str):
@@ -109,15 +109,11 @@ def ip_mac_info(request, ip_or_mac: str):
                     filter={"ip": ips},
                     selectInterfaces=["ip"],
                 )
-            names = [[h["name"], h["hostid"]] for h in hosts if h["status"] == "0"]
+            names = [{"name": h["name"], "hostid": h["hostid"]} for h in hosts if h["status"] == "0"]
         except RequestException:
             pass
 
-    return render(
-        request,
-        "tools/mac_result_for_modal.html",
-        {"info": arp_info, "zabbix": names, "zabbix_url": zabbix_url},
-    )
+    return Response({"info": arp_info, "zabbix": names, "zabbix_url": zabbix_url})
 
 
 @get_vlan_desc_schema

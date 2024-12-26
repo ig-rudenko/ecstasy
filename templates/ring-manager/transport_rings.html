@@ -2,14 +2,14 @@
 {% load static %}
 
 {% block title %}
-Транспортные кольца
+    Транспортные кольца
 {% endblock %}
 
 {% block content %}
-<div id="app"></div>
+    <div id="app"></div>
 {% endblock %}
 
 {% block js %}
-{% csrf_token %}
-<script src="{% static 'js/transport_ring_v17.7.5.js' %}"></script>
+    {% csrf_token %}
+    <script src="{% static 'js/transport_ring_v17.7.5.js' %}"></script>
 {% endblock %}

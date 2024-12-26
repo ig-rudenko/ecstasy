@@ -26,24 +26,18 @@ def log(
         or not isinstance(model_device, (models.Devices, models.Bras))
         or not isinstance(operation, str)
     ):
-        django_actions_logger.info(
-            f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}"
-        )
+        django_actions_logger.info(f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}")
         return
 
     # В базу
     # Получение максимальной длины поля «действие» в модели UsersActions.
-    operation_max_length: int = (
-        models.UsersActions._meta.get_field("action").max_length or 100
-    )
+    operation_max_length: int = models.UsersActions._meta.get_field("action").max_length or 100
     if len(operation) > operation_max_length:
         operation = operation[:operation_max_length]
 
     # Проверка того, является ли model_device экземпляром класса models.Devices.
     if isinstance(model_device, models.Devices):
-        models.UsersActions.objects.create(
-            user=user, device=model_device, action=operation
-        )
+        models.UsersActions.objects.create(user=user, device=model_device, action=operation)
         # В файл
         django_actions_logger.info(
             f"| {user.username:<10} | {model_device.name} ({model_device.ip}) | {operation}"
@@ -55,6 +49,4 @@ def log(
             user=user, action=f"{model_device} | {operation}"[:operation_max_length]
         )
         # В файл
-        django_actions_logger.info(
-            f"| {user.username:<10} | {model_device} | {operation}"
-        )
+        django_actions_logger.info(f"| {user.username:<10} | {model_device} | {operation}")

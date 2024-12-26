@@ -30,7 +30,7 @@ class DevicesListAPIViewTestCase(APITestCase):
     def test_get_devices_list_without_authentication(self):
         """Убедитесь, что GET запрос списка устройств без аутентификации возвращает 403 ответ"""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get_devices_list_with_authentication(self):
         """Убедитесь, что GET запрос списка устройств с аутентификацией возвращает список устройств"""
@@ -94,7 +94,7 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
     def test_get_all_device_interfaces_workload_without_authentication(self):
         """Убедитесь, что GET запрос списка устройств без аутентификации возвращает 403 ответ"""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get_all_device_interfaces_workload_without_cache(self):
         self.client.force_authenticate(user=self.user)
@@ -423,7 +423,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
 
     def test_view_requires_authentication(self):
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_view_requires_device_permission(self):
         user = User.objects.create_user(username="user123")
@@ -493,7 +493,7 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         self.client.force_authenticate(user=None)
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         mock_connect.assert_not_called()
 

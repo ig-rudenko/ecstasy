@@ -111,7 +111,7 @@ class WriteOnlyHouseBAddressSerializer(AddressSerializer):
         ]
 
 
-class HouseOLTStateSerializer(serializers.ModelSerializer):
+class CreateHouseOLTStateSerializer(serializers.ModelSerializer):
     address = WriteOnlyHouseBAddressSerializer(source="house.address", write_only=True)
 
     class Meta:
@@ -200,7 +200,9 @@ class CreateTechDataSerializer(serializers.Serializer):
     oltState = OLTStateSerializer(
         error_messages={"required": "Обязательный параметр для данных OLT состояния"}
     )
-    houseB = HouseOLTStateSerializer(error_messages={"required": "Обязательный параметр для данных строения"})
+    houseB = CreateHouseOLTStateSerializer(
+        error_messages={"required": "Обязательный параметр для данных строения"}
+    )
     end3 = End3CreateListSerializer(
         error_messages={"required": "Обязательный параметр для данных splitter/rizer"}
     )
@@ -217,7 +219,7 @@ class CreateTechDataSerializer(serializers.Serializer):
         """
         olt_state = OLTStateSerializer.create(validated_data["oltState"])
 
-        house_olt_state = HouseOLTStateSerializer.create(validated_data["houseB"])
+        house_olt_state = CreateHouseOLTStateSerializer.create(validated_data["houseB"])
         house_olt_state.statement = olt_state
         house_olt_state.save(update_fields=["statement"])
 

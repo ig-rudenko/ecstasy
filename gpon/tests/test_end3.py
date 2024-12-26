@@ -38,9 +38,7 @@ class TestEnd3TechCapabilitySerializer(TestCase):
             self.assertEqual(end3.techcapability_set.count(), update_capacity_count)
             # Проверяем порядок нумерации
             for i, tech in enumerate(end3.techcapability_set.all().order_by("number"), 1):
-                self.assertEqual(
-                    tech.number, i, msg="Порядок нумерации после изменения ёмкости был нарушен"
-                )
+                self.assertEqual(tech.number, i, msg="Порядок нумерации после изменения ёмкости был нарушен")
 
     def test_end3_update_location(self):
         end3 = End3.objects.first()
@@ -90,7 +88,7 @@ class TestEnd3TechCapabilityAPIView(APITestCase):
     def test_retrieve_end3_data(self):
         self.client.force_login(self.user)
         resp = self.client.get(
-            path=reverse("gpon:api:tech-data-end3-capability", kwargs={"pk": self.end3.id})
+            path=reverse("gpon-api:tech-data-end3-capability", kwargs={"pk": self.end3.id})
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["capacity"], self.end3.capacity)

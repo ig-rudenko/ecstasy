@@ -3,6 +3,7 @@ import logging
 from celery.result import AsyncResult
 from django.core.cache import cache
 from pyzabbix.api import logger
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
 from check.models import Devices as ModelDevices
 from check.services.device.interfaces_collector import DeviceDBSynchronizer
@@ -14,7 +15,7 @@ from ecstasy_project.task import ThreadUpdatedStatusTask
 class InterfacesScanTask(ThreadUpdatedStatusTask):
     max_workers = 80
     name = "interfaces_scan"
-    queryset = ModelDevices.objects.all()
+    queryset = ModelDevices.objects.filter(active=True, collect_interfaces=True)
 
     def pre_run(self):
         super().pre_run()
@@ -43,6 +44,18 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             print(f"Error when collect interfaces of {obj}: {e}")
 
         self.update_state()
+
+    @classmethod
+    def register_task(cls):
+        crontab, _ = CrontabSchedule.objects.get_or_create(
+            minute="0",
+            hour="*/2",
+        )
+        PeriodicTask.objects.get_or_create(
+            name="Опрос интерфейсов оборудования",
+            task=cls.name,
+            crontab=crontab,
+        )
 
 
 interfaces_scan = app.register_task(InterfacesScanTask())

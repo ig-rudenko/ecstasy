@@ -9,7 +9,7 @@ from gpon.api.serializers.address import AddressSerializer, BuildingAddressSeria
 from gpon.api.serializers.common import End3Serializer
 from gpon.api.serializers.create_tech_data import (
     OLTStateSerializer,
-    HouseOLTStateSerializer,
+    CreateHouseOLTStateSerializer,
     CreateTechDataSerializer,
 )
 from gpon.models import OLTState, Address, HouseB, HouseOLTState, TechCapability, End3
@@ -238,7 +238,7 @@ class TestHouseOLTStateSerializer(TestCase):
             },
         }
 
-        serializer = HouseOLTStateSerializer(data=data)
+        serializer = CreateHouseOLTStateSerializer(data=data)
         self.assertTrue(serializer.is_valid(), msg="Данные сериализатора неверные")
         house_olt_state = serializer.create(serializer.validated_data)
 
@@ -251,7 +251,7 @@ class TestHouseOLTStateSerializer(TestCase):
         self.assertEqual(HouseB.objects.first().id, house_olt_state.house.id)
 
         # Повторное создание не добавит новые записи в базу
-        serializer = HouseOLTStateSerializer(data=data)
+        serializer = CreateHouseOLTStateSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         serializer.create(serializer.validated_data)
         self.assertEqual(HouseB.objects.count(), 1)  # Дом все еще один

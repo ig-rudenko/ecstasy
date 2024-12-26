@@ -3,59 +3,59 @@
 {% load ring_manager_perms %}
 
 {% block title %}
-Кольца
+    Кольца
 {% endblock %}
 
 {% block content %}
 
-<style>
-.text-bg-white {
-    background-color: #ffffff;
-    padding: 7px;
-    border-radius: 7px;
-    opacity: 0.75;
-    text-decoration: none;
-    color: black;
-}
-</style>
+    <style>
+        .text-bg-white {
+            background-color: #ffffff;
+            padding: 7px;
+            border-radius: 7px;
+            opacity: 0.75;
+            text-decoration: none;
+            color: black;
+        }
+    </style>
 
-<div class="align-items-md-stretch justify-content-center row">
+    <div class="align-items-md-stretch justify-content-center row">
 
-{% if request.user|has_transport_ring_permission %}
-  <div class="col-md-5">
-    <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
-    style="background-image: url('{% static 'img/ring_manager/background/transport_ring.jpg' %}');
-           background-size: cover;">
-        <h4 class="fw-bold">
-            <a class="text-bg-white" href="{% url 'ring-manager:transport-rings' %}">Транспортные кольца</a>
-        </h4>
-        <br>
-      <p style="padding-top: 220px;" class="text-light">
-          <span class="text-bg-white">
-              Кольца агрегаций, используются для разворота VLAN
-          </span>
-      </p>
+        {% if request.user|has_transport_ring_permission %}
+            <div class="col-md-5">
+                <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
+                     style="background-image: url('{% static 'img/ring_manager/background/transport_ring.jpg' %}');
+                             background-size: cover;">
+                    <h4 class="fw-bold">
+                        <a class="text-bg-white" href="{% url 'ring-manager:transport-rings' %}">Транспортные кольца</a>
+                    </h4>
+                    <br>
+                    <p style="padding-top: 220px;" class="text-light">
+                      <span class="text-bg-white">
+                          Кольца агрегаций, используются для разворота VLAN
+                      </span>
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if request.user|has_access_ring_permission %}
+            <div class="col-md-5">
+                <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
+                     style="background-image: url('{% static 'img/ring_manager/background/access_ring.jpg' %}');
+                             background-size: cover;">
+                    <h4 class="fw-bold">
+                        <a class="text-bg-white" href="{% url 'ring-manager:access-rings' %}">Абонентские кольца</a>
+                    </h4>
+                    <br>
+                    <p style="padding-top: 220px;" class="text-light">
+                      <span class="text-bg-white">
+                          Оборудование доступа, которые имею топологию "кольцо".
+                      </span>
+                    </p>
+                </div>
+            </div>
+        {% endif %}
     </div>
-  </div>
-{% endif %}
-
-{% if request.user|has_access_ring_permission %}
-  <div class="col-md-5">
-    <div class="text-center h-100 p-4 bg-light border rounded-5 shadow"
-    style="background-image: url('{% static 'img/ring_manager/background/access_ring.jpg' %}');
-           background-size: cover;">
-        <h4 class="fw-bold">
-            <a class="text-bg-white" href="{% url 'ring-manager:access-rings' %}">Абонентские кольца</a>
-        </h4>
-        <br>
-      <p style="padding-top: 220px;" class="text-light">
-          <span class="text-bg-white">
-              Оборудование доступа, которые имею топологию "кольцо".
-          </span>
-      </p>
-    </div>
-  </div>
-{% endif %}
-</div>
 
 {% endblock %}

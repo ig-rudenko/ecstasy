@@ -1,0 +1,74 @@
+services:
+  nginx:
+    image: nginx:1.27.3-alpine
+    ports:
+      - "8888:80"
+    volumes:
+      - "./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    networks:
+      - dmz
+    depends_on:
+      - web-connector
+
+  web-connector:
+    build: web-connector
+    image: web-ssh-connector:0.1
+    hostname: web-connector
+    command: --address=0.0.0.0 --port=8080 --wpintvl=3
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+          cpus: "1"
+        reservations:
+          memory: 64MB
+          cpus: "1"
+    networks:
+      - dmz
+      - server
+    depends_on:
+      - shared-server
+
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+
+  shared-server:
+    image: web-ssh-shared-server:0.1
+    hostname: shared-server
+    build:
+      context: shared-server
+      dockerfile: Dockerfile
+      args:
+        - USER_PASSWORD=${WEB_SSH_USER_PASSWORD:-password}
+    restart: always
+
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+          cpus: "2"
+        reservations:
+          memory: 64MB
+          cpus: "1"
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    networks:
+      - server
+
+networks:
+  # Создаем свою сеть, чтобы не было конфликтов с уже существующей
+  dmz:
+    ipam:
+      driver: default
+      config:
+        - subnet: '${DMZ_NETWORK:-10.201.201.0/29}'
+  server:
+    ipam:
+      driver: default
+      config:
+        - subnet: '${SERVER_NETWORK:-10.201.201.8/29}'

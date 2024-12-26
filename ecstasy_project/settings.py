@@ -17,7 +17,6 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
-import orjson
 import urllib3
 from import_export.formats.base_formats import CSV, XLSX, JSON
 from pyzabbix.api import logger as zabbix_api_logger
@@ -39,11 +38,16 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
+ENV = os.getenv("DJANGO_ENV", "dev")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1").split()
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5174",
+]
 
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
-if trusted_origins is not None:
+if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
 # Application definition
@@ -72,6 +76,7 @@ INSTALLED_APPS = [
     "accounting",
     "news",
     "import_export",
+    "corsheaders",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -91,9 +96,11 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "ecstasy_project.authentication.JWTAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -115,24 +122,21 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "news.context_preprocessors.global_news",
-                "accounting.context_preprocessors.ecstasy_loop_url",
             ],
             "builtins": ["app_settings.templatetags.customtags"],
             "libraries": {
-                "gpon_perms": "gpon.templatetags.gpon_perms",
-                "net_tools_perms": "net_tools.templatetags.net_tools_perms",
                 "ring_manager_perms": "ring_manager.templatetags.ring_manager_perms",
-                "masp_perms": "maps.templatetags.maps_perms",
-                "accounting_perms": "accounting.templatetags.account_perms",
             },
         },
     },
 ]
 
+if ENV == "dev":
+    TEMPLATES[0]["DIRS"].append(BASE_DIR / "frontend_v/dist")  # type: ignore
+
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
-DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", ""))
-if not DATABASES:
+if not os.getenv("DB_NAME"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -140,6 +144,17 @@ if not DATABASES:
             "OPTIONS": {
                 "timeout": 20,
             },
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("MYSQL_DATABASE"),
+            "USER": os.getenv("MYSQL_USER"),
+            "PASSWORD": os.getenv("MYSQL_PASSWORD"),
+            "HOST": os.getenv("MYSQL_HOST"),
+            "PORT": os.getenv("MYSQL_PORT", "3306"),
         }
     }
 
@@ -181,10 +196,14 @@ STATIC_URL = "static/"
 if os.getenv("DJANGO_COLLECT_STATIC", "0") == "1":
     STATIC_ROOT = BASE_DIR / "static"
 else:
-    STATICFILES_DIRS = [BASE_DIR / "static"]
+    STATICFILES_DIRS = [
+        BASE_DIR / "static",
+        BASE_DIR / "frontend_v/dist",
+    ]
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -213,12 +232,12 @@ if DEBUG:
     }
 
 else:
-    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
+    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/0")
 
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"redis://{REDIS_CACHE_URL}",
+            "LOCATION": REDIS_CACHE_URL,
             "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
         }
     }
@@ -233,8 +252,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PARSER_CLASSES": [
         "drf_orjson_renderer.parsers.ORJSONParser",
@@ -257,10 +276,8 @@ SWAGGER_SETTINGS = {
 
 # ================= CELERY ==================
 
-REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/1")
-
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 # ========== CONFIGURATION STORAGE ===========
@@ -314,20 +331,13 @@ if not DEBUG:
             "handlers": ["console", "file"],
             "propagate": True,
         },
-        # "loggers": {
-        #     "django": {
-        #         "level": "INFO",
-        #         "handlers": ["file", "console"],
-        #         "propagate": True,
-        #     }
-        # },
     }
 
 # ================= JWT ===================
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,

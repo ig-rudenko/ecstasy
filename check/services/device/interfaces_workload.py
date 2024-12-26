@@ -99,7 +99,7 @@ class DevicesInterfacesWorkloadCollector:
     @staticmethod
     def get_queryset() -> QuerySet:
         return (
-            DevicesInfo.objects.filter(interfaces__isnull=False)
+            DevicesInfo.objects.filter(interfaces__isnull=False, dev__active=True)
             .select_related("dev", "dev__group")
             .order_by("dev__name")
             .values(

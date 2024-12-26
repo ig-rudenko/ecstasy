@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Layers
+from ..models import Layers, Maps
 
 
 class MapLayerField(serializers.CharField):
@@ -10,6 +10,18 @@ class MapLayerField(serializers.CharField):
         elif value.type == "file":
             return value.name
         return "None"
+
+
+class MapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Maps
+        fields = ["id", "name", "description", "interactive", "preview_image", "type"]
+
+
+class MapDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Maps
+        fields = ["id", "name", "description", "interactive", "preview_image", "type", "from_file", "map_url"]
 
 
 GroupsType = serializers.ListSerializer[MapLayerField]

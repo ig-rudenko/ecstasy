@@ -4,9 +4,9 @@ from . import statistic_view
 from . import subscriber_view
 from . import views
 
-# /gpon/api/
+# /api/gpon/
 
-app_name = "api"
+app_name = "gpon-api"
 
 urlpatterns = [
     path("permissions", views.ListUserPermissions.as_view(), name="user-permissions"),
