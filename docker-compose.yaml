@@ -59,6 +59,9 @@ services:
         condition: service_healthy
     volumes:
       - "./logs:/app/logs"
+      - "./media:/app/media"
+      - "./map_layer_files:/app/media/map_layer_files"
+      - "./configurations:/configurations"
     networks:
       - backend
 

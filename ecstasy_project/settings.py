@@ -136,7 +136,7 @@ if ENV == "dev":
 
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
-if not os.getenv("DB_NAME"):
+if not os.getenv("MYSQL_DATABASE"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
