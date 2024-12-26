@@ -39,3 +39,4 @@ paramiko>=3.4.1 # not directly required, pinned by Snyk to avoid a vulnerability
 openpyxl>=3.1.5
 django-import-export>=4.1.1
 sqlparse>=0.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
+django-cors-headers

@@ -9,6 +9,11 @@ const router = createRouter({
         {path: "/devices", component: () => import("@/pages/devicesList/DevicesList.vue"), name: "devices-list"},
         {path: "/device/:deviceName", component: () => import("@/pages/deviceInfo/DeviceInfo.vue"), name: "device"},
         {
+            path: "/by-zabbix/:hostID",
+            component: () => import("@/pages/findByZabbix/findByZabbix.vue"),
+            name: "by-zabbix"
+        },
+        {
             path: "/tools/search",
             component: () => import("@/pages/descriptionSearch/DescriptionSearch.vue"),
             name: "tools-search"

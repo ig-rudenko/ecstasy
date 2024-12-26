@@ -1,94 +1,35 @@
-#version: "3.9"
-
 volumes:
   redis-data:
 
 services:
 
   frontend:
-    image: nginx
+    image: ecstasy-frontend:18
+    build: frontend_v
     restart: always
     ports:
-      - "8888:80"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8000}:80"
     volumes:
-      - "./static:/var/www/static"
+      - "./static:/usr/share/nginx/static"
       - "./nginx/default.conf:/etc/nginx/conf.d/default.conf"
     depends_on:
       - backend
-
-  redis:
-    image: redis
-    restart: always
-    volumes:
-      - "redis-data:/data"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      timeout: 20s
-      retries: 10
-
-  celery: &celery
-    build: .
-    image: ecstasy:v.17.4
-    restart: always
-    command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
-    environment:
-      ALLOWED_HOSTS: "*"
-      REDIS_CACHE_URL: "redis:6379/0"
-      REDIS_BROKER_URL: "redis:6379/1"
-      DATABASES: |
-        {
-            "default": {
-                "ENGINE": "django.db.backends.mysql",
-                "NAME": "ecstasy",
-                "USER": "ecstasy",
-                "PASSWORD": "ecstasy_password",
-                "HOST": "mysql",
-                "PORT": "3306"
-            }
-        }
-      DJANGO_SECRET_KEY: "django-key12312423534532452345234523452345345"
-      CONFIG_STORAGE_DIR: "/configurations"
-
-    depends_on:
-      - backend
-    volumes:
-      - "./logs:/app/logs"
-
-  celery-beat:
-    <<: *celery
-    command: celery -A ecstasy_project beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    networks:
+      - frontend
 
   backend:
     build: .
-    image: ecstasy:v.17.4
+    image: ecstasy:18
     restart: always
     command: /bin/sh run.sh
+    env_file:
+      - .env
     environment:
-      DEVICE_CONNECTOR_TOKEN: "jiodjiwejdf9h2e9dfh9wqhef9hfh9h343"
-      DEVICE_CONNECTOR_ADDRESS: "http://device-connector:8000"
-      ALLOWED_HOSTS: "*"
-      REDIS_CACHE_URL: "redis:6379/0"
-      REDIS_BROKER_URL: "redis:6379/1"
-      DATABASES: |
-        {
-            "default": {
-                "ENGINE": "django.db.backends.mysql",
-                "NAME": "ecstasy",
-                "USER": "ecstasy",
-                "PASSWORD": "ecstasy_password",
-                "HOST": "mysql",
-                "PORT": "3306"
-            }
-        }
-      DJANGO_SECRET_KEY: "django-key12312423534532452345234523452345345"
-      CONFIG_STORAGE_DIR: "/configurations"
-
       DJANGO_SUPERUSER_EMAIL: admin@example.com
       DJANGO_SUPERUSER_USERNAME: admin
-      DJANGO_SUPERUSER_PASSWORD: password
+      DJANGO_SUPERUSER_PASSWORD: password1
 
     volumes:
-      - "./run.sh:/app/run.sh"
       - "./logs:/app/logs"
       - "./static:/app/static"
       - "./media:/app/media"
@@ -100,25 +41,90 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+    networks:
+      - frontend
+      - backend
+
+  celery: &celery
+    build: .
+    image: ecstasy:18
+    restart: always
+    command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    volumes:
+      - "./logs:/app/logs"
+    networks:
+      - backend
+
+  celery-beat:
+    <<: *celery
+    command: celery -A ecstasy_project beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
   device-connector:
-    image: ecstasy:v.17.4
+    build: .
+    image: ecstasy:18
     command: python device_connector.py
     restart: always
     environment:
-      DEVICE_CONNECTOR_TOKEN: "jiodjiwejdf9h2e9dfh9wqhef9hfh9h343"
+      DEVICE_CONNECTOR_TOKEN: "${DEVICE_CONNECTOR_TOKEN:-connector-token}"
+    networks:
+      - backend
+
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - "redis-data:/data"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      timeout: 20s
+      retries: 10
+    networks:
+      - backend
 
   mysql:
     image: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_USER: ecstasy
-      MYSQL_PASSWORD: ecstasy_password
-      MYSQL_DATABASE: ecstasy
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-99593284x3iou4txiou3}"
+      MYSQL_USER: "${MYSQL_USER:-ecstasy}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-ecstasy_password}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-ecstasy}"
     restart: always
     volumes:
-      - "./data:/var/lib/mysql"
+      - "./mysql_data:/var/lib/mysql"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
+    networks:
+      - backend
+
+
+networks:
+  frontend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-fron-ecstasy
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${FRONTEND_IPV4_NETWORK:-172.22.253.0/24}
+        - subnet: ${FRONTEND_IPV6_NETWORK:-fd4d:6169:6c63:6f76::/64}
+
+  backend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-back-ecstasy
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${BACKEND_IPV4_NETWORK:-172.22.254.0/24}
+        - subnet: ${BACKEND_IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}

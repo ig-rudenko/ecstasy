@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
@@ -260,7 +260,7 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
 
 
 class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
-    def get(self, request, host_id: str) -> HttpResponseRedirect:
+    def get(self, request, host_id: str):
         """
         ## Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy.
 
@@ -283,4 +283,4 @@ class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
             # Не нашли оборудование
             raise Http404
 
-        return HttpResponseRedirect("/device/" + model_dev.name)
+        return Response({"device": model_dev.name})

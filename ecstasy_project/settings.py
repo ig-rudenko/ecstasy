@@ -17,7 +17,6 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
-import orjson
 import urllib3
 from import_export.formats.base_formats import CSV, XLSX, JSON
 from pyzabbix.api import logger as zabbix_api_logger
@@ -48,7 +47,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
-if trusted_origins is not None:
+if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
 # Application definition
@@ -137,8 +136,7 @@ if ENV == "dev":
 
 WSGI_APPLICATION = "ecstasy_project.wsgi.application"
 
-DATABASES = orjson.loads(os.getenv("DATABASES", "{}").replace("'", '"').replace(" ", "").replace("\n", ""))
-if not DATABASES:
+if not os.getenv("DB_NAME"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -146,6 +144,17 @@ if not DATABASES:
             "OPTIONS": {
                 "timeout": 20,
             },
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("MYSQL_DATABASE"),
+            "USER": os.getenv("MYSQL_USER"),
+            "PASSWORD": os.getenv("MYSQL_PASSWORD"),
+            "HOST": os.getenv("MYSQL_HOST"),
+            "PORT": os.getenv("MYSQL_PORT", "3306"),
         }
     }
 
@@ -223,12 +232,12 @@ if DEBUG:
     }
 
 else:
-    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "localhost:6379/0")
+    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/0")
 
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"redis://{REDIS_CACHE_URL}",
+            "LOCATION": REDIS_CACHE_URL,
             "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
         }
     }
@@ -267,10 +276,8 @@ SWAGGER_SETTINGS = {
 
 # ================= CELERY ==================
 
-REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "localhost:6379/1")
-
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_BROKER_URL = f"redis://{REDIS_BROKER_URL}"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 # ========== CONFIGURATION STORAGE ===========

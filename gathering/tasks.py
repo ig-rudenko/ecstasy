@@ -65,7 +65,6 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
 
 # Регистрация задачи в приложении Celery.
 mac_table_gather_task = app.register_task(MacTablesGatherTask())
-MacTablesGatherTask.register_task()
 
 
 def check_scanning_status() -> dict:
@@ -130,4 +129,3 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
 
 # Регистрация задачи в приложении Celery.
 configuration_gather_task = app.register_task(ConfigurationGatherTask())
-ConfigurationGatherTask.register_task()

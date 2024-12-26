@@ -24,37 +24,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://10.29.14.12/',
-                changeOrigin: true,
-                secure: false,
-                ws: true,
-            },
-            '/tools/api': {
-                target: 'http://10.29.14.12/',
-                changeOrigin: true,
-                secure: false,
-                ws: true,
-            },
-            '/gather': {
-                target: 'http://10.29.14.12/',
-                changeOrigin: true,
-                secure: false,
-                ws: true,
-            },
-            '/device/api': {
-                target: 'http://10.29.14.12/',
-                changeOrigin: true,
-                secure: false,
-                ws: true,
-            },
-            '/media/': {
-                target: 'http://10.29.14.12/',
-                changeOrigin: true,
-                secure: false,
-                ws: true,
-            },
-            '/gpon/api': {
-                target: 'http://10.29.14.12/',
+                target: 'http://127.0.0.1:8000/',
                 changeOrigin: true,
                 secure: false,
                 ws: true,

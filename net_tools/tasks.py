@@ -59,7 +59,6 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
 
 interfaces_scan = app.register_task(InterfacesScanTask())
-InterfacesScanTask.register_task()
 
 
 def check_scanning_status() -> dict:
