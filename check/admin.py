@@ -100,7 +100,16 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         ),
         (
             "Удаленное подключение",
-            {"fields": ("snmp_community", "port_scan_protocol", "cmd_protocol")},
+            {
+                "fields": (
+                    "snmp_community",
+                    "port_scan_protocol",
+                    "cmd_protocol",
+                    "collect_interfaces",
+                    "collect_mac_addresses",
+                    "collect_configurations",
+                )
+            },
         ),
         (
             "Интерфейсы",
