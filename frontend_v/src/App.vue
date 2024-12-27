@@ -1,4 +1,5 @@
 <template>
+  <Snow v-if="[0, 1, 11].indexOf((new Date()).getMonth()) !== -1"/>
   <Toast>
     <template #message="slotProps">
       <div class="flex flex-col items-start" style="flex: 1">
@@ -13,4 +14,5 @@
 
 <script setup>
 import Toast from "primevue/toast";
+import Snow from "@/components/Snow.vue";
 </script>
