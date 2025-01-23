@@ -268,10 +268,11 @@ export default {
             const generalMatch_companyName = generalFilter.length === 0 || elem.customer.companyName && elem.customer.companyName.toLowerCase().indexOf(generalFilter.toLowerCase()) > -1
             const generalMatch_transit = generalFilter.length === 0 || String(elem.transit).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1
             const generalMatch_phone = generalFilter.length === 0 || String(elem.customer.phone).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1
+            const generalMatch_contract = generalFilter.length === 0 || String(elem.customer.contract).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1
 
             return match_region && match_settlement && match_planStructure && match_street && match_house && match_block
                 && (match_firstName || match_surname || match_lastName)
-                && (generalMatch_firstName || generalMatch_surname || generalMatch_lastName || generalMatch_companyName || generalMatch_transit || generalMatch_phone)
+                && (generalMatch_firstName || generalMatch_surname || generalMatch_lastName || generalMatch_companyName || generalMatch_transit || generalMatch_phone || generalMatch_contract)
           }
       )
       this.show_filter = false
