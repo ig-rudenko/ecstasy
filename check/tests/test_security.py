@@ -14,7 +14,7 @@ class NoAccessWithNoLogin(TestCase):
 
 class ResponseHeadersTest(TestCase):
     def test_security_headers(self):
-        resp = self.client.get("/api/v1/devices")
+        resp = self.client.get("/api/v1/devices/")
         self.assertEqual(resp.headers["X-Frame-Options"], "SAMEORIGIN")
         self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
         self.assertEqual(resp.headers["Referrer-Policy"], "same-origin")
