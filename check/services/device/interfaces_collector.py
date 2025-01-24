@@ -127,7 +127,7 @@ def get_device_interfaces(
     available = check_status and device.available
 
     # Если оборудование доступно, то можно собирать интерфейсы в реальном времени.
-    current_status = current_status and available > 0
+    current_status = current_status and available
 
     # Уточняем возможность сбора VLAN интерфейсов.
     # Если интерфейсы опрашиваются через SNMP, то сбор VLAN на интерфейсах не доступен.
@@ -161,7 +161,7 @@ def get_device_interfaces(
         # Возвращает пустой список интерфейсов.
         return {
             "interfaces": [],
-            "deviceAvailable": available > 0,
+            "deviceAvailable": bool(available),
             "collected": timezone.now(),
         }
 
@@ -171,7 +171,7 @@ def get_device_interfaces(
     # Далее возвращаем интерфейсы.
     return {
         "interfaces": device_sync.device_collector.interfaces.json(),
-        "deviceAvailable": available > 0,
+        "deviceAvailable": bool(available),
         "collected": timezone.now(),
     }
 

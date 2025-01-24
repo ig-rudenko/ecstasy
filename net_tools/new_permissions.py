@@ -14,4 +14,4 @@ def create_permission(sender, **kwargs):
     ]
 
     for codename, name in extra_permissions:
-        print(Permission.objects.get_or_create(codename=codename, name=name, content_type=content_type))
+        Permission.objects.get_or_create(codename=codename, name=name, content_type=content_type)

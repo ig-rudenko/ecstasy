@@ -41,11 +41,16 @@ from .models import (
 )
 
 
+class ProfileInline(admin.TabularInline):
+    model = Profile.devices_groups.through
+
+
 @admin.register(DeviceGroup)
 class DeviceGroupAdmin(admin.ModelAdmin):
     """Управление группами оборудования"""
 
     list_display = ["name", "description", "dev_count"]
+    inlines = [ProfileInline]
 
     @admin.display(description="Кол-во")
     def dev_count(self, obj: DeviceGroup) -> int:

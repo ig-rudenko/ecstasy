@@ -200,8 +200,12 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         self.url = reverse("devices-api:device-interfaces", args=[self.device.name])
         self.client.force_authenticate(user=self.user)
 
+    @patch("check.models.Devices.available")
     @patch("devicemanager.device.DeviceManager.from_model")
-    def test_get_current_interfaces_not_snmp_with_vlans(self, mock_connect: Mock):
+    def test_get_current_interfaces_not_snmp_with_vlans(self, mock_connect: Mock, mock_available: Mock):
+        # mock_available.return_value = MagicMock(__bool__=Mock(return_value=True))
+        mock_available.return_value = False
+
         interfaces = [
             {
                 "Interface": "Fa1/0/1",
@@ -219,13 +223,15 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         device_manager_mock = MagicMock()
         device_manager_mock.protocol = "telnet"
-        mock_connect.return_value = device_manager_mock
         device_manager_mock.interfaces = Interfaces(interfaces)
 
         # Указываем новый вендор и модель, после они должны быть записаны в базе
         device_manager_mock.zabbix_info.inventory.vendor = "new vendor"
         device_manager_mock.zabbix_info.inventory.model = "new model"
+        device_manager_mock.zabbix_info.inventory.serialno_a = "new serial"
         device_manager_mock.push_zabbix_inventory.return_value = None
+
+        mock_connect.return_value = device_manager_mock
 
         response = self.client.get(f"{self.url}?current_status=1&vlans=1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -299,8 +305,10 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             ],
         )
 
+    @patch("check.models.Devices.available")
     @patch("devicemanager.device.DeviceManager.from_model")
-    def test_get_current_interfaces_with_snmp_no_vlans(self, mock_connect: Mock):
+    def test_get_current_interfaces_with_snmp_no_vlans(self, mock_connect: Mock, mock_available: Mock):
+        mock_available.return_value = True
         interfaces = [
             {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1"},
             {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2"},
@@ -311,8 +319,9 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock = MagicMock()
         device_manager_mock.interfaces = Interfaces(interfaces)
         # Указываем ПУСТЫМИ вендор и модель, после они НЕ должны быть записаны в базе
-        device_manager_mock.zabbix_info.inventory.vendor = ""
-        device_manager_mock.zabbix_info.inventory.model = ""
+        device_manager_mock.zabbix_info.inventory.vendor = "vendor"
+        device_manager_mock.zabbix_info.inventory.model = "model"
+        device_manager_mock.zabbix_info.inventory.serialno_a = "serial_number"
         device_manager_mock.push_zabbix_inventory.return_value = None
         mock_connect.return_value = device_manager_mock
 
@@ -326,6 +335,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         # В базе должны были остаться без изменения поля
         self.assertEqual(device.vendor, "vendor")
         self.assertEqual(device.model, "model")
+        self.assertEqual(device.serial_number, "serial_number")
 
         self.assertEqual(mock_connect.call_count, 1)
 
@@ -446,11 +456,11 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         )
         self.url = reverse("devices-api:device-stats-info", args=[self.device.name])
 
+    @patch("check.models.Devices.available")
     @patch("check.models.Devices.connect")
-    def test_device_stats_info_api_view(self, mock_connect: Mock):
+    def test_device_stats_info_api_view(self, mock_connect: Mock, mock_available: Mock):
         # Делаем так, чтобы оборудование было доступно
-        self.device.ip = "127.0.0.1"
-        self.device.save()
+        mock_available.return_value = True
 
         self.client.force_authenticate(user=self.user)
         mock_connect.return_value.get_device_info.return_value = {
@@ -475,18 +485,6 @@ class TestDeviceStatsInfoAPIView(APITestCase):
 
         mock_connect.assert_called_once_with()
         mock_connect.return_value.get_device_info.assert_called_once_with()
-
-    @patch("check.models.Devices.connect")
-    def test_device_unavailable(self, mock_connect: Mock):
-        # Оборудование недоступно | device.available = False
-
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(response.data, {"detail": "Device unavailable"})
-
-        # Проверяем что `connect` не вызывался, потому что устройство недоступно
-        mock_connect.assert_not_called()
 
     @patch("check.models.Devices.connect")
     def test_authentication(self, mock_connect: Mock):

@@ -70,7 +70,8 @@ class PortControlAPIViewTestCase(APITestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_port_down_dev_unavailable(self):
+    @patch("ping3.ping", return_value=False)
+    def test_port_down_dev_unavailable(self, ping):
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)
@@ -176,17 +177,18 @@ class PortControlAPIViewTestCase(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(resp.data["detail"], "Запрещено изменять состояние данного порта!")
 
+    @patch("check.models.Devices.available")
     @patch("check.models.Devices.connect")
-    def test_port_down_superuser_access_to_change_core_port_by_desc(self, device_connection: Mock):
+    def test_port_down_superuser_access_to_change_core_port_by_desc(
+            self, device_connection: Mock, mock_available: Mock
+    ):
+        mock_available.return_value = True
+
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)
         self.user.is_superuser = True
         self.user.save()
-
-        # Меняем IP, чтобы работал ping.
-        self.device.ip = "127.0.0.1"
-        self.device.save()
 
         device_connection.return_value.set_port.return_value = "Порт выключен"
         # Данный порт имеет описание `CORE`, изменять его состояние может только суперпользователь.
@@ -206,15 +208,13 @@ class PortControlAPIViewTestCase(APITestCase):
             msg="Нет записи в логах смене состояния порта",
         )
 
+    @patch("check.models.Devices.available")
     @patch("check.models.Devices.connect")
-    def test_port_down_valid(self, dev_connect_mock: Mock):
+    def test_port_down_valid(self, dev_connect_mock: Mock, mock_available: Mock):
+        mock_available.return_value = True
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)
-
-        # Меняем IP, чтобы работал ping.
-        self.device.ip = "127.0.0.1"
-        self.device.save()
 
         device_mock = MagicMock()
         device_mock.set_port.return_value = "Порт выключен"
