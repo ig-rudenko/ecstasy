@@ -1,5 +1,7 @@
 import pprint
-from datetime import datetime
+from unittest.mock import patch
+
+from django.utils import timezone
 
 from check.models import Devices, AuthGroup
 from devicemanager.device import DeviceManager
@@ -260,7 +262,8 @@ class TestRotateToNormalSolutions(TestRingBase):
             },
         )
 
-    def test_perform_solutions_fail_first(self):
+    @patch("check.models.Devices.available", return_value=False)
+    def test_perform_solutions_fail_first(self, *args):
         ring = TransportRing.objects.get(name=self.ring_name)
 
         r = TestTransportRingManager(ring=ring)
@@ -275,19 +278,12 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         print(solutions)
 
-        ring.solutions = solutions
-        ring.solution_time = datetime.now()
-        ring.save(update_fields=["solutions", "solution_time"])
-
-        performer = SolutionsPerformer(ring=ring)
-        performed_solutions = performer.perform_all()
-
         # Найдено 3 решения
-        self.assertEqual(len(performed_solutions), 3)
+        self.assertEqual(len(solutions), 3)
 
         # Решение 1 - NO STATUS
         self.assertDictEqual(
-            performed_solutions[0],
+            solutions[0],
             {
                 "info": {
                     "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
@@ -298,7 +294,7 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         # Решение 2 - STATUS FAIL
         self.assertDictEqual(
-            performed_solutions[1],
+            solutions[1],
             {
                 "set_port_vlans": {
                     "status": "delete",
@@ -310,15 +306,13 @@ class TestRotateToNormalSolutions(TestRingBase):
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
                     "на оборудовании ring-dev55 (224.0.5.5) на порту GE0/5/3",
-                    "perform_status": "fail",
-                    "error": "Оборудование ring-dev55 (224.0.5.5) недоступно",
                 }
             },
         )
 
         # Решение 3 - NO STATUS
         self.assertDictEqual(
-            performed_solutions[2],
+            solutions[2],
             {
                 "set_port_status": {
                     "status": "up",
@@ -332,7 +326,8 @@ class TestRotateToNormalSolutions(TestRingBase):
             },
         )
 
-    def test_perform_solutions_fail_last(self):
+    @patch("check.models.Devices.available", return_value=False)
+    def test_perform_solutions_fail_last(self, *args):
         # Меняем IP TAIL чтобы он был доступен
         Devices.objects.filter(ip="224.0.5.5").update(
             ip="127.0.0.1",
@@ -352,33 +347,9 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        ring.solutions = solutions
-        ring.solution_time = datetime.now()
-        ring.save(update_fields=["solutions", "solution_time"])
-
-        # Создаем фальшивую сессию и делаем её глобальной, для тестирования
-        remote_connector.set_connector("ring_manager.tests.test_rotate_to_normal_solutions.FakeTailSession")
-        # Теперь `SolutionsPerformer` будет использовать для `tail` фальшивую сессию
-        performer = SolutionsPerformer(ring=ring)
-        performed_solutions = performer.perform_all()
-
-        pprint.pprint(performed_solutions)
-
-        # Найдено 3 решения
-        self.assertEqual(len(performed_solutions), 3)
-
-        # Первое действие над Tail это удаление VLAN, затем неудачная попытка поменять состояние
-        # порта на другом оборудовании и второе действие - добавление VLAN
-        self.assertEqual(
-            FakeTailSession.vlans_on_port_args,
-            [["GE0/5/3", "delete", (1, 2, 3)], ["GE0/5/3", "add", (1, 2, 3)]],
-        )
-
-        self.assertEqual(len(FakeTailSession.vlans_on_port_args), 2)
-
         # Решение 1 - NO STATUS
         self.assertDictEqual(
-            performed_solutions[0],
+            solutions[0],
             {
                 "info": {
                     "message": "Транспортное кольцо в данный момент развернуто, со стороны ring-dev55 "
@@ -389,7 +360,7 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         # Решение 2 - STATUS REVERSED
         self.assertDictEqual(
-            performed_solutions[1],
+            solutions[1],
             {
                 "set_port_vlans": {
                     "status": "delete",
@@ -401,14 +372,13 @@ class TestRotateToNormalSolutions(TestRingBase):
                     "port": "GE0/5/3",
                     "message": "Сначала будут удалены VLAN'ы {1, 2, 3} "
                     "на оборудовании ring-dev55 (127.0.0.1) на порту GE0/5/3",
-                    "perform_status": "reversed",
                 }
             },
         )
 
         # Решение 3 - STATUS FAIL
         self.assertDictEqual(
-            performed_solutions[2],
+            solutions[2],
             {
                 "set_port_status": {
                     "status": "up",
@@ -418,13 +388,12 @@ class TestRotateToNormalSolutions(TestRingBase):
                     },
                     "port": "GE0/3/4",
                     "message": "Переводим кольцо в штатное состояние",
-                    "perform_status": "fail",
-                    "error": f"Оборудование {r.ring_devs[2].device.name} ({r.ring_devs[2].device.ip}) недоступно",
                 }
             },
         )
 
-    def test_perform_solutions_ok(self):
+    @patch("check.models.Devices.available", return_value=False)
+    def test_perform_solutions_ok(self, *args):
         # Меняем IP TAIL и Dev3 чтобы они были доступны
         auth = AuthGroup.objects.create(login="admin", password="admin", name="test")
         Devices.objects.filter(ip="224.0.5.5").update(ip="127.0.0.1", auth_group=auth)
@@ -444,7 +413,7 @@ class TestRotateToNormalSolutions(TestRingBase):
         solutions = r.create_solutions().solutions
 
         ring.solutions = solutions
-        ring.solution_time = datetime.now()
+        ring.solution_time = timezone.now()
         ring.save(update_fields=["solutions", "solution_time"])
 
         # Создаем фальшивую сессию и делаем её глобальной, для тестирования

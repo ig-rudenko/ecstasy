@@ -70,8 +70,8 @@ class PortControlAPIViewTestCase(APITestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch("ping3.ping", return_value=False)
-    def test_port_down_dev_unavailable(self, ping):
+    @patch("check.models.ping", return_value=False)
+    def test_port_down_dev_unavailable(self, *args):
         self.user.profile.permissions = self.user.profile.UP_DOWN
         self.user.profile.save()
         self.client.force_login(user=self.user)

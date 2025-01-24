@@ -73,7 +73,6 @@ class ZabbixAPIConnector:
             and callable(self.__init_load_function)
             and not (self.__zabbix_url and self.__zabbix_user and self.__zabbix_password)
         ):
-            print("Загрузка настроек Zabbix API")
             self.set(self.__init_load_function())
 
 

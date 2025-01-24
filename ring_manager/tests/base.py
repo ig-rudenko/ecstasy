@@ -1,7 +1,7 @@
 import json
-from datetime import datetime
 
 from django.test import TransactionTestCase
+from django.utils import timezone
 
 from check.models import Devices
 from ring_manager.models import RingDev, TransportRing
@@ -30,7 +30,7 @@ class TestRingBase(TransactionTestCase):
                 DevicesInfo.objects.create(
                     dev=dev,
                     interfaces=json.dumps(test_data.get("interfaces")),
-                    interfaces_date=datetime.now(),
+                    interfaces_date=timezone.now(),
                 )
 
             # Создаем историю для интерфейсов и VLANS
@@ -38,7 +38,7 @@ class TestRingBase(TransactionTestCase):
                 DevicesInfo.objects.create(
                     dev=dev,
                     vlans=json.dumps(test_data.get("interfaces_vlans")),
-                    vlans_date=datetime.now(),
+                    vlans_date=timezone.now(),
                 )
 
         # Последнее в цепочке оборудование

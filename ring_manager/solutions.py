@@ -1,6 +1,8 @@
 from datetime import timedelta, datetime
 from typing import Literal, Sequence, Callable
 
+from django.utils import timezone
+
 import check.models
 from devicemanager import DeviceException
 from devicemanager.device import Interfaces
@@ -183,7 +185,7 @@ class SolutionsPerformer:
 
         :param solution_time: Параметр типа «datetime», представляющий время создания или последнего обновления решения.
         """
-        return not solution_time or solution_time < datetime.now() - cls.solution_expire
+        return not solution_time or solution_time < timezone.now() - cls.solution_expire
 
     def perform_all(self) -> Sequence[dict]:
         """

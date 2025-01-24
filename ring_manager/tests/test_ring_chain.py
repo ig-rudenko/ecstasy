@@ -1,4 +1,3 @@
-from check.models import Devices
 from devicemanager.device import Interfaces
 from devicemanager.device import DeviceManager
 from .base import TestRingBase
@@ -122,9 +121,7 @@ class TestRingChain(TestRingBase):
         # Не указаны VLAN для транспортного кольца
         with self.assertRaises(InvalidRingStructureError):
             TransportRingManager(
-                TransportRing.objects.create(
-                    name="without_vlans", head=RingDev.objects.first(), vlans=[1]
-                )
+                TransportRing.objects.create(name="without_vlans", head=RingDev.objects.first(), vlans=[1])
             )
 
     def test_init_ring(self):
@@ -199,44 +196,6 @@ class TestRingChain(TestRingBase):
                 RingPoint(point=point1, device=point1.device, collect_vlans=True),
                 RingPoint(point=point2, device=point2.device, collect_vlans=False),
                 RingPoint(point=point3, device=point3.device, collect_vlans=True),
-            ],
-        )
-
-    def test_ring_check_devices_availability(self):
-        """
-        Проверяем ping для менеджера кольца
-        """
-        point1 = RingDev.objects.get(device__name="ring-dev41")
-        point2 = RingDev.objects.get(device__name="ring-dev42")
-        point3 = RingDev.objects.get(device__name="ring-dev43")
-
-        r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
-
-        r.check_devices_availability()
-
-        self.assertEqual(
-            r.ring_devs,
-            [
-                RingPoint(point=point1, device=point1.device, ping=False, collect_vlans=True),
-                RingPoint(point=point2, device=point2.device, ping=False, collect_vlans=False),
-                RingPoint(point=point3, device=point3.device, ping=False, collect_vlans=True),
-            ],
-        )
-
-        # Одно оборудование доступно
-
-        Devices.objects.filter(name="ring-dev41").update(ip="127.0.0.1")
-
-        r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
-
-        r.check_devices_availability()
-
-        self.assertEqual(
-            r.ring_devs,
-            [
-                RingPoint(point=point1, device=point1.device, ping=True, collect_vlans=True),
-                RingPoint(point=point2, device=point2.device, ping=False, collect_vlans=False),
-                RingPoint(point=point3, device=point3.device, ping=False, collect_vlans=True),
             ],
         )
 

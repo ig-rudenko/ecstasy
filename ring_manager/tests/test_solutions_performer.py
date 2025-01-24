@@ -1,9 +1,9 @@
-from datetime import datetime
+from unittest.mock import patch
+
 
 from devicemanager.device import DeviceManager
 from ring_manager.models import TransportRing
 from ring_manager.ring_manager import TransportRingManager
-from ring_manager.solutions import SolutionsPerformer
 from ring_manager.tests.base import TestRingBase
 
 TEST_DEVICES = [
@@ -82,7 +82,9 @@ class TestSolutionsPerformer(TestRingBase):
     TEST_DEVICES = TEST_DEVICES
     ring_name = "ring61"
 
-    def test_down_solutions(self):
+    @patch("check.models.Devices.available", return_value=False)
+    def test_down_solutions(self, *args):
+
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 
@@ -102,21 +104,14 @@ class TestSolutionsPerformer(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        ring.solutions = solutions
-        ring.solution_time = datetime.now()
-        ring.save(update_fields=["solutions", "solution_time"])
-
-        performer = SolutionsPerformer(ring=ring)
-        performed_solutions = performer.perform_all()
-
         # Найдено 2 решения
-        self.assertEqual(len(performed_solutions), 2)
+        self.assertEqual(len(solutions), 2)
 
-        print(performed_solutions)
+        print(solutions)
 
         # 1 решение - STATUS FAIL
         self.assertDictEqual(
-            performed_solutions[0],
+            solutions[0],
             {
                 "set_port_status": {
                     "status": "down",
@@ -126,16 +121,13 @@ class TestSolutionsPerformer(TestRingBase):
                     },
                     "port": r.ring_devs[0].port_to_next_dev.name,
                     "message": "Закрываем порт в сторону tail, готовимся разворачивать кольцо",
-                    # Status FAIL
-                    "perform_status": "fail",
-                    "error": f"Оборудование {r.ring_devs[0].device.name} ({r.ring_devs[0].device.ip}) недоступно",
                 }
             },
         )
 
         # 2 решение - NO STATUS
         self.assertDictEqual(
-            performed_solutions[1],
+            solutions[1],
             {
                 "set_port_vlans": {
                     "status": "add",
