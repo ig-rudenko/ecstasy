@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto py-5 xl:w-2/3">
+  <div class="mx-auto py-5 xl:w-2/3">
 
     <Toast/>
 
