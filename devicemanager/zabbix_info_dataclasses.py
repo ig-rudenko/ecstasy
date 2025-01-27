@@ -130,23 +130,3 @@ class ZabbixHostInfo:
                     res.append([key, value])
 
         print(tabulate.tabulate(res))
-
-
-@dataclass
-class Location:
-    state: str
-    city: str
-    district: str
-    street: str
-    house_number: str
-
-    def __init__(self, **kwargs):
-        self.state = kwargs.get("state") or ""
-        self.city = kwargs.get("town") or kwargs.get("city") or ""
-        self.district = kwargs.get("city_district") or kwargs.get("state_district") or ""
-        self.street = " ".join([kwargs.get("allotments") or "", kwargs.get("road") or ""]).strip()
-        print(f'"{self.street}"')
-        self.house_number = kwargs.get("house_number") or ""
-
-    def __str__(self):
-        return ", ".join([r for r in [self.city, self.street, self.house_number] if r])

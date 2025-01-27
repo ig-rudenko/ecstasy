@@ -1,18 +1,12 @@
 from typing import Any, Optional
 
 import orjson
-from geopy.geocoders import Nominatim
 from ping3 import ping as socket_ping
 from pyzabbix.api import ZabbixAPIException
 from requests import RequestException
 
 from devicemanager.remote import remote_connector, RemoteDevice
-from devicemanager.zabbix_info_dataclasses import (
-    ZabbixHostInfo,
-    ZabbixInventory,
-    ZabbixHostGroup,
-    Location,
-)
+from devicemanager.zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup
 from .interfaces import Interfaces
 from .zabbix_api import zabbix_api
 from ..exceptions import AuthException, BaseDeviceException
@@ -213,25 +207,6 @@ class DeviceManager:
             return 1
 
         return 0
-
-    def address(self):
-        """Выводит местоположение оборудования"""
-
-        if not self._zabbix_info_collected:
-            self.collect_zabbix_info()
-        if self._zabbix_info.inventory.location:
-            return self._zabbix_info.inventory.location
-        if (
-            self._zabbix_info.inventory.location_lat
-            and self._zabbix_info.inventory.location_lon
-            and not self._location
-        ):
-            location = Nominatim(user_agent="coordinateconverter").reverse(
-                ", ".join(self._zabbix_info.inventory.coordinates())
-            )
-            if location:
-                self._location = Location(**location.raw["address"])
-        return self._location
 
     def connect(self, protocol: str = "", auth_obj: Any = None, make_session_global=True) -> RemoteDevice:
         """

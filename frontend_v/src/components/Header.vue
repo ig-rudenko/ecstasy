@@ -73,12 +73,12 @@ const menuItems = computed(() => {
     })
   }
 
-  if (permissions.has("auth.access_rings") || permissions.has("auth.access_transport_rings")) {
-    items.value.push({
-      label: 'Кольца',
-      icon: 'ring',
-    })
-  }
+  // if (permissions.has("auth.access_rings") || permissions.has("auth.access_transport_rings")) {
+  //   items.value.push({
+  //     label: 'Кольца',
+  //     icon: 'ring',
+  //   })
+  // }
 
   if (permissions.hasGPONAnyPermission()) {
     items.value.push({

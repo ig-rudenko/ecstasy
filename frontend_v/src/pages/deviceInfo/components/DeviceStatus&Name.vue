@@ -57,13 +57,12 @@ export default defineComponent({
   methods: {
     copyIP() {
       this.copied = true;
-      navigator.clipboard.writeText(this.deviceIp).then(() => {
-        console.log('Async');
-        this.copiedStatus = "Скопировано!";
-      }, (err) => {
-        this.copiedStatus = "Ошибка!";
-        console.error('Async: Could not copy text: ', err);
-      });
+      navigator.clipboard.writeText(this.deviceIp)
+          .then(() => this.copiedStatus = "Скопировано!")
+          .catch((err) => {
+            this.copiedStatus = "Ошибка!";
+            console.error('Could not copy text: ', err);
+          });
       setTimeout(() => this.copied = false, 1000)
     },
   }
