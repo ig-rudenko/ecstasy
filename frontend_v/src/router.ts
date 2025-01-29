@@ -32,6 +32,17 @@ const router = createRouter({
 
         {path: "/maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps"},
         {path: "/maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view"},
+        {path: "/ring-manager", component: () => import("@/pages/ring-manager/RingManager.vue"), name: "ring-manager"},
+        {
+            path: "/ring-manager/access-ring",
+            component: () => import("@/pages/ring-manager/AccessRing.vue"),
+            name: "access-manager"
+        },
+        {
+            path: "/ring-manager/transport-ring",
+            component: () => import("@/pages/ring-manager/TransportRing.vue"),
+            name: "transport-manager"
+        },
 
         {path: "/gpon", component: () => import("@/pages/gpon_base/GPONPage.vue"), name: "gpon"},
         {path: "/gpon/tech-data", component: () => import("@/pages/gpon_base/TechData.vue"), name: "gpon-tech-data"},

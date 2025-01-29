@@ -1,8 +1,8 @@
 import {AxiosError} from "axios";
 
 function getVerboseAxiosError(error: AxiosError<any>): string {
-    if (error.response?.data?.detail) {
-        const detail = error.response.data.detail
+    if (error.response?.data?.detail || error.response?.data?.error) {
+        const detail = error.response.data.detail || error.response.data.error;
         // const request_id = error.response.headers["x-api-request-id"]
 
         if (typeof detail[0] === "string") return detail // + "\nRequest ID: " + request_id;
