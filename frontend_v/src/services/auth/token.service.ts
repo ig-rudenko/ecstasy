@@ -5,8 +5,16 @@ import router from "@/router";
 import {UserTokens} from "@/services/user";
 
 export async function refreshAccessToken() {
+    if (tokenService.isRefreshing) {
+        // Если токен обновляется, то ожидаем его обновления и успешно выходим
+        await tokenService.waitRefreshingIsFinished();
+        return true;
+    }
+
     const refreshToken = tokenService.getLocalRefreshToken()
     if (!refreshToken) return;
+
+    tokenService.isRefreshing = true;
 
     const logout = async () => {
         await store.dispatch("auth/logout")
@@ -29,13 +37,15 @@ export async function refreshAccessToken() {
 
     } catch (error) {
         console.error(error);
+        tokenService.isRefreshing = false;
         return logout();
     }
 
 }
 
 export class TokenService {
-    private _tokens: UserTokens|null = null;
+    private _tokens: UserTokens | null = null;
+    public isRefreshing = false;
 
     constructor() {
         this.load();
@@ -55,17 +65,19 @@ export class TokenService {
         return user.refreshToken;
     }
 
-    getLocalAccessToken() {
+    async getLocalAccessToken() {
+        await this.waitRefreshingIsFinished();
         const user = this.getUserTokens();
         return user.accessToken;
     }
 
     getUserTokens(): UserTokens {
-        return this._tokens || {accessToken: "", refreshToken:""}
+        return this._tokens || {accessToken: "", refreshToken: ""}
     }
 
     setTokens(access: string, refresh: string) {
         this._tokens = {accessToken: access, refreshToken: refresh};
+        tokenService.isRefreshing = false;
         this.save();
     }
 
@@ -73,7 +85,14 @@ export class TokenService {
         localStorage.removeItem("tokens");
         this._tokens = null;
     }
+
+    async waitRefreshingIsFinished() {
+        while (this.isRefreshing) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
 }
+
 const tokenService = new TokenService();
 
 export {tokenService}

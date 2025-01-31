@@ -5,8 +5,8 @@ const ignoreURLs = ["/api/token"];
 
 const setup = () => {
     axiosInstance.interceptors.request.use(
-        config => {
-            const token = tokenService.getLocalAccessToken();
+        async (config) => {
+            const token = await tokenService.getLocalAccessToken();
             if (token) config.headers["Authorization"] = 'Bearer ' + token;
             return config;
         },
