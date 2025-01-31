@@ -198,3 +198,23 @@ class VlanTracerouteConfig(SingletonModel):
     class Meta:
         db_table = "vlan_traceroute_settings"
         verbose_name = verbose_name_plural = "VLAN traceroute settings"
+
+
+class AccessRingSettings(SingletonModel):
+    """
+    Модель, которая хранит настройки для работы поиска колец доступа.
+    """
+
+    agg_dev_name_regexp = models.TextField(
+        verbose_name="RegExp для названия оборудований агрегации",
+        help_text="Оборудования, которые будут использоваться как начало и конец колец доступа",
+    )
+
+    access_dev_name_regexp = models.TextField(
+        verbose_name="RegExp для названия оборудований доступа",
+        help_text="Оборудования, которые являются элементами колец доступа",
+    )
+
+    class Meta:
+        db_table = "access_rings_settings"
+        verbose_name = verbose_name_plural = "Access rings settings"

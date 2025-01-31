@@ -3,6 +3,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from app_settings.models import AccessRingSettings
 from check.models import Devices
 from .permissions import AccessRingPermission
 from .serializers import AccessRingSerializer, PointRingSerializer
@@ -16,11 +17,14 @@ class ListAccessRingsAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, AccessRingPermission]
 
     def get_queryset(self):
-        user_available_groups = (
-            self.request.user.profile.devices_groups.all().values_list("id", flat=True)
-        )
+        user_available_groups = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
+        ring_settings = AccessRingSettings.load()
+        if not ring_settings.agg_dev_name_regexp:
+            return Devices.objects.none()
+
         return Devices.objects.filter(
-            group__name="SSW", group_id__in=user_available_groups
+            name__iregex=ring_settings.agg_dev_name_regexp,
+            group_id__in=user_available_groups,
         ).select_related("devicesinfo")
 
     def list(self, request, *args, **kwargs):

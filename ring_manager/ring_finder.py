@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 import orjson
 
+from app_settings.models import AccessRingSettings
 from check.models import Devices
 from devicemanager.device import Interfaces
 from devicemanager.device.interfaces import Interface
@@ -104,6 +105,7 @@ class AggregationRingFinder:
 
     def __init__(self, agg: Devices):
         self._agg: Devices = agg
+        self._settings = AccessRingSettings.load()
         self._result_rings: list[RingStructure] = []
         self._current_agg_port: str = ""
         self._passed_devices: list[str] = []
@@ -129,14 +131,18 @@ class AggregationRingFinder:
         self._temp_result_rings = []
         self._current_agg_port = ""
 
-    @staticmethod
-    def _match_device(string) -> DeviceMatch:
-        match = re.findall(r"SVSL\S+ASW\d", string)
+    def _match_device(self, string) -> DeviceMatch:
+        # Access device regexp
+        match = re.findall(self._settings.access_dev_name_regexp, string)
         if match:
             return DeviceMatch(name=match[0], agg=False)
-        match = re.findall(r"SVSL\S+SSW\d", string)
+
+        # Aggregation device regexp
+        match = re.findall(self._settings.agg_dev_name_regexp, string)
         if match:
             return DeviceMatch(name=match[0], agg=True)
+
+        # Not found device
         return DeviceMatch()
 
     def _get_end_agg_port_to_dev(self, device_name: str) -> str:

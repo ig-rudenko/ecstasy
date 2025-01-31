@@ -20,6 +20,7 @@
     чтобы найти в описании порта имя другого оборудования и продолжить трассировку
 """
 
+from django import forms
 from django.contrib import admin
 from requests import RequestException
 
@@ -27,6 +28,7 @@ from app_settings.models import (
     LogsElasticStackSettings,
     ZabbixConfig,
     VlanTracerouteConfig,
+    AccessRingSettings,
 )
 from devicemanager.device.zabbix_api import zabbix_api
 
@@ -69,3 +71,27 @@ class VlanTracerouteConfigAdmin(admin.ModelAdmin):
     """
 
     list_display = ["find_device_pattern", "vlan_start", "vlan_start_regex", "ip_pattern", "cache_timeout"]
+
+
+class AccessRingSettingsModelForm(forms.ModelForm):
+    class Meta:
+        model = AccessRingSettings
+        fields = "__all__"
+        widgets = {
+            "agg_dev_name_regexp": forms.Textarea(
+                attrs={"style": "font-family: monospace; font-size: 1.3rem;"}
+            ),
+            "access_dev_name_regexp": forms.Textarea(
+                attrs={"style": "font-family: monospace; font-size: 1.3rem;"}
+            ),
+        }
+
+
+@admin.register(AccessRingSettings)
+class AccessRingSettingsAdmin(admin.ModelAdmin):
+    """
+    ## Админка для настроек работы Access Ring
+    """
+
+    form = AccessRingSettingsModelForm
+    list_display = ["id", "agg_dev_name_regexp", "access_dev_name_regexp"]
