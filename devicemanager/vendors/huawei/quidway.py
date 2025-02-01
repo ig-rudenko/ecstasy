@@ -215,17 +215,85 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         for intf, status, desc in interfaces:
             if not re.match("^(V|NU|A)", intf):
                 output = self.send_command(
-                    f"display current-configuration interface {interface_normal_view(intf)}",
-                    expect_command=False,
-                )
+                f"display current-configuration interface {interface_normal_view(intf)}",
+                expect_command=False,
+            )
 
-                vlans_group = re.sub(r"(?<=undo).+vlan (.+)", "", output)  # Убираем строчки, где есть "undo"
-                # Ищем строчки вланов, без повторений
-                vlans = list(set(re.findall(r"vlan (.+)", vlans_group)))
+            # Use the extract_vlans method to parse VLANs for the interface is work for S2326 tested 
+            vlans = self.extract_vlans(output)
 
+            # Check if there are any VLANs before appending
+            if vlans:  # This ensures you don't append empty VLAN lists
                 result.append((intf, status, desc, vlans))
+            else:
+                result.append((intf, status, desc, []))  # Or append an empty list if no VLANs found
 
         return result
+    def extract_vlans(self,interface_output: str) -> list:
+        """
+        Extract VLANs from the interface configuration.
+        
+        :param interface_output: Output of the command `display current-configuration interface {port}`
+        :return: A sorted list of extracted VLANs
+        """
+        # Remove lines with "undo" to avoid conflicts
+        cleaned_output = re.sub(r"^ undo .+", "", interface_output, flags=re.MULTILINE)
+        
+        # Extract tagged VLANs if present
+        tagged_vlans = re.findall(r"port hybrid tagged vlan ([\d\s\,to]+)", cleaned_output)
+        # If a single string is returned, convert it to a list of one element
+        if isinstance(tagged_vlans, str):
+            tagged_vlans = [tagged_vlans]
+        tagged_vlans = self.expand_vlan_ranges(tagged_vlans)
+        
+        # Extract trunk VLANs if present
+        trunk_vlans = re.findall(r"port trunk allow-pass vlan ([\d\s\,to]+)", cleaned_output)
+        if isinstance(trunk_vlans, str):
+            trunk_vlans = [trunk_vlans]
+        trunk_vlans = self.expand_vlan_ranges(trunk_vlans)
+        
+        # Extract untagged VLANs if present
+        untagged_vlans = re.findall(r"port hybrid untagged vlan ([\d\s]+)", cleaned_output)
+        untagged_vlans = [int(vlan) for vlan in " ".join(untagged_vlans).split()]
+        
+        # Extract PVID VLAN if present
+        pvid_vlan = re.findall(r"port hybrid pvid vlan (\d+)", cleaned_output)
+        pvid_vlan = [int(vlan) for vlan in pvid_vlan]
+
+        # Combine all VLANs and remove duplicates
+        all_vlans = set(tagged_vlans + untagged_vlans + trunk_vlans + pvid_vlan)
+        return sorted(all_vlans)
+    def expand_vlan_ranges(vlan_ranges: list) -> list:
+        """
+        Expand VLAN ranges into individual VLANs.
+        
+        :param vlan_ranges: List of VLAN ranges as strings, e.g., ["10 to 14", "3456"]
+        :return: List of individual VLANs
+        """
+        vlans = []
+        #print(f"Raw vlan_ranges: {vlan_ranges}")  # Debug print to check input
+        
+        for part in vlan_ranges:
+            #print(f"Processing: {part}")  # Debug print to see what's being processed
+            part = part.strip(",")  # Remove trailing commas or delimiters
+            parts = part.split()  # Split by spaces for individual VLANs and ranges
+            
+            # Process each part in the string
+            for i, subpart in enumerate(parts):
+                if "to" in subpart:  # Handle VLAN ranges
+                    if i > 0 and i + 1 < len(parts):
+                        try:
+                            start = int(parts[i - 1])  # Get the start of the range
+                            end = int(parts[i + 1])  # Get the end of the range
+                            vlans.extend(range(start, end + 1))  # Add all VLANs between start and end inclusive
+                        except ValueError:
+                            pass
+                            #print(f"Invalid range: {parts[i - 1]} to {parts[i + 1]}. Skipping.")  # Log invalid range
+        
+                elif subpart.isdigit():  # Handle single VLAN numbers
+                    vlans.append(int(subpart))
+        
+        return vlans
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
