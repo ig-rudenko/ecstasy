@@ -711,23 +711,86 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-
-        self.session.sendline("system-view")
-        self.session.sendline(f"interface {port}")
-        self.session.expect(self.prompt)
-        self.session.sendline("virtual-cable-test")
-        self.session.expect("virtual-cable-test")
-        if self.session.expect([self.prompt, "continue"]):  # Требуется подтверждение?
-            self.session.sendline("Y")
+        port_type=self.get_port_type(port)
+        if port_type in ["COPPER", "COMBO-COPPER"]:
+            self.session.sendline("system-view")
+            self.session.sendline(f"interface {port}")
             self.session.expect(self.prompt)
-        cable_test_data = (self.session.before or b"").decode("utf-8")
+            self.session.sendline("virtual-cable-test")
+            self.session.expect("virtual-cable-test")
+            if self.session.expect([self.prompt, "continue"]):  # Требуется подтверждение?
+                self.session.sendline("Y")
+                self.session.expect(self.prompt)
+            cable_test_data = (self.session.before or b"").decode("utf-8")
 
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
-        self.session.sendline("quit")
-        self.session.expect(self.prompt)
-        return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
+            self.session.sendline("quit")
+            self.session.expect(self.prompt)
+            self.session.sendline("quit")
+            self.session.expect(self.prompt)
+            return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
+        elif port_type in ["SFP", "COMBO-FIBER"]:
+            sfp_parameter_data = self.send_command(f'display transceiver diagnosis interface {port}',expect_command=True)
+            return self.__parse_sfp_diagnostics(sfp_parameter_data)
+    def __parse_sfp_diagnostics(self,output: str):
+        """
+        Parses SFP transceiver diagnostic information using regex.
+        
+        :param output: String containing the transceiver diagnostic data.
+        :return: Dictionary with parsed values.
+        example:
+         {
+        "TxPower": {
+            "Current": -5.2,
+            "Low Warning": -10.0,
+            "High Warning": 0.0,
+            "Status": "normal"
+        },
+        "RxPower": {
+            "Current": -7.1,
+            "Low Warning": -15.0,
+            "High Warning": 0.0,
+            "Status": "normal"
+        },
+        "Temperature": {
+            "Current": 45.0,
+            "Low Warning": 30.0,
+            "High Warning": 70.0,
+            "Status": "normal"
+        },
+        "Current": {
+            "Current": 100.0,
+            "Low Warning": 50.0,
+            "High Warning": 200.0,
+            "Status": "normal"
+        },
+        "Voltage": {
+            "Current": 3.3,
+            "Low Warning": 2.8,
+            "High Warning": 3.6,
+            "Status": "normal"
+        }
+    }
 
+        """
+        pattern = re.compile(
+            r"(?P<parameter>[\w.()]+)\s+"
+            r"(?P<current_value>-?\d+\.\d+)\s+"
+            r"(?P<low_warning>-?\d+\.\d+)\s+"
+            r"(?P<high_warning>-?\d+\.\d+)\s+"
+            r"(?P<status>\w+)"
+        )
+
+        results = {}
+        for match in pattern.finditer(output):
+            parameter = match.group("parameter").strip()
+            results[parameter] = {
+                "Current": float(match.group("current_value")),
+                "Low Warning": float(match.group("low_warning")),
+                "High Warning": float(match.group("high_warning")),
+                "Status": match.group("status")
+            }
+
+        return results
     def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": self.__get_port_info(port)}
 
