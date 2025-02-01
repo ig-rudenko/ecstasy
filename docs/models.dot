@@ -1,7 +1,7 @@
 digraph model_graph {
   // Dotfile by Django-Extensions graph_models
-  // Created: 2023-05-11 23:41
-  // Cli Options: -a --rankdir LR --dot -g -o models.dot
+  // Created: 2025-02-01 21:12
+  // Cli Options: -a --rankdir LR --dot -g -o ./docs/models.dot
 
   fontname = "Roboto"
   fontsize = 8
@@ -638,9 +638,57 @@ digraph model_graph {
     
     
       <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">active</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">BooleanField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">cmd_protocol</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">collect_configurations</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">BooleanField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">collect_interfaces</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">BooleanField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">collect_mac_addresses</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">BooleanField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">connection_pool_size</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">interface_pattern</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
     
     
@@ -678,6 +726,14 @@ digraph model_graph {
     
     
       <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">serial_number</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">snmp_community</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
@@ -694,57 +750,57 @@ digraph model_graph {
     
       </TABLE>
       >]
-
+  
     check_models_DeviceMedia [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       DeviceMedia
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>device</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">description</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">file</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">FileField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">mod_time</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     check_models_Bras [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
@@ -757,6 +813,14 @@ digraph model_graph {
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">connection_pool_size</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
     
     
@@ -824,17 +888,17 @@ digraph model_graph {
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">BooleanField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">console_url</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">permissions</FONT>
       </TD><TD ALIGN="LEFT">
@@ -842,14 +906,14 @@ digraph model_graph {
       </TD></TR>
     
     
-
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">port_guard_pattern</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
   
@@ -1462,6 +1526,14 @@ digraph model_graph {
     
     
       <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">cache_timeout</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">IntegerField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">find_device_pattern</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">TextField</FONT>
@@ -1470,7 +1542,57 @@ digraph model_graph {
     
     
       <TR><TD ALIGN="LEFT" BORDER="0">
-      <FONT FACE="Roboto">vlan_start</FONT>
+      <FONT COLOR="#7B7B7B" FACE="Roboto">ip_pattern</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">vlan_start</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">vlan_start_regex</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
+      </TD></TR>
+    
+    
+      </TABLE>
+      >]
+  
+    app_settings_models_AccessRingSettings [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      AccessRingSettings<BR/>&lt;<FONT FACE="Roboto"><I>SingletonModel</I></FONT>&gt;
+      </B></FONT></TD></TR>
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto"><B>id</B></FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">access_dev_name_regexp</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">TextField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">agg_dev_name_regexp</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">TextField</FONT>
       </TD></TR>
@@ -1832,392 +1954,392 @@ digraph model_graph {
           >
     color=olivedrab4
     style="rounded"
-
+  
     django_celery_beat_models_SolarSchedule [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       SolarSchedule
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>AutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">event</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">latitude</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">DecimalField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">longitude</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">DecimalField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     django_celery_beat_models_IntervalSchedule [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       IntervalSchedule
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>AutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">every</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">IntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">period</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     django_celery_beat_models_ClockedSchedule [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       ClockedSchedule
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>AutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">clocked_time</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     django_celery_beat_models_CrontabSchedule [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       CrontabSchedule
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>AutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">day_of_month</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">day_of_week</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">hour</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">minute</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">month_of_year</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">timezone</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">TimeZoneField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     django_celery_beat_models_PeriodicTasks [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       PeriodicTasks
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>ident</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>SmallIntegerField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">last_update</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     django_celery_beat_models_PeriodicTask [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       PeriodicTask
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>AutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>clocked</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>crontab</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>interval</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>solar</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">args</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">date_changed</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">description</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">enabled</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">BooleanField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">exchange</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">expire_seconds</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">PositiveIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">expires</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">headers</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">kwargs</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">last_run_at</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">name</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">one_off</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">BooleanField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">priority</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">PositiveIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">queue</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">routing_key</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">start_time</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">task</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">total_run_count</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveIntegerField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
 
@@ -2234,526 +2356,606 @@ digraph model_graph {
           >
     color=olivedrab4
     style="rounded"
-
+  
     gpon_models_Address [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       Address
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">apartment</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">block</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">floor</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">SmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">house</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">plan_structure</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">region</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">settlement</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">street</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_OLTState [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       OLTState
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>device</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">description</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">fiber</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">olt_port</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_HouseOLTState [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       HouseOLTState
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>house</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>statement</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">description</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">TextField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">entrances</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_HouseB [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       HouseB
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>address</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">apartment_building</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">BooleanField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">floors</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">total_entrances</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_End3 [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       End3
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>address</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">capacity</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">location</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">type</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_TechCapability [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       TechCapability
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>end3</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">number</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">status</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_Customer [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       Customer
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">company_name</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">contract</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">first_name</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">last_name</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">phone</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT COLOR="#7B7B7B" FACE="Roboto">surname</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">type</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_Service [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       Service
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">name</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
+    
+    
       </TABLE>
       >]
-
+  
     gpon_models_SubscriberConnection [label=<
       <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
       <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
       <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
       SubscriberConnection
       </B></FONT></TD></TR>
-
-
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>id</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>address</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>customer</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto"><B>tech_capability</B></FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto"><B>ForeignKey (id)</B></FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">connected_at</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">DateTimeField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">description</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">CharField</FONT>
+      </TD></TR>
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">ip</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">GenericIPAddressField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">ont_id</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveSmallIntegerField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">ont_mac</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">ont_serial</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">order</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">CharField</FONT>
       </TD></TR>
-
-
-
+    
+    
+    
       <TR><TD ALIGN="LEFT" BORDER="0">
       <FONT FACE="Roboto">transit</FONT>
       </TD><TD ALIGN="LEFT">
       <FONT FACE="Roboto">PositiveIntegerField</FONT>
       </TD></TR>
+    
+    
+      </TABLE>
+      >]
 
-
+  }
+  subgraph cluster_news {
+    label=<
+          <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+          <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER">
+          <FONT FACE="Roboto" COLOR="Black" POINT-SIZE="10">
+          <B>news</B>
+          </FONT>
+          </TD></TR>
+          </TABLE>
+          >
+    color=olivedrab4
+    style="rounded"
+  
+    news_models_GlobalNews [label=<
+      <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+      <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+      <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>
+      GlobalNews
+      </B></FONT></TD></TR>
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto"><B>id</B></FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto"><B>BigAutoField</B></FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">content</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">TextField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">created_at</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">expired_at</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT COLOR="#7B7B7B" FACE="Roboto">DateTimeField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">severity</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">CharField</FONT>
+      </TD></TR>
+    
+    
+    
+      <TR><TD ALIGN="LEFT" BORDER="0">
+      <FONT FACE="Roboto">title</FONT>
+      </TD><TD ALIGN="LEFT">
+      <FONT FACE="Roboto">CharField</FONT>
+      </TD></TR>
+    
+    
       </TABLE>
       >]
 
@@ -2859,6 +3061,9 @@ digraph model_graph {
   app_settings_models_VlanTracerouteConfig -> app_settings_models_SingletonModel
   [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
 
+  app_settings_models_AccessRingSettings -> app_settings_models_SingletonModel
+  [label=" abstract\ninheritance"] [arrowhead=empty, arrowtail=none, dir=both];
+
 
   gathering_models_MacAddress -> check_models_Devices
   [label=" device (macaddress)"] [arrowhead=none, arrowtail=dot, dir=both];
@@ -2935,6 +3140,7 @@ digraph model_graph {
 
   gpon_models_SubscriberConnection -> gpon_models_Service
   [label=" services (subscribers)"] [arrowhead=dot arrowtail=dot, dir=both];
+
 
 
 }
