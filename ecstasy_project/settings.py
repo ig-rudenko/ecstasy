@@ -370,6 +370,7 @@ SIMPLE_JWT = {
 }
 
 JAZZMIN_SETTINGS = {
+    # "show_ui_builder": True,
     "site_title": "Панель администратора",
     "site_header": "Ecstasy",
     "site_brand": "Ecstasy",
@@ -395,6 +396,7 @@ JAZZMIN_SETTINGS = {
         "check.UsersActions": "fas fa-font",
         "check.DeviceMedia": "fas fa-images",
         "app_settings.LogsElasticStackSettings": "fas fas fa-wrench",
+        "app_settings.AccessRingSettings": "fas fas fa-wrench",
         "app_settings.ZabbixConfig": "fas fas fa-wrench",
         "app_settings.VlanTracerouteConfig": "fas fas fa-wrench",
         "gathering.MacAddress": "fas fa-ethernet",
@@ -406,8 +408,36 @@ JAZZMIN_SETTINGS = {
     },
 }
 JAZZMIN_UI_TWEAKS = {
-    "theme": "litera",
-    "dark_mode_theme": "darkly",
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-purple",
+    "accent": "accent-lightblue",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": True,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True,
+    "theme": "cyborg",
+    "dark_mode_theme": "cyborg",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+    "actions_sticky_top": True,
 }
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
