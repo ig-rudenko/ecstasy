@@ -180,7 +180,7 @@ class PortControlAPIViewTestCase(APITestCase):
     @patch("check.models.Devices.available")
     @patch("check.models.Devices.connect")
     def test_port_down_superuser_access_to_change_core_port_by_desc(
-            self, device_connection: Mock, mock_available: Mock
+        self, device_connection: Mock, mock_available: Mock
     ):
         mock_available.return_value = True
 

@@ -24,6 +24,7 @@ from devicemanager.vendors.base.types import (
     PortInfoType,
 )
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
+from ..device_connector.factory import DEFAULT_POOL_SIZE
 
 
 class RemoteDevice(
@@ -42,6 +43,7 @@ class RemoteDevice(
         port_scan_protocol: str,
         snmp_community: str,
         make_session_global: bool,
+        pool_size: int = DEFAULT_POOL_SIZE,
     ):
         self.ip = ip
         self._remote_auth = {
@@ -54,6 +56,7 @@ class RemoteDevice(
         self._snmp_community = snmp_community
         self._make_session_global = make_session_global
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
+        self._pool_size = pool_size
 
         self._timeout = 60 * 3
         self._session = requests.Session()
@@ -81,6 +84,7 @@ class RemoteDevice(
                         "port_scan_protocol": self._port_scan_protocol,
                         "snmp_community": self._snmp_community,
                         "make_session_global": self._make_session_global,
+                        "pool_size": self._pool_size,
                     },
                     "auth": self._remote_auth,
                     "params": params,
@@ -88,9 +92,9 @@ class RemoteDevice(
                 timeout=self._timeout,
             )
         except requests.exceptions.ConnectionError:
-            raise requests.exceptions.ConnectionError(f"Не удалось подключиться к DeviceConnector")
+            raise requests.exceptions.ConnectionError("Не удалось подключиться к DeviceConnector")
         except requests.exceptions.Timeout:
-            raise requests.exceptions.ConnectTimeout(f"Время ожидания ответа от DeviceConnector")
+            raise requests.exceptions.ConnectTimeout("Время ожидания ответа от DeviceConnector")
 
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)

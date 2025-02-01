@@ -80,6 +80,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         "model",
         "port_scan_protocol",
         "cmd_protocol",
+        "connection_pool_size",
     ]
     radio_fields = {
         "port_scan_protocol": admin.HORIZONTAL,
@@ -113,6 +114,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
                     "collect_interfaces",
                     "collect_mac_addresses",
                     "collect_configurations",
+                    "connection_pool_size",
                 )
             },
         ),
@@ -127,6 +129,10 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         "set_telnet",
         "set_snmp",
         "set_ssh",
+        "set_pool_size_1",
+        "set_pool_size_2",
+        "set_pool_size_3",
+        "set_pool_size_4",
     ]
 
     @admin.display(description="Группа")
@@ -210,6 +216,22 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         """Меняем протокол поиска интерфейсов на SSH"""
 
         queryset.update(port_scan_protocol="ssh")
+
+    @admin.action(description="Установка пула подключений в 1")
+    def set_pool_size_1(self, request, queryset):
+        queryset.update(connection_pool_size=1)
+
+    @admin.action(description="Установка пула подключений в 2")
+    def set_pool_size_2(self, request, queryset):
+        queryset.update(connection_pool_size=3)
+
+    @admin.action(description="Установка пула подключений в 3")
+    def set_pool_size_3(self, request, queryset):
+        queryset.update(connection_pool_size=3)
+
+    @admin.action(description="Установка пула подключений в 4")
+    def set_pool_size_4(self, request, queryset):
+        queryset.update(connection_pool_size=4)
 
     @admin.action(description="Экспорт ёмкости интерфейсов в xls")
     def excel_interfaces_export(self, request, queryset):

@@ -1,12 +1,12 @@
-mypy
 celery-types
-types-pexpect
-django-stubs
 django-filter-stubs
+django-stubs
 djangorestframework-stubs
+drf-yasg-stubs
+mypy
 types-Markdown
-types-Pygments
+types-pexpect
 types-psycopg2
+types-Pygments
 types-pysftp
 types-tabulate
-drf-yasg-stubs

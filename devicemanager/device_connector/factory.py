@@ -15,6 +15,7 @@ logger = logging.Logger(__file__)
 logger.addHandler(logging.StreamHandler())
 
 DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", 3))
+MAX_POOL_SIZE = int(os.getenv("MAX_POOL_SIZE", 3))
 
 
 class DeviceSessionFactory:
@@ -46,8 +47,8 @@ class DeviceSessionFactory:
             pool_size = DEFAULT_POOL_SIZE
         if pool_size < 1:
             return 1
-        elif pool_size > 3:
-            return 3
+        elif pool_size > MAX_POOL_SIZE:
+            return MAX_POOL_SIZE
         return pool_size
 
     def perform_method(self, method: str, **params) -> Any:

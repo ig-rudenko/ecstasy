@@ -2,6 +2,7 @@ import io
 import logging
 import os
 import pathlib
+from ipaddress import IPv4Address
 from typing import TypedDict
 
 from flask import Flask, after_this_request
@@ -15,7 +16,7 @@ from devicemanager.session_control import DEVICE_SESSIONS
 
 app = Flask(__name__)
 TOKEN = os.getenv("DEVICE_CONNECTOR_TOKEN", "ASDIH!hausd17391")
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(os.getenv("DEVICE_CONNECTOR_LOG_LEVEL", logging.INFO))
 
 
 class ConnectionType(TypedDict):
@@ -64,13 +65,19 @@ def connector(ip: str, method: str):
     if token_error:
         return token_error
 
+    try:
+        valid_ip = IPv4Address(ip).compressed
+    except ValueError:
+        resp = jsonify({"error": "invalid ip"})
+        resp.status_code = 400
+        return resp
+
     data = request.get_json(force=True)
     connection: ConnectionType = data.get("connection")
-    print(ip, method)
 
     try:
         factory = DeviceSessionFactory(
-            ip=ip,
+            ip=valid_ip,
             protocol=connection.get("cmd_protocol", "ssh"),
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
@@ -107,11 +114,22 @@ def delete_connection_pool(ip: str):
     token_error = check_token()
     if token_error:
         return token_error
-    DEVICE_SESSIONS.delete_pool(ip)
+
+    try:
+        valid_ip = IPv4Address(ip).compressed
+    except ValueError:
+        resp = jsonify({"error": "invalid ip"})
+        resp.status_code = 400
+        return resp
+
+    DEVICE_SESSIONS.delete_pool(valid_ip)
     resp = jsonify({"message": "Connection pool deleted"})
     resp.status_code = 204
     return resp
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, use_reloader=True)
+    app.run(
+        host=os.getenv("DEVICE_CONNECTOR_BIND_HOST", "0.0.0.0"),
+        port=os.getenv("DEVICE_CONNECTOR_BIND_PORT", 8000),
+    )

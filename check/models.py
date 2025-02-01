@@ -139,7 +139,7 @@ class Devices(models.Model):
         max_length=255,
         verbose_name="Паттерн имени интерфейса",
         help_text=r"Паттерн, по которому отфильтрованы интерфейсы. "
-                  r"Например `^gi\S+|^eth\S+`. По умолчанию все интерфейсы.",
+        r"Например `^gi\S+|^eth\S+`. По умолчанию все интерфейсы.",
     )
     active = models.BooleanField(
         default=True,
@@ -149,19 +149,24 @@ class Devices(models.Model):
         default=True,
         verbose_name="Сбор интерфейсов",
         help_text="Если включено, то будут собраны интерфейсы "
-                  'во время периодической задачи "interfaces_scan"',
+        'во время периодической задачи "interfaces_scan"',
     )
     collect_mac_addresses = models.BooleanField(
         default=True,
         verbose_name="Сбор MAC адресов",
         help_text="Если включено, то будут собраны MAC адреса "
-                  'во время периодической задачи "mac_table_gather_task"',
+        'во время периодической задачи "mac_table_gather_task"',
     )
     collect_configurations = models.BooleanField(
         default=True,
         verbose_name="Сбор конфигураций",
         help_text="Если включено, то будут собраны конфигурации "
-                  'во время периодической задачи "configuration_gather_task"',
+        'во время периодической задачи "configuration_gather_task"',
+    )
+    connection_pool_size = models.PositiveSmallIntegerField(
+        default=2,
+        verbose_name="Размер пула подключений",
+        help_text="Количество подключений к оборудованию, которые могут быть одновременно открыты",
     )
 
     def __str__(self):
@@ -187,6 +192,7 @@ class Devices(models.Model):
             snmp_community=str(self.snmp_community),
             auth_obj=self.auth_group,
             make_session_global=make_session_global,
+            pool_size=self.connection_pool_size,
         )
 
     class Meta:
@@ -246,6 +252,11 @@ class Bras(models.Model):
         blank=True,
         verbose_name="Пароль от привилегированного режима",
     )
+    connection_pool_size = models.PositiveSmallIntegerField(
+        default=2,
+        verbose_name="Размер пула подключений",
+        help_text="Количество подключений к оборудованию, которые могут быть одновременно открыты",
+    )
 
     def __str__(self):
         return self.name
@@ -264,6 +275,7 @@ class Bras(models.Model):
             snmp_community="",
             auth_obj=SimpleAuthObject(self.login, self.password, self.secret or ""),
             make_session_global=True,
+            pool_size=self.connection_pool_size,
         )
 
     @staticmethod
