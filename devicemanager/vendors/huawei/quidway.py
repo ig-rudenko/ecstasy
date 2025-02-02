@@ -213,14 +213,16 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
         result: InterfaceVLANListType = []
         for intf, status, desc in interfaces:
-            if not re.match("^(V|NU|A)", intf):
-                output = self.send_command(
+            if re.match("^(V|NU|A)", intf):
+                continue
+
+            output = self.send_command(
                 f"display current-configuration interface {interface_normal_view(intf)}",
                 expect_command=False,
             )
 
-            # Use the extract_vlans method to parse VLANs for the interface is work for S2326 tested 
-            vlans = self.extract_vlans(output)
+            # Use the extract_vlans method to parse VLANs for the interface is work for S2326 tested
+            vlans = self._extract_vlans(output)
 
             # Check if there are any VLANs before appending
             if vlans:  # This ensures you don't append empty VLAN lists
@@ -229,33 +231,34 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 result.append((intf, status, desc, []))  # Or append an empty list if no VLANs found
 
         return result
-    def extract_vlans(self,interface_output: str) -> list:
+
+    def _extract_vlans(self, interface_output: str) -> list:
         """
         Extract VLANs from the interface configuration.
-        
+
         :param interface_output: Output of the command `display current-configuration interface {port}`
         :return: A sorted list of extracted VLANs
         """
         # Remove lines with "undo" to avoid conflicts
         cleaned_output = re.sub(r"^ undo .+", "", interface_output, flags=re.MULTILINE)
-        
+
         # Extract tagged VLANs if present
-        tagged_vlans = re.findall(r"port hybrid tagged vlan ([\d\s\,to]+)", cleaned_output)
+        tagged_vlans = re.findall(r"port hybrid tagged vlan ([\d\s,to]+)", cleaned_output)
         # If a single string is returned, convert it to a list of one element
         if isinstance(tagged_vlans, str):
             tagged_vlans = [tagged_vlans]
-        tagged_vlans = self.expand_vlan_ranges(tagged_vlans)
-        
+        tagged_vlans = self._expand_vlan_ranges(tagged_vlans)
+
         # Extract trunk VLANs if present
-        trunk_vlans = re.findall(r"port trunk allow-pass vlan ([\d\s\,to]+)", cleaned_output)
+        trunk_vlans = re.findall(r"port trunk allow-pass vlan ([\d\s,to]+)", cleaned_output)
         if isinstance(trunk_vlans, str):
             trunk_vlans = [trunk_vlans]
-        trunk_vlans = self.expand_vlan_ranges(trunk_vlans)
-        
+        trunk_vlans = self._expand_vlan_ranges(trunk_vlans)
+
         # Extract untagged VLANs if present
         untagged_vlans = re.findall(r"port hybrid untagged vlan ([\d\s]+)", cleaned_output)
         untagged_vlans = [int(vlan) for vlan in " ".join(untagged_vlans).split()]
-        
+
         # Extract PVID VLAN if present
         pvid_vlan = re.findall(r"port hybrid pvid vlan (\d+)", cleaned_output)
         pvid_vlan = [int(vlan) for vlan in pvid_vlan]
@@ -263,21 +266,23 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         # Combine all VLANs and remove duplicates
         all_vlans = set(tagged_vlans + untagged_vlans + trunk_vlans + pvid_vlan)
         return sorted(all_vlans)
-    def expand_vlan_ranges(vlan_ranges: list) -> list:
+
+    @staticmethod
+    def _expand_vlan_ranges(vlan_ranges: list) -> list:
         """
         Expand VLAN ranges into individual VLANs.
-        
+
         :param vlan_ranges: List of VLAN ranges as strings, e.g., ["10 to 14", "3456"]
         :return: List of individual VLANs
         """
         vlans = []
-        #print(f"Raw vlan_ranges: {vlan_ranges}")  # Debug print to check input
-        
+        # print(f"Raw vlan_ranges: {vlan_ranges}")  # Debug print to check input
+
         for part in vlan_ranges:
-            #print(f"Processing: {part}")  # Debug print to see what's being processed
+            # print(f"Processing: {part}")  # Debug print to see what's being processed
             part = part.strip(",")  # Remove trailing commas or delimiters
             parts = part.split()  # Split by spaces for individual VLANs and ranges
-            
+
             # Process each part in the string
             for i, subpart in enumerate(parts):
                 if "to" in subpart:  # Handle VLAN ranges
@@ -285,14 +290,16 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                         try:
                             start = int(parts[i - 1])  # Get the start of the range
                             end = int(parts[i + 1])  # Get the end of the range
-                            vlans.extend(range(start, end + 1))  # Add all VLANs between start and end inclusive
+                            vlans.extend(
+                                range(start, end + 1)
+                            )  # Add all VLANs between start and end inclusive
                         except ValueError:
                             pass
-                            #print(f"Invalid range: {parts[i - 1]} to {parts[i + 1]}. Skipping.")  # Log invalid range
-        
+                            # print(f"Invalid range: {parts[i - 1]} to {parts[i + 1]}. Skipping.")  # Log invalid range
+
                 elif subpart.isdigit():  # Handle single VLAN numbers
                     vlans.append(int(subpart))
-        
+
         return vlans
 
     @staticmethod
@@ -711,7 +718,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-        port_type=self.get_port_type(port)
+        port_type = self.get_port_type(port)
         if port_type in ["COPPER", "COMBO-COPPER"]:
             self.session.sendline("system-view")
             self.session.sendline(f"interface {port}")
@@ -729,47 +736,53 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             self.session.expect(self.prompt)
             return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
         elif port_type in ["SFP", "COMBO-FIBER"]:
-            sfp_parameter_data = self.send_command(f'display transceiver diagnosis interface {port}',expect_command=True)
-            return self.__parse_sfp_diagnostics(sfp_parameter_data)
-    def __parse_sfp_diagnostics(self,output: str):
+            sfp_parameter_data = self.send_command(
+                f"display transceiver diagnosis interface {port}", expect_command=True
+            )
+            return {"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)}
+
+        return {"len": "-", "status": "Unknown"}
+
+    @staticmethod
+    def __parse_sfp_diagnostics(output: str) -> dict:
         """
-        Parses SFP transceiver diagnostic information using regex.
-        
-        :param output: String containing the transceiver diagnostic data.
-        :return: Dictionary with parsed values.
-        example:
-         {
-        "TxPower": {
-            "Current": -5.2,
-            "Low Warning": -10.0,
-            "High Warning": 0.0,
-            "Status": "normal"
-        },
-        "RxPower": {
-            "Current": -7.1,
-            "Low Warning": -15.0,
-            "High Warning": 0.0,
-            "Status": "normal"
-        },
-        "Temperature": {
-            "Current": 45.0,
-            "Low Warning": 30.0,
-            "High Warning": 70.0,
-            "Status": "normal"
-        },
-        "Current": {
-            "Current": 100.0,
-            "Low Warning": 50.0,
-            "High Warning": 200.0,
-            "Status": "normal"
-        },
-        "Voltage": {
-            "Current": 3.3,
-            "Low Warning": 2.8,
-            "High Warning": 3.6,
-            "Status": "normal"
+            Parses SFP transceiver diagnostic information using regex.
+
+            :param output: String containing the transceiver diagnostic data.
+            :return: Dictionary with parsed values.
+            example:
+             {
+            "TxPower": {
+                "Current": -5.2,
+                "Low Warning": -10.0,
+                "High Warning": 0.0,
+                "Status": "normal"
+            },
+            "RxPower": {
+                "Current": -7.1,
+                "Low Warning": -15.0,
+                "High Warning": 0.0,
+                "Status": "normal"
+            },
+            "Temperature": {
+                "Current": 45.0,
+                "Low Warning": 30.0,
+                "High Warning": 70.0,
+                "Status": "normal"
+            },
+            "Current": {
+                "Current": 100.0,
+                "Low Warning": 50.0,
+                "High Warning": 200.0,
+                "Status": "normal"
+            },
+            "Voltage": {
+                "Current": 3.3,
+                "Low Warning": 2.8,
+                "High Warning": 3.6,
+                "Status": "normal"
+            }
         }
-    }
 
         """
         pattern = re.compile(
@@ -787,10 +800,11 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 "Current": float(match.group("current_value")),
                 "Low Warning": float(match.group("low_warning")),
                 "High Warning": float(match.group("high_warning")),
-                "Status": match.group("status")
+                "Status": match.group("status"),
             }
 
         return results
+
     def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": self.__get_port_info(port)}
 

@@ -1,4 +1,5 @@
 import pathlib
+import re
 
 import textfsm
 from django.test import SimpleTestCase
@@ -230,6 +231,8 @@ Total Entries  : 0
             self.before = self._virtual_cable_test(command)
         elif "config ports 2 description" in command or "config ports 2 clear_description" in command:
             self.before = b"Success"
+        elif re.search("show ports \d+ media_type", command):
+            self.before = self._get_media_type(command)
         else:
             self.before = b""
 
@@ -237,6 +240,21 @@ Total Entries  : 0
 
     def expect(self, *args, **kwargs):
         return 0
+
+    def _get_media_type(self, command: str):
+        # show ports {port} media_type
+        port = int(command.split()[-2])
+        data = {
+            1: b"1 1000BASE-T ",
+            2: b"2 1000BASE-T ",
+            3: b"3 1000BASE-T ",
+            4: b"4 1000BASE-T ",
+            5: b"5 1000BASE-T ",
+            6: b"6 1000BASE-T ",
+            7: b"7 1000BASE-T ",
+            8: b"8 1000BASE-T ",
+        }
+        return data.get(port) or b"1000BASE-T"
 
     def _virtual_cable_test(self, command: str):
         port = int(command.split()[-1])
@@ -768,7 +786,7 @@ class TestDLinkCableDiag(SimpleTestCase):
         ]
         for port_num in range(1, 10):
             res = self.dlink.virtual_cable_test(str(port_num))
-            self.assertEqual(valid_results[port_num - 1], res)
+            self.assertEqual(valid_results[port_num - 1], res, msg=f"port {port_num}")
 
 
 class TestDLinkPortValid(SimpleTestCase):
