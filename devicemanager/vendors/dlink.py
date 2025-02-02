@@ -310,7 +310,29 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str
         )
         return [(int(vid), mac) for vid, mac in mac_lines]
+    @dlink_validate_and_format_port(if_invalid_return=[])
+    def get_port_type(self, port) -> str:
+        """
+        ## Возвращает тип порта
 
+        :param port: Порт для проверки
+        :return: "SFP", "COPPER",или "?"
+        """
+        res =self.send_command(f"show ports {port} media_type", expect_command=False)
+        
+        # Определяем тип порта по выводу команды
+        media_type = self.find_or_empty(r"\d+\s+([A-Za-z0-9\-]+)\s+", res)
+        
+        if media_type:
+            media_type = media_type.strip().upper()
+            
+            if "SFP" in media_type or "LC" in media_type or "FIBER" in media_type:
+                return "SFP"
+            
+            if "BASE-T" in media_type or "COPPER" in media_type:
+                return "COPPER"
+            
+        return "?"
     @BaseDevice.lock_session
     def reload_port(self, port, save_config=True) -> str:
         """
@@ -548,49 +570,134 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
+        port_type=self.get_port_type(port)
+        if port_type in ["COPPER"]:
+            diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
-        diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
+            if "Available commands" in diag_output:
+                return {}
 
-        if "Available commands" in diag_output:
-            return {}
+            result: dict[str, Any] = {
+                "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
+                "status": "",  # Состояние на порту (Up, Down, Empty)
+            }
 
-        result: dict[str, Any] = {
-            "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
-            "status": "",  # Состояние на порту (Up, Down, Empty)
+            if "can't support" in diag_output or "Unknown" in diag_output:
+                result["status"] = "Don't support Cable Diagnostic"
+                return result
+
+            if "No Cable" in diag_output:
+                # Нет кабеля
+                result["status"] = "Empty"
+                return result
+
+            if re.findall(r"Link (Up|Down)\s+OK", diag_output):
+                # Если статус OK
+                match = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
+                if len(match) == 2:
+                    result["len"] = match[1]  # Длина
+                    result["status"] = match[0]  # Up или Down
+            else:
+                # C ошибкой
+                result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
+                # Смотрим по очереди 4 пары
+                for i in range(1, 5):
+                    # Нахождение пары по номеру `i`.
+                    pair_n = self.find_or_empty(rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output)
+                    # Проверка, не является ли пара пустой.
+                    if pair_n:
+                        # Создаем пустой словарь для пары
+                        result["pair" + str(i)] = {
+                            "status": pair_n[0].lower(),  # Open, Short
+                            "len": pair_n[1],  # Длина
+                        }
+
+            return result
+        elif port_type in ["SFP"]:
+            sfp_parameter_data = self.send_command(f'show ddm ports {port} status',expect_command=False)
+            return self.__parse_sfp_diagnostics(sfp_parameter_data)
+    def __parse_sfp_diagnostics(self,output):
+        """
+        Parses SFP transceiver diagnostic information using regex.
+        
+        :param output: String containing the transceiver diagnostic data.
+        :return: Dictionary with parsed values.
+        example:
+        {
+        "TxPower": {
+            "Current": -5.2,
+            "Low Warning": None
+            "High Warning": None
+        },
+        "RxPower": {
+            "Current": -7.1,
+            "Low Warning": None
+            "High Warning": None
+        },
+        "Temperature": {
+            "Current": 45.0,
+            "Low Warning": None
+            "High Warning": None
+        },
+        "Current": {
+            "Current": 100.0,
+            "Low Warning": None
+            "High Warning": None
+        },
+        "Voltage": {
+            "Current": 3.3,
+            "Low Warning":  None
+            "High Warning": None
+        }
         }
 
-        if "can't support" in diag_output or "Unknown" in diag_output:
-            result["status"] = "Don't support Cable Diagnostic"
-            return result
-
-        if "No Cable" in diag_output:
-            # Нет кабеля
-            result["status"] = "Empty"
-            return result
-
-        if re.findall(r"Link (Up|Down)\s+OK", diag_output):
-            # Если статус OK
-            match = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
-            if len(match) == 2:
-                result["len"] = match[1]  # Длина
-                result["status"] = match[0]  # Up или Down
-        else:
-            # C ошибкой
-            result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
-            # Смотрим по очереди 4 пары
-            for i in range(1, 5):
-                # Нахождение пары по номеру `i`.
-                pair_n = self.find_or_empty(rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output)
-                # Проверка, не является ли пара пустой.
-                if pair_n:
-                    # Создаем пустой словарь для пары
-                    result["pair" + str(i)] = {
-                        "status": pair_n[0].lower(),  # Open, Short
-                        "len": pair_n[1],  # Длина
-                    }
-
-        return result
-
+        """
+        pattern = re.compile(
+                r"(?P<port>\d+)\s+"  # Match port number
+                r"(?P<temperature>-?\d*\.\d+|\-)\s+"  # Match Temperature (can be a dash if not present)
+                r"(?P<voltage>-?\d*\.\d+|\-)\s+"  # Match Voltage (can be a dash if not present)
+                r"(?P<bias_current>-?\d*\.\d+|\-)\s+"  # Match Bias Current (can be a dash if not present)
+                r"(?P<tx_power>-?\d*\.\d+|\-)\s+"  # Match TX Power (can be a dash if not present)
+                r"(?P<rx_power>-?\d*\.\d+|\-)"  # Match RX Power (can be a dash if not present)
+            )
+    
+        results = {}
+        for match in pattern.finditer(output):
+                    temperature = match.group("temperature") if match.group("temperature") != '-' else None
+                    voltage = match.group("voltage") if match.group("voltage") != '-' else None
+                    bias_current = match.group("bias_current") if match.group("bias_current") != '-' else None
+                    tx_power = match.group("tx_power") if match.group("tx_power") != '-' else None
+                    rx_power = match.group("rx_power") if match.group("rx_power") != '-' else None
+        
+                    results = {
+                            "TxPower": {
+                                "Current": float(tx_power) if tx_power else None,
+                                "Low Warning": None,  # No placeholder, directly parsed
+                                "High Warning": None,  # No placeholder, directly parsed
+                            },
+                            "RxPower": {
+                                "Current": float(rx_power) if rx_power else None,
+                                "Low Warning": None,  # No placeholder, directly parsed
+                                "High Warning": None,  # No placeholder, directly parsed
+                            },
+                            "Temperature": {
+                                "Current": float(temperature) if temperature else None,
+                                "Low Warning": None,  # No placeholder, directly parsed
+                                "High Warning": None,  # No placeholder, directly parsed
+                            },
+                            "Current": {
+                                "Current": float(bias_current) if bias_current else None,
+                                "Low Warning": None,  # No placeholder, directly parsed
+                                "High Warning": None,  # No placeholder, directly parsed
+                            },
+                            "Voltage": {
+                                "Current": float(voltage) if voltage else None,
+                                "Low Warning": None,  # No placeholder, directly parsed
+                                "High Warning": None,  # No placeholder, directly parsed
+                            }
+                        }
+        
+        return results
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         stats = ["cpu", "ram", "flash"]
