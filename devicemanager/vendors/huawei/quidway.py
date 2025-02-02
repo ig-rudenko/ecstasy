@@ -110,7 +110,12 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             elabel = self.send_command("display elabel")
             # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
-
+        elif "S3328" in self.model or "S3352" in self.model:
+            arp_output = self.send_command("display arp | include Vlanif") # Нахождение mac адреса устройства Проверено для S3328 S3352.
+            mac_pattern = re.compile(r"(?P<MAC_Address>[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4})(?P<vlan>\s+I\s\-\s+Vlanif\d+)").search(arp_output)
+            self.mac = mac_pattern.group('MAC_Address') if mac_pattern else ''
+            elabel = self.send_command("display elabel")
+            self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
         self.__ports_info: Dict[str, _PortInfo] = {}
 
     @BaseDevice.lock_session
