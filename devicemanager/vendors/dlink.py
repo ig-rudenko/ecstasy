@@ -325,7 +325,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         res = self.send_command(f"show ports {port} media_type", expect_command=False)
 
         # Определяем тип порта по выводу команды
-        media_type = self.find_or_empty(r"\d+\s+([A-Za-z0-9\-]+)\s+", res)
+        media_type = self.find_or_empty(r"\d+\s+([A-Za-z0-9\-]+)", res)
 
         if media_type:
             media_type = media_type.strip().upper()
