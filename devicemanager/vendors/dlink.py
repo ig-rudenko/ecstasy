@@ -313,6 +313,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         )
         return [(int(vid), mac) for vid, mac in mac_lines]
 
+    @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return="?")
     @cache
     def get_port_type(self, port: str) -> str:
@@ -593,7 +594,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
+        self.lock = False
         port_type = self.get_port_type(port)
+        self.lock = True
 
         if port_type in ["COPPER"]:
             diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
@@ -770,8 +773,12 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
         return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
+    @BaseDevice.lock_session
+    @dlink_validate_and_format_port(if_invalid_return={"type": "text", "data": ""})
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": ""}
+        cmd = f"show ports {port} details"
+        res = self.send_command(cmd, expect_command=True, before_catch=f"Command: {cmd}")
+        return {"type": "text", "data": res}
 
     def get_port_config(self, port: str) -> str:
         return ""
