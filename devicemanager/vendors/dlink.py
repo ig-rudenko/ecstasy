@@ -1,6 +1,6 @@
 import io
 import re
-from functools import partial
+from functools import partial, cache
 from time import sleep
 from typing import Literal, Any
 
@@ -19,6 +19,8 @@ from .base.types import (
     DeviceAuthDict,
     InterfaceType,
     PortInfoType,
+    FIBER_TYPES,
+    COOPER_TYPES,
 )
 from .base.validators import validate_and_format_port
 
@@ -312,6 +314,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         return [(int(vid), mac) for vid, mac in mac_lines]
 
     @dlink_validate_and_format_port(if_invalid_return="?")
+    @cache
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -327,10 +330,19 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         if media_type:
             media_type = media_type.strip().upper()
 
-            if "SFP" in media_type or "LC" in media_type or "FIBER" in media_type:
+            if (
+                "SFP" in media_type
+                or "LC" in media_type
+                or "FIBER" in media_type
+                or re.search(rf"base-({'|'.join(FIBER_TYPES)})$", media_type, flags=re.IGNORECASE)
+            ):
                 return "SFP"
 
-            if "BASE-T" in media_type or "COPPER" in media_type:
+            if (
+                "BASE-T" in media_type
+                or "COPPER" in media_type
+                or re.search(rf"base-({'|'.join(COOPER_TYPES)})$", media_type, flags=re.IGNORECASE)
+            ):
                 return "COPPER"
 
         return "?"
