@@ -126,7 +126,8 @@ async function executeCommand(command: CommandType) {
           <template #body="{ data }">
             <div class="flex gap-2 items-center">
               <template v-for="part in data.command.split(' ')">
-                <Select v-if="part === '{port}'" :options="interfacesNames" v-model="data.context.port" filter>
+                <Select v-if="part === '{port}'" :options="interfacesNames" v-model="data.context.port" filter
+                        placeholder="Порт">
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center">
                       <div>{{ slotProps.value }}</div>
@@ -137,7 +138,8 @@ async function executeCommand(command: CommandType) {
                   </template>
                 </Select>
 
-                <InputText v-else-if="part === '{mac}'" v-model="data.context.mac"/>
+                <InputText v-else-if="part === '{mac}'" v-model="data.context.mac" placeholder="MAC адрес"/>
+                <InputText v-else-if="part === '{ip}'" v-model="data.context.ip" placeholder="IP адрес"/>
 
                 <div v-else class="font-mono">{{ part }}</div>
               </template>

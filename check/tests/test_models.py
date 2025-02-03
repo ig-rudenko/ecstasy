@@ -295,7 +295,7 @@ class ProfileTest(TestCase):
 
     def test_permissions_list(self):
         p = Profile.objects.get(user=User.objects.get(username="first_user"))
-        self.assertEqual(p.permissions_level, ["read", "reboot", "up_down", "bras"])
+        self.assertEqual(p.permissions_level, ["read", "reboot", "up_down", "bras", "cmd_run"])
 
     def test_permissions_max_length(self):
         p = Profile.objects.get(user=User.objects.get(username="first_user"))
