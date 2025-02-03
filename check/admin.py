@@ -16,6 +16,7 @@ import zipfile
 from datetime import datetime
 
 import orjson
+from django import forms
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -38,6 +39,7 @@ from .models import (
     Profile,
     UsersActions,
     DeviceMedia,
+    DeviceCommand,
 )
 
 
@@ -413,3 +415,21 @@ class DeviceMediaAdmin(admin.ModelAdmin):
             )
 
         return ""
+
+
+class DeviceCommandModelForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        uniq_vendors = list(sorted(set(Devices.objects.all().values_list("vendor", flat=True)), key=str))
+        self.fields["device_vendor"] = forms.ChoiceField(choices=[(v, v) for v in uniq_vendors], required=True)
+
+    class Meta:
+        model = DeviceCommand
+        fields = ["name", "description", "command", "device_vendor", "perm_groups"]
+
+
+@admin.register(DeviceCommand)
+class DeviceCommandAdmin(admin.ModelAdmin):
+    list_display = ["name", "description", "command"]
+    search_fields = ["name", "command"]
+    form = DeviceCommandModelForm

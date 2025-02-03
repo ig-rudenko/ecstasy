@@ -3,7 +3,7 @@ from re import findall
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions
+from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions, DeviceCommand
 
 
 class DevicesSerializer(serializers.ModelSerializer):
@@ -127,3 +127,9 @@ class UserDeviceActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersActions
         fields = ["time", "user", "action"]
+
+
+class DeviceCommandsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceCommand
+        fields = ["id", "name", "description", "command", "device_vendor"]

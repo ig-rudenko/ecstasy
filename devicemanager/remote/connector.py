@@ -95,6 +95,8 @@ class RemoteDevice(
             raise requests.exceptions.ConnectionError("Не удалось подключиться к DeviceConnector")
         except requests.exceptions.Timeout:
             raise requests.exceptions.ConnectTimeout("Время ожидания ответа от DeviceConnector")
+        except requests.exceptions.MissingSchema:
+            raise requests.exceptions.ConnectionError("Неверный формат URL для подключения DeviceConnector")
 
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
@@ -190,3 +192,6 @@ class RemoteDevice(
         tagged: bool = True,
     ) -> MACTableType:
         return self._remote_call("vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged)
+
+    def send_command(self, command: str) -> str:
+        return self._remote_call("send_command", command=command)

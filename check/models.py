@@ -4,7 +4,7 @@
 
 """
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
@@ -290,15 +290,18 @@ class Profile(models.Model):
     REBOOT = "reboot"
     UP_DOWN = "up_down"
     BRAS = "bras"
+    CMD_RUN = "cmd_run"
 
-    permissions_level = [READ, REBOOT, UP_DOWN, BRAS]
+    permissions_level = [READ, REBOOT, UP_DOWN, BRAS, CMD_RUN]
 
     PERMS = (
         (READ, "Чтение"),
         (REBOOT, "Перезагрузка порта"),
         (UP_DOWN, "Изменение состояния порта"),
         (BRAS, "Сброс сессий клиента"),
+        (CMD_RUN, "Выполнение команд"),
     )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, verbose_name="Пользователь")
     permissions = models.CharField(choices=PERMS, default=READ, max_length=15, verbose_name="Уровень доступа")
     devices_groups = models.ManyToManyField(DeviceGroup, verbose_name="Доступные группы оборудования")
@@ -376,3 +379,35 @@ def auto_create_profile(sender, instance: User, created: bool, **kwargs):
 
     if created:
         Profile.objects.create(user=instance)
+
+
+class DeviceCommand(models.Model):
+    name = models.CharField(
+        max_length=100,
+        null=False,
+        blank=False,
+        verbose_name="Название команды",
+        help_text="Кратко, что она делает",
+    )
+    description = models.TextField(null=True, blank=True, verbose_name="Описание команды")
+    command = models.CharField(
+        max_length=512,
+        null=False,
+        blank=False,
+        verbose_name="Команда",
+        help_text="Вы можете использовать макросы - {port}, "
+        "чтобы подставить название интерфейса, а также {ip}, {mac}",
+    )
+    device_vendor = models.CharField(
+        max_length=100,
+        null=False,
+        blank=False,
+        verbose_name="Вендор",
+        help_text="Команда будет доступна только оборудованию с тем же вендором",
+    )
+    perm_groups = models.ManyToManyField(Group, verbose_name="Права доступа", blank=True)
+
+    class Meta:
+        db_table = "device_commands"
+        verbose_name = "Команда для оборудования"
+        verbose_name_plural = "Команды для оборудования"
