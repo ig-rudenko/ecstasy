@@ -324,7 +324,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :return: "SFP", "COPPER", или "?"
         """
         res = self.send_command(
-            f"show ports {port} media_type", expect_command=True, before_catch="media_type"
+            f"show ports {port} media_type", expect_command=True, before_catch="Command: .+?\n"
         )
 
         # Определяем тип порта по выводу команды
@@ -777,7 +777,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     @dlink_validate_and_format_port(if_invalid_return={"type": "text", "data": ""})
     def get_port_info(self, port: str) -> PortInfoType:
         cmd = f"show ports {port} details"
-        res = self.send_command(cmd, expect_command=True)
+        res = self.send_command(cmd, expect_command=True, before_catch="Command: .+?\n")
         if "Next possible completions" in res:
             res = ""
         return {"type": "text", "data": res}
@@ -790,7 +790,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         config = self.send_command(
             "show config current_config",
             expect_command=False,
-            before_catch="Command: show config current_config",
+            before_catch="Command: .+?\n",
         )
         config = re.sub("[\r\n]{3}", "\n", config.strip())
         return io.BytesIO(config.encode())
