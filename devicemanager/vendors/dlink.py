@@ -322,26 +322,34 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для проверки
         :return: "SFP", "COPPER", или "?"
         """
-        res = self.send_command(f"show ports {port} media_type", expect_command=False)
+        res = self.send_command(
+            f"show ports {port} media_type", expect_command=True, before_catch="media_type"
+        )
 
         # Определяем тип порта по выводу команды
-        media_type = self.find_or_empty(r"\d+\s+([A-Za-z0-9\-]+)", res)
 
+        # COMBO порты:
+        # Port     Type           Vendor name/OUI       PN/Rev           SN/Date Code
+        # ------  --------------  -----------------  -----------------  -----------------
+        # 26  (C) 1000Base-T             -                  -                  -
+        # 26  (F) 1000Base-X             -                  -                  -
+        if re.search(rf"{port}\s+\(C\).+{port}\s+\(F\)", res, flags=re.DOTALL):
+            return "COMBO"
+
+        media_type = self.find_or_empty(rf"{port}\s+([A-Za-z0-9\-]+)", res).strip().upper()
         if media_type:
-            media_type = media_type.strip().upper()
-
             if (
                 "SFP" in media_type
                 or "LC" in media_type
                 or "FIBER" in media_type
-                or re.search(rf"base-({'|'.join(FIBER_TYPES)})$", media_type, flags=re.IGNORECASE)
+                    or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
             ):
                 return "SFP"
 
             if (
                 "BASE-T" in media_type
                 or "COPPER" in media_type
-                or re.search(rf"base-({'|'.join(COOPER_TYPES)})$", media_type, flags=re.IGNORECASE)
+                    or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
             ):
                 return "COPPER"
 
