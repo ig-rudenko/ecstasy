@@ -777,7 +777,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     @dlink_validate_and_format_port(if_invalid_return={"type": "text", "data": ""})
     def get_port_info(self, port: str) -> PortInfoType:
         cmd = f"show ports {port} details"
-        res = self.send_command(cmd, expect_command=True, before_catch=f"Command: {cmd}")
+        res = self.send_command(cmd, expect_command=True)
+        if "Next possible completions" in res:
+            res = ""
         return {"type": "text", "data": res}
 
     def get_port_config(self, port: str) -> str:
