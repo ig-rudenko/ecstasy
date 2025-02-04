@@ -9,8 +9,8 @@ env:
   DJANGO_SECRET_KEY: qwerty*!(#*JJSAJ_!@+uiop123sdasd12124567890
   REDIS_CACHE_URL: localhost:6379/0
   MYSQL_DATABASE: ecstasy
-  MYSQL_USER: user
-  MYSQL_PASSWORD: password
+  MYSQL_USER: root
+  MYSQL_PASSWORD: root_password
   MYSQL_HOST: 127.0.0.1
   MYSQL_PORT: 3306
 
