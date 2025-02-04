@@ -343,14 +343,14 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 "SFP" in media_type
                 or "LC" in media_type
                 or "FIBER" in media_type
-                    or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
+                or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
             ):
                 return "SFP"
 
             if (
                 "BASE-T" in media_type
                 or "COPPER" in media_type
-                    or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
+                or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
             ):
                 return "COPPER"
 

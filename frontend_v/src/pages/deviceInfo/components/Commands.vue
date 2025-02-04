@@ -16,7 +16,6 @@ const props = defineProps({
   }
 })
 
-
 interface CommandContext {
   port: string;
   ip: string;
@@ -36,6 +35,7 @@ interface CommandResult {
   command: string;
   output: string;
   error: string;
+  isRunning: boolean;
 }
 
 const visible = ref(false);
@@ -91,17 +91,16 @@ function createCommand(command: CommandType): string {
 
 async function executeCommand(command: CommandType) {
   if (!commandIsValid(command)) return;
+  const resultRow = ref<CommandResult>({command: createCommand(command), output: "", error: "", isRunning: true})
+  results.value.unshift(resultRow.value)
   try {
-    const resp = await api.post(`/api/v1/devices/${props.deviceName}/commands/${command.id}/execute`, command.context);
-    results.value.push(
-        {command: createCommand(command), output: resp.data, error: ""}
-    )
+    const resp = await api.post<{output: string}>(`/api/v1/devices/${props.deviceName}/commands/${command.id}/execute`, command.context);
+    resultRow.value.output = resp.data.output
   } catch (e: any) {
     console.error(e);
-    results.value.push(
-        {command: createCommand(command), output: "", error: errorFmt(e)}
-    )
+    resultRow.value.error = errorFmt(e)
   }
+  resultRow.value.isRunning = false;
 }
 
 </script>
@@ -159,13 +158,16 @@ async function executeCommand(command: CommandType) {
 
     <div class="pt-10 font-mono">
       <DataTable v-if="results.length" :value="results" paginator :always-show-paginator="false" :rows="5">
-        <Column field="command" header="Команда"></Column>
-        <Column field="result" header="Результат">
+        <Column field="result" class="font-mono">
           <template #body="{ data }">
-            <Message severity="error" v-if="data.error">
-              <div v-html="textToHtml(data.error)"></div>
-            </Message>
-            <div class="font-mono" v-html="textToHtml(data.output)"></div>
+            <Fieldset :legend="data.command" toggleable>
+              <div>
+                <Message v-if="data.error" severity="error"><div v-html="textToHtml(data.error)"></div></Message>
+                <div v-else-if="data.output" class="" v-html="textToHtml(data.output)"></div>
+                <div v-else><ProgressSpinner/></div>
+              </div>
+            </Fieldset>
+<!--            <div class="p-2 px-5 border rounded w-fit border-indigo-300">{{}}</div>-->
           </template>
         </Column>
       </DataTable>
