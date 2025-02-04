@@ -6,7 +6,6 @@ from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
-from gathering.services.vlan.collector import VlanTableGather
 from pyzabbix.api import logger
 
 from check.models import Devices
@@ -14,7 +13,8 @@ from ecstasy_project.celery import app
 from ecstasy_project.task import ThreadUpdatedStatusTask
 from gathering.services.configurations import ConfigurationGather, ConfigFileError, LocalConfigStorage
 from gathering.services.mac import MacAddressTableGather
-from .models import MacAddress,Vlan
+from gathering.services.vlan.collector import VlanTableGather
+from .models import MacAddress, Vlan
 
 
 class MacTablesGatherTask(ThreadUpdatedStatusTask):
@@ -62,6 +62,8 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
             task=cls.name,
             crontab=crontab,
         )
+
+
 class VlanTablesGatherTask(ThreadUpdatedStatusTask):
     """
     # Celery задача для сбора таблицы VLAN оборудования.
@@ -108,9 +110,11 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
             crontab=crontab,
         )
 
+
 # Регистрация задачи в приложении Celery.
 mac_table_gather_task = app.register_task(MacTablesGatherTask())
 vlan_table_gather_task = app.register_task(VlanTablesGatherTask())
+
 
 def check_scanning_status() -> dict:
     """
@@ -133,6 +137,8 @@ def check_scanning_status() -> dict:
         "status": None,
         "progress": None,
     }
+
+
 def check_scanning_status_vlan() -> dict:
     """
     Проверяет статус задачи `vlan_table_gather_task`.
@@ -154,6 +160,7 @@ def check_scanning_status_vlan() -> dict:
         "status": None,
         "progress": None,
     }
+
 
 class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     """

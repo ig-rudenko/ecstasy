@@ -1,6 +1,4 @@
-import re
 from datetime import timedelta
-from itertools import islice
 
 import orjson
 from django.conf import settings
@@ -103,15 +101,15 @@ class VlanTableGather:
         device_history.interfaces_date = timezone.now()
         device_history.save(update_fields=["interfaces", "interfaces_date"])
 
-    def save_vlan_info(self) -> None:
+    def save_vlan_info(self) -> int:
         if not self.table:
-            return
+            return 0
 
         for vlan, port, vlan_desc, desc in self.table:
             vlan_obj, created = Vlan.objects.get_or_create(
                 vlan=vlan,
                 device=self.device,
-                defaults={"vlan_desc": vlan_desc}
+                defaults={"vlan_desc": vlan_desc},
             )
             if not created:
                 vlan_obj.vlan_desc = vlan_desc
@@ -121,10 +119,10 @@ class VlanTableGather:
                 vlan=vlan_obj,
                 port=port,
                 defaults={
-                    "desc_port": desc
-                }
+                    "desc_port": desc,
+                },
             )
-
+        return len(self.table)
 
     def clear_old_records(self, timedelta_=timedelta(hours=48)) -> None:
         old_vlans = Vlan.objects.filter(
@@ -147,7 +145,7 @@ class VlanTableGather:
 
         database_engine = settings.DATABASES["default"]["ENGINE"].rsplit(".", 1)[1]
         if database_engine in ["postgresql", "sqlite3"]:
-            options["unique_fields"] = ["vlan", "device",]
+            options["unique_fields"] = ["vlan", "device"]
 
         return options
 
@@ -156,4 +154,3 @@ class VlanTableGather:
         # Creates or updates VLAN entries in the database.
         """
         return self.save_vlan_info()
-

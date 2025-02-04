@@ -202,6 +202,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             interfaces.append((port_name, status, desc))
 
         return interfaces
+
     @BaseDevice.lock_session
     def get_vlan_table(self) -> VlanTableType:
         """
@@ -213,7 +214,6 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
          :return: ```[ ('vid', 'vlan name', 'port,port,port',), ... ]```
         """
-
 
         vlan_str = self.send_command("show vlan", expect_command=False)
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
@@ -231,9 +231,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             if ports:
                 # Replace ranges with comma-separated values (e.g., 1-13 -> 1,2,3,...,13)
                 port_ranges = []
-                for part in ports.split(','):
-                    if '-' in part:
-                        start, end = map(int, part.split('-'))
+                for part in ports.split(","):
+                    if "-" in part:
+                        start, end = map(int, part.split("-"))
                         port_ranges.extend(map(str, range(start, end + 1)))
                     else:
                         port_ranges.append(part)
@@ -242,8 +242,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 ports = ""
 
             result.append((int(vid), ports, name))
-        
+
         return result
+
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
         """

@@ -158,10 +158,10 @@ class Devices(models.Model):
         'во время периодической задачи "mac_table_gather_task"',
     )
     collect_vlan_info = models.BooleanField(
-    default=True,
-    verbose_name="Сбор VLAN информации",
-    help_text="Если включено, то будет собрана VLAN информация "
-              'во время периодической задачи "vlan_table_gather_task"',
+        default=True,
+        verbose_name="Сбор VLAN информации",
+        help_text="Если включено, то будет собрана VLAN информация "
+        'во время периодической задачи "vlan_table_gather_task"',
     )
     collect_configurations = models.BooleanField(
         default=True,
