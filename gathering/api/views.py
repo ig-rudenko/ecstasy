@@ -3,9 +3,19 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from gathering.services.mac.traceroute import MacTraceroute
-from .serializers import MacGatherStatusSerializer, MacGatherScanTaskSerializer
+from .serializers import (
+    MacGatherStatusSerializer,
+    MacGatherScanTaskSerializer,
+    VlanGatherScanTaskSerializer,
+    VlanGatherStatusSerializer,
+)
 from .swagger.schemas import mac_traceroute_api_doc
-from ..tasks import check_scanning_status, mac_table_gather_task
+from ..tasks import (
+    check_scanning_status,
+    check_scanning_status_vlan,
+    mac_table_gather_task,
+    vlan_table_gather_task,
+)
 
 
 class MacTracerouteAPIView(GenericAPIView):
@@ -37,6 +47,28 @@ class MacGatherScanRunAPIView(GenericAPIView):
         if not task_id:
             task_id = mac_table_gather_task.delay()
             cache.set("mac_table_gather_task_id", task_id, timeout=None)
+            return Response({"task_id": task_id}, status=201)
+
+        return Response({"task_id": task_id}, status=200)
+
+
+class VlanGatherStatusAPIView(GenericAPIView):
+    serializer_class = VlanGatherStatusSerializer
+
+    def get(self, request):
+        """Проверяет, выполняется ли сканирование VLAN-ов и возвращает результаты."""
+        return Response(check_scanning_status_vlan())
+
+
+class VlanGatherScanRunAPIView(GenericAPIView):
+    serializer_class = VlanGatherScanTaskSerializer
+
+    def post(self, request):
+        """Запускает сканирование VLAN-ов."""
+        task_id = cache.get("vlan_table_gather_task_id")
+        if not task_id:
+            task_id = vlan_table_gather_task.delay()
+            cache.set("vlan_table_gather_task_id", task_id, timeout=None)
             return Response({"task_id": task_id}, status=201)
 
         return Response({"task_id": task_id}, status=200)

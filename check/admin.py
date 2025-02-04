@@ -115,6 +115,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
                     "cmd_protocol",
                     "collect_interfaces",
                     "collect_mac_addresses",
+                    "collect_vlan_info",
                     "collect_configurations",
                     "connection_pool_size",
                 )
