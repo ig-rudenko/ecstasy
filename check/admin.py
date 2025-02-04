@@ -430,6 +430,7 @@ class DeviceCommandModelForm(forms.ModelForm):
 
 @admin.register(DeviceCommand)
 class DeviceCommandAdmin(admin.ModelAdmin):
-    list_display = ["name", "description", "command"]
+    list_display = ["name", "device_vendor", "command", "description"]
     search_fields = ["name", "command"]
     form = DeviceCommandModelForm
+    list_filter = ["device_vendor"]
