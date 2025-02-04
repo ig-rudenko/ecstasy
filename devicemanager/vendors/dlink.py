@@ -16,6 +16,7 @@ from .base.types import (
     MACListType,
     MACTableType,
     MACType,
+    VlanTableType,
     DeviceAuthDict,
     InterfaceType,
     PortInfoType,
@@ -201,7 +202,48 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             interfaces.append((port_name, status, desc))
 
         return interfaces
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        """
+        ## Возвращаем список  VLAN, описание и порт для данного оборудования.
 
+        Команда на оборудовании:
+
+            # show vlan
+
+         :return: ```[ ('vid', 'vlan name', 'port,port,port',), ... ]```
+        """
+
+
+        vlan_str = self.send_command("show vlan", expect_command=False)
+        # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
+        vlan_table: list[tuple[int, str, str]] = re.findall(
+            r"VID\s+:\s+(\d+)\s+VLAN Name\s+:\s+([\w\-]+)\s+.*?Member Ports\s+:\s+([^\n]*)",  # Capture VID, VLAN Name, and Member Ports
+            vlan_str,
+            flags=re.DOTALL,
+        )
+
+        # Format the result as (VLAN ID, Ports, Description)
+        result = []
+        for vid, name, ports in vlan_table:
+            # Clean the ports, removing extra spaces and handling ranges
+            ports = ports.strip()
+            if ports:
+                # Replace ranges with comma-separated values (e.g., 1-13 -> 1,2,3,...,13)
+                port_ranges = []
+                for part in ports.split(','):
+                    if '-' in part:
+                        start, end = map(int, part.split('-'))
+                        port_ranges.extend(map(str, range(start, end + 1)))
+                    else:
+                        port_ranges.append(part)
+                ports = ", ".join(port_ranges)
+            else:
+                ports = ""
+
+            result.append((int(vid), ports, name))
+        
+        return result
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
         """
