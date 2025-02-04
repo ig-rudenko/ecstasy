@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "db_table": "vlan",
+                "db_table": "vlans",
             },
         ),
         migrations.CreateModel(
@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "db_table": "vlan_port",
+                "db_table": "vlans_ports",
             },
         ),
         migrations.AddIndex(
