@@ -33,7 +33,7 @@ class DevicesVlanWorkloadCollector:
         for vlan in vlans:
             vlan_ports = VlanPort.objects.filter(vlan=vlan)
             vlan_ports_data.append({
-                "vlan_id": vlan.vlan_id,
+                "vlan": vlan.vlan,
                 "vlan_desc": vlan.vlan_desc,
                 "ports": [
                     {

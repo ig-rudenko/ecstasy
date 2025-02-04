@@ -107,9 +107,9 @@ class VlanTableGather:
         if not self.table:
             return
 
-        for vlan_id, vlan_desc, port, desc in self.table:
+        for vlan, port, vlan_desc, desc in self.table:
             vlan_obj, created = Vlan.objects.get_or_create(
-                vlan=vlan_id,
+                vlan=vlan,
                 device=self.device,
                 defaults={"vlan_desc": vlan_desc}
             )
