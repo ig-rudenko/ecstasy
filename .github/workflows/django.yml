@@ -52,7 +52,7 @@ jobs:
           pip install coverage
       - name: Merge migration conflicts
         run: |
-          python manage.py makemigrations --merge
+          python manage.py makemigrations --merge --no-input
       - name: Run Tests
         run: |
           coverage run manage.py test
