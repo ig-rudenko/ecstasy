@@ -67,6 +67,9 @@ urlpatterns += (
 )
 
 if settings.ENV == "dev":
+    from debug_toolbar.toolbar import debug_toolbar_urls
+
+    urlpatterns += debug_toolbar_urls()
     urlpatterns += [
         re_path(
             r"^(?P<path>(?:assets|img|video).*)$",

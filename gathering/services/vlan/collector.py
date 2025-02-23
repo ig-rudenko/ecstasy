@@ -52,7 +52,8 @@ class VlanTableGather:
         except BaseDeviceException:
             pass
 
-    def get_vlan_table(self, session) -> VlanTableType:
+    @staticmethod
+    def get_vlan_table(session) -> VlanTableType:
         """
         # Fetch the VLAN table from the device session. If a specific method exists for VLANs, call it.
         """

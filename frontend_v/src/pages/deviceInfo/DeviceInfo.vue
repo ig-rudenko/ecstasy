@@ -54,6 +54,10 @@
         </div>
 
         <div class="py-4">
+          <DeviceVlanInfo :device-name="generalInfo.deviceName"/>
+        </div>
+
+        <div class="py-4">
           <UserActionsButton v-if="generalInfo" :device-name="generalInfo.deviceName"/>
         </div>
 
@@ -247,11 +251,13 @@ import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/in
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
+import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
 
 export default defineComponent({
   name: 'device',
 
   components: {
+    DeviceVlanInfo,
     Header,
     Footer,
     UserActionsButton,

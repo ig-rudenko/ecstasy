@@ -37,6 +37,7 @@ urlpatterns = [
         "<device_name>/interfaces", devices_info.DeviceInterfacesAPIView.as_view(), name="device-interfaces"
     ),
     path("<device_name>/info", devices_info.DeviceInfoAPIView.as_view(), name="device-info"),
+    path("<device_name>/vlan-info", devices_info.DeviceVlanInfoAPIView.as_view(), name="device-vlan-info"),
     path("<device_name>/stats", devices_info.DeviceStatsInfoAPIView.as_view(), name="device-stats-info"),
     path(
         "<device_name>/actions", user_actions.UserDeviceActionsAPIView.as_view(), name="device-user-actions"
