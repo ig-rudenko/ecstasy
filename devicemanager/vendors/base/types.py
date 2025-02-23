@@ -19,6 +19,7 @@ InterfaceType = Literal["up", "down", "admin down", "notPresent", "dormant"]
 InterfaceListType = list[tuple[PORT, InterfaceType, DESCRIPTION]]
 InterfaceVLANListType = list[tuple[PORT, InterfaceType, DESCRIPTION, VLAN_LIST]]
 MACTableType = list[tuple[VID, MAC, MACType, PORT]]
+VlanTableType = list[tuple[VID, DESCRIPTION, PORT]]
 
 SplittedPortType = tuple[str, tuple[str, ...]]
 

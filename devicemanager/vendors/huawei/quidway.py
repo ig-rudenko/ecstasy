@@ -15,6 +15,7 @@ from ..base.types import (
     MACListType,
     MACTableType,
     MACType,
+    VlanTableType,
     DeviceAuthDict,
     InterfaceType,
     PortInfoType,
@@ -111,6 +112,17 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             # Нахождение серийного номера устройства.
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
 
+        elif "S3328" in self.model or "S3352" in self.model:
+            # Нахождение mac адреса устройства Проверено для S3328 S3352.
+            arp_output = self.send_command("display arp | include Vlanif")
+            mac_pattern = re.compile(
+                r"(?P<MAC_Address>[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4})(?P<vlan>\s+I\s-\s+Vlanif\d+)"
+            ).search(arp_output)
+            self.mac = mac_pattern.group("MAC_Address") if mac_pattern else ""
+
+            elabel = self.send_command("display elabel")
+            self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
+
         self.__ports_info: Dict[str, _PortInfo] = {}
 
     @BaseDevice.lock_session
@@ -185,6 +197,81 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             interfaces.append((port_name, status, desc))
 
         return interfaces
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        """
+        ## Возвращаем список  VLAN, описание и порт для данного оборудования.
+
+        Команда на оборудовании:
+
+            # display vlan
+
+         :return: ```[ ('vid', 'port,port,port','vlan name',), ... ]```
+        """
+        vlan_str = self.send_command("show vlan", expect_command=False)
+        # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
+        vlan_lines = vlan_str.splitlines()
+        # Split into ports and description sections
+        second_header_index = None
+        for i, line in enumerate(vlan_lines):
+            if line.startswith("VID  Status"):
+                second_header_index = i
+                break
+
+        ports_lines = vlan_lines[7:second_header_index]  # Skip the header lines
+        desc_lines = vlan_lines[second_header_index + 1 :]  # Skip header and separator
+
+        # Process ports section
+        port_vlans = []
+        current_vlan = None
+        for line in ports_lines:
+            if line.startswith("VID  Type") or line.startswith("----"):
+                continue
+            match = re.match(r"^(\d+)\s+(\w+)\s+(.*)", line)
+            if match:
+                if current_vlan:
+                    port_vlans.append(current_vlan)
+                vid = int(match.group(1))
+                ports: list[str] = match.group(3).split()
+                current_vlan = {"vid": vid, "ports": ports}
+            else:
+                # Continuation line
+                if current_vlan:
+                    ports = line.strip().split()
+                    current_vlan["ports"].extend(ports)
+        if current_vlan:
+            port_vlans.append(current_vlan)
+
+        # Process description section
+        desc_vlans = {}
+        for line in desc_lines:
+            if line.startswith("----"):
+                continue
+            parts = re.split(r"\s{2,}", line.strip())
+            if len(parts) >= 6:
+                vid = int(parts[0])
+                desc = parts[-1]
+                desc_vlans[vid] = desc
+
+        # Merge the data
+        result = []
+        for vlan in port_vlans:
+            vid = vlan["vid"]
+            ports = vlan["ports"]
+            # Clean ports
+            cleaned_ports = []
+            for port in ports:
+                # Split on colon to remove prefixes like UT: or TG:
+                port_part = port.split(":")[-1]
+                # Remove (U) or (D) at the end
+                port_clean = re.sub(r"\([UD]\)$", "", port_part)
+                cleaned_ports.append(port_clean)
+            ports_str = ", ".join(cleaned_ports)
+            description = desc_vlans.get(vid, "")
+            result.append((vid, ports_str, description))
+
+        return result
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:

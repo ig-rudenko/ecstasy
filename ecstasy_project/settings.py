@@ -45,6 +45,8 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
 ]
+if ENV == "dev":
+    INTERNAL_IPS = ["127.0.0.1"]
 
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
 if trusted_origins:
@@ -78,6 +80,8 @@ INSTALLED_APPS = [
     "import_export",
     "corsheaders",
 ]
+if ENV == "dev":
+    INSTALLED_APPS += ["debug_toolbar"]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
 DBBACKUP_STORAGE_OPTIONS = {"location": BASE_DIR / "db-backup"}
@@ -104,6 +108,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+if ENV == "dev":
+    MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
 
 ROOT_URLCONF = "ecstasy_project.urls"
 
@@ -261,6 +267,8 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.MultiPartParser",
     ],
 }
+if ENV == "dev":
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append("rest_framework.renderers.BrowsableAPIRenderer")
 
 # ================= SWAGGER ==================
 

@@ -18,12 +18,13 @@ from net_tools.models import DevicesInfo as ModelDeviceInfo
 from .base import DeviceAPIView
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter, DeviceInfoFilter
-from ..serializers import DevicesSerializer
+from ..serializers import DevicesSerializer, DeviceVlanSerializer
 from ..swagger.schemas import (
     devices_interfaces_workload_list_api_doc,
     interfaces_workload_api_doc,
     interfaces_list_api_doc,
 )
+from ...models import Devices
 from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
 from ...services.remote_terminal import get_console_url
 from ...services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
@@ -221,6 +222,20 @@ class DeviceInfoAPIView(DeviceAPIView):
                 "uptime": uptime,
             }
         )
+
+
+class DeviceVlanInfoAPIView(DeviceAPIView):
+    """
+    ## Возвращаем информацию о VLAN-ах
+    """
+
+    serializer_class = DeviceVlanSerializer
+
+    def get(self, request, *args, **kwargs):
+        device: Devices = self.get_object()
+        queryset = device.vlan_set.all().prefetch_related("ports")
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class DeviceStatsInfoAPIView(DeviceAPIView):

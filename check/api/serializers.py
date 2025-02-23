@@ -3,6 +3,7 @@ from re import findall
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from gathering.models import VlanPort, Vlan
 from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions, DeviceCommand
 
 
@@ -127,6 +128,21 @@ class UserDeviceActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsersActions
         fields = ["time", "user", "action"]
+
+
+class DeviceVlanPortSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = VlanPort
+        fields = ["port", "desc"]
+
+
+class DeviceVlanSerializer(serializers.ModelSerializer):
+    ports = DeviceVlanPortSerializer(many=True)
+
+    class Meta:
+        model = Vlan
+        fields = ["ports", "vlan", "desc", "datetime"]
 
 
 class DeviceCommandsSerializer(serializers.ModelSerializer):
