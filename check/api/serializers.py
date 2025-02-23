@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from gathering.models import VlanPort, Vlan
-from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions
+from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions, DeviceCommand
 
 
 class DevicesSerializer(serializers.ModelSerializer):
@@ -143,3 +143,9 @@ class DeviceVlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vlan
         fields = ["ports", "vlan", "desc", "datetime"]
+
+
+class DeviceCommandsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceCommand
+        fields = ["id", "name", "description", "command", "device_vendor"]

@@ -78,4 +78,9 @@ urlpatterns = [
     path("<device_name>/cable-diag", device_manager.CableDiagAPIView.as_view()),
     path("<device_name>/set-poe-out", device_manager.SetPoEAPIView.as_view()),
     path("<device_name>/change-dsl-profile", device_manager.ChangeDSLProfileAPIView.as_view()),
+    path("<device_name>/commands", device_manager.DeviceCommandsListAPIView.as_view()),
+    path(
+        "<device_name>/commands/<int:command_id>/execute",
+        device_manager.ExecuteDeviceCommandAPIView.as_view(),
+    ),
 ]

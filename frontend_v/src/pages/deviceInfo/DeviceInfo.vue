@@ -22,6 +22,10 @@
           <ZabbixInfo :zabbix-info="generalInfo.zabbixInfo"/>
         </div>
 
+        <div>
+          <Commands :device-name="deviceName" :interfaces="interfaces"/>
+        </div>
+
         <!--    Ссылка на Zabbix-->
         <div v-if="generalInfo.zabbixHostID">
           <ToZabbixLink :monitoringAvailable="Boolean(generalInfo.zabbixInfo.monitoringAvailable)"
@@ -252,12 +256,14 @@ import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
+import Commands from "@/pages/deviceInfo/components/Commands.vue";
 
 export default defineComponent({
   name: 'device',
 
   components: {
     DeviceVlanInfo,
+    Commands,
     Header,
     Footer,
     UserActionsButton,

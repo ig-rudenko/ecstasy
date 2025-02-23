@@ -24,8 +24,11 @@ from ..serializers import (
     ADSLProfileSerializer,
     PortControlSerializer,
     PoEPortStatusSerializer,
+    DeviceCommandsSerializer,
 )
 from ..swagger import schemas
+from ...models import DeviceCommand
+from ...services.device.commands import execute_command
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -317,3 +320,46 @@ class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = "pk"
     lookup_url_kwarg = "pk"
+
+
+@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
+class DeviceCommandsListAPIView(DeviceAPIView):
+    serializer_class = DeviceCommandsSerializer
+    permission_classes = [IsAuthenticated, DevicePermission]
+
+    def get(self, request, *args, **kwargs):
+        device = self.get_object()
+        commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
+        if not request.user.is_superuser:
+            commands = commands.filter(perm_groups__user_set=request.user)
+
+        serializer = self.get_serializer(commands, many=True)
+        return Response(serializer.data)
+
+
+@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
+class ExecuteDeviceCommandAPIView(DeviceAPIView):
+    permission_classes = [IsAuthenticated, DevicePermission]
+
+    @except_connection_errors
+    def post(self, request, *args, **kwargs):
+        device = self.get_object()
+        commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
+        if not request.user.is_superuser:
+            commands = commands.filter(perm_groups__user_set=request.user)
+
+        if not commands.exists():
+            return Response({"detail": "Command not found"}, status=404)
+
+        command = commands.first()
+        if commands is None:
+            return Response({"detail": "Command not found"}, status=404)
+
+        try:
+            result = execute_command(device, command, request.data)
+        except InvalidMethod:
+            return Response({"detail": "Unsupported for this device"}, status=400)
+        except ValidationError as exc:
+            return Response({"detail": exc.detail}, status=400)
+        else:
+            return Response({"output": result})

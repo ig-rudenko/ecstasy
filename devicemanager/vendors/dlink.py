@@ -1,6 +1,6 @@
 import io
 import re
-from functools import partial
+from functools import partial, cache
 from time import sleep
 from typing import Literal, Any
 
@@ -20,6 +20,8 @@ from .base.types import (
     DeviceAuthDict,
     InterfaceType,
     PortInfoType,
+    FIBER_TYPES,
+    COOPER_TYPES,
 )
 from .base.validators import validate_and_format_port
 
@@ -354,7 +356,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         )
         return [(int(vid), mac) for vid, mac in mac_lines]
 
+    @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return="?")
+    @cache
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -362,18 +366,35 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для проверки
         :return: "SFP", "COPPER", или "?"
         """
-        res = self.send_command(f"show ports {port} media_type", expect_command=False)
+        res = self.send_command(
+            f"show ports {port} media_type", expect_command=True, before_catch="Command: .+?\n"
+        )
 
         # Определяем тип порта по выводу команды
-        media_type = self.find_or_empty(r"\d+\s+([A-Za-z0-9\-]+)\s+", res)
 
+        # COMBO порты:
+        # Port     Type           Vendor name/OUI       PN/Rev           SN/Date Code
+        # ------  --------------  -----------------  -----------------  -----------------
+        # 26  (C) 1000Base-T             -                  -                  -
+        # 26  (F) 1000Base-X             -                  -                  -
+        if re.search(rf"{port}\s+\(C\).+{port}\s+\(F\)", res, flags=re.DOTALL):
+            return "COMBO"
+
+        media_type = self.find_or_empty(rf"{port}\s+([A-Za-z0-9\-]+)", res).strip().upper()
         if media_type:
-            media_type = media_type.strip().upper()
-
-            if "SFP" in media_type or "LC" in media_type or "FIBER" in media_type:
+            if (
+                "SFP" in media_type
+                or "LC" in media_type
+                or "FIBER" in media_type
+                or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
+            ):
                 return "SFP"
 
-            if "BASE-T" in media_type or "COPPER" in media_type:
+            if (
+                "BASE-T" in media_type
+                or "COPPER" in media_type
+                or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
+            ):
                 return "COPPER"
 
         return "?"
@@ -616,7 +637,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
+        self.lock = False
         port_type = self.get_port_type(port)
+        self.lock = True
 
         if port_type in ["COPPER"]:
             diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
@@ -793,8 +816,14 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
         return self._get_utilization("dram", r"Utilization\s+: (\d+)\s*%")
 
+    @BaseDevice.lock_session
+    @dlink_validate_and_format_port(if_invalid_return={"type": "text", "data": ""})
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": ""}
+        cmd = f"show ports {port} details"
+        res = self.send_command(cmd, expect_command=True, before_catch="Command: .+?\n")
+        if "Next possible completions" in res:
+            res = ""
+        return {"type": "text", "data": res}
 
     def get_port_config(self, port: str) -> str:
         return ""
@@ -804,7 +833,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         config = self.send_command(
             "show config current_config",
             expect_command=False,
-            before_catch="Command: show config current_config",
+            before_catch="Command: .+?\n",
         )
         config = re.sub("[\r\n]{3}", "\n", config.strip())
         return io.BytesIO(config.encode())

@@ -48,6 +48,7 @@ FIBER_TYPES = [
     "ER",
     "FR",
     "LH",
+    "X",
 ]
 
 
