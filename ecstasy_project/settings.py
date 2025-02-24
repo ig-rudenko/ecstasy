@@ -52,6 +52,8 @@ trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
 if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
+PROXY_URL = os.getenv("PROXY_URL", "")
+
 # Application definition
 INSTALLED_APPS = [
     "jazzmin",

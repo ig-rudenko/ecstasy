@@ -2,6 +2,7 @@ from functools import reduce
 
 import orjson
 import requests as requests_lib
+from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.cache import cache
 from django.http import HttpResponse
@@ -52,7 +53,14 @@ def check_periodically_scan(request: Request):
 @login_required
 def get_vendor(request: Request, mac: str) -> Response:
     """Определяет производителя по MAC адресу"""
-    resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2)
+    proxies = {}
+    if settings.PROXY_URL:
+        proxies = {"http": settings.PROXY_URL, "https": settings.PROXY_URL}
+    try:
+        resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2, proxies=proxies)
+    except requests_lib.RequestException:
+        return Response({"vendor": f"Got exception!"})
+
     if resp.status_code == 200:
         data = resp.json()
         return Response(
