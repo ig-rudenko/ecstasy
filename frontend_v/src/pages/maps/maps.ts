@@ -70,6 +70,8 @@ interface StaticPointData {
 }
 
 
+const popupDefaultOptions = {maxWidth: 1200}
+
 export type MapsPage = Paginator<MapBrief>;
 
 const geoGoogle = tileLayer('https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {attribution: 'google'});
@@ -170,7 +172,7 @@ export class MapService {
             const point = circleMarker(feature.geometry.coordinates.reverse(), feature.properties.style)
                 .bindTooltip(feature.properties.name)
                 // @ts-ignore
-                .bindPopup(feature.properties.description, {maxWidth: 560}).addTo(this.overlays[data.name]);
+                .bindPopup(feature.properties.description, popupDefaultOptions).addTo(this.overlays[data.name]);
 
             /* Он создает новый маркер круга и добавляет его к объекту точек. */
             this.points.set(feature.id, {
@@ -305,8 +307,7 @@ export class MapService {
             } else if (marker.hasProblems && marker.point._popup._content !== problems_text) {
                 // Если уже недоступен, НО описание проблем изменилось.
                 marker.point.bindPopup(
-                    marker._origin.popupContent + problems_text,
-                    {"maxWidth": 500}
+                    marker._origin.popupContent + problems_text, popupDefaultOptions
                 )
             } else {
                 // Новое недоступное оборудование
@@ -408,7 +409,7 @@ function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any) 
     let p = polygon(latlng, options)
 
     if (popup_text) {
-        p.bindPopup(wrapLinks(textToHtml(popup_text)))
+        p.bindPopup(wrapLinks(textToHtml(popup_text)), popupDefaultOptions)
     }
 
     return p
@@ -441,7 +442,7 @@ function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any)
     let p = polyline(latlng, options)
 
     if (popup_text) {
-        p.bindPopup(wrapLinks(textToHtml(popup_text)))
+        p.bindPopup(wrapLinks(textToHtml(popup_text)), popupDefaultOptions)
     }
 
     /* Возврат полилинейного объекта. */
@@ -503,7 +504,7 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any) {
 
     /* Создание всплывающего окна для маркера. */
     if (popup_text) {
-        m.bindPopup(wrapLinks(textToHtml(popup_text)))
+        m.bindPopup(wrapLinks(textToHtml(popup_text)), popupDefaultOptions)
     }
     /* Создание всплывающей подсказки для маркера. */
     if (tooltip_text) {
