@@ -4,6 +4,7 @@ import {ref} from "vue";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import macSearch, {IPMACInfoResult} from "@/services/macSearch";
+import errorFmt from "@/errorFmt.ts";
 
 const text = ref("");
 const error = ref("");
@@ -14,27 +15,35 @@ interface WTFSearchResults {
 }
 
 const results = ref<WTFSearchResults[]>([]);
+const running = ref(false);
 
-function find() {
-  if (!text.value.length) return;
+async function find() {
+  if (!text.value.length || running.value) return;
+  running.value = true;
 
   if (text.value.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
-    macSearch.getMacDetail(text.value).then(
-        value => {
-          if (value) results.value.unshift({search: text.value, result: value})
-        }
-    );
+    try {
+      const value: IPMACInfoResult | null = await macSearch.getMacDetail(text.value)
+      if (value) {
+        results.value.unshift({search: text.value, result: value})
+      }
+    } catch (e: any) {
+      error.value = errorFmt(e)
+    }
+
     error.value = "";
+    running.value = false;
     return;
   }
 
   let macAddress = text.value.replace(/[^A-Fa-f\d]/g, "");
   if (macAddress.length === 12) {
-    macSearch.getMacDetail(macAddress).then(
-        value => {
-          if (value) results.value.unshift({search: text.value, result: value})
-        }
-    );
+    try {
+      const value = await macSearch.getMacDetail(macAddress)
+      if (value) results.value.unshift({search: text.value, result: value})
+    } catch (e: any) {
+      error.value = errorFmt(e)
+    }
     error.value = "";
     return;
   }
@@ -54,7 +63,7 @@ function find() {
       <Message v-if="error" severity="error" class="w-fit" closable @close="error = ''">{{ error }}</Message>
       <div>
         <InputText v-model="text" @keyup.enter="find"/>
-        <Button @click="find" icon="pi pi-search"/>
+        <Button :loading="running" @click="find" icon="pi pi-search"/>
       </div>
     </div>
 
@@ -68,9 +77,9 @@ function find() {
       </template>
 
       <div class="py-3 flex flex-wrap justify-center gap-2">
-        <Fieldset v-for="info in res.result.info" :key="info.device.name" :toggleable="true">
+        <Fieldset v-for="info in res.result.info" :toggleable="true">
           <template #legend="{toggleCallback}">
-            <Button text @click="toggleCallback" :label="'Найдено на '+info.device.name"/>
+            <Button v-if="info?.device?.name" text @click="toggleCallback" :label="'Найдено на '+info.device.name"/>
           </template>
 
           <div class="p-2">
@@ -88,15 +97,12 @@ function find() {
             </a>
 
             <div v-for="res in info.results" class="my-2 p-3 border rounded font-mono">
-              <div class="flex gap-3 justify-center">
+              <div class="flex flex-col gap-3 justify-center">
                 <div>IP - {{ res.ip }}</div>
                 <div>MAC - {{ res.mac }}</div>
                 <div>VLAN - {{ res.vlan }}</div>
-              </div>
-
-              <div class="flex gap-3 justify-center">
                 <div v-if="res.device_name">Device - {{ res.device_name }}</div>
-                <div v-if="res.port">{{ res.port }}</div>
+                <div v-if="res.port">Port - {{ res.port }}</div>
               </div>
             </div>
 

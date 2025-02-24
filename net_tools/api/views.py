@@ -121,7 +121,27 @@ def ip_mac_info(request, ip_or_mac: str):
         except RequestException:
             pass
 
-    return Response({"info": arp_info, "zabbix": names, "zabbix_url": zabbix_url})
+    arp_info_json = [
+        {
+            "device": {
+                "name": info.device.name,
+                "ip": info.device.ip,
+            },
+            "results": [
+                {
+                    "mac": res.mac,
+                    "ip": res.ip,
+                    "vlan": res.vlan,
+                    "device_name": res.device_name,
+                    "port": res.port,
+                }
+                for res in info.results
+            ],
+        }
+        for info in arp_info
+    ]
+
+    return Response({"info": arp_info_json, "zabbix": names, "zabbix_url": zabbix_url})
 
 
 @get_vlan_desc_schema
