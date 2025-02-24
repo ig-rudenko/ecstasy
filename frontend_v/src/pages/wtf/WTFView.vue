@@ -50,6 +50,7 @@ async function find() {
   }
 
   error.value = "Введенное значение не является MAC-адресом или IP-адресом"
+  running.value = false;
 }
 
 </script>
