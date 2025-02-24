@@ -45,6 +45,7 @@ async function find() {
       error.value = errorFmt(e)
     }
     error.value = "";
+    running.value = false;
     return;
   }
 
