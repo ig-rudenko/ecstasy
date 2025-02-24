@@ -196,7 +196,7 @@ class MacAddressTableGather:
         }
 
         # Получение имени ядра базы данных из файла settings.py.
-        database_engine = settings.DATABASES["default"]["ENGINE"].rsplit(".", 1)[1]
+        database_engine = str(settings.DATABASES["default"]["ENGINE"]).rsplit(".", 1)[1]
 
         if database_engine in ["postgresql", "sqlite3"]:
             # В PostgreSQL и SQLite, в дополнение к update_fields,

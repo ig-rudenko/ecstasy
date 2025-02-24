@@ -231,7 +231,7 @@ class DeviceVlanInfoAPIView(DeviceAPIView):
 
     serializer_class = DeviceVlanSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         device: Devices = self.get_object()
         queryset = device.vlan_set.all().prefetch_related("ports")
         serializer = self.get_serializer(queryset, many=True)

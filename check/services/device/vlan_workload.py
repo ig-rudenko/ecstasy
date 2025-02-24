@@ -1,14 +1,13 @@
 from typing import Type
-import orjson
+
 from django.core.cache import cache
 from django.db.models import QuerySet
 from rest_framework.serializers import BaseSerializer
 
 from check.api.serializers import DevicesSerializer
 from check.models import Profile
-from devicemanager.device.interfaces import Interfaces
-from net_tools.models import DevicesInfo
 from gathering.models import Vlan, VlanPort
+from net_tools.models import DevicesInfo
 
 
 class DevicesVlanWorkloadCollector:
@@ -16,7 +15,7 @@ class DevicesVlanWorkloadCollector:
     cache_seconds = 60 * 10
 
     @staticmethod
-    def get_vlans_load(device: DevicesInfo | dict) -> dict:
+    def get_vlans_load(device) -> dict:
         """
         ## Возвращает список VLAN и нагрузку на порты.
         :param device: Данные о устройстве.
@@ -27,27 +26,22 @@ class DevicesVlanWorkloadCollector:
         else:
             raw_vlans = device.get("vlans", "[]")
 
-        vlans = Vlan.objects.filter(device=device)
+        vlans = Vlan.objects.filter(device_id=device.dev.id)
 
         vlan_ports_data = []
         for vlan in vlans:
             vlan_ports = VlanPort.objects.filter(vlan=vlan)
-            vlan_ports_data.append({
-                "vlan": vlan.vlan,
-                "vlan_desc": vlan.vlan_desc,
-                "ports": [
-                    {
-                        "port": port.port,
-                        "desc_port": port.desc_port or "No description"
-                    }
-                    for port in vlan_ports
-                ]
-            })
+            vlan_ports_data.append(
+                {
+                    "vlan": vlan.vlan,
+                    "vlan_desc": vlan.desc,
+                    "ports": [
+                        {"port": port.port, "desc_port": port.port or "No description"} for port in vlan_ports
+                    ],
+                }
+            )
 
-        return {
-            "vlan_count": len(vlans),
-            "vlans": vlan_ports_data
-        }
+        return {"vlan_count": len(vlans), "vlans": vlan_ports_data}
 
     @staticmethod
     def get_serializer_class() -> Type[BaseSerializer]:

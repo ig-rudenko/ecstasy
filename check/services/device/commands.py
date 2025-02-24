@@ -20,9 +20,9 @@ def validate_command(device: Devices, command: DeviceCommand, context: dict) -> 
         "port": validate_port,
         "mac": lambda mac: len(re.findall(r"[0-9a-f]", mac.strip().lower())) == 12,
     }
-    command = command.command
+    cmd = command.command
     for key, validator in context_validators.items():
-        if "{" + key + "}" in command:
+        if "{" + key + "}" in cmd:
             if key not in context:
                 raise ValidationError(f"Missing {key} value")
             try:
@@ -30,8 +30,8 @@ def validate_command(device: Devices, command: DeviceCommand, context: dict) -> 
             except:  # noqa: E722
                 raise ValidationError(f"Invalid {key} value")
 
-            command = command.replace("{" + key + "}", context[key])
-    return command
+            cmd = cmd.replace("{" + key + "}", context[key])
+    return cmd
 
 
 def execute_command(device: Devices, command: DeviceCommand, context):

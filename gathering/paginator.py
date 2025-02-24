@@ -32,7 +32,7 @@ class LargeTablePaginator(Paginator):
 
     @staticmethod
     def _get_database_engine() -> str:
-        return settings.DATABASES["default"]["ENGINE"].rsplit(".", 1)[1]
+        return str(settings.DATABASES["default"]["ENGINE"]).rsplit(".", 1)[1]
 
     def _get_table_count(self) -> int:
         if self._get_database_engine() == "postgresql":
