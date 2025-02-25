@@ -106,22 +106,20 @@ class VlanTableGather:
         if not self.table:
             return 0
 
-        for vlan, port, vlan_desc, desc in self.table:
+        for vlan, port, vlan_desc in self.table:
             vlan_obj, created = Vlan.objects.get_or_create(
                 vlan=vlan,
                 device=self.device,
-                defaults={"vlan_desc": vlan_desc},
+                defaults={"desc": vlan_desc},
             )
             if not created:
-                vlan_obj.vlan_desc = vlan_desc
+                vlan_obj.desc = vlan_desc
                 vlan_obj.save()
 
             VlanPort.objects.update_or_create(
                 vlan=vlan_obj,
                 port=port,
-                defaults={
-                    "desc_port": desc,
-                },
+                defaults={"desc": ""},
             )
         return len(self.table)
 
@@ -144,7 +142,7 @@ class VlanTableGather:
             "batch_size": 999,
         }
 
-        database_engine = settings.DATABASES["default"]["ENGINE"].rsplit(".", 1)[1]
+        database_engine = str(settings.DATABASES["default"]["ENGINE"]).rsplit(".", 1)[1]
         if database_engine in ["postgresql", "sqlite3"]:
             options["unique_fields"] = ["vlan", "device"]
 

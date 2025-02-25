@@ -213,7 +213,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
         vlan_lines = vlan_str.splitlines()
         # Split into ports and description sections
-        second_header_index = None
+        second_header_index = 7
         for i, line in enumerate(vlan_lines):
             if line.startswith("VID  Status"):
                 second_header_index = i
@@ -224,7 +224,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
         # Process ports section
         port_vlans = []
-        current_vlan = None
+        current_vlan: dict = {}
         for line in ports_lines:
             if line.startswith("VID  Type") or line.startswith("----"):
                 continue
@@ -362,7 +362,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param vlan_ranges: List of VLAN ranges as strings, e.g., ["10 to 14", "3456"]
         :return: List of individual VLANs
         """
-        vlans = []
+        vlans: list = []
         # print(f"Raw vlan_ranges: {vlan_ranges}")  # Debug print to check input
 
         for part in vlan_ranges:

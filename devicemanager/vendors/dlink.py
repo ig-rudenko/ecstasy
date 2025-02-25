@@ -232,7 +232,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             ports = ports.strip()
             if ports:
                 # Replace ranges with comma-separated values (e.g., 1-13 -> 1,2,3,...,13)
-                port_ranges = []
+                port_ranges: list[str] = []
                 for part in ports.split(","):
                     if "-" in part:
                         start, end = map(int, part.split("-"))

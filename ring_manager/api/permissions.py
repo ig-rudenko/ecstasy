@@ -6,9 +6,7 @@ from ring_manager.models import TransportRing
 
 
 class RingPermission(BasePermission):
-    def has_object_permission(
-        self, request: Request, view: APIView, obj: TransportRing
-    ) -> bool:
+    def has_object_permission(self, request: Request, view: APIView, obj: TransportRing) -> bool:
         """
         Эта функция проверяет, есть ли у пользователя, делающего запрос, разрешение на доступ к определенному объекту на
         основе того, находится ли его идентификатор пользователя в списке пользователей, связанных с этим объектом.
@@ -25,9 +23,10 @@ class RingPermission(BasePermission):
         :return: логическое значение, указывающее, имеет ли пользователь, делающий запрос, разрешение на доступ к
          указанному объекту TransportRing.
         """
+        allowed_user_ids: list[int] = list(obj.users.all().values_list("id", flat=True))
         return (
             request.user.is_superuser
-            or request.user.id in obj.users.all().values_list("id", flat=True)
+            or (request.user.id or 0) in allowed_user_ids
             and obj.status != obj.DEACTIVATED
         )
 
