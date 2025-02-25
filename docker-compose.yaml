@@ -28,6 +28,7 @@ services:
       DJANGO_SUPERUSER_EMAIL: admin@example.com
       DJANGO_SUPERUSER_USERNAME: admin
       DJANGO_SUPERUSER_PASSWORD: password1
+      DJANGO_ENV: "${DJANGO_ENV:-prod}"
 
     volumes:
       - "./logs:/app/logs"
