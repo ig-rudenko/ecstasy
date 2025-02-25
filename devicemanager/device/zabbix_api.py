@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Callable, Any, Optional
 
+from django.conf import settings
 from pyzabbix import ZabbixAPI, ZabbixAPIException
-from requests import RequestException
+from requests import RequestException, Session
 
 
 class ZabbixAPIConnector:
@@ -18,6 +19,13 @@ class ZabbixAPIConnector:
         self.__session_exists_timeout = 60
         self.__session_created: datetime | None = None
         self._zabbix_connection: ZabbixAPI = ZabbixAPI()
+
+    @staticmethod
+    def get_session() -> Session:
+        session = Session()
+        if not settings.VERIFY_ZABBIX_CONNECTION:
+            session.verify = False
+        return session
 
     def set_init_load_function(self, func: Callable):
         self.__init_load_function = func
@@ -47,7 +55,11 @@ class ZabbixAPIConnector:
         if not self.__session_created or self.__session_created < datetime.now() - timedelta(
             seconds=self.__session_exists_timeout
         ):
-            self._zabbix_connection = ZabbixAPI(server=self.zabbix_url, timeout=self.timeout)
+            self._zabbix_connection = ZabbixAPI(
+                server=self.zabbix_url,
+                timeout=self.timeout,
+                session=self.get_session(),
+            )
             self.__session_created = datetime.now()
 
             try:
