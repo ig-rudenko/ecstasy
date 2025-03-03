@@ -129,9 +129,11 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     actions = [
         "excel_interfaces_export",
         "load_last_config_files",
-        "set_telnet",
-        "set_snmp",
-        "set_ssh",
+        "set_telnet_port_scan_protocol",
+        "set_snmp_port_scan_protocol",
+        "set_ssh_port_scan_protocol",
+        "set_telnet_cmd_protocol",
+        "set_ssh_cmd_protocol",
         "set_pool_size_1",
         "set_pool_size_2",
         "set_pool_size_3",
@@ -203,23 +205,23 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         )
 
     @admin.action(description="telnet Протокол для поиска интерфейсов")
-    def set_telnet(self, request, queryset):
+    def set_telnet_port_scan_protocol(self, request, queryset):
         queryset.update(port_scan_protocol="telnet")
 
     @admin.action(description="snmp Протокол для поиска интерфейсов")
-    def set_snmp(self, request, queryset):
+    def set_snmp_port_scan_protocol(self, request, queryset):
         queryset.update(port_scan_protocol="snmp")
 
     @admin.action(description="ssh Протокол для поиска интерфейсов")
-    def set_ssh(self, request, queryset):
+    def set_ssh_port_scan_protocol(self, request, queryset):
         queryset.update(port_scan_protocol="ssh")
 
     @admin.action(description="telnet Протокол для подключения")
-    def set_ssh(self, request, queryset):
+    def set_telnet_cmd_protocol(self, request, queryset):
         queryset.update(cmd_protocol="telnet")
 
     @admin.action(description="ssh Протокол для подключения")
-    def set_ssh(self, request, queryset):
+    def set_ssh_cmd_protocol(self, request, queryset):
         queryset.update(cmd_protocol="ssh")
 
     @admin.action(description="Установка пула подключений в 1")
