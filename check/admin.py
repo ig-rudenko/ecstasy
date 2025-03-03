@@ -204,21 +204,23 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
 
     @admin.action(description="telnet Протокол для поиска интерфейсов")
     def set_telnet(self, request, queryset):
-        """Меняем протокол поиска интерфейсов на TELNET"""
-
         queryset.update(port_scan_protocol="telnet")
 
     @admin.action(description="snmp Протокол для поиска интерфейсов")
     def set_snmp(self, request, queryset):
-        """Меняем протокол поиска интерфейсов на SNMP"""
-
         queryset.update(port_scan_protocol="snmp")
 
     @admin.action(description="ssh Протокол для поиска интерфейсов")
     def set_ssh(self, request, queryset):
-        """Меняем протокол поиска интерфейсов на SSH"""
-
         queryset.update(port_scan_protocol="ssh")
+
+    @admin.action(description="telnet Протокол для подключения")
+    def set_ssh(self, request, queryset):
+        queryset.update(cmd_protocol="telnet")
+
+    @admin.action(description="ssh Протокол для подключения")
+    def set_ssh(self, request, queryset):
+        queryset.update(cmd_protocol="ssh")
 
     @admin.action(description="Установка пула подключений в 1")
     def set_pool_size_1(self, request, queryset):
