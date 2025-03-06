@@ -1,5 +1,5 @@
-Value DESC (\S*)
+Value INTF ([ABCD]?\d+(-Trk\d+)?)
+Value DESC ((\s+\S+)?)
 
 Start
-  ^\s+Name\s*:\s*${DESC}
-  ^\s+Link Status -> Record
+  ^\s+${INTF}(\s+\S+)?${DESC} -> Record

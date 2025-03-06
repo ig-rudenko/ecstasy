@@ -67,9 +67,7 @@ class TestMikrotikRBLHGG(SimpleTestCase):
         self.assertEqual(self.mikrotik.model, "RBLHGG-60ad")
 
     def test_vlans_and_bridges_parsing(self):
-        self.assertDictEqual(
-            self.mikrotik._vlans_interfaces, {"vlan1944": "1944", "vlan3738": "3738"}
-        )
+        self.assertDictEqual(self.mikrotik._vlans_interfaces, {"vlan1944": "1944", "vlan3738": "3738"})
         self.assertDictEqual(
             self.mikrotik._bridges,
             {

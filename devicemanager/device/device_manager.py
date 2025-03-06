@@ -5,10 +5,12 @@ from ping3 import ping as socket_ping
 from pyzabbix.api import ZabbixAPIException
 from requests import RequestException
 
+from check.models import Devices
 from devicemanager.remote import remote_connector, RemoteDevice
 from devicemanager.zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup
 from .interfaces import Interfaces
 from .zabbix_api import zabbix_api
+from ..device_connector.factory import DEFAULT_POOL_SIZE
 from ..exceptions import AuthException, BaseDeviceException
 
 
@@ -32,6 +34,7 @@ class DeviceManager:
         self.snmp_community = ""
         self.auth_obj = None
         self.success_auth: dict = {}
+        self.pool_size = DEFAULT_POOL_SIZE
 
     def collect_zabbix_info(self):
         """Собирает информацию по данному оборудованию из Zabbix"""
@@ -98,12 +101,13 @@ class DeviceManager:
         return self._zabbix_info
 
     @classmethod
-    def from_model(cls, model_dev, zabbix_info=True) -> "DeviceManager":
+    def from_model(cls, model_dev: Devices, zabbix_info=True) -> "DeviceManager":
         dev = cls(model_dev.name, zabbix_info=False)
         dev.ip = model_dev.ip
         dev.protocol = model_dev.port_scan_protocol
         dev.snmp_community = model_dev.snmp_community
         dev.auth_obj = model_dev.auth_group
+        dev.pool_size = model_dev.connection_pool_size
         if zabbix_info:
             dev.collect_zabbix_info()
         return dev
@@ -168,6 +172,7 @@ class DeviceManager:
             snmp_community=self.snmp_community,
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,
+            pool_size=self.pool_size,
         )
 
         sys_info = session.get_system_info()
@@ -220,4 +225,5 @@ class DeviceManager:
             snmp_community="",
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,
+            pool_size=self.pool_size,
         )

@@ -1,4 +1,4 @@
-Value INTF ([ABCD]*\d+(-Trk\d+){0,1})
+Value INTF ([ABCD]?\d+(-Trk\d+)?)
 Value PHY (Yes|No)
 Value STATUS (Up|Down)
 

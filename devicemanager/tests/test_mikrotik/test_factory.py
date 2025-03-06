@@ -44,5 +44,3 @@ class TestMikroTikFactory(AbstractTestFactory):
     def test_factory_device_attributes(self, send_command: Mock):
         send_command.return_value = self.mikrotik_version_output
         super().test_factory_device_attributes()
-
-

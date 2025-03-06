@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import wraps
 
 from .helpers import interface_normal_view
@@ -21,7 +22,7 @@ def validate_and_format_port(if_invalid_return=None, validator=None):
             port = validator(port)
             if not port:
                 # Неверный порт
-                return if_invalid_return
+                return deepcopy(if_invalid_return)
 
             # Вызываем метод
             return func(self, port, *args, **kwargs)
@@ -43,9 +44,7 @@ def validate_and_format_port_as_normal(if_invalid_return=None):
 
     :param if_invalid_return: Что нужно вернуть, если порт неверный.
     """
-    return validate_and_format_port(
-        if_invalid_return=if_invalid_return, validator=interface_normal_view
-    )
+    return validate_and_format_port(if_invalid_return=if_invalid_return, validator=interface_normal_view)
 
 
 def validate_and_format_port_only_digit(if_invalid_return=None):

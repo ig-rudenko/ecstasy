@@ -24,7 +24,7 @@ class EltexFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         version_output = str(version_output)
 

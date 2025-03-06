@@ -10,7 +10,7 @@ class AbstractDeviceFactory(ABC):
     @classmethod
     @abstractmethod
     def get_device(
-            cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
     ) -> BaseDevice:
         pass
 

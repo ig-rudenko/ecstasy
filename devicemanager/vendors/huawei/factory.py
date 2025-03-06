@@ -17,10 +17,7 @@ class HuaweiFactory(AbstractDeviceFactory):
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return bool(
-            version_output
-            and re.search(
-                r"Unrecognized command|% Unknown command", str(version_output)
-            )
+            version_output and re.search(r"Unrecognized command|% Unknown command", str(version_output))
         )
 
     @classmethod
@@ -35,9 +32,7 @@ class HuaweiFactory(AbstractDeviceFactory):
         if "Unrecognized command" in version_output:
             version = cls.send_command(session, "display version")
             if "CX600" in version:
-                model = BaseDevice.find_or_empty(
-                    r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE
-                )
+                model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime", version, flags=re.IGNORECASE)
                 return HuaweiCX600(session, ip, auth, model, snmp_community)
 
             elif "quidway" in version.lower():
@@ -45,9 +40,7 @@ class HuaweiFactory(AbstractDeviceFactory):
 
             elif "ce6865" in version.lower():
                 model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime is", version)
-                return HuaweiCE6865(
-                    session, ip, auth, snmp_community=snmp_community, model=model
-                )
+                return HuaweiCE6865(session, ip, auth, snmp_community=snmp_community, model=model)
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
             if "Unrecognized command" in version:
@@ -58,9 +51,7 @@ class HuaweiFactory(AbstractDeviceFactory):
             version_output = ""
             session.sendline("display version")
             while True:
-                match = session.expect(
-                    [r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"]
-                )
+                match = session.expect([r"]$", "---- More", r">$", r"#", pexpect.TIMEOUT, "{"])
                 if match == 5:
                     session.expect(r"\}:")
                     session.sendline("\n")
@@ -73,13 +64,7 @@ class HuaweiFactory(AbstractDeviceFactory):
                 else:
                     break
             if re.findall(r"VERSION : MA5600", version_output):
-                model = BaseDevice.find_or_empty(
-                    r"VERSION : (MA5600\S+)", version_output
-                )
-                return HuaweiMA5600T(
-                    session, ip, auth, model=model, snmp_community=snmp_community
-                )
+                model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version_output)
+                return HuaweiMA5600T(session, ip, auth, model=model, snmp_community=snmp_community)
 
-        raise UnknownDeviceError(
-            "HuaweiFactory не удалось распознать модель оборудования", ip=ip
-        )
+        raise UnknownDeviceError("HuaweiFactory не удалось распознать модель оборудования", ip=ip)
