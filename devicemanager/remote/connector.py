@@ -193,5 +193,5 @@ class RemoteDevice(
     ) -> MACTableType:
         return self._remote_call("vlans_on_port", port=port, operation=operation, vlans=vlans, tagged=tagged)
 
-    def send_command(self, command: str) -> str:
-        return self._remote_call("send_command", command=command)
+    def execute_command(self, command: str) -> str:
+        return self._remote_call("execute_command", command=command)

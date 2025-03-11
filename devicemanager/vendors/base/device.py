@@ -408,3 +408,7 @@ class BaseDevice(AbstractDevice, ABC):
             # Убираем управляющие последовательности ANSI
             output += self.ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
         return output
+
+    @lock_session
+    def execute_command(self, cmd: str) -> str:
+        return self.send_command(cmd)

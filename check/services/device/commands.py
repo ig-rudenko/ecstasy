@@ -9,7 +9,6 @@ from devicemanager.device.interfaces import Interfaces
 
 
 def validate_command(device: Devices, command: DeviceCommand, context: dict) -> str:
-
     def validate_port(port: str):
         port = port.strip()
         interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
@@ -36,4 +35,4 @@ def validate_command(device: Devices, command: DeviceCommand, context: dict) -> 
 
 def execute_command(device: Devices, command: DeviceCommand, context):
     valid_command = validate_command(device, command, context)
-    return device.connect().send_command(valid_command)
+    return device.connect().execute_command(valid_command)
