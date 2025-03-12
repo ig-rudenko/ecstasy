@@ -411,4 +411,17 @@ class BaseDevice(AbstractDevice, ABC):
 
     @lock_session
     def execute_command(self, cmd: str) -> str:
-        return self.send_command(cmd)
+        return self.send_command(cmd.strip())
+
+    @lock_session
+    def execute_commands_list(self, commands: list[str]) -> list[str]:
+        """
+        Отправляет список команд на оборудование и считывает их вывод.
+
+        :param commands: Список команд, которые необходимо выполнить на оборудовании.
+        :return: Список строк с результатами команд.
+        """
+        output = []
+        for command in commands:
+            output.append(self.send_command(command.strip(), expect_command=False))
+        return output

@@ -28,7 +28,7 @@ from ..serializers import (
 )
 from ..swagger import schemas
 from ...models import DeviceCommand
-from ...services.device.commands import execute_command
+from ...services.device.commands import execute_command, validate_command
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -356,10 +356,38 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Command not found"}, status=404)
 
         try:
-            result = execute_command(device, command, request.data)
+            output: str = execute_command(device, command, request.data)
         except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
         except ValidationError as exc:
             return Response({"detail": exc.detail}, status=400)
         else:
-            return Response({"output": result})
+            return Response({"output": output})
+
+
+@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
+class ValidateDeviceCommandAPIView(DeviceAPIView):
+    permission_classes = [IsAuthenticated, DevicePermission]
+
+    @except_connection_errors
+    def post(self, request, *args, **kwargs):
+        device = self.get_object()
+        commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
+        if not request.user.is_superuser:
+            commands = commands.filter(perm_groups__user_set=request.user)
+
+        if not commands.exists():
+            return Response({"detail": "Command not found"}, status=404)
+
+        command = commands.first()
+        if commands is None:
+            return Response({"detail": "Command not found"}, status=404)
+
+        try:
+            valid_command: str = validate_command(device, command.command, request.data)
+        except InvalidMethod:
+            return Response({"detail": "Unsupported for this device"}, status=400)
+        except ValidationError as exc:
+            return Response({"detail": exc.detail}, status=400)
+        else:
+            return Response({"command": valid_command})

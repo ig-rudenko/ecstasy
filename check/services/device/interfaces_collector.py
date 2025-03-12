@@ -3,10 +3,10 @@ from datetime import datetime
 from typing import TypeVar, TypedDict
 
 import orjson
+import requests
 from django.utils import timezone
-from requests import RequestException
+from urllib3.exceptions import MaxRetryError
 
-from check.logger import django_actions_logger
 from check.models import Devices
 from devicemanager.device import DeviceManager, zabbix_api
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
@@ -306,7 +306,7 @@ class InterfacesBuilder:
                         f"{graphs_ids_params}filter_set=1"
                     )
 
-        except RequestException as exc:
-            django_actions_logger.error("Ошибка `add_zabbix_graph_links`", exc_info=exc)
+        except (MaxRetryError, requests.exceptions.RequestException) as exc:
+            print(f"Ошибка `add_zabbix_graph_links` {exc}")
         finally:
             return interfaces

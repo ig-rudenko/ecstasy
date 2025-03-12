@@ -83,4 +83,8 @@ urlpatterns = [
         "<device_name>/commands/<int:command_id>/execute",
         device_manager.ExecuteDeviceCommandAPIView.as_view(),
     ),
+    path(
+        "<device_name>/commands/<int:command_id>/validate",
+        device_manager.ValidateDeviceCommandAPIView.as_view(),
+    ),
 ]

@@ -396,11 +396,10 @@ class DeviceCommand(models.Model):
         help_text="Кратко, что она делает",
     )
     description = models.TextField(null=True, blank=True, verbose_name="Описание команды")
-    command = models.CharField(
-        max_length=512,
+    command = models.TextField(
         null=False,
         blank=False,
-        verbose_name="Команда",
+        verbose_name="Команды",
         help_text="Вы можете использовать макросы - {port}, "
         "чтобы подставить название интерфейса, а также {ip}, {mac}",
     )
@@ -410,6 +409,13 @@ class DeviceCommand(models.Model):
         blank=False,
         verbose_name="Вендор",
         help_text="Команда будет доступна только оборудованию с тем же вендором",
+    )
+    model_regexp = models.CharField(
+        max_length=512,
+        null=True,
+        blank=True,
+        verbose_name="Регулярное выражение для модели",
+        help_text="Команда будет доступна только оборудованию с той же моделью",
     )
     perm_groups = models.ManyToManyField(Group, verbose_name="Права доступа", blank=True)
 

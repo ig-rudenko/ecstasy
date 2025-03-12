@@ -23,7 +23,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.db.models import QuerySet
 from django.http import HttpResponse
-from django.utils.html import format_html
+from django.utils.html import format_html, escape
 from django.utils.safestring import mark_safe
 from import_export.admin import ExportMixin
 
@@ -426,16 +426,42 @@ class DeviceCommandModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         uniq_vendors = list(sorted(set(Devices.objects.all().values_list("vendor", flat=True)), key=str))
-        self.fields["device_vendor"] = forms.ChoiceField(choices=[(v, v) for v in uniq_vendors], required=True)
+        self.fields["device_vendor"] = forms.ChoiceField(
+            choices=[(v, v) for v in uniq_vendors], required=True
+        )
 
     class Meta:
         model = DeviceCommand
-        fields = ["name", "description", "command", "device_vendor", "perm_groups"]
+        fields = [
+            "name",
+            "description",
+            "command",
+            "device_vendor",
+            "model_regexp",
+            "perm_groups",
+        ]
+        widgets = {
+            "command": forms.Textarea(
+                attrs={
+                    "style": "font-family: monospace; "
+                    "font-size: 1rem; "
+                    "padding: 1rem; "
+                    "min-width: 100%;",
+                    "wrap": "off",
+                },
+            ),
+        }
 
 
 @admin.register(DeviceCommand)
 class DeviceCommandAdmin(admin.ModelAdmin):
-    list_display = ["name", "device_vendor", "command", "description"]
+    list_display = ["name", "device_vendor", "model_regexp", "command_html", "description"]
     search_fields = ["name", "command"]
+    filter_horizontal = ("perm_groups",)
     form = DeviceCommandModelForm
     list_filter = ["device_vendor"]
+
+    @admin.display(description="Команда", ordering="command")
+    def command_html(self, obj):
+        cmd_text = escape(obj.command).replace('\n', '<br/>')
+        return mark_safe(f'<code style="font-family: monospace;">{cmd_text}</code>')
