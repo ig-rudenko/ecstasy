@@ -1,3 +1,4 @@
+### Python template
 *
 !accounting
 !app_settings
@@ -16,3 +17,8 @@
 !manage.py
 !requirements.txt
 !run.sh
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
