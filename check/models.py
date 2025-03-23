@@ -328,7 +328,10 @@ class Profile(models.Model):
 
     @property
     def perm_level(self) -> int:
-        return self.permissions_level.index(self.permissions)
+        try:
+            return self.permissions_level.index(self.permissions)
+        except ValueError:
+            return 0
 
     def __str__(self):
         return f"Profile: {self.user.username}"

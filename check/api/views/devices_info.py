@@ -21,6 +21,7 @@ from ..swagger.schemas import (
     devices_interfaces_workload_list_api_doc,
     interfaces_workload_api_doc,
     interfaces_list_api_doc,
+    device_info_api_doc,
 )
 from ...models import Devices
 from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
@@ -43,28 +44,38 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        return models.Devices.objects.filter(group__profile__user_id=self.current_user.id).select_related(
-            "group"
-        )
+        return models.Devices.objects.filter(group__profile__user_id=self.current_user.id)
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+
+        all_fields = self.serializer_class.Meta.fields
+        return_fields = self.request.GET.get("return-fields", "").split(",")
+        return_fields = list(set(return_fields) & set(all_fields))
+
+        if not return_fields:
+            return_fields = all_fields
+
+        if "group" in return_fields:
+            queryset = queryset.select_related("group")
+            return_fields.remove("group")
+            return_fields.append("group__name")
+
+        queryset = queryset.values(*return_fields)
+        return queryset
 
     def get(self, request, *args, **kwargs):
         """
         ## Возвращаем список всех устройств, без пагинации
         """
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
+        data = self.filter_queryset(self.get_queryset())
 
-        self.format_return_data(serializer.data)
-        return Response(serializer.data)
+        for item in data:
+            if item.get("group__name"):
+                item["group"] = item["group__name"]
+                del item["group__name"]
 
-    def format_return_data(self, data):
-        return_fields = self.request.GET.get("return-fields", "").split(",")
-        if any(return_fields):
-            for item in data:
-                for field in list(item.keys()):
-                    if field not in return_fields:
-                        item.pop(field, None)
-        return data
+        return Response(data)
 
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
@@ -151,6 +162,7 @@ class DeviceInterfacesAPIView(DeviceAPIView):
         return Response(interfaces_data)
 
 
+@method_decorator(device_info_api_doc, name="get")
 class DeviceInfoAPIView(DeviceAPIView):
     """
     ## Возвращаем общую информацию оборудования

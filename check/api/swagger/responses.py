@@ -15,7 +15,6 @@ class ConfigFileSwaggerSerializer(SwaggerSerializer):
     name = serializers.CharField()
     size = serializers.IntegerField(min_value=0)
     modTime = serializers.DateTimeField(format="%H:%M %d.%m.%Y")
-    isDir = serializers.BooleanField()
 
 
 class DevicesConfigsSwaggerSerializer(SwaggerSerializer):
@@ -142,3 +141,13 @@ class InterfacesListSwaggerSerializer(SwaggerSerializer):
     interfaces = InterfaceInfoSwaggerSerializer(many=True)
     deviceAvailable = serializers.BooleanField()
     collected = serializers.DateTimeField()
+
+
+class DeviceInfoSwaggerSerializer(SwaggerSerializer):
+    deviceName = serializers.CharField()
+    deviceIP = serializers.CharField()
+    elasticStackLink = serializers.URLField()
+    zabbixHostID = serializers.CharField()
+    zabbixInfo = serializers.DictField()
+    permission = serializers.IntegerField(min_value=0, max_value=4)
+    coords = serializers.ListField(child=serializers.FloatField(), min_length=2, max_length=2)

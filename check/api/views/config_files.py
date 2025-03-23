@@ -2,8 +2,11 @@ from typing import Type
 
 from django.http import FileResponse
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from check import models
@@ -20,10 +23,14 @@ from ..serializers import DevicesSerializer, ConfigFileSerializer
 from ..swagger import schemas
 
 
+class ConfigFilesPagination(PageNumberPagination):
+    page_size = 25
+
+
 class BaseConfigStorageAPIView(DeviceAPIView):
     config_storage: Type[ConfigStorage] | None = None
 
-    def get_storage(self, device: models.Devices, file_name: str | None = None) -> ConfigStorage:
+    def get_storage(self, device: str, file_name: str | None = None) -> ConfigStorage:
         """
         ## Эта функция проверяет, что файл конфигурации верный.
 
@@ -50,8 +57,7 @@ class BaseConfigStorageAPIView(DeviceAPIView):
         return storage
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="get")
-@method_decorator(profile_permission(models.Profile.BRAS), name="delete")
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     """
     # Для загрузки и удаления файла конфигурации конкретного оборудования
@@ -64,7 +70,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
         ## Отправляет содержимое файла конфигурации
         """
         device = self.get_object()
-        storage = self.get_storage(device, file_name)
+        storage = self.get_storage(device.name, file_name)
         return FileResponse(storage.open(file_name), filename=file_name)
 
     def delete(self, request, device_name: str, file_name: str):
@@ -72,7 +78,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
         ## Удаляет файл конфигурации
         """
         device = self.get_object()
-        self.get_storage(device, file_name).delete(file_name)
+        self.get_storage(device.name, file_name).delete(file_name)
         return Response(status=204)
 
 
@@ -97,7 +103,7 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
             ]
         """
         device = self.get_object()
-        storage = self.get_storage(device)
+        storage = self.get_storage(device.name)
 
         config_files = storage.files_list()
         serializer = self.serializer_class(config_files, many=True)
@@ -105,8 +111,10 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
         return Response(serializer.data, status=200)
 
 
+@method_decorator(cache_page(60 * 10), name="dispatch")
+@method_decorator(vary_on_headers("Authorization"), name="dispatch")
+@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 @method_decorator(schemas.devices_config_files_list_api_doc, name="get")
-@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
     """
     # Смотрим список оборудования и файлы конфигураций
@@ -116,6 +124,23 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
     filterset_class = DeviceFilter
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
+    pagination_class = ConfigFilesPagination
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+
+        all_fields = DevicesSerializer.Meta.fields
+        return_fields = self.request.GET.get("return-fields", "").split(",")
+        return_fields = list(set(return_fields) & set(all_fields))
+
+        if not return_fields:
+            return_fields = all_fields
+
+        if "group" in return_fields:
+            queryset = queryset.select_related("group")
+
+        queryset = queryset.values(*return_fields)
+        return queryset
 
     def get(self, request, **kwargs):
         """
@@ -150,31 +175,29 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
 
         """
 
-        result = {
-            "count": 0,
-            "devices": [],
-        }
-        devices = self.filter_queryset(self.get_queryset())
-        for dev in devices:  # type: models.Devices
-            result["count"] += 1
+        result = []
 
+        qs = self.filter_queryset(self.get_queryset())
+        devices = self.paginate_queryset(qs)
+        for dev in devices:
             # Файлы конфигураций
-            files = self.get_storage(dev).files_list()
-
+            files = self.get_storage(dev["name"]).files_list()
             # Сериализуем файлы
             files_serializer = self.serializer_class(files, many=True)
 
-            # Сериализуем оборудование
-            device_serializer = DevicesSerializer(dev)
+            # Форматируем название группы
+            if dev.get("group__name"):
+                dev["group"] = dev["group__name"]
+                del dev["group__name"]
 
-            result["devices"].append(
+            result.append(
                 {
-                    **device_serializer.data,
+                    **dev,
                     "files": files_serializer.data,
                 }
             )
 
-        return Response(result)
+        return self.get_paginated_response(result)
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
@@ -189,7 +212,7 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
 
         """
         device = self.get_object()
-        storage = self.get_storage(device)
+        storage = self.get_storage(device.name)
         gather = ConfigurationGather(storage)
 
         try:

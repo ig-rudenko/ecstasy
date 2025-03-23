@@ -1,13 +1,13 @@
 from drf_yasg.utils import swagger_auto_schema
 
 from check.api.serializers import PortControlSerializer
-
 from .responses import (
     DevicesConfigListSwaggerSerializer,
     ConfigFileSwaggerSerializer,
     DevicesInterfaceWorkloadSwaggerSerializer,
     InterfaceWorkloadSwaggerSerializer,
     InterfacesListSwaggerSerializer,
+    DeviceInfoSwaggerSerializer,
 )
 
 # Изменяем состояние порта оборудования
@@ -53,5 +53,11 @@ interfaces_workload_api_doc = swagger_auto_schema(
 interfaces_list_api_doc = swagger_auto_schema(
     responses={
         200: InterfacesListSwaggerSerializer(),
+    }
+)
+
+device_info_api_doc = swagger_auto_schema(
+    responses={
+        200: DeviceInfoSwaggerSerializer(),
     }
 )
