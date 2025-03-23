@@ -186,8 +186,9 @@ class LayerFrom(forms.ModelForm):
 
 @admin.register(Layers)
 class LayersAdmin(admin.ModelAdmin):
-    list_display = ("layer_name", "icon", "layer_type", "download_layer")
+    list_display = ("layer_name", "icon", "layer_type", "description", "download_layer")
     form = LayerFrom
+    search_fields = ("name", "description")
 
     fieldsets = (
         ("Описание", {"fields": ("name", "description")}),
@@ -311,10 +312,10 @@ class LayersAdmin(admin.ModelAdmin):
         """
         if instance.from_file:
             return mark_safe(
-                f"На основе файла - <strong>\"{instance.from_file.name.rsplit('/', 1)[-1]}\"</strong>"
+                f"{svg_file_icon} <strong>\"{instance.from_file.name.rsplit('/', 1)[-1]}\"</strong>"
             )
         if instance.zabbix_group_name:
-            return mark_safe(f'На основе группы Zabbix - <strong>"{instance.zabbix_group_name}"</strong>')
+            return mark_safe(f'{svg_zabbix_icon} - <strong>"{instance.zabbix_group_name}"</strong>')
 
         return "Неизвестный тип слоя"
 
@@ -391,8 +392,9 @@ class LayersAdmin(admin.ModelAdmin):
 @admin.register(Maps)
 class MapsAdmin(admin.ModelAdmin):
     readonly_fields = ("map_image",)
-    list_display = ("name", "map_layers", "description", "url")
+    list_display = ("name", "map_image", "map_layers", "description", "url")
     filter_horizontal = ("users", "layers")
+    search_fields = ("name", "description")
     fieldsets = (
         ("Основные", {"fields": ("name", "map_image", "preview_image", "description")}),
         (
@@ -422,9 +424,11 @@ class MapsAdmin(admin.ModelAdmin):
             </svg></a>""",
         )
 
-    @staticmethod
-    def map_image(instance: Maps):
-        return format_html(f"""<img height=300 src="{instance.preview_image.url}" >""")
+    @admin.display(description="Изображение")
+    def map_image(self, instance: Maps):
+        if instance.preview_image:
+            return format_html(f"""<img height=300 src="{instance.preview_image.url}" >""")
+        return "-"
 
     @admin.display(description="Структура")
     def map_layers(self, instance: Maps):

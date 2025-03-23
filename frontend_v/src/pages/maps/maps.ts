@@ -207,7 +207,7 @@ export class MapService {
                     {
                         element: point,
                         latlng: point.getLatLng(),
-                        name: features[j].properties.name,
+                        name: features[j].properties.name || features[j].properties.iconCaption,
                         description: features[j].properties.description,
                     }
                 )
@@ -237,7 +237,6 @@ export class MapService {
                     defaultSettings.Polygon
                     // @ts-ignore
                 ).addTo(layer)
-                console.log(polygon.getLatLngs())
                 this.staticElements.push(
                     {
                         element: polygon,

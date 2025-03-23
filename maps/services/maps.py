@@ -11,22 +11,26 @@ from .map_alerts import get_group_problems
 def get_map_layers_geo_data(map_object: Maps) -> list[dict]:
     """Возвращает список гео данных для каждого слоя карты."""
     layers_data = []
+    zabbix_layers = []
 
-    try:
-        with zabbix_api.connect() as zbx_session:
-            for layer in map_object.layers.all():  # Проходимся по введенным именам групп
-                if layer.type == "zabbix":
+    for layer in map_object.layers.all():  # Проходимся по введенным именам групп
+        if layer.type == "zabbix":
+            zabbix_layers.append(layer)
+
+        elif layer.type == "file":
+            layer_data = get_file_layer_data(layer)
+            if layer_data:
+                layers_data.append(layer_data)
+
+    if zabbix_layers:  # Если есть zabbix слои
+        try:
+            with zabbix_api.connect() as zbx_session:
+                for layer in zabbix_layers:
                     layer_data = get_zabbix_layer_data(zbx_session, layer)
                     if layer_data:
                         layers_data.append(layer_data)
-
-                elif layer.type == "file":
-                    layer_data = get_file_layer_data(layer)
-                    if layer_data:
-                        layers_data.append(layer_data)
-
-    except RequestException:
-        raise APIException({"detail": "Не удалось подключиться к Zabbix API"})
+        except RequestException:
+            raise APIException({"detail": "Не удалось подключиться к Zabbix API"})
 
     return layers_data  # Возвращаем список геообъектов
 

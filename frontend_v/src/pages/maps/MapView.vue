@@ -23,10 +23,13 @@ onMounted(async () => {
       .on("locationerror", () => mapService?.map.setView([44.6, 33.5], 12));
 
   mapData.value = await mapService.getMapData();
-
   if (mapData.value?.type == "external") {
-    open(mapData.value.map_url, "_blank");
-    history.back();
+    const res = window.open(mapData.value.map_url, );
+    if (!res) {
+      location.href = mapData.value.map_url
+    } else {
+      history.back();
+    }
     return;
   }
 
@@ -66,7 +69,7 @@ onUnmounted(() => {
 })
 
 function searchElement() {
-  if (search.value.length < 4) return;
+  if (search.value.length < 3) return;
   mapService?.searchPoint(search.value);
 }
 

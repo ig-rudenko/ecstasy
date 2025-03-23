@@ -75,7 +75,7 @@ def get_file_layer_data(layer: Layers) -> dict:
 
     try:
         # Читаем содержимое файла
-        with layer.from_file.open("r") as file:
+        with open(layer.from_file.path, "r", encoding="utf-8", errors="ignore") as file:
             try:
                 layer_data["features"] = orjson.loads(file.read())
             except orjson.JSONDecodeError:
