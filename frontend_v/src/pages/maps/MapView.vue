@@ -69,7 +69,7 @@ onUnmounted(() => {
 })
 
 function searchElement() {
-  if (search.value.length < 3) return;
+  if (search.value.length < 1) return;
   mapService?.searchPoint(search.value);
 }
 

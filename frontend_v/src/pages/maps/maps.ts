@@ -12,7 +12,7 @@ import {
     marker,
     polygon,
     polyline,
-    tileLayer
+    tileLayer,
 } from "leaflet";
 
 import api from "@/services/api";
@@ -94,14 +94,12 @@ export class MapService {
     public overlays: LayersObject = {};
 
     constructor(public mapID: string, public mapHTMLElementID: string) {
-        this.map = new LMap(mapHTMLElementID, {layers: [geoGoogle, arcgisonline, osm], minZoom: 5});
+        this.map = new LMap(mapHTMLElementID, {layers: [osm], minZoom: 5}); // Оставляем только OSM при инициализации
         this.map.attributionControl.getContainer()?.remove();
-
         this.map.addControl(new Control.Scale());
 
-        // Подписываемся на событие изменения слоев и вызываем функцию для сохранения состояния активных слоев при каждом изменении
+        // Подписываемся на изменение слоев
         this.map.on('overlayadd overlayremove', () => saveLayers(this.mapID, this.map, this.overlays));
-
     }
 
     async getMapData() {
@@ -133,7 +131,7 @@ export class MapService {
         }
 
         this.map.addControl(new Control.Layers(
-            {"Спутник": geoGoogle, "Спутник 2": arcgisonline, "Схема": osm},
+            {"Спутник старый": geoGoogle, "Спутник новый": arcgisonline, "Схема": osm},
             this.overlays,
             {autoZIndex: true, collapsed: true, position: "topright", sortLayers: true})
         );
