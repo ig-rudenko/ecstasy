@@ -79,17 +79,21 @@ class DeviceDBSynchronizer(DeviceInterfacesGather):
         """
         actual_inventory: ZabbixInventory = self.device_collector.zabbix_info.inventory
 
-        if self.device_collector.zabbix_info.inventory.model != self.device.model:
+        if actual_inventory.model != self.device.model:
             self.device.model = actual_inventory.model
             self.model_update_fields.append("model")
 
-        if self.device_collector.zabbix_info.inventory.vendor != self.device.vendor:
+        if actual_inventory.vendor != self.device.vendor:
             self.device.vendor = actual_inventory.vendor
             self.model_update_fields.append("vendor")
 
-        if self.device_collector.zabbix_info.inventory.serialno_a != self.device.serial_number:
+        if actual_inventory.serialno_a != self.device.serial_number:
             self.device.serial_number = actual_inventory.serialno_a
             self.model_update_fields.append("serial_number")
+
+        if actual_inventory.os_full != self.device.os_version:
+            self.device.os_version = actual_inventory.os_full
+            self.model_update_fields.append("os_version")
 
         # Сохраняем изменения
         if self.model_update_fields:

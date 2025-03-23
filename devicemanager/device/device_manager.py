@@ -189,6 +189,9 @@ class DeviceManager:
         if sys_info.get("mac"):
             self.zabbix_info.inventory.macaddress_a = sys_info["mac"]
 
+        if sys_info.get("os_version"):
+            self.zabbix_info.inventory.os_full = sys_info["os_version"]
+
         if with_vlans:
             # Если не получилось собрать vlan тогда собираем интерфейсы
             self.interfaces = Interfaces(session.get_vlans())

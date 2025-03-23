@@ -97,6 +97,13 @@ class Devices(models.Model):
         verbose_name="Серийный номер",
         help_text="Если не указано, то обновится автоматически при подключении к устройству",
     )
+    os_version = models.CharField(
+        max_length=512,
+        null=True,
+        blank=True,
+        verbose_name="Версия ПО",
+        help_text="Если не указано, то обновится автоматически при подключении к устройству",
+    )
     auth_group = models.ForeignKey(
         AuthGroup,
         on_delete=models.SET_NULL,

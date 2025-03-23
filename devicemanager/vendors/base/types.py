@@ -68,6 +68,7 @@ class SystemInfo(TypedDict):
     vendor: str
     model: str
     serialno: str
+    os_version: str
 
 
 class SetDescriptionResult(NamedTuple):

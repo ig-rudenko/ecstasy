@@ -181,6 +181,7 @@ class BaseDevice(AbstractDevice, ABC):
             "vendor": self.vendor,
             "model": self.model,
             "serialno": self.serialno,
+            "os_version": self.os_version,
         }
 
     @staticmethod

@@ -23,6 +23,7 @@ class DevicesSerializer(serializers.ModelSerializer):
             "group",
             "model",
             "serial_number",
+            "os_version",
             "port_scan_protocol",
             "cmd_protocol",
             "active",
