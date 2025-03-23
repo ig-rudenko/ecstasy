@@ -18,7 +18,7 @@ class TestLocalStorage(TestCase):
     def test_storage_init(self):
         dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev)
+            storage = LocalConfigStorage(dev.name)
 
             self.assertTrue(pathlib.Path(f"{self.storage_path}/{dev.name}").exists())
 
@@ -29,7 +29,7 @@ class TestLocalStorage(TestCase):
     def test_add_remove_file(self):
         dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev)
+            storage = LocalConfigStorage(dev.name)
 
             configuration = "some config"
             config_name = "new_config.txt"
@@ -77,7 +77,7 @@ class TestLocalStorage(TestCase):
     def test_add_file_from_path(self):
         dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev)
+            storage = LocalConfigStorage(dev.name)
 
             config_file_path = pathlib.Path("./manage_copy.py")
             config_name = "new_config.txt"
