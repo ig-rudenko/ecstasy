@@ -21,7 +21,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Count
 from django.http import HttpResponse
 from django.utils.html import format_html, escape
 from django.utils.safestring import mark_safe
@@ -54,9 +54,12 @@ class DeviceGroupAdmin(admin.ModelAdmin):
     list_display = ["name", "description", "dev_count"]
     inlines = [ProfileInline]
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(dev_count=Count("devices"))
+
     @admin.display(description="Кол-во")
-    def dev_count(self, obj: DeviceGroup) -> int:
-        return obj.devices_set.count()
+    def dev_count(self, obj) -> int:
+        return obj.dev_count
 
 
 @admin.register(Devices)
@@ -257,7 +260,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         """
         config_files_path_list = []
         for device in queryset:
-            storage = LocalConfigStorage(device)
+            storage = LocalConfigStorage(device.name)
             configs = storage.files_list()
             if configs:
                 config_files_path_list.append(configs[0].path)
@@ -292,9 +295,12 @@ class AuthGroupAdmin(admin.ModelAdmin):
     list_display = ["name", "login", "description", "dev_count"]
     search_fields = ["name", "login"]
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(dev_count=Count("devices"))
+
     @admin.display(description="Кол-во")
-    def dev_count(self, obj: AuthGroup) -> int:
-        return obj.devices_set.count()
+    def dev_count(self, obj) -> int:
+        return obj.dev_count
 
 
 @admin.register(Bras)
@@ -318,10 +324,13 @@ class ProfileAdmin(admin.ModelAdmin):
         """Отображаем username пользователя"""
         return obj.user.username
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("devices_groups")
+
     @admin.display(description="Группы")
     def dev_groups(self, obj: Profile):
         """Отображение доступных групп для пользователя"""
-        user_groups: QuerySet[DeviceGroup] = obj.devices_groups.all()
+        user_groups = obj.devices_groups.all()
         groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])
         return mark_safe(groups_string)
 
@@ -360,7 +369,7 @@ class UserProfileAdmin(UserAdmin):
         except Profile.DoesNotExist:
             return ""
 
-        user_groups: QuerySet[DeviceGroup] = profile.devices_groups.all()
+        user_groups = profile.devices_groups.all()
         groups_string = "".join([f"<li>{group}</li>" for group in user_groups])
         return mark_safe(groups_string)
 
@@ -375,6 +384,7 @@ class UsersActionsAdmin(admin.ModelAdmin):
     date_hierarchy = "time"
     readonly_fields = ["time", "user", "device", "action"]
     list_per_page = 50
+    list_select_related = ["device", "user"]
 
 
 @admin.register(DeviceMedia)
@@ -386,7 +396,7 @@ class DeviceMediaAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("description", "device", ("current_file", "file"))},
+            {"fields": ("description", "device", "file", "current_file")},
         ),
     )
 
