@@ -39,7 +39,23 @@ class DevicesListAPIViewTestCase(APITestCase):
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             serializer_data = DevicesSerializer([self.device], many=True).data
-            self.assertEqual(response.data, serializer_data)
+            self.assertDictEqual(response.data[0], serializer_data[0])
+
+    def test_get_devices_list_with_authentication_and_params(self):
+        """Убедитесь, что GET запрос списка устройств с аутентификацией возвращает список устройств"""
+        self.client.force_authenticate(user=self.user)
+        with self.assertNumQueries(1):
+            response = self.client.get(self.url + "?return-fields=ip,name,group")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            serializer_data = DevicesSerializer(self.device).data
+            self.assertDictEqual(
+                response.data[0],
+                {
+                    "ip": serializer_data["ip"],
+                    "name": serializer_data["name"],
+                    "group": serializer_data["group"],
+                },
+            )
 
     def test_cache(self):
         """Убедитесь, что функция кэширования работает корректно"""

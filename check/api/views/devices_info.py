@@ -49,7 +49,7 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
 
-        all_fields = self.serializer_class.Meta.fields
+        all_fields = self.serializer_class.Meta.fields.copy()
         return_fields = self.request.GET.get("return-fields", "").split(",")
         return_fields = list(set(return_fields) & set(all_fields))
 

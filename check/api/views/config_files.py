@@ -129,7 +129,7 @@ class ListAllConfigFilesAPIView(BaseConfigStorageAPIView):
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
 
-        all_fields = DevicesSerializer.Meta.fields
+        all_fields = DevicesSerializer.Meta.fields.copy()
         return_fields = self.request.GET.get("return-fields", "").split(",")
         return_fields = list(set(return_fields) & set(all_fields))
 
