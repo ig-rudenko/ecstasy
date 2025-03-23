@@ -5,8 +5,9 @@ from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.authentication import SessionAuthentication
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView, TokenVerifyView
+
+from accounting.api_tokens import CustomTokenAuthentication
+from ecstasy_project.authentication import CustomJWTAuthentication
 
 access_token_lifetime_seconds: float = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60  # type: ignore
 
@@ -49,10 +50,7 @@ schema_view = get_schema_view(
         description=f"""
 ## Здесь вы можете посмотреть API для работы с Ecstasy
 
-Для работы с каждым endpoint `требуется токен` (JWT). Получить можно по URL `/api/token`.
-
-Время жизни access токена - `{access_token_lifetime_seconds} минут`
-Время жизни refresh токена - `{settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]}`
+API токен можно создать в панели администратора
         """,
         contact=openapi.Contact(
             name=settings.CONTACT_NAME or "user",
@@ -65,23 +63,19 @@ schema_view = get_schema_view(
     ),
     # Это список всех конечных точек, которые будут отображаться в Swagger.
     patterns=[
-        # JWT
-        path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-        path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
-        path("api/token/verify", TokenVerifyView.as_view(), name="token_verify"),
-        # API
+        path("api/v1/accounts/", include("accounting.urls")),
         path("api/v1/devices/", include("check.api.urls")),
         path("api/v1/tools/", include("net_tools.api.urls")),
         path("api/v1/maps/", include("maps.api.urls")),
         path("api/v1/gather/", include("gathering.api.urls")),
         path("api/v1/gpon/", include("gpon.api.urls")),
         path("api/v1/ring-manager/", include("ring_manager.api.urls")),
-        path("api/v1/accounts/", include("accounting.urls")),
     ],
     generator_class=CustomSchemaGenerator,
     authentication_classes=[
         SessionAuthentication,
-        JWTAuthentication,
+        CustomTokenAuthentication,
+        CustomJWTAuthentication,
     ],
     # Это означает, что пользовательский интерфейс Swagger недоступен для общего доступа.
     public=False,
