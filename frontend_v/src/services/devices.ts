@@ -10,7 +10,6 @@ export interface Device {
     model: string;
     group: string;
     vendor: string;
-    port_scan_protocol: string;
     interfaces_count?: InterfacesCount;
 }
 
@@ -38,7 +37,7 @@ export class DevicesService {
 
     async getDevicesList(): Promise<Device[]> {
         try {
-            let resp = await api.get<Device[]>("/api/v1/devices/");
+            let resp = await api.get<Device[]>("/api/v1/devices/?return-fields=name,ip,vendor,group,model");
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))

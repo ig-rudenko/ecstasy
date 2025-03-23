@@ -16,7 +16,22 @@ class DevicesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Devices
-        fields = ["ip", "name", "vendor", "group", "model", "port_scan_protocol"]
+        fields = [
+            "ip",
+            "name",
+            "vendor",
+            "group",
+            "model",
+            "serial_number",
+            "port_scan_protocol",
+            "cmd_protocol",
+            "active",
+            "collect_interfaces",
+            "collect_mac_addresses",
+            "collect_vlan_info",
+            "collect_configurations",
+            "connection_pool_size",
+        ]
 
 
 class DeviceMediaSerializer(serializers.ModelSerializer):

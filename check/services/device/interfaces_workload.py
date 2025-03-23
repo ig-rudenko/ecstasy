@@ -87,7 +87,6 @@ class DevicesInterfacesWorkloadCollector:
                         "vendor": dev_info["dev__vendor"],
                         "group": dev_info["dev__group__name"],
                         "model": dev_info["dev__model"],
-                        "port_scan_protocol": dev_info["dev__port_scan_protocol"],
                     }
                     for dev_info in queryset
                 ],
@@ -109,6 +108,5 @@ class DevicesInterfacesWorkloadCollector:
                 "dev__vendor",
                 "dev__group__name",
                 "dev__model",
-                "dev__port_scan_protocol",
             )
         )

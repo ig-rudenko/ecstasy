@@ -1,16 +1,14 @@
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_cookie
+from django.views.decorators.vary import vary_on_headers
 from django_filters.rest_framework import DjangoFilterBackend
 from requests.exceptions import RequestException
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
 from check import models
-from check.services.device.interfaces_workload import (
-    DevicesInterfacesWorkloadCollector,
-)
+from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 from devicemanager.device import DeviceManager
 from devicemanager.device import zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
@@ -30,6 +28,8 @@ from ...services.remote_terminal import get_console_url
 from ...services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
 
 
+@method_decorator(cache_page(60 * 10), name="dispatch")
+@method_decorator(vary_on_headers("Authorization"), name="dispatch")
 class DevicesListAPIView(UserAuthenticatedAPIView):
     """
     ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
@@ -47,29 +47,24 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
             "group"
         )
 
-    @method_decorator(cache_page(60 * 10))
-    @method_decorator(vary_on_cookie)
     def get(self, request, *args, **kwargs):
         """
         ## Возвращаем список всех устройств, без пагинации
-
-        Пример ответа:
-
-            [
-                {
-                    "ip": "172.30.0.58",
-                    "name": "FTTB_Aktybinsk42_p1_TKD_116",
-                    "vendor": "D-Link",
-                    "group": "ASW",
-                    "model": "DES-3200-28",
-                    "port_scan_protocol": "telnet"
-                },
-                ...
-            ]
         """
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
+
+        self.format_return_data(serializer.data)
         return Response(serializer.data)
+
+    def format_return_data(self, data):
+        return_fields = self.request.GET.get("return-fields", "").split(",")
+        if any(return_fields):
+            for item in data:
+                for field in list(item.keys()):
+                    if field not in return_fields:
+                        item.pop(field, None)
+        return data
 
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
@@ -98,8 +93,8 @@ class DeviceInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
         return Response(result)
 
 
+@method_decorator(interfaces_list_api_doc, name="get")
 class DeviceInterfacesAPIView(DeviceAPIView):
-    @interfaces_list_api_doc
     @except_connection_errors
     def get(self, request, *args, **kwargs) -> Response:
         """

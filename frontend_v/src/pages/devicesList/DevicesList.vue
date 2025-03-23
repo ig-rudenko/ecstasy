@@ -183,9 +183,9 @@ export default defineComponent({
           devices_models.push(dev.model)
         }
       }
-      this.groups = devices_groups
-      this.vendors = devices_vendors
-      this.models = devices_models
+      this.groups = devices_groups.sort((a, b) => a.localeCompare(b))
+      this.vendors = devices_vendors.sort((a, b) => a.localeCompare(b))
+      this.models = devices_models.sort((a, b) => a.localeCompare(b))
     },
 
     calculateInterfacesWorkload(devices: Device[]) {
