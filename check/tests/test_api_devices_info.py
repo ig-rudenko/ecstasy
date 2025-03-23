@@ -245,6 +245,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock.zabbix_info.inventory.vendor = "new vendor"
         device_manager_mock.zabbix_info.inventory.model = "new model"
         device_manager_mock.zabbix_info.inventory.serialno_a = "new serial"
+        device_manager_mock.zabbix_info.inventory.os_full = "new os version"
         device_manager_mock.push_zabbix_inventory.return_value = None
 
         mock_connect.return_value = device_manager_mock
@@ -260,6 +261,8 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         # В базе должны были обновиться поля
         self.assertEqual(device.vendor, "new vendor")
         self.assertEqual(device.model, "new model")
+        self.assertEqual(device.serial_number, "new serial")
+        self.assertEqual(device.os_version, "new os version")
 
         # Полученные данные
         del response.data["collected"]
@@ -338,6 +341,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock.zabbix_info.inventory.vendor = "vendor"
         device_manager_mock.zabbix_info.inventory.model = "model"
         device_manager_mock.zabbix_info.inventory.serialno_a = "serial_number"
+        device_manager_mock.zabbix_info.inventory.os_full = "os_version"
         device_manager_mock.push_zabbix_inventory.return_value = None
         mock_connect.return_value = device_manager_mock
 
@@ -352,6 +356,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         self.assertEqual(device.vendor, "vendor")
         self.assertEqual(device.model, "model")
         self.assertEqual(device.serial_number, "serial_number")
+        self.assertEqual(device.os_version, "os_version")
 
         self.assertEqual(mock_connect.call_count, 1)
 
