@@ -197,4 +197,4 @@ class RemoteDevice(
         return self._remote_call("execute_command", cmd=cmd)
 
     def execute_commands_list(self, command_list: list[str]) -> list[str]:
-        return self._remote_call("execute_commands_list", command_list=command_list)
+        return self._remote_call("execute_commands_list", commands=command_list)
