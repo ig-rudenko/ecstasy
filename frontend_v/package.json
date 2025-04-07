@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.2.5",
-    "axios": "^1.8.2",
+    "axios": "^1.8.3",
     "diff": "^7.0.0",
     "javascript-time-ago": "^2.5.11",
     "leaflet": "^1.9.4",
