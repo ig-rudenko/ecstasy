@@ -25,7 +25,7 @@ class Interface:
     @property
     def is_up(self) -> bool:
         status = self.status.lower()
-        return "down" not in status and "disable" not in status
+        return "down" not in status and "disable" not in status and "dormant" not in status
 
     @property
     def is_admin_down(self) -> bool:
