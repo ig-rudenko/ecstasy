@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build
 
 
-FROM nginx:1.27.3-alpine
+FROM nginx:1.27.5-alpine
 LABEL authors="irudenko"
 
 COPY --from=builder /app/dist /usr/share/nginx/html
