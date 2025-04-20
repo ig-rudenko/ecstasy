@@ -97,7 +97,7 @@ class Finder:
                 vlans_date=dev_info["vlans_date"],
             )
 
-    def find_description(self, pattern_str: str) -> list[DescriptionFinderResult]:
+    def find_description(self, pattern_str: str, is_regex: bool = False) -> list[DescriptionFinderResult]:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
@@ -115,17 +115,20 @@ class Finder:
         ```
 
         :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
+        :param is_regex: Флаг, указывающий, является ли pattern_str регулярным выражением.
         :return: Список результатов поиска
         """
-
-        comments: Comments = self.get_comments(pattern_str)
-
-        pattern: re.Pattern[str] = re.compile(re.escape(pattern_str), flags=re.IGNORECASE)
-
         result: list[DescriptionFinderResult] = []
+
+        if not is_regex:
+            pattern_str = re.escape(pattern_str)  # Экранируем специальные символы
+        pattern: re.Pattern[str] = re.compile(pattern_str, flags=re.IGNORECASE)
+
+        comments: Comments = self.get_comments(pattern)
 
         self._find_in_interfaces_history(pattern, comments, result)
         self._add_comments_to_result(comments, result)
+
         return result
 
     def _find_in_interfaces_history(
@@ -137,7 +140,7 @@ class Finder:
                 find_on_desc = False
 
                 # Если нашли совпадение в описании порта
-                if re.findall(pattern, line["Description"]):
+                if pattern.search(line["Description"]):
                     find_on_desc = True
 
                 interface_comments = comments.get_interface(device_name, line["Interface"])
@@ -159,7 +162,7 @@ class Finder:
                             }
                         )
                     except KeyError as exc:
-                        print(exc)
+                        print(exc, line)
 
                     # Удаляем найденные комментарии
                     if interface_comments:
@@ -194,10 +197,10 @@ class Finder:
             return "No Datetime"
 
     @staticmethod
-    def get_comments(regex_str: str) -> Comments:
+    def get_comments(regex: re.Pattern[str]) -> Comments:
         """Возвращает список всех комментариев поискового запроса."""
         comments = list(
-            InterfacesComments.objects.filter(comment__iregex=re.escape(regex_str))
+            InterfacesComments.objects.filter(comment__iregex=regex.pattern)
             .select_related("user", "device")
             .values("user__username", "device__name", "interface", "comment", "datetime")
         )

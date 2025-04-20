@@ -56,22 +56,22 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",
-            pattern=re.compile("\{ip(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{ip(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, ip: validate_ip(ip),
         ),
         ContextValidator(
             key="port",
-            pattern=re.compile("\{port(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{port(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, port: validate_device_port(device, port),
         ),
         ContextValidator(
             key="mac",
-            pattern=re.compile("\{mac(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{mac(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, mac: validate_mac(mac),
         ),
         ContextValidator(
             key="number",
-            pattern=re.compile("\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, v: validate_number(v, m.group("start"), m.group("end")),
         ),
     ]

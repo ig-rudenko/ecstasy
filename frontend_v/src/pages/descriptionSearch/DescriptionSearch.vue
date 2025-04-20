@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="p-6">
+  <div class="md:p-6">
     <div class="container mx-auto row py-3">
       <div class="flex flex-wrap justify-between pb-5">
         <div>
@@ -13,9 +13,26 @@
 
         <img class="h-[100px]" src="/img/search-description-2.svg" alt="search-description-image">
       </div>
-      <SearchInput @submit_input="searchDescription" @update:modelValue="(v: string) => pattern = v"
-                   :active-mode="true"
-                   placeholder="Введите строку для поиска"/>
+
+      <div class="flex flex-col justify-between p-2 border-2 border-transparent rounded-xl"
+           :class="{'!border-indigo-400': isRegexPattern}">
+
+        <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3">
+          <label for="isRegexPattern" class="flex items-center gap-2 w-fit cursor-pointer"
+                 :class="{ 'opacity-50 cursor-not-allowed': waitResult }">
+            <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
+            <span>Искать по регулярному выражению</span>
+          </label>
+          <div v-if="isRegexPattern" class="text-sm text-gray-500 flex items-center gap-2">
+            <div>Вы можете проверить работу регулярного выражения на сайте</div>
+            <a href="https://regex101.com/" target="_blank" class="text-indigo-400">regex101.com</a>
+          </div>
+        </div>
+        <SearchInput @submit_input="searchDescription" @update:modelValue="(v: string) => pattern = v"
+                     :active-mode="true" input-class="font-mono"
+                     placeholder="Введите строку для поиска"/>
+      </div>
+
     </div>
 
     <div v-show="interfaces.length" class="py-4">
@@ -153,7 +170,8 @@ export default defineComponent({
       interfaces: [] as InterfaceDescriptionMatchResult[],
       pattern: "" as string,
       lastPattern: "" as string,
-      waitResult: false as boolean,
+      isRegexPattern: false,
+      waitResult: false,
       rows: 25, // количество строк в таблице
 
       selectedVlans: "",
@@ -183,7 +201,7 @@ export default defineComponent({
       if (this.pattern.length < 2) return;
       this.waitResult = true
 
-      findInterfacesByDescription(this.pattern)
+      findInterfacesByDescription(this.pattern, this.isRegexPattern)
           .then(
               data => {
                 this.interfaces = data
