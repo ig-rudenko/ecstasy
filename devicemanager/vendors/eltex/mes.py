@@ -306,7 +306,9 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         self.session.sendline("end")
         self.session.expect(r"#")
 
-        r = self.session.before.decode(errors="ignore")
+        r = ""
+        if self.session.before is not None:
+            r = self.session.before.decode(errors="ignore")
 
         self.lock = False
         s = self.save_config() if save_config else "Without saving"

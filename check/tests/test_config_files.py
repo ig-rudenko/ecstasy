@@ -15,6 +15,4 @@ class TestConfigFile(TestCase):
             for i in range(5)
         ]
 
-        serializer = ConfigFileSerializer(files, many=True)
-
-        print(serializer.data)
+        ConfigFileSerializer(files, many=True)

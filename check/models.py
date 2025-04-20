@@ -61,7 +61,7 @@ class Devices(models.Model):
 
     PROTOCOLS = (("snmp", "snmp"), ("telnet", "telnet"), ("ssh", "ssh"))
 
-    group = models.ForeignKey(DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name="Группа")
+    group = models.ForeignKey(DeviceGroup, on_delete=models.PROTECT, verbose_name="Группа")
     ip = models.GenericIPAddressField(
         protocol="ipv4",
         null=False,
@@ -106,8 +106,7 @@ class Devices(models.Model):
     )
     auth_group = models.ForeignKey(
         AuthGroup,
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.PROTECT,
         verbose_name="Группа авторизации",
         help_text="Указываем группу, для удаленного подключения к оборудованию. "
         "Используется для протоколов telnet и ssh. Если на оборудовании "

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.test import TestCase
 
-from check.models import Devices
+from check.models import Devices, DeviceGroup, AuthGroup
 from gathering.services.configurations.local_storage import LocalConfigStorage, ConfigFile
 
 
@@ -16,9 +16,13 @@ class TestLocalStorage(TestCase):
         shutil.rmtree("./test_storage", ignore_errors=True)
 
     def test_storage_init(self):
-        dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
+        group = DeviceGroup.objects.create(name="test")
+        auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+        dev = Devices.objects.create(
+            ip="10.10.10.10", name=self.device_name, group=group, auth_group=auth_group
+        )
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev.name)
+            storage = LocalConfigStorage(dev)
 
             self.assertTrue(pathlib.Path(f"{self.storage_path}/{dev.name}").exists())
 
@@ -27,9 +31,13 @@ class TestLocalStorage(TestCase):
             self.assertFalse(storage.is_exist("config.txt"))
 
     def test_add_remove_file(self):
-        dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
+        group = DeviceGroup.objects.create(name="test")
+        auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+        dev = Devices.objects.create(
+            ip="10.10.10.10", name=self.device_name, group=group, auth_group=auth_group
+        )
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev.name)
+            storage = LocalConfigStorage(dev)
 
             configuration = "some config"
             config_name = "new_config.txt"
@@ -75,9 +83,13 @@ class TestLocalStorage(TestCase):
             self.assertFalse(file_path.exists())
 
     def test_add_file_from_path(self):
-        dev = Devices.objects.create(ip="10.10.10.10", name=self.device_name)
+        group = DeviceGroup.objects.create(name="test")
+        auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+        dev = Devices.objects.create(
+            ip="10.10.10.10", name=self.device_name, group=group, auth_group=auth_group
+        )
         with self.settings(CONFIG_STORAGE_DIR=pathlib.Path(self.storage_path)):
-            storage = LocalConfigStorage(dev.name)
+            storage = LocalConfigStorage(dev)
 
             config_file_path = pathlib.Path("./manage_copy.py")
             config_name = "new_config.txt"

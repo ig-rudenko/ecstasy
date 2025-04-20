@@ -5,6 +5,7 @@ from django.test import TestCase, RequestFactory
 
 from check import models
 from check.api.permissions import DevicePermission
+from check.models import AuthGroup
 from check.permissions import profile_permission
 
 
@@ -166,8 +167,10 @@ class DevicePermissionTest(TestCase):
     def setUp(self):
         self.permission = DevicePermission()
         self.device_group = models.DeviceGroup.objects.create(name="test_group")
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+
         self.device = models.Devices.objects.create(
-            name="test_device", ip="20.20.20.20", group=self.device_group
+            name="test_device", ip="20.20.20.20", group=self.device_group, auth_group=self.auth_group
         )
         self.user = User(
             username="device_permission_user",
@@ -197,7 +200,7 @@ class DevicePermissionTest(TestCase):
         # которое принадлежит другой группе устройств
         other_device_group = models.DeviceGroup.objects.create(name="other_test_group")
         other_device = models.Devices.objects.create(
-            name="other_test_device", group=other_device_group, ip="10.10.10.10"
+            name="other_test_device", group=other_device_group, ip="10.10.10.10", auth_group=self.auth_group
         )
 
         self.user.profile.devices_groups.add(self.device_group)

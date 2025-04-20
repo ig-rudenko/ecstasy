@@ -166,13 +166,13 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     @admin.display(description="Группа")
     def show_group(self, obj: Devices):
         return mark_safe(
-            f"""<span style="font-family: monospace;">{obj.group.name if obj.group else "-"}</span>"""
+            f"""<span style="font-family: monospace;">{obj.group.name}</span>"""
         )
 
     @admin.display(description="Авторизация")
     def show_auth_group(self, obj: Devices):
         return mark_safe(
-            f"""<span style="font-family: monospace;">{obj.auth_group.name if obj.auth_group else "-"}</span>"""
+            f"""<span style="font-family: monospace;">{obj.auth_group.name}</span>"""
         )
 
     @admin.display(description="")
@@ -288,7 +288,7 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         """
         config_files_path_list = []
         for device in queryset:
-            storage = LocalConfigStorage(device.name)
+            storage = LocalConfigStorage(device)
             configs = storage.files_list()
             if configs:
                 config_files_path_list.append(configs[0].path)

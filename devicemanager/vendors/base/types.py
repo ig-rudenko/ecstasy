@@ -1,5 +1,5 @@
 import pathlib
-from typing import Literal, TypedDict, NamedTuple, Any
+from typing import Literal, TypedDict, NamedTuple, Any, Protocol, AnyStr
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"
@@ -50,6 +50,12 @@ FIBER_TYPES = [
     "LH",
     "X",
 ]
+
+
+class SimpleAuthObjectProtocol(Protocol[AnyStr]):
+    login: AnyStr
+    password: AnyStr
+    secret: AnyStr
 
 
 class DeviceAuthDict(TypedDict):

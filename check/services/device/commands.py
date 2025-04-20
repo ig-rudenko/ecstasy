@@ -13,7 +13,7 @@ from devicemanager.device.interfaces import Interfaces
 @dataclass(frozen=True)
 class ContextValidator:
     key: str
-    pattern: str | re.Pattern
+    pattern: re.Pattern
     validate: Callable
 
 

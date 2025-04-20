@@ -9,11 +9,11 @@ class DevicesResource(resources.ModelResource):
 
     @staticmethod
     def dehydrate_auth_group(obj):
-        return obj.auth_group.name if obj.auth_group else "-"
+        return obj.auth_group.name
 
     @staticmethod
     def dehydrate_group(obj):
-        return obj.group.name if obj.auth_group else "-"
+        return obj.group.name
 
     class Meta:
         model = Devices

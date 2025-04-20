@@ -3,9 +3,9 @@ import json
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from check.models import Devices
-from ring_manager.models import RingDev, TransportRing
+from check.models import Devices, DeviceGroup, AuthGroup
 from net_tools.models import DevicesInfo
+from ring_manager.models import RingDev, TransportRing
 
 
 class TestRingBase(TransactionTestCase):
@@ -18,9 +18,13 @@ class TestRingBase(TransactionTestCase):
         # Добавляем оборудования
 
         model_devices_list = []
+        group = DeviceGroup.objects.create(name="test")
+        auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
 
         for test_data in self.TEST_DEVICES:
-            dev = Devices.objects.create(ip=test_data["ip"], name=test_data["name"])
+            dev = Devices.objects.create(
+                ip=test_data["ip"], name=test_data["name"], group=group, auth_group=auth_group
+            )
 
             # Добавляем созданное оборудование в список
             model_devices_list.append(dev)

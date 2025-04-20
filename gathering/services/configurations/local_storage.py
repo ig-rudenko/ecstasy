@@ -5,6 +5,7 @@ from typing import IO
 
 from django.conf import settings
 
+from check.models import Devices
 from .base import ConfigStorage, ConfigFile
 
 
@@ -13,7 +14,7 @@ class LocalConfigStorage(ConfigStorage):
     # Локальное хранилище для файлов конфигураций в директории
     """
 
-    def __init__(self, device: str):
+    def __init__(self, device: Devices):
         self.device = device
 
         # Создание пути к каталогу, в котором хранятся файлы конфигурации.
@@ -30,7 +31,7 @@ class LocalConfigStorage(ConfigStorage):
                 "Укажите CONFIG_STORAGE_DIR в settings.py как объект `pathlib.Path`"
                 " для использования локального хранилища конфигураций"
             )
-        self._storage = settings.CONFIG_STORAGE_DIR / self.slug_name(self.device)
+        self._storage = settings.CONFIG_STORAGE_DIR / self.slug_name(self.device.name)
         # Создаем папку, если надо
         if not self._storage.exists():
             self._storage.mkdir(parents=True)

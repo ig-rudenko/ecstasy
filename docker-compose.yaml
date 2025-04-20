@@ -19,9 +19,9 @@ services:
 
   backend:
     build: .
-    image: ecstasy:18
+    image: ecstasy:18.4
     restart: always
-    command: /bin/sh run.sh
+    command: /bin/sh /app/run.sh
     env_file:
       - .env
     environment:
@@ -48,7 +48,7 @@ services:
 
   celery: &celery
     build: .
-    image: ecstasy:18
+    image: ecstasy:18.4
     restart: always
     command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
     env_file:
@@ -72,7 +72,7 @@ services:
 
   device-connector:
     build: .
-    image: ecstasy:18
+    image: ecstasy:18.4
     command: python device_connector.py
     restart: always
     environment:
@@ -90,7 +90,7 @@ services:
       - backend
 
   redis:
-    image: redis
+    image: redis:7.4.2-alpine
     restart: always
     volumes:
       - "redis-data:/data"
@@ -102,7 +102,7 @@ services:
       - backend
 
   mysql:
-    image: mysql
+    image: mysql:9.3.0-oracle
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-99593284x3iou4txiou3}"
       MYSQL_USER: "${MYSQL_USER:-ecstasy}"
