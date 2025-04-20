@@ -55,6 +55,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          uv add coverage
           uv run coverage run manage.py test
 
       - name: Upload coverage reports to Codecov
