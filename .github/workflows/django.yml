@@ -35,27 +35,27 @@ jobs:
           - 6379:6379
 
     strategy:
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         python-version: [ "3.11", "3.12", "3.13" ]
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-          pip install coverage
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
       - name: Merge migration conflicts
         run: |
-          python manage.py makemigrations --merge --no-input
+          uv run python manage.py makemigrations --merge --no-input
+
       - name: Run Tests
         run: |
-          coverage run manage.py test
+          uv run coverage run manage.py test
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
