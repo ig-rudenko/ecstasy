@@ -8,7 +8,6 @@ from net_tools.models import DevicesInfo
 
 
 class BaseCommandsTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         cls.group = DeviceGroup.objects.create(name="ASW")
@@ -31,7 +30,6 @@ class BaseCommandsTestCase(TestCase):
 
 
 class TestCommandsPortValidator(BaseCommandsTestCase):
-
     def test_cmd_port_validator(self):
         command = "show port {port} {port}"
         valid_command = "show port Ethernet1/1 Ethernet1/1"
@@ -65,7 +63,6 @@ class TestCommandsPortValidator(BaseCommandsTestCase):
 
 
 class TestCommandsIPValidator(BaseCommandsTestCase):
-
     def test_cmd_ip_validator(self):
         command = "show ip {ip} {ip}"
         valid_command = "show ip 172.30.0.58 172.30.0.58"

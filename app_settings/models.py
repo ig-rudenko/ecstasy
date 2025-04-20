@@ -95,7 +95,7 @@ class LogsElasticStackSettings(SingletonModel):
         blank=True,
         max_length=100,
         verbose_name="timestamp поле",
-        help_text="Сортировка будет происходить по нему.<br>" "Например: @timestamp",
+        help_text="Сортировка будет происходить по нему.<br>Например: @timestamp",
     )
 
     def __str__(self):

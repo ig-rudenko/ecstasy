@@ -52,7 +52,6 @@ def validate_number(number_string: str, min_value: str, max_value: str) -> None:
 
 
 def validate_command(device: Devices, command: str, context: dict) -> str:
-
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",

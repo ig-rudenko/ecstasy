@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-
 from devicemanager.device import DeviceManager
 from ring_manager.models import TransportRing
 from ring_manager.ring_manager import TransportRingManager
@@ -84,7 +83,6 @@ class TestSolutionsPerformer(TestRingBase):
 
     @patch("check.models.Devices.available", return_value=False)
     def test_down_solutions(self, *args):
-
         class TestTransportRingManager(TransportRingManager):
             device_manager = DeviceManager
 

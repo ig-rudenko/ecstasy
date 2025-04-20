@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -28,9 +27,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "region",
-                    models.CharField(
-                        default="Севастополь", max_length=128, verbose_name="Регион"
-                    ),
+                    models.CharField(default="Севастополь", max_length=128, verbose_name="Регион"),
                 ),
                 (
                     "settlement",
@@ -241,9 +238,7 @@ class Migration(migrations.Migration):
                 ("description", models.TextField(blank=True, null=True)),
                 (
                     "end3_set",
-                    models.ManyToManyField(
-                        related_name="house_olt_states", to="gpon.end3"
-                    ),
+                    models.ManyToManyField(related_name="house_olt_states", to="gpon.end3"),
                 ),
                 (
                     "house",
@@ -314,9 +309,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "end3",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="gpon.end3"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="gpon.end3"),
                 ),
             ],
             options={
@@ -361,9 +354,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "services",
-                    models.ManyToManyField(
-                        related_name="subscribers", to="gpon.service"
-                    ),
+                    models.ManyToManyField(related_name="subscribers", to="gpon.service"),
                 ),
                 (
                     "tech_capability",

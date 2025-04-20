@@ -129,8 +129,8 @@ class End3TechCapabilitySerializer(End3Serializer):
 
                 additional_capacity = validated_data["capacity"] - instance.capacity
                 for i in range(
-                        last_number + 1,
-                        last_number + additional_capacity + 1,
+                    last_number + 1,
+                    last_number + additional_capacity + 1,
                 ):
                     TechCapability.objects.create(end3=instance, number=i)
 
@@ -147,7 +147,7 @@ class End3TechCapabilitySerializer(End3Serializer):
 
     @staticmethod
     def _get_affected_tech_capability(
-            new_capacity: int, tech_capabilities: QuerySet[TechCapability]
+        new_capacity: int, tech_capabilities: QuerySet[TechCapability]
     ) -> list[TechCapability]:
         """
         Возвращает список объектов `TechCapability`, которые необходимо удалить, на

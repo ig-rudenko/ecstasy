@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("maps", "0009_remove_layers_points_radius_layers_points_size_and_more"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="layers",
             name="marker_icon_name",
-            field=models.CharField(
-                default="circle-fill", max_length=100, verbose_name="Выберите иконку"
-            ),
+            field=models.CharField(default="circle-fill", max_length=100, verbose_name="Выберите иконку"),
         ),
     ]

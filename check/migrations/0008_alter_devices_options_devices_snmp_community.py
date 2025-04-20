@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0007_remove_profile_id_alter_profile_user"),
     ]

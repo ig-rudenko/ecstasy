@@ -147,7 +147,6 @@ class UserDeviceActionSerializer(serializers.ModelSerializer):
 
 
 class DeviceVlanPortSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = VlanPort
         fields = ["port", "desc"]

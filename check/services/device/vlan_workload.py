@@ -21,11 +21,6 @@ class DevicesVlanWorkloadCollector:
         :param device: Данные о устройстве.
         :return: Список VLAN и их загрузки по портам.
         """
-        if isinstance(device, DevicesInfo):
-            raw_vlans = device.vlans or "[]"
-        else:
-            raw_vlans = device.get("vlans", "[]")
-
         vlans = Vlan.objects.filter(device_id=device.dev.id)
 
         vlan_ports_data = []

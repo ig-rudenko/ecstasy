@@ -447,7 +447,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
 
         # Меняем состояние порта
         return self.send_command(
-            f'set dsl port {port_number} port_equp {"equipped" if status == "up" else "unequipped"}',
+            f"set dsl port {port_number} port_equp {'equipped' if status == 'up' else 'unequipped'}",
             expect_command=False,
         )
 

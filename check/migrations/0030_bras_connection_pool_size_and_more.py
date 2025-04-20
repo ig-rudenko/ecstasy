@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0029_devices_active_devices_collect_configurations_and_more"),
     ]

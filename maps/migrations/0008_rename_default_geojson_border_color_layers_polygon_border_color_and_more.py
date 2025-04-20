@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("maps", "0007_layers_default_geojson_border_color_and_more"),
     ]

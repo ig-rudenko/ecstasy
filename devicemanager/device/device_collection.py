@@ -75,7 +75,7 @@ class DevicesCollection:
         with alive_bar(len(hosts), title="Создаем коллекцию") as bar:
             devs = []
             for host in hosts:
-                bar.text = f'-> Собираем данные с {host["name"]}'
+                bar.text = f"-> Собираем данные с {host['name']}"
                 devs.append(DeviceManager(host["name"], zabbix_info=zabbix_info))
                 bar()
         return DevicesCollection(devs)
@@ -98,7 +98,7 @@ class DevicesCollection:
             with alive_bar(len(hosts), title="Создаем коллекцию") as bar:
                 devs = []
                 for h in hosts:
-                    bar.text = f'-> Собираем данные с {h["name"]}'
+                    bar.text = f"-> Собираем данные с {h['name']}"
                     devs.append(DeviceManager(h["name"], zabbix_info=zabbix_info))
                     bar()
             return DevicesCollection(devs)

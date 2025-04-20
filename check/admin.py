@@ -165,15 +165,11 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
 
     @admin.display(description="Группа")
     def show_group(self, obj: Devices):
-        return mark_safe(
-            f"""<span style="font-family: monospace;">{obj.group.name}</span>"""
-        )
+        return mark_safe(f"""<span style="font-family: monospace;">{obj.group.name}</span>""")
 
     @admin.display(description="Авторизация")
     def show_auth_group(self, obj: Devices):
-        return mark_safe(
-            f"""<span style="font-family: monospace;">{obj.auth_group.name}</span>"""
-        )
+        return mark_safe(f"""<span style="font-family: monospace;">{obj.auth_group.name}</span>""")
 
     @admin.display(description="")
     def show_auth_type(self, obj: Devices):
@@ -499,10 +495,7 @@ class DeviceCommandModelForm(forms.ModelForm):
         widgets = {
             "command": forms.Textarea(
                 attrs={
-                    "style": "font-family: monospace; "
-                    "font-size: 1rem; "
-                    "padding: 1rem; "
-                    "min-width: 100%;",
+                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%;",
                     "wrap": "off",
                 },
             ),

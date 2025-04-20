@@ -99,9 +99,7 @@ class OLTState(models.Model):
     olt_port = models.CharField(max_length=24, null=False, blank=False)
     fiber = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    houses = models.ManyToManyField(
-        "gpon.HouseB", through="gpon.HouseOLTState", related_name="olt_states"
-    )
+    houses = models.ManyToManyField("gpon.HouseB", through="gpon.HouseOLTState", related_name="olt_states")
 
     class Meta:
         db_table = "gpon_olt_states"
@@ -191,9 +189,7 @@ class End3(models.Model):
         related_name="end3_set",
     )
     location = models.CharField(max_length=255)
-    type = models.CharField(
-        choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования"
-    )
+    type = models.CharField(choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования")
     capacity = models.PositiveSmallIntegerField(
         choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)],
         help_text="Кол-во портов/волокон",
@@ -269,9 +265,7 @@ class TechCapability(models.Model):
         bad = "bad"
 
     end3 = models.ForeignKey("gpon.End3", on_delete=models.CASCADE)
-    status = models.CharField(
-        choices=Status.choices, default=Status.empty.value, max_length=16
-    )
+    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)
     number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(24)],
         verbose_name="Номер порта/волокна",
@@ -292,9 +286,7 @@ class Customer(models.Model):
         company = "company"
         contract = "contract"
 
-    type = models.CharField(
-        choices=Type.choices, max_length=128, null=False, blank=False
-    )
+    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)
     company_name = models.CharField(max_length=256, null=True, blank=True)
     first_name = models.CharField(max_length=256, null=True, blank=True)
     surname = models.CharField(max_length=256, null=True, blank=True)
@@ -338,9 +330,7 @@ class SubscriberConnection(models.Model):
     address = models.ForeignKey(
         "gpon.Address", on_delete=models.SET_NULL, null=True, related_name="subscribers"
     )
-    customer = models.ForeignKey(
-        "gpon.Customer", related_name="connections", on_delete=models.CASCADE
-    )
+    customer = models.ForeignKey("gpon.Customer", related_name="connections", on_delete=models.CASCADE)
     tech_capability = models.ForeignKey(
         "gpon.TechCapability",
         on_delete=models.SET_NULL,

@@ -60,7 +60,7 @@ def get_vendor(request: Request, mac: str) -> Response:
     try:
         resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2, proxies=proxies)
     except requests_lib.RequestException:
-        return Response({"vendor": f"Got exception!"})
+        return Response({"vendor": "Got exception!"})
 
     if resp.status_code == 200:
         data = resp.json()

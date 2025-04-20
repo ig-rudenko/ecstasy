@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("maps", "0005_alter_maps_options_maps_from_file_maps_preview_image_and_more"),
     ]

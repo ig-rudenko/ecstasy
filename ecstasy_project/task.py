@@ -80,7 +80,7 @@ class ThreadUpdatedStatusTask(Task):
             task_id=task_id or self.task_id,
             state=state or "PROGRESS",
             meta=meta or {"progress": int(self.objects_scanned / self.objects_count * 100)},
-            **kwargs
+            **kwargs,
         )
 
     @classmethod

@@ -170,7 +170,7 @@ class EdgeCore(BaseDevice):
 
         output = self.send_command(f"show mac-address-table interface {port}")
         macs: list[tuple[str, ...]] = re.findall(rf"({self.mac_format})\s+(\d+)", output)
-        return [(int(vid), mac) for mac, vid, in macs]
+        return [(int(vid), mac) for mac, vid in macs]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()

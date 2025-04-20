@@ -53,8 +53,7 @@ class OLTStateSerializer(serializers.ModelSerializer):
             interfaces = orjson.loads(self._device.devicesinfo.interfaces or "[]")
         except ObjectDoesNotExist:
             raise ValidationError(
-                "Данное оборудование не имеет портов для проверки, "
-                "пожалуйста, откройте его, чтобы опросить"
+                "Данное оборудование не имеет портов для проверки, пожалуйста, откройте его, чтобы опросить"
             )
         else:
             for intf in interfaces:

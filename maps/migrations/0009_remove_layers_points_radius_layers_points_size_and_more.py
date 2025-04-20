@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         (
             "maps",
@@ -33,30 +32,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="layers",
             name="points_border_color",
-            field=models.CharField(
-                default="#ffffff", max_length=10, verbose_name="Цвет рамки маркера"
-            ),
+            field=models.CharField(default="#ffffff", max_length=10, verbose_name="Цвет рамки маркера"),
         ),
         migrations.AlterField(
             model_name="layers",
             name="points_color",
-            field=models.CharField(
-                default="#00CC00", max_length=10, verbose_name="Цвет маркера"
-            ),
+            field=models.CharField(default="#00CC00", max_length=10, verbose_name="Цвет маркера"),
         ),
         migrations.AlterField(
             model_name="layers",
             name="polygon_border_color",
-            field=models.CharField(
-                default="#004c87", max_length=7, verbose_name="Цвет рамок полигона"
-            ),
+            field=models.CharField(default="#004c87", max_length=7, verbose_name="Цвет рамок полигона"),
         ),
         migrations.AlterField(
             model_name="layers",
             name="polygon_fill_color",
-            field=models.CharField(
-                default="#0074CC", max_length=7, verbose_name="Цвет полигона"
-            ),
+            field=models.CharField(default="#0074CC", max_length=7, verbose_name="Цвет полигона"),
         ),
         migrations.AlterField(
             model_name="layers",

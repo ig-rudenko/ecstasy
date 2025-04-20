@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0021_logselasticstacksettings_alter_usersactions_options"),
     ]

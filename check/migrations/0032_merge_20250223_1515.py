@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0031_alter_profile_permissions_devicecommand"),
         ("check", "0031_devices_collect_vlan_info"),

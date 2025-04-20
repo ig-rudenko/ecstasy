@@ -66,7 +66,7 @@ def cut_bras_session(device: Devices, user: AbstractBaseUser, mac: str, port: st
         result["portReloadStatus"] = reload_port_status  # Успех
 
         # Логи
-        log(user, device, f"reload port {port} \n" f"{reload_port_status}")
+        log(user, device, f"reload port {port} \n{reload_port_status}")
 
     except BaseDeviceException as e:
         result["errors"].append(f"Сессия сброшена, но порт не был перезагружен! {e}")

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0016_alter_authgroup_options_remove_devices_protocol_and_more"),
     ]
