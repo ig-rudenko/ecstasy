@@ -61,7 +61,7 @@ class Devices(models.Model):
 
     PROTOCOLS = (("snmp", "snmp"), ("telnet", "telnet"), ("ssh", "ssh"))
 
-    group = models.ForeignKey(DeviceGroup, on_delete=models.SET_NULL, null=True, verbose_name="Группа")
+    group = models.ForeignKey(DeviceGroup, on_delete=models.PROTECT, verbose_name="Группа")
     ip = models.GenericIPAddressField(
         protocol="ipv4",
         null=False,
@@ -106,8 +106,7 @@ class Devices(models.Model):
     )
     auth_group = models.ForeignKey(
         AuthGroup,
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.PROTECT,
         verbose_name="Группа авторизации",
         help_text="Указываем группу, для удаленного подключения к оборудованию. "
         "Используется для протоколов telnet и ssh. Если на оборудовании "
@@ -120,7 +119,7 @@ class Devices(models.Model):
         null=True,
         blank=True,
         verbose_name="SNMP community",
-        help_text="Версия - v2c. Используется для сбора интерфейсов, если указан " "протокол - SNMP",
+        help_text="Версия - v2c. Используется для сбора интерфейсов, если указан протокол - SNMP",
     )
     port_scan_protocol = models.CharField(
         choices=PROTOCOLS,
@@ -128,7 +127,7 @@ class Devices(models.Model):
         default="telnet",
         null=False,
         verbose_name="Протокол для поиска интерфейсов",
-        help_text="Выберите протокол, с помощью которого будет " "осуществляться сканирование интерфейсов",
+        help_text="Выберите протокол, с помощью которого будет осуществляться сканирование интерфейсов",
     )
     cmd_protocol = models.CharField(
         choices=PROTOCOLS[1:],
@@ -367,8 +366,8 @@ class UsersActions(models.Model):
 
     def __str__(self):
         return (
-            f'{self.time.strftime("%d.%m.%Y %H:%M:%S")} |'
-            f' {self.user.username:<10} | {self.device or ""} |'
+            f"{self.time.strftime('%d.%m.%Y %H:%M:%S')} |"
+            f" {self.user.username:<10} | {self.device or ''} |"
             f" {self.action}"
         )
 

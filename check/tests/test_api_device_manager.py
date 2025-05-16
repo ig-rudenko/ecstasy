@@ -33,6 +33,7 @@ class PortControlAPIViewTestCase(APITestCase):
             ip="10.255.255.255",
             name="dev1",
             group=cls.group,
+            auth_group=cls.auth_group,
         )
         DevicesInfo.objects.create(
             dev=cls.device,
@@ -246,8 +247,12 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+
         cls.user.profile.devices_groups.add(cls.group)
-        cls.device = Devices.objects.create(ip="172.31.176.21", name="dev1", group=cls.group)
+        cls.device = Devices.objects.create(
+            ip="172.31.176.21", name="dev1", group=cls.group, auth_group=cls.auth_group
+        )
 
     def setUp(self) -> None:
         self.client.force_login(user=self.user)
@@ -426,11 +431,13 @@ class MacListAPIViewTestCase(APITestCase):
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         cls.user.profile.devices_groups.add(cls.group)
         cls.device = Devices.objects.create(
             ip="172.31.176.21",
             name="dev1",
             group=cls.group,
+            auth_group=cls.auth_group,
         )
 
     @patch("check.models.Devices.connect")

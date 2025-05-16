@@ -18,13 +18,12 @@ class VlanTracerouteQuerySerializer(serializers.Serializer):
         help_text="Указывать выключенные порты",
     )
     double_check = serializers.BooleanField(
-        default=False, required=False,
-        help_text="Двухстороннее соответствие VLAN на соседних портах"
+        default=False, required=False, help_text="Двухстороннее соответствие VLAN на соседних портах"
     )
     graph_min_length = serializers.IntegerField(
         min_value=0,
         default=0,
         max_value=1024,
         required=False,
-        help_text="Минимальное количество узлов в одном графе"
+        help_text="Минимальное количество узлов в одном графе",
     )

@@ -10,7 +10,7 @@ from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Interfaces, zabbix_api
 from net_tools.models import DevicesInfo
 from ..api.serializers import DevicesSerializer
-from ..models import Devices, DeviceGroup, User, InterfacesComments
+from ..models import Devices, DeviceGroup, User, InterfacesComments, AuthGroup
 from ..services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
 
@@ -20,11 +20,13 @@ class DevicesListAPIViewTestCase(APITestCase):
         self.url = reverse("devices-api:devices-list")
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
             ip="172.30.0.58",
             name="dev1",
             group=self.group,
+            auth_group=self.auth_group,
         )
 
     def test_get_devices_list_without_authentication(self):
@@ -77,12 +79,14 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
         self.url = reverse("devices-api:all-devices-interfaces-workload")
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
 
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
             ip="10.10.10.10",
             name="dev1",
             group=self.group,
+            auth_group=self.auth_group,
         )
 
         self.unavailable_group = DeviceGroup.objects.create(name="unavailable_group")
@@ -90,6 +94,7 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
             ip="10.10.10.12",
             name="dev2",
             group=self.unavailable_group,
+            auth_group=self.auth_group,
         )
 
         self.device_info = DevicesInfo.objects.create(
@@ -202,12 +207,14 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         self.device = Devices.objects.create(
             ip="127.0.0.1",
             name="dev1",
             group=self.group,
             model="model",
             vendor="vendor",
+            auth_group=self.auth_group,
         )
         self.comment = InterfacesComments.objects.create(
             device=self.device, interface="Fa1/0/1", comment="comment", user=self.user
@@ -390,6 +397,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
     def setUp(self) -> None:
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         self.user.profile.devices_groups.add(self.group)
         self.device = Devices.objects.create(
             ip="10.100.0.10",
@@ -397,6 +405,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             group=self.group,
             model="model",
             vendor="vendor",
+            auth_group=self.auth_group,
         )
         self.url = reverse("devices-api:device-info", args=[self.device.name])
 
@@ -468,12 +477,14 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.user.profile.devices_groups.add(self.group)
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         self.device = Devices.objects.create(
             ip="10.20.0.20",
             name="dev1",
             group=self.group,
             model="model",
             vendor="vendor",
+            auth_group=self.auth_group,
         )
         self.url = reverse("devices-api:device-stats-info", args=[self.device.name])
 

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("gathering", "0002_vlan_vlanport_vlan_vlan_index_and_more"),
     ]

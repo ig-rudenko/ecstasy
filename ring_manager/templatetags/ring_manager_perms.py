@@ -16,6 +16,4 @@ def has_transport_ring_permission(user: AbstractUser) -> bool:
 
 @register.filter
 def has_any_ring_permission(user: AbstractUser) -> bool:
-    return user.has_perm("auth.access_rings") or user.has_perm(
-        "auth.access_transport_rings"
-    )
+    return user.has_perm("auth.access_rings") or user.has_perm("auth.access_transport_rings")

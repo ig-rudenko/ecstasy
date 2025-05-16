@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("app_settings", "0003_vlantracerouteconfig_cache_timeout_and_more"),
     ]

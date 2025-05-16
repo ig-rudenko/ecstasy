@@ -7,7 +7,11 @@ from check.models import Devices, DeviceGroup, AuthGroup, Bras, Profile, UsersAc
 class DeviceModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        Devices.objects.create(name="Test Name", ip="192.168.123.123")
+        cls.group = DeviceGroup.objects.create(name="test")
+        cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+        Devices.objects.create(
+            name="Test Name", ip="192.168.123.123", auth_group=cls.auth_group, group=cls.group
+        )
 
     # NAME
     def test_device_name_label(self):
@@ -316,7 +320,11 @@ class UsersActionsTest(TestCase):
         u2.set_password("password")
         u2.save()
 
-        dev = Devices.objects.create(name="Device1", ip="10.101.10.101")
+        self.group = DeviceGroup.objects.create(name="test")
+        self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
+        dev = Devices.objects.create(
+            name="Device1", ip="10.101.10.101", auth_group=self.auth_group, group=self.group
+        )
 
         # По 50 действий для 2х пользователей
         for i in range(1, 101):

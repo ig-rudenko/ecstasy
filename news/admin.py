@@ -31,7 +31,7 @@ class GlobalNewsAdmin(admin.ModelAdmin):
 
         is_expired = obj.expired_at is not None and obj.expired_at < timezone.now()
 
-        text += f"<span style=\"color: {'red' if is_expired else 'currentColor'}\">{obj.title}</span>"
+        text += f'<span style="color: {"red" if is_expired else "currentColor"}">{obj.title}</span>'
 
         if is_expired:
             text += '<small style="color: red; margin-left: 5px;">(Срок действия сообщения истек)</small>'

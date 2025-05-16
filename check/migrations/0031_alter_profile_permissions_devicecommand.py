@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("auth", "0012_alter_user_first_name_max_length"),
         ("check", "0030_bras_connection_pool_size_and_more"),
@@ -49,9 +48,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "description",
-                    models.TextField(
-                        blank=True, null=True, verbose_name="Описание команды"
-                    ),
+                    models.TextField(blank=True, null=True, verbose_name="Описание команды"),
                 ),
                 (
                     "command",
@@ -71,9 +68,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "perm_groups",
-                    models.ManyToManyField(
-                        blank=True, to="auth.group", verbose_name="Права доступа"
-                    ),
+                    models.ManyToManyField(blank=True, to="auth.group", verbose_name="Права доступа"),
                 ),
             ],
             options={

@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import IO
 
+from check.models import Devices
+
 
 @dataclass
 class ConfigFile:
@@ -33,7 +35,7 @@ class ConfigStorage(ABC):
     """
 
     @abstractmethod
-    def __init__(self, device: str):
+    def __init__(self, device: Devices):
         self.device = device
 
     @abstractmethod

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 
-from check.models import DeviceGroup, Devices
+from check.models import DeviceGroup, Devices, AuthGroup
 from check.services.device.commands import validate_command
 from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo
@@ -11,10 +11,12 @@ class BaseCommandsTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         cls.device = Devices.objects.create(
             ip="172.30.0.58",
             name="dev1",
             group=cls.group,
+            auth_group=cls.auth_group,
         )
         cls.interfaces = Interfaces(
             [

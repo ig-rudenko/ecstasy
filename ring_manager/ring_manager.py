@@ -78,10 +78,10 @@ class RingStatus:
         """
         # Обрыв?
         if (
-                point.port_to_next_dev  # Имеется следующее устройство в кольце
-                and point.ping  # Текущее устройство доступно
-                and point.port_to_next_dev.is_down  # К следующему link down
-                and (
+            point.port_to_next_dev  # Имеется следующее устройство в кольце
+            and point.ping  # Текущее устройство доступно
+            and point.port_to_next_dev.is_down  # К следующему link down
+            and (
                 not self.transport_ring_manager.ring_devs[
                     ring_index + 1
                 ].ping  # Следующее оборудование Недоступно
@@ -89,7 +89,7 @@ class RingStatus:
                 and self.transport_ring_manager.ring_devs[
                     ring_index + 1
                 ].port_to_prev_dev.is_down  # ... link down
-        )
+            )
         ):
             # Нашли обрыв между `self.ring_devs[ring_index]` и `self.ring_devs[ring_index + 1]`
             self.broken_links.append(
@@ -186,8 +186,8 @@ class RingStatus:
                         device=self.transport_ring_manager.tail.device,
                         port=self.transport_ring_manager.tail.port_to_prev_dev.name,
                         message=f"Будут удалены VLAN - {self.required_vlans} на "
-                                f"{self.transport_ring_manager.tail.device} "
-                                f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
+                        f"{self.transport_ring_manager.tail.device} "
+                        f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
                     )
 
                 # Создаем решение - включить порт
@@ -206,14 +206,14 @@ class RingStatus:
                     device=self.broken_links[0]["from_dev"]["device"].device,
                     port=self.broken_links[0]["from_dev"]["port"].name,
                     message="Нашли обрыв между: "
-                            f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
-                            f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
+                    f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
+                    f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
                 )
             else:
                 # Если на `tail` есть некоторые VLANS
                 if self.tail_exists_vlans:
                     self.solutions.info(
-                        "Кольцо находится в исправном состоянии, но необходимо удалить зацикленные " "VLANS"
+                        "Кольцо находится в исправном состоянии, но необходимо удалить зацикленные VLANS"
                     )
                     # Необходимо удалить их
                     self.solutions.delete_vlans(
@@ -221,8 +221,8 @@ class RingStatus:
                         device=self.transport_ring_manager.tail.device,
                         port=self.transport_ring_manager.tail.port_to_prev_dev.name,
                         message=f"Будут удалены VLAN - {self.required_vlans} на"
-                                f" {self.transport_ring_manager.tail.device} "
-                                f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
+                        f" {self.transport_ring_manager.tail.device} "
+                        f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
                     )
                 self.solutions.info("Кольцо находится в исправном состоянии")
                 return
@@ -248,7 +248,7 @@ class RingStatus:
             device=self.transport_ring_manager.tail.device,
             port=self.transport_ring_manager.tail.port_to_prev_dev.name,
             message=f"Прописываем VLANS {self.tail_required_vlans} на {self.transport_ring_manager.tail.device} "
-                    f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
+            f"на порту {self.transport_ring_manager.tail.port_to_prev_dev.name}",
         )
 
     def _compute_if_tail_has_vlans(self):
@@ -265,8 +265,8 @@ class RingStatus:
                 device=self.transport_ring_manager.tail.device,
                 port=self.transport_ring_manager.tail.port_to_prev_dev.name,
                 message=f"Если в кольце все исправно, то надо убрать VLANS {self.required_vlans} "
-                        f"на {self.transport_ring_manager.tail.device} на порту"
-                        f" {self.transport_ring_manager.tail.port_to_prev_dev.name}",
+                f"на {self.transport_ring_manager.tail.device} на порту"
+                f" {self.transport_ring_manager.tail.port_to_prev_dev.name}",
             )
 
         # Имеется закрытый порт и все оборудование доступно, можно развернуть в штатное состояние
@@ -282,8 +282,8 @@ class RingStatus:
                 device=self.transport_ring_manager.tail.device,
                 port=self.transport_ring_manager.tail.port_to_prev_dev.name,
                 message=f"Сначала будут удалены VLAN'ы {self.required_vlans} на оборудовании "
-                        f"{self.transport_ring_manager.tail.device} на порту "
-                        f"{self.transport_ring_manager.tail.port_to_prev_dev.name}",
+                f"{self.transport_ring_manager.tail.device} на порту "
+                f"{self.transport_ring_manager.tail.port_to_prev_dev.name}",
             )
             self.solutions.port_set_up(
                 device=self.closed_ports[0]["point"].device,
@@ -309,8 +309,8 @@ class RingStatus:
                 device=self.broken_links[0]["from_dev"]["device"].device,
                 port=self.broken_links[0]["from_dev"]["port"].name,
                 message="Нашли обрыв между: "
-                        f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
-                        f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
+                f"{b_link['from_dev']['device'].device} - порт ({b_link['from_dev']['port'].name})"
+                f" и {b_link['to_dev']['device'].device} - порт ({b_link['to_dev']['port'].name})",
             )
 
     def compute_solutions(self):

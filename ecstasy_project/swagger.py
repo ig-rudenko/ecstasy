@@ -47,7 +47,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Ecstasy API",
         default_version="v1",
-        description=f"""
+        description="""
 ## Здесь вы можете посмотреть API для работы с Ecstasy
 
 API токен можно создать в панели администратора

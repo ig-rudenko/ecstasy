@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from ..api.serializers import DeviceMediaSerializer
-from ..models import User, DeviceGroup, Devices, DeviceMedia
+from ..models import User, DeviceGroup, Devices, DeviceMedia, AuthGroup
 
 
 @override_settings(MEDIA_ROOT="/tmp/media")
@@ -23,11 +23,13 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create_user(username="test_user", password="password")
         cls.group = DeviceGroup.objects.create(name="ASW")
+        cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         cls.user.profile.devices_groups.add(cls.group)
         cls.device = Devices.objects.create(
             ip="172.20.0.10",
             name="dev1",
             group=cls.group,
+            auth_group=cls.auth_group,
         )
         with pathlib.Path(__file__).open("rb") as file:
             cls.device_media = DeviceMedia.objects.create(

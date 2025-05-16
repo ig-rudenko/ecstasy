@@ -94,10 +94,14 @@ class ProCurve(BaseDevice):
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
         raw_intf_status = self.send_command("show interfaces brief")
-        intf_status: list[str] = parse_by_template("interfaces/procurve_status.template", raw_intf_status)
+        intf_status: list[tuple[str, str, str]] = parse_by_template(
+            "interfaces/procurve_status.template", raw_intf_status
+        )
 
         raw_intf_desc = self.send_command("show name")
-        intf_desc: list[str] = parse_by_template("interfaces/procurve_description.template", raw_intf_desc)
+        intf_desc: list[tuple[str, str]] = parse_by_template(
+            "interfaces/procurve_description.template", raw_intf_desc
+        )
 
         int_desc_dict = {row[0]: row[1].strip() for row in intf_desc}
 

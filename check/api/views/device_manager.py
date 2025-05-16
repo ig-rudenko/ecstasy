@@ -342,7 +342,7 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> Response:
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
         if not request.user.is_superuser:
@@ -352,7 +352,7 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Command not found"}, status=404)
 
         command = commands.first()
-        if commands is None:
+        if command is None:
             return Response({"detail": "Command not found"}, status=404)
 
         try:
@@ -370,7 +370,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> Response:
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
         if not request.user.is_superuser:
@@ -380,7 +380,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Command not found"}, status=404)
 
         command = commands.first()
-        if commands is None:
+        if command is None:
             return Response({"detail": "Command not found"}, status=404)
 
         try:

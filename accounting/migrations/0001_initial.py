@@ -31,9 +31,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "description",
-                    models.TextField(
-                        help_text="Напишите для каких целей будет использоваться токен"
-                    ),
+                    models.TextField(help_text="Напишите для каких целей будет использоваться токен"),
                 ),
                 (
                     "expired",

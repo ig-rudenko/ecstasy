@@ -12,9 +12,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="vlantracerouteconfig",
             name="cache_timeout",
-            field=models.IntegerField(
-                default=300, verbose_name="Время в секундах для кеширования"
-            ),
+            field=models.IntegerField(default=300, verbose_name="Время в секундах для кеширования"),
         ),
         migrations.AddField(
             model_name="vlantracerouteconfig",

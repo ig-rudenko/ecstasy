@@ -72,21 +72,15 @@ class AddressSerializer(serializers.ModelSerializer):
 
         # Заменяем сокращение "ул." на полное слово "улица"
         value = re.sub(r"ул\.|ул(?=\s)", "улица", value, flags=re.IGNORECASE)
-        value = re.sub(
-            r"пр-кт\.|пр-кт(?=\s)|просп\.|просп(?=\s)", "проспект", value, flags=re.IGNORECASE
-        )
-        value = re.sub(
-            r"пр-зд\.|пр-зд(?=\s)|пр-д\.|пр-д(?=\s)", "проезд", value, flags=re.IGNORECASE
-        )
+        value = re.sub(r"пр-кт\.|пр-кт(?=\s)|просп\.|просп(?=\s)", "проспект", value, flags=re.IGNORECASE)
+        value = re.sub(r"пр-зд\.|пр-зд(?=\s)|пр-д\.|пр-д(?=\s)", "проезд", value, flags=re.IGNORECASE)
         value = re.sub(
             r"б-р\.|б-р(?=\s)|бул[ьвар]*?\.|бул[ьвар]*?(?=\s)",
             "бульвар",
             value,
             flags=re.IGNORECASE,
         )
-        value = re.sub(
-            r"ш\.|ш(?=\s)|шосе(?=\s)|шос\.|шос(?=\s)", "шоссе", value, flags=re.IGNORECASE
-        )
+        value = re.sub(r"ш\.|ш(?=\s)|шосе(?=\s)|шос\.|шос(?=\s)", "шоссе", value, flags=re.IGNORECASE)
         value = re.sub(
             r"пер\.|пер(?=\s)|п-к\.|п-к(?=\s)|пер-к\.|пер-к(?=\s)",
             "переулок",
@@ -106,9 +100,7 @@ class AddressSerializer(serializers.ModelSerializer):
         value = re.sub(r"\s+", " ", value, flags=re.IGNORECASE)
 
         # Но если указано, то проверяем правильность
-        if not re.search(
-            r"улица|проспект|площадь|проезд|бульвар|шоссе|переулок|тупик", value, re.IGNORECASE
-        ):
+        if not re.search(r"улица|проспект|площадь|проезд|бульвар|шоссе|переулок|тупик", value, re.IGNORECASE):
             raise ValidationError(
                 "Укажите полное название с указанием типа"
                 " (улица/проспект/площадь/проезд/бульвар/шоссе/переулок/тупик)"
@@ -160,9 +152,7 @@ class BuildingAddressSerializer(serializers.ModelSerializer):
     street = serializers.CharField(source="address.street")
     house = serializers.CharField(source="address.house")
     block = serializers.CharField(source="address.block")
-    building_type = serializers.ChoiceField(
-        source="apartment_building", choices=["building", "house"]
-    )
+    building_type = serializers.ChoiceField(source="apartment_building", choices=["building", "house"])
 
     class Meta:
         model = HouseB

@@ -12,6 +12,7 @@ from .interfaces import Interfaces
 from .zabbix_api import zabbix_api
 from ..device_connector.factory import DEFAULT_POOL_SIZE
 from ..exceptions import AuthException, BaseDeviceException
+from ..vendors.base.types import SimpleAuthObjectProtocol
 
 
 class DeviceManager:
@@ -32,7 +33,7 @@ class DeviceManager:
         self.interfaces = Interfaces()
         self.protocol: str = "telnet"
         self.snmp_community = ""
-        self.auth_obj = None
+        self.auth_obj: SimpleAuthObjectProtocol | None = None
         self.success_auth: dict = {}
         self.pool_size = DEFAULT_POOL_SIZE
 
@@ -105,8 +106,8 @@ class DeviceManager:
         dev = cls(model_dev.name, zabbix_info=False)
         dev.ip = model_dev.ip
         dev.protocol = model_dev.port_scan_protocol
-        dev.snmp_community = model_dev.snmp_community
-        dev.auth_obj = model_dev.auth_group
+        dev.snmp_community = model_dev.snmp_community or ""
+        dev.auth_obj = model_dev.auth_group  # type: ignore
         dev.pool_size = model_dev.connection_pool_size
         if zabbix_info:
             dev.collect_zabbix_info()

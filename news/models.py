@@ -2,7 +2,6 @@ from django.db import models
 
 
 class GlobalNews(models.Model):
-
     class SevSeverityChoices(models.TextChoices):
         PRIMARY = "primary", "Primary"
         SECONDARY = "secondary", "Secondary"

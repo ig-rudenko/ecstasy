@@ -231,7 +231,7 @@ Total Entries  : 0
             self.before = self._virtual_cable_test(command)
         elif "config ports 2 description" in command or "config ports 2 clear_description" in command:
             self.before = b"Success"
-        elif re.search("show ports \d+ media_type", command):
+        elif re.search(r"show ports \d+ media_type", command):
             self.before = self._get_media_type(command)
         else:
             self.before = b""

@@ -1,3 +1,4 @@
+import re
 from functools import reduce
 
 import orjson
@@ -59,7 +60,7 @@ def get_vendor(request: Request, mac: str) -> Response:
     try:
         resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2, proxies=proxies)
     except requests_lib.RequestException:
-        return Response({"vendor": f"Got exception!"})
+        return Response({"vendor": "Got exception!"})
 
     if resp.status_code == 200:
         data = resp.json()
@@ -81,10 +82,19 @@ def find_by_description(request):
     ## Поиск портов по описанию и комментариям.
     """
 
-    if not request.GET.get("pattern"):
+    is_regex = request.GET.get("is_regex", "0").lower() in ("1", "true")
+    pattern = request.GET.get("pattern", "")
+    if not pattern:
         return Response({"interfaces": []})
 
-    result = Finder(request.user.id).find_description(request.GET.get("pattern"))
+    if is_regex:
+        try:
+            re.compile(pattern)
+        except re.PatternError as exc:
+            return Response(data={"error": f"Ошибка в регулярном выражении: {exc}"}, status=400)
+
+    finder = Finder(user_id=request.user.id)
+    result = finder.find_description(pattern_str=pattern, is_regex=is_regex)
 
     return Response({"interfaces": result})
 

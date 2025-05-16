@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0003_authgroup_alter_devicegroup_table_and_more"),
     ]

@@ -1,6 +1,7 @@
 """
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
+
 import re
 from dataclasses import dataclass
 
@@ -13,6 +14,7 @@ from .exceptions import (
 )
 from .multifactory import DeviceMultiFactory
 from .vendors.base.device import BaseDevice
+from .vendors.base.types import SimpleAuthObjectProtocol
 
 
 @dataclass
@@ -95,16 +97,16 @@ class DeviceRemoteConnector:
         ip: str,
         protocol: str,
         snmp_community: str,
-        auth_obj,
+        auth_obj: SimpleAuthObjectProtocol,
     ):
         self.ip = ip
         self.session = None
         self.snmp_community = snmp_community
         self.protocol = protocol
 
-        self.login: str = auth_obj.login
-        self.password: str = auth_obj.password
-        self.privilege_mode_password: str = auth_obj.secret
+        self.login = str(auth_obj.login)
+        self.password = str(auth_obj.password)
+        self.privilege_mode_password = str(auth_obj.secret)
 
     def get_session(self) -> BaseDevice:
         return self._get_device_session()

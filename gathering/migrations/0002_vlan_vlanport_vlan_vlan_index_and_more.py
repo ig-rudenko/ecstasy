@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("check", "0031_devices_collect_vlan_info"),
         ("gathering", "0001_initial"),

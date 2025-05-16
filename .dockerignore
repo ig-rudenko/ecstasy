@@ -15,8 +15,9 @@
 !create_docs.py
 !device_connector.py
 !manage.py
-!requirements.txt
 !run.sh
+!pyproject.toml
+!uv.lock
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__/

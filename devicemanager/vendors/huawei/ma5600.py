@@ -386,7 +386,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         if not isinstance(indexes, tuple) or len(indexes) not in [3, 4]:
             return {
                 "type": "error",
-                "data": f'Неверный порт! (GPON {"/".join(indexes)})',
+                "data": f"Неверный порт! (GPON {'/'.join(indexes)})",
             }
 
         self.send_command("config")  # Переходим в режим конфигурации
@@ -396,7 +396,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         if len(indexes) == 3:
             # Смотрим порт
             output = self.send_command(
-                f'display ont info summary {"/".join(i)}',
+                f"display ont info summary {'/'.join(i)}",
                 before_catch="Please wait",
                 expect_command=False,
             )

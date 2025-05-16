@@ -72,13 +72,16 @@ export function calculateInterfacesWorkload(devices: Device[]): number[] {
 }
 
 
-export async function findInterfacesByDescription(description: string): Promise<InterfaceDescriptionMatchResult[]> {
-    const url = "/api/v1/tools/find-by-desc?pattern=" + description;
+export async function findInterfacesByDescription(pattern: string, isRegex = false): Promise<InterfaceDescriptionMatchResult[]> {
+    const url = "/api/v1/tools/find-by-desc";
+    let params = {
+        pattern: pattern,
+        is_regex: isRegex ? "1" : "0"
+    }
     try {
-        const resp = await api.get<{ interfaces: InterfaceDescriptionMatchResult[] }>(url)
+        const resp = await api.get<{ interfaces: InterfaceDescriptionMatchResult[] }>(url, {params})
         return resp.data.interfaces;
     } catch (error: any) {
-        console.error(error);
         errorToast("Не удалось найти интерфейсы по описанию", errorFmt(error))
         return [];
     }
@@ -86,12 +89,18 @@ export async function findInterfacesByDescription(description: string): Promise<
 
 export function newInterface(data: any): DeviceInterface {
     let comments: InterfaceComment[] = []
-    if (data.Comments) { comments = data.Comments }
+    if (data.Comments) {
+        comments = data.Comments
+    }
 
     let vlans: number[] = []
-    if (data["VLAN's"]) { vlans = data["VLAN's"].map(Number) }
+    if (data["VLAN's"]) {
+        vlans = data["VLAN's"].map(Number)
+    }
     let link: DeviceLink | undefined = undefined;
-    if (data.Link) { link = { deviceName: data.Link.device_name, url: data.Link.url } }
+    if (data.Link) {
+        link = {deviceName: data.Link.device_name, url: data.Link.url}
+    }
 
     return {
         name: data.Interface,

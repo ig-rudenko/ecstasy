@@ -312,7 +312,7 @@ class LayersAdmin(admin.ModelAdmin):
         """
         if instance.from_file:
             return mark_safe(
-                f"{svg_file_icon} <strong>\"{instance.from_file.name.rsplit('/', 1)[-1]}\"</strong>"
+                f'{svg_file_icon} <strong>"{instance.from_file.name.rsplit("/", 1)[-1]}"</strong>'
             )
         if instance.zabbix_group_name:
             return mark_safe(f'{svg_zabbix_icon} - <strong>"{instance.zabbix_group_name}"</strong>')
@@ -452,7 +452,7 @@ class MapsAdmin(admin.ModelAdmin):
 
         elif instance.type == "file":
             text = f"""
-            <p style="white-space: nowrap;">{svg_file_icon} {instance.from_file.name.rsplit('/', 1)[-1]}</p>
+            <p style="white-space: nowrap;">{svg_file_icon} {instance.from_file.name.rsplit("/", 1)[-1]}</p>
             """
 
         return format_html(text)

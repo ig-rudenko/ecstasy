@@ -174,7 +174,7 @@ class Command(BaseCommand):
             "Будут использованы следующие параметры подключения к Zabbix:",
             f"  url       {zbx_connector.zabbix_url}",
             f"  user      {zbx_connector.zabbix_user}",
-            f"  password  {'*'*len(zbx_connector.zabbix_password)}",
+            f"  password  {'*' * len(zbx_connector.zabbix_password)}",
             sep="\n",
         )
 

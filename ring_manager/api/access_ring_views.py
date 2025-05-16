@@ -28,7 +28,6 @@ class ListAccessRingsAPIView(generics.ListAPIView):
         ).select_related("devicesinfo")
 
     def list(self, request, *args, **kwargs):
-
         access_rings = []
 
         for agg in self.get_queryset():

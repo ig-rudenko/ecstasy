@@ -131,5 +131,5 @@ def delete_connection_pool(ip: str):
 if __name__ == "__main__":
     app.run(
         host=os.getenv("DEVICE_CONNECTOR_BIND_HOST", "0.0.0.0"),
-        port=os.getenv("DEVICE_CONNECTOR_BIND_PORT", 8000),
+        port=int(os.getenv("DEVICE_CONNECTOR_BIND_PORT", 8000)),
     )
