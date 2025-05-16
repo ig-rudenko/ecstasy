@@ -29,6 +29,7 @@ interface CommandContext {
   ip?: StringValues;
   mac?: StringValues;
   number?: NullNumberValues;
+  word?: StringValues;
 }
 
 interface CommandType {
@@ -84,6 +85,7 @@ const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+)?)?}/
 const portRegex = /\{port(#(\S+)?)?}/
 const ipRegex = /\{ip(#(\S+)?)?}/
 const macRegex = /\{mac(#(\S+)?)?}/
+const wordRegex = /\{word(#(\S+)?)?}/
 
 
 function markCommandKeys(command: CommandType) {
@@ -91,11 +93,13 @@ function markCommandKeys(command: CommandType) {
   command.context.port = {};
   command.context.ip = {};
   command.context.mac = {};
+  command.context.word = {};
 
   const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+)?)?}/g
   const portRegex = /\{port(#(\S+)?)?}/g
   const ipRegex = /\{ip(#(\S+)?)?}/g
   const macRegex = /\{mac(#(\S+)?)?}/g
+  const wordRegex = /\{word(#(\S+)?)?}/g
 
   let match;
 
@@ -113,6 +117,10 @@ function markCommandKeys(command: CommandType) {
 
   while ((match = macRegex.exec(command.command)) !== null) {
     command.context.mac[getKeyName(match[0])] = "";
+  }
+
+  while ((match = wordRegex.exec(command.command)) !== null) {
+    command.context.word[getKeyName(match[0])] = "";
   }
 
 }
@@ -156,6 +164,10 @@ function cleanMacAddress(mac: string): string {
   return cleaned && cleaned.length === 12 ? cleaned.join('') : "";
 }
 
+function isValidWord(word: string): boolean {
+  return word.match(/^\S+$/g) != null;
+}
+
 function isValidIPAddress(ip: string): boolean {
   // Регулярное выражение для проверки IPv4-адреса
   const ipRegex = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
@@ -185,6 +197,15 @@ function commandIsValid(command: CommandType) {
     for (const key in command.context.mac) {
       if (!cleanMacAddress(command.context.mac[key])) {
         console.log("MAC INVALID")
+        return false;
+      }
+    }
+  }
+
+  if (command.context.word) {
+    for (const key in command.context.word) {
+      if (!isValidWord(command.context.word[key])) {
+        console.log("WORD INVALID")
         return false;
       }
     }
@@ -274,6 +295,8 @@ async function executeCommand(command: CommandType) {
                              v-model="data.context.mac[getKeyName(part)]" placeholder="MAC адрес"/>
                   <InputText v-tooltip="getKeyName(part)" v-else-if="data.context.ip && ipRegex.test(part)"
                              v-model="data.context.ip[getKeyName(part)]" placeholder="IP адрес"/>
+                  <InputText v-tooltip="getKeyName(part)" v-else-if="data.context.word && wordRegex.test(part)"
+                             v-model="data.context.word[getKeyName(part)]" placeholder=""/>
 
                   <InputNumber v-tooltip="getKeyName(part)+': '+numberVerboseRange(part)"
                                v-else-if="data.context.number && numberRegex.test(part)"

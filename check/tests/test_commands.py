@@ -8,7 +8,6 @@ from net_tools.models import DevicesInfo
 
 
 class BaseCommandsTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         cls.group = DeviceGroup.objects.create(name="ASW")
@@ -29,7 +28,6 @@ class BaseCommandsTestCase(TestCase):
 
 
 class TestCommandsPortValidator(BaseCommandsTestCase):
-
     def test_cmd_port_validator(self):
         command = "show port {port} {port}"
         valid_command = "show port Ethernet1/1 Ethernet1/1"
@@ -63,7 +61,6 @@ class TestCommandsPortValidator(BaseCommandsTestCase):
 
 
 class TestCommandsIPValidator(BaseCommandsTestCase):
-
     def test_cmd_ip_validator(self):
         command = "show ip {ip} {ip}"
         valid_command = "show ip 172.30.0.58 172.30.0.58"
@@ -295,3 +292,24 @@ class TestMixedValidator(BaseCommandsTestCase):
 
         res = validate_command(self.device, command, context)
         self.assertEqual(valid_command, res)
+
+
+class TestWordValidator(BaseCommandsTestCase):
+    def test_word_validator(self):
+        command = "show port {word#2}"
+        valid_command = "show port TEST"
+        context = {
+            "word": {"2": "TEST\n"},  # Крайние пробельные символы удалятся
+        }
+
+        res = validate_command(self.device, command, context)
+        self.assertEqual(valid_command, res)
+
+    def test_word_with_spaces_validator(self):
+        command = "show port {word#2}"
+        context = {
+            "word": {"2": "TEST\n1"},  # Не должно быть пробельных символов
+        }
+
+        with self.assertRaises(ValidationError):
+            validate_command(self.device, command, context)

@@ -36,6 +36,12 @@ def validate_mac(mac: str) -> None:
         raise ValidationError("Неверный формат MAC")
 
 
+def validate_word(word: str) -> None:
+    if not re.match(r"^\S+$", word):
+        raise ValidationError("Не должно быть пробельных символов")
+    return
+
+
 def validate_number(number_string: str, min_value: str, max_value: str) -> None:
     try:
         number = int(str(number_string).strip())
@@ -52,7 +58,6 @@ def validate_number(number_string: str, min_value: str, max_value: str) -> None:
 
 
 def validate_command(device: Devices, command: str, context: dict) -> str:
-
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",
@@ -74,6 +79,11 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
             pattern=re.compile("\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, v: validate_number(v, m.group("start"), m.group("end")),
         ),
+        ContextValidator(
+            key="word",
+            pattern=re.compile("\{word(?:#(?P<name>\S+)?)?}"),
+            validate=lambda m, word: validate_word(word),
+        ),
     ]
 
     default_key = "_"
@@ -93,7 +103,7 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
             key_context: dict = context[validator.key]
 
             key = match.group("name") or default_key
-            value = key_context.get(key)
+            value = key_context.get(key).strip()
 
             if value is None:
                 raise ValidationError(f"Необходимо указать ключ `{key}` для параметра {validator.key}")
