@@ -36,8 +36,7 @@ def validate_port(port: str) -> str | None:
      - wlan2
      - wlan60-station-1
     """
-    port = port.lower()
-    if re.match(r"^ether|^sfp|^wlan|^p\d+$", port):
+    if re.match(r"^ether|^sfp|^wlan|^p\d+$", port.lower()):
         return port
     return None
 
@@ -256,7 +255,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
 
         Команда на оборудовании:
 
-            # show mac address-table interface {port}
+            # interface bridge host print terse where interface="{port}" !local
 
         :param port: Номер порта коммутатора
         :return: ```[ ('vid', 'mac'), ... ]```
