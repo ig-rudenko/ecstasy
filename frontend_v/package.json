@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.3.4",
-    "axios": "^1.8.3",
+    "axios": "^1.9.0",
     "diff": "^7.0.0",
     "javascript-time-ago": "^2.5.11",
     "leaflet": "^1.9.4",
@@ -20,7 +20,7 @@
     "vis-network": "^9.1.10",
     "vue": "^3.5.13",
     "vue-chartjs": "^5.3.2",
-    "vue-router": "^4.5.0",
+    "vue-router": "^4.5.1",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
