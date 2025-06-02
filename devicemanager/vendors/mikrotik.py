@@ -30,13 +30,14 @@ def validate_port(port: str) -> str | None:
 
     Разрешенные:
      - ether4
+     - P1
      - sfp1
      - sfp-sfpplus1
      - wlan2
      - wlan60-station-1
     """
     port = port.lower()
-    if re.match(r"^ether|^sfp|^wlan", port):
+    if re.match(r"^ether|^sfp|^wlan|^p\d+$", port):
         return port
     return None
 
