@@ -88,7 +88,7 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
 
     default_key = "_"
 
-    match = None
+    match: re.Match | None = None
     first = True
 
     for validator in context_validators:
@@ -100,10 +100,10 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
 
             first = False
 
-            key_context: dict = context[validator.key]
+            key_context: dict = context.get(validator.key, {})
 
             key = match.group("name") or default_key
-            value = key_context.get(key).strip()
+            value = str(key_context.get(key)).strip()
 
             if value is None:
                 raise ValidationError(f"Необходимо указать ключ `{key}` для параметра {validator.key}")
