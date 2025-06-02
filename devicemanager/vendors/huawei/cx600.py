@@ -145,7 +145,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
         return {}
 
     @BaseDevice.lock_session
-    @cx600_validate_and_format_port
+    @cx600_validate_and_format_port()
     def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": self.send_command(f"display interface {port.strip()}").strip()}
 
@@ -153,7 +153,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
         return ""
 
     @BaseDevice.lock_session
-    @cx600_validate_and_format_port
+    @cx600_validate_and_format_port()
     def get_port_config(self, port: str) -> str:
         return self.send_command(f"display current-configuration interface {port}").strip()
 

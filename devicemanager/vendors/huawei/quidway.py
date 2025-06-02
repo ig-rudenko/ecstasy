@@ -478,6 +478,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
         return mac_list
 
+    @BaseDevice.lock_session
     @validate_and_format_port_as_normal()
     def __get_port_info(self, port: str):
         """
