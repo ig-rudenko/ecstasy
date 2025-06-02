@@ -15,6 +15,31 @@ from ..base.types import (
     InterfaceType,
     DeviceAuthDict,
 )
+from ..base.validators import validate_and_format_port
+
+
+def cx600_validate_and_format_port(if_invalid_return=None):
+    """
+    ## Декоратор для проверки правильности порта и форматирования его.
+
+    Valid:
+        "gi 1/0/1" -> "GigabitEthernet 1/0/1"
+        "GE 1/0/1(10G)" -> "GigabitEthernet 1/0/1"
+        "GE 1/0/1.700" -> "GigabitEthernet 1/0/1.700"
+        "Eth-Trunk1.4013" -> "Eth-Trunk1.4013"
+
+    :param if_invalid_return: Что нужно вернуть, если порт неверный.
+    """
+
+    def validator(port: str) -> str:
+        interface = re.sub(r"\(.*?\)", "", str(port)).strip()
+
+        interface = re.sub(r"^[gG][eE]", "GigabitEthernet", interface)
+        interface = re.sub(r"^[Tt][eE]", "TenGigabitEthernet", interface)
+
+        return interface.strip()
+
+    return validate_and_format_port(if_invalid_return=if_invalid_return, validator=validator)
 
 
 class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
@@ -120,14 +145,17 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
         return {}
 
     @BaseDevice.lock_session
+    @cx600_validate_and_format_port
     def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": self.send_command(f"display interface {port.strip()}").strip()}
 
     def get_port_type(self, port: str) -> str:
         return ""
 
+    @BaseDevice.lock_session
+    @cx600_validate_and_format_port
     def get_port_config(self, port: str) -> str:
-        return self.send_command(f"display current-configuration interface {port.strip()}").strip()
+        return self.send_command(f"display current-configuration interface {port}").strip()
 
     def get_port_errors(self, port: str) -> str:
         return ""

@@ -70,19 +70,32 @@ def interface_normal_view(interface) -> str:
 
     >>> interface_normal_view("gi1")
     'GigabitEthernet 1'
+
+    >>> interface_normal_view("Gi 1/0/1 (10G)")
+    'GigabitEthernet 1/0/1'
+
+    >>> interface_normal_view("GigabitEthernet")
+    'GigabitEthernet'
+
+    >>> interface_normal_view("21")
+    '21'
     """
 
-    interface_number = re.findall(r"(\d+([/\\]?\d*)*)", str(interface))
+    if interface_numbers := re.search(r"(\d+(?:[/\\]?\d*)*)", str(interface)):
+        port_number = interface_numbers.group(1)
+    else:
+        port_number = ""
+
     if re.match(r"^[Ee]t", interface):
-        return f"Ethernet {interface_number[0][0]}"
+        return f"Ethernet {port_number}".strip()
     if re.match(r"^[Ff]a", interface):
-        return f"FastEthernet {interface_number[0][0]}"
+        return f"FastEthernet {port_number}".strip()
     if re.match(r"^[Gg][ieE]", interface):
-        return f"GigabitEthernet {interface_number[0][0]}"
-    if re.match(r"^\d+", interface):
-        return re.findall(r"^\d+", interface)[0]
+        return f"GigabitEthernet {port_number}".strip()
+    if n := re.match(r"^\d+", interface):
+        return n.group()
     if re.match(r"^[Tt]e", interface):
-        return f"TenGigabitEthernet {interface_number[0][0]}"
+        return f"TenGigabitEthernet {port_number}".strip()
 
     return ""
 
