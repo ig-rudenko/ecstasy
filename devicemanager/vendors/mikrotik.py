@@ -364,6 +364,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     def get_port_errors(self, port: str) -> str:
         return ""
 
+    @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         output = self.send_command(f"system resource print", expect_command=False)
