@@ -1,3 +1,5 @@
+import io
+import re
 from typing import Literal
 
 import textfsm
@@ -10,6 +12,8 @@ from ..base.types import (
     MACListType,
     ArpInfoResult,
     PortInfoType,
+    InterfaceType,
+    DeviceAuthDict,
 )
 
 
@@ -23,6 +27,11 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
+
+    def __init__(self, session, ip: str, auth: DeviceAuthDict, model, snmp_community):
+        super().__init__(session, ip, auth, model, snmp_community)
+        os_version = self.send_command("display version | include software")
+        self.os_version = self.find_or_empty(r"\(CX600 (\S+)\)", os_version)
 
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
@@ -75,8 +84,22 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
 
         return list(map(lambda r: ArpInfoResult(*r), result)) if result else []
 
+    @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
-        return []
+        interfaces = []
+
+        output = self.send_command("display interface description")
+        for port_name, admin_status, link_status, desc in re.findall(
+            r"(\S+)\s+([*^]?(?:down|up))\s+([*^]?(?:down|up))\s+(.*)", output
+        ):
+            status: InterfaceType = "up"
+            if "*" in admin_status or "adm" in link_status.lower() or "admin" in link_status.lower():
+                status = "admin down"
+            elif "down" in link_status.lower():
+                status = "down"
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
 
     def get_vlans(self) -> InterfaceVLANListType:
         return []
@@ -96,14 +119,15 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
+    @BaseDevice.lock_session
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": ""}
+        return {"type": "text", "data": self.send_command(f"display interface {port.strip()}").strip()}
 
     def get_port_type(self, port: str) -> str:
         return ""
 
     def get_port_config(self, port: str) -> str:
-        return ""
+        return self.send_command(f"display current-configuration interface {port.strip()}").strip()
 
     def get_port_errors(self, port: str) -> str:
         return ""
@@ -111,20 +135,28 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     def get_device_info(self) -> dict:
         return {}
 
+    @BaseDevice.lock_session
     def get_access_user_data(self, mac: str) -> str:
         bras_output = self.send_command(f"display access-user mac-address {mac}", expect_command=False)
         if "No online user!" not in bras_output:
             user_index = self.find_or_empty(r"User access index\s+:\s+(\d+)", bras_output)
 
             if user_index:
-                bras_output = self.send_command(
-                    f"display access-user user-id {user_index} verbose",
-                )
+                bras_output = self.send_command(f"display access-user user-id {user_index} verbose")
         return bras_output
 
+    @BaseDevice.lock_session
     def cut_access_user_session(self, mac: str) -> str:
         self.send_command("system-view")
         self.send_command("aaa")
         # Срезаем сессию по MAC адресу
         self.send_command(f"cut access-user mac-address {mac}")
+        self.send_command("quit")
+        self.send_command("quit")
         return ""
+
+    @BaseDevice.lock_session
+    def get_current_configuration(self) -> io.BytesIO:
+        config = self.send_command("display current-configuration", expect_command=True)
+        config = re.sub(r"[ ]+\n[ ]+(?=\S)", "", config.strip())
+        return io.BytesIO(config.encode())
