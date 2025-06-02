@@ -10,6 +10,7 @@ import pysftp
 
 from .base.device import BaseDevice, AbstractConfigDevice, AbstractPOEDevice
 from .base.factory import AbstractDeviceFactory
+from .base.helpers import normalize_number_suffix
 from .base.types import (
     InterfaceListType,
     InterfaceVLANListType,
@@ -62,6 +63,8 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
         super().__init__(session, ip, auth, model, snmp_community)
         routerboard = self.send_command("system routerboard print")
         self.model = self.find_or_empty(r"model: (\S+)", routerboard)
+        self.serialno = self.find_or_empty(r"serial-number: (\S+)", routerboard)
+        self.os_version = self.find_or_empty(r"current-firmware: (\S+)", routerboard)
 
         # {"bridge_name": {"vlans": ['10', '20']}}
         self._bridges: dict[str, dict[str, list[str]]] = {}
@@ -362,7 +365,23 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
         return ""
 
     def get_device_info(self) -> dict:
-        return {}
+        data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
+        output = self.send_command(f"system resource print", expect_command=False)
+
+        # Список
+        data["cpu"]["util"] = [self.find_or_empty(r"cpu-load: (\d+)%", output) or None]
+
+        free_hdd_space = normalize_number_suffix(self.find_or_empty(r"free-hdd-space: (\S+[kKMG])iB", output))
+        total_hdd_space = normalize_number_suffix(
+            self.find_or_empty(r"total-hdd-space: (\S+[kKMG])iB", output)
+        )
+        data["flash"]["util"] = round((total_hdd_space - free_hdd_space) / total_hdd_space, 2)
+
+        free_memory = normalize_number_suffix(self.find_or_empty(r"free-memory: (\S+[kKMG])iB", output))
+        total_memory = normalize_number_suffix(self.find_or_empty(r"total-memory: (\S+[kKMG])iB", output))
+        data["ram"]["util"] = round((total_memory - free_memory) / total_memory, 2)
+
+        return data
 
     def get_current_configuration(self) -> pathlib.Path:
         local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))

@@ -104,3 +104,27 @@ def parse_by_template(template_name: str, text: str) -> list:
         int_des_ = textfsm.TextFSM(template_file)
         # Разбираем вывод команды.
         return int_des_.ParseText(text)
+
+
+def normalize_number_suffix(s_number: str) -> int:
+    s = s_number.strip().lower().replace(",", ".")  # удалим пробелы и запятые заменим на точки.
+
+    if s.endswith("k"):
+        multiplier = 1_000
+        s = s[:-1]
+    elif s.endswith("m"):
+        multiplier = 10**6
+        s = s[:-1]
+    elif s.endswith("g"):
+        multiplier = 10**9
+        s = s[:-1]
+    elif s.endswith("t"):
+        multiplier = 10**12
+        s = s[:-1]
+    else:
+        multiplier = 1
+
+    try:
+        return int(float(s) * multiplier)
+    except ValueError:
+        return -1
