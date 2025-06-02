@@ -31,7 +31,7 @@ def cx600_validate_and_format_port(if_invalid_return=None):
     :param if_invalid_return: Что нужно вернуть, если порт неверный.
     """
 
-    def validator(port: str) -> str:
+    def _validator(port: str) -> str:
         interface = re.sub(r"\(.*?\)", "", str(port)).strip()
 
         interface = re.sub(r"^[gG][eE]", "GigabitEthernet", interface)
@@ -39,7 +39,7 @@ def cx600_validate_and_format_port(if_invalid_return=None):
 
         return interface.strip()
 
-    return validate_and_format_port(if_invalid_return=if_invalid_return, validator=validator)
+    return validate_and_format_port(if_invalid_return=if_invalid_return, validator=_validator)
 
 
 class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
