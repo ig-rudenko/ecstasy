@@ -166,7 +166,7 @@ class RemoteDevice(
     def set_poe_out(self, port: str, status: str):
         return self._remote_call("set_poe_out", port=port, status=status)
 
-    def change_profile(self, port: str, profile_index: int):
+    def change_profile(self, port: str, profile_index: int) -> str:
         return self._remote_call("change_profile", port=port, profile_index=profile_index)
 
     def get_access_user_data(self, mac: str) -> str:

@@ -27,6 +27,12 @@ from ..serializers import (
     DeviceCommandsSerializer,
 )
 from ..swagger import schemas
+from ..swagger.schemas import (
+    mac_list_api_doc,
+    interface_info_api_doc,
+    change_dsl_profile_api_doc,
+    change_description_api_doc,
+)
 from ...models import DeviceCommand
 from ...services.device.commands import execute_command, validate_command
 
@@ -68,6 +74,7 @@ class InterfaceControlAPIView(DeviceAPIView):
         return Response(serializer.validated_data, status=200)
 
 
+@method_decorator(change_description_api_doc, name="post")
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class ChangeDescriptionAPIView(DeviceAPIView):
     """
@@ -127,6 +134,7 @@ class ChangeDescriptionAPIView(DeviceAPIView):
         )
 
 
+@method_decorator(mac_list_api_doc, name="get")
 class MacListAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
@@ -238,6 +246,7 @@ class SetPoEAPIView(DeviceAPIView):
             return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
 
 
+@method_decorator(interface_info_api_doc, name="get")
 class InterfaceInfoAPIView(DeviceAPIView):
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
@@ -246,7 +255,8 @@ class InterfaceInfoAPIView(DeviceAPIView):
 
         В зависимости от типа оборудования информация будет совершенно разной
 
-        Поле `portDetailInfo.type` указывает тип данных, которые могут быть строкой, JSON, или HTML кодом.
+        Поле `portDetailInfo.type` указывает тип данных, которые могут быть Строкой или Объектом.
+        Возможные значения: "text", "html", "error", "adsl", "gpon", "eltex-gpon", "mikrotik".
 
             {
                 "portDetailInfo": {
@@ -273,8 +283,10 @@ class InterfaceInfoAPIView(DeviceAPIView):
 
 
 @method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
+@method_decorator(change_dsl_profile_api_doc, name="post")
 class ChangeDSLProfileAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
+    serializer_class = ADSLProfileSerializer
 
     @except_connection_errors
     def post(self, request, *args, **kwargs):

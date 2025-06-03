@@ -9,8 +9,10 @@ from check.services.bras import cut_bras_session, get_bras_sessions
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 from ..permissions import DevicePermission
 from ..serializers import BrassSessionSerializer, MacSerializer
+from ..swagger.schemas import cut_bras_session_api_doc, bras_get_session_api_doc
 
 
+@method_decorator(bras_get_session_api_doc, name="get")
 @method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class BrassSessionAPIView(UserAuthenticatedAPIView):
     def get(self, request):
@@ -40,6 +42,7 @@ class BrassSessionAPIView(UserAuthenticatedAPIView):
         return Response(result)
 
 
+@method_decorator(cut_bras_session_api_doc, name="post")
 @method_decorator(profile_permission(models.Profile.BRAS), name="post")
 class CutBrassSessionAPIView(UserAuthenticatedAPIView):
     """
@@ -47,6 +50,7 @@ class CutBrassSessionAPIView(UserAuthenticatedAPIView):
     """
 
     permission_classes = [IsAuthenticated, DevicePermission]
+    serializer_class = BrassSessionSerializer
 
     def post(self, request):
         """

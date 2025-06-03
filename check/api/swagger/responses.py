@@ -1,3 +1,4 @@
+from drf_yasg import openapi
 from rest_framework import serializers
 
 from ...models import Devices, InterfacesComments
@@ -9,6 +10,15 @@ class SwaggerSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         pass
+
+
+device_unavailable = openapi.Response(
+    description="Device unavailable",
+    schema=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={"detail": openapi.Schema(type=openapi.TYPE_STRING, example="Device unavailable")},
+    ),
+)
 
 
 class ConfigFileSwaggerSerializer(SwaggerSerializer):
@@ -151,3 +161,55 @@ class DeviceInfoSwaggerSerializer(SwaggerSerializer):
     zabbixInfo = serializers.DictField()
     permission = serializers.IntegerField(min_value=0, max_value=4)
     coords = serializers.ListField(child=serializers.FloatField(), min_length=2, max_length=2)
+    uptime = serializers.IntegerField(min_value=-1)
+    consoleURL = serializers.CharField()
+
+
+# MAC List
+
+
+class MacListSwaggerSerializer(SwaggerSerializer):
+    vlanID = serializers.IntegerField(min_value=1, max_value=4096)
+    mac = serializers.CharField()
+    vlanName = serializers.CharField()
+
+
+class MacListResultSwaggerSerializer(SwaggerSerializer):
+    result = serializers.ListSerializer(child=MacListSwaggerSerializer())
+    count = serializers.IntegerField(min_value=0)
+
+
+class InterfaceDetailInfoSwaggerSerializer(SwaggerSerializer):
+    class PortDetailInfo(serializers.Serializer):
+        type = serializers.ChoiceField(
+            choices=("text", "html", "error", "adsl", "gpon", "eltex-gpon", "mikrotik")
+        )
+
+        data = serializers.SerializerMethodField()
+
+    portDetailInfo = PortDetailInfo()
+    portConfig = serializers.CharField()
+    portType = serializers.CharField()
+    portErrors = serializers.CharField()
+    hasCableDiag = serializers.BooleanField()
+
+
+class ChangeDescriptionSwaggerSerializer(SwaggerSerializer):
+    description = serializers.CharField()
+    port = serializers.CharField()
+    saved = serializers.CharField()
+
+
+class BrasSessionSwaggerSerializer(SwaggerSerializer):
+    session = serializers.CharField(allow_null=True)
+    errors = serializers.ListSerializer(child=serializers.CharField())
+
+
+class BrasPairSessionResultSwaggerSerializer(SwaggerSerializer):
+    BRAS1 = BrasSessionSwaggerSerializer()
+    BRAS2 = BrasSessionSwaggerSerializer()
+
+
+class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
+    errors = serializers.ListSerializer(child=serializers.CharField())
+    portReloadStatus = serializers.CharField()

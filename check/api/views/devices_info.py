@@ -198,7 +198,9 @@ class DeviceInfoAPIView(DeviceAPIView):
             "coords": [
                 "23.322332",
                 "32.233223"
-            ]
+            ],
+            "consoleURL": "",
+            "uptime": 23434,
         }
 
     """
