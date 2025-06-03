@@ -57,6 +57,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
         super().__init__(session, ip, auth, model, snmp_community)
         os_version = self.send_command("display version | include software")
         self.os_version = self.find_or_empty(r"\(CX600 (\S+)\)", os_version)
+        self.send_command("screen-length 0 temporary")
 
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
