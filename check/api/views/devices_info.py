@@ -157,7 +157,12 @@ class DeviceInterfacesAPIView(DeviceAPIView):
         )
 
         interfaces_builder = InterfacesBuilder(device)
-        interfaces_data["interfaces"] = interfaces_builder.build(interfaces_data["interfaces"])
+        interfaces_data["interfaces"] = interfaces_builder.build(
+            interfaces=interfaces_data["interfaces"],
+            add_links=request.GET.get("add_links", "1") in status_on,
+            add_comments=request.GET.get("add_comments", "1") in status_on,
+            add_zabbix_graph=request.GET.get("add_zabbix_graph", "1") in status_on,
+        )
 
         return Response(interfaces_data)
 
