@@ -367,7 +367,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
-        output = self.send_command(f"system resource print", expect_command=False)
+        output = self.send_command("system resource print", expect_command=False)
 
         # Список
         data["cpu"]["util"] = [self.find_or_empty(r"cpu-load: (\d+)%", output) or None]
