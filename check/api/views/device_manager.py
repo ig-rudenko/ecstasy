@@ -358,7 +358,7 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
         if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user_set=request.user)
+            commands = commands.filter(perm_groups__user=request.user)
 
         if not commands.exists():
             return Response({"detail": "Command not found"}, status=404)
@@ -386,7 +386,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
         if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user_set=request.user)
+            commands = commands.filter(perm_groups__user=request.user)
 
         if not commands.exists():
             return Response({"detail": "Command not found"}, status=404)
