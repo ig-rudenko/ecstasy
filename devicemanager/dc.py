@@ -73,7 +73,9 @@ class DeviceRemoteConnector:
 
     prompt_expect = r"[#>\]]\s*$"
 
-    login_input_expect = r"[Ll]ogin(?![-\siT]).*:\s*$|[Uu]ser\s(?![lfp]).*:\s*$|User:$|[Nn]ame.*:\s*$"
+    login_input_expect = (
+        r"[Ll]ogin(?![-\siT]).*:\s*$|[Uu]ser\s(?![lfp]).*:\s*$|User:$|[Nn]ame.*:\s*$|Enter Login Name"
+    )
     password_input_expect = r"[Pp]ass.*:\s*$"
 
     # Совпадения, после которых надо нажать `N` (no)
