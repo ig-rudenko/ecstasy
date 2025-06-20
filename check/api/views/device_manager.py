@@ -343,7 +343,7 @@ class DeviceCommandsListAPIView(DeviceAPIView):
         device = self.get_object()
         commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
         if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user_set=request.user)
+            commands = commands.filter(perm_groups__user=request.user)
 
         serializer = self.get_serializer(commands, many=True)
         return Response(serializer.data)
