@@ -30,11 +30,9 @@ class AbstractDeviceFactory(ABC):
         while True:
             match = session.expect(
                 [
-                    r"]$",  # 0
+                    r"[#>\]]\s*$|[#>\]]\s*\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08$",  # 0
                     r"-More-|-+\(more.*?\)-+",  # 1
-                    r">\s*$",  # 2
-                    r"#\s*",  # 3
-                    pexpect.TIMEOUT,  # 4
+                    pexpect.TIMEOUT,  # 2
                 ],
                 timeout=3,
             )
@@ -42,7 +40,7 @@ class AbstractDeviceFactory(ABC):
             version += str(session.before.decode("utf-8"))
             if match == 1:
                 session.send(" ")
-            elif match == 4:
+            elif match == 2:
                 session.sendcontrol("C")
             else:
                 break
