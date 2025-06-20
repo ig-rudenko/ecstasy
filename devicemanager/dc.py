@@ -76,7 +76,7 @@ class DeviceRemoteConnector:
     login_input_expect = (
         r"[Ll]ogin(?![-\siT]).*:\s*$|[Uu]ser\s(?![lfp]).*:\s*$|User:$|[Nn]ame.*:\s*$|Enter Login Name"
     )
-    password_input_expect = r"[Pp]ass.*:\s*$"
+    password_input_expect = r"[Pp]ass.*:\s*$|Please Enter Password"
 
     # Совпадения, после которых надо нажать `N` (no)
     send_N_key = r"The password needs to be changed|Do you want to see the software license"
