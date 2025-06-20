@@ -1,5 +1,5 @@
-Value INTF ([ABCD]?\d+(-Trk\d+)?)
-Value DESC ((\s+\S+)?)
+Value INTF ([ABCD]?\d+(?:-Trk\d+)?)
+Value DESC (.*)
 
 Start
-  ^\s+${INTF}(\s+\S+)?${DESC} -> Record
+  ^\s+${INTF}[ ]{0,5}(?:\S*|[ ]{5,})[ ]{0,5}${DESC}$ -> Record

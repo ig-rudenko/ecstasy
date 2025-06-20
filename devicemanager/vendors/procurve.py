@@ -68,6 +68,7 @@ class ProCurve(BaseDevice):
             self.session.sendline(self.auth["login"])
             self.session.expect("Password:", timeout=1)
             self.session.sendline(self.auth["password"])
+            self.session.expect(self.prompt)
 
     def send_command(
         self,
