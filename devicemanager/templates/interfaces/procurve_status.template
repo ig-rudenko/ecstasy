@@ -3,4 +3,4 @@ Value PHY (Yes|No)
 Value STATUS (Up|Down)
 
 Start
-  ^\s+${INTF}\s+\d\S+\s+\|\s+\S+\s+${PHY}\s+${STATUS}\s+ -> Record
+  ^\s+${INTF}.+?\|\s+\S+\s+${PHY}\s+${STATUS}\s+ -> Record
