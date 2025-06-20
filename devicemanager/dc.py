@@ -71,12 +71,28 @@ class DeviceRemoteConnector:
     # Подключение к оборудованию, определение вендора и возврат соответствующего экземпляра класса
     """
 
-    prompt_expect = r"[#>\]]\s*$"
-
-    login_input_expect = (
-        r"[Ll]ogin(?![-\siT]).*:\s*$|[Uu]ser\s(?![lfp]).*:\s*$|User:$|[Nn]ame.*:\s*$|Enter Login Name"
+    prompt_expect = "|".join(
+        [
+            r"[#>\]]\s*$",  # Normal prompt
+            r"[#>\]]\s*\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08$",  # ANSI escape sequence
+        ]
     )
-    password_input_expect = r"[Pp]ass.*:\s*$|Please Enter Password"
+
+    login_input_expect = "|".join(
+        [
+            r"[Ll]ogin(?![-\siT]).*:\s*$",
+            r"[Uu]ser\s(?![lfp]).*:\s*$",
+            r"User:$",
+            r"[Nn]ame.*:\s*$",
+            r"Enter Login Name",
+        ]
+    )
+    password_input_expect = "|".join(
+        [
+            r"[Pp]ass.*:\s*$",
+            r"Please Enter Password",
+        ]
+    )
 
     # Совпадения, после которых надо нажать `N` (no)
     send_N_key = r"The password needs to be changed|Do you want to see the software license"

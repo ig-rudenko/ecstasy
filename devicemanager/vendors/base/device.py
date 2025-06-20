@@ -9,6 +9,7 @@ from typing import Literal
 
 import pexpect
 
+from .helpers import remove_ansi_escape_codes
 from .types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -152,9 +153,6 @@ class BaseDevice(AbstractDevice, ABC):
     SAVED_OK = "Saved OK"  # Конфигурация была сохранена
     SAVED_ERR = "Saved Error"  # Ошибка при сохранении конфигурации
     vendor: str
-
-    # Паттерн для управляющих последовательностей ANSI
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
 
     def __init__(
         self,
@@ -384,8 +382,7 @@ class BaseDevice(AbstractDevice, ABC):
                     timeout=20,
                 )
 
-                # Убираем управляющие последовательности ANSI
-                output += self.ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
+                output += remove_ansi_escape_codes(self.session.before)
 
                 if match == 0:
                     break
@@ -407,7 +404,7 @@ class BaseDevice(AbstractDevice, ABC):
             except pexpect.TIMEOUT:
                 pass
             # Убираем управляющие последовательности ANSI
-            output += self.ansi_escape.sub("", (self.session.before or b"").decode(errors="ignore"))
+            output += remove_ansi_escape_codes(self.session.before)
         return output
 
     @lock_session

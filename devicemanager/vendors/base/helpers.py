@@ -5,6 +5,14 @@ import textfsm
 from devicemanager.vendors.base.types import TEMPLATE_FOLDER
 
 
+def remove_ansi_escape_codes(string: str | bytes) -> str:
+    """Убираем управляющие последовательности ANSI"""
+    if string:
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
+        return ansi_escape.sub("", (string or b"").decode(errors="ignore"))
+    return ""
+
+
 def range_to_numbers(ports_string: str) -> list[int]:
     """
     Переводит строку с диапазоном чисел в список
