@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto my-5 sm:my-10 flex justify-center">
+  <div class="container mx-auto md:my-5 sm:my-10 flex justify-center">
     <!--    Имя оборудования и его статус-->
     <DeviceStatusName
         v-if="generalInfo"
@@ -11,15 +11,15 @@
         :console-url="generalInfo.consoleURL"/>
   </div>
 
-  <div v-if="generalInfo" class="sm:container mx-auto my-3">
+  <div v-if="generalInfo" class="xl:container mx-auto my-3">
 
     <div v-if="generalInfo"
          class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
 
       <div class="p-3 flex flex-wrap items-center gap-1">
         <!--    Кнопка для отображения панели с информацией Zabbix-->
-        <div v-if="generalInfo.zabbixInfo">
-          <ZabbixInfo :zabbix-info="generalInfo.zabbixInfo"/>
+        <div v-if="generalInfo">
+          <DeviceDetailInfo :general-info="generalInfo"/>
         </div>
 
         <div>
@@ -234,7 +234,7 @@ import DeviceStatusName from "./components/DeviceStatus&Name.vue";
 import ElasticStackLink from "./components/ElasticStackLink.vue";
 import MapCoordLink from "./components/MapCoordLink.vue";
 import ToZabbixLink from "./components/ToZabbixLink.vue";
-import ZabbixInfo from "./components/ZabbixInfo.vue";
+import DeviceDetailInfo from "./components/DeviceDetailInfo.vue";
 import InterfacesHelpText from "./components/InterfacesHelpText.vue";
 import ModalPortControl from "./components/ModalPortControl.vue";
 import DeviceStats from "./components/DeviceStats.vue";
@@ -278,7 +278,7 @@ export default defineComponent({
     InterfacesHelpText,
     MapCoordLink,
     ToZabbixLink,
-    ZabbixInfo,
+    DeviceDetailInfo,
     ModalPortControl,
     DeviceStats,
     CommentControl,
@@ -376,9 +376,6 @@ export default defineComponent({
           (value: any) => {
             this.interfacesWorkload = value.data
           },
-          (reason: any) => this.showToastError(reason)
-      ).catch(
-          (reason: any) => this.showToastError(reason)
       )
     },
 

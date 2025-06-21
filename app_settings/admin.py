@@ -55,7 +55,7 @@ class ZabbixConfigAdmin(admin.ModelAdmin):
         """
         Отображает, можно ли подключиться к Zabbix по указанным настройкам
         """
-        zabbix_api.set(obj)
+        zabbix_api.set_lazy_attributes(obj)
         try:
             with zabbix_api.connect() as conn:
                 return "✅ Подключено" if conn.is_authenticated else "❌ Не подключено"

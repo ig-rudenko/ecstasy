@@ -1,18 +1,19 @@
 from datetime import datetime, timedelta
-from typing import Callable, Any, Optional
+from typing import Any
 
 from django.conf import settings
 from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import RequestException, Session
 
+from app_settings.lazy_settings import LazyConfigLoader, LazyStringAttribute
 
-class ZabbixAPIConnector:
+
+class ZabbixAPIConnector(LazyConfigLoader):
     """Конфигурация для работы с Zabbix API"""
 
-    __zabbix_url: str = ""
-    __zabbix_user: str = ""
-    __zabbix_password: str = ""
-    __init_load_function: Optional[Callable[[], Any]] = None
+    zabbix_url: str = LazyStringAttribute()
+    zabbix_user: str = LazyStringAttribute()
+    zabbix_password: str = LazyStringAttribute()
 
     def __init__(self, timeout: int = 2):
         self.timeout = timeout
@@ -27,29 +28,13 @@ class ZabbixAPIConnector:
             session.verify = False
         return session
 
-    def set_init_load_function(self, func: Callable):
-        self.__init_load_function = func
-
-    @property
-    def zabbix_url(self):
-        self.__init_load()
-        return self.__zabbix_url
-
-    @property
-    def zabbix_user(self):
-        self.__init_load()
-        return self.__zabbix_user
-
-    @property
-    def zabbix_password(self):
-        self.__init_load()
-        return self.__zabbix_password
-
-    def set(self, obj):
-        """Задаем настройки"""
-        self.__zabbix_url = str(getattr(obj, "url", ""))
-        self.__zabbix_user = str(getattr(obj, "login", ""))
-        self.__zabbix_password = str(getattr(obj, "password", ""))
+    def set_lazy_attributes(self, obj: Any):
+        print("Инициализация атрибутов класса ZabbixAPIConnector", obj)
+        if not obj:
+            return
+        self.zabbix_url = str(getattr(obj, "url", ""))
+        self.zabbix_user = str(getattr(obj, "login", ""))
+        self.zabbix_password = str(getattr(obj, "password", ""))
 
     def connect(self):
         if not self.__session_created or self.__session_created < datetime.now() - timedelta(
@@ -77,15 +62,6 @@ class ZabbixAPIConnector:
             seconds=self.__session_exists_timeout
         ):
             self._zabbix_connection.__exit__(exc_type, exc_val, exc_tb)
-
-    def __init_load(self):
-        """Загрузка настроек Zabbix API из функции"""
-        if (
-            self.__init_load_function is not None
-            and callable(self.__init_load_function)
-            and not (self.__zabbix_url and self.__zabbix_user and self.__zabbix_password)
-        ):
-            self.set(self.__init_load_function())
 
 
 zabbix_api = ZabbixAPIConnector()

@@ -21,4 +21,8 @@ export interface GeneralInfo {
     zabbixURL: string,
     consoleURL: string,
     uptime: number,
+    vendor: string | null,
+    model: string | null,
+    serialNumber: string | null,
+    osVersion: string | null,
 }

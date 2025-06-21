@@ -29,7 +29,7 @@ class ThreadUpdatedStatusTask(Task):
         """
         ## Эта функция вызывается перед началом симуляции
         """
-        zabbix_api.set(ZabbixConfig.load())
+        zabbix_api.set_lazy_attributes(ZabbixConfig.load())
 
     def run(self, *args, **kwargs):
         """

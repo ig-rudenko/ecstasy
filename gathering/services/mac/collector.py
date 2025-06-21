@@ -23,7 +23,7 @@ class MacAddressTableGather:
 
     def __init__(self, from_: Devices):
         if not zabbix_api.zabbix_url:
-            zabbix_api.set(ZabbixConfig.load())
+            zabbix_api.set_lazy_attributes(ZabbixConfig.load())
 
         self.device: Devices = from_
 

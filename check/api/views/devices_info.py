@@ -220,6 +220,10 @@ class DeviceInfoAPIView(DeviceAPIView):
             {
                 "deviceName": device.name,
                 "deviceIP": device.ip,
+                "vendor": device.vendor,
+                "model": device.model,
+                "serialNumber": device.serial_number,
+                "osVersion": device.os_version,
                 # Создание URL-адреса для запроса журналов Kibana.
                 "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=device),
                 "zabbixHostID": int(zabbix_info.hostid or 0),
