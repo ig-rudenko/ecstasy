@@ -149,7 +149,7 @@ class ZabbixConfig(SingletonModel):
         # pylint: disable-next=import-outside-toplevel
         from devicemanager.device import zabbix_api
 
-        zabbix_api.set(self)
+        zabbix_api.set_lazy_attributes(self)
 
     class Meta:
         db_table = "zabbix_api_settings"

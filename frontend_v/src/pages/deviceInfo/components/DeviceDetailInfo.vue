@@ -8,10 +8,19 @@
     </Button>
   </div>
 
-  <Drawer v-model:visible="visible" header="Информация с Zabbix" class="w-full md:!w-80 lg:!w-[30rem]">
-    <div v-if="zabbixInfo">
+  <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:!w-80 lg:!w-[30rem]">
+    <div v-if="generalInfo.zabbixInfo">
 
-      <div v-if="!zabbixInfo.monitoringAvailable" class="alert alert-danger mb-2">Снято с мониторинга</div>
+      <div v-if="!generalInfo.zabbixInfo.monitoringAvailable" class="alert alert-danger text-right text-red-400 mb-2">
+        Не мониторится в Zabbix
+      </div>
+
+      <div v-if="generalInfo" class="font-mono p-2 space-y-1">
+        <div v-if="generalInfo.vendor">Vendor: {{ generalInfo.vendor }}</div>
+        <div v-if="generalInfo.model">Model: {{ generalInfo.model }}</div>
+        <div v-if="generalInfo.serialNumber">Серийный номер: {{ generalInfo.serialNumber }}</div>
+        <div v-if="generalInfo.osVersion"> Версия ОС: {{ generalInfo.osVersion }}</div>
+      </div>
 
       <div class="border flex flex-wrap mb-4 p-3 rounded-xl">
         <div v-for="(imageURL, i) in images" class="p-3">
@@ -19,10 +28,12 @@
         </div>
       </div>
 
-      <div v-if="zabbixInfo.description" class="p-3 border rounded-xl">{{ zabbixInfo.description }}</div>
+      <div v-if="generalInfo.zabbixInfo.description" class="p-3 border rounded-xl">
+        {{ generalInfo.zabbixInfo.description }}
+      </div>
 
       <div class="grid grid-cols-3 gap-4 font-mono">
-        <template v-for="(value, key) in zabbixInfo.inventory">
+        <template v-for="(value, key) in generalInfo.zabbixInfo.inventory">
           <div>{{ key }}:</div>
           <div class="whitespace-break-spaces col-span-2">{{ value }}</div>
         </template>
@@ -37,11 +48,11 @@ import {defineComponent, PropType} from "vue";
 import Image from "primevue/image";
 
 import api from "@/services/api";
-import {ZabbixInfo} from "../GeneralInfo";
+import {GeneralInfo} from "../GeneralInfo";
 
 export default defineComponent({
   props: {
-    zabbixInfo: {required: true, type: Object as PropType<ZabbixInfo>}
+    generalInfo: {required: true, type: Object as PropType<GeneralInfo>}
   },
   components: {Image},
   data() {
@@ -55,20 +66,17 @@ export default defineComponent({
   },
   methods: {
     async getImages() {
-      if (!this.zabbixInfo.inventory?.vendor || !this.zabbixInfo.inventory?.model) return;
+      if (!this.generalInfo.vendor || !this.generalInfo.model) return;
 
       for (let i = 1; i < 10; i++) {
         const url = "/img/devices/" +
-            this.zabbixInfo.inventory.vendor.toLowerCase() + "/" + this.zabbixInfo.inventory.model.toUpperCase().replace("/", "-")
+            this.generalInfo.vendor.toLowerCase() + "/" + this.generalInfo.model.toUpperCase().replace("/", "-")
             + "_" + i + ".png"
         try {
           const resp = await api.head(url)
-          console.log(url, resp.status)
-          if (resp.status !== 200) break;
+          if (resp.status !== 200 || resp.headers["content-type"] == "text/html") break;
           this.images.push(url)
-        } catch (e) {
-          break;
-        }
+        } catch (e) { break;}
       }
     },
   }
