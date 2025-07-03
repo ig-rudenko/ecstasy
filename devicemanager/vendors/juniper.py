@@ -213,6 +213,10 @@ class Juniper(BaseDevice):
     def get_device_info(self) -> dict:
         return {}
 
+    @BaseDevice.lock_session
+    def execute_command(self, cmd: str) -> str:
+        return self.send_command(cmd.strip(), expect_command=False)
+
 
 class JuniperFactory(AbstractDeviceFactory):
     @staticmethod
