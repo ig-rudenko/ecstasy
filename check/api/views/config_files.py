@@ -54,7 +54,6 @@ class BaseConfigStorageAPIView(DeviceAPIView):
         return storage
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     """
     # Для загрузки и удаления файла конфигурации конкретного оборудования
@@ -62,6 +61,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
 
     config_storage = LocalConfigStorage
 
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def get(self, request, device_name: str, file_name: str):
         """
         ## Отправляет содержимое файла конфигурации
@@ -70,6 +70,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
         storage = self.get_storage(device, file_name)
         return FileResponse(storage.open(file_name), filename=file_name)
 
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def delete(self, request, device_name: str, file_name: str):
         """
         ## Удаляет файл конфигурации
@@ -79,12 +80,12 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
         return Response(status=204)
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
 
     @schemas.config_files_list_api_doc
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def get(self, requests, device_name: str):
         """
         ## Перечень файлов конфигураций указанного оборудования
@@ -108,10 +109,10 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
         return Response(serializer.data, status=200)
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class CollectConfigAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
 
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request, device_name: str):
         """
         ## В реальном времени смотрим и сохраняем конфигурацию оборудования

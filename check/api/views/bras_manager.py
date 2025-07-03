@@ -12,9 +12,9 @@ from ..serializers import BrassSessionSerializer, MacSerializer
 from ..swagger.schemas import cut_bras_session_api_doc, bras_get_session_api_doc
 
 
-@method_decorator(bras_get_session_api_doc, name="get")
-@method_decorator(profile_permission(models.Profile.BRAS), name="get")
 class BrassSessionAPIView(UserAuthenticatedAPIView):
+    @method_decorator(bras_get_session_api_doc)
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def get(self, request):
         """
         ## Возвращаем сессию на BRAS для конкретного MAC адреса
@@ -42,8 +42,6 @@ class BrassSessionAPIView(UserAuthenticatedAPIView):
         return Response(result)
 
 
-@method_decorator(cut_bras_session_api_doc, name="post")
-@method_decorator(profile_permission(models.Profile.BRAS), name="post")
 class CutBrassSessionAPIView(UserAuthenticatedAPIView):
     """
     ## Сбрасываем сессию по MAC адресу и перезагружаем порт на оборудовании
@@ -52,6 +50,8 @@ class CutBrassSessionAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = BrassSessionSerializer
 
+    @method_decorator(cut_bras_session_api_doc)
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request):
         """
         ## Сбрасываем сессию абонента и перезагружаем порт на оборудовании

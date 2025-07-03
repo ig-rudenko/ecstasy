@@ -38,11 +38,11 @@ from ...services.device.commands import execute_command, validate_command
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
-@method_decorator(profile_permission(models.Profile.REBOOT), name="dispatch")
 class InterfaceControlAPIView(DeviceAPIView):
     serializer_class = PortControlSerializer
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.REBOOT))
     def post(self, request: Request, *args, **kwargs):
         """
         ## Изменяем состояние порта оборудования
@@ -75,13 +75,13 @@ class InterfaceControlAPIView(DeviceAPIView):
 
 
 @method_decorator(change_description_api_doc, name="post")
-@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class ChangeDescriptionAPIView(DeviceAPIView):
     """
     ## Изменяем описание на порту у оборудования
     """
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request: Request, *args, **kwargs):
         """
         ## Меняем описание на порту оборудования
@@ -216,11 +216,11 @@ class CableDiagAPIView(DeviceAPIView):
             return Response(cable_test)
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 class SetPoEAPIView(DeviceAPIView):
     serializer_class = PoEPortStatusSerializer
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request: Request, *args, **kwargs):
         """Устанавливает PoE статус на порту"""
 
@@ -282,13 +282,13 @@ class InterfaceInfoAPIView(DeviceAPIView):
         return Response(result)
 
 
-@method_decorator(profile_permission(models.Profile.BRAS), name="dispatch")
 @method_decorator(change_dsl_profile_api_doc, name="post")
 class ChangeDSLProfileAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = ADSLProfileSerializer
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request, *args, **kwargs):
         """
         Изменяем профиль xDSL порта на другой
@@ -334,11 +334,11 @@ class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_url_kwarg = "pk"
 
 
-@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
 class DeviceCommandsListAPIView(DeviceAPIView):
     serializer_class = DeviceCommandsSerializer
     permission_classes = [IsAuthenticated, DevicePermission]
 
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs):
         device = self.get_object()
         commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
@@ -349,11 +349,11 @@ class DeviceCommandsListAPIView(DeviceAPIView):
         return Response(serializer.data)
 
 
-@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
 class ExecuteDeviceCommandAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
@@ -377,11 +377,11 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
             return Response({"output": output})
 
 
-@method_decorator(profile_permission(models.Profile.CMD_RUN), name="dispatch")
 class ValidateDeviceCommandAPIView(DeviceAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
 
     @except_connection_errors
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
         device = self.get_object()
         commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
