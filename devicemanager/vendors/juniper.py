@@ -22,6 +22,10 @@ class Juniper(BaseDevice):
     vendor = "juniper"
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
 
+    def __init__(self, session, ip: str, auth: DeviceAuthDict, *args, **kwargs):
+        super().__init__(session, ip, auth, *args, **kwargs)
+        self.send_command("show version", expect_command=False)
+
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         """
@@ -215,7 +219,7 @@ class Juniper(BaseDevice):
 
     @BaseDevice.lock_session
     def execute_command(self, cmd: str) -> str:
-        return self.send_command(cmd.strip(), expect_command=False)
+        return self.send_command(cmd.strip(), expect_command=False, before_catch=cmd[1:])
 
 
 class JuniperFactory(AbstractDeviceFactory):
@@ -238,7 +242,7 @@ class JuniperFactory(AbstractDeviceFactory):
         if "show: invalid command, valid commands are" in version_output:
             session.sendline("sys info show")
             while True:
-                match = session.expect([r"]$", "---- More", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
+                match = session.expect([r"]$", "---- [Mm]ore", r">\s*$", r"#\s*$", pexpect.TIMEOUT])
                 version_output += str(session.before.decode("utf-8"))
                 if match == 1:
                     session.sendline(" ")
