@@ -399,7 +399,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
         self.group = DeviceGroup.objects.create(name="ASW")
         self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         self.user.profile.devices_groups.add(self.group)
-        self.device = Devices.objects.create(
+        self.device: Devices = Devices.objects.create(
             ip="10.100.0.10",
             name="dev1",
             group=self.group,
@@ -420,6 +420,10 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
+            "model": self.device.model,
+            "osVersion": self.device.os_version,
+            "serialNumber": self.device.serial_number,
+            "vendor": self.device.vendor,
             "zabbixInfo": {
                 "description": "",
                 "inventory": {},
@@ -448,6 +452,10 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             "elasticStackLink": LogsElasticStackSettings.load().query_kibana_url(device=self.device),
             "zabbixHostID": 0,
             "zabbixURL": zabbix_api.zabbix_url,
+            "model": self.device.model,
+            "osVersion": self.device.os_version,
+            "serialNumber": self.device.serial_number,
+            "vendor": self.device.vendor,
             "zabbixInfo": {
                 "description": "",
                 "inventory": {},

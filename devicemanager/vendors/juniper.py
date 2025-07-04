@@ -192,12 +192,12 @@ class Juniper(BaseDevice):
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
         output = self.send_command("show interfaces description", expect_command=False)
-        interfaces_raw = re.findall(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(.*)", output, flags=re.MULTILINE)
+        interfaces_raw = re.findall(r"^\s*(\S+) +(up|down) +(up|down) *(.*)$", output, flags=re.MULTILINE)
 
         interfaces = []
         for port_name, admin_status, link_status, desc in interfaces_raw:
             status: InterfaceType = "up"
-            if admin_status.lower() == "admin down":
+            if admin_status.lower() == "down":
                 status = "admin down"
             elif "down" in link_status.lower():
                 status = "down"

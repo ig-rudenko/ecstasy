@@ -1,10 +1,52 @@
 from django.test import SimpleTestCase
+
 from devicemanager.vendors.juniper import Juniper
 
 
+class FakeJuniperSession:
+    def __init__(self):
+        self._output = b""
+
+    @staticmethod
+    def expect(*args, **kwargs):
+        return 0
+
+    @property
+    def before(self):
+        return self._output
+
+    def send(self, command, *args, **kwargs):
+        return self.sendline(command, *args, **kwargs)
+
+    def sendline(self, command, *args, **kwargs):
+        if "show interfaces description" in command:
+            self._output = b"""
+Interface       Admin Link Description
+ae1.123         up    up   ### VLAN 123
+ae1.1234        up    up   ### VLAN 1234
+ae2             down  down   
+ae2.2           up    down
+fxp0            up    up   Management
+lo0.2           up    up   Loopback Interface user white networks
+"""
+
+
 class TestJuniperAddressParser(SimpleTestCase):
+    def test_interfaces_parser(self):
+        juniper = Juniper(session=FakeJuniperSession(), ip="10.10.10.10", auth={})
+        interfaces = [
+            ("ae1.123", "up", "### VLAN 123"),
+            ("ae1.1234", "up", "### VLAN 1234"),
+            ("ae2", "admin down", ""),
+            ("ae2.2", "down", ""),
+            ("fxp0", "up", "Management"),
+            ("lo0.2", "up", "Loopback Interface user white networks"),
+        ]
+        juniper.get_interfaces()
+        self.assertListEqual(juniper.get_interfaces(), interfaces)
+
     def test_subscribers_parser(self):
-        juniper = Juniper(session=None, ip="10.10.10.10", auth={})
+        juniper = Juniper(session=FakeJuniperSession(), ip="10.10.10.10", auth={})
         subscribers_output1 = """...
             IP Address: 10.201.170.140
             ...
