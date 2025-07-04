@@ -8,7 +8,15 @@ import textfsm
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.types import TEMPLATE_FOLDER, DeviceAuthDict, ArpInfoResult, PortInfoType
+from .base.types import (
+    TEMPLATE_FOLDER,
+    DeviceAuthDict,
+    ArpInfoResult,
+    PortInfoType,
+    InterfaceListType,
+    InterfaceType,
+    InterfaceVLANListType,
+)
 from .. import UnknownDeviceError
 
 
@@ -181,11 +189,25 @@ class Juniper(BaseDevice):
 
         return info
 
-    def get_interfaces(self) -> list:
-        return []
+    @BaseDevice.lock_session
+    def get_interfaces(self) -> InterfaceListType:
+        output = self.send_command("show interfaces description", expect_command=False)
+        interfaces_raw = re.findall(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(.*)", output, flags=re.MULTILINE)
 
-    def get_vlans(self) -> list:
-        return []
+        interfaces = []
+        for port_name, admin_status, link_status, desc in interfaces_raw:
+            status: InterfaceType = "up"
+            if admin_status.lower() == "admin down":
+                status = "admin down"
+            elif "down" in link_status.lower():
+                status = "down"
+
+            interfaces.append((port_name, status, desc))
+
+        return interfaces
+
+    def get_vlans(self) -> InterfaceVLANListType:
+        return [(port, status, desc, []) for port, status, desc in self.get_interfaces()]
 
     def get_mac(self, port: str) -> list:
         return []
