@@ -334,8 +334,10 @@ class Extreme(BaseDevice, AbstractConfigDevice):
             "saved": self.save_config(),
         }
 
+    @BaseDevice.lock_session
+    @validate_and_format_port_only_digit(if_invalid_return={"type": "text", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": ""}
+        return {"type": "text", "data": self.send_command(f"show port {port} information detail")}
 
     def get_port_config(self, port: str) -> str:
         return ""
