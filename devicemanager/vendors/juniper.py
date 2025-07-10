@@ -88,7 +88,7 @@ class Juniper(BaseDevice):
         result = self._parse_subscribers(subscribers_output)
         if result:
             # Нашли среди subscribers
-            return list(map(lambda r: ArpInfoResult(*r), result))
+            return [ArpInfoResult(*result)]
 
         # >> Ищем в таблице ARP <<
         match = self.send_command(f"show arp | match {address}", expect_command=False)
