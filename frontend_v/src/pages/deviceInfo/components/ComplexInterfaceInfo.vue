@@ -11,6 +11,7 @@ import brasSessionsService from "@/services/bras.sessions";
 import {ComplexInterfaceInfoType} from "@/pages/deviceInfo/detailInterfaceInfo";
 import {textToHtml} from "@/formats";
 import macSearch from "@/services/macSearch";
+import {FilterMatchMode} from "@primevue/core/api";
 
 const collectingMACs = ref(false);
 const macs = ref<MacInfo[]>([]);
@@ -19,13 +20,18 @@ const portDetailMenu = ref("");
 const emits = defineEmits(["updateMacs"])
 
 const props = defineProps({
-  deviceName: { required: true, type: String},
-  interface: { required: true, type: Object as PropType<DeviceInterface>},
+  deviceName: {required: true, type: String},
+  interface: {required: true, type: Object as PropType<DeviceInterface>},
   complexInfo: {
     required: true,
     type: Object as PropType<ComplexInterfaceInfoType>,
   },
 })
+
+const macFilters = ref({
+  vlanID: {value: null, matchMode: FilterMatchMode.CONTAINS},
+  mac: {value: null, matchMode: FilterMatchMode.CONTAINS},
+});
 
 function checkBrasSessions(mac: string) {
   brasSessionsService.getSessions(mac, props.deviceName, props.interface.name)
@@ -58,7 +64,7 @@ const macsUniqueVLANs = computed(() => {
   return result
 })
 
-onMounted( async () => {
+onMounted(async () => {
   await getMacs();
 })
 
@@ -148,8 +154,8 @@ onMounted( async () => {
     <div>
       <div class="flex flex-wrap gap-4 font-mono">
         <div v-for="row in macsUniqueVLANs" class="flex items-center gap-1">
-          <div>v {{row[0]}}:</div>
-          <div class="bg-indigo-500 text-gray-200 px-2 rounded-full text-center">{{row[1]}}</div>
+          <div>v {{ row[0] }}:</div>
+          <div class="bg-indigo-500 text-gray-200 px-2 rounded-full text-center">{{ row[1] }}</div>
         </div>
       </div>
 
@@ -161,16 +167,28 @@ onMounted( async () => {
 
       <div class="flex justify-center pb-10">
         <DataTable :value="macs"
-                   class="w-fit self-center"
+                   v-model:filters="macFilters" filterDisplay="row"
+                   class="w-fit self-center" removable-sort
                    :paginator="macs.length>10" :rows="10" paginator-position="both">
-          <Column header="vlan" field="vlanID">
+          <Column :sortable="true" header="VLAN" field="vlanID">
             <template #body="{data}">
-              <div class="font-mono text-xl cursor-pointer" v-tooltip.left="data.vlanName.toString()">{{data.vlanID}}</div>
+              <div class="font-mono text-xl cursor-pointer" v-tooltip.left="data.vlanName.toString()">
+                {{ data.vlanID }}
+              </div>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
+                         placeholder="Search by VLAN"/>
             </template>
           </Column>
-          <Column header="mac" field="mac">
+          <Column :sortable="true" header="MAC" field="mac">
             <template #body="{data}">
-              <div class="font-mono text-xl cursor-pointer hover:text-primary" @click="() => searchMacAddress(data.mac)" >{{data.mac}}</div>
+              <div class="font-mono text-xl cursor-pointer hover:text-primary"
+                   @click="() => searchMacAddress(data.mac)">{{ data.mac }}
+              </div>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Search by MAC"/>
             </template>
           </Column>
           <Column header="" field="mac">
