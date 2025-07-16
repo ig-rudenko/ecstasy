@@ -4,6 +4,7 @@ from typing import TypeVar, TypedDict
 
 import orjson
 import requests
+from django.core.cache import cache
 from django.utils import timezone
 from urllib3.exceptions import MaxRetryError
 
@@ -275,42 +276,58 @@ class InterfacesBuilder:
 
         return interfaces
 
-    def _add_zabbix_graph_links(self, interfaces: INTF) -> INTF:
+    @staticmethod
+    def _collect_zabbix_graphs(device_name: str) -> tuple[int, list]:
+        graphs = []
+        host_id = 0
         try:
             with zabbix_api.connect() as zbx:
-                host = zbx.host.get(output=["name"], filter={"name": self._device.name})
+                host = zbx.host.get(output=["name"], filter={"name": device_name})
                 if not host:
-                    return interfaces
+                    return host_id, []
 
                 # Получаем все графики для данного узла сети.
                 host_id = host[0]["hostid"]
+
                 graphs = zbx.graph.get(hostids=[host_id])
-
-            for intf in interfaces:
-                intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")
-                intf_desc = intf["Description"]
-                valid_graph_ids = []
-
-                for g in graphs:
-                    # Ищем все графики, в которых упоминается description или название интерфейса.
-                    if (intf_desc and intf_desc in g["name"]) or intf_pattern.search(g["name"]):
-                        valid_graph_ids.append(g["graphid"])
-
-                graphs_ids_params = ""
-                # Создаем параметры URL для фильтрации только требуемых графиков.
-                for graph_id in valid_graph_ids:
-                    graphs_ids_params += f"filter_graphids%5B%5D={graph_id}&"
-
-                if graphs_ids_params:
-                    # Создаем ссылку на графики zabbix, если получилось их найти.
-                    intf["GraphsLink"] = (
-                        f"{zabbix_api.zabbix_url}/zabbix.php?"
-                        f"view_as=showgraph&action=charts.view&from=now-24h&to=now&"
-                        f"filter_hostids%5B%5D={host_id}&filter_search_type=0&"
-                        f"{graphs_ids_params}filter_set=1"
-                    )
-
         except (MaxRetryError, requests.exceptions.RequestException) as exc:
-            print(f"Ошибка `add_zabbix_graph_links` {exc}")
+            print(f"Ошибка `collect_zabbix_graphs` {exc}")
+
         finally:
-            return interfaces
+            return host_id, graphs
+
+    def _add_zabbix_graph_links(self, interfaces: INTF) -> INTF:
+        # Получаем кэшированный список графиков
+        cache_key = f"zabbix_graphs_{self._device.name}"
+        graphs_data: tuple[int, list] = cache.get(cache_key)
+        if not graphs_data:
+            graphs_data = self._collect_zabbix_graphs(self._device.name)
+            cache.set(cache_key, graphs_data, timeout=60)
+
+        host_id, graphs = graphs_data
+
+        for intf in interfaces:
+            intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")
+            intf_desc = intf["Description"]
+            valid_graph_ids = []
+
+            for g in graphs:
+                # Ищем все графики, в которых упоминается description или название интерфейса.
+                if (intf_desc and intf_desc in g["name"]) or intf_pattern.search(g["name"]):
+                    valid_graph_ids.append(g["graphid"])
+
+            graphs_ids_params = ""
+            # Создаем параметры URL для фильтрации только требуемых графиков.
+            for graph_id in valid_graph_ids:
+                graphs_ids_params += f"filter_graphids%5B%5D={graph_id}&"
+
+            if graphs_ids_params:
+                # Создаем ссылку на графики zabbix, если получилось их найти.
+                intf["GraphsLink"] = (
+                    f"{zabbix_api.zabbix_url}/zabbix.php?"
+                    f"view_as=showgraph&action=charts.view&from=now-24h&to=now&"
+                    f"filter_hostids%5B%5D={host_id}&filter_search_type=0&"
+                    f"{graphs_ids_params}filter_set=1"
+                )
+
+        return interfaces

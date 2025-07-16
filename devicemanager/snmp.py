@@ -1,5 +1,4 @@
 import subprocess
-from concurrent.futures import ThreadPoolExecutor
 from re import findall, IGNORECASE
 
 from .vendors.base.types import InterfaceListType, InterfaceType
@@ -82,9 +81,8 @@ def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
             res_line = findall(r"(\S+) (.*)", line)
             snmp_result[mib][res_line[0][0].replace(f"{mib}.", "")] = res_line[0][1]
 
-    with ThreadPoolExecutor() as snmp_executor:
-        for key in snmp_result:
-            snmp_executor.submit(snmpget, community, device_ip, snmp_port, key)
+    for key in snmp_result:
+        snmpget(community, device_ip, snmp_port, key)
 
     result: InterfaceListType = []
 

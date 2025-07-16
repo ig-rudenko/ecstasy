@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -148,13 +149,26 @@ class DeviceInterfacesAPIView(DeviceAPIView):
 
         status_on = ["1", "yes", "true"]
 
-        interfaces_data = get_device_interfaces(
-            device,
-            DeviceManager.from_model(device),
-            current_status=request.GET.get("current_status") in status_on,
-            with_vlans=request.GET.get("vlans") in status_on,
-            check_status=request.GET.get("check_status", "true") in status_on,
+        current_status = request.GET.get("current_status") in status_on
+        with_vlans = request.GET.get("vlans") in status_on
+        check_status = request.GET.get("check_status", "true") in status_on
+
+        interfaces_data = None
+        cache_key = (
+            f"interfaces:{device.name}:cs:{current_status}:vlans:{with_vlans}:check_status:{check_status}"
         )
+        if current_status:
+            interfaces_data = cache.get(cache_key)
+
+        if not interfaces_data:
+            interfaces_data = get_device_interfaces(
+                device,
+                DeviceManager.from_model(device),
+                current_status=current_status,
+                with_vlans=with_vlans,
+                check_status=check_status,
+            )
+            cache.set(cache_key, interfaces_data, timeout=4)
 
         interfaces_builder = InterfacesBuilder(device)
         interfaces_data["interfaces"] = interfaces_builder.build(
