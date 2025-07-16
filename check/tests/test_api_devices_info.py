@@ -223,6 +223,9 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         self.url = reverse("devices-api:device-interfaces", args=[self.device.name])
         self.client.force_authenticate(user=self.user)
 
+    def tearDown(self):
+        cache.clear()
+
     @patch("check.models.Devices.available")
     @patch("devicemanager.device.DeviceManager.from_model")
     def test_get_current_interfaces_not_snmp_with_vlans(self, mock_connect: Mock, mock_available: Mock):
