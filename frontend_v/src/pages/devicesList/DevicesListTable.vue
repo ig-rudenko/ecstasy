@@ -18,7 +18,7 @@
       </template>
       <template #paginatorend>
         <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" fluid outlined
-                v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'" label="export csv" />
+                v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'" label="export csv"/>
       </template>
 
       <!--      IP АДРЕС-->
@@ -45,8 +45,10 @@
         <template #body="{data}">{{ data.interfaces_count.abons_up }}</template>
         <template #filter>
           <div class="flex gap-1 items-center">
-            от <InputNumber input-class="w-[5rem]" v-model="workloadRange[0]"/>
-            до <InputNumber input-class="w-[5rem]" v-model="workloadRange[1]"/>
+            от
+            <InputNumber input-class="w-[5rem]" v-model="workloadRange[0]"/>
+            до
+            <InputNumber input-class="w-[5rem]" v-model="workloadRange[1]"/>
           </div>
         </template>
         <template #filterapply></template>
@@ -71,8 +73,8 @@
         </template>
         <template #filter="{ filterModel, filterCallback }">
           <Select focus-on-hover auto-filter-focus auto-option-focus v-model="filterModel.value"
-                    @change="filterCallback()" :options="vendors" placeholder="Выбрать"
-                    scroll-height="300px" style="min-width: 12rem" :showClear="true">
+                  @change="filterCallback()" :options="vendors" placeholder="Выбрать"
+                  scroll-height="300px" style="min-width: 12rem" :showClear="true">
             <template #option="slotProps">
               <div class="relative ps-10 pb-6">
                 <div class="absolute">
@@ -90,18 +92,27 @@
       </Column>
 
       <!--      МОДЕЛЬ-->
-      <Column field="model" header="Модель" :sortable="true" :showFilterMatchModes="false"
-              :filterMenuStyle="{ width: '20rem' }">
-        <template #body="{data}">{{ data['model'] }}</template>
+      <Column field="model" header="Модель" :sortable="true" :showFilterMatchModes="false">
+        <template #body="{data}">
+          <div v-if="data.model" class="group/model-filter flex items-center gap-2">
+            <div class="">{{ data.model }}</div>
+            <Button v-if="filters.model.value != data.model" @click="filters.model.value = data.model" icon="pi pi-filter" size="small"
+                    class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
+            <Button v-else @click="filters.model.value = null" icon="pi pi-filter-slash" size="small"
+                    class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
+          </div>
+        </template>
         <template #filtericon>
           <i :class="filters.model.value?'pi pi-filter-fill text-indigo-500':'pi pi-filter'"/>
         </template>
         <template #filter="{ filterModel, filterCallback }">
-          <Select v-model="filterModel.value" @change="filterCallback()" :options="models" placeholder="Выбрать"
-                    scroll-height="300px"
-                    class="p-column-filter" style="min-width: 15rem" :showClear="true">
-            <template #option="slotProps">
-              <div class="font-mono">{{ slotProps.option }}</div>
+          <Select v-model="filterModel.value" :showClear="true"
+                  optionGroupLabel="label" optionGroupChildren="items" @change="filterCallback()" :options="models"
+                  placeholder="Выберите модель" class="md:w-80 w-full relative">
+            <template #optiongroup="slotProps">
+              <div class="sticky top-0 flex items-center">
+                <div class="">{{ slotProps.option.label }}</div>
+              </div>
             </template>
           </Select>
         </template>
@@ -112,14 +123,22 @@
       <!--      ГРУППА-->
       <Column field="group" header="Группа" :sortable="true" :showFilterMatchModes="false"
               :filterMenuStyle="{ width: '14rem' }">
-        <template #body="{data}">{{ data['group'] }}</template>
+        <template #body="{data}">
+          <div v-if="data.group" class="group/group-filter flex items-center gap-2">
+            <div class="">{{ data.group }}</div>
+            <Button v-if="filters.group.value != data.group" @click="filters.group.value = data.group" icon="pi pi-filter" size="small"
+                    class="opacity-0 group-hover/group-filter:opacity-100" outlined/>
+            <Button v-else @click="filters.group.value = null" icon="pi pi-filter-slash" size="small"
+                    class="opacity-0 group-hover/group-filter:opacity-100" outlined/>
+          </div>
+        </template>
         <template #filtericon>
           <i :class="filters.group.value?'pi pi-filter-fill text-indigo-500':'pi pi-filter'"/>
         </template>
         <template #filter="{ filterModel, filterCallback }">
           <Select v-model="filterModel.value" @change="filterCallback()" :options="groups" placeholder="Выбрать"
-                    scroll-height="300px"
-                    class="p-column-filter" style="min-width: 12rem" :showClear="true">
+                  scroll-height="300px"
+                  class="p-column-filter" style="min-width: 12rem" :showClear="true">
             <template #option="slotProps">
               <div class="font-mono">{{ slotProps.option }}</div>
             </template>
@@ -147,7 +166,7 @@ export default defineComponent({
   props: {
     devices: {required: true, type: Object as PropType<Device[]>},
     vendors: {required: true, type: Object as PropType<string[]>},
-    models: {required: true, type: Object as PropType<string[]>},
+    models: {required: true, type: Object as PropType<any[]>},
     groups: {required: true, type: Object as PropType<string[]>},
     globalSearch: {required: true, type: String},
   },
@@ -159,6 +178,7 @@ export default defineComponent({
 
   data() {
     return {
+      model: null,
       paginatorPosition: 'both' as 'top' | 'bottom' | 'both' | undefined,
       _filters: {
         global: {value: "", matchMode: FilterMatchMode.CONTAINS},

@@ -115,7 +115,7 @@ export default defineComponent({
 
       groups: [] as string[],
       vendors: [] as string[],
-      models: [] as string[],
+      models: [] as any[],
 
       displayMode: "default",
       chartData: [] as number[],
@@ -178,14 +178,23 @@ export default defineComponent({
         }
         if (dev.vendor && devices_vendors.indexOf(dev.vendor) === -1) {
           devices_vendors.push(dev.vendor)
+          this.models.push({label: dev.vendor, items: []})
         }
         if (dev.model && devices_models.indexOf(dev.model) === -1) {
+          this.models.forEach((model) => {
+            if (!model.items) {
+              model.items = []
+            }
+            if (model.label === dev.vendor) {
+              model.items.push(dev.model)
+            }
+          });
           devices_models.push(dev.model)
         }
       }
       this.groups = devices_groups.sort((a, b) => a.localeCompare(b))
       this.vendors = devices_vendors.sort((a, b) => a.localeCompare(b))
-      this.models = devices_models.sort((a, b) => a.localeCompare(b))
+      // this.models = devices_models.sort((a, b) => a.localeCompare(b))
     },
 
     calculateInterfacesWorkload(devices: Device[]) {

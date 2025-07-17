@@ -59,7 +59,7 @@ async function getMacs() {
 const macsUniqueVLANs = computed(() => {
   const result = new Map()
   for (const mac of macs.value) {
-    result.set(mac.vlanID, (result.get(mac.vlanID) || 1) + 1)
+    result.set(mac.vlanID, (result.get(mac.vlanID) || 0) + 1)
   }
   return result
 })
@@ -176,7 +176,7 @@ onMounted(async () => {
                 {{ data.vlanID }}
               </div>
             </template>
-            <template #filter="{ filterModel, filterCallback }">
+            <template v-if="macs.length>10" #filter="{ filterModel, filterCallback }">
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
                          placeholder="Search by VLAN"/>
             </template>
@@ -187,7 +187,7 @@ onMounted(async () => {
                    @click="() => searchMacAddress(data.mac)">{{ data.mac }}
               </div>
             </template>
-            <template #filter="{ filterModel, filterCallback }">
+            <template v-if="macs.length>10" #filter="{ filterModel, filterCallback }">
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Search by MAC"/>
             </template>
           </Column>
