@@ -159,6 +159,6 @@ class EltexESR(EltexMES):
 
     @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
-        config = self.send_command("show startup-config", expect_command=True)
+        config = self.send_command("show running-config", expect_command=True)
         config = config.strip()
         return io.BytesIO(config.encode())
