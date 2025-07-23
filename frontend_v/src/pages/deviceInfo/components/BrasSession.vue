@@ -1,6 +1,6 @@
 <template>
 
-  <Dialog modal v-model:visible="brasSessionsService.dialogVisible" class="w-full h-full">
+  <Dialog maximizable modal v-model:visible="brasSessionsService.dialogVisible" class="w-full h-full">
     <template #header>
       <div class="flex items-center">
         <div class="text-2xl">
@@ -22,7 +22,7 @@
         <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
           <use xlink:href="#blade-handmade"></use>
         </svg>
-        <svg v-else class="icon-30" >
+        <svg v-else class="icon-30">
           <use xlink:href="#blade-handmade"></use>
         </svg>
         Cut session
@@ -30,29 +30,23 @@
 
     </div>
 
-    <div class="">
+    <div class="pt-4">
 
       <!--        SESSIONS-->
       <div v-if="sessions" class="overflow-auto">
-        <template v-if="sessions.BRAS1">
-          <div class="flex justify-center">
-            <Button>BRAS1</Button>
-          </div>
+        <Fieldset legend="BRAS1" :toggleable="true" v-if="sessions.BRAS1">
           <div class="p-4" v-if="sessions.BRAS1.errors.length">
             {{ sessions.BRAS1.errors }}
           </div>
-          <div class="p-4 font-mono" v-html="textToHtml(sessions.BRAS1.session)"></div>
-        </template>
+          <div class="p-4 font-mono whitespace-pre" v-html="formatSession(sessions.BRAS1.session)"></div>
+        </Fieldset>
 
-        <template v-if="sessions.BRAS2">
-          <div class="flex justify-center">
-            <Button>BRAS1</Button>
-          </div>
-          <div class="card p-4" v-if="sessions.BRAS2.errors.length">
+        <Fieldset legend="BRAS2" :toggleable="true" v-if="sessions.BRAS2">
+          <div class="p-4" v-if="sessions.BRAS2.errors.length">
             {{ sessions.BRAS2.errors }}
           </div>
-          <div class="card p-4 font-mono" v-html="textToHtml(sessions.BRAS2.session)"></div>
-        </template>
+          <div class="p-4 font-mono whitespace-pre" v-html="formatSession(sessions.BRAS2.session)"></div>
+        </Fieldset>
       </div>
 
       <!--        LOADING SESSIONS-->
@@ -96,7 +90,6 @@ import {defineComponent} from "vue";
 
 import brasSessionsService from "@/services/bras.sessions";
 import brasSessions from "@/services/bras.sessions";
-import {textToHtml} from "@/formats.ts";
 
 export default defineComponent({
   data() {
@@ -113,7 +106,47 @@ export default defineComponent({
   },
 
   methods: {
-    textToHtml,
+    formatSession(input: string) {
+      // Заменяем Domain
+      input = input.replace(
+          /(Domain name\s*:\s*)(\S+)/,
+          (_, prefix, value) => {
+            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-500 text-white">${value}</span>`;
+          }
+      );
+      // Заменяем MAC-адрес
+      input = input.replace(
+          /(User MAC\s*:\s*)(\S+)/,
+          (_, prefix, value) => {
+            return `${prefix}<span class="px-2 py-1 rounded bg-orange-200">${value}</span>`;
+          }
+      );
+      // Заменяем IP-адрес
+      input = input.replace(
+          /(User IP address\s*:\s*)(\d{1,3}(?:\.\d{1,3}){3})(\([^)]+\))?/,
+          (_, prefix, ip, suffix = '') => {
+            return `${prefix}<span class="px-2 py-1 rounded bg-teal-200 ">${ip}</span>${suffix}`;
+          }
+      );
+
+      // Заменяем Agent-Circuit-Id
+      input = input.replace(
+          /(Agent-Circuit-Id\s*:\s*)([^\n]+)/,
+          (_, prefix, value) => {
+            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200">${value.trim()}</span>`;
+          }
+      );
+
+      // Заменяем Agent-Remote-Id
+      input = input.replace(
+          /(Agent-Remote-Id\s*:\s*)([^\n]+)/,
+          (_, prefix, value) => {
+            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200">${value.trim()}</span>`;
+          }
+      );
+
+      return input;
+    },
 
     cutSession() {
       if (brasSessionsService.cuttingNow.value) return;

@@ -5,6 +5,8 @@ import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import macSearch, {IPMACInfoResult} from "@/services/macSearch";
 import errorFmt from "@/errorFmt.ts";
+import BrasSession from "@/pages/deviceInfo/components/BrasSession.vue";
+import brasSessionsService from "@/services/bras.sessions.ts";
 
 const text = ref("");
 const error = ref("");
@@ -99,6 +101,13 @@ async function find() {
             </a>
 
             <div v-for="res in info.results" class="my-2 p-3 border rounded font-mono">
+
+              <div v-if="info?.device?.name && info.device.name.startsWith('BRAS')" class="flex justify-center pb-2">
+                <Button size="small" @click="() => brasSessionsService.getSessions(res.mac, '', '')" outlined
+                        icon="pi pi-user"
+                        label="Сессия по MAC" />
+              </div>
+
               <div class="flex flex-col gap-3 justify-center">
                 <div>IP - {{ res.ip }}</div>
                 <div>MAC - {{ res.mac }}</div>
@@ -114,6 +123,6 @@ async function find() {
     </Fieldset>
 
   </div>
-
+  <BrasSession/>
   <Footer/>
 </template>
