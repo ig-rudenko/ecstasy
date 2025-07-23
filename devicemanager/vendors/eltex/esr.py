@@ -1,5 +1,8 @@
+import io
+
 from .mes import EltexMES
 from ..base.device import BaseDevice
+from ..base.types import DeviceAuthDict
 from ..base.validators import validate_and_format_port_as_normal
 
 
@@ -13,9 +16,45 @@ class EltexESR(EltexMES):
 
     _template_name = "eltex-esr"
 
+    def __init__(
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
+        mac: str = "",
+    ):
+        super().__init__(session, ip, auth, model, snmp_community)
+        self.mac = mac
+        self._find_system_info()
+        self.send_command("terminal datadump")  # Убираем постраничный вывод
+
     def _find_system_info(self) -> None:
         system = self.send_command("show system")
         self.serialno: str = self.find_or_empty(r"serial number:\s+(\S+)", system)
+
+    def send_command(
+        self,
+        command: str,
+        before_catch: str | None = None,
+        expect_command=True,
+        num_of_expect=10,
+        space_prompt=None,
+        prompt=None,
+        pages_limit=None,
+        command_linesep="\n",
+    ) -> str:
+        return super().send_command(
+            command=command,
+            before_catch=before_catch,
+            expect_command=False,
+            num_of_expect=num_of_expect,
+            space_prompt=space_prompt,
+            prompt=prompt,
+            pages_limit=pages_limit,
+            command_linesep=command_linesep,
+        )
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -117,3 +156,9 @@ class EltexESR(EltexMES):
 
     def get_device_info(self) -> dict:
         return {}
+
+    @BaseDevice.lock_session
+    def get_current_configuration(self) -> io.BytesIO:
+        config = self.send_command("show startup-config", expect_command=True)
+        config = config.strip()
+        return io.BytesIO(config.encode())
