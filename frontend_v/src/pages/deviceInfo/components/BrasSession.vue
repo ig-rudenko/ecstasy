@@ -30,7 +30,7 @@
       </SplitButton>
 
       <Button v-else @click="() => cutSession(false)" outlined class="btn btn-outline-primary"
-                   :disabled="brasSessionsService.cuttingNow">
+              :disabled="brasSessionsService.cuttingNow">
         <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
           <use xlink:href="#blade-handmade"></use>
         </svg>
@@ -118,7 +118,7 @@ export default defineComponent({
   },
 
   methods: {
-    formatSession(input: string) {
+    formatSession(input: string): string {
       // Заменяем Domain
       input = input.replace(
           /(Domain name\s*:\s*)(\S+)/,
@@ -141,23 +141,61 @@ export default defineComponent({
           }
       );
 
-      // Заменяем Agent-Circuit-Id
-      input = input.replace(
-          /(Agent-Circuit-Id\s*:\s*)([^\n]+)/,
-          (_, prefix, value) => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200 dark:bg-indigo-800">${value.trim()}</span>`;
-          }
-      );
+      let regexes = [
+        /(Agent-Circuit-Id\s*:\s*)([^\n]+)/,
+        /(Agent-Remote-Id\s*:\s*)([^\n]+)/,
+        /(Accounting start time\s*:\s*)([^\n]+)/,
+        /(Accounting state\s*:\s*)(\S+)/,
+        /(Ipv4 Realtime speed\s*:\s*)([^\n]+)/,
+        /(Ipv4 Realtime speed inbound\s*:\s*)([^\n]+)/,
+        /(Ipv4 Realtime speed outbound\s*:\s*)([^\n]+)/,
+      ]
 
-      // Заменяем Agent-Remote-Id
-      input = input.replace(
-          /(Agent-Remote-Id\s*:\s*)([^\n]+)/,
-          (_, prefix, value) => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200 dark:bg-indigo-800">${value.trim()}</span>`;
-          }
-      );
-
+      for (let regex of regexes) {
+        // Заменяем Agent-Circuit-Id
+        input = input.replace(
+            regex,
+            (_, prefix, value) => {
+              return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200 dark:bg-indigo-800">${value.trim()}</span>`;
+            }
+        );
+      }
+      input = this.highlightActiveServices(input);
       return input;
+    },
+
+    highlightActiveServices(text: string): string {
+      const lines = text.split('\n');
+
+      let insideActiveBlock = false;
+      const outputLines = [];
+
+      for (let line of lines) {
+        // Определяем начало нужного блока
+        if (line.trim().startsWith("Active EDSG services by order:")) {
+          insideActiveBlock = true;
+          outputLines.push(line);
+          continue;
+        }
+
+        // Если достигли следующего заголовка — выходим из блока
+        if (insideActiveBlock && /^[A-Z]/.test(line.trim()) && !line.trim().startsWith("Service info")) {
+          insideActiveBlock = false;
+        }
+
+        // Если в нужном блоке и строка содержит Service info — заменяем значение
+        if (insideActiveBlock && line.includes("Service info")) {
+          const replacedLine = line.replace(
+              /(Service info\s*:\s*)(.+)/,
+              (_, prefix, value) => `${prefix}<span class="px-2 py-1 rounded bg-violet-300 dark:bg-violet-800">${value.trim()}</span>`
+          );
+          outputLines.push(replacedLine);
+        } else {
+          outputLines.push(line);
+        }
+      }
+
+      return outputLines.join('\n');
     },
 
     cutSession(reloadPort: boolean) {
