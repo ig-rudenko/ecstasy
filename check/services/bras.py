@@ -43,22 +43,20 @@ def get_bras_user_session(bras: Bras, mac: str, result: dict[str, BrasSession]):
         result[bras.name]["errors"].append(exc.message)
 
 
-def cut_bras_session(device: Devices, user: AbstractBaseUser, mac: str, port: str) -> dict:
+def cut_bras_session(device: Devices | None, user: AbstractBaseUser, mac: str, port: str) -> dict:
     """
     Cut bras session
-    :param device:
-    :param user:
-    :param mac:
-    :param port:
-    :return:
     """
 
     # Словарь, который будет содержать данные для отправки
-    result: dict = {"errors": []}
+    result: dict = {"errors": [], "portReloadStatus": "SKIP"}
 
     for bras in Bras.objects.all():
         bras.connect().cut_access_user_session(mac)
-        log(user, device, f"cut access-user mac-address {mac}")
+        log(user, bras, f"cut access-user mac-address {mac}")
+
+    if device is None:
+        return result
 
     try:
         # Перезагружаем порт без сохранения конфигурации

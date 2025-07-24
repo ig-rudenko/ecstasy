@@ -14,18 +14,30 @@
     </template>
 
     <div>
-
       <!--СРЕЗАТЬ СЕССИЮ   -->
       <!--        НОЖ-->
-
-      <Button @click="cutSession" class="btn btn-outline-primary">
+      <SplitButton v-if="brasSessionsService.current?.device && brasSessionsService.current?.port" outlined
+                   :disabled="brasSessionsService.cuttingNow"
+                   @click="() => cutSession(false)" class="btn btn-outline-primary"
+                   :model="[{label: '🔪🔄 Срезать сессию и перезагрузить порт', command: () => cutSession(true)}]">
         <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
           <use xlink:href="#blade-handmade"></use>
         </svg>
         <svg v-else class="icon-30">
           <use xlink:href="#blade-handmade"></use>
         </svg>
-        Cut session
+        Срезать сессию
+      </SplitButton>
+
+      <Button v-else @click="() => cutSession(false)" outlined class="btn btn-outline-primary"
+                   :disabled="brasSessionsService.cuttingNow">
+        <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
+          <use xlink:href="#blade-handmade"></use>
+        </svg>
+        <svg v-else class="icon-30">
+          <use xlink:href="#blade-handmade"></use>
+        </svg>
+        Срезать сессию
       </Button>
 
     </div>
@@ -118,14 +130,14 @@ export default defineComponent({
       input = input.replace(
           /(User MAC\s*:\s*)(\S+)/,
           (_, prefix, value) => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-orange-200">${value}</span>`;
+            return `${prefix}<span class="px-2 py-1 rounded bg-orange-200 dark:bg-orange-800">${value}</span>`;
           }
       );
       // Заменяем IP-адрес
       input = input.replace(
           /(User IP address\s*:\s*)(\d{1,3}(?:\.\d{1,3}){3})(\([^)]+\))?/,
           (_, prefix, ip, suffix = '') => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-teal-200 ">${ip}</span>${suffix}`;
+            return `${prefix}<span class="px-2 py-1 rounded bg-teal-200 dark:bg-teal-800">${ip}</span>${suffix}`;
           }
       );
 
@@ -133,7 +145,7 @@ export default defineComponent({
       input = input.replace(
           /(Agent-Circuit-Id\s*:\s*)([^\n]+)/,
           (_, prefix, value) => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200">${value.trim()}</span>`;
+            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200 dark:bg-indigo-800">${value.trim()}</span>`;
           }
       );
 
@@ -141,16 +153,16 @@ export default defineComponent({
       input = input.replace(
           /(Agent-Remote-Id\s*:\s*)([^\n]+)/,
           (_, prefix, value) => {
-            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200">${value.trim()}</span>`;
+            return `${prefix}<span class="px-2 py-1 rounded bg-indigo-200 dark:bg-indigo-800">${value.trim()}</span>`;
           }
       );
 
       return input;
     },
 
-    cutSession() {
+    cutSession(reloadPort: boolean) {
       if (brasSessionsService.cuttingNow.value) return;
-      brasSessionsService.cutSession()
+      brasSessionsService.cutSession(reloadPort)
     },
 
     refreshSessions() {

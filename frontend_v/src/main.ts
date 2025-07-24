@@ -27,6 +27,7 @@ import {
     Ripple,
     ScrollTop,
     Select,
+    SplitButton,
     Textarea,
     ToggleSwitch,
     Tooltip
@@ -75,6 +76,7 @@ app.component("Popover", Popover);
 app.component("RadioButton", RadioButton);
 app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
+app.component("SplitButton", SplitButton);
 app.component("Textarea", Textarea);
 app.component("ToggleSwitch", ToggleSwitch);
 

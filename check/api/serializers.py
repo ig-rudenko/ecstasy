@@ -96,8 +96,8 @@ class BrassSessionSerializer(MacSerializer):
      - str:`port` - max:50
     """
 
-    device = serializers.CharField(max_length=255, required=True)
-    port = serializers.CharField(max_length=50, required=True)
+    device = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
+    port = serializers.CharField(max_length=50, required=False, default="", allow_blank=True)
 
 
 class ADSLProfileSerializer(serializers.Serializer):

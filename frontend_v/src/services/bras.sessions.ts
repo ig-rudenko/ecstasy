@@ -21,12 +21,17 @@ interface BrasData {
     }
 }
 
+interface BrasCutSessionResult {
+    errors: string[]
+    portReloadStatus: string
+}
+
 class BrasSessionsService {
     public dialogVisible: Ref<boolean> = ref(false);
-    private lastSessions: Ref<BrasData|null> = ref(null);
-    public current: Ref<MacAffiliation|null> = ref(null);
+    private lastSessions: Ref<BrasData | null> = ref(null);
+    public current: Ref<MacAffiliation | null> = ref(null);
     public cuttingNow: Ref<boolean> = ref(false)
-    public cutSessionResult: Ref<string|null> = ref(null);
+    public cutSessionResult: Ref<BrasCutSessionResult | null> = ref(null);
 
     async getSessions(mac: string, deviceName: string, port: string) {
         this.lastSessions.value = null;
@@ -49,20 +54,19 @@ class BrasSessionsService {
     }
 
     get sessions() {
-        console.log(this.lastSessions.value)
         return this.lastSessions.value;
     }
 
-    async cutSession() {
+    async cutSession(reloadPort: boolean) {
         if (!this.current.value) return;
         this.cuttingNow.value = true
         let data = {
-            device: this.current.value.device,
-            port: this.current.value.port,
+            device: reloadPort?this.current.value.device:'',
+            port: reloadPort?this.current.value.port:'',
             mac: this.currentMac
         }
         try {
-            const resp = await api.post<string>("/api/v1/devices/cut-session", data)
+            const resp = await api.post<BrasCutSessionResult>("/api/v1/devices/cut-session", data)
             this.cutSessionResult.value = resp.data;
         } catch (error: any) {
             errorToast("Ошибка", errorFmt(error))

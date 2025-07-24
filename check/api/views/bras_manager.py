@@ -78,8 +78,11 @@ class CutBrassSessionAPIView(UserAuthenticatedAPIView):
         # Берем mac-адрес из формы и форматируем его в строку вида `aaaa-bbbb-cccc`.
         mac = serializer.validated_data["mac"]
         port = serializer.validated_data["port"]
-        device = get_object_or_404(models.Devices, name=serializer.validated_data["device"])
-        self.check_object_permissions(self.request, device)
+
+        device = None
+        if serializer.validated_data["device"]:
+            device = get_object_or_404(models.Devices, name=serializer.validated_data["device"])
+            self.check_object_permissions(self.request, device)
 
         result = cut_bras_session(device, self.current_user, mac, port)
         return Response(result)
