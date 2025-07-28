@@ -6,19 +6,17 @@
     <DeviceStatusName
         v-if="generalInfo"
         :status="deviceAvailable"
-        :device-name="deviceName"
-        :device-ip="generalInfo.deviceIP"
+        :device="{name: deviceName, ip: generalInfo.deviceIP, vendor: generalInfo.vendor || '', model: generalInfo.model || '', group: ''}"
         :console-url="generalInfo.consoleURL"/>
   </div>
 
   <div v-if="generalInfo" class="xl:container mx-auto my-3">
 
-    <div v-if="generalInfo"
-         class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
+    <div class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
 
       <div class="p-3 flex flex-wrap items-center gap-1">
         <!--    Кнопка для отображения панели с информацией Zabbix-->
-        <div v-if="generalInfo">
+        <div>
           <DeviceDetailInfo :general-info="generalInfo"/>
         </div>
 

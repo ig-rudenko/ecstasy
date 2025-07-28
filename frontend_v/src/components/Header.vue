@@ -9,6 +9,7 @@ import {User} from "@/services/user";
 import permissions from "@/services/permissions";
 import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
 import {MenuItem} from "primevue/menuitem";
+import pinnedDevices from "@/services/pinnedDevices.ts";
 
 const store = useStore()
 const user: User | null = store.state.auth.user
@@ -106,6 +107,15 @@ const toggle = () => {
   currentTheme.value = getCurrentTheme();
 }
 
+const pinnedDevicesRef = ref();
+const togglePinedDevices = (event: Event) => {
+  pinnedDevicesRef.value.toggle(event);
+}
+
+function showDevicePinned(): boolean {
+  return location.href.includes('device') && pinnedDevices.pinnedDevices.value.length > 0;
+}
+
 </script>
 
 <template>
@@ -164,5 +174,38 @@ const toggle = () => {
       </template>
     </Menubar>
   </div>
+
+  <div class="md:sticky top-0 z-10">
+    <Button v-if="showDevicePinned()" type="button" icon="pi pi-box" label="Закреплённое оборудование" outlined text
+            size="small" @click="togglePinedDevices"/>
+  </div>
+
+  <Popover ref="pinnedDevicesRef" class="p-1">
+    <div class="pb-2 mb-2 flex w-full justify-between items-center gap-2 border-b-[1px]">
+      <div>Ваши избранные устройства</div>
+      <Button v-if="pinnedDevices.pinnedDevices.value.length != 0" outlined icon="pi pi-trash" size="small"
+              v-tooltip="'Очистить избранное'"
+              severity="danger" @click="pinnedDevices.clear()"/>
+    </div>
+    <div class="flex flex-col gap-2">
+      <div v-for="dev in pinnedDevices.pinnedDevices.value" class="flex flex-row gap-2 items-center">
+        <a :href="'/device/'+dev.name" class="text-sm font-mono hover:text-indigo-500 pr-2"
+           v-tooltip="dev.vendor + ' ' + dev.model">{{ dev.name }} ({{ dev.ip }})</a>
+        <a :href="'/device/'+dev.name" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               class="cursor-pointer hover:text-indigo-500" viewBox="0 0 16 16">
+            <path fill-rule="evenodd"
+                  d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+            <path fill-rule="evenodd"
+                  d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+          </svg>
+        </a>
+        <i class="pi pi-minus-circle cursor-pointer hover:text-red-500" @click="pinnedDevices.removeDevice(dev)"/>
+      </div>
+      <div v-if="pinnedDevices.pinnedDevices.value.length == 0">
+        Нет избранных устройств
+      </div>
+    </div>
+  </Popover>
 
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-wrap justify-center items-center gap-4">
+  <div class="flex flex-wrap justify-center items-center gap-4 pt-10 md:pt-5">
 
     <!--  Оборудование Недоступно-->
     <span v-if="status === 0" class="text-red-500">
@@ -22,30 +22,33 @@
 
 
     <!--  Название оборудования-->
-    <div class="flex flex-wrap flex-col sm:flex-row font-mono justify-center items-center gap-4">
-      <div class="text-2xl sm:text-3xl">{{ deviceName }}</div>
+    <div class="flex flex-wrap flex-row sm:flex-row font-mono justify-center items-center gap-4">
+      <div class="text-2xl sm:text-3xl">{{ device.name }}</div>
       <div class="flex items-center gap-2">
-        <div v-show="deviceIp" class="bg-primary rounded-xl px-3 py-1 text-white sm:text-xl">{{ deviceIp }}</div>
+        <div v-show="device.ip" class="bg-primary rounded-xl px-3 py-1 text-white sm:text-xl">{{ device.ip }}</div>
         <div class="relative">
           <i class="pi pi-clone cursor-pointer" @click="copyIP"/>
-          <span v-if="copied" class="absolute text-xs rounded-xl p-2 shadow">Скопировано!</span>
+          <span v-if="copied" class="z-10 absolute text-xs rounded-xl p-2 bg-white dark:bg-surface-800 shadow">Скопировано!</span>
         </div>
       </div>
+      <PinDevice :device="device"/>
     </div>
-
 
   </div>
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import {defineComponent, PropType} from "vue";
+import pinnedDevices from "@/services/pinnedDevices";
+import {Device} from "@/services/devices";
+import PinDevice from "@/components/PinDevice.vue";
 
 
 export default defineComponent({
+  components: {PinDevice},
   props: {
     status: {required: true, type: Number},
-    deviceName: {required: true, type: String},
-    deviceIp: {required: true, type: String},
+    device: {required: true, type: Object as PropType<Device>},
     consoleUrl: {required: true, type: String},
   },
   data() {
@@ -54,10 +57,15 @@ export default defineComponent({
       copiedStatus: ""
     }
   },
+  computed: {
+    pinnedDevices() {
+      return pinnedDevices
+    },
+  },
   methods: {
     copyIP() {
       this.copied = true;
-      navigator.clipboard.writeText(this.deviceIp)
+      navigator.clipboard.writeText(this.device.ip)
           .then(() => this.copiedStatus = "Скопировано!")
           .catch((err) => {
             this.copiedStatus = "Ошибка!";

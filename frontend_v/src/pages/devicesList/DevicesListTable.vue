@@ -31,9 +31,14 @@
       <!--      НАЗВАНИЕ-->
       <Column field="name" header="Имя" :sortable="true">
         <template #body="{data}">
-          <a :href="'/device/'+data.name">
-            <Button text icon="pi pi-box" :label="data.name"/>
-          </a>
+          <div class="group/device-name flex items-center gap-1">
+            <a :href="'/device/'+data.name">
+              <Button text icon="pi pi-box" :label="data.name"/>
+            </a>
+            <span class="opacity-0 group-hover/device-name:opacity-100" :class="{'!opacity-100': pinnedDevices.isPinned(data.name)}">
+              <PinDevice :device="data"/>
+            </span>
+          </div>
           <InterfacesWorkload class="p-2" :dev="data"/>
         </template>
       </Column>
@@ -96,7 +101,8 @@
         <template #body="{data}">
           <div v-if="data.model" class="group/model-filter flex items-center gap-2">
             <div class="">{{ data.model }}</div>
-            <Button v-if="filters.model.value != data.model" @click="filters.model.value = data.model" icon="pi pi-filter" size="small"
+            <Button v-if="filters.model.value != data.model" @click="filters.model.value = data.model"
+                    icon="pi pi-filter" size="small"
                     class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
             <Button v-else @click="filters.model.value = null" icon="pi pi-filter-slash" size="small"
                     class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
@@ -126,7 +132,8 @@
         <template #body="{data}">
           <div v-if="data.group" class="group/group-filter flex items-center gap-2">
             <div class="">{{ data.group }}</div>
-            <Button v-if="filters.group.value != data.group" @click="filters.group.value = data.group" icon="pi pi-filter" size="small"
+            <Button v-if="filters.group.value != data.group" @click="filters.group.value = data.group"
+                    icon="pi pi-filter" size="small"
                     class="opacity-0 group-hover/group-filter:opacity-100" outlined/>
             <Button v-else @click="filters.group.value = null" icon="pi pi-filter-slash" size="small"
                     class="opacity-0 group-hover/group-filter:opacity-100" outlined/>
@@ -158,11 +165,13 @@ import {FilterMatchMode} from "@primevue/core/api";
 
 import {Device} from "@/services/devices";
 import InterfacesWorkload from "./InterfacesWorkload.vue";
+import PinDevice from "@/components/PinDevice.vue";
+import pinnedDevices from "@/services/pinnedDevices.ts";
 
 
 export default defineComponent({
   name: "DevicesListTable",
-  components: {InterfacesWorkload},
+  components: {PinDevice, InterfacesWorkload},
   props: {
     devices: {required: true, type: Object as PropType<Device[]>},
     vendors: {required: true, type: Object as PropType<string[]>},
@@ -179,7 +188,7 @@ export default defineComponent({
   data() {
     return {
       model: null,
-      paginatorPosition: 'both' as 'top' | 'bottom' | 'both' | undefined,
+      paginatorPosition: undefined as 'top' | 'bottom' | 'both' | undefined,
       _filters: {
         global: {value: "", matchMode: FilterMatchMode.CONTAINS},
         vendor: {value: null, matchMode: FilterMatchMode.EQUALS},
@@ -191,6 +200,9 @@ export default defineComponent({
   },
 
   computed: {
+    pinnedDevices() {
+      return pinnedDevices;
+    },
     loading() {
       return !this.devices || this.devices.length == 0
     },
