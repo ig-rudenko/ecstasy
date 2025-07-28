@@ -10,13 +10,13 @@ const props = defineProps({
   }
 })
 
-const pinDevice = computed(() => {
+const pinDevice = () => {
   pinnedDevices.addDevice(props.device)
-})
+}
 
-const removePinDevice = computed(() => {
+const removePinDevice = () => {
   pinnedDevices.removeDevice(props.device)
-})
+}
 
 const isPinned = computed(() => {
   return pinnedDevices.isPinned(props.device.name)
