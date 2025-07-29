@@ -1,6 +1,17 @@
+from typing import Any
+
+from django.conf import settings
+from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
-from rest_framework.exceptions import APIException
+from future.backports.datetime import timedelta
+from rest_framework import serializers
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import UntypedToken
+
+if api_settings.BLACKLIST_AFTER_ROTATION:
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
 
 class CustomJWTAuthentication(JWTAuthentication):
@@ -29,3 +40,22 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
         auth = CustomJWTAuthentication()
 
         request.user = auth.auth_and_get_user(request)
+
+
+class TokenVerifySerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs: dict[str, None]) -> dict[Any, Any]:
+        token = UntypedToken(attrs["token"])
+
+        if (
+            api_settings.BLACKLIST_AFTER_ROTATION
+            and "rest_framework_simplejwt.token_blacklist" in settings.INSTALLED_APPS
+        ):
+            jti = token.get(api_settings.JTI_CLAIM)
+            if BlacklistedToken.objects.filter(
+                token__jti=jti, blacklisted_at__lt=timezone.now() - timedelta(minutes=1)
+            ).exists():
+                raise ValidationError("Token is blacklisted")
+
+        return {}
