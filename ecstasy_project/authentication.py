@@ -1,9 +1,9 @@
+from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
-from future.backports.datetime import timedelta
 from rest_framework import serializers
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework_simplejwt.authentication import JWTAuthentication
