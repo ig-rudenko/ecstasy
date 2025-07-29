@@ -72,6 +72,7 @@ export class TokenService {
     }
 
     getUserTokens(): UserTokens {
+        this.load();
         return this._tokens || {accessToken: "", refreshToken: ""}
     }
 
