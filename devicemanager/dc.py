@@ -108,6 +108,7 @@ class DeviceRemoteConnector:
         r"Press any key to continue",  # 4
         r"Timeout or some unexpected error happened on server host",  # 5 - Ошибка радиуса
         send_N_key,  # 6 Нажать `N`
+        "The user has been locked",  # 7
     ]
 
     def __init__(
@@ -296,6 +297,9 @@ class DeviceRemoteConnector:
             if expect_index == 6:
                 session.send("N\r")  # Не меняем пароль, когда спрашивает
                 continue
+
+            if expect_index == 7:
+                raise DeviceLoginError("Пользователь заблокирован", ip=self.ip)
 
             break
 
