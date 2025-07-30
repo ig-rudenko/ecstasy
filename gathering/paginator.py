@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import connection
 
@@ -35,17 +36,28 @@ class LargeTablePaginator(Paginator):
         return str(settings.DATABASES["default"]["ENGINE"]).rsplit(".", 1)[1]
 
     def _get_table_count(self) -> int:
-        if self._get_database_engine() == "postgresql":
-            raw_sql = "SELECT reltuples FROM pg_class WHERE relname = %s"
-            column_index = 0
-        else:
-            raw_sql = "SHOW TABLE STATUS LIKE %s"
-            column_index = 4
+        table_name = self.object_list.query.model._meta.db_table  # type: ignore
+        engine = self._get_database_engine()
 
-        cursor = connection.cursor()
-        cursor.execute(raw_sql, [self.object_list.query.model._meta.db_table])  # type: ignore
-        data = cursor.fetchone()
-        return int(data[column_index])
+        with connection.cursor() as cursor:
+            if engine == "postgresql":
+                cursor.execute(
+                    "SELECT reltuples::BIGINT AS estimate FROM pg_class WHERE relname = %s", [table_name]
+                )
+                row = cursor.fetchone()
+                return int(row[0]) if row and row[0] is not None else 0
+
+            elif engine in ("mysql", "mariadb"):
+                cursor.execute("SHOW TABLE STATUS WHERE Name = %s", [table_name])
+                row = cursor.fetchone()
+                if row:
+                    # Rows count is usually at index 4, but we can also use column names for clarity
+                    desc = cursor.description
+                    columns = {col[0]: idx for idx, col in enumerate(desc)}
+                    rows_index = columns.get("Rows", 4)
+                    return int(row[rows_index]) if row[rows_index] is not None else 0
+
+        return 0
 
     def _get_estimate(self) -> int:
         if not self.object_list.query.where:  # type: ignore
@@ -71,6 +83,29 @@ class LargeTablePaginator(Paginator):
                 # AttributeError if object_list has no count() method.
                 # TypeError if object_list.count() requires arguments
                 # (i.e. is of type list).
-                self._count = len(self.object_list)
+                self._count = self.object_list.count()
 
         return self._count
+
+
+class CachedLargeTablePaginator(LargeTablePaginator):
+    CACHE_TIMEOUT = 60 * 2
+
+    def _cache_key(self) -> str:
+        db_alias = self.object_list.db if hasattr(self.object_list, "db") else "default"
+        table_name = self.object_list.query.model._meta.db_table  # type: ignore
+        return f"table_count_estimate:{db_alias}:{table_name}"
+
+    def _get_table_count(self):
+        key = self._cache_key()
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+
+        data = super()._get_table_count()
+        if data:
+            if data > self._limit:
+                cache.set(key, data, timeout=self.CACHE_TIMEOUT)
+            return data
+
+        return 0

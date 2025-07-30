@@ -1,10 +1,13 @@
+import re
+
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
 from django.core.cache import cache
+from django.db.models import Q
 
 from check.models import Devices
 from .models import MacAddress, Vlan, VlanPort
-from .paginator import LargeTablePaginator
+from .paginator import LargeTablePaginator, CachedLargeTablePaginator
 
 LIST_FILTER_CACHE_TIMEOUT = 60 * 10
 
@@ -87,10 +90,10 @@ class CachedPortFilter(SimpleListFilter):
 @admin.register(MacAddress)
 class MacAddressesAdmin(admin.ModelAdmin):
     list_display = ["mac_address", "vlan", "device", "port", "desc", "datetime", "type"]
-    search_fields = ["address", "vlan"]
+    search_fields = ["address"]
     list_select_related = ["device"]
     list_filter = [CachedDeviceFilter, CachedVlanFilter, CachedTypeFilter, CachedPortFilter]
-    paginator = LargeTablePaginator
+    paginator = CachedLargeTablePaginator
 
     @admin.display(description="MAC")
     def mac_address(self, obj: MacAddress):
@@ -103,6 +106,21 @@ class MacAddressesAdmin(admin.ModelAdmin):
             .select_related("device")
             .only("address", "vlan", "device__name", "port", "desc", "datetime", "type", "device__ip")
         )
+
+    def get_search_results(self, request, queryset, search_term):
+        if not search_term:
+            return queryset, False
+
+        search_term = "".join(re.findall(r"[0-9a-fA-F]", search_term))
+        q = Q()
+
+        if 4 <= len(search_term) <= 10:
+            # address — BinaryField or CharField with MAC-like values
+            q |= Q(address__icontains=search_term)
+        else:
+            return queryset.none(), False
+
+        return queryset.filter(q), False
 
 
 @admin.register(Vlan)
