@@ -15,13 +15,19 @@ import {defineComponent, PropType, StyleValue} from "vue";
 
 export default defineComponent({
   props: {
+    initSearch: {required: false, type: String, default: ""},
     activeMode: {required: false, type: Boolean, default: false},
     placeholder: {required: false, type: String},
     inputClass: {required: false, type: Object as PropType<String|Object|string[]>},
   },
   data() {
     return {
-      text: ""
+      text: "",
+    }
+  },
+  mounted() {
+    if (this.initSearch) {
+      this.text = this.initSearch
     }
   },
   emits: ["submit_input", "update:modelValue"],

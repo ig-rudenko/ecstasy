@@ -1,6 +1,7 @@
 <template>
 
-  <tr :style="interfaceStyles" :class="interfaceClasses" class="hover:bg-gray-100 dark:hover:bg-gray-800">
+  <tr :id="'interface-'+interface.name" :style="interfaceStyles" :class="interfaceClasses"
+      class="hover:bg-gray-100 dark:hover:bg-gray-800">
 
     <td>
       <div class="flex gap-1 px-2">
@@ -215,6 +216,21 @@ export default defineComponent({
     }
   },
 
+  mounted() {
+    let selectedPorts = this.getSelectedPorts();
+
+    if (selectedPorts.includes(this.interface.name)) {
+      this.showDetailInfo = true;
+      this.getDetailInfo();
+      setTimeout(() => {
+        window.scrollTo({
+          top: (document.getElementById("interface-" + this.interface.name)?.offsetTop ?? 0) + (window.innerHeight / 2),
+          behavior: "smooth"
+        })
+      }, 100)
+    }
+  },
+
   computed: {
     interfaceStyles(): any {
       return this.dynamicOpacity
@@ -283,10 +299,49 @@ export default defineComponent({
       return status
     },
 
+    getSelectedPorts(): string[] {
+      // Преобразуем currentQuery.port в массив строк
+      let selectedPorts: string[] = [];
+
+      const currentQuery = { ...this.$route.query };
+      const portQuery = currentQuery.port;
+
+      if (Array.isArray(portQuery)) {
+        selectedPorts = portQuery.filter((p): p is string => typeof p === 'string');
+      } else if (typeof portQuery === 'string') {
+        selectedPorts = [portQuery];
+      }
+      return selectedPorts
+    },
+
     toggleDetailInfo() {
-      this.showDetailInfo = !this.showDetailInfo
-      if (!this.showDetailInfo) return
-      this.getDetailInfo()
+      this.showDetailInfo = !this.showDetailInfo;
+
+      let selectedPorts = this.getSelectedPorts();
+
+      const portName = this.interface.name;
+
+      if (this.showDetailInfo) {
+        if (!selectedPorts.includes(portName)) {
+          selectedPorts.push(portName);
+        }
+      } else {
+        selectedPorts = selectedPorts.filter(p => p !== portName);
+      }
+
+      // Обновляем query
+      const newQuery = { ...this.$route.query };
+      if (selectedPorts.length > 0) {
+        newQuery.port = selectedPorts;
+      } else {
+        delete newQuery.port;
+      }
+
+      this.$router.push({ query: newQuery });
+
+      if (this.showDetailInfo) {
+        this.getDetailInfo();
+      }
     },
 
     getDetailInfo() {

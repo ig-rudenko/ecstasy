@@ -29,6 +29,7 @@
           </div>
         </div>
         <SearchInput @submit_input="searchDescription" @update:modelValue="(v: string) => pattern = v"
+                     :init-search="$route.query.pattern?.toString()"
                      :active-mode="true" input-class="font-mono"
                      placeholder="Введите строку для поиска"/>
       </div>
@@ -55,7 +56,7 @@
 
           <Column field="device" header="Оборудование" :sortable="true" class="font-mono">
             <template #body="{data}">
-              <a :href="'/device/' + data.device">
+              <a :href="'/device/' + data.device" target="_blank">
                 <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']"/>
               </a>
             </template>
@@ -68,6 +69,10 @@
           <Column field="interface.name" filter-field="interface.name" header="Порт" :sortable="true" class="font-mono">
             <template #filter="{ filterModel, filterCallback }">
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск порта"/>
+            </template>
+            <template #body="{data}">
+              <a :href="'/device/' + data.device + '?port=' + data.interface.name" target="_blank"
+                 class="p-2 rounded bg-indigo-200 dark:bg-indigo-600">{{ data.interface.name }}</a>
             </template>
           </Column>
 
@@ -185,6 +190,14 @@ export default defineComponent({
       },
     }
   },
+
+  mounted() {
+    if (this.$route.query.pattern) {
+      this.pattern = this.$route.query.pattern.toString();
+      this.searchDescription();
+    }
+  },
+
   methods: {
 
     getInterface(data: InterfaceDescriptionMatchResult): DeviceInterface {
@@ -200,6 +213,8 @@ export default defineComponent({
     searchDescription() {
       if (this.pattern.length < 2) return;
       this.waitResult = true
+
+      this.$router.replace({query: {...this.$route.query, pattern: this.pattern}});
 
       findInterfacesByDescription(this.pattern, this.isRegexPattern)
           .then(
