@@ -44,6 +44,7 @@ class ThreadUpdatedStatusTask(Task):
 
         self.create_threads()
 
+        self.finish()
         return self.return_value()
 
     def create_threads(self):
@@ -85,4 +86,8 @@ class ThreadUpdatedStatusTask(Task):
 
     @classmethod
     def register_task(cls):
+        pass
+
+    def finish(self):
+        """Выполняется в самом конце после завершения задачи"""
         pass

@@ -339,14 +339,18 @@ class BrasAdmin(admin.ModelAdmin):
 class ProfileAdmin(admin.ModelAdmin):
     """Управление уровнем привилегий пользователей"""
 
-    list_display = ["user", "permissions", "dev_groups", "console_access"]
+    list_display = ["user", "permissions", "user_is_active", "dev_groups", "console_access"]
     list_select_related = ["user"]
     filter_horizontal = ["devices_groups"]
+    list_filter = ["permissions", "devices_groups", "console_access", "user__is_active", "user__is_staff"]
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):
-        """Отображаем username пользователя"""
         return obj.user.username
+
+    @admin.display(description="Активный", boolean=True)
+    def user_is_active(self, obj: Profile):
+        return obj.user.is_active
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("devices_groups")

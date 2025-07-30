@@ -63,6 +63,15 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
             crontab=crontab,
         )
 
+    def finish(self):
+        """
+        Очищает кэш для фильтров в панели администратора.
+        """
+        cache.delete("admin_device_filter_lookups")
+        cache.delete("admin_vlan_filter_lookups")
+        cache.delete("admin_type_filter_lookups")
+        cache.delete("admin_port_filter_lookups")
+
 
 class VlanTablesGatherTask(ThreadUpdatedStatusTask):
     """
