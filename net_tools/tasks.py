@@ -2,8 +2,8 @@ import logging
 
 from celery.result import AsyncResult
 from django.core.cache import cache
-from pyzabbix.api import logger
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from pyzabbix.api import logger
 
 from check.models import Devices as ModelDevices
 from check.services.device.interfaces_collector import DeviceDBSynchronizer
@@ -28,7 +28,6 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             return
 
         try:
-            print(f"Start collect interfaces --> {obj}")
             synchronizer = DeviceDBSynchronizer(
                 device=obj,
                 device_collector=DeviceManager.from_model(obj),
@@ -39,9 +38,9 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
             synchronizer.sync_device_info_to_db()
             synchronizer.device_collector.push_zabbix_inventory()
             synchronizer.save_interfaces_to_db()
-            print(f"Saved Interfaces --> {obj}")
-        except Exception as e:
-            print(f"Error when collect interfaces of {obj}: {e}")
+            self.log(device=self.device_log_format(obj), message="Интерфейсы успешно обновлены")
+        except Exception as exc:
+            self.log_error(device=self.device_log_format(obj), message=exc)
 
         self.update_state()
 

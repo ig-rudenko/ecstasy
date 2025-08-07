@@ -1,7 +1,6 @@
 import logging
 from datetime import timedelta
 
-import pexpect.exceptions
 from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
@@ -38,16 +37,16 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         logger.setLevel(logging.ERROR)
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
         res = MacAddress.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
-        print(f"cleared {res}")
+        self.log(message=f"cleared outdated MAC entries: {res}")
 
     def thread_task(self, obj: Devices, **kwargs):
         try:
             if not obj.available:
                 return
             gather = MacAddressTableGather(obj)
-            print(f"{obj} bulk_create: {gather.bulk_create()}")
-        except pexpect.exceptions.ExceptionPexpect as error:
-            print(f"{obj} --> {error}")
+            self.log(device=self.device_log_format(obj), message=f"bulk_create: {gather.bulk_create()}")
+        except Exception as error:
+            self.log_error(device=self.device_log_format(obj), message=error)
         finally:
             self.update_state()
 
@@ -94,16 +93,16 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
         logger.setLevel(logging.ERROR)
         cache.set("vlan_table_gather_task_id", self.request.id, timeout=None)
         res = Vlan.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
-        print(f"Cleared outdated VLAN entries: {res}")
+        self.log(message=f"Cleared outdated VLAN entries: {res}")
 
     def thread_task(self, obj: Devices, **kwargs):
         try:
             if not obj.available:
                 return
             gather = VlanTableGather(obj)
-            print(f"{obj} bulk_create: {gather.bulk_create()}")
-        except pexpect.exceptions.ExceptionPexpect as error:
-            print(f"{obj} --> {error}")
+            self.log(device=self.device_log_format(obj), message=f"bulk_create: {gather.bulk_create()}")
+        except Exception as error:
+            self.log_error(device=self.device_log_format(obj), message=error)
         finally:
             self.update_state()
 
@@ -182,6 +181,7 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
 
     name = "configuration_gather_task"
     queryset = Devices.objects.filter(active=True, collect_configurations=True)
+    max_workers = 40
 
     def thread_task(self, obj: Devices, **kwargs):
         storage = LocalConfigStorage(obj)
@@ -189,9 +189,11 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
             gather = ConfigurationGather(storage=storage)
             gather.delete_outdated_configs()
             status = gather.collect_config_file()
-            print(f"configuration_gather_task {status} {obj}")
+            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {status}")
         except ConfigFileError as error:
-            print(f"configuration_gather_task {error.message} {obj}")
+            self.log_error(device=self.device_log_format(obj), message=error.message)
+        except Exception as error:
+            self.log_error(device=self.device_log_format(obj), message=error)
 
         self.update_state()
 

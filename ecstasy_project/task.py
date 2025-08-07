@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 
+import orjson
 from celery import Task
 from django.db.models import QuerySet  # noqa: F401
 
@@ -91,3 +92,24 @@ class ThreadUpdatedStatusTask(Task):
     def finish(self):
         """Выполняется в самом конце после завершения задачи"""
         pass
+
+    @staticmethod
+    def device_log_format(device):
+        return {"name": device.name, "ip": device.ip}
+
+    def log(self, **kwargs):
+        kwargs["message"] = str(kwargs.get("message", ""))
+
+        data = {
+            "task_id": self.task_id,
+            "task_name": self.name,
+            "task_args": self.request.args,
+            "objects_count": self.objects_count,
+            "objects_scanned": self.objects_scanned,
+            "severity": kwargs.get("severity", "INFO"),
+            **kwargs,
+        }
+        print(orjson.dumps(data), flush=True)
+
+    def log_error(self, **kwargs):
+        return self.log(**kwargs, severity="ERROR")
