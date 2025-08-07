@@ -215,6 +215,26 @@ class Devices(models.Model):
         verbose_name_plural = "Devices"
 
 
+class AccessGroup(models.Model):
+    """Группа доступа к оборудованию"""
+
+    name = models.CharField(max_length=100, verbose_name="Название")
+    description = models.TextField(max_length=255, null=True, blank=True, verbose_name="Описание")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    devices = models.ManyToManyField(
+        Devices, verbose_name="Разрешенное оборудование", blank=True, related_name="access_groups"
+    )
+    forbidden_devices = models.ManyToManyField(
+        Devices, verbose_name="Запрещенное оборудование", blank=True, related_name="forbidden_access_groups"
+    )
+    users = models.ManyToManyField(User, verbose_name="Пользователи", blank=True)
+    user_groups = models.ManyToManyField(Group, verbose_name="Группы пользователей", blank=True)
+
+    class Meta:
+        db_table = "access_groups"
+
+
 def get_device_media_path(instance, file_name: str) -> str:
     slug = slugify(instance.device.name, allow_unicode=True)
     return f"{slug}/{file_name}"

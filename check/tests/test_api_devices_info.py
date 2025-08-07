@@ -136,43 +136,6 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
         self.assertEqual(device1_data["interfaces_count"]["abons_down_with_desc"], 3)
         self.assertEqual(device1_data["interfaces_count"]["abons_down_no_desc"], 1)
 
-    def test_get_all_device_interfaces_workload_with_cache(self):
-        cache_value = {
-            "devices_count": 123,
-            "devices": [],
-        }
-        cache.set("all_devices_interfaces_workload_api_view", cache_value)
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, cache_value)
-
-    def test_get_all_device_interfaces_workload_with_cache_and_with_unavailable_group(
-        self,
-    ):
-        cache_value = {
-            "devices_count": 2,
-            "devices": [
-                {"group": self.unavailable_group.name, "device": "dev1"},
-                {"group": self.group.name, "device": "dev2"},
-            ],
-        }
-        cache.set("all_devices_interfaces_workload_api_view", cache_value)
-
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            response.data,
-            {
-                "devices_count": 1,
-                "devices": [
-                    {"group": self.group.name, "device": "dev2"},
-                ],
-            },
-        )
-
     def test_get_queryset(self):
         queryset = DevicesInterfacesWorkloadCollector().get_queryset()
         self.assertEqual(queryset.count(), 1)

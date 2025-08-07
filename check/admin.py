@@ -40,6 +40,7 @@ from .models import (
     UsersActions,
     DeviceMedia,
     DeviceCommand,
+    AccessGroup,
 )
 
 
@@ -518,3 +519,52 @@ class DeviceCommandAdmin(admin.ModelAdmin):
     def command_html(self, obj):
         cmd_text = escape(obj.command).replace("\n", "<br/>")
         return mark_safe(f'<code style="font-family: monospace;">{cmd_text}</code>')
+
+
+@admin.register(AccessGroup)
+class AccessGroupAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "description_short",
+        "devices_count",
+        "forbidden_devices_count",
+        "users_count",
+        "created_at",
+    )
+    search_fields = ("name", "description")
+    ordering = ("-created_at",)
+    filter_horizontal = ("devices", "forbidden_devices", "users", "user_groups")
+    list_filter = ("users", "user_groups", "devices", "forbidden_devices")
+
+    fieldsets = (
+        ("Основная информация", {"fields": ("name", "description", "created_at")}),
+        ("Доступ к оборудованию", {"fields": ("devices", "forbidden_devices")}),
+        ("Пользователи и группы", {"fields": ("users", "user_groups")}),
+    )
+
+    readonly_fields = ("created_at",)
+
+    @admin.display(description="Описание")
+    def description_short(self, obj):
+        return (
+            (obj.description[:75] + "...")
+            if obj.description and len(obj.description) > 75
+            else obj.description
+        )
+
+    @admin.display(description="Кол-во устройств access")
+    def devices_count(self, obj):
+        return obj.devices.count()
+
+    @admin.display(description="Кол-во устройств forbidden")
+    def forbidden_devices_count(self, obj: AccessGroup):
+        return obj.forbidden_devices.count()
+
+    @admin.display(description="Кол-во пользователей")
+    def users_count(self, obj):
+        return obj.users.count() + obj.user_groups.count()
+
+    class Media:
+        css = {
+            "all": ("admin/css/widgets.css",),
+        }

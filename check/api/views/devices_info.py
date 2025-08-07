@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.db.models import Q
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -30,7 +31,7 @@ from ...services.remote_terminal import get_console_url
 from ...services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
 
 
-@method_decorator(cache_page(60 * 10), name="dispatch")
+@method_decorator(cache_page(60 * 2), name="dispatch")
 @method_decorator(vary_on_headers("Authorization"), name="dispatch")
 class DevicesListAPIView(UserAuthenticatedAPIView):
     """
@@ -43,9 +44,24 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
 
     def get_queryset(self):
         """
-        ## Возвращаем queryset всех устройств из доступных для пользователя групп
+        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        через Profile.devices_groups или AccessGroup (users / user_groups),
+        при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
-        return models.Devices.objects.filter(group__profile__user_id=self.current_user.id)
+        user = self.current_user
+
+        return (
+            Devices.objects.filter(
+                Q(group__profile__user_id=user.id)  # доступ через профиль
+                | Q(access_groups__users=user)
+                | Q(access_groups__user_groups__in=user.groups.all())
+            )
+            .exclude(
+                Q(forbidden_access_groups__users=user)
+                | Q(forbidden_access_groups__user_groups__in=user.groups.all())
+            )
+            .distinct()
+        )
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)

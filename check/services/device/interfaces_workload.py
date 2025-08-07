@@ -2,11 +2,11 @@ from typing import Type
 
 import orjson
 from django.core.cache import cache
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from rest_framework.serializers import BaseSerializer
 
 from check.api.serializers import DevicesSerializer
-from check.models import Profile
+from check.models import Devices
 from devicemanager.device.interfaces import Interfaces
 from net_tools.models import DevicesInfo
 
@@ -19,7 +19,7 @@ class DevicesInterfacesWorkloadCollector:
     def get_interfaces_load(device: DevicesInfo | dict) -> dict:
         """
         ## Возвращает список интерфейсов и их загрузку.
-        :param device: Данные о устройстве.
+        :param device: Данные об устройстве.
         :return: Список интерфейсов и их загрузки.
         """
         if isinstance(device, DevicesInfo):
@@ -52,25 +52,24 @@ class DevicesInterfacesWorkloadCollector:
         return DevicesSerializer
 
     def get_interfaces_load_for_user(self, user) -> dict:
-        data = self.get_all_device_interfaces_workload()
-        try:
-            groups_names = list(
-                Profile.objects.get(user=user).devices_groups.all().values_list("name", flat=True)
-            )
-        except Profile.DoesNotExist:
-            groups_names = []
+        # Собираем только устройства, к которым у пользователя есть доступ
+        queryset = self.get_queryset_for_user(user)
+        devices = list(queryset)
 
-        user_data = {
-            "devices_count": data["devices_count"],
-            "devices": [],
+        return {
+            "devices_count": len(devices),
+            "devices": [
+                {
+                    "interfaces_count": self.get_interfaces_load(dev_info),
+                    "ip": dev_info["dev__ip"],
+                    "name": dev_info["dev__name"],
+                    "vendor": dev_info["dev__vendor"],
+                    "group": dev_info["dev__group__name"],
+                    "model": dev_info["dev__model"],
+                }
+                for dev_info in devices
+            ],
         }
-
-        for device_info in data["devices"]:
-            if device_info["group"] not in groups_names:
-                user_data["devices_count"] -= 1
-            else:
-                user_data["devices"].append(device_info)
-        return user_data
 
     def get_all_device_interfaces_workload(self, from_cache=True):
         cache_value = cache.get(self.cache_key)
@@ -99,6 +98,40 @@ class DevicesInterfacesWorkloadCollector:
     def get_queryset() -> QuerySet:
         return (
             DevicesInfo.objects.filter(interfaces__isnull=False, dev__active=True)
+            .select_related("dev", "dev__group")
+            .order_by("dev__name")
+            .values(
+                "interfaces",
+                "dev__ip",
+                "dev__name",
+                "dev__vendor",
+                "dev__group__name",
+                "dev__model",
+            )
+        )
+
+    @staticmethod
+    def get_queryset_for_user(user) -> QuerySet:
+        """
+        ## Возвращает queryset устройств с интерфейсами, к которым у пользователя есть доступ
+        через Profile.devices_groups или AccessGroup (users / user_groups),
+        исключая устройства, явно запрещённые в AccessGroup.
+        """
+        return (
+            DevicesInfo.objects.filter(
+                interfaces__isnull=False,
+                dev__active=True,
+                dev__in=Devices.objects.filter(
+                    Q(group__profile__user_id=user.id)
+                    | Q(access_groups__users=user)
+                    | Q(access_groups__user_groups__in=user.groups.all())
+                )
+                .exclude(
+                    Q(forbidden_access_groups__users=user)
+                    | Q(forbidden_access_groups__user_groups__in=user.groups.all())
+                )
+                .distinct(),
+            )
             .select_related("dev", "dev__group")
             .order_by("dev__name")
             .values(
