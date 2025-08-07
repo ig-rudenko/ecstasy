@@ -109,7 +109,7 @@ class ThreadUpdatedStatusTask(Task):
             "severity": kwargs.get("severity", "INFO"),
             **kwargs,
         }
-        print(orjson.dumps(data), flush=True)
+        print(orjson.dumps(data).decode("utf-8"), flush=True)
 
     def log_error(self, **kwargs):
         return self.log(**kwargs, severity="ERROR")
