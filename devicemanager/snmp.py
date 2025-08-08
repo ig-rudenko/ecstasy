@@ -86,9 +86,13 @@ def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
 
     # Убираем возможное переполнение в отрицательных индексах
     for k, v in snmp_result["IF-MIB::ifIndex"].items():
-        if v.isdigit() and int(v) < 0:
-            # Если значение отрицательное, то прибавляем к нему 2^32, чтобы изменить знак на положительный
-            snmp_result["IF-MIB::ifIndex"][k] = v + 2**32
+        try:
+            v_int = int(v)
+            if v_int < 0:
+                # Если значение отрицательное, то прибавляем к нему 2^32, чтобы изменить знак на положительный
+                snmp_result["IF-MIB::ifIndex"][k] = str(v_int + 2**32)
+        except ValueError:
+            continue
 
     result: InterfaceListType = []
 
