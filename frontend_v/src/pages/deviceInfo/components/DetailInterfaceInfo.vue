@@ -381,7 +381,7 @@ export default defineComponent({
     },
 
     toggleVlansList(event: Event) {
-      if (this.interface.vlans.length < 5) return;
+      if (this.compressVlanRange.length < 5) return;
       // @ts-ignore
       this.$refs.vlansList.toggle(event, event.target);
     },
