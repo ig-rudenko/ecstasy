@@ -344,6 +344,7 @@ class ProfileAdmin(admin.ModelAdmin):
     list_select_related = ["user"]
     filter_horizontal = ["devices_groups"]
     list_filter = ["permissions", "devices_groups", "console_access", "user__is_active", "user__is_staff"]
+    search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):
@@ -408,11 +409,11 @@ class UsersActionsAdmin(admin.ModelAdmin):
     """Просмотр логов действий пользователя"""
 
     list_display = ["time", "user", "device", "action"]
-    list_filter = ["user"]
+    list_filter = ["user", "device"]
     search_fields = ["action"]
     date_hierarchy = "time"
     readonly_fields = ["time", "user", "device", "action"]
-    list_per_page = 50
+    list_per_page = 25
     list_select_related = ["device", "user"]
 
 
