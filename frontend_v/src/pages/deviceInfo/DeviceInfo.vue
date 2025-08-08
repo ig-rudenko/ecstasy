@@ -14,7 +14,7 @@
 
     <div class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
 
-      <div class="p-3 flex flex-wrap items-center gap-1">
+      <div class="p-3 flex flex-wrap items-center gap-1 scale-90 sm:scale-100">
         <!--    Кнопка для отображения панели с информацией Zabbix-->
         <div>
           <DeviceDetailInfo :general-info="generalInfo"/>
@@ -115,22 +115,20 @@
     </div>
   </div>
 
-  <div class="container mx-auto py-4 flex justify-evenly relative">
+  <div class="mx-auto py-4 px-2 flex justify-evenly relative">
 
     <!--    Таблица интерфейсов-->
     <div v-if="interfaces.length && generalInfo" class="overflow-x-scroll overflow-y-visible">
       <table class="block">
         <thead>
         <tr>
-          <th class="px-3"></th>
-          <th class="px-3">Порт</th>
-          <th class="px-3">Статус</th>
-          <th class="px-3">Описание</th>
-          <th class="px-3">
-            <Button class="cursor-pointer mx-3" outlined size="small" @click="toggleInterfacesWithVlans">
-              <span v-if="withVlans">no VLAN's</span>
-              <span v-else>+ VLAN's</span>
-            </Button>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th class="font-mono">
+            <Button outlined size="small" @click="toggleInterfacesWithVlans"
+                    :label="withVlans?'no VLAN':'+ VLAN'"/>
           </th>
         </tr>
         </thead>
@@ -141,6 +139,7 @@
               :device-name="generalInfo.deviceName"
               :dynamic-opacity="dynamicOpacity"
               :interface="_interface"
+              :show-vlans="withVlans"
               :permission-level="generalInfo.permission"/>
         </template>
 

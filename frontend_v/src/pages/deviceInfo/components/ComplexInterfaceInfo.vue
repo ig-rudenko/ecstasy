@@ -12,6 +12,7 @@ import {ComplexInterfaceInfoType} from "@/pages/deviceInfo/detailInterfaceInfo";
 import {textToHtml} from "@/formats";
 import macSearch from "@/services/macSearch";
 import {FilterMatchMode} from "@primevue/core/api";
+import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
 
 const collectingMACs = ref(false);
 const macs = ref<MacInfo[]>([]);
@@ -116,8 +117,8 @@ onMounted(async () => {
     <!--      Конфигурация порта -->
     <div v-show="portDetailMenu==='portConfig'">
 
-      <div v-if="complexInfo.portConfig.length>0" class="p-4 m-2 border rounded shadow font-mono">
-        <span v-html="textToHtml(complexInfo.portConfig)"></span>
+      <div v-if="complexInfo.portConfig.length>0" class="p-4 m-2 border max-sm:text-xs rounded shadow font-mono whitespace-pre">
+        {{ complexInfo.portConfig }}
       </div>
 
       <div v-else class="d-flex justify-content-center">
@@ -159,10 +160,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="flex flex-wrap justify-between">
-        <span>Всего: <span class="font-mono">{{ macs.length }}</span></span>
-        <span v-if="collectingMACs" class="text-muted text-help" style="cursor: default">Обновляю...</span>
-        <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+      <span>Всего: <span class="font-mono">{{ macs.length }}</span></span>
+      <div class="flex justify-end">
+        <UpdateCommonButton :condition="collectingMACs" @update="getMacs"/>
       </div>
 
       <div class="flex justify-center pb-10">
@@ -204,9 +204,8 @@ onMounted(async () => {
   </div>
 
   <div v-else-if="macs.length === 0" class="container">
-    <div class="text-end">
-      <span v-if="collectingMACs" class="text-muted text-help">Обновляю...</span>
-      <span v-else @click="getMacs" class="text-muted text-help" style="cursor: pointer">Обновить</span>
+    <div class="flex justify-end">
+      <UpdateCommonButton :condition="collectingMACs" @update="getMacs"/>
     </div>
     <div class="text-2xl text-center" style="padding-bottom: 40px;">Нет MAC</div>
   </div>
@@ -215,7 +214,3 @@ onMounted(async () => {
     <div class="spinner-border" role="status"></div>
   </div>
 </template>
-
-<style scoped>
-
-</style>

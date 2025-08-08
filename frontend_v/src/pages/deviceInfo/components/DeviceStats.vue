@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-wrap gap-3 items-center justify-end p-3 dark:text-gray-300">
+  <div class="flex flex-wrap gap-3 items-center justify-end p-3 dark:text-gray-300 scale-90 sm:scale-100">
     <!--  UPTIME -->
     <div v-if="uptime>0">
       <div v-tooltip.bottom="'Время работы'" class="flex gap-2 items-center">

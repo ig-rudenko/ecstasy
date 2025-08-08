@@ -13,7 +13,7 @@ function logout() {
 </script>
 
 <template>
-  <Button v-tooltip.bottom="'Выйти'" icon="pi pi-sign-out" @click="logoutVisible=true"
+  <Button v-tooltip.left="'Выйти'" icon="pi pi-sign-out" @click="logoutVisible=true"
           class="dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-gray-600 bg-opacity-10"
           text/>
 
@@ -30,7 +30,3 @@ function logout() {
   </Dialog>
 
 </template>
-
-<style scoped>
-
-</style>

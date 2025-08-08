@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div class="px-1">
     <DataTable ref="dt" :value="devices" v-model:filters="filters" :paginator-position="paginatorPosition"
                :loading="loading" class="font-mono !bg-transparent"
                paginator :rows="50" :rowsPerPageOptions="[10, 20, 50]"
                export-filename="devices" @valueChange="filterDevices"
-               filterDisplay="menu" stripedRows size="small" removableSort
+               filterDisplay="menu" stripedRows size="small" removableSort resizableColumns
                dataKey="ip" :globalFilterFields="['name', 'ip']">
 
       <template #empty>
@@ -35,7 +35,8 @@
             <a :href="'/device/'+data.name">
               <Button text icon="pi pi-box" :label="data.name"/>
             </a>
-            <span class="opacity-0 group-hover/device-name:opacity-100" :class="{'!opacity-100': pinnedDevices.isPinned(data.name)}">
+            <span class="opacity-0 group-hover/device-name:opacity-100"
+                  :class="{'!opacity-100': pinnedDevices.isPinned(data.name)}">
               <PinDevice :device="data"/>
             </span>
           </div>
@@ -105,6 +106,7 @@
                     icon="pi pi-filter" size="small"
                     class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
             <Button v-else @click="filters.model.value = null" icon="pi pi-filter-slash" size="small"
+                    v-tooltip="'Сбросить фильтр'"
                     class="opacity-0 group-hover/model-filter:opacity-100" outlined/>
           </div>
         </template>
@@ -113,12 +115,22 @@
         </template>
         <template #filter="{ filterModel, filterCallback }">
           <Select v-model="filterModel.value" :showClear="true"
+                  filter
                   optionGroupLabel="label" optionGroupChildren="items" @change="filterCallback()" :options="models"
+                  scroll-height="400px"
                   placeholder="Выберите модель" class="md:w-80 w-full relative">
             <template #optiongroup="slotProps">
-              <div class="sticky top-0 flex items-center">
-                <div class="">{{ slotProps.option.label }}</div>
+              <div class="relative ps-10 pb-6">
+                <div class="absolute">
+                  <span class="font-mono">{{ slotProps.option.label }}</span>
+                  <div :style="{'background-color': stringToColour(slotProps.option.label)}"
+                       class="absolute -left-6 top-1 p-2 rounded-full">
+                  </div>
+                </div>
               </div>
+            </template>
+            <template #option="slotProps">
+              <div class="ps-3 font-mono">{{ slotProps.option }}</div>
             </template>
           </Select>
         </template>

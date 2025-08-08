@@ -16,36 +16,39 @@
     <!--ПОРТ-->
     <td class="btn-fog" style="text-align: right">
 
-      <div class="flex items-center">
+      <div class="flex items-center justify-between">
 
         <!--Название Интерфейса-->
         <div @click="toggleDetailInfo" class="flex items-center cursor-pointer">
-          <span class="sm:pl-8 pr-4 text-xl">{{ interface.name }}</span>
+          <span class="md:text-lg break-keep w-full font-mono">{{ interface.name }}</span>
         </div>
 
-        <div class="hidden sm:flex items-center">
-          <!--Управление состоянием интерфейсов-->
-          <PortControlButtons
-              :interface="interface"
-              :device-name="deviceName"
-              :permission-level="permissionLevel"/>
+        <div>
+          <div class="hidden sm:flex items-center">
+            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+              {{ complexInfo.portType }}
+            </span>
 
-          <!--Посмотреть порт -->
-          <Button @click="toggleDetailInfo" text>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-              <path
-                  d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
-            </svg>
-          </Button>
+            <!--Управление состоянием интерфейсов-->
+            <PortControlButtons
+                :interface="interface"
+                :device-name="deviceName"
+                :permission-level="permissionLevel"/>
 
-          <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
-            {{ complexInfo.portType }}
-          </span>
+            <!--Посмотреть порт -->
+            <Button @click="toggleDetailInfo" text>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
+              </svg>
+            </Button>
+          </div>
+
+          <Button icon="pi pi-info-circle" size="small" class="sm:hidden mx-1" outlined @click="showPortControlsPopover"/>
+
         </div>
-
-        <Button icon="pi pi-info-circle" size="small" class="sm:hidden" outlined @click="showPortControlsPopover"/>
         <Popover ref="portControls">
-          <div class="flex items-center">
+          <div class="flex items-center max-sm:scale-90">
             <!--Управление состоянием интерфейсов-->
             <PortControlButtons
                 :interface="interface"
@@ -72,7 +75,7 @@
     <!--Статус порта-->
     <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm sm:text-base text-center sm:min-w-[6rem] px-3 font-mono">
+        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm text-center sm:min-w-[6rem] px-3 font-mono">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
@@ -82,8 +85,8 @@
     </td>
 
     <!--VLANS-->
-    <td v-if="interface.vlans.length" @click="toggleVlansList"
-        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3">
+    <td v-if="showVlans && interface.vlans.length" @click="toggleVlansList"
+        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3 font-mono">
       {{ compressVlanRange }}
     </td>
     <td v-else></td>
@@ -97,17 +100,16 @@
       <!--      DETAIL PORT INFO  -->
       <div v-if="complexInfo.portDetailInfo" class="container py-3">
 
-        <div class="text-end">
-          <span v-if="collectingDetailInfo" class="text-muted-color text-help"
-                style="cursor: default">Обновляю...</span>
-          <span v-else @click="getDetailInfo" class="text-muted-color text-help" style="cursor: pointer">Обновить</span>
+        <div class="flex justify-end">
+          <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
         </div>
 
         <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3 "
              v-html="complexInfo.portDetailInfo.data"></div>
 
-        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 font-mono"
-             v-html="textToHtml(complexInfo.portDetailInfo.data)"></div>
+        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
+          {{ complexInfo.portDetailInfo.data }}
+        </div>
 
         <!--      MIKROTIK -->
         <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3 border rounded shadow py-3">
@@ -154,7 +156,7 @@
 
   <!--  VLANS FULL LIST-->
   <Popover ref="vlansList">
-    <div>{{ compressVlanRange }}</div>
+    <div class="font-mono">{{ compressVlanRange }}</div>
   </Popover>
 
 </template>
@@ -181,9 +183,11 @@ import errorFmt from "@/errorFmt";
 import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterfaceInfo.vue";
 import {textToHtml} from "@/formats";
 import {ComplexInterfaceInfoType} from "@/pages/deviceInfo/detailInterfaceInfo";
+import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
 
 export default defineComponent({
   components: {
+    UpdateCommonButton,
     ComplexInterfaceInfo,
     GraphsLink,
     ChangeDescription,
@@ -201,6 +205,7 @@ export default defineComponent({
     interface: {required: true, type: Object as PropType<DeviceInterface>},
     permissionLevel: {required: true, type: Number},
     dynamicOpacity: {required: true, type: Object as PropType<{ opacity: Number }>},
+    showVlans: {required: false, type: Boolean, default: true},
   },
 
   data() {
@@ -303,7 +308,7 @@ export default defineComponent({
       // Преобразуем currentQuery.port в массив строк
       let selectedPorts: string[] = [];
 
-      const currentQuery = { ...this.$route.query };
+      const currentQuery = {...this.$route.query};
       const portQuery = currentQuery.port;
 
       if (Array.isArray(portQuery)) {
@@ -330,14 +335,14 @@ export default defineComponent({
       }
 
       // Обновляем query
-      const newQuery = { ...this.$route.query };
+      const newQuery = {...this.$route.query};
       if (selectedPorts.length > 0) {
         newQuery.port = selectedPorts;
       } else {
         delete newQuery.port;
       }
 
-      this.$router.push({ query: newQuery });
+      this.$router.push({query: newQuery});
 
       if (this.showDetailInfo) {
         this.getDetailInfo();
@@ -376,6 +381,7 @@ export default defineComponent({
     },
 
     toggleVlansList(event: Event) {
+      if (this.interface.vlans.length < 5) return;
       // @ts-ignore
       this.$refs.vlansList.toggle(event, event.target);
     },

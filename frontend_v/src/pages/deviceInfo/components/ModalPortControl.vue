@@ -40,15 +40,15 @@
       </div>
     </template>
     <div>
-      <div class="flex flex-wrap gap-2 py-6 justify-center text-2xl" v-if="interfaceControlService.portAction.action">
-        <div>Вы уверены, что хотите {{ interfaceControlService.portAction.name }}</div>
-        <svg class="" width="24" height="24">
+      <div class="flex flex-wrap gap-3 py-6 items-center justify-center text-2xl" v-if="interfaceControlService.portAction.action">
+        <div class="text-center">Вы уверены, что хотите {{ interfaceControlService.portAction.name }}</div>
+        <svg class="scale-125" width="24" height="24">
           <use v-if="interfaceControlService.portAction.name === 'включить'" xlink:href="#port-up-icon"></use>
           <use v-else-if="interfaceControlService.portAction.name === 'выключить'" xlink:href="#port-down-icon"></use>
           <use v-else-if="interfaceControlService.portAction.name === 'перезагрузить'" xlink:href="#port-reload-icon"></use>
         </svg>
-        <div>{{ interfaceControlService.portAction.port }}</div>
-        <div>{{ interfaceControlService.portAction.desc }}?</div>
+        <div class="font-mono text-center">{{ interfaceControlService.portAction.port }}</div>
+        <div class="font-mono text-center">{{ interfaceControlService.portAction.desc }}?</div>
       </div>
       <div v-else class="text-center textl-xl">
         Неверное действие

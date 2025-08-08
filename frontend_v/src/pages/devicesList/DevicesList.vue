@@ -1,7 +1,7 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto py-4">
+  <div class="xl:container mx-auto py-4">
 
     <div class="flex flex-wrap justify-center md:grid sm:grid-cols-4 items-center p-4">
 
@@ -68,7 +68,7 @@
     <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true"
                  placeholder="Поиск по Имени или IP адресу"/>
 
-    <div class="p-4 py-2 font-mono">Найдено: {{ devices.length }}</div>
+    <div class="p-4 py-2 font-mono">Найдено: {{ devices_count }}</div>
 
     <DevicesListTable :globalSearch="search" :devices="devices"
                       :groups="groups" :vendors="vendors" :models="models"
@@ -111,6 +111,7 @@ export default defineComponent({
     return {
       imageIndex: 0,
       devices: [] as Device[],
+      devices_count: 0,
       search: "",
 
       groups: [] as string[],
@@ -141,6 +142,7 @@ export default defineComponent({
           .then(
               devices => {
                 this.devices = devices;
+                this.devices_count = devices.length;
                 // Режим по умолчанию
                 this.displayMode = "default"
                 this.getUniqueVendorsGroupsModels()
@@ -201,11 +203,12 @@ export default defineComponent({
       if (this.displayMode !== 'interfaces_loading' || !devices.length) {
         this.chartData = []
       } else {
-        this.chartData = calculateInterfacesWorkload(this.devices)
+        this.chartData = calculateInterfacesWorkload(devices)
       }
     },
 
     processFilteredDevices(devices: Device[]): void {
+      this.devices_count = devices.length;
       this.calculateInterfacesWorkload(devices);
     }
 

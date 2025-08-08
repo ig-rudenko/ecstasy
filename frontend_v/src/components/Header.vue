@@ -121,7 +121,7 @@ function showDevicePinned(): boolean {
 <template>
   <div class="bg-zinc-800 dark:bg-gray-950">
     <Menubar :model="menuItems.value"
-             class="container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
+             class="xl:container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
              :pt="{itemContent: {class: 'bg-zinc-800 dark:!bg-gray-950'}}">
       <template #start>
         <a href="/" class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none z-10">
@@ -149,23 +149,23 @@ function showDevicePinned(): boolean {
 
       <template #end>
         <div class="flex items-center gap-2">
-          <a href="/admin/">
-            <Button v-if="user && user.isStaff" icon="pi pi-cog" size="large" text
+          <a v-if="user && user.isStaff" href="/admin/">
+            <Button icon="pi pi-cog" size="large" text
                     v-tooltip.bottom="'Панель администратора'"/>
           </a>
           <Avatar v-if="user" :image="getAvatar(user.username)" v-tooltip.bottom="user.firstName" shape="circle"
                   :size="'large'"/>
           <div class="flex flex-col">
             <Button icon="pi pi-circle" v-if="currentTheme == 'auto'" @click="toggle"
-                    v-tooltip.bottom="'Включить светлую тему'"
+                    v-tooltip.left="'Включить светлую тему'"
                     class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
                     text/>
             <Button icon="pi pi-sun" v-if="currentTheme == 'light'" @click="toggle"
-                    v-tooltip.bottom="'Включить темную тему'"
+                    v-tooltip.left="'Включить темную тему'"
                     class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
                     text/>
             <Button icon="pi pi-moon" v-if="currentTheme == 'dark'" @click="toggle"
-                    v-tooltip.bottom="'Выбрать тему автоматически'"
+                    v-tooltip.left="'Выбрать тему автоматически'"
                     class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
                     text/>
             <LogoutButton/>
@@ -175,9 +175,11 @@ function showDevicePinned(): boolean {
     </Menubar>
   </div>
 
-  <div class="md:sticky top-0 z-10">
-    <Button v-if="showDevicePinned()" type="button" icon="pi pi-box" label="Закреплённое оборудование" outlined text
-            size="small" @click="togglePinedDevices"/>
+  <div class="md:sticky top-0 z-10 w-fit backdrop-blur-sm rounded-md">
+    <div>
+      <Button v-if="showDevicePinned()" type="button" icon="pi pi-box" label="Закреплённое оборудование" outlined text
+              size="small" @click="togglePinedDevices"/>
+    </div>
   </div>
 
   <Popover ref="pinnedDevicesRef" class="p-1">

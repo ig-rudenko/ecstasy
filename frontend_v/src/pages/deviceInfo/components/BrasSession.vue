@@ -3,13 +3,10 @@
   <Dialog maximizable modal v-model:visible="brasSessionsService.dialogVisible" class="w-full h-full">
     <template #header>
       <div class="flex items-center">
-        <div class="text-2xl">
+        <div class="sm:text-2xl">
           Сессия абонента <span class="font-mono">"{{ brasSessionsService.current?.mac }}"</span>
         </div>
-        <div>
-          <span v-if="updatingSessions" class="text-muted text-help" style="cursor: progress">Обновляю...</span>
-          <span v-else @click="refreshSessions" class="text-muted text-help" style="cursor: pointer">Обновить</span>
-        </div>
+        <UpdateCommonButton :condition="updatingSessions" @update="refreshSessions"/>
       </div>
     </template>
 
@@ -102,8 +99,10 @@ import {defineComponent} from "vue";
 
 import brasSessionsService from "@/services/bras.sessions";
 import brasSessions from "@/services/bras.sessions";
+import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
 
 export default defineComponent({
+  components: {UpdateCommonButton},
   data() {
     return {
       brasSessionsService: brasSessionsService,
