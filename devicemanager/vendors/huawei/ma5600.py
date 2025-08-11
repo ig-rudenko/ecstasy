@@ -796,7 +796,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         if len(indexes) != 3:  # Неверный порт
             return []
 
-        # -> display mac-address port
+        # -> display mac-address port x/x/x
         #   SRV-P BUNDLE TYPE MAC            MAC TYPE F /S /P  VPI  VCI   VLAN ID
         #   INDEX INDEX
         #   ---------------------------------------------------------------------
@@ -804,19 +804,21 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         #     689    -   adl  e0cc-f85d-3818 dynamic  0 /11/27 1    33    1418
         #     690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
         #   ---------------------------------------------------------------------
+        output = self.send_command(f"display  mac-address  port  {'/'.join(indexes)}", expect_command=False)
         macs1: list[tuple[str, str]] = re.findall(
             rf"\s+\S+\s+\S+\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+\S+\s+\S+\s+?.+?\s+(\d+)",
-            self.send_command(f"display mac-address port {'/'.join(indexes)}", expect_command=False),
+            output,
         )
 
-        # Попробуем еще одну команду -> display security bind mac
+        # Попробуем еще одну команду -> display security bind mac x/x/x
         #   Index     MAC-Address FlowID  F/ S/ P   VLAN-ID  Vpi  Vci FlowType    FlowPara
         #   ------------------------------------------------------------------------------
         #       0  0002-cf93-db80    879  0 /2 /15      735    1   40        -           -
         #       0  0a31-92f7-1625    582  0 /11/16      707    1   40        -           -
+        output = self.send_command(f"display  security  bind  mac  {'/'.join(indexes)}", expect_command=False)
         macs2: list[tuple[str, str]] = re.findall(
             rf"\s+\S+\s+({self.mac_format})\s+\S+\s+\d+\s*/\d+\s*/\d+\s+(\d+)",
-            self.send_command(f"display security bind mac {'/'.join(indexes)}", expect_command=False),
+            output,
         )
 
         res: MACListType = []
