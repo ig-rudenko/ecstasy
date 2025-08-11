@@ -298,7 +298,7 @@ line3"""
   Maximum transmit rate upstream(Kbps)          : 2464
   ------------------------------------------------------------------------------
 """
-        elif "display mac-address port" in command:
+        elif re.search("display\s+mac-address\s+port", command):
             self._output = b"""
    SRV-P BUNDLE TYPE MAC            MAC TYPE F /S /P  VPI  VCI   VLAN ID
    INDEX INDEX
@@ -308,7 +308,7 @@ line3"""
      690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
    ---------------------------------------------------------------------
 """
-        elif "display security bind mac" in command:
+        elif re.search("display\s+security\s+bind\s+mac", command):
             self._output = b"""
    Index     MAC-Address FlowID  F/ S/ P   VLAN-ID  Vpi  Vci FlowType    FlowPara
    ------------------------------------------------------------------------------
