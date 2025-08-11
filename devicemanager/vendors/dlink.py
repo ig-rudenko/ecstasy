@@ -138,7 +138,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.mac = self.find_or_empty(r"MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)", version)
         self.model = self.model or self.find_or_empty(r"Device Type\s+:\s+(\S+)\s", version)
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
-        self.os_version = self.find_or_empty(r"Firmware Version\s+:\s+(\S+)", version)
+        self.os_version = self.find_or_empty(r"Firmware Version\s+:\s+(.+)", version)
 
     @BaseDevice.lock_session
     def save_config(self):
