@@ -1,11 +1,11 @@
 <template>
   <div class="px-1">
-    <DataTable ref="dt" :value="devices" v-model:filters="filters" :paginator-position="paginatorPosition"
+    <DataTable ref="dt" :value="devicesFiltered" v-model:filters="filters" :paginator-position="paginatorPosition"
                :loading="loading" class="font-mono !bg-transparent"
                paginator :rows="50" :rowsPerPageOptions="[10, 20, 50]"
                export-filename="devices" @valueChange="filterDevices"
                filterDisplay="menu" stripedRows size="small" removableSort resizableColumns
-               dataKey="ip" :globalFilterFields="['name', 'ip']">
+               dataKey="ip">
 
       <template #empty>
         <div v-if="!loading" class="p-4 text-center"><h2>Оборудование не найдено</h2></div>
@@ -194,15 +194,15 @@ export default defineComponent({
   emits: ["update:data", "filter:devices", "filter:clear"],
 
   updated() {
-    this.filters.global.value = this.globalSearch;
+    this.search = this.globalSearch.trim() || "";
   },
 
   data() {
     return {
       model: null,
       paginatorPosition: undefined as 'top' | 'bottom' | 'both' | undefined,
+      search: '',
       _filters: {
-        global: {value: "", matchMode: FilterMatchMode.CONTAINS},
         vendor: {value: null, matchMode: FilterMatchMode.EQUALS},
         model: {value: null, matchMode: FilterMatchMode.EQUALS},
         group: {value: null, matchMode: FilterMatchMode.EQUALS},
@@ -230,6 +230,29 @@ export default defineComponent({
       set(value: any) {
         this._filters = value
       }
+    },
+
+    devicesFiltered(): Device[] {
+      if (this.search) {
+        const defaultFiltered = this.devices.filter(d => {
+          return d.name.toLowerCase().includes(this.search.toLowerCase()) || d.ip.includes(this.search)
+        });
+        if (defaultFiltered.length) return defaultFiltered;
+      }
+
+      if (this.search && this.devices?.length) {
+        const names = this.devices.map(d => d.name);
+        const matched = this.smartSearch(this.search, names, 0.7);
+
+        let filtered: Device[] = [];
+        for (let i = 0; i < matched.length; i++) {
+          if (this.devices.find(d => d.name == matched[i])) {
+            filtered.push({...this.devices.find(d => d.name == matched[i])!});
+          }
+        }
+        return filtered;
+      }
+      return this.devices;
     }
   },
 
@@ -241,7 +264,7 @@ export default defineComponent({
 
     clearFilters() {
       this.$emit("filter:clear");
-      this.filters.global.value = "";
+      this.search = "";
       this.filters.vendor.value = null;
       this.filters.model.value = null;
       this.filters.group.value = null;
@@ -269,6 +292,56 @@ export default defineComponent({
         this.paginatorPosition = undefined;
       }
       this.$emit("filter:devices", devices)
+    },
+
+    // Левенштейн
+    levenshtein(a: string, b: string) {
+      a = a.toLowerCase();
+      b = b.toLowerCase();
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j - 1] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    },
+    // Коэффициент похожести
+    similarity(a: string, b: string) {
+      const longer = a.length > b.length ? a : b;
+      const shorter = a.length > b.length ? b : a;
+      const distance = this.levenshtein(longer, shorter);
+      return (longer.length - distance) / longer.length;
+    },
+    // Умный поиск
+    smartSearch(searchStr: string, list: string[], minSimilarity = 0.5) {
+      searchStr = searchStr.toLowerCase();
+      return list
+          .map(item => {
+            const itemLower = item.toLowerCase();
+            let score = 0;
+            if (searchStr.includes(itemLower) || itemLower.includes(searchStr)) {
+              score = 1;
+            } else {
+              const words = searchStr.split(/\s+/).filter(Boolean);
+              const wordScores = words.map(w => this.similarity(w, itemLower));
+              score = Math.max(...wordScores);
+            }
+            return {item, score};
+          })
+          .filter(r => r.score >= minSimilarity)
+          .sort((a, b) => b.score - a.score)
+          .map(r => r.item);
     }
   }
 })

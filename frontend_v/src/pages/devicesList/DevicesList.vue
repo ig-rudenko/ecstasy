@@ -66,6 +66,7 @@
 
     <!-- Строка поиска-->
     <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true"
+                 :init-search="search"
                  placeholder="Поиск по Имени или IP адресу"/>
 
     <div class="p-4 py-2 font-mono">Найдено: {{ devices_count }}</div>
@@ -112,7 +113,7 @@ export default defineComponent({
       imageIndex: 0,
       devices: [] as Device[],
       devices_count: 0,
-      search: "",
+      search: this.$route.query.search as string || "",
 
       groups: [] as string[],
       vendors: [] as string[],
@@ -196,7 +197,6 @@ export default defineComponent({
       }
       this.groups = devices_groups.sort((a, b) => a.localeCompare(b))
       this.vendors = devices_vendors.sort((a, b) => a.localeCompare(b))
-      // this.models = devices_models.sort((a, b) => a.localeCompare(b))
     },
 
     calculateInterfacesWorkload(devices: Device[]) {
@@ -210,6 +210,12 @@ export default defineComponent({
     processFilteredDevices(devices: Device[]): void {
       this.devices_count = devices.length;
       this.calculateInterfacesWorkload(devices);
+      this.$router.replace({
+        query: {
+          ...this.$route.query,
+          search: this.search,
+        }
+      });
     }
 
   },
