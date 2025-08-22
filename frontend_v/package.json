@@ -18,7 +18,7 @@
     "primevue": "^4.3.4",
     "tailwindcss-primeui": "^0.6.1",
     "vis-network": "^9.1.10",
-    "vue": "^3.5.13",
+    "vue": "^3.5.14",
     "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.1",
     "vuex": "^4.1.0"
