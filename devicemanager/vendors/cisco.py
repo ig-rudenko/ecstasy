@@ -69,6 +69,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
+        self.os_version = self.find_or_empty(r"(Version \S+),.+Copyright", version, flags=re.DOTALL)
         self.__cache_port_info: dict[str, str] = {}
 
     @staticmethod
