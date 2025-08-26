@@ -327,12 +327,12 @@ export default defineComponent({
     },
   },
 
-  async mounted() {
+  mounted() {
     this.deviceName = this.$route.params.deviceName.toString();
     TimeAgo.addDefaultLocale(ru)
 
     // Смотрим предыдущую загруженность интерфейсов оборудования
-    await this.getInterfacesWorkload()
+    this.getInterfacesWorkload()
 
     // Сначала смотрим предыдущие интерфейсы
     this.getInterfaces(false)?.then(
