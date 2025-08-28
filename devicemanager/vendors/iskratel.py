@@ -656,6 +656,7 @@ class IskratelFactory(AbstractDeviceFactory):
             if os_version_match := re.search(
                 r"(?P<date>\S+ \d+ \d+ \d+:\d+:\d+).+?Steer version: (?P<steer_version>\S+).+?VxWorks: (?P<vxversion>\S+).+?Kernel: (?P<kernel>.+?)\n",
                 version_output,
+                flags=re.DOTALL,
             ):
                 device.os_version = (
                     f"{os_version_match.group('steer_version')} {os_version_match.group('date')}"
