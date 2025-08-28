@@ -207,6 +207,43 @@ class TestCE6865Template(TestCase):
         )
 
 
+class HuaweiCE6865PexpectFaker:
+    """
+    ## Это класс создает имитацию сессии pexpect для обработки команд Cisco.
+    """
+
+    def __init__(self):
+        self.before = b""
+        self.sent_commands = []
+        self.expect_cmd = 0
+
+    def send(self, command: str):
+        return self.sendline(command.strip())
+
+    def sendline(self, command: str):
+        self.sent_commands.append(command)
+
+        if "display device elabel" in command:
+            self.before = b"""
+BarCode=000000000000
+BarCode=oud129388939
+BarCode=kojaisoid9h9
+            """
+
+        else:
+            self.before = b""
+        return len(command)
+
+    def expect(self, *args, **kwargs):
+        if self.expect_cmd != 0:
+            # Если указан другой случай ожидания, то выдаем его и снова ставим по умолчанию `0`
+            v = self.expect_cmd
+            self.expect_cmd = 0
+            return v
+
+        return 0
+
+
 class TestCE6865Methods(TestCase):
     device = None  # type: ClassVar[HuaweiCE6865]
     display_mac_address_output = None  # type: ClassVar[str]
@@ -219,7 +256,7 @@ class TestCE6865Methods(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.device = HuaweiCE6865(
-            session=None,
+            session=HuaweiCE6865PexpectFaker(),
             ip="",
             auth={
                 "login": "login",

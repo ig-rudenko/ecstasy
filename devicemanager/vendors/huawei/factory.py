@@ -40,7 +40,9 @@ class HuaweiFactory(AbstractDeviceFactory):
 
             elif "ce6865" in version.lower():
                 model = BaseDevice.find_or_empty(r"HUAWEI (\S+) uptime is", version)
-                return HuaweiCE6865(session, ip, auth, snmp_community=snmp_community, model=model)
+                device = HuaweiCE6865(session, ip, auth, snmp_community=snmp_community, model=model)
+                device.os_version = device.find_or_empty("software, (Version .+)", version).strip()
+                return device
 
             # Если снова 'Unrecognized command', значит недостаточно прав, пробуем Huawei
             if "Unrecognized command" in version:
@@ -63,11 +65,12 @@ class HuaweiFactory(AbstractDeviceFactory):
                     session.sendcontrol("C")
                 else:
                     break
-            if re.findall(r"PRODUCT : MA5600", version_output):
+            if re.findall(r"PRODUCT\s*:? MA5600", version_output):
                 device = HuaweiMA5600T(session, ip, auth, model="MA5600T", snmp_community=snmp_community)
-                os_version = device.find_or_empty(r"VERSION : (MA5600\S+)", version_output)
+                os_version = device.find_or_empty(r"VERSION\s*:?\s*(MA5600\S+)", version_output)
                 patch = device.find_or_empty("PATCH : (\S+)", version_output)
-                device.os_version = f"Version: {os_version} Patch: {patch}"
+                if os_version or patch:
+                    device.os_version = f"Version: {os_version} Patch: {patch}"
                 return device
 
         raise UnknownDeviceError("HuaweiFactory не удалось распознать модель оборудования", ip=ip)

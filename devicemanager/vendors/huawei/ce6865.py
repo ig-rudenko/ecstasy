@@ -42,9 +42,6 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
     def __init__(self, session, ip: str, auth, model: str = "", snmp_community: str = ""):
         super().__init__(session, ip, auth, model, snmp_community)
 
-        version = self.send_command("display version")
-        self.os_version = self.find_or_empty("software, (Version .+)", version).strip()
-
         bar_codes = self.send_command("display device elabel brief | include BarCode", expect_command=False)
         self.serialno = self.find_or_empty("BarCode=(\S+)", bar_codes).strip()  # Первый найденный
 
