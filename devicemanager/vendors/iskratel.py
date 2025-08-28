@@ -659,7 +659,7 @@ class IskratelFactory(AbstractDeviceFactory):
                 flags=re.DOTALL,
             ):
                 device.os_version = (
-                    f"{os_version_match.group('steer_version')} {os_version_match.group('date')}"
+                    f"{os_version_match.group('steer_version')} {os_version_match.group('date')} "
                     + f"{os_version_match.group('vxversion')} "
                     + f"Kernel: {os_version_match.group('kernel')}"
                 )
