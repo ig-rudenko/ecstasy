@@ -114,15 +114,33 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         super().__init__(session, ip, auth, model, snmp_community)
         self.dsl_profiles = self._get_dsl_profiles()
 
+    def send_command(
+        self,
+        command: str,
+        before_catch: str | None = None,
+        expect_command=True,
+        num_of_expect=10,
+        space_prompt=None,
+        prompt=None,
+        pages_limit=None,
+        command_linesep="\n",
+    ) -> str:
+        return super().send_command(
+            command,
+            before_catch=before_catch,
+            expect_command=False,
+            num_of_expect=num_of_expect,
+            space_prompt=space_prompt,
+            prompt=prompt,
+            pages_limit=pages_limit,
+            command_linesep=command_linesep,
+        )
+
     def _get_dsl_profiles(self) -> list:
         return sorted(
             re.findall(
                 r"(\d+)\s+(.+)",
-                self.send_command(
-                    "show dsl profile",
-                    expect_command=False,
-                    before_catch=r"ADSL profiles",
-                ),
+                self.send_command("show dsl profile", before_catch=r"ADSL profiles"),
             ),
             key=lambda pr: int(pr[0]),
             reverse=True,
@@ -298,7 +316,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
             cmd = f"show dsl port {port_number} detail"
             before_catch = None
 
-        output = self.send_command(cmd, expect_command=False, before_catch=before_catch)
+        output = self.send_command(cmd, before_catch=before_catch)
 
         if port_type == "fasteth":  # Возвращаем первые 4 строки
             # Requested Speed  : Auto
@@ -318,7 +336,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         :return: ```[ ({int:vid}, '{mac}', 'dynamic', '{port}'), ... ]```
         """
 
-        output = self.send_command("show bridge mactable", expect_command=False)
+        output = self.send_command("show bridge mactable")
         parsed: list[tuple[str, str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})\s+(\S+).*\n", output)
         mac_type: MACType = "dynamic"
         return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
@@ -348,19 +366,13 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
 
         # Для fasteth портов
         if port_type == "fasteth":
-            output = self.send_command(
-                f"show bridge mactable interface fasteth{port_number}",
-                expect_command=False,
-            )
+            output = self.send_command(f"show bridge mactable interface fasteth{port_number}")
             macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
             return macs
 
         # Для dsl портов
         for sp in self._get_service_ports:  # смотрим маки на сервис портах
-            output = self.send_command(
-                f"show bridge mactable interface dsl{port_number}:{sp}",
-                expect_command=False,
-            )
+            output = self.send_command(f"show bridge mactable interface dsl{port_number}:{sp}")
             macs.extend(re.findall(rf"(\d*)\s+({self.mac_format})", output))
 
         return macs
@@ -423,9 +435,9 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         if port_type is None:
             return "Неверный порт!"
 
-        s1 = self.send_command(f"set dsl port {port_number} port_equp unequipped", expect_command=False)
+        s1 = self.send_command(f"set dsl port {port_number} port_equp unequipped")
         sleep(1)
-        s2 = self.send_command(f"set dsl port {port_number} port_equp equipped", expect_command=False)
+        s2 = self.send_command(f"set dsl port {port_number} port_equp equipped")
 
         return s1 + s2
 
@@ -447,8 +459,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
 
         # Меняем состояние порта
         return self.send_command(
-            f"set dsl port {port_number} port_equp {'equipped' if status == 'up' else 'unequipped'}",
-            expect_command=False,
+            f"set dsl port {port_number} port_equp {'equipped' if status == 'up' else 'unequipped'}"
         )
 
     @BaseDevice.lock_session
@@ -463,7 +474,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show dsl port", expect_command=False)
+        output = self.send_command("show dsl port")
         interfaces_list = []
         for line in output.split("\n"):
             interface: list[list[str]] = re.findall(
@@ -533,7 +544,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
                 "max_length": 32,
             }
 
-        self.send_command(f"set dsl port {port_number} name {desc}", expect_command=False)
+        self.send_command(f"set dsl port {port_number} name {desc}")
 
         return {
             "description": desc,
@@ -556,23 +567,17 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         if port_type is None or port_type != "dsl":
             return "Неверный порт!"
 
-        output = self.send_command(
-            f"set dsl port {port_number} profile {profile_index}", expect_command=False
-        )
+        output = self.send_command(f"set dsl port {port_number} profile {profile_index}")
         if "According to the attached ATM QoS" in output:
             # Если возникает ошибка:
             #   Profile can't be changed. According to the attached ATM QoS profile
             #   DSL downstream rate can't be less than 21024 kbits/s!
             no_policing = self.send_command(
-                f"set atm vc tp dsl{port_number}:1_33 qos_profile UBR:No-policing",
-                expect_command=False,
+                f"set atm vc tp dsl{port_number}:1_33 qos_profile UBR:No-policing"
             )
             if "successfully updated" in no_policing:
                 # Если ограничение снято, снова меняем профиль
-                output = self.send_command(
-                    f"set dsl port {port_number} profile {profile_index}",
-                    expect_command=False,
-                )
+                output = self.send_command(f"set dsl port {port_number} profile {profile_index}")
 
         return output
 
@@ -634,13 +639,15 @@ class IskratelFactory(AbstractDeviceFactory):
     ) -> BaseDevice:
         # ISKRATEL CONTROL
         if "ISKRATEL" in version_output:
-            return IskratelControl(
+            device = IskratelControl(
                 session,
                 ip,
                 auth,
                 model="ISKRATEL Switching",
                 snmp_community=snmp_community,
             )
+            device.os_version = device.find_or_empty(r"Software Version\.+\s+(\S+)", version_output)
+            return device
 
         # ISKRATEL mBAN>
         if "IskraTEL" in version_output:
