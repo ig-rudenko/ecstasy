@@ -43,7 +43,7 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
         super().__init__(session, ip, auth, model, snmp_community)
 
         bar_codes = self.send_command("display device elabel brief | include BarCode", expect_command=False)
-        self.serialno = self.find_or_empty("BarCode=(\S+)", bar_codes).strip()  # Первый найденный
+        self.serialno = self.find_or_empty(r"BarCode=(\S+)", bar_codes).strip()  # Первый найденный
 
     @BaseDevice.lock_session
     def save_config(self) -> str:
