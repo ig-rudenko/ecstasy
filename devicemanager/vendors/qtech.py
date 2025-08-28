@@ -439,6 +439,8 @@ class QtechFactory(AbstractDeviceFactory):
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"\s+(\S+)\s+Device", version_output)
         device = Qtech(session, ip, auth, model=model, snmp_community=snmp_community)
-        device.os_version = device.find_or_empty(r"SoftWare Package (Version \S+)", version_output)
+        device.os_version = device.find_or_empty(
+            r"SoftWare (?:Package )?(Version \S+)", version_output, flags=re.IGNORECASE
+        )
         device.serialno = device.find_or_empty(r"Serial No\.:\s*(\S+)", version_output)
         return device
