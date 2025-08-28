@@ -62,8 +62,6 @@ class Extreme(BaseDevice, AbstractConfigDevice):
         system = self.send_command("show switch")
         self.mac = self.find_or_empty(r"System MAC:\s+(\S+)", system)
         self.model = self.find_or_empty(r"System Type:\s+(\S+)", system)
-        version = self.send_command("show version")
-        self.serialno = self.find_or_empty(r"Switch\s+: \S+ (\S+)", version)
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -401,4 +399,9 @@ class ExtremeFactory(AbstractDeviceFactory):
         auth: DeviceAuthDict,
         version_output: str = "",
     ) -> BaseDevice:
-        return Extreme(session, ip, auth, snmp_community=snmp_community)
+        device = Extreme(session, ip, auth, snmp_community=snmp_community)
+
+        device.serialno = device.find_or_empty(r"Switch\s+: \S+ (\S+)", version_output)
+        device.os_version = device.find_or_empty(r"Image\s+:\s+(.+)BootROM", version_output, flags=re.DOTALL)
+        device.os_version = re.sub(r"\s+", " ", device.os_version)
+        return device

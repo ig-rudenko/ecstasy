@@ -31,15 +31,19 @@ class EltexFactory(AbstractDeviceFactory):
         if "Eltex LTP" in version_output:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version_output)
             if re.match(r"LTP-[48]X", model):
-                return EltexLTP(session, ip, auth, model=model, snmp_community=snmp_community)
+                device = EltexLTP(session, ip, auth, model=model, snmp_community=snmp_community)
+                device.os_version = device.find_or_empty("software version (.+)", version_output).strip()
+                return device
             if "LTP-16N" in model:
-                return EltexLTP16N(session, ip, auth, model=model, snmp_community=snmp_community)
+                device = EltexLTP16N(session, ip, auth, model=model, snmp_community=snmp_community)
+                device.os_version = device.find_or_empty("software version (.+)", version_output).strip()
+                return device
 
         # Eltex MES, ESR
         if re.search(r"Active-image:|Boot version:", version_output):
             eltex_device = EltexBase(session, ip, auth)
             if "MES" in eltex_device.model:
-                return EltexMES(
+                device = EltexMES(
                     eltex_device.session,
                     ip,
                     auth,
@@ -47,8 +51,14 @@ class EltexFactory(AbstractDeviceFactory):
                     mac=eltex_device.mac,
                     snmp_community=snmp_community,
                 )
+                os_version = device.find_or_empty("Version: (\S+)", version_output)
+                build = device.find_or_empty("Build: (.+)", version_output).strip()
+                date = device.find_or_empty("Date: (\S+)", version_output)
+                device.os_version = f"Version: {os_version} Build: {build} {date}"
+                return device
+
             if "ESR" in eltex_device.model:
-                return EltexESR(
+                device = EltexESR(
                     eltex_device.session,
                     ip,
                     auth,
@@ -56,5 +66,9 @@ class EltexFactory(AbstractDeviceFactory):
                     mac=eltex_device.mac,
                     snmp_community=snmp_community,
                 )
+                device.os_version = device.find_or_empty(
+                    "SW version:(.+)HW version", version_output, flags=re.DOTALL
+                ).strip()
+                return device
 
         raise UnknownDeviceError("EltexFactory не удалось распознать модель оборудования", ip=ip)

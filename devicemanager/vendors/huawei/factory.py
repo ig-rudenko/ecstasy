@@ -63,8 +63,11 @@ class HuaweiFactory(AbstractDeviceFactory):
                     session.sendcontrol("C")
                 else:
                     break
-            if re.findall(r"VERSION : MA5600", version_output):
-                model = BaseDevice.find_or_empty(r"VERSION : (MA5600\S+)", version_output)
-                return HuaweiMA5600T(session, ip, auth, model=model, snmp_community=snmp_community)
+            if re.findall(r"PRODUCT : MA5600", version_output):
+                device = HuaweiMA5600T(session, ip, auth, model="MA5600T", snmp_community=snmp_community)
+                os_version = device.find_or_empty(r"VERSION : (MA5600\S+)", version_output)
+                patch = device.find_or_empty("PATCH : (\S+)", version_output)
+                device.os_version = f"Version: {os_version} Patch: {patch}"
+                return device
 
         raise UnknownDeviceError("HuaweiFactory не удалось распознать модель оборудования", ip=ip)

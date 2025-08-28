@@ -95,6 +95,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         version = self.send_command("display version")
         # Нахождение модели устройства.
         self.model = self.find_or_empty(r"Quidway (\S+) [Routing Switch]*uptime", version)
+        self.os_version = self.find_or_empty("software, (Version .+)", version)
 
         if "S2403" in self.model:
             manuinfo = self.send_command("display device manuinfo")

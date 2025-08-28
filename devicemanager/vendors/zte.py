@@ -63,8 +63,6 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         """
 
         super().__init__(session, ip, auth, model, snmp_community)
-        version = self.send_command("show version")
-        self.mac = self.find_or_empty(r"Mac Address: (\S+)", version)
 
         # Turning on privileged mode
         self.session.sendline("enable")
@@ -529,4 +527,28 @@ class ZTEFactory(AbstractDeviceFactory):
         version_output: str = "",
     ) -> BaseDevice:
         model = BaseDevice.find_or_empty(r"Module 0:\s*(\S+\s\S+);\s*fasteth", version_output)
-        return ZTE(session, ip, auth, model=model, snmp_community=snmp_community)
+        device = ZTE(session, ip, auth, model=model, snmp_community=snmp_community)
+        device.mac = device.find_or_empty(r"Mac Address: (\S+)", version_output)
+
+        # Получаем информацию о версии.
+        #     ZXR10 Router Operating System Software, ZTE Corporation:
+        #     ZXR10 2928E Version Number    : 2900E Series V2.05.10B25
+        #     Copyright (c) 2001-2013 By ZTE Corporation
+        #     Compiled: 11:44:45 Jul  2 2013
+        #     System uptime is  0 years 39 days 15 hours 15 minutes 40 seconds
+        # Ищем только нужные части:
+        # - ZXR10 Router Operating System Software
+        # - 2900E Series V2.05.10B25
+        # - 11:44:45 Jul  2 2013
+        os_version_parts: list[tuple[str]] = re.findall(
+            r"(ZXR10 Router Operating System Software), .+Version Number\s+:\s+(.+)Copyright.+Compiled:\s+(.+)System uptime",
+            version_output,
+            flags=re.DOTALL,
+        )
+        if os_version_parts:
+            # Удаляем множественные пробелы у всех частей.
+            device.os_version = " ".join(
+                re.sub(r"\s+", " ", os_version).strip() for os_version in os_version_parts[0]
+            )
+
+        return device
