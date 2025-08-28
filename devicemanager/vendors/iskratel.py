@@ -652,6 +652,13 @@ class IskratelFactory(AbstractDeviceFactory):
         # ISKRATEL mBAN>
         if "IskraTEL" in version_output:
             model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version_output)
-            return IskratelMBan(session, ip, auth, model=model, snmp_community=snmp_community)
+            device = IskratelMBan(session, ip, auth, model=model, snmp_community=snmp_community)
+            board_info = device.send_command("show board")
+            if board_match := re.search(
+                r"-+\s+\d+\s+\S+\s+\S+\s+(?P<model>\S+)\s+(?P<serialno>\S+)\s+", board_info
+            ):
+                device.model = board_match.group("model")
+                device.serialno = board_match.group("serialno")
+            return device
 
         raise UnknownDeviceError("IskratelFactory не удалось распознать модель оборудования", ip=ip)
