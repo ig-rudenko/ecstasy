@@ -651,14 +651,25 @@ class IskratelFactory(AbstractDeviceFactory):
 
         # ISKRATEL mBAN>
         if "IskraTEL" in version_output:
-            model = BaseDevice.find_or_empty(r"CPU: IskraTEL \S+ (\S+)", version_output)
-            device = IskratelMBan(session, ip, auth, model=model, snmp_community=snmp_community)
+            device = IskratelMBan(session, ip, auth, snmp_community=snmp_community)
+
+            if os_version_match := re.search(
+                r"(?P<date>\S+ \d+ \d+ \d+:\d+:\d+).+?Steer version: (?P<steer_version>\S+).+?VxWorks: (?P<vxversion>\S+).+?Kernel: (?P<kernel>.+?)\n",
+                version_output,
+            ):
+                device.os_version = (
+                    f"{os_version_match.group('steer_version')} {os_version_match.group('date')}"
+                    + f"{os_version_match.group('vxversion')} "
+                    + f"Kernel: {os_version_match.group('kernel')}"
+                )
+
             board_info = device.send_command("show board")
             if board_match := re.search(
                 r"-+\s+\d+\s+\S+\s+\S+\s+(?P<model>\S+)\s+(?P<serialno>\S+)\s+", board_info
             ):
                 device.model = board_match.group("model")
                 device.serialno = board_match.group("serialno")
+
             return device
 
         raise UnknownDeviceError("IskratelFactory не удалось распознать модель оборудования", ip=ip)
