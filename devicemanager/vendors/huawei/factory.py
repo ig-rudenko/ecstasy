@@ -68,7 +68,7 @@ class HuaweiFactory(AbstractDeviceFactory):
             if re.findall(r"PRODUCT\s*:? MA5600", version_output):
                 device = HuaweiMA5600T(session, ip, auth, model="MA5600T", snmp_community=snmp_community)
                 os_version = device.find_or_empty(r"VERSION\s*:?\s*(MA5600\S+)", version_output)
-                patch = device.find_or_empty("PATCH : (\S+)", version_output)
+                patch = device.find_or_empty("PATCH\s*:?\s*(\S+)", version_output)
                 if os_version or patch:
                     device.os_version = f"Version: {os_version} Patch: {patch}"
                 return device
