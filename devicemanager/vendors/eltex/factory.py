@@ -51,9 +51,9 @@ class EltexFactory(AbstractDeviceFactory):
                     mac=eltex_device.mac,
                     snmp_community=snmp_community,
                 )
-                os_version = device.find_or_empty("Version: (\S+)", version_output)
-                build = device.find_or_empty("Build: (.+)", version_output).strip()
-                date = device.find_or_empty("Date: (\S+)", version_output)
+                os_version = device.find_or_empty(r"Version: (\S+)", version_output)
+                build = device.find_or_empty(r"Build: (.+)", version_output).strip()
+                date = device.find_or_empty(r"Date: (\S+)", version_output)
                 device.os_version = f"Version: {os_version} Build: {build} {date}"
                 return device
 
