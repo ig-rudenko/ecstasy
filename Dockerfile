@@ -2,6 +2,7 @@ FROM python:3.13.3-alpine AS builder
 LABEL authors="ig-rudenko"
 
 SHELL ["/bin/sh", "-exc"]
+ARG python_version=3.13
 
 WORKDIR /app
 
