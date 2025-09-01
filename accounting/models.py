@@ -46,9 +46,10 @@ class UserAPIToken(models.Model):
             return False
         for allowed_ip in map(str.strip, self.allowed_ips.split(",")):
             try:
-                if "/" in allowed_ip:
-                    return client_ip in IPv4Network(allowed_ip)
-                return client_ip == IPv4Address(allowed_ip)
+                if "/" in allowed_ip and client_ip in IPv4Network(allowed_ip):
+                    return True
+                if "/" not in allowed_ip and client_ip == IPv4Address(allowed_ip):
+                    return True
             except ValueError:
                 return False
         return False

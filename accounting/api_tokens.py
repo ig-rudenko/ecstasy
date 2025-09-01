@@ -29,7 +29,8 @@ class CustomTokenAuthentication(TokenAuthentication):
 
         return self.authenticate_credentials_by_request(token, request)
 
-    def authenticate_credentials_by_request(self, key, request):
+    @staticmethod
+    def authenticate_credentials_by_request(key, request):
         try:
             token = UserAPIToken.objects.select_related("user").get(key=key)
         except UserAPIToken.DoesNotExist:
@@ -39,8 +40,9 @@ class CustomTokenAuthentication(TokenAuthentication):
         if token.expired is not None and token.expired < now:
             raise exceptions.AuthenticationFailed("Token has been expired")
 
-        if not token.validate_ip(request):
-            raise exceptions.AuthenticationFailed("Your IP is not allowed to use this token")
+        client_ip = request.META.get("REMOTE_ADDR")
+        if not token.validate_ip(client_ip):
+            raise exceptions.AuthenticationFailed(f"Your IP ({client_ip}) is not allowed to use this token")
 
         if not token.user.is_active:
             raise exceptions.AuthenticationFailed("User inactive or deleted")
