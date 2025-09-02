@@ -126,20 +126,28 @@ class MacTraceroute:
 
         vlan_names = self.get_vlan_names(list(vlans_count.keys()))
 
+        vlans_count_list = []
+        for vid, count in vlans_count.items():
+            vlan_info = vlan_names.get(vid)
+            vlans_count_list.append(
+                {
+                    "vid": vid,
+                    "count": count,
+                    "name": vlan_info["name"] if vlan_info else "",
+                    "description": vlan_info["description"] if vlan_info else "",
+                }
+            )
+
         return {
             "nodes": nodes,
             "edges": edges,
-            "vlansCount": [
-                {"vid": vid, "count": count, "name": vlan_names.get(vid, "")}
-                for vid, count in vlans_count.items()
-            ],
+            "vlansInfo": vlans_count_list,
         }
 
     @staticmethod
-    def get_vlan_names(vlans: list[int]) -> dict:
-        return {
-            vlan.vid: vlan.name for vlan in VlanName.objects.all().only("name", "vid").filter(vid__in=vlans)
-        }
+    def get_vlan_names(vlans: list[int]) -> dict[int, dict[str, str]]:
+        qs = VlanName.objects.all().only("name", "vid", "description").filter(vid__in=vlans)
+        return {vlan.vid: {"name": vlan.name, "description": vlan.description} for vlan in qs}
 
     @lru_cache(maxsize=255)
     def reformatting(self, name: str):

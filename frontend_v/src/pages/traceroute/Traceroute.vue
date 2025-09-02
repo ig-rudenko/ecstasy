@@ -175,11 +175,11 @@
     </div>
 
     <div class="flex flex-wrap gap-2 font-mono py-4">
-      <div v-for="vlanInfo in macTracerouteVlansCount">
+      <div v-for="vlanInfo in macTracerouteVLANInfo">
         <span @click="tracerouteMACWithVlanFilter(vlanInfo.vid)"
               v-tooltip.bottom="macTracerouteOptions.vlanFilter == vlanInfo.vid?'Убрать фильтр':`Фильтр по VLAN ${vlanInfo.vid}`"
               class="cursor-pointer py-1 ps-3 pe-2 rounded-l-xl text-white bg-indigo-500">vid: {{ vlanInfo.vid }}</span>
-        <span v-tooltip.bottom="'Название'" class="py-1 px-2 text-white bg-gray-600">{{vlanInfo.name}}</span>
+        <span v-tooltip.bottom="vlanInfo.description || 'Нет описания'" class="py-1 px-2 text-white bg-gray-600">{{vlanInfo.name}}</span>
         <span v-tooltip.bottom="'Количество'" class="py-1 pl-2 pe-3 bg-white rounded-e-xl">{{ vlanInfo.count }}</span>
       </div>
     </div>
@@ -221,6 +221,7 @@ interface VlanCountInfo {
   vid: number
   count: number
   name: string
+  description: string
 }
 
 
@@ -266,7 +267,7 @@ export default defineComponent({
         rendered: false,
         vlanFilter: null as number | null,
       },
-      macTracerouteVlansCount: [] as VlanCountInfo[],
+      macTracerouteVLANInfo: [] as VlanCountInfo[],
 
       vlanNetwork: new TracerouteNetwork("vlan-network"),
       macNetwork: new TracerouteNetwork("mac-network")
@@ -380,7 +381,7 @@ export default defineComponent({
           .then(
               resp => {
                 this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
-                this.macTracerouteVlansCount = resp.data.vlansCount;
+                this.macTracerouteVLANInfo = resp.data.vlansInfo;
                 this.macTracerouteStarted = false;
                 this.macTracerouteOptions.rendered = true;
               }
