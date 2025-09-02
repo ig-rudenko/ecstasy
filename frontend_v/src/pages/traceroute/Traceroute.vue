@@ -53,7 +53,7 @@
           <div>
             <InputNumber @keyup.enter="load_vlan_traceroute"
                          @input="getInputVlanInfo"
-                         input-class="w-24 bg-transparent text-gray-200 text-center rounded-full font-mono text-xl"
+                         input-class="w-24 bg-[#222222] text-gray-200 text-center rounded-full font-mono text-xl"
                          :min="1" :max="4096"
                          v-model="input.vlan"
                          placeholder="vlan"/>
@@ -148,7 +148,7 @@
         <div class="my-3 flex items-center gap-3">
           <div>
             <InputText @keyup.enter="load_mac_traceroute"
-                       class="w-50 bg-transparent text-gray-200 text-center rounded-full font-mono text-xl" :min="1"
+                       class="w-50 bg-[#222222] text-gray-200 text-center rounded-full font-mono text-xl" :min="1"
                        :max="4096"
                        v-model="input.mac"
                        placeholder="MAC"/>
@@ -161,6 +161,8 @@
             </svg>
           </Button>
         </div>
+        <InputNumber v-model="macTracerouteOptions.vlanFilter" placeholder="Фильтр VLAN" :min="1" :max="4096"
+                     input-class="w-[150px] text-gray-200 bg-[#222222] text-center rounded-full font-mono"/>
       </div>
     </div>
 
@@ -169,6 +171,16 @@
       <div style="text-align: center">
         <div class="me-2 spinner-border text-primary" role="status"
              style="text-align: center;height: 200px;width: 200px;"></div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 font-mono py-4">
+      <div v-for="vlanInfo in macTracerouteVlansCount">
+        <span @click="tracerouteMACWithVlanFilter(vlanInfo.vid)"
+              v-tooltip.bottom="macTracerouteOptions.vlanFilter == vlanInfo.vid?'Убрать фильтр':`Фильтр по VLAN ${vlanInfo.vid}`"
+              class="cursor-pointer py-1 ps-3 pe-2 rounded-l-xl text-white bg-indigo-500">vid: {{ vlanInfo.vid }}</span>
+        <span v-tooltip.bottom="'Название'" class="py-1 px-2 text-white bg-gray-600">{{vlanInfo.name}}</span>
+        <span v-tooltip.bottom="'Количество'" class="py-1 pl-2 pe-3 bg-white rounded-e-xl">{{ vlanInfo.count }}</span>
       </div>
     </div>
 
@@ -204,6 +216,14 @@ import Header from "@/components/Header.vue";
 import ScanStatus, {getInputVlanInfo} from "@/services/traceroute";
 import {InputNumberInputEvent} from "primevue";
 
+
+interface VlanCountInfo {
+  vid: number
+  count: number
+  name: string
+}
+
+
 export default defineComponent({
   name: 'Traceroute',
   components: {Header},
@@ -212,7 +232,7 @@ export default defineComponent({
       macScanIcon: "" as string,
 
       vlanScanStatus: new ScanStatus("/api/v1/tools/vlans-scan/check", "/api/v1/tools/vlans-scan/run"),
-      macScanStatus: new ScanStatus("/api/v1/gather/mac-address/scan/check", "/api/v1/gather/mac-address/scan/run"),
+      macScanStatus: new ScanStatus("/api/v1/gather/mac-address/scan/status", "/api/v1/gather/mac-address/scan/run"),
 
       vlanTracerouteStarted: false,
       macTracerouteStarted: false,
@@ -244,7 +264,9 @@ export default defineComponent({
       macTracerouteOptions: {
         maximized: false,
         rendered: false,
+        vlanFilter: null as number | null,
       },
+      macTracerouteVlansCount: [] as VlanCountInfo[],
 
       vlanNetwork: new TracerouteNetwork("vlan-network"),
       macNetwork: new TracerouteNetwork("mac-network")
@@ -349,11 +371,16 @@ export default defineComponent({
 
       this.macTracerouteStarted = true
       const url = '/api/v1/gather/traceroute/mac-address/' + valid_mac + "/"
+      const params: any = {}
+      if (this.macTracerouteOptions.vlanFilter) {
+        params["vlan"] = this.macTracerouteOptions.vlanFilter
+      }
 
-      api.get(url)
+      api.get(url, {params: params})
           .then(
               resp => {
                 this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
+                this.macTracerouteVlansCount = resp.data.vlansCount;
                 this.macTracerouteStarted = false;
                 this.macTracerouteOptions.rendered = true;
               }
@@ -362,6 +389,15 @@ export default defineComponent({
               () => this.macTracerouteStarted = false
           )
     },
+
+    tracerouteMACWithVlanFilter(vlan: number) {
+      if (this.macTracerouteOptions.vlanFilter === vlan) {
+        this.macTracerouteOptions.vlanFilter = null
+      } else {
+        this.macTracerouteOptions.vlanFilter = vlan
+      }
+      this.load_mac_traceroute()
+    }
 
   }
 });

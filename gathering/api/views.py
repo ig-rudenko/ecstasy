@@ -26,8 +26,13 @@ class MacTracerouteAPIView(GenericAPIView):
 
     @mac_traceroute_api_doc
     def get(self, request, mac: str):
+        try:
+            vlan = int(request.GET.get("vlan", 0))
+        except ValueError:
+            vlan = 0
+
         traceroute = MacTraceroute()
-        return Response(traceroute.get_mac_graph(mac))
+        return Response(traceroute.get_mac_graph(mac=mac, vlan=vlan))
 
 
 class MacGatherStatusAPIView(GenericAPIView):

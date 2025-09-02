@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from app_settings.models import VlanTracerouteConfig
 from gathering.models import MacAddress
-from net_tools.models import DescNameFormat
+from net_tools.models import DescNameFormat, VlanName
 
 
 class MacQueryValues(TypedDict):
@@ -26,7 +26,7 @@ class MacTraceroute:
         # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
         self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
 
-    def get_mac_graph(self, mac: str) -> dict:
+    def get_mac_graph(self, mac: str, vlan: int | None = None) -> dict:
         """
         # Ищем MAC адрес в таблице всех MAC адресов
 
@@ -40,6 +40,7 @@ class MacTraceroute:
                 (E)---------(A)
 
         :param mac: MAC адрес, который нужно найти в таблице.
+        :param vlan: VLAN, в котором MAC адрес.
         :return: Словарь: {"nodes": [...], "edges": [...]}
         """
 
@@ -49,9 +50,12 @@ class MacTraceroute:
             .select_related("device")
             .values("type", "vlan", "port", "desc", "datetime", "device__name")
         )
+        if vlan:
+            macs_objects = macs_objects.filter(vlan=vlan)
 
         nodes = []
         edges = []
+        vlans_count = {}
 
         # Создание списка всех устройств, которые были найдены в traceroute.
         found_devices_names = [record["device__name"] for record in macs_objects]
@@ -117,8 +121,25 @@ class MacTraceroute:
                     "color": edge_color,
                 }
             )
+            vlans_count.setdefault(record["vlan"], 0)
+            vlans_count[record["vlan"]] += 1
 
-        return {"nodes": nodes, "edges": edges}
+        vlan_names = self.get_vlan_names(list(vlans_count.keys()))
+
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "vlansCount": [
+                {"vid": vid, "count": count, "name": vlan_names.get(vid, "")}
+                for vid, count in vlans_count.items()
+            ],
+        }
+
+    @staticmethod
+    def get_vlan_names(vlans: list[int]) -> dict:
+        return {
+            vlan.vid: vlan.name for vlan in VlanName.objects.all().only("name", "vid").filter(vid__in=vlans)
+        }
 
     @lru_cache(maxsize=255)
     def reformatting(self, name: str):
@@ -146,21 +167,29 @@ class MacTraceroute:
         ### Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
         """
         if mac_object["type"] == "D":
-            type_ = '<div class="badge bg-primary" style="vertical-align: middle;">dynamic</div>'
+            type_ = '<span class="px-2 rounded text-white bg-primary" style="vertical-align: middle;">dynamic</span>'
         elif mac_object["type"] == "S":
-            type_ = '<div class="badge bg-secondary" style="vertical-align: middle;">static</div>'
+            type_ = '<span class="px-2 rounded bg-secondary" style="vertical-align: middle;">static</span>'
         elif mac_object["type"] == "E":
-            type_ = '<div class="badge bg-warning text-dark" style="vertical-align: middle;">security</div>'
+            type_ = '<span class="px-2 rounded bg-warning text-dark" style="vertical-align: middle;">security</span>'
         else:
-            type_ = '<div class="badge bg-light text-dark" style="vertical-align: middle;">none</div>'
+            type_ = (
+                '<span class="px-2 rounded bg-light text-dark" style="vertical-align: middle;">none</span>'
+            )
 
         return f"""
-        <div class="container py-2 rounded-2" style="font-size: 16px;">
-            <p>From: <b>{mac_object["device__name"]}</b>; Port: <b>{mac_object["port"]}</b></p>
-            <p>To: "<i>{mac_object["desc"]}</i>"</p>
-            VLAN: <div class="badge bg-primary" style="vertical-align: middle;">{mac_object["vlan"]}</div>
-            <br>Type: {type_}
-            <br>Обнаружен <b>{naturaltime(mac_object["datetime"])}</b>
+        <div class="p-3 rounded font-mono" style="font-size: 16px;">
+            <div>From: <b>{mac_object["device__name"]}</b>; Port: <b>{mac_object["port"]}</b></div>
+            <div>To: "{mac_object["desc"]}"</div>
+            <div>
+                VLAN: <span class="px-2 rounded text-white bg-primary">{mac_object["vlan"]}</span>
+            </div>
+            <div>
+                Type: {type_}
+            </div>
+            <div>
+                Обнаружен <b>{naturaltime(mac_object["datetime"])}</b>
+            </div>
         </div>
         """
 
