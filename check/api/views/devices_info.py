@@ -5,12 +5,16 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
 from django_filters.rest_framework import DjangoFilterBackend
-from requests.exceptions import RequestException
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
 from check import models
+from check.models import Devices
+from check.services.device.extra import get_device_stats
+from check.services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
 from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
+from check.services.remote_terminal import get_console_url
+from check.services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
 from devicemanager.device import DeviceManager
 from devicemanager.device import zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
@@ -25,10 +29,6 @@ from ..swagger.schemas import (
     interfaces_list_api_doc,
     device_info_api_doc,
 )
-from ...models import Devices
-from ...services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
-from ...services.remote_terminal import get_console_url
-from ...services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
 
 
 @method_decorator(cache_page(60 * 2), name="dispatch")
@@ -241,10 +241,7 @@ class DeviceInfoAPIView(DeviceAPIView):
 
         with zabbix_api.connect() as zbx:
             devices_maps = get_device_zabbix_maps_ids(zbx, zabbix_info.hostid)
-            try:
-                uptime = get_device_uptime(zbx, zabbix_info.hostid)
-            except RequestException:
-                uptime = -1
+            uptime = get_device_uptime(zbx, zabbix_info.hostid)
 
         return Response(
             {
@@ -317,7 +314,7 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
         if not device.available:
             return Response({"detail": "Device unavailable"}, status=500)
 
-        device_stats: dict = device.connect().get_device_info() or {}
+        device_stats: dict = get_device_stats(device) or {}
 
         return Response(device_stats)
 

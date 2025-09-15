@@ -3,12 +3,11 @@ from datetime import datetime
 from typing import TypeVar, TypedDict
 
 import orjson
-import requests
-from django.core.cache import cache
 from django.utils import timezone
-from urllib3.exceptions import MaxRetryError
 
 from check.models import Devices
+from check.services.device.extra import get_all_device_names_list
+from check.services.zabbix import get_zabbix_graphs
 from devicemanager.device import DeviceManager, zabbix_api
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo
@@ -228,8 +227,7 @@ class InterfacesBuilder:
         :param interfaces: Список интерфейсов
         :return: Список интерфейсов с добавлением ссылок
         """
-
-        devices_names = Devices.objects.all().values_list("name", flat=True)
+        devices_names = get_all_device_names_list()
         for intf in interfaces:
             for dev_name in devices_names:
                 if dev_name in intf["Description"]:
@@ -260,7 +258,9 @@ class InterfacesBuilder:
         :param interfaces: Список интерфейсов для добавления комментариев.
         """
 
-        interfaces_comments = self._device.interfacescomments_set.select_related("user")
+        interfaces_comments = self._device.interfacescomments_set.select_related("user").only(
+            "id", "comment", "datetime", "user__username"
+        )
 
         for intf in interfaces:
             intf["Comments"] = [
@@ -276,35 +276,9 @@ class InterfacesBuilder:
 
         return interfaces
 
-    @staticmethod
-    def _collect_zabbix_graphs(device_name: str) -> tuple[int, list]:
-        graphs = []
-        host_id = 0
-        try:
-            with zabbix_api.connect() as zbx:
-                host = zbx.host.get(output=["name"], filter={"name": device_name})
-                if not host:
-                    return host_id, []
-
-                # Получаем все графики для данного узла сети.
-                host_id = host[0]["hostid"]
-
-                graphs = zbx.graph.get(hostids=[host_id])
-        except (MaxRetryError, requests.exceptions.RequestException) as exc:
-            print(f"Ошибка `collect_zabbix_graphs` {exc}")
-
-        finally:
-            return host_id, graphs
-
     def _add_zabbix_graph_links(self, interfaces: INTF) -> INTF:
-        # Получаем кэшированный список графиков
-        cache_key = f"zabbix_graphs_{self._device.name}"
-        graphs_data: tuple[int, list] = cache.get(cache_key)
-        if not graphs_data:
-            graphs_data = self._collect_zabbix_graphs(self._device.name)
-            cache.set(cache_key, graphs_data, timeout=60)
-
-        host_id, graphs = graphs_data
+        # Получаем список графиков
+        host_id, graphs = get_zabbix_graphs(self._device.name)
 
         for intf in interfaces:
             intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")

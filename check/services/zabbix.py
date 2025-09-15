@@ -1,7 +1,12 @@
-from django.core.cache import cache
 from pyzabbix.api import ZabbixAPI
+from requests.exceptions import RequestException
+from urllib3.exceptions import MaxRetryError
+
+from devicemanager.device import zabbix_api
+from ecstasy_project.decorators import cached
 
 
+@cached(60 * 10, key=lambda _, host_id: f"device_zabbix_maps_ids:{host_id}")
 def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> list[dict[str, str | int]]:
     """
     Возвращает список карт Zabbix, в которых находится узел сети Zabbix по его id.
@@ -26,31 +31,46 @@ def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> li
     return hosts_map_ids
 
 
+@cached(60 * 10, key="zabbix_maps")
 def get_all_zabbix_maps_list(zbx_session: ZabbixAPI) -> list:
     """
     Возвращает список всех zabbix карт.
     [{'name': 'Название карты', 'sysmapid': '94', 'elements': [ {'elements': [{'hostid': '11469'}]},... ]}]
     :return: Список.
     """
-
-    cache_key = "zabbix_maps"
-    cached_data: list | None = cache.get(cache_key)
-    if cached_data is not None:
-        return cached_data
-
-    map_data: list = zbx_session.map.get(selectSelements=["elements"], output=["sysmapid", "name"])
-
-    cache.set(cache_key, map_data, timeout=60 * 10)
-    return map_data
+    return zbx_session.map.get(selectSelements=["elements"], output=["sysmapid", "name"])
 
 
+@cached(90, key=lambda _, host_id: f"device_uptime:{host_id}")
 def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
-    """
-    Возвращает время работы устройства.
-    """
-    uptime_items = zbx_session.item.get(hostids=host_id, output=["itemid"], search={"key_": "uptime"})
-    for item in uptime_items:
-        uptime_value = zbx_session.history.get(itemids=item["itemid"], output=["value"], history=3, limit=1)
-        if uptime_value:
-            return uptime_value[0]["value"]
+    """Возвращает время работы устройства"""
+    try:
+        uptime_items = zbx_session.item.get(hostids=host_id, output=["itemid"], search={"key_": "uptime"})
+        for item in uptime_items:
+            uptime_value = zbx_session.history.get(
+                itemids=item["itemid"], output=["value"], history=3, limit=1
+            )
+            if uptime_value:
+                return uptime_value[0]["value"]
+    except (MaxRetryError, RequestException):
+        pass
     return -1
+
+
+@cached(60, key=lambda name: f"zabbix_graphs:{name}")
+def get_zabbix_graphs(device_name: str) -> tuple[int, list]:
+    graphs = []
+    host_id = 0
+    try:
+        with zabbix_api.connect() as zbx:
+            host = zbx.host.get(output=["name"], filter={"name": device_name})
+            if not host:
+                return host_id, []
+
+            # Получаем все графики для данного узла сети.
+            host_id = host[0]["hostid"]
+
+            graphs = zbx.graph.get(hostids=[host_id])
+    except (MaxRetryError, RequestException) as exc:
+        print(f"Ошибка `collect_zabbix_graphs` {exc}")
+    return host_id, graphs
