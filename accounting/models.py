@@ -36,7 +36,7 @@ class UserAPIToken(models.Model):
         validators=[validate_ip_addresses],
     )
 
-    def validate_ip(self, ip):
+    def validate_ip(self, ip) -> bool:
         """Валидация доступа к токену по IP"""
         if not self.allowed_ips:
             return True

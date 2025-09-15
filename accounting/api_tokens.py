@@ -7,7 +7,6 @@ from .models import UserAPIToken
 
 
 class CustomTokenAuthentication(TokenAuthentication):
-
     def authenticate(self, request):
         auth = get_authorization_header(request).split()
 
@@ -32,7 +31,7 @@ class CustomTokenAuthentication(TokenAuthentication):
     @staticmethod
     def authenticate_credentials_by_request(key, request):
         try:
-            token = UserAPIToken.objects.select_related("user").get(key=key)
+            token: UserAPIToken = UserAPIToken.objects.select_related("user").get(key=key)
         except UserAPIToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token")
         now = timezone.now()
@@ -40,7 +39,7 @@ class CustomTokenAuthentication(TokenAuthentication):
         if token.expired is not None and token.expired < now:
             raise exceptions.AuthenticationFailed("Token has been expired")
 
-        client_ip = request.META.get("REMOTE_ADDR")
+        client_ip = request.META.get("HTTP_X_FORWARDED_FOR") or request.META.get("REMOTE_ADDR")
         if not token.validate_ip(client_ip):
             raise exceptions.AuthenticationFailed(f"Your IP ({client_ip}) is not allowed to use this token")
 
