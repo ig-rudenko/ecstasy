@@ -2,7 +2,7 @@ from pyzabbix.api import ZabbixAPI, ZabbixAPIException
 from requests.exceptions import RequestException
 from urllib3.exceptions import MaxRetryError
 
-from devicemanager.device import zabbix_api
+from devicemanager.device.zabbix_api import zabbix_api
 from ecstasy_project.decorators import cached
 
 
@@ -87,6 +87,7 @@ def get_zabbix_host_map_and_uptime(host_id: int | str) -> tuple[list[dict[str, s
 @cached(20, key=lambda device_name: f"zabbix_info:{device_name}")
 def get_zabbix_host_info(device_name: str) -> dict:
     try:
+        print(zabbix_api)
         with zabbix_api.connect() as zbx:
             info = zbx.host.get(
                 filter={"name": device_name},
