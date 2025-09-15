@@ -7,8 +7,8 @@ from ..models import User
 class CutBrasSessionTest(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
-        cls.user = User.objects.create_superuser(username="test_user", password="password")
-        cls.url = reverse("devices-api:cut-session")
+        cls.user = User.objects.create_superuser(username="test_user", password="password")  # type: ignore
+        cls.url = reverse("devices-api:cut-session")  # type: ignore
 
     def test_cut_bras_session(self):
         self.client.force_login(user=self.user)

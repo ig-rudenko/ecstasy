@@ -1,13 +1,16 @@
+from typing import Any
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication, get_authorization_header
+from rest_framework.request import Request
 
 from .models import UserAPIToken
 
 
 class CustomTokenAuthentication(TokenAuthentication):
-    def authenticate(self, request):
+    def authenticate(self, request: Request) -> tuple[Any, Any] | None:
         auth = get_authorization_header(request).split()
 
         if not auth or auth[0].lower() not in [b"token", b"bearer"]:
@@ -29,7 +32,7 @@ class CustomTokenAuthentication(TokenAuthentication):
         return self.authenticate_credentials_by_request(token, request)
 
     @staticmethod
-    def authenticate_credentials_by_request(key, request):
+    def authenticate_credentials_by_request(key: str, request: Request) -> tuple[Any, Any] | None:
         try:
             token: UserAPIToken = UserAPIToken.objects.select_related("user").get(key=key)
         except UserAPIToken.DoesNotExist:

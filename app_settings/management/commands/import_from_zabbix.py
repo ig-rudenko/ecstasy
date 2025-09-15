@@ -63,7 +63,7 @@ class Command(BaseCommand):
         db_zabbix_config.password = password or db_zabbix_config.password
 
         zbx_connector = ZabbixAPIConnector()
-        zbx_connector.set(db_zabbix_config)
+        zbx_connector.set_lazy_attributes(db_zabbix_config)
         return zbx_connector
 
     @staticmethod

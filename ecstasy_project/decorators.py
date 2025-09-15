@@ -28,7 +28,7 @@ def cached(
             if callable(key):
                 cache_key = key(*args, **kwargs)
             else:
-                cache_key: str = key if key is not None else func.__name__
+                cache_key = key if key is not None else func.__name__
 
             # Добавляем в название ключа значение аргументов
             if not callable(key) and variable_positions is not None:

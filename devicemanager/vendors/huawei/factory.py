@@ -29,6 +29,7 @@ class HuaweiFactory(AbstractDeviceFactory):
         auth: DeviceAuthDict,
         version_output: str = "",
     ) -> BaseDevice:
+        device: BaseDevice
         if "Unrecognized command" in version_output:
             version = cls.send_command(session, "display version")
             if "CX600" in version:

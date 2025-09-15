@@ -175,7 +175,7 @@ class MacListSwaggerSerializer(SwaggerSerializer):
 
 
 class MacListResultSwaggerSerializer(SwaggerSerializer):
-    result = serializers.ListSerializer(child=MacListSwaggerSerializer())
+    result = serializers.ListSerializer(child=MacListSwaggerSerializer())  # type: ignore
     count = serializers.IntegerField(min_value=0)
 
 
@@ -185,7 +185,7 @@ class InterfaceDetailInfoSwaggerSerializer(SwaggerSerializer):
             choices=("text", "html", "error", "adsl", "gpon", "eltex-gpon", "mikrotik")
         )
 
-        data = serializers.SerializerMethodField()
+        data = serializers.SerializerMethodField()  # type: ignore
 
     portDetailInfo = PortDetailInfo()
     portConfig = serializers.CharField()
@@ -202,7 +202,7 @@ class ChangeDescriptionSwaggerSerializer(SwaggerSerializer):
 
 class BrasSessionSwaggerSerializer(SwaggerSerializer):
     session = serializers.CharField(allow_null=True)
-    errors = serializers.ListSerializer(child=serializers.CharField())
+    errors = serializers.ListSerializer(child=serializers.CharField())  # type: ignore
 
 
 class BrasPairSessionResultSwaggerSerializer(SwaggerSerializer):
@@ -211,5 +211,5 @@ class BrasPairSessionResultSwaggerSerializer(SwaggerSerializer):
 
 
 class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
-    errors = serializers.ListSerializer(child=serializers.CharField())
+    errors = serializers.ListSerializer(child=serializers.CharField())  # type: ignore
     portReloadStatus = serializers.CharField()

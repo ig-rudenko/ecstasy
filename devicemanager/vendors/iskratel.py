@@ -639,7 +639,7 @@ class IskratelFactory(AbstractDeviceFactory):
     ) -> BaseDevice:
         # ISKRATEL CONTROL
         if "ISKRATEL" in version_output:
-            device = IskratelControl(
+            device: BaseDevice = IskratelControl(
                 session,
                 ip,
                 auth,

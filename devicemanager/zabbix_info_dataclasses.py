@@ -88,7 +88,7 @@ class ZabbixInventory:
 
     def print(self):
         """Выводит в терминал данные инвентаризации, только те, что имеются"""
-        print(tabulate.tabulate([[i, self.__dict__[i]] for i in self.__dict__ if self.__dict__[i]]))
+        print(tabulate.tabulate([[k, v] for k, v in self.__dict__.items() if v]))
 
     @property
     def to_dict(self):

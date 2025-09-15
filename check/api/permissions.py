@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.request import Request
@@ -21,8 +21,10 @@ def has_access_by_access_group(user: User, device: Devices) -> bool:
     )
 
 
-def has_user_access_to_device(user: User, device: Devices) -> bool:
+def has_user_access_to_device(user: User | AnonymousUser, device: Devices) -> bool:
     """Объединённая проверка доступа: через профиль или AccessGroup"""
+    if not user.is_authenticated:
+        return False
     return has_access_by_profile(user.id, device.group_id) or has_access_by_access_group(user, device)
 
 

@@ -31,7 +31,7 @@ class LazyIntAttribute(LazyAttribute):
 
 
 class LazyConfigLoader:
-    __init_load_function: Optional[Callable[[], Any]] = lambda _: None
+    __init_load_function: Optional[Callable[[], Any]] = lambda _: None  # type: ignore
 
     def __init_load(self):
         """Загрузка настроек Zabbix API из функции"""

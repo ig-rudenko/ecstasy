@@ -18,6 +18,7 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
     group = None  # type: ClassVar[DeviceGroup]
     device = None  # type: ClassVar[Devices]
     device_media = None  # type: ClassVar[DeviceMedia]
+    auth_group = None  # type: ClassVar[AuthGroup]
 
     @classmethod
     def setUpTestData(cls) -> None:

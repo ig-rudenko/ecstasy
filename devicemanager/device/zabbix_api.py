@@ -11,9 +11,9 @@ from app_settings.lazy_settings import LazyConfigLoader, LazyStringAttribute
 class ZabbixAPIConnector(LazyConfigLoader):
     """Конфигурация для работы с Zabbix API"""
 
-    zabbix_url: str = LazyStringAttribute()
-    zabbix_user: str = LazyStringAttribute()
-    zabbix_password: str = LazyStringAttribute()
+    zabbix_url: str = LazyStringAttribute()  # type: ignore
+    zabbix_user: str = LazyStringAttribute()  # type: ignore
+    zabbix_password: str = LazyStringAttribute()  # type: ignore
 
     def __init__(self, timeout: int = 2):
         self.timeout = timeout

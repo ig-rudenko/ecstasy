@@ -55,7 +55,7 @@ class MacTraceroute:
 
         nodes = []
         edges = []
-        vlans_count = {}
+        vlans_count: dict[int, int] = {}
 
         # Создание списка всех устройств, которые были найдены в traceroute.
         found_devices_names = [record["device__name"] for record in macs_objects]
@@ -147,7 +147,7 @@ class MacTraceroute:
     @staticmethod
     def get_vlan_names(vlans: list[int]) -> dict[int, dict[str, str]]:
         qs = VlanName.objects.all().only("name", "vid", "description").filter(vid__in=vlans)
-        return {vlan.vid: {"name": vlan.name, "description": vlan.description} for vlan in qs}
+        return {vlan.vid: {"name": vlan.name or "", "description": vlan.description} for vlan in qs}
 
     @lru_cache(maxsize=255)
     def reformatting(self, name: str):

@@ -28,6 +28,7 @@ class EltexFactory(AbstractDeviceFactory):
     ) -> BaseDevice:
         version_output = str(version_output)
 
+        device: BaseDevice
         if "Eltex LTP" in version_output:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version_output)
             if re.match(r"LTP-[48]X", model):

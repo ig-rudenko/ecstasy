@@ -1,15 +1,21 @@
 import re
+from typing import AnyStr
 
 import textfsm
 
 from devicemanager.vendors.base.types import TEMPLATE_FOLDER
 
 
-def remove_ansi_escape_codes(string: str | bytes) -> str:
+def remove_ansi_escape_codes(string: AnyStr | None) -> str:
     """Убираем управляющие последовательности ANSI"""
-    if string:
+    if string is not None:
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
-        return ansi_escape.sub("", (string or b"").decode(errors="ignore"))
+        if isinstance(string, bytes):
+            clean_string = string.decode("utf-8")
+        else:
+            clean_string = str(string)
+
+        return ansi_escape.sub("", clean_string)
     return ""
 
 
