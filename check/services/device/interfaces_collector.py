@@ -158,7 +158,8 @@ def get_device_interfaces(
     device_sync.sync_device_info_to_db()
 
     # Обновляем данные в Zabbix.
-    device_sync.device_collector.push_zabbix_inventory()
+    # Обновление происходит в периодической задаче.
+    # device_sync.device_collector.push_zabbix_inventory()
 
     # Если не собрали интерфейсы.
     if not device_sync.device_collector.interfaces:

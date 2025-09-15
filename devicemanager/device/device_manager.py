@@ -6,6 +6,7 @@ from pyzabbix.api import ZabbixAPIException
 from requests import RequestException
 
 from check.models import Devices
+from check.services.zabbix import get_zabbix_host_info
 from devicemanager.remote import remote_connector, RemoteDevice
 from devicemanager.zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup
 from .interfaces import Interfaces
@@ -39,47 +40,36 @@ class DeviceManager:
 
     def collect_zabbix_info(self):
         """Собирает информацию по данному оборудованию из Zabbix"""
-        try:
-            with zabbix_api.connect() as zbx:
-                zabbix_info = zbx.host.get(
-                    filter={"name": self.name},
-                    output=["hostid", "host", "name", "status", "description"],
-                    selectGroups=["groupid", "name"],
-                    selectInterfaces=["ip"],
-                    selectInventory="extend",
-                )
-            if not zabbix_info:
-                return
-            # Форматируем вывод активировано/деактивировано для узла сети
-            zabbix_info[0]["status"] = 1 if zabbix_info[0]["status"] == "0" else 0
-            # Создаем уникальный кортеж ip адресов
-            zabbix_info[0]["interfaces"] = tuple(
-                sorted(list({i["ip"] for i in zabbix_info[0]["interfaces"]}))
-            )
-
-            # Инвентарные данные
-            inventory = zabbix_info[0]["inventory"].values() if zabbix_info[0]["inventory"] else {}
-            del zabbix_info[0]["inventory"]
-
-            # Группы
-            groups = zabbix_info[0]["groups"] if zabbix_info[0]["groups"] else {}
-            del zabbix_info[0]["groups"]
-
-            self._zabbix_info = ZabbixHostInfo(
-                *zabbix_info[0].values(),
-                inventory=ZabbixInventory(*inventory),
-                hostgroups=[ZabbixHostGroup(*group.values()) for group in groups],
-            )
-            self._zabbix_info_collected = True
-
-            if not self.ip:
-                self.ip = [
-                    i
-                    for i in self.zabbix_info.ip
-                    if len(self.zabbix_info.ip) > 1 and i != "127.0.0.1" or len(self.zabbix_info.ip) == 1
-                ][0]
-        except (RequestException, ZabbixAPIException):
+        zabbix_info = get_zabbix_host_info(self.name)
+        if not zabbix_info:
             return
+
+        # Форматируем вывод активировано/деактивировано для узла сети
+        zabbix_info["status"] = 1 if zabbix_info["status"] == "0" else 0
+        # Создаем уникальный кортеж ip адресов
+        zabbix_info["interfaces"] = tuple(sorted(list({i["ip"] for i in zabbix_info["interfaces"]})))
+
+        # Инвентарные данные
+        inventory = zabbix_info["inventory"].values() if zabbix_info["inventory"] else {}
+        del zabbix_info["inventory"]
+
+        # Группы
+        groups = zabbix_info["groups"] if zabbix_info["groups"] else {}
+        del zabbix_info["groups"]
+
+        self._zabbix_info = ZabbixHostInfo(
+            *zabbix_info.values(),
+            inventory=ZabbixInventory(*inventory),
+            hostgroups=[ZabbixHostGroup(*group.values()) for group in groups],
+        )
+        self._zabbix_info_collected = True
+
+        if not self.ip:
+            self.ip = [
+                i
+                for i in self.zabbix_info.ip
+                if len(self.zabbix_info.ip) > 1 and i != "127.0.0.1" or len(self.zabbix_info.ip) == 1
+            ][0]
 
     def push_zabbix_inventory(self):
         """Обновляем инвентарные данные узла сети в Zabbix"""

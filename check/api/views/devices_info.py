@@ -14,7 +14,7 @@ from check.services.device.extra import get_device_stats
 from check.services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
 from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 from check.services.remote_terminal import get_console_url
-from check.services.zabbix import get_device_zabbix_maps_ids, get_device_uptime
+from check.services.zabbix import get_zabbix_host_map_and_uptime
 from devicemanager.device import DeviceManager
 from devicemanager.device import zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
@@ -239,9 +239,7 @@ class DeviceInfoAPIView(DeviceAPIView):
         device: models.Devices = self.get_object()
         zabbix_info = DeviceManager(name=device_name).zabbix_info
 
-        with zabbix_api.connect() as zbx:
-            devices_maps = get_device_zabbix_maps_ids(zbx, zabbix_info.hostid)
-            uptime = get_device_uptime(zbx, zabbix_info.hostid)
+        devices_maps, uptime = get_zabbix_host_map_and_uptime(zabbix_info.hostid)
 
         return Response(
             {

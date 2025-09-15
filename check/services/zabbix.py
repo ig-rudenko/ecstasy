@@ -1,4 +1,4 @@
-from pyzabbix.api import ZabbixAPI
+from pyzabbix.api import ZabbixAPI, ZabbixAPIException
 from requests.exceptions import RequestException
 from urllib3.exceptions import MaxRetryError
 
@@ -74,3 +74,29 @@ def get_zabbix_graphs(device_name: str) -> tuple[int, list]:
     except (MaxRetryError, RequestException) as exc:
         print(f"Ошибка `collect_zabbix_graphs` {exc}")
     return host_id, graphs
+
+
+@cached(60 * 10, key=lambda host_id: f"zabbix_map_and_uptime:{host_id}")
+def get_zabbix_host_map_and_uptime(host_id: int | str) -> tuple[list[dict[str, str | int]], int]:
+    with zabbix_api.connect() as zbx:
+        devices_maps = get_device_zabbix_maps_ids(zbx, host_id)
+        uptime = get_device_uptime(zbx, host_id)
+    return devices_maps, uptime
+
+
+@cached(20, key=lambda device_name: f"zabbix_info:{device_name}")
+def get_zabbix_host_info(device_name: str) -> dict:
+    try:
+        with zabbix_api.connect() as zbx:
+            info = zbx.host.get(
+                filter={"name": device_name},
+                output=["hostid", "host", "name", "status", "description"],
+                selectGroups=["groupid", "name"],
+                selectInterfaces=["ip"],
+                selectInventory="extend",
+            )
+            if len(info) > 0:
+                return info[0]
+    except (MaxRetryError, RequestException, ZabbixAPIException):
+        pass
+    return {}
