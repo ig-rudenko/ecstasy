@@ -20,7 +20,7 @@ def physical_interface(name: str) -> bool:
     """
 
     name = name.lower()
-    return bool(findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE))
+    return not bool(findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE))
 
 
 def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
