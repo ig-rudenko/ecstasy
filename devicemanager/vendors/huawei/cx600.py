@@ -4,16 +4,16 @@ from typing import Literal
 
 import textfsm
 
-from ..base.device import BaseDevice, AbstractUserSessionsDevice
+from ..base.device import AbstractUserSessionsDevice, BaseDevice
 from ..base.types import (
     TEMPLATE_FOLDER,
+    ArpInfoResult,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
-    ArpInfoResult,
     PortInfoType,
-    InterfaceType,
-    DeviceAuthDict,
 )
 from ..base.validators import validate_and_format_port
 
@@ -108,7 +108,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
             template = textfsm.TextFSM(template_file)
         result = template.ParseText(match)
 
-        return list(map(lambda r: ArpInfoResult(*r), result)) if result else []
+        return [ArpInfoResult(*r) for r in result] if result else []
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:

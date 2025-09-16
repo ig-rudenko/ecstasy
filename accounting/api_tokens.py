@@ -19,15 +19,15 @@ class CustomTokenAuthentication(TokenAuthentication):
         if len(auth) == 1:
             msg = _("Invalid token header. No credentials provided.")
             raise exceptions.AuthenticationFailed(msg)
-        elif len(auth) > 2:
+        if len(auth) > 2:
             msg = _("Invalid token header. Token string should not contain spaces.")
             raise exceptions.AuthenticationFailed(msg)
 
         try:
             token = auth[1].decode()
-        except UnicodeError:
+        except UnicodeError as exc:
             msg = _("Invalid token header. Token string should not contain invalid characters.")
-            raise exceptions.AuthenticationFailed(msg)
+            raise exceptions.AuthenticationFailed(msg) from exc
 
         return self.authenticate_credentials_by_request(token, request)
 
@@ -35,8 +35,8 @@ class CustomTokenAuthentication(TokenAuthentication):
     def authenticate_credentials_by_request(key: str, request: Request) -> tuple[Any, Any] | None:
         try:
             token: UserAPIToken = UserAPIToken.objects.select_related("user").get(key=key)
-        except UserAPIToken.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Invalid token")
+        except UserAPIToken.DoesNotExist as exc:
+            raise exceptions.AuthenticationFailed("Invalid token") from exc
         now = timezone.now()
 
         if token.expired is not None and token.expired < now:

@@ -7,13 +7,13 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port

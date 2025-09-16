@@ -1,6 +1,6 @@
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import tabulate
 

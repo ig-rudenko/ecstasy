@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from devicemanager.vendors.base.helpers import parse_by_template
 from devicemanager.vendors.huawei.ce6865 import HuaweiCE6865
+
 from .test_huawei import TestHuaweiS2326TPFactory
 
 dis_int_desc_output = """

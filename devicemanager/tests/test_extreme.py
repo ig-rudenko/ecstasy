@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.extreme import Extreme
+
 from .base_factory_test import AbstractTestFactory
 
 

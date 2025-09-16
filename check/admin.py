@@ -21,26 +21,27 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.db.models import QuerySet, Count
+from django.db.models import Count, QuerySet
 from django.http import HttpResponse
-from django.utils.html import format_html, escape
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from import_export.admin import ExportMixin
 
 from devicemanager.device import Interfaces
 from gathering.services.configurations import LocalConfigStorage
+
 from .export import DevicesInterfacesWorkloadExcelExport
 from .export_resources import DevicesResource
 from .models import (
-    DeviceGroup,
-    Devices,
+    AccessGroup,
     AuthGroup,
     Bras,
+    DeviceCommand,
+    DeviceGroup,
+    DeviceMedia,
+    Devices,
     Profile,
     UsersActions,
-    DeviceMedia,
-    DeviceCommand,
-    AccessGroup,
 )
 
 

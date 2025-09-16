@@ -5,7 +5,7 @@ from typing import TypedDict
 from django.core.management.base import BaseCommand
 
 from app_settings.models import ZabbixConfig
-from check.models import DeviceGroup, Devices, AuthGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from devicemanager.device.zabbix_api import ZabbixAPIConnector
 
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
         return zbx_connector
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def get_auth_group(name: str):
         try:
             print("Группа авторизации:", name)
@@ -76,8 +76,9 @@ class Command(BaseCommand):
             print("Не найдена группа авторизации:", name)
             exit(1)
 
-    @lru_cache()
-    def get_model_group(self, name: str):
+    @staticmethod
+    @lru_cache
+    def get_model_group(name: str):
         return DeviceGroup.objects.get_or_create(name=name)[0]
 
     @staticmethod

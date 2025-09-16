@@ -7,13 +7,14 @@ from requests import RequestException
 
 from check.models import Devices
 from check.services.zabbix import get_zabbix_host_info
-from devicemanager.remote import remote_connector, RemoteDevice
-from devicemanager.zabbix_info_dataclasses import ZabbixHostInfo, ZabbixInventory, ZabbixHostGroup
-from .interfaces import Interfaces
-from .zabbix_api import zabbix_api
+from devicemanager.remote import RemoteDevice, remote_connector
+from devicemanager.zabbix_info_dataclasses import ZabbixHostGroup, ZabbixHostInfo, ZabbixInventory
+
 from ..device_connector.factory import DEFAULT_POOL_SIZE
 from ..exceptions import AuthException, BaseDeviceException
 from ..vendors.base.types import SimpleAuthObjectProtocol
+from .interfaces import Interfaces
+from .zabbix_api import zabbix_api
 
 
 class DeviceManager:
@@ -47,7 +48,7 @@ class DeviceManager:
         # Форматируем вывод активировано/деактивировано для узла сети
         zabbix_info["status"] = 1 if zabbix_info["status"] == "0" else 0
         # Создаем уникальный кортеж ip адресов
-        zabbix_info["interfaces"] = tuple(sorted(list({i["ip"] for i in zabbix_info["interfaces"]})))
+        zabbix_info["interfaces"] = tuple(sorted({i["ip"] for i in zabbix_info["interfaces"]}))
 
         # Инвентарные данные
         inventory = zabbix_info["inventory"].values() if zabbix_info["inventory"] else {}

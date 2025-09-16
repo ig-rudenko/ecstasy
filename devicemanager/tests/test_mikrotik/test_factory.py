@@ -1,6 +1,7 @@
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from devicemanager.vendors.mikrotik import MikroTik
+
 from ..base_factory_test import AbstractTestFactory
 
 

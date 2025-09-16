@@ -3,19 +3,20 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from gathering.services.mac.traceroute import MacTraceroute
-from .serializers import (
-    MacGatherStatusSerializer,
-    MacGatherScanTaskSerializer,
-    VlanGatherScanTaskSerializer,
-    VlanGatherStatusSerializer,
-)
-from .swagger.schemas import mac_traceroute_api_doc
+
 from ..tasks import (
     check_scanning_status,
     check_scanning_status_vlan,
     mac_table_gather_task,
     vlan_table_gather_task,
 )
+from .serializers import (
+    MacGatherScanTaskSerializer,
+    MacGatherStatusSerializer,
+    VlanGatherScanTaskSerializer,
+    VlanGatherStatusSerializer,
+)
+from .swagger.schemas import mac_traceroute_api_doc
 
 
 class MacTracerouteAPIView(GenericAPIView):

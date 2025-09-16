@@ -4,7 +4,8 @@ import re
 import textfsm
 from django.test import SimpleTestCase
 
-from devicemanager.vendors.dlink import validate_port, Dlink
+from devicemanager.vendors.dlink import Dlink, validate_port
+
 from .base_factory_test import AbstractTestFactory
 
 

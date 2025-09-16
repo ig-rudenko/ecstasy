@@ -1,4 +1,3 @@
-from typing import Type
 
 import orjson
 from django.core.cache import cache
@@ -48,7 +47,7 @@ class DevicesInterfacesWorkloadCollector:
         }
 
     @staticmethod
-    def get_serializer_class() -> Type[BaseSerializer]:
+    def get_serializer_class() -> type[BaseSerializer]:
         return DevicesSerializer
 
     def get_interfaces_load_for_user(self, user) -> dict:

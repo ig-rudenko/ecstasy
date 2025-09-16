@@ -1,5 +1,6 @@
-from datetime import timedelta, datetime
-from typing import Literal, Sequence, Callable
+from collections.abc import Callable, Sequence
+from datetime import datetime, timedelta
+from typing import Literal
 
 from django.utils import timezone
 
@@ -9,6 +10,7 @@ from devicemanager.device import Interfaces
 from devicemanager.exceptions import BaseDeviceException
 from devicemanager.remote import remote_connector
 from devicemanager.remote.exceptions import InvalidMethod
+
 from .models import TransportRing
 
 
@@ -277,8 +279,8 @@ class SolutionsPerformer:
         Проверяет, имеется ли метод (не атрибут) для текущего типа решения.
         :param solution_type: Тип решения.
         """
-        return hasattr(self, f"_perform_{solution_type}") and hasattr(
-            getattr(self, f"_perform_{solution_type}"), "__call__"
+        return hasattr(self, f"_perform_{solution_type}") and callable(
+            getattr(self, f"_perform_{solution_type}")
         )
 
     @staticmethod
@@ -359,10 +361,10 @@ class SolutionsPerformer:
 
                 try:
                     conn.vlans_on_port(port=port, operation=status, vlans=vlans)
-                except InvalidMethod:
+                except InvalidMethod as exc:
                     raise SolutionsPerformerError(
                         f"Оборудование {device_obj}, не имеет метода для управления VLAN на порту"
-                    )
+                    ) from exc
 
                 tries -= 1
 
@@ -482,12 +484,12 @@ class SolutionsPerformer:
 
                 # Если желаемое состояние порта - «down» и он не отключен административно,
                 # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «down».
-                if status == "down" and not interfaces[port].is_admin_down:
-                    continue
-
-                # Точно так же, если желаемое состояние - «up», а порт административно выключен,
-                # то переходит к следующей попытке, чтобы снова попытаться установить статус порта в «up».
-                elif status == "up" and interfaces[port].is_admin_down:
+                if (
+                    status == "down"
+                    and not interfaces[port].is_admin_down
+                    or status == "up"
+                    and interfaces[port].is_admin_down
+                ):
                     continue
 
                 # Если ни одно из этих условий не выполняется, то выходим из цикла.

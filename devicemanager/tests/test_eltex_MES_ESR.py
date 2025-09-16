@@ -1,8 +1,9 @@
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from devicemanager.vendors.eltex import EltexMES, EltexESR
+from devicemanager.vendors.eltex import EltexESR, EltexMES
+
 from .base_factory_test import AbstractTestFactory
 
 

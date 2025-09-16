@@ -1,27 +1,27 @@
 import io
 import re
-from functools import partial, cache
+from functools import partial
 from time import sleep
-from typing import Literal, Any
+from typing import Any, Literal
 
 import textfsm
 
-from .base.device import BaseDevice, AbstractConfigDevice, AbstractCableTestDevice
+from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import range_to_numbers, parse_by_template
+from .base.helpers import parse_by_template, range_to_numbers
 from .base.types import (
+    COOPER_TYPES,
+    FIBER_TYPES,
     TEMPLATE_FOLDER,
-    InterfaceVLANListType,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
+    InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    VlanTableType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
-    FIBER_TYPES,
-    COOPER_TYPES,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port
 
@@ -139,6 +139,8 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.model = self.model or self.find_or_empty(r"Device Type\s+:\s+(\S+)\s", version)
         self.serialno = self.find_or_empty(r"Serial Number\s+:\s+(\S+)", version)
         self.os_version = self.find_or_empty(r"Firmware Version\s+:\s+(.+)", version)
+
+        self._port_type_cache: dict[str, str] = {}
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -274,13 +276,11 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.lock = True
 
         output = self.send_command("show vlan")
-        with open(
-            f"{TEMPLATE_FOLDER}/vlans_templates/d-link.template", "r", encoding="utf-8"
-        ) as template_file:
+        with open(f"{TEMPLATE_FOLDER}/vlans_templates/d-link.template", encoding="utf-8") as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
         # сортируем и выбираем уникальные номера портов из списка интерфейсов
-        port_num = set(sorted([int(re.findall(r"\d+", p[0])[0]) for p in interfaces]))
+        port_num = {int(re.findall(r"\d+", p[0])[0]) for p in interfaces}
 
         # Создаем словарь, где ключи это кол-во портов, а значениями будут вланы на них
         ports_vlan: dict[str, list] = {str(num): [] for num in range(1, len(port_num) + 1)}
@@ -359,7 +359,6 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return="?")
-    @cache
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -367,6 +366,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для проверки
         :return: "SFP", "COPPER", или "?"
         """
+        if info := self._port_type_cache.get(port):
+            return info
+
         res = self.send_command(
             f"show ports {port} media_type", expect_command=True, before_catch="Command: .+?\n"
         )
@@ -379,6 +381,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         # 26  (C) 1000Base-T             -                  -                  -
         # 26  (F) 1000Base-X             -                  -                  -
         if re.search(rf"{port}\s+\(C\).+{port}\s+\(F\)", res, flags=re.DOTALL):
+            self._port_type_cache[port] = "COMBO"
             return "COMBO"
 
         media_type = self.find_or_empty(rf"{port}\s+([A-Za-z0-9\-]+)", res).strip().upper()
@@ -389,6 +392,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 or "FIBER" in media_type
                 or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
             ):
+                self._port_type_cache[port] = "SFP"
                 return "SFP"
 
             if (
@@ -396,8 +400,10 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 or "COPPER" in media_type
                 or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
             ):
+                self._port_type_cache[port] = "COPPER"
                 return "COPPER"
 
+        self._port_type_cache[port] = "?"
         return "?"
 
     @BaseDevice.lock_session

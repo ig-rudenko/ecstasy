@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from gpon.api.serializers.create_subscriber_data import SubscriberDataSerializer
-from gpon.models import Service, End3, Customer, SubscriberConnection, Address, TechCapability
+from gpon.models import Address, Customer, End3, Service, SubscriberConnection, TechCapability
 
 
 class TestSubscriberDataCreation(APITestCase):

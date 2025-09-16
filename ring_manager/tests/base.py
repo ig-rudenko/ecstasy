@@ -3,7 +3,7 @@ import json
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from check.models import Devices, DeviceGroup, AuthGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from net_tools.models import DevicesInfo
 from ring_manager.models import RingDev, TransportRing
 

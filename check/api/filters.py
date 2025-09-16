@@ -1,6 +1,7 @@
 from django_filters import rest_framework as rf_filters
 
 from net_tools.models import DevicesInfo
+
 from ..models import Devices
 
 

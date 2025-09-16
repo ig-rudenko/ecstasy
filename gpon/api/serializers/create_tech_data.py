@@ -1,11 +1,12 @@
 import orjson
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from check.models import Devices
-from gpon.models import Address, OLTState, HouseOLTState, HouseB, End3
+from gpon.models import Address, End3, HouseB, HouseOLTState, OLTState
+
 from .address import AddressSerializer
 from .common import End3Serializer
 
@@ -32,8 +33,8 @@ class OLTStateSerializer(serializers.ModelSerializer):
         """
         try:
             self._device = Devices.objects.get(name=value)
-        except Devices.DoesNotExist:
-            raise ValidationError(f"Оборудование `{value}` не существует")
+        except Devices.DoesNotExist as exc:
+            raise ValidationError(f"Оборудование `{value}` не существует") from exc
         return value
 
     def validate_devicePort(self, value: str) -> str:
@@ -51,10 +52,10 @@ class OLTStateSerializer(serializers.ModelSerializer):
             return value
         try:
             interfaces = orjson.loads(self._device.devicesinfo.interfaces or "[]")
-        except ObjectDoesNotExist:
+        except ObjectDoesNotExist as exc:
             raise ValidationError(
                 "Данное оборудование не имеет портов для проверки, пожалуйста, откройте его, чтобы опросить"
-            )
+            ) from exc
         else:
             for intf in interfaces:
                 if intf["Interface"] == value:
@@ -190,8 +191,8 @@ class End3CreateListSerializer(serializers.Serializer):
             raise ValidationError("Не был передан `id` существующего сплиттера")
         try:
             End3.objects.get(id=value["id"])
-        except End3.DoesNotExist:
-            raise ValidationError(f"Сплиттер с id={value['id']} не существует")
+        except End3.DoesNotExist as exc:
+            raise ValidationError(f"Сплиттер с id={value['id']} не существует") from exc
         return value
 
 
@@ -237,8 +238,8 @@ class CreateTechDataSerializer(serializers.Serializer):
         try:
             splitter_id = validated_data["end3"]["existingSplitter"]["id"]
             return End3.objects.get(id=splitter_id)
-        except End3.DoesNotExist:
-            raise ValidationError("Выбранный вами сплиттер не существует.")
+        except End3.DoesNotExist as exc:
+            raise ValidationError("Выбранный вами сплиттер не существует.") from exc
 
     @staticmethod
     def create_new_end3(validated_data, house_olt_state: HouseOLTState) -> list[End3]:

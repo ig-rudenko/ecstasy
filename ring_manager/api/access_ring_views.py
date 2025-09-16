@@ -5,10 +5,11 @@ from rest_framework.response import Response
 
 from app_settings.models import AccessRingSettings
 from check.models import Devices
+
+from ..base.helpers import collect_current_interfaces, thread_ping
+from ..ring_finder import AggregationRingFinder
 from .permissions import AccessRingPermission
 from .serializers import AccessRingSerializer, PointRingSerializer
-from ..base.helpers import thread_ping, collect_current_interfaces
-from ..ring_finder import AggregationRingFinder
 
 
 class ListAccessRingsAPIView(generics.ListAPIView):

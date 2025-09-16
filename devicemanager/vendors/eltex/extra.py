@@ -29,7 +29,7 @@ def reformat_gpon_ports_state_output(output: str) -> InterfaceListType:
 
     interfaces: InterfaceListType = []
     if ports and states:
-        for port_number, state in zip(ports, states):
+        for port_number, state in zip(ports, states, strict=False):
             status: InterfaceType = "up"
             if state.upper() == "DISABLED":
                 status = "admin down"

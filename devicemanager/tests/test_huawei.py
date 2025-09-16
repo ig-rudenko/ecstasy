@@ -4,8 +4,9 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from devicemanager.vendors import Huawei, HuaweiMA5600T
-from .base_factory_test import AbstractTestFactory
+
 from ..multifactory import DeviceMultiFactory
+from .base_factory_test import AbstractTestFactory
 
 
 class TestHuaweiS2403TPFactory(AbstractTestFactory):
@@ -34,13 +35,13 @@ Error: Unrecognized command found at '^' position.
  % Unrecognized command found at '^' position."""
 
     @patch("devicemanager.vendors.huawei.factory.HuaweiFactory.send_command")
-    def test_factory_return_class(self, huawei_factory_send_command: Mock):
-        huawei_factory_send_command.return_value = self.get_output_from_display_version_command()
+    def test_factory_return_class(self, send_command: Mock):
+        send_command.return_value = self.get_output_from_display_version_command()
         super().test_factory_return_class()
 
     @patch("devicemanager.vendors.huawei.factory.HuaweiFactory.send_command")
-    def test_factory_device_attributes(self, huawei_factory_send_command: Mock):
-        huawei_factory_send_command.return_value = self.get_output_from_display_version_command()
+    def test_factory_device_attributes(self, send_command: Mock):
+        send_command.return_value = self.get_output_from_display_version_command()
         super().test_factory_device_attributes()
 
 
@@ -298,7 +299,7 @@ line3"""
   Maximum transmit rate upstream(Kbps)          : 2464
   ------------------------------------------------------------------------------
 """
-        elif re.search("display\s+mac-address\s+port", command):
+        elif re.search(r"display\s+mac-address\s+port", command):
             self._output = b"""
    SRV-P BUNDLE TYPE MAC            MAC TYPE F /S /P  VPI  VCI   VLAN ID
    INDEX INDEX
@@ -308,7 +309,7 @@ line3"""
      690    -   adl  bc76-706c-c671 dynamic  0 /11/27 1    40    704
    ---------------------------------------------------------------------
 """
-        elif re.search("display\s+security\s+bind\s+mac", command):
+        elif re.search(r"display\s+security\s+bind\s+mac", command):
             self._output = b"""
    Index     MAC-Address FlowID  F/ S/ P   VLAN-ID  Vpi  Vci FlowType    FlowPara
    ------------------------------------------------------------------------------
@@ -359,7 +360,7 @@ class TestHuaweiMA5600TFactory(AbstractTestFactory):
         self.assertTrue(hasattr(device, "adsl_profiles"))
         self.assertTrue(hasattr(device, "interfaces"))
         self.assertTrue(hasattr(device, "interfaces_vlans"))
-        self.assertEqual(getattr(device, "vdsl_templates"), self.vdsl_templates)
+        self.assertEqual(device.vdsl_templates, self.vdsl_templates)
 
 
 class TestHuaweiMA5600T(SimpleTestCase):

@@ -3,22 +3,22 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from time import sleep
-from typing import Literal, Dict, Optional
+from typing import Literal
 
-from ..base.device import BaseDevice, AbstractConfigDevice, AbstractCableTestDevice
+from ..base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    VlanTableType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
+    VlanTableType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -124,7 +124,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             elabel = self.send_command("display elabel")
             self.serialno = self.find_or_empty(r"BarCode=(\S+)", elabel)
 
-        self.__ports_info: Dict[str, _PortInfo] = {}
+        self.__ports_info: dict[str, _PortInfo] = {}
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -492,7 +492,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Номер порта, для которого требуется получить информацию
         """
 
-        port_info: Optional[_PortInfo] = self.__ports_info.get(port, None)
+        port_info: _PortInfo | None = self.__ports_info.get(port, None)
         now = datetime.now()
         if port_info is None or port_info.exp < now:
             new_port_info = _PortInfo(
@@ -823,7 +823,8 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             self.session.sendline("quit")
             self.session.expect(self.prompt)
             return self.__parse_virtual_cable_test_data(cable_test_data)  # Парсим полученные данные
-        elif port_type in ["SFP", "COMBO-FIBER"]:
+
+        if port_type in ["SFP", "COMBO-FIBER"]:
             sfp_parameter_data = self.send_command(
                 f"display transceiver diagnosis interface {port}", expect_command=True
             )

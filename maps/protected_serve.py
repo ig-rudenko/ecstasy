@@ -22,6 +22,5 @@ class MapMediaServeLimitation(BaseServeLimitation):
             or request.user.has_perm("maps.delete_layers")
         ):
             return True
-        if re.match("^map_layer_files", path):
-            return False
-        return True
+
+        return not bool(re.match("^map_layer_files", path))

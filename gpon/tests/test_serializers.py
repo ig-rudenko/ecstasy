@@ -4,15 +4,15 @@ import json
 from django.test import TestCase
 from rest_framework.exceptions import ErrorDetail, ValidationError
 
-from check.models import Devices, AuthGroup, DeviceGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from gpon.api.serializers.address import AddressSerializer, BuildingAddressSerializer
 from gpon.api.serializers.common import End3Serializer
 from gpon.api.serializers.create_tech_data import (
-    OLTStateSerializer,
     CreateHouseOLTStateSerializer,
     CreateTechDataSerializer,
+    OLTStateSerializer,
 )
-from gpon.models import OLTState, Address, HouseB, HouseOLTState, TechCapability, End3
+from gpon.models import Address, End3, HouseB, HouseOLTState, OLTState, TechCapability
 from gpon.tests.data import CREATE_TECH_DATA
 from net_tools.models import DevicesInfo
 

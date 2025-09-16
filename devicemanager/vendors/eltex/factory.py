@@ -1,18 +1,17 @@
 import re
 
-from .base import EltexBase
-from .esr import EltexESR
-from .ltp_16n import EltexLTP16N
-from .ltp_4x_8x import EltexLTP
-from .mes import EltexMES
 from ..base.device import BaseDevice
 from ..base.factory import AbstractDeviceFactory
+from .base import EltexBase
+from .esr import EltexESR
+from .ltp_4x_8x import EltexLTP
+from .ltp_16n import EltexLTP16N
+from .mes import EltexMES
 
 __all__ = ["EltexFactory"]
 
-from ..base.types import DeviceAuthDict
-
 from ... import UnknownDeviceError
+from ..base.types import DeviceAuthDict
 
 
 class EltexFactory(AbstractDeviceFactory):

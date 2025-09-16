@@ -16,16 +16,17 @@ Including another URLconf
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import include, path, re_path
 from django.views.static import serve
 from rest_framework_simplejwt.views import (
-    TokenRefreshView,
     TokenObtainPairView,
+    TokenRefreshView,
     TokenVerifyView,
 )
 
 from maps.protected_serve import MapMediaServeLimitation
-from .protected_serve import protected_serve, LoginRequiredLimitation
+
+from .protected_serve import LoginRequiredLimitation, protected_serve
 from .swagger import schema_view
 
 urlpatterns = [

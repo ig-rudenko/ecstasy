@@ -1,4 +1,3 @@
-from typing import Type
 
 from django.core.cache import cache
 from django.db.models import QuerySet
@@ -39,7 +38,7 @@ class DevicesVlanWorkloadCollector:
         return {"vlan_count": len(vlans), "vlans": vlan_ports_data}
 
     @staticmethod
-    def get_serializer_class() -> Type[BaseSerializer]:
+    def get_serializer_class() -> type[BaseSerializer]:
         return DevicesSerializer
 
     def get_vlans_load_for_user(self, user) -> dict:

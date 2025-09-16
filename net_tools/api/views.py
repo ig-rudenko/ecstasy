@@ -18,13 +18,14 @@ from check.models import Devices
 from devicemanager.device import zabbix_api
 from net_tools.models import VlanName
 from net_tools.services.arp_find import find_mac_or_ip
-from net_tools.services.finder import Finder, VlanTraceroute, MultipleVlanTraceroute
+from net_tools.services.finder import Finder, MultipleVlanTraceroute, VlanTraceroute
 from net_tools.services.network import VlanNetwork
-from net_tools.tasks import interfaces_scan, check_scanning_status
+from net_tools.tasks import check_scanning_status, interfaces_scan
+
 from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
 from .swagger.schemas import (
-    get_vendor_schema,
     find_by_description_schema,
+    get_vendor_schema,
     get_vlan_desc_schema,
     vlan_traceroute_schema,
 )

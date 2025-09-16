@@ -8,9 +8,9 @@ from dataclasses import dataclass
 import pexpect
 
 from .exceptions import (
-    TelnetConnectionError,
     DeviceLoginError,
     SSHConnectionError,
+    TelnetConnectionError,
 )
 from .multifactory import DeviceMultiFactory
 from .vendors.base.device import BaseDevice

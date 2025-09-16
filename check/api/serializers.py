@@ -3,8 +3,9 @@ from re import findall
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from gathering.models import VlanPort, Vlan
-from ..models import Devices, InterfacesComments, DeviceMedia, UsersActions, DeviceCommand
+from gathering.models import Vlan, VlanPort
+
+from ..models import DeviceCommand, DeviceMedia, Devices, InterfacesComments, UsersActions
 
 
 class DevicesSerializer(serializers.ModelSerializer):

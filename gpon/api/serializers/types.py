@@ -1,4 +1,3 @@
-from rest_framework.serializers import ListSerializer, CharField
-
+from rest_framework.serializers import CharField, ListSerializer
 
 ServicesType = ListSerializer[CharField]

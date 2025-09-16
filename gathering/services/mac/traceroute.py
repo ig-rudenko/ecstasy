@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from functools import lru_cache
 from typing import TypedDict
 
 from django.contrib.humanize.templatetags.humanize import naturaltime
@@ -25,6 +24,8 @@ class MacTraceroute:
         self.desc_name_list: list[DescNameFormat] = list(DescNameFormat.objects.all())
         # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
         self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
+
+        self._reformatting_cache: dict[str, str] = {}
 
     def get_mac_graph(self, mac: str, vlan: int | None = None) -> dict:
         """
@@ -149,24 +150,29 @@ class MacTraceroute:
         qs = VlanName.objects.all().only("name", "vid", "description").filter(vid__in=vlans)
         return {vlan.vid: {"name": vlan.name or "", "description": vlan.description} for vlan in qs}
 
-    @lru_cache(maxsize=255)
     def reformatting(self, name: str):
         """
         ### Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat
         """
+        if (new_name := self._reformatting_cache.get(name)) is not None:
+            return new_name
 
         for reformat in self.desc_name_list:
             if reformat.standard == name:
                 # Если имя совпадает с правильным, то отправляем его
+                self._reformatting_cache[name] = name
                 return name
 
             for pattern in reformat.replacement.split(", "):
                 # Если паттерн содержится в исходном имени
                 if re.search(pattern, name, flags=re.IGNORECASE):
                     # Заменяем совпадение "pattern" в названии "name" на правильное "n"
-                    return re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
+                    new_name = re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
+                    self._reformatting_cache[name] = new_name
+                    return new_name
 
         # Если не требуется замены
+        self._reformatting_cache[name] = name
         return name
 
     @staticmethod

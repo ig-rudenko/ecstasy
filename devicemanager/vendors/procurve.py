@@ -1,19 +1,18 @@
 import re
 import time
-from functools import lru_cache
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
-    InterfaceListType,
-    InterfaceVLANListType,
-    MACListType,
-    DeviceAuthDict,
-    PortInfoType,
-    InterfaceType,
     COOPER_TYPES,
     FIBER_TYPES,
+    DeviceAuthDict,
+    InterfaceListType,
+    InterfaceType,
+    InterfaceVLANListType,
+    MACListType,
+    PortInfoType,
 )
 from .base.validators import validate_and_format_port
 
@@ -61,6 +60,7 @@ class ProCurve(BaseDevice):
         self.serialno = self.find_or_empty(r"Serial Number\s+: (\S+)", sys_info)
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
         self._grant_privileges()
+        self._ports_info: dict[str, str] = {}
 
     def _grant_privileges(self):
         self.session.sendline("enable")
@@ -107,7 +107,7 @@ class ProCurve(BaseDevice):
         int_desc_dict = {row[0]: row[1].strip() for row in intf_desc}
 
         interfaces: InterfaceListType = []
-        for name, enabled, link_status in intf_status:
+        for name, _, link_status in intf_status:
             status: InterfaceType = "up"
             if link_status.lower() == "no":
                 status = "admin down"
@@ -189,10 +189,7 @@ class ProCurve(BaseDevice):
 
         desc = self.clear_description(desc)
 
-        if desc == "":
-            res = self.send_command("no name")
-        else:
-            res = self.send_command(f"name {desc}")
+        res = self.send_command("no name" if desc == "" else f"name {desc}")
 
         self.send_command("exit")
         self.send_command("exit")
@@ -212,8 +209,10 @@ class ProCurve(BaseDevice):
         }
 
     @validate_port()
-    @lru_cache
     def _get_port_info(self, port: str) -> str:
+        if info := self._ports_info.get(port):
+            return info
+
         no_trk_port = self._get_no_trk(port)
 
         show_int_brief_cmd = f"show interface brief ethernet {no_trk_port}"
@@ -224,6 +223,7 @@ class ProCurve(BaseDevice):
         output = self.send_command(show_int_cmd)
         result += re.sub(show_int_cmd, "", output)
 
+        self._ports_info[port] = result
         return result
 
     @validate_port(if_invalid_return={"type": "text", "data": ""})

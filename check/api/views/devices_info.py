@@ -11,24 +11,24 @@ from app_settings.models import LogsElasticStackSettings
 from check import models
 from check.models import Devices
 from check.services.device.extra import get_device_stats
-from check.services.device.interfaces_collector import get_device_interfaces, InterfacesBuilder
+from check.services.device.interfaces_collector import InterfacesBuilder, get_device_interfaces
 from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 from check.services.remote_terminal import get_console_url
 from check.services.zabbix import get_zabbix_host_map_and_uptime
-from devicemanager.device import DeviceManager
-from devicemanager.device import zabbix_api
+from devicemanager.device import DeviceManager, zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 from net_tools.models import DevicesInfo as ModelDeviceInfo
-from .base import DeviceAPIView
+
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter, DeviceInfoFilter
 from ..serializers import DevicesSerializer, DeviceVlanSerializer
 from ..swagger.schemas import (
-    devices_interfaces_workload_list_api_doc,
-    interfaces_workload_api_doc,
-    interfaces_list_api_doc,
     device_info_api_doc,
+    devices_interfaces_workload_list_api_doc,
+    interfaces_list_api_doc,
+    interfaces_workload_api_doc,
 )
+from .base import DeviceAPIView
 
 
 @method_decorator(cache_page(60 * 2), name="dispatch")

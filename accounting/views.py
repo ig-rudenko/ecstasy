@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 
-from accounting.serializers import UserSerializer, UserPermissionsSerializer
+from accounting.serializers import UserPermissionsSerializer, UserSerializer
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 

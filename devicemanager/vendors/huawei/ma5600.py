@@ -1,20 +1,21 @@
+import contextlib
 import re
-from functools import lru_cache
 from time import sleep
 
 import pexpect
 from jinja2 import Environment, FileSystemLoader
 
 from devicemanager import snmp
-from ..base.device import BaseDevice, AbstractDSLProfileDevice
+
+from ..base.device import AbstractDSLProfileDevice, BaseDevice
 from ..base.types import (
+    DeviceAuthDict,
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
-    SplittedPortType,
-    DeviceAuthDict,
     PortInfoType,
+    SplittedPortType,
 )
 
 
@@ -56,6 +57,10 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         self.vdsl_templates: list = self.get_vdsl_templates()
         self.interfaces: InterfaceListType = []
         self.interfaces_vlans: InterfaceVLANListType = []
+
+        self._ont_port_info_cache: dict[tuple[str, ...], list] = {}
+        self._splitted_ports_cache: dict[str, SplittedPortType] = {}
+        self._board_info_cache: dict[str, str] = {}
 
     def get_adsl_profiles(self) -> str:
         return self.send_command(
@@ -172,10 +177,8 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
                     pages_limit -= 1
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
-            try:
-                self.session.expect(prompt)
-            except pexpect.TIMEOUT:
-                pass
+            with contextlib.suppress(pexpect.TIMEOUT):
+                self.session.expect(prompt, timeout=20)
             before = (self.session.before or b"").decode(errors="ignore")
             output = re.sub(r"\\x1[bB]\[\d\d\S", "", before)
         return output
@@ -217,8 +220,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
 
         return ""
 
-    @lru_cache()
-    def get_boards(self, board_index):
+    def get_boards(self, board_index: str):
         """
         ## Смотрим слоты на плате:
 
@@ -240,9 +242,11 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
 
         :param board_index: Индекс доски, которую вы хотите получить
         """
-        return self.send_command(f"display board {board_index}")
+        if (board_info := self._board_info_cache.get(board_index)) is None:
+            board_info = self.send_command(f"display board {board_index}")
+            self._board_info_cache[board_index] = board_info
+        return board_info
 
-    @lru_cache()
     def split_port(self, port: str) -> SplittedPortType:
         """
         ## Разделяет строку порта на тип интерфейса и плата, слот, порт
@@ -262,6 +266,8 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         ('scu', ('0', '9', '2'))
 
         """
+        if info := self._splitted_ports_cache.get(port):
+            return info
 
         # Преобразование порта в нижний регистр и удаление всех пробелов.
         port = port.lower().strip()
@@ -281,6 +287,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
 
             return "eth", tuple(indexes)
 
+        self._splitted_ports_cache[port] = (port_type, tuple(indexes))
         return port_type, tuple(indexes)
 
     def _render_adsl_port_info(
@@ -363,7 +370,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         # }, ...
         table_dict = [
             {"name": line[0], "down": line[1], "up": line[2]}
-            for line in zip(names, up_down_streams["Do"], up_down_streams["Up"])
+            for line in zip(names, up_down_streams["Do"], up_down_streams["Up"], strict=False)
         ]
 
         return {
@@ -441,8 +448,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
             "data": template.render(ont_info=ont_port_info),
         }
 
-    @lru_cache()
-    def _ont_port_info(self, indexes: tuple) -> list:
+    def _ont_port_info(self, indexes: tuple) -> list[dict[str, str]]:
         """
         ## Смотрим информацию на конкретном ONT
 
@@ -464,9 +470,12 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         ```
 
         """
-        i: tuple = indexes  # Упрощаем запись переменной
+        if info := self._ont_port_info_cache.get(indexes):
+            return info
+
+        i: tuple[str, ...] = indexes  # Упрощаем запись переменной
         info = self.send_command(f"display ont wan-info {i[0]}/{i[1]} {i[2]} {i[3]}", expect_command=False)
-        data = []  # Общий список
+        data: list[dict[str, str]] = []  # Общий список
 
         # Разделяем на сервисы
         parts = info.split("---------------------------------------------------------------")
@@ -491,6 +500,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
                 }
             )
 
+        self._ont_port_info_cache[indexes] = data
         return data
 
     def _render_vdsl_port_info(self, info: str, profile_name: str, all_profiles: list) -> PortInfoType:
@@ -722,7 +732,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         if port_type not in ["adsl", "vdsl"] or len(indexes) != 3 or profile_index <= 0:
             return "Неверный порт!"
 
-        if port_type == "adsl":
+        if port_type == "adsl":  # noqa: SIM108
             # Если порт ADSL, то команда для смена профиля
             change_profile_cmd = "profile-index"
         else:
@@ -790,7 +800,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
             macs = []
             for service in data:
                 if service.get("mac"):  # Если есть МАС для сервиса
-                    macs.append((service.get("manage_vlan"), service["mac"]))
+                    macs.append((service.get("manage_vlan", 0), service["mac"]))
             return macs
 
         if len(indexes) != 3:  # Неверный порт

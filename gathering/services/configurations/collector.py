@@ -3,6 +3,7 @@ import re
 
 from devicemanager.remote.exceptions import InvalidMethod
 from gathering.services.ftp.exceptions import FTPCollectorError
+
 from .base import ConfigStorage
 from .exceptions import ConfigFileError
 
@@ -105,5 +106,5 @@ class ConfigurationGather:
             return self.save_config(current_config_data, file_name)
         except FTPCollectorError as error:
             raise ConfigFileError(error.message) from error
-        except InvalidMethod:
-            raise ConfigFileError("Данное оборудование не поддерживает сохранение конфигурации")
+        except InvalidMethod as error:
+            raise ConfigFileError("Данное оборудование не поддерживает сохранение конфигурации") from error

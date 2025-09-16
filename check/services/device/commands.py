@@ -1,12 +1,12 @@
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from ipaddress import IPv4Address
-from typing import Callable
 
 import orjson
 from rest_framework.exceptions import ValidationError
 
-from check.models import Devices, DeviceCommand
+from check.models import DeviceCommand, Devices
 from devicemanager.device.interfaces import Interfaces
 
 
@@ -27,8 +27,8 @@ def validate_device_port(device: Devices, port: str) -> None:
 def validate_ip(ip: str) -> None:
     try:
         IPv4Address(ip.strip())
-    except ValueError:
-        raise ValidationError("Неверный формат IP")
+    except ValueError as exc:
+        raise ValidationError("Неверный формат IP") from exc
 
 
 def validate_mac(mac: str) -> None:
@@ -39,22 +39,19 @@ def validate_mac(mac: str) -> None:
 def validate_word(word: str) -> None:
     if not re.match(r"^\S+$", word):
         raise ValidationError("Не должно быть пробельных символов")
-    return
 
 
 def validate_number(number_string: str, min_value: str, max_value: str) -> None:
     try:
         number = int(str(number_string).strip())
-    except ValueError:
-        raise ValidationError("Необходимо указать целое число")
+    except ValueError as exc:
+        raise ValidationError("Необходимо указать целое число") from exc
 
-    if min_value:
-        if number < int(min_value):
-            raise ValidationError(f"Число должно быть больше или равно {min_value}")
+    if min_value and number < int(min_value):
+        raise ValidationError(f"Число должно быть больше или равно {min_value}")
 
-    if max_value:
-        if number > int(max_value):
-            raise ValidationError(f"Число должно быть меньше или равно {max_value}")
+    if max_value and number > int(max_value):
+        raise ValidationError(f"Число должно быть меньше или равно {max_value}")
 
 
 def validate_command(device: Devices, command: str, context: dict) -> str:
@@ -81,7 +78,7 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
         ),
         ContextValidator(
             key="word",
-            pattern=re.compile("\{word(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{word(?:#(?P<name>\S+)?)?}"),
             validate=lambda m, word: validate_word(word),
         ),
     ]

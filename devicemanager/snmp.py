@@ -1,5 +1,5 @@
 import subprocess
-from re import findall, IGNORECASE
+from re import IGNORECASE, findall
 
 from .vendors.base.types import InterfaceListType, InterfaceType
 
@@ -20,9 +20,7 @@ def physical_interface(name: str) -> bool:
     """
 
     name = name.lower()
-    if findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE):
-        return False
-    return True
+    return bool(findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE))
 
 
 def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:

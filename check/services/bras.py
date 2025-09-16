@@ -4,7 +4,7 @@ from typing import TypedDict
 from django.contrib.auth.base_user import AbstractBaseUser
 
 from check.logging import log
-from check.models import Devices, Bras
+from check.models import Bras, Devices
 from devicemanager.exceptions import BaseDeviceException
 
 

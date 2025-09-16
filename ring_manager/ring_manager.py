@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
 from devicemanager.device import DeviceManager
+
 from .base.exceptions import InvalidRingStructureError, RingStatusError
 from .base.finder import find_links_between_points
-from .base.helpers import thread_ping, collect_current_interfaces
+from .base.helpers import collect_current_interfaces, thread_ping
 from .base.types import BaseRingPoint
 from .models import RingDev, TransportRing
 from .solutions import Solutions

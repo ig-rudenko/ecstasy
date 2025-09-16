@@ -1,7 +1,7 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import orjson
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 

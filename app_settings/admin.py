@@ -25,10 +25,10 @@ from django.contrib import admin
 from requests import RequestException
 
 from app_settings.models import (
-    LogsElasticStackSettings,
-    ZabbixConfig,
-    VlanTracerouteConfig,
     AccessRingSettings,
+    LogsElasticStackSettings,
+    VlanTracerouteConfig,
+    ZabbixConfig,
 )
 from devicemanager.device.zabbix_api import zabbix_api
 

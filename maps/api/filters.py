@@ -1,4 +1,4 @@
-from django_filters.rest_framework import FilterSet, CharFilter
+from django_filters.rest_framework import CharFilter, FilterSet
 
 
 class IdNameFilter(FilterSet):

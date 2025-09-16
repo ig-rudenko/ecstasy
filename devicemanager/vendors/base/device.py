@@ -1,3 +1,4 @@
+import contextlib
 import io
 import re
 import string
@@ -11,13 +12,13 @@ import pexpect
 
 from .helpers import remove_ansi_escape_codes
 from .types import (
+    ArpInfoResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
-    SystemInfo,
     PortInfoType,
-    ArpInfoResult,
+    SystemInfo,
 )
 
 
@@ -96,12 +97,10 @@ class AbstractSearchDevice(ABC):
     @abstractmethod
     def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         """Ищем IP адрес в таблице ARP оборудования"""
-        pass
 
     @abstractmethod
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
         """Ищем MAC адрес в таблице ARP оборудования"""
-        pass
 
 
 class AbstractConfigDevice(ABC):
@@ -399,10 +398,8 @@ class BaseDevice(AbstractDevice, ABC):
                     pages_limit -= 1
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
-            try:
+            with contextlib.suppress(pexpect.TIMEOUT):
                 self.session.expect(prompt, timeout=20)
-            except pexpect.TIMEOUT:
-                pass
             # Убираем управляющие последовательности ANSI
             output += remove_ansi_escape_codes(self.session.before)
         return output

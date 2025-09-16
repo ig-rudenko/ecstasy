@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from check.models import Devices, AuthGroup, DeviceGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from gpon.tests.data import CREATE_TECH_DATA
 from net_tools.models import DevicesInfo
 

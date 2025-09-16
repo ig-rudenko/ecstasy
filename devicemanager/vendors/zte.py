@@ -4,20 +4,20 @@ from typing import Literal
 
 import textfsm
 
-from .base.device import BaseDevice, AbstractCableTestDevice
+from .base.device import AbstractCableTestDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import range_to_numbers, parse_by_template
+from .base.helpers import parse_by_template, range_to_numbers
 from .base.types import (
-    TEMPLATE_FOLDER,
     COOPER_TYPES,
     FIBER_TYPES,
+    TEMPLATE_FOLDER,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
-    DeviceAuthDict,
     MACType,
-    InterfaceType,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port_only_digit
@@ -151,8 +151,8 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
 
         for line in interfaces:
             vlans = []  # Строка со списком VLANов с переносами
-            for vlan_id in vlan_port:
-                if int(line[0]) in vlan_port[vlan_id]:
+            for vlan_id, ports in vlan_port.items():
+                if int(line[0]) in ports:
                     vlans.append(vlan_id)
             interfaces_vlan.append((line[0], line[1], line[2], vlans))
         return interfaces_vlan
@@ -185,11 +185,10 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
                 mac_table.append((int(vid), mac, "dynamic", port))
             return mac_table
 
-        else:
-            parsed2: list[tuple[str, str, str, MACType]] = re.findall(
-                rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output
-            )
-            return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed2]
+        parsed2: list[tuple[str, str, str, MACType]] = re.findall(
+            rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output
+        )
+        return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed2]
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])

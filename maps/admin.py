@@ -11,6 +11,7 @@ from pyzabbix import ZabbixAPIException
 from requests import RequestException
 
 from devicemanager.device.zabbix_api import zabbix_api
+
 from .models import Layers, Maps
 
 svg_file_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">

@@ -1,30 +1,32 @@
 import os
 import re
-from typing import Literal, Type, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 import requests
 
 from devicemanager import exceptions
 from devicemanager.vendors.base.device import (
-    AbstractDevice,
-    AbstractSearchDevice,
-    AbstractPOEDevice,
     AbstractCableTestDevice,
+    AbstractDevice,
     AbstractDSLProfileDevice,
+    AbstractPOEDevice,
+    AbstractSearchDevice,
     AbstractUserSessionsDevice,
 )
 from devicemanager.vendors.base.types import (
-    MACListType,
-    InterfaceVLANListType,
-    InterfaceListType,
-    MACTableType,
-    SetDescriptionResult,
     ArpInfoResult,
-    SystemInfo,
+    InterfaceListType,
+    InterfaceVLANListType,
+    MACListType,
+    MACTableType,
     PortInfoType,
+    SetDescriptionResult,
+    SystemInfo,
 )
-from .exceptions import InvalidMethod, RemoteAuthenticationFailed
+
 from ..device_connector.factory import DEFAULT_POOL_SIZE
+from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
 
 class RemoteDevice(
@@ -65,10 +67,10 @@ class RemoteDevice(
     def _handle_error(self, error: dict):
         self._delete_pool()  # Удаляем пул соединений, чтобы он создался заново
         if hasattr(exceptions, error["type"]):
-            some_exception: Type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
+            some_exception: type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
             raise some_exception(error["message"], ip=self.ip)
-        else:
-            raise exceptions.DeviceException(error["message"], ip=self.ip)
+
+        raise exceptions.DeviceException(error["message"], ip=self.ip)
 
     def _delete_pool(self):
         self._session.delete(f"{self._remote_connector_address}/pool/{self.ip}")
@@ -91,12 +93,14 @@ class RemoteDevice(
                 },
                 timeout=self._timeout,
             )
-        except requests.exceptions.ConnectionError:
-            raise requests.exceptions.ConnectionError("Не удалось подключиться к DeviceConnector")
-        except requests.exceptions.Timeout:
-            raise requests.exceptions.ConnectTimeout("Время ожидания ответа от DeviceConnector")
-        except requests.exceptions.MissingSchema:
-            raise requests.exceptions.ConnectionError("Неверный формат URL для подключения DeviceConnector")
+        except requests.exceptions.ConnectionError as exc:
+            raise requests.exceptions.ConnectionError("Не удалось подключиться к DeviceConnector") from exc
+        except requests.exceptions.Timeout as exc:
+            raise requests.exceptions.ConnectTimeout("Время ожидания ответа от DeviceConnector") from exc
+        except requests.exceptions.MissingSchema as exc:
+            raise requests.exceptions.ConnectionError(
+                "Неверный формат URL для подключения DeviceConnector"
+            ) from exc
 
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
@@ -177,12 +181,11 @@ class RemoteDevice(
 
     def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
         result = self._remote_call("search_ip", ip_address=ip_address)
-        return list(map(lambda r: ArpInfoResult(*r), result))
+        return [ArpInfoResult(*r) for r in result]
 
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
-        print(mac_address)
         result = self._remote_call("search_mac", mac_address=mac_address)
-        return list(map(lambda r: ArpInfoResult(*r), result))
+        return [ArpInfoResult(*r) for r in result]
 
     def vlans_on_port(
         self,

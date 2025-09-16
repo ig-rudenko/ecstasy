@@ -3,6 +3,7 @@ import re
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.iskratel import IskratelMBan
+
 from .base_factory_test import AbstractTestFactory
 
 
@@ -70,7 +71,7 @@ Port   Name                   Profile Name             Equipment  Operational St
  6   312311424435-1297399     N160-1856/608-6432Anne#  Equipped   Up/In service
  """
         elif "show bridge mactable interface dsl" in command:
-            self._output = b"""            
+            self._output = b"""
 Current MAC addresses        : 11:22:6E:89:8B:98
 """
         elif "show bridge mactable interface fasteth" in command:

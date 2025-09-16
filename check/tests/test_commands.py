@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 
-from check.models import DeviceGroup, Devices, AuthGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from check.services.device.commands import validate_command
 from devicemanager.device import Interfaces
 from net_tools.models import DevicesInfo

@@ -10,31 +10,32 @@ from check.logging import log
 from check.permissions import profile_permission
 from check.services.device.interfaces import (
     change_port_state,
-    set_interface_description,
-    get_mac_addresses_on_interface,
-    get_interface_detail_info,
     check_user_interface_permission,
+    get_interface_detail_info,
+    get_mac_addresses_on_interface,
+    set_interface_description,
 )
 from devicemanager.remote.exceptions import InvalidMethod
-from .base import DeviceAPIView
+
+from ...models import DeviceCommand
+from ...services.device.commands import execute_command, validate_command
 from ..decorators import except_connection_errors
 from ..permissions import DevicePermission
 from ..serializers import (
-    InterfacesCommentsSerializer,
     ADSLProfileSerializer,
-    PortControlSerializer,
-    PoEPortStatusSerializer,
     DeviceCommandsSerializer,
+    InterfacesCommentsSerializer,
+    PoEPortStatusSerializer,
+    PortControlSerializer,
 )
 from ..swagger import schemas
 from ..swagger.schemas import (
-    mac_list_api_doc,
-    interface_info_api_doc,
-    change_dsl_profile_api_doc,
     change_description_api_doc,
+    change_dsl_profile_api_doc,
+    interface_info_api_doc,
+    mac_list_api_doc,
 )
-from ...models import DeviceCommand
-from ...services.device.commands import execute_command, validate_command
+from .base import DeviceAPIView
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -212,8 +213,8 @@ class CableDiagAPIView(DeviceAPIView):
             cable_test = device.connect().virtual_cable_test(request.GET["port"])
         except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
-        else:
-            return Response(cable_test)
+
+        return Response(cable_test)
 
 
 class SetPoEAPIView(DeviceAPIView):
@@ -240,10 +241,10 @@ class SetPoEAPIView(DeviceAPIView):
             _, err = device.connect().set_poe_out(port_name, poe_status)
         except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
-        else:
-            if not err:
-                return Response({"status": poe_status})
-            return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
+
+        if not err:
+            return Response({"status": poe_status})
+        return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
 
 
 @method_decorator(interface_info_api_doc, name="get")
@@ -373,8 +374,8 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Unsupported for this device"}, status=400)
         except ValidationError as exc:
             return Response({"detail": exc.detail}, status=400)
-        else:
-            return Response({"output": output})
+
+        return Response({"output": output})
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):
@@ -401,5 +402,5 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Unsupported for this device"}, status=400)
         except ValidationError as exc:
             return Response({"detail": exc.detail}, status=400)
-        else:
-            return Response({"command": valid_command})
+
+        return Response({"command": valid_command})

@@ -3,7 +3,7 @@ from django.db.models import QuerySet
 
 from gpon.api.serializers.address import AddressSerializer
 from gpon.api.serializers.create_tech_data import OLTStateSerializer
-from gpon.models import HouseB, HouseOLTState, End3
+from gpon.models import End3, HouseB, HouseOLTState
 
 
 def get_all_tech_data(from_cache: bool = True):

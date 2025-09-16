@@ -1,4 +1,4 @@
-from django.http import HttpResponseForbidden, HttpRequest
+from django.http import HttpRequest, HttpResponseForbidden
 from django.views.static import serve
 
 
@@ -15,9 +15,7 @@ class LoginRequiredLimitation(BaseServeLimitation):
 
     @staticmethod
     def check(request: HttpRequest, path, document_root=None, show_indexes=False) -> bool:
-        if request.user and request.user.is_authenticated:
-            return True
-        return False
+        return bool(request.user and request.user.is_authenticated)
 
 
 class ProtectedServe:

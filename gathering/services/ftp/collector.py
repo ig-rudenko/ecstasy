@@ -1,11 +1,10 @@
 import ftplib
 import pathlib
-import socket
 from dataclasses import dataclass
-from typing import Pattern
+from re import Pattern
 
 from .base import AbstractFTPCollector
-from .exceptions import NotFound, FileDownloadError
+from .exceptions import FileDownloadError, NotFound
 
 
 @dataclass
@@ -158,15 +157,14 @@ class FTPCollector(AbstractFTPCollector):
                             self._ftp.retrbinary(f"RETR {item.name}", f.write)
                         break
 
-                    except socket.timeout:
+                    except TimeoutError as exc:
                         if self.retry_after_fail:
                             file_retry_counts -= 1
                             continue
 
-                        else:
-                            raise FileDownloadError(
-                                f"Превышено время ожидания ({self._ftp.timeout} секунд) "
-                                f"скачивания файла ({path}/{item.name})"
-                            )
+                        raise FileDownloadError(
+                            f"Превышено время ожидания ({self._ftp.timeout} секунд) "
+                            f"скачивания файла ({path}/{item.name})"
+                        ) from exc
 
                 self._ftp.cwd("/")

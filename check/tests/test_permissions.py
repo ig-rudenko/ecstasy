@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 from django.contrib.auth.models import User
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase
 
 from check import models
 from check.api.permissions import DevicePermission
@@ -27,21 +27,21 @@ class ReadPermissionsDecoratorTest(TestCase):
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
     def test_up_down_with_read_perms(self):
         @profile_permission(models.Profile.UP_DOWN)
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
     def test_bras_with_read_perms(self):
         @profile_permission(models.Profile.BRAS)
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
 
 class RebootPermissionsDecoratorTest(TestCase):
@@ -72,14 +72,14 @@ class RebootPermissionsDecoratorTest(TestCase):
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
     def test_bras_with_read_perms(self):
         @profile_permission(models.Profile.BRAS)
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
 
 class UpDownPermissionsDecoratorTest(TestCase):
@@ -117,7 +117,7 @@ class UpDownPermissionsDecoratorTest(TestCase):
         def test_(request):
             return "func"
 
-        self.assertEqual(test_(self.request).status_code, 403)
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
 
 class BrasPermissionsDecoratorTest(TestCase):
@@ -185,14 +185,14 @@ class DevicePermissionTest(TestCase):
     def test_user_without_access(self):
         # Пользователь без доступа к группам устройств не может получить разрешение
         request = Mock(user=self.user)
-        result = self.permission.has_object_permission(request, None, self.device)
+        result = self.permission.has_object_permission(request, None, self.device)  # type: ignore
         self.assertFalse(result)
 
     def test_user_with_access(self):
         # Пользователь с доступом к группам устройств может получить разрешение
         self.user.profile.devices_groups.add(self.device_group)
         request = Mock(user=self.user)
-        result = self.permission.has_object_permission(request, None, self.device)
+        result = self.permission.has_object_permission(request, None, self.device)  # type: ignore
         self.assertTrue(result)
 
     def test_device_with_different_group(self):
@@ -204,5 +204,5 @@ class DevicePermissionTest(TestCase):
         )
 
         self.user.profile.devices_groups.add(self.device_group)
-        result = self.permission.has_object_permission(Mock(user=self.user), None, other_device)
+        result = self.permission.has_object_permission(Mock(user=self.user), None, other_device)  # type: ignore
         self.assertFalse(result)

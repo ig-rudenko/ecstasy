@@ -4,21 +4,21 @@ from time import sleep
 
 import textfsm
 
-from .base.device import BaseDevice, AbstractConfigDevice, AbstractSearchDevice
+from .base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
-    TEMPLATE_FOLDER,
-    FIBER_TYPES,
     COOPER_TYPES,
-    InterfaceType,
+    FIBER_TYPES,
+    TEMPLATE_FOLDER,
+    ArpInfoResult,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
-    ArpInfoResult,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port_as_normal
@@ -449,7 +449,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         ) as template_file:
             template = textfsm.TextFSM(template_file)
         result = template.ParseText(match)
-        return list(map(lambda r: ArpInfoResult(*r), result))
+        return [ArpInfoResult(*r) for r in result]
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
@@ -517,8 +517,8 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
-        for key in data:
-            data[key]["util"] = getattr(self, f"get_{key}_utilization")()
+        for key, value in data.items():
+            value["util"] = getattr(self, f"get_{key}_utilization")()
         data["temp"] = self.get_temp()
         return data
 

@@ -6,18 +6,18 @@ from typing import Literal
 import pexpect
 import textfsm
 
+from .. import UnknownDeviceError
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     TEMPLATE_FOLDER,
-    DeviceAuthDict,
     ArpInfoResult,
-    PortInfoType,
+    DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
     InterfaceVLANListType,
+    PortInfoType,
 )
-from .. import UnknownDeviceError
 
 
 class Juniper(BaseDevice):
@@ -102,7 +102,7 @@ class Juniper(BaseDevice):
         result = template.ParseText(match)
         if result:
             # Нашли в таблице ARP
-            return list(map(lambda r: ArpInfoResult(*r), result))
+            return [ArpInfoResult(*r) for r in result]
 
         return []
 
@@ -275,8 +275,8 @@ class JuniperFactory(AbstractDeviceFactory):
 
             if "unknown keyword show" in version_output:
                 return Juniper(session, ip, auth, snmp_community=snmp_community)
-            else:
-                raise UnknownDeviceError("JuniperFactory не удалось распознать модель оборудования", ip=ip)
+
+            raise UnknownDeviceError("JuniperFactory не удалось распознать модель оборудования", ip=ip)
 
         model = BaseDevice.find_or_empty(r"Model: (\S+)", version_output)
         return Juniper(session, ip, auth, model, snmp_community=snmp_community)

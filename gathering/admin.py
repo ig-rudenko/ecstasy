@@ -9,8 +9,9 @@ from django.core.paginator import InvalidPage
 from django.db.models import Q
 
 from check.models import Devices
+
 from .models import MacAddress, Vlan, VlanPort
-from .paginator import LargeTablePaginator, CachedLargeTablePaginator
+from .paginator import CachedLargeTablePaginator, LargeTablePaginator
 
 LIST_FILTER_CACHE_TIMEOUT = 60 * 10
 
@@ -39,8 +40,8 @@ class CustomChangeList(ChangeList):
         else:
             try:
                 result_list = paginator.page(self.page_num).object_list
-            except InvalidPage:
-                raise IncorrectLookupParameters
+            except InvalidPage as exc:
+                raise IncorrectLookupParameters from exc
 
         self.result_count = result_count
         self.show_full_result_count = self.model_admin.show_full_result_count

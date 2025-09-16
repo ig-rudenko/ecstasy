@@ -79,7 +79,7 @@ class ZabbixInventory:
 
     def coordinates(self, reverse=False) -> tuple:
         if not self.location_lat or not self.location_lon:
-            return tuple()
+            return ()
 
         if reverse:
             return self.location_lon, self.location_lat

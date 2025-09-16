@@ -1,9 +1,9 @@
 import io
 
-from .mes import EltexMES
 from ..base.device import BaseDevice
 from ..base.types import DeviceAuthDict
 from ..base.validators import validate_and_format_port_as_normal
+from .mes import EltexMES
 
 
 class EltexESR(EltexMES):

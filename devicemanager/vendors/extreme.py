@@ -1,23 +1,24 @@
 import io
 import re
+from collections.abc import Sequence
 from time import sleep
-from typing import Literal, Sequence
+from typing import Literal
 
-from .base.device import BaseDevice, AbstractConfigDevice
+from .. import DeviceException
+from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import range_to_numbers, parse_by_template
+from .base.helpers import parse_by_template, range_to_numbers
 from .base.types import (
-    InterfaceVLANListType,
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
+    InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port_only_digit
-from .. import DeviceException
 
 
 class Extreme(BaseDevice, AbstractConfigDevice):

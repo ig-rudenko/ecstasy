@@ -1,5 +1,4 @@
 import re
-from functools import lru_cache
 from time import sleep
 from typing import Literal
 
@@ -9,12 +8,12 @@ from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import interface_normal_view, parse_by_template
 from .base.types import (
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port_as_normal
@@ -30,6 +29,17 @@ class EdgeCore(BaseDevice):
     space_prompt = "---More---"
     vendor = "Edge-Core"
     mac_format = r"\S\S-" * 5 + r"\S\S"
+
+    def __init__(
+        self,
+        session,
+        ip: str,
+        auth: DeviceAuthDict,
+        model: str = "",
+        snmp_community: str = "",
+    ):
+        super().__init__(session, ip, auth, model, snmp_community)
+        self._port_info_cache: dict[str, str] = {}
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
@@ -258,7 +268,6 @@ class EdgeCore(BaseDevice):
         return r + s
 
     @validate_and_format_port_as_normal()
-    @lru_cache
     @BaseDevice.lock_session
     def __get_port_info(self, port: str) -> str:
         """
@@ -270,8 +279,10 @@ class EdgeCore(BaseDevice):
 
         :param port: Номер порта, для которого требуется получить информацию
         """
-
-        return self.send_command(f"show interfaces status {port}")
+        if (info := self._port_info_cache.get(port)) is None:
+            info = self.send_command(f"show interfaces status {port}")
+            self._port_info_cache[port] = info
+        return info
 
     @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> PortInfoType:

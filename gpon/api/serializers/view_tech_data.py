@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from gpon.models import OLTState, HouseOLTState, TechCapability, SubscriberConnection, HouseB
+from gpon.models import HouseB, HouseOLTState, OLTState, SubscriberConnection, TechCapability
+
 from .address import BuildingAddressSerializer
 from .common import End3Serializer
 from .create_tech_data import OLTStateSerializer

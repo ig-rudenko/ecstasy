@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import orjson
 from django.core.cache import cache
@@ -9,8 +9,9 @@ from rest_framework.test import APITestCase
 from app_settings.models import LogsElasticStackSettings
 from devicemanager.device import Interfaces, zabbix_api
 from net_tools.models import DevicesInfo
+
 from ..api.serializers import DevicesSerializer
-from ..models import Devices, DeviceGroup, User, InterfacesComments, AuthGroup
+from ..models import AuthGroup, DeviceGroup, Devices, InterfacesComments, User
 from ..services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
 
@@ -219,7 +220,6 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock.zabbix_info.inventory.model = "new model"
         device_manager_mock.zabbix_info.inventory.serialno_a = "new serial"
         device_manager_mock.zabbix_info.inventory.os_full = "new os version"
-        device_manager_mock.push_zabbix_inventory.return_value = None
 
         mock_connect.return_value = device_manager_mock
 
@@ -276,7 +276,6 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             raise_exception=True,
             make_session_global=True,
         )
-        device_manager_mock.push_zabbix_inventory.assert_called_once()
 
         # Проверяем, что полученные интерфейсы с VLAN были записаны в базу
         self.assertListEqual(
@@ -315,7 +314,6 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
         device_manager_mock.zabbix_info.inventory.model = "model"
         device_manager_mock.zabbix_info.inventory.serialno_a = "serial_number"
         device_manager_mock.zabbix_info.inventory.os_full = "os_version"
-        device_manager_mock.push_zabbix_inventory.return_value = None
         mock_connect.return_value = device_manager_mock
 
         response = self.client.get(f"{self.url}?current_status=1&vlans=1")
@@ -340,7 +338,6 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             raise_exception=True,
             make_session_global=True,
         )
-        device_manager_mock.push_zabbix_inventory.assert_called_once()
 
         # Проверяем, что полученные интерфейсы с VLAN НЕ были записаны в базу
         self.assertIsNone(device_info.vlans)

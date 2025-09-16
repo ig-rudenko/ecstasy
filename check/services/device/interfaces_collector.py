@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import TypeVar, TypedDict
+from typing import TypedDict, TypeVar
 
 import orjson
 from django.utils import timezone

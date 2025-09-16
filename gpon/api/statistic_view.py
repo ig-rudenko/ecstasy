@@ -1,7 +1,8 @@
-from django.db.models import F, Count
+from django.db.models import Count, F
 from rest_framework.generics import ListAPIView
 
 from gpon.models import SubscriberConnection
+
 from .serializers.statistics import OLTSubscriberSerializer
 
 

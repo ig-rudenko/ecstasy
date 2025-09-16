@@ -126,7 +126,7 @@ def parse_by_template(template_name: str, text: str) -> list:
     :return: Возвращает список.
     """
 
-    with open(f"{TEMPLATE_FOLDER}/{template_name}", "r", encoding="utf-8") as template_file:
+    with open(f"{TEMPLATE_FOLDER}/{template_name}", encoding="utf-8") as template_file:
         # Используем библиотеку TextFSM для анализа.
         int_des_ = textfsm.TextFSM(template_file)
         # Разбираем вывод команды.

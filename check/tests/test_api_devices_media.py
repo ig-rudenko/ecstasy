@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from ..api.serializers import DeviceMediaSerializer
-from ..models import User, DeviceGroup, Devices, DeviceMedia, AuthGroup
+from ..models import AuthGroup, DeviceGroup, DeviceMedia, Devices, User
 
 
 @override_settings(MEDIA_ROOT="/tmp/media")

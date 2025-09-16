@@ -2,21 +2,22 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
 from check.api.serializers import PortControlSerializer
+
 from .query_params import DeviceQueryParamsSerializer
 from .requests import ChangeDescriptionRequestSwaggerSerializer
 from .responses import (
-    DevicesConfigListSwaggerSerializer,
-    ConfigFileSwaggerSerializer,
-    DevicesInterfaceWorkloadSwaggerSerializer,
-    InterfaceWorkloadSwaggerSerializer,
-    InterfacesListSwaggerSerializer,
-    DeviceInfoSwaggerSerializer,
-    MacListResultSwaggerSerializer,
-    InterfaceDetailInfoSwaggerSerializer,
-    device_unavailable,
-    ChangeDescriptionSwaggerSerializer,
-    CutBrasSessionSwaggerSerializer,
     BrasPairSessionResultSwaggerSerializer,
+    ChangeDescriptionSwaggerSerializer,
+    ConfigFileSwaggerSerializer,
+    CutBrasSessionSwaggerSerializer,
+    DeviceInfoSwaggerSerializer,
+    DevicesConfigListSwaggerSerializer,
+    DevicesInterfaceWorkloadSwaggerSerializer,
+    InterfaceDetailInfoSwaggerSerializer,
+    InterfacesListSwaggerSerializer,
+    InterfaceWorkloadSwaggerSerializer,
+    MacListResultSwaggerSerializer,
+    device_unavailable,
 )
 
 # Изменяем состояние порта оборудования

@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.almatek import Almatek
+
 from .base_factory_test import AbstractTestFactory
 
 fake_auth = {"login": "test", "password": "password", "privilege_mode_password": ""}

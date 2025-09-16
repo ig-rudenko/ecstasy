@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Optional, Any
+from typing import Any
 
 from django.core.cache import cache
 
@@ -8,7 +9,7 @@ def cached(
     timeout: int,
     *,
     key: str | Callable[..., str] | None = None,
-    variable_positions: Optional[list[int]] = None,
+    variable_positions: list[int] | None = None,
     delimiter: str = ":",
 ) -> Callable[..., Any]:
     """

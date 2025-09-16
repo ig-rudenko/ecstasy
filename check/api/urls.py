@@ -5,7 +5,7 @@ URL Configuration для API
 
 from django.urls import path
 
-from .views import devices_info, device_manager, bras_manager, config_files, device_media, user_actions
+from .views import bras_manager, config_files, device_manager, device_media, devices_info, user_actions
 
 app_name = "devices-api"
 

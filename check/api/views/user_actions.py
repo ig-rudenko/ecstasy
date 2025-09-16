@@ -1,9 +1,9 @@
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 
-from .base import DeviceAPIView
-from ..serializers import UserDeviceActionSerializer
 from ...models import UsersActions
+from ..serializers import UserDeviceActionSerializer
+from .base import DeviceAPIView
 
 
 class UserDeviceActionsAPIView(DeviceAPIView, ListModelMixin):

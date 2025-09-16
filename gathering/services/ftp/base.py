@@ -1,6 +1,6 @@
 import pathlib
 from abc import ABC, abstractmethod
-from typing import Pattern
+from re import Pattern
 
 
 class AbstractFTPCollector(ABC):

@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from gpon.api.serializers.update_tech_data import End3TechCapabilitySerializer
-from gpon.models import End3, TechCapability, Address
+from gpon.models import Address, End3, TechCapability
 
 
 class TestEnd3TechCapabilitySerializer(TestCase):

@@ -7,9 +7,10 @@ from check import models
 from check.permissions import profile_permission
 from check.services.bras import cut_bras_session, get_bras_sessions
 from ecstasy_project.types.api import UserAuthenticatedAPIView
+
 from ..permissions import DevicePermission
 from ..serializers import BrassSessionSerializer, MacSerializer
-from ..swagger.schemas import cut_bras_session_api_doc, bras_get_session_api_doc
+from ..swagger.schemas import bras_get_session_api_doc, cut_bras_session_api_doc
 
 
 class BrassSessionAPIView(UserAuthenticatedAPIView):

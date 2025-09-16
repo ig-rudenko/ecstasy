@@ -2,7 +2,7 @@ import os
 from typing import Literal
 
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -100,10 +100,11 @@ def update_file_for_layer(sender, instance: Layers, *args, **kwargs):
         # Он получает старый файл из базы данных.
         old_file = sender.objects.get(id=instance.id).from_file
         # Он проверяет, существует ли старый файл и отличается ли новый файл.
-        if old_file and not instance.from_file or old_file and instance.from_file.path != old_file.path:
+        if (
+            old_file and not instance.from_file or old_file and instance.from_file.path != old_file.path
+        ) and os.path.exists(old_file.path):
             # Удаляем предыдущий файл
-            if os.path.exists(old_file.path):
-                os.remove(old_file.path)
+            os.remove(old_file.path)
     # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
     except sender.DoesNotExist:
         pass
@@ -198,10 +199,11 @@ def update_files_for_map(sender, instance: Maps, *args, **kwargs):
         old_file = old_instance.from_file
         old_image = old_instance.preview_image
         # Проверяем, существует ли старый файл и отличается ли от нового.
-        if old_file and not instance.from_file or old_file and instance.from_file.path != old_file.path:
+        if (
+            old_file and not instance.from_file or old_file and instance.from_file.path != old_file.path
+        ) and os.path.exists(old_file.path):
             # Удаляем предыдущий файл
-            if os.path.exists(old_file.path):
-                os.remove(old_file.path)
+            os.remove(old_file.path)
 
         # Проверяем, существует ли старое изоб и отличается ли от нового.
         if (
@@ -209,10 +211,9 @@ def update_files_for_map(sender, instance: Maps, *args, **kwargs):
             and not instance.preview_image
             or old_image
             and instance.preview_image.path != old_image.path
-        ):
+        ) and os.path.exists(old_image.path):
             # Удаляем предыдущий файл
-            if os.path.exists(old_image.path):
-                os.remove(old_image.path)
+            os.remove(old_image.path)
 
     # Он перехватывает исключение, возникающее при попытке получить несуществующий объект.
     except sender.DoesNotExist:

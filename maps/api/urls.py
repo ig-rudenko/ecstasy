@@ -2,11 +2,11 @@ from django.urls import path
 
 from .crud_views import LayerListView, LayerUpdateView
 from .views import (
-    UpdateInteractiveMapAPIView,
-    MapLayersListAPIView,
     InteractiveMapAPIView,
+    MapLayersListAPIView,
     MapListAPIView,
     MapRetrieveAPIView,
+    UpdateInteractiveMapAPIView,
 )
 
 # /api/v1/maps/

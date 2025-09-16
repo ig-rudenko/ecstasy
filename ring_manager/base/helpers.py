@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
-from typing import Type
 
-from devicemanager.device import Interfaces, DeviceManager
+from devicemanager.device import DeviceManager, Interfaces
+
 from .types import BaseRingPoint
 
 
@@ -26,7 +26,7 @@ def thread_ping(devices: list[BaseRingPoint]):
             devices[i].ping = f.result()
 
 
-def _get_device_interfaces(point: BaseRingPoint, device_manager: Type[DeviceManager]) -> Interfaces:
+def _get_device_interfaces(point: BaseRingPoint, device_manager: type[DeviceManager]) -> Interfaces:
     dev = device_manager.from_model(point.device, zabbix_info=False)
     # Собираем текущее состояние интерфейсов, если оборудование доступно
     dev.collect_interfaces(vlans=point.collect_vlans, current_status=point.ping)
@@ -34,7 +34,7 @@ def _get_device_interfaces(point: BaseRingPoint, device_manager: Type[DeviceMana
 
 
 def collect_current_interfaces(
-    devices: list[BaseRingPoint], device_manager: Type[DeviceManager] = DeviceManager
+    devices: list[BaseRingPoint], device_manager: type[DeviceManager] = DeviceManager
 ):
     """
     Эта функция использует ThreadPoolExecutor для сбора всех интерфейсов устройств в кольце.

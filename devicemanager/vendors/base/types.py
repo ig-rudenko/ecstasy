@@ -1,5 +1,5 @@
 import pathlib
-from typing import Literal, TypedDict, NamedTuple, Any, Protocol, AnyStr
+from typing import Any, AnyStr, Literal, NamedTuple, Protocol, TypedDict
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"

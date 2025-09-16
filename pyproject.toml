@@ -67,3 +67,30 @@ dev = [
     "types-pysftp>=0.2.17.20241117",
     "types-tabulate>=0.9.0.20241207",
 ]
+
+[tool.ruff]
+line-length = 120
+lint.extend-select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+lint.ignore = [
+    # Line too long
+    "E501",
+    # Functions with a high complexity
+    "C901",
+    # Use ternary operator instead of `if`-`else`-block
+    "SIM108",
+    # Module level import not at top of file
+    "E402"
+]

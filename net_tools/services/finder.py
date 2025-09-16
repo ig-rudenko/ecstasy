@@ -1,8 +1,7 @@
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import lru_cache
-from typing import NamedTuple, TypedDict, Literal
+from typing import Literal, NamedTuple, TypedDict
 
 import orjson
 from django.contrib.humanize.templatetags.humanize import naturaltime
@@ -11,7 +10,7 @@ from django.db.models import QuerySet
 
 from check.models import Devices, InterfacesComments
 from devicemanager.device import Interfaces
-from net_tools.models import DevicesInfo, DescNameFormat
+from net_tools.models import DescNameFormat, DevicesInfo
 
 
 @dataclass
@@ -251,21 +250,28 @@ class VlanTraceroute:
         self._cache_timeout = cache_timeout  # Время кеширования
         self._get_devices_vlans()
 
-    @lru_cache(maxsize=2000)
+        self._reformatting_cache: dict[str, str] = {}
+
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
+        if (new_name := self._reformatting_cache.get(name)) is not None:
+            return new_name
 
         for reformat in self._desc_name_list:
             if reformat.standard == name:
                 # Если имя совпадает с правильным, то отправляем его
+                self._reformatting_cache[name] = name
                 return name
 
             for pattern in reformat.replacement.split(", "):
                 if re.search(pattern, name, flags=re.IGNORECASE):  # Если паттерн содержится в исходном имени
                     # Заменяем совпадение "pattern" в названии "name" на правильное "n"
-                    return re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
+                    new_name = re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
+                    self._reformatting_cache[name] = new_name
+                    return new_name
 
         # Если не требуется замены
+        self._reformatting_cache[name] = name
         return name
 
     def find_vlan(

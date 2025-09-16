@@ -3,14 +3,14 @@ import re
 import time
 from typing import Literal
 
-from .base.device import BaseDevice, AbstractConfigDevice
+from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
-    MACListType,
-    InterfaceVLANListType,
-    InterfaceListType,
     DeviceAuthDict,
+    InterfaceListType,
     InterfaceType,
+    InterfaceVLANListType,
+    MACListType,
     MACTableType,
     MACType,
     PortInfoType,
@@ -81,9 +81,9 @@ class Almatek(BaseDevice, AbstractConfigDevice):
             r"(\d{1,4})\s+(\S+)\s+(\S*)\s+(\S*)\s+(?=Default|Static)", vlans_output
         )
         interfaces_vlans: dict[str, list[int]] = {}
-        for vid, name, untagged, tagged in vlans_parsed:
-            untagged_list: list[str] = untagged.split(",")
-            tagged_list: list[str] = tagged.split(",")
+        for vid, _, untagged, tagged in vlans_parsed:  # type: str, str, str, str
+            untagged_list = untagged.split(",")
+            tagged_list = tagged.split(",")
 
             for ports in [untagged_list, tagged_list]:
                 for port in ports:

@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.eltex import EltexLTP, EltexLTP16N
+
 from .base_factory_test import AbstractTestFactory
 
 

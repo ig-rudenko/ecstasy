@@ -10,7 +10,6 @@ from django.utils import timezone
 
 from devicemanager.device import Interfaces
 
-
 # pylint: disable=maybe-no-member, missing-function-docstring
 
 

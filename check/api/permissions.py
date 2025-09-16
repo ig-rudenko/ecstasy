@@ -1,9 +1,9 @@
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.request import Request
 
-from check.models import Devices, DeviceMedia, Profile, AccessGroup
+from check.models import AccessGroup, DeviceMedia, Devices, Profile
 
 
 def has_access_by_profile(user_id: int, group_id: int) -> bool:

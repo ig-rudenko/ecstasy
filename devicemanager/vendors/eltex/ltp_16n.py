@@ -4,16 +4,16 @@ from functools import wraps
 
 from packaging.version import Version
 
-from .extra import reformat_ltp_interfaces_list
-from .ltp_4x_8x import _EltexLTPPortTypes
-from ..base.device import BaseDevice, AbstractConfigDevice
+from ..base.device import AbstractConfigDevice, BaseDevice
 from ..base.types import (
+    DeviceAuthDict,
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
-    DeviceAuthDict,
 )
+from .extra import reformat_ltp_interfaces_list
+from .ltp_4x_8x import _EltexLTPPortTypes
 
 
 def _validate_port(if_invalid_return=None):
@@ -273,7 +273,7 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
                 "data": f'<div style="white-space: pre-wrap;font-family: monospace;font-size: 13px;">{info}</div>',
             }
 
-        elif port_type == "pon-port":
+        if port_type == "pon-port":
             # Данные для шаблона
             data: dict[str, int | list] = {}
 
@@ -441,7 +441,8 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
         if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
             # Для порта ONT вида - `0/1`
             return self.send_command(f"show interface ont {port_number} configuration")
-        elif port_type == "front-port":
+
+        if port_type == "front-port":
             return self.send_command(f"show running-config interface front-port {port_number}")
 
         return ""

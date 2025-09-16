@@ -3,15 +3,15 @@ import re
 from time import sleep
 from typing import Literal
 
-from ..base.device import BaseDevice, AbstractConfigDevice
+from ..base.device import AbstractConfigDevice, BaseDevice
 from ..base.helpers import parse_by_template, range_to_numbers
 from ..base.types import (
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    InterfaceType,
     PortInfoType,
 )
 from ..base.validators import validate_and_format_port

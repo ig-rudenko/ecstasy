@@ -7,7 +7,7 @@ from django.utils import timezone
 from app_settings.models import ZabbixConfig
 from check.models import Devices
 from devicemanager.dc import DeviceRemoteConnector
-from devicemanager.device import DeviceManager, zabbix_api, Interfaces
+from devicemanager.device import DeviceManager, Interfaces, zabbix_api
 from devicemanager.exceptions import BaseDeviceException
 from devicemanager.vendors.base.types import VlanTableType  # Updated to handle VLANs
 from gathering.models import Vlan, VlanPort  # Updated model for VLANs

@@ -1,4 +1,3 @@
-from typing import Type
 
 from django.http import FileResponse
 from django.utils.decorators import method_decorator
@@ -9,15 +8,16 @@ from rest_framework.response import Response
 from check import models
 from check.permissions import profile_permission
 from gathering.services.configurations import (
-    ConfigurationGather,
     ConfigFileError,
-    LocalConfigStorage,
     ConfigStorage,
+    ConfigurationGather,
+    LocalConfigStorage,
 )
-from .base import DeviceAPIView
+
+from ...models import Devices
 from ..serializers import ConfigFileSerializer
 from ..swagger import schemas
-from ...models import Devices
+from .base import DeviceAPIView
 
 
 class ConfigFilesPagination(PageNumberPagination):
@@ -25,7 +25,7 @@ class ConfigFilesPagination(PageNumberPagination):
 
 
 class BaseConfigStorageAPIView(DeviceAPIView):
-    config_storage: Type[ConfigStorage] | None = None
+    config_storage: type[ConfigStorage] | None = None
 
     def get_storage(self, device: Devices, file_name: str | None = None) -> ConfigStorage:
         """

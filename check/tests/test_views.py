@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from check.models import Devices, DeviceGroup, AuthGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 
 
 class ShowDevicesNoAccessTest(TestCase):

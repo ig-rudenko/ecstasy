@@ -1,5 +1,5 @@
 from typing import ClassVar  # noqa: F401
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import orjson
 from django.urls import reverse
@@ -9,7 +9,8 @@ from rest_framework.test import APITestCase
 from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 from net_tools.models import DevicesInfo, VlanName
-from ..models import Devices, DeviceGroup, User, UsersActions, AuthGroup
+
+from ..models import AuthGroup, DeviceGroup, Devices, User, UsersActions
 
 
 class PortControlAPIViewTestCase(APITestCase):

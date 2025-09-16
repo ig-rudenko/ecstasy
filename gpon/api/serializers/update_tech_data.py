@@ -12,7 +12,7 @@ from gpon.api.serializers.create_tech_data import (
     WriteOnlyHouseBAddressSerializer,
 )
 from gpon.api.serializers.view_tech_data import TechCapabilitySerializer
-from gpon.models import OLTState, HouseOLTState, End3, TechCapability
+from gpon.models import End3, HouseOLTState, OLTState, TechCapability
 
 
 class UpdateRetrieveOLTStateSerializer(OLTStateSerializer):

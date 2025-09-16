@@ -1,8 +1,8 @@
-from devicemanager.device import Interfaces
-from devicemanager.device import DeviceManager
+from devicemanager.device import DeviceManager, Interfaces
+
+from ..models import RingDev, TransportRing
+from ..ring_manager import InvalidRingStructureError, RingPoint, TransportRingManager
 from .base import TestRingBase
-from ..models import TransportRing, RingDev
-from ..ring_manager import TransportRingManager, RingPoint, InvalidRingStructureError
 
 #    DEV1 (gi4) --> (gi3) DEV2
 #    (gi3)               (gi4)

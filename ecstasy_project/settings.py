@@ -18,7 +18,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import urllib3
-from import_export.formats.base_formats import CSV, XLSX, JSON
+from import_export.formats.base_formats import CSV, JSON, XLSX
 from pyzabbix.api import logger as zabbix_api_logger
 
 from gathering.services.ftp import FTPCollector

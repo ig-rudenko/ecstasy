@@ -3,9 +3,9 @@ import re
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from ...models import Customer, Service, SubscriberConnection, TechCapability
 from .address import AddressSerializer
 from .types import ServicesType
-from ...models import SubscriberConnection, Customer, Service, TechCapability
 
 
 class CustomerSerializer(serializers.ModelSerializer):

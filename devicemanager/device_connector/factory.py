@@ -1,11 +1,11 @@
 import logging
 import os
 import time
-from queue import Queue, Empty
+from queue import Empty, Queue
 from threading import Thread
 from typing import Any
 
-from devicemanager import snmp, DeviceException
+from devicemanager import DeviceException, snmp
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS
@@ -14,8 +14,8 @@ from devicemanager.vendors import BaseDevice
 logger = logging.Logger(__file__)
 logger.addHandler(logging.StreamHandler())
 
-DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", 3))
-MAX_POOL_SIZE = int(os.getenv("MAX_POOL_SIZE", 3))
+DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", "3"))
+MAX_POOL_SIZE = int(os.getenv("MAX_POOL_SIZE", "3"))
 
 
 class DeviceSessionFactory:
@@ -47,18 +47,21 @@ class DeviceSessionFactory:
             pool_size = DEFAULT_POOL_SIZE
         if pool_size < 1:
             return 1
-        elif pool_size > MAX_POOL_SIZE:
+        if pool_size > MAX_POOL_SIZE:
             return MAX_POOL_SIZE
         return pool_size
 
     def perform_method(self, method: str, **params) -> Any:
         if logger.level <= logging.DEBUG:
-            logger.debug(f'Device: {self.ip} | Начало выполнение метода "{method}", params={params}')
+            logger.debug('Device: %s | Начало выполнение метода "%s", params=%s', self.ip, method, params)
             start_time = time.perf_counter()
             result = self._perform(method, **params)
             logger.debug(
-                f'Device: {self.ip} | Метод "{method}" выполнялся {round(time.perf_counter() - start_time, 4)} сек,'
-                f" params={params}"
+                'Device: %s | Метод "%s" выполнялся %s сек, params=%s',
+                self.ip,
+                method,
+                round(time.perf_counter() - start_time, 4),
+                params,
             )
             return result
 
@@ -72,7 +75,7 @@ class DeviceSessionFactory:
         device_connection = self._get_connection_to_perform()
 
         logger.debug(
-            f"Device: {self.ip} | Method={method} DeviceVendor={device_connection.__class__.__name__}"
+            "Device: %s | Method=%s DeviceVendor=%s", self.ip, method, device_connection.__class__.__name__
         )
 
         if not hasattr(device_connection, method):
@@ -87,8 +90,7 @@ class DeviceSessionFactory:
             raise exc
 
         logger.debug(
-            f"Device: {self.ip} | Method={method} DeviceVendor={device_connection.__class__.__name__}"
-            f" DataLength={len(str(data))}"
+            "Device: %s | Method=%s DeviceVendor=%s", self.ip, method, device_connection.__class__.__name__
         )
         return data
 
@@ -114,7 +116,7 @@ class DeviceSessionFactory:
                 time.sleep(0.1)
             if time.perf_counter() - start_time > 30.0:
                 # Если не удалось дождаться пула более 30с, очищаем его и будем создавать заново
-                logger.debug(f"Device: {self.ip} | CLEAR POOL")
+                logger.debug("Device: %s | CLEAR POOL", self.ip)
                 DEVICE_SESSIONS.clear_pool(self.ip)
 
         if DEVICE_SESSIONS.has_connection(self.ip):
@@ -136,7 +138,7 @@ class DeviceSessionFactory:
             new_thread.start()
 
         first_connection = self.get_first_valid_connection(connections_queue)
-        logger.debug(f"Device: {self.ip} | GOT FIRST CONNECTION: {first_connection}")
+        logger.debug("Device: %s | GOT FIRST CONNECTION: %s", self.ip, first_connection)
         # Сохраняем, если было указано хранение глобально.
         # Но для начала очистим пул от возможных не сброшенных подключений.
         DEVICE_SESSIONS.clear_pool(self.ip)
@@ -154,7 +156,7 @@ class DeviceSessionFactory:
 
     def _add_device_session(self, queue: Queue) -> None:
         try:
-            logger.debug(f"Device: {self.ip} | Создаем сессию для")
+            logger.debug("Device: %s | Создаем сессию", self.ip)
             connection = DeviceRemoteConnector(
                 ip=self.ip,
                 protocol=self.protocol,
@@ -163,11 +165,11 @@ class DeviceSessionFactory:
             ).get_session()
 
         except Exception as exc:
-            logger.error(f"Device: {self.ip} | Ошибка при создании сессии", exc_info=exc)
+            logger.error("Device: %s | Ошибка при создании сессии", self.ip, exc_info=exc)
             queue.put(exc, block=True)
 
         else:
-            logger.debug(f"Device: {self.ip} | Успешно создали сессию для")
+            logger.debug("Device: %s | Успешно создали сессию для", self.ip)
             queue.put(connection, block=True)
 
     @staticmethod
@@ -201,10 +203,10 @@ class DeviceSessionFactory:
                 DEVICE_SESSIONS.add_connections_to_pool(
                     self.ip, pool_size=self.pool_size, connections=[connection]
                 )
-            logger.debug(f"Device: {self.ip} | Add session to pool - {connection}")
+            logger.debug("Device: %s | Add session to pool - %s", self.ip, connection)
 
     def _expand_to_pool_size(self) -> None:
-        logger.debug(f"Device: {self.ip} | Expand to pool size")
+        logger.debug("Device: %s | Expand to pool size", self.ip)
         pool = DEVICE_SESSIONS.get_or_create_pool(self.ip, self.pool_size)
         length = self.pool_size - len(pool)
 

@@ -4,8 +4,9 @@ import textfsm
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.cisco import Cisco
-from .base_factory_test import AbstractTestFactory
+
 from ..vendors.base.types import ArpInfoResult
+from .base_factory_test import AbstractTestFactory
 
 fake_auth = {"login": "test", "password": "password", "privilege_mode_password": ""}
 
@@ -68,12 +69,7 @@ Vl101                          up             up
 Vl106                          up             up
 """
 
-        elif command == "show arp | include 0000.aaaa.0000":
-            self.before = b"""
-Internet  10.100.10.100             27   0000.aaaa.0000  ARPA   Vlan25
-            """
-
-        elif command == "show arp | include 10.100.10.100":
+        elif command == "show arp | include 0000.aaaa.0000" or command == "show arp | include 10.100.10.100":
             self.before = b"""
 Internet  10.100.10.100             27   0000.aaaa.0000  ARPA   Vlan25
             """

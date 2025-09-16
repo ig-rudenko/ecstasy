@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import reduce
-from typing import Optional, Callable, Any
+from typing import Any
 
 
 class LazyAttribute:
@@ -13,7 +14,7 @@ class LazyAttribute:
     def __get__(self, instance, owner):
         # print("__get__: ", self.name, instance.__dir__())
         if hasattr(instance, "_LazyConfigLoader__init_load"):
-            getattr(instance, "_LazyConfigLoader__init_load")()
+            instance._LazyConfigLoader__init_load()
         # print(f"__get__: {self.name}", instance.__dict__.get(self.name))
         return instance.__dict__.get(self.name, self.default_value)
 
@@ -31,7 +32,7 @@ class LazyIntAttribute(LazyAttribute):
 
 
 class LazyConfigLoader:
-    __init_load_function: Optional[Callable[[], Any]] = lambda _: None  # type: ignore
+    __init_load_function: Callable[[], Any] | None = lambda _: None  # type: ignore
 
     def __init_load(self):
         """Загрузка настроек Zabbix API из функции"""
@@ -55,10 +56,9 @@ class LazyConfigLoader:
             return
         lazy_attrs = list(filter(lambda a: a.startswith("_lazy_"), self.__dir__()))
         for attr in lazy_attrs:
-            if isinstance(data, dict):
-                if attr.replace("_lazy_", "") in data:
-                    setattr(self, attr, data[attr.replace("_lazy_", "")])
-                    continue
+            if isinstance(data, dict) and attr.replace("_lazy_", "") in data:
+                setattr(self, attr, data[attr.replace("_lazy_", "")])
+                continue
 
             if hasattr(data, attr.replace("_lazy_", "")):
                 setattr(self, attr, getattr(data, attr.replace("_lazy_", "")))

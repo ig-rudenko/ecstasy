@@ -4,10 +4,10 @@ from concurrent.futures import ThreadPoolExecutor
 from alive_progress import alive_bar
 from requests import RequestException
 
-from .device_manager import DeviceManager
-from .zabbix_api import zabbix_api
 from ..exceptions import AuthException
 from ..zabbix_info_dataclasses import ZabbixInventory
+from .device_manager import DeviceManager
+from .zabbix_api import zabbix_api
 
 
 class DevicesCollection:
@@ -179,10 +179,9 @@ class DevicesCollection:
         if current_status and not self.auth_groups:
             raise AuthException("Не указаны группы авторизации для коллекции!")
 
-        with alive_bar(self.count, title="Собираем интерфейсы") as bar:
-            with ThreadPoolExecutor() as ex:
-                for device in self.collection:
-                    ex.submit(device.collect_interfaces, vlans, current_status, bar)
+        with alive_bar(self.count, title="Собираем интерфейсы") as bar, ThreadPoolExecutor() as ex:
+            for device in self.collection:
+                ex.submit(device.collect_interfaces, vlans, current_status, bar)
         self.interfaces_collected = True
         return self
 

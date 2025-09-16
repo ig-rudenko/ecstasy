@@ -1,8 +1,6 @@
 from django.urls import path
 
-from . import statistic_view
-from . import subscriber_view
-from . import views
+from . import statistic_view, subscriber_view, views
 
 # /api/gpon/
 

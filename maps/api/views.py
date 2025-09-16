@@ -4,9 +4,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from maps.models import Maps
-from .permissions import MapPermission
-from .serializers import MapLayerSerializer, MapSerializer, MapDetailSerializer
+
 from ..services.maps import get_map_layers_geo_data, get_zabbix_problems_on_map
+from .permissions import MapPermission
+from .serializers import MapDetailSerializer, MapLayerSerializer, MapSerializer
 
 
 class MapPageNumberPagination(PageNumberPagination):

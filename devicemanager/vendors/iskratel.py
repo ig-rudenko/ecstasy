@@ -7,19 +7,20 @@ from time import sleep
 
 from gathering.services.ftp import FTPCollector
 from gathering.services.ftp.exceptions import NotFound
-from .base.device import BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice
+
+from .. import UnknownDeviceError
+from .base.device import AbstractConfigDevice, AbstractDSLProfileDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
 )
-from .. import UnknownDeviceError
 
 
 class IskratelControl(BaseDevice):
@@ -259,7 +260,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
                 "down": {"color": color(line[1][0], line[0]), "value": line[1][0]},
                 "up": {"color": color(line[1][1], line[0]), "value": line[1][1]},
             }
-            for line in zip(names, data_rate + max_rate + snr + intl + att)
+            for line in zip(names, data_rate + max_rate + snr + intl + att, strict=False)
         ]
 
         return {
@@ -378,7 +379,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         return macs
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def validate_port(port: str) -> tuple[str | None, int | None]:
         """
         ## Проверяем правильность полученного порта

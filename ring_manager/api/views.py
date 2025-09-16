@@ -5,12 +5,12 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .decorators import ring_valid
-from .permissions import RingPermission, TransportRingPermission
-from .serializers import TransportRingSerializer, PointRingSerializer
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager
-from ..solutions import SolutionsPerformer, Solutions, SolutionsPerformerError
+from ..solutions import Solutions, SolutionsPerformer, SolutionsPerformerError
+from .decorators import ring_valid
+from .permissions import RingPermission, TransportRingPermission
+from .serializers import PointRingSerializer, TransportRingSerializer
 
 
 class ListTransportRingsAPIView(generics.ListAPIView):

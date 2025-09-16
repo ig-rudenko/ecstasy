@@ -3,7 +3,7 @@ from typing import Any
 
 import orjson
 from django.contrib.auth.models import User
-from rest_framework.exceptions import PermissionDenied, ValidationError, APIException
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 
 from check import models
 from check.logging import log
@@ -31,8 +31,8 @@ def check_user_interface_permission(
 
     try:
         profile: Profile = Profile.objects.get(user=user)
-    except Profile.DoesNotExist:
-        raise PermissionDenied(detail="У вас нет профиля для выполнения данного действия!")
+    except Profile.DoesNotExist as exc:
+        raise PermissionDenied(detail="У вас нет профиля для выполнения данного действия!") from exc
 
     # Смотрим интерфейсы, которые сохранены в БД
     dev_info, _ = DevicesInfo.objects.get_or_create(dev=device)
@@ -120,8 +120,7 @@ def set_interface_description(
     if set_description_status.error:
         if set_description_status.error == "Неверный порт":
             raise ValidationError({"detail": f"Неверный порт {interface_name}"})
-        else:
-            raise APIException(detail=set_description_status.error)
+        raise APIException(detail=set_description_status.error)
 
     return set_description_status
 

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from check.models import Devices, DeviceGroup, AuthGroup, Bras, Profile, UsersActions
+from check.models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
 
 
 class DeviceModelTest(TestCase):

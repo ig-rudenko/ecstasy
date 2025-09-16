@@ -3,14 +3,15 @@ from unittest.mock import patch
 
 from django.utils import timezone
 
-from check.models import Devices, AuthGroup
+from check.models import AuthGroup, Devices
 from devicemanager.device import DeviceManager
 from devicemanager.remote import remote_connector
 from devicemanager.remote.connector import RemoteDevice
-from .base import TestRingBase
+
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager
 from ..solutions import SolutionsPerformer
+from .base import TestRingBase
 
 TEST_DEVICES = [
     {
@@ -191,7 +192,7 @@ class TestRotateToNormalSolutions(TestRingBase):
     ring_name = "ring51"
 
     def setUp(self):
-        super(TestRotateToNormalSolutions, self).setUp()
+        super().setUp()
         FakeTailSession.reset_class_data()
 
     def test_rotate_to_normal_solutions(self):

@@ -1,15 +1,15 @@
 from django.contrib import admin
 
 from .models import (
-    Service,
+    Address,
+    Customer,
     End3,
     HouseB,
     HouseOLTState,
     OLTState,
-    Address,
-    TechCapability,
-    Customer,
+    Service,
     SubscriberConnection,
+    TechCapability,
 )
 
 

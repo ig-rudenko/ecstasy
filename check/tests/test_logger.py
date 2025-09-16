@@ -1,9 +1,9 @@
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
 from ..logging import log
-from ..models import User, Devices, Bras, UsersActions, DeviceGroup, AuthGroup
+from ..models import AuthGroup, Bras, DeviceGroup, Devices, User, UsersActions
 
 
 class TestLog(TestCase):

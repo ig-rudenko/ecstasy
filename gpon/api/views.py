@@ -5,39 +5,40 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
+    RetrieveAPIView,
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
-    RetrieveAPIView,
 )
 from rest_framework.response import Response
 
 from check.models import Devices
+
+from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
+from ..services.tech_data import get_all_tech_data
 from .permissions import (
-    TechDataPermission,
-    OLTStatePermission,
-    HouseOLTStatePermission,
-    TechCapabilityPermission,
     End3Permission,
+    HouseOLTStatePermission,
+    OLTStatePermission,
+    TechCapabilityPermission,
+    TechDataPermission,
 )
 from .serializers.address import BuildingAddressSerializer
 from .serializers.common import End3Serializer
 from .serializers.create_tech_data import (
-    CreateTechDataSerializer,
     AddEnd3ToHouseOLTStateSerializer,
+    CreateTechDataSerializer,
 )
 from .serializers.update_tech_data import (
-    UpdateRetrieveOLTStateSerializer,
-    UpdateHouseOLTStateSerializer,
     End3TechCapabilitySerializer,
+    UpdateHouseOLTStateSerializer,
+    UpdateRetrieveOLTStateSerializer,
 )
 from .serializers.view_tech_data import (
-    ViewOLTStatesTechDataSerializer,
     StructuresHouseOLTStateSerializer,
-    ViewHouseBTechDataSerializer,
     TechCapabilitySerializer,
+    ViewHouseBTechDataSerializer,
+    ViewOLTStatesTechDataSerializer,
 )
-from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
-from ..services.tech_data import get_all_tech_data
 
 
 class ListUserPermissions(GenericAPIView):
@@ -90,10 +91,10 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
 
         try:
             return self.get_queryset().get(device__name=device_name, olt_port=olt_port)
-        except OLTState.DoesNotExist:
+        except OLTState.DoesNotExist as exc:
             raise ValidationError(
                 f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
-            )
+            ) from exc
 
     def get(self, request, *args, **kwargs):
         olt_state = self.get_object()

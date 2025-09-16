@@ -1,4 +1,5 @@
 from devicemanager.vendors.qtech import Qtech
+
 from .base_factory_test import AbstractTestFactory
 
 

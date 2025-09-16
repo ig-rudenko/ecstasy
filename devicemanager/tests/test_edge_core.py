@@ -1,4 +1,5 @@
 from django.test import SimpleTestCase
+
 from devicemanager.vendors.edge_core import EdgeCore
 
 

@@ -4,16 +4,16 @@ import time
 from functools import wraps
 from typing import Any, TypedDict
 
-from .extra import reformat_ltp_interfaces_list, reformat_gpon_ports_state_output
-from ..base.device import BaseDevice, AbstractConfigDevice
+from ..base.device import AbstractConfigDevice, BaseDevice
 from ..base.types import (
+    DeviceAuthDict,
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
 )
+from .extra import reformat_gpon_ports_state_output, reformat_ltp_interfaces_list
 
 
 class _EltexLTPPortTypes(TypedDict):
@@ -41,7 +41,7 @@ def _validate_port(if_invalid_return: Any = None):
                 },
                 1: {
                     "name": "10G-front-port",
-                    "max_number": deco_self.the_10G_ports_count - 1,
+                    "max_number": deco_self.the_10g_ports_count - 1,
                 },
                 2: {
                     "name": "pon-port",
@@ -126,17 +126,17 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
         # Проверяем, является ли модель LTP-4X.
         if "LTP-4X" in self.model:
             self.gpon_ports_count = 4
-            self.the_10G_ports_count = 2
+            self.the_10g_ports_count = 2
             self.front_ports_count = 4
 
         # Проверяем, является ли модель LTP-8X.
         elif "LTP-8X" in self.model:
             self.gpon_ports_count = 8
-            self.the_10G_ports_count = 2
+            self.the_10g_ports_count = 2
             self.front_ports_count = 8
         else:
             self.gpon_ports_count = 0
-            self.the_10G_ports_count = 0
+            self.the_10g_ports_count = 0
             self.front_ports_count = 0
 
     def send_command(
@@ -184,7 +184,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
         interfaces: list[tuple[str, str]] = []
 
         interfaces_10gig_output = self.send_command(
-            f"show interfaces status 10G-front-port 0 - {self.the_10G_ports_count - 1}",
+            f"show interfaces status 10G-front-port 0 - {self.the_10g_ports_count - 1}",
             expect_command=False,
         )
         interfaces += re.findall(r"(10G\S+ \d+)\s+(\S{2,})\s+", interfaces_10gig_output)

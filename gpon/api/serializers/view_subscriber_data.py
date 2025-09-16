@@ -3,10 +3,10 @@ import re
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from ...models import Customer, HouseOLTState, Service, SubscriberConnection, TechCapability
 from .address import AddressSerializer
 from .common import CustomerSerializer, End3Serializer
 from .types import ServicesType
-from ...models import Customer, SubscriberConnection, HouseOLTState, Service, TechCapability
 
 
 class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):

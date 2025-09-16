@@ -1,4 +1,5 @@
 from django.test import SimpleTestCase
+
 from devicemanager.device import Interfaces
 from devicemanager.device.interfaces import Interface
 

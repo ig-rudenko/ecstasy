@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import MacTracerouteAPIView, MacGatherStatusAPIView, MacGatherScanRunAPIView
+from .views import MacGatherScanRunAPIView, MacGatherStatusAPIView, MacTracerouteAPIView
 
 # /api/v1/gather/
 

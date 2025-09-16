@@ -5,7 +5,8 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
 from check.models import DeviceMedia, Devices
-from ..permissions import DevicePermission, DeviceMediaPermission
+
+from ..permissions import DeviceMediaPermission, DevicePermission
 from ..serializers import DeviceMediaSerializer
 
 

@@ -6,7 +6,8 @@ from typing import IO
 from django.conf import settings
 
 from check.models import Devices
-from .base import ConfigStorage, ConfigFile
+
+from .base import ConfigFile, ConfigStorage
 
 
 class LocalConfigStorage(ConfigStorage):
@@ -38,15 +39,10 @@ class LocalConfigStorage(ConfigStorage):
         return True
 
     def validate_config_name(self, file_name: str) -> bool:
-        if ".." in file_name or (self._storage / file_name).is_dir():
-            return False
-
-        return True
+        return not bool(".." in file_name or (self._storage / file_name).is_dir())
 
     def is_exist(self, file_name: str) -> bool:
-        if not (self._storage / file_name).exists():
-            return False
-        return True
+        return (self._storage / file_name).exists()
 
     def open(self, file_name: str, mode: str = "rb", **kwargs) -> IO:
         return (self._storage / file_name).open(mode, **kwargs)

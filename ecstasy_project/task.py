@@ -91,7 +91,6 @@ class ThreadUpdatedStatusTask(Task):
 
     def finish(self):
         """Выполняется в самом конце после завершения задачи"""
-        pass
 
     @staticmethod
     def device_log_format(device):

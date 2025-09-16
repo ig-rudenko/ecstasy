@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from net_tools.models import DescNameFormat, VlanName, DevicesForMacSearch
+from net_tools.models import DescNameFormat, DevicesForMacSearch, VlanName
 
 
 @admin.register(DescNameFormat)

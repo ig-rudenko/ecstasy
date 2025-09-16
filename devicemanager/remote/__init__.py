@@ -1,5 +1,3 @@
-from typing import Type
-
 from django.conf import settings
 from django.utils.module_loading import import_string
 
@@ -14,7 +12,7 @@ class _DeviceRemoteConnector:
         self._connector_class = import_string(from_string)
 
     @property
-    def create(self) -> Type[RemoteDevice]:
+    def create(self) -> type[RemoteDevice]:
         return self._connector_class
 
 

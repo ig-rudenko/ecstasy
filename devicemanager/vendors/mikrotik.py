@@ -8,21 +8,21 @@ from typing import Literal
 
 import pysftp
 
-from .base.device import BaseDevice, AbstractConfigDevice, AbstractPOEDevice
+from ..exceptions import UnknownDeviceError
+from .base.device import AbstractConfigDevice, AbstractPOEDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import normalize_number_suffix
 from .base.types import (
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
     MACType,
-    DeviceAuthDict,
-    InterfaceType,
     PortInfoType,
 )
 from .base.validators import validate_and_format_port
-from ..exceptions import UnknownDeviceError
 
 
 def validate_port(port: str) -> str | None:

@@ -4,15 +4,15 @@ from time import sleep
 
 import pexpect
 
-from ..base.device import BaseDevice, AbstractConfigDevice
+from ..base.device import AbstractConfigDevice, BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
+    DeviceAuthDict,
     InterfaceListType,
+    InterfaceType,
     InterfaceVLANListType,
     MACListType,
     MACTableType,
-    DeviceAuthDict,
-    InterfaceType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 

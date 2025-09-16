@@ -2,7 +2,7 @@ import logging
 
 from celery.result import AsyncResult
 from django.core.cache import cache
-from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from pyzabbix.api import logger
 
 from check.models import Devices as ModelDevices

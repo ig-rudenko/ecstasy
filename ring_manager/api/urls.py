@@ -1,7 +1,6 @@
 from django.urls import path
 
-from . import access_ring_views
-from . import views
+from . import access_ring_views, views
 
 # /api/ring-manager/
 

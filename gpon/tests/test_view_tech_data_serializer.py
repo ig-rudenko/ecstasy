@@ -2,12 +2,13 @@ import json
 
 from django.test import TestCase
 
-from check.models import DeviceGroup, Devices, AuthGroup
+from check.models import AuthGroup, DeviceGroup, Devices
 from gpon.api.serializers.create_tech_data import CreateTechDataSerializer
 from gpon.api.serializers.view_tech_data import ViewOLTStatesTechDataSerializer
 from net_tools.models import DevicesInfo
-from .data import CREATE_TECH_DATA
+
 from ..models import OLTState
+from .data import CREATE_TECH_DATA
 
 
 class TestViewOLTStatesTechDataSerializer(TestCase):

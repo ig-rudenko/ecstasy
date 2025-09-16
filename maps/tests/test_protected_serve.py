@@ -1,6 +1,6 @@
+from django.contrib.auth.models import Group, Permission, User
 from django.http import HttpRequest
 from django.test import TestCase
-from django.contrib.auth.models import User, Group, Permission
 
 from ..protected_serve import MapMediaServeLimitation
 

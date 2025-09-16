@@ -5,8 +5,7 @@ import pathlib
 from ipaddress import IPv4Address
 from typing import TypedDict
 
-from flask import Flask, after_this_request
-from flask import request, jsonify, send_file
+from flask import Flask, after_this_request, jsonify, request, send_file
 
 from devicemanager.dc import SimpleAuthObject
 from devicemanager.device_connector.exceptions import MethodError

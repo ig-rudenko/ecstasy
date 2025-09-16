@@ -3,24 +3,25 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
+    GenericAPIView,
     ListAPIView,
     ListCreateAPIView,
-    GenericAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from gpon.models import Customer, SubscriberConnection, OLTState
-from .permissions import SubscriberDataPermission, CustomerPermission
-from .serializers.common import CustomerSerializer
-from .serializers.create_subscriber_data import SubscriberDataSerializer, UpdateSubscriberDataSerializer
-from .serializers.view_subscriber_data import CustomerDetailSerializer
+from gpon.models import Customer, OLTState, SubscriberConnection
+
 from ..services.subscriber_data import (
     all_subscriber_connections_cache_key,
     get_all_subscriber_connections,
     get_subscribers_on_device_port,
 )
+from .permissions import CustomerPermission, SubscriberDataPermission
+from .serializers.common import CustomerSerializer
+from .serializers.create_subscriber_data import SubscriberDataSerializer, UpdateSubscriberDataSerializer
+from .serializers.view_subscriber_data import CustomerDetailSerializer
 
 
 class CustomersListAPIView(ListAPIView):
@@ -108,8 +109,8 @@ class SubscribersOnDevicePort(GenericAPIView):
         olt_port: str = self.request.query_params.get("port", "")
         try:
             ont_id: int = int(self.request.query_params.get("ont_id", 0))
-        except ValueError:
-            raise ValidationError("`ont_id` parameter must be an integer")
+        except ValueError as exc:
+            raise ValidationError("`ont_id` parameter must be an integer") from exc
         if not olt_port:
             raise ValidationError("Missing `port` parameter.")
 
