@@ -281,10 +281,13 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
             board_list = self.find_or_empty(rf"\s+({indexes[1]})\s+(\S+)\s+\S+", board_info)
             if board_list:
                 if "SCU" in board_list[1]:
+                    self._splitted_ports_cache[port] = ("scu", tuple(indexes))
                     return "scu", tuple(indexes)
                 if "GI" in board_list[1]:
+                    self._splitted_ports_cache[port] = ("giu", tuple(indexes))
                     return "giu", tuple(indexes)
 
+            self._splitted_ports_cache[port] = ("eth", tuple(indexes))
             return "eth", tuple(indexes)
 
         self._splitted_ports_cache[port] = (port_type, tuple(indexes))
