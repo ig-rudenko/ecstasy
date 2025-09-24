@@ -1,11 +1,11 @@
-
 import orjson
 from django.core.cache import cache
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from rest_framework.serializers import BaseSerializer
 
 from check.api.serializers import DevicesSerializer
 from check.models import Devices
+from check.services.filters import filter_devices_qs_by_user
 from devicemanager.device.interfaces import Interfaces
 from net_tools.models import DevicesInfo
 
@@ -120,16 +120,7 @@ class DevicesInterfacesWorkloadCollector:
             DevicesInfo.objects.filter(
                 interfaces__isnull=False,
                 dev__active=True,
-                dev__in=Devices.objects.filter(
-                    Q(group__profile__user_id=user.id)
-                    | Q(access_groups__users=user)
-                    | Q(access_groups__user_groups__in=user.groups.all())
-                )
-                .exclude(
-                    Q(forbidden_access_groups__users=user)
-                    | Q(forbidden_access_groups__user_groups__in=user.groups.all())
-                )
-                .distinct(),
+                dev__in=filter_devices_qs_by_user(Devices.objects.all(), user),
             )
             .select_related("dev", "dev__group")
             .order_by("dev__name")

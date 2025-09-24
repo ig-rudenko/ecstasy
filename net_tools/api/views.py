@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 from app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from check.models import Devices
+from check.services.filters import filter_devices_qs_by_user
 from devicemanager.device import zabbix_api
 from net_tools.models import VlanName
 from net_tools.services.arp_find import find_mac_or_ip
@@ -94,7 +95,8 @@ def find_by_description(request):
         except re.PatternError as exc:
             return Response(data={"error": f"Ошибка в регулярном выражении: {exc}"}, status=400)
 
-    finder = Finder(user_id=request.user.id)
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
+    finder = Finder(devices_qs)
     result = finder.find_description(pattern_str=pattern, is_regex=is_regex)
 
     return Response({"interfaces": result})
@@ -217,7 +219,8 @@ def get_vlan_traceroute(request: Request) -> Response:
     # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
-    devices_qs = Devices.objects.all()
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
+
     if vlan_traceroute_settings.vlan_start:
         devices_names = tuple(map(str.strip, vlan_traceroute_settings.vlan_start.split("\n")))
         devices_qs = devices_qs.filter(name__in=devices_names)

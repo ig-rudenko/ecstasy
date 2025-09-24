@@ -1,5 +1,4 @@
 from django.core.cache import cache
-from django.db.models import Q
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -19,6 +18,7 @@ from devicemanager.device import DeviceManager, zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 from net_tools.models import DevicesInfo as ModelDeviceInfo
 
+from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter, DeviceInfoFilter
 from ..serializers import DevicesSerializer, DeviceVlanSerializer
@@ -48,20 +48,7 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         через Profile.devices_groups или AccessGroup (users / user_groups),
         при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
-        user = self.current_user
-
-        return (
-            Devices.objects.filter(
-                Q(group__profile__user_id=user.id)  # доступ через профиль
-                | Q(access_groups__users=user)
-                | Q(access_groups__user_groups__in=user.groups.all())
-            )
-            .exclude(
-                Q(forbidden_access_groups__users=user)
-                | Q(forbidden_access_groups__user_groups__in=user.groups.all())
-            )
-            .distinct()
-        )
+        return filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)

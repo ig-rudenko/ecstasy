@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from check.api.permissions import DevicePermission
 from check.models import Devices
+from check.services.filters import filter_devices_qs_by_user
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 
@@ -15,7 +16,7 @@ class DeviceAPIView(UserAuthenticatedAPIView):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
-        return Devices.objects.filter(group__profile__user_id=self.current_user.id).select_related("group")
+        return filter_devices_qs_by_user(Devices.objects.all(), self.current_user).select_related("group")
 
     def get_object(self) -> Devices:
         """Возвращает объект устройства по имени или IP адресу"""

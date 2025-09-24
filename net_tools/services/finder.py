@@ -75,12 +75,9 @@ class DeviceInterfacesData:
 
 
 class Finder:
-    def __init__(self, user_id: int):
-        self.user_id = user_id
-        self.dev_info_queryset = (
-            DevicesInfo.objects.filter(dev__group__profile__user_id=self.user_id)
-            .select_related("dev")
-            .values("interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name")
+    def __init__(self, devices: QuerySet[Devices]):
+        self.dev_info_queryset = devices.select_related("dev").values(
+            "interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name"
         )
 
         self.devices: dict[str, DeviceInterfacesData] = {}
