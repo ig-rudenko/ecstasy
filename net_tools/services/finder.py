@@ -71,7 +71,7 @@ class DeviceInterfacesData:
     def get_interface_vlans(self, interface_name: str) -> str:
         for vlan in self.vlans:
             if vlan["Interface"] == interface_name:
-                return ", ".join(map(str, vlan["VLAN's"]))
+                return ", ".join(map(str, vlan.get("VLAN's", "")))
         return ""
 
 
