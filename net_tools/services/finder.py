@@ -76,9 +76,13 @@ class DeviceInterfacesData:
 
 class Finder:
     def __init__(self, devices: QuerySet[Devices]):
-        self.dev_info_queryset = devices.select_related("dev").values(
-            "interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name"
+        self.dev_info_queryset = (
+            DevicesInfo.objects.filter(dev__in=devices)
+            .select_related("dev")
+            .values("interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name")
         )
+
+        print(DevicesInfo.objects.filter(dev__in=devices).query)
 
         self.devices: dict[str, DeviceInterfacesData] = {}
         for dev_info in self.dev_info_queryset:
@@ -158,6 +162,7 @@ class Finder:
                             }
                         )
                     except KeyError as exc:
+                        pass
                         print(exc, line)
 
                     # Удаляем найденные комментарии
