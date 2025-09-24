@@ -1,3 +1,4 @@
+import contextlib
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -82,8 +83,6 @@ class Finder:
             .values("interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name")
         )
 
-        print(DevicesInfo.objects.filter(dev__in=devices).query)
-
         self.devices: dict[str, DeviceInterfacesData] = {}
         for dev_info in self.dev_info_queryset:
             interfaces = orjson.loads(dev_info["interfaces"] or "[]")
@@ -146,7 +145,7 @@ class Finder:
                 interface_comments = comments.get_interface(device_name, line["Interface"])
 
                 if find_on_desc or interface_comments:
-                    try:
+                    with contextlib.suppress(KeyError):
                         result.append(
                             {
                                 "device": device_name,
@@ -161,9 +160,6 @@ class Finder:
                                 },
                             }
                         )
-                    except KeyError as exc:
-                        pass
-                        print(exc, line)
 
                     # Удаляем найденные комментарии
                     if interface_comments:
