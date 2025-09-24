@@ -77,6 +77,7 @@ class DeviceInterfacesData:
 
 class Finder:
     def __init__(self, devices: QuerySet[Devices]):
+        self._devices_qs = devices
         self.dev_info_queryset = (
             DevicesInfo.objects.filter(dev__in=devices)
             .select_related("dev")
@@ -199,9 +200,7 @@ class Finder:
     def get_comments(self, regex: re.Pattern[str]) -> Comments:
         """Возвращает список всех комментариев поискового запроса."""
         comments = list(
-            InterfacesComments.objects.filter(
-                comment__iregex=regex.pattern, device__in=self.dev_info_queryset
-            )
+            InterfacesComments.objects.filter(comment__iregex=regex.pattern, device__in=self._devices_qs)
             .select_related("user", "device")
             .values("user__username", "device__name", "interface", "comment", "datetime")
         )
