@@ -166,8 +166,11 @@ class Finder:
                         del comments.devices[device_name].interfaces[line["Interface"]]
 
     def _add_comments_to_result(self, comments: Comments, result: list[DescriptionFinderResult]) -> None:
-        for dev_name in comments.devices:
-            for interface in comments.devices[dev_name].interfaces:
+        for dev_name, dev_intf_comments in comments.devices.items():
+            if not dev_name in self.devices:
+                continue
+
+            for interface in dev_intf_comments.interfaces:
                 result.extend(
                     [
                         {
@@ -182,7 +185,7 @@ class Finder:
                                 "vlansSavedTime": self.get_natural_time(self.devices[dev_name].vlans_date),
                             },
                         }
-                        for comment in comments.devices[dev_name].interfaces[interface]
+                        for comment in dev_intf_comments.interfaces[interface]
                     ]
                 )
 
@@ -193,11 +196,12 @@ class Finder:
         else:
             return "No Datetime"
 
-    @staticmethod
-    def get_comments(regex: re.Pattern[str]) -> Comments:
+    def get_comments(self, regex: re.Pattern[str]) -> Comments:
         """Возвращает список всех комментариев поискового запроса."""
         comments = list(
-            InterfacesComments.objects.filter(comment__iregex=regex.pattern)
+            InterfacesComments.objects.filter(
+                comment__iregex=regex.pattern, device__in=self.dev_info_queryset
+            )
             .select_related("user", "device")
             .values("user__username", "device__name", "interface", "comment", "datetime")
         )
