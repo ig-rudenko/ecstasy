@@ -62,19 +62,29 @@ class InterfaceWorkloadSwaggerSerializer(SwaggerSerializer):
 
 class DevicesInterfaceWorkloadSwaggerSerializer(SwaggerSerializer):
     interfaces_count = InterfaceWorkloadSwaggerSerializer(many=True)
-    group = serializers.CharField(source="group.name")
+    ip = serializers.IPAddressField()
+    name = serializers.CharField()
+    vendor = serializers.CharField(allow_null=True)
+    group = serializers.CharField()
+    model = serializers.CharField(allow_null=True)
 
     class Meta:
-        model = Devices
         fields = [
             "ip",
             "name",
             "vendor",
-            "group",
             "model",
-            "port_scan_protocol",
+            "group",
             "interfaces_count",
         ]
+
+
+class DevicesInterfaceWorkloadResultSwaggerSerializer(SwaggerSerializer):
+    devices_count = serializers.IntegerField()
+    devices = DevicesInterfaceWorkloadSwaggerSerializer(many=True)
+
+    class Meta:
+        fields = ["devices_count", "devices"]
 
 
 class LinkToAnotherDeviceSwaggerSerializer(SwaggerSerializer):

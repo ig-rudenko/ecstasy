@@ -27,10 +27,12 @@ from ..swagger.schemas import (
     devices_interfaces_workload_list_api_doc,
     interfaces_list_api_doc,
     interfaces_workload_api_doc,
+    devices_list_api_doc,
 )
 from .base import DeviceAPIView
 
 
+@method_decorator(devices_list_api_doc, name="get")
 @method_decorator(cache_page(60 * 2), name="dispatch")
 @method_decorator(vary_on_headers("Authorization"), name="dispatch")
 class DevicesListAPIView(UserAuthenticatedAPIView):
@@ -54,7 +56,9 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         queryset = super().filter_queryset(queryset)
 
         all_fields = self.serializer_class.Meta.fields.copy()
-        return_fields = self.request.GET.get("return-fields", "").split(",")
+        return_fields = (
+            self.request.GET.get("return_fields", "") or self.request.GET.get("return-fields", "")
+        ).split(",")
         return_fields = list(set(return_fields) & set(all_fields))
 
         if not return_fields:
@@ -85,11 +89,20 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
 class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
     filter_backends = [DjangoFilterBackend]
-    filterset_class = DeviceInfoFilter
+    filterset_class = DeviceFilter
+
+    def get_queryset(self):
+        """
+        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        через Profile.devices_groups или AccessGroup (users / user_groups),
+        при этом исключаются устройства, явно запрещённые в AccessGroup.
+        """
+        return filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
 
     def get(self, request, *args, **kwargs):
-        collector = DevicesInterfacesWorkloadCollector()
-        data = collector.get_interfaces_load_for_user(self.current_user)
+        qs = self.filter_queryset(self.get_queryset())
+        collector = DevicesInterfacesWorkloadCollector(qs)
+        data = collector.get_interfaces_workload()
         return Response(data)
 
 
@@ -99,12 +112,17 @@ class DeviceInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
     lookup_field = "dev__name"
 
     def get_queryset(self):
-        return ModelDeviceInfo.objects.all().select_related("dev").order_by("dev__name")
+        return (
+            ModelDeviceInfo.objects.filter(
+                dev__in=filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
+            )
+            .select_related("dev")
+            .order_by("dev__name")
+        )
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        collector = DevicesInterfacesWorkloadCollector()
-        result = collector.get_interfaces_load(instance)
+        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(instance)
         return Response(result)
 
 

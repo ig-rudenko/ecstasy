@@ -14,6 +14,9 @@ class DevicesInterfacesWorkloadCollector:
     cache_key = "all_devices_interfaces_workload_api_view"
     cache_seconds = 60 * 10
 
+    def __init__(self, devices_qs: QuerySet[Devices]):
+        self.devices_qs = devices_qs
+
     @staticmethod
     def get_interfaces_load(device: DevicesInfo | dict) -> dict:
         """
@@ -50,33 +53,25 @@ class DevicesInterfacesWorkloadCollector:
     def get_serializer_class() -> type[BaseSerializer]:
         return DevicesSerializer
 
-    def get_interfaces_load_for_user(self, user) -> dict:
-        # Собираем только устройства, к которым у пользователя есть доступ
-        queryset = self.get_queryset_for_user(user)
-        devices = list(queryset)
+    def get_interfaces_workload(self) -> dict:
+        queryset = self._create_queryset(self.devices_qs).values_list("dev__name", flat=True).distinct()
+        devices_names: list[str] = list(queryset)
+        all_devices_data = self.get_all_device_interfaces_workload(from_cache=True)
 
         return {
-            "devices_count": len(devices),
+            "devices_count": len(devices_names),
             "devices": [
-                {
-                    "interfaces_count": self.get_interfaces_load(dev_info),
-                    "ip": dev_info["dev__ip"],
-                    "name": dev_info["dev__name"],
-                    "vendor": dev_info["dev__vendor"],
-                    "group": dev_info["dev__group__name"],
-                    "model": dev_info["dev__model"],
-                }
-                for dev_info in devices
+                dev_info for dev_info in all_devices_data["devices"] if dev_info["name"] in devices_names
             ],
         }
 
-    def get_all_device_interfaces_workload(self, from_cache=True):
+    def get_all_device_interfaces_workload(self, from_cache: bool = True):
         cache_value = cache.get(self.cache_key)
 
         if not cache_value or not from_cache:
-            queryset = self.get_queryset()
+            qs = self._create_queryset(Devices.objects.all())
             cache_value = {
-                "devices_count": len(queryset),
+                "devices_count": len(qs),
                 "devices": [
                     {
                         "interfaces_count": self.get_interfaces_load(dev_info),
@@ -86,7 +81,7 @@ class DevicesInterfacesWorkloadCollector:
                         "group": dev_info["dev__group__name"],
                         "model": dev_info["dev__model"],
                     }
-                    for dev_info in queryset
+                    for dev_info in qs
                 ],
             }
             cache.set(self.cache_key, cache_value, timeout=self.cache_seconds)
@@ -94,34 +89,9 @@ class DevicesInterfacesWorkloadCollector:
         return cache_value
 
     @staticmethod
-    def get_queryset() -> QuerySet:
+    def _create_queryset(qs: QuerySet[Devices]) -> QuerySet:
         return (
-            DevicesInfo.objects.filter(interfaces__isnull=False, dev__active=True)
-            .select_related("dev", "dev__group")
-            .order_by("dev__name")
-            .values(
-                "interfaces",
-                "dev__ip",
-                "dev__name",
-                "dev__vendor",
-                "dev__group__name",
-                "dev__model",
-            )
-        )
-
-    @staticmethod
-    def get_queryset_for_user(user) -> QuerySet:
-        """
-        ## Возвращает queryset устройств с интерфейсами, к которым у пользователя есть доступ
-        через Profile.devices_groups или AccessGroup (users / user_groups),
-        исключая устройства, явно запрещённые в AccessGroup.
-        """
-        return (
-            DevicesInfo.objects.filter(
-                interfaces__isnull=False,
-                dev__active=True,
-                dev__in=filter_devices_qs_by_user(Devices.objects.all(), user),
-            )
+            DevicesInfo.objects.filter(interfaces__isnull=False, dev__in=qs)
             .select_related("dev", "dev__group")
             .order_by("dev__name")
             .values(

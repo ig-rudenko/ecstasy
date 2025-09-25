@@ -57,4 +57,9 @@ class DeviceInfoFilter(rf_filters.FilterSet):
 
     class Meta:
         model = DevicesInfo
-        fields = ["dev"]
+        fields = [
+            "group",
+            "vendor",
+            "model",
+            "ip",
+        ]

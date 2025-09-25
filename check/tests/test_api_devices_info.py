@@ -137,17 +137,15 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
         self.assertEqual(device1_data["interfaces_count"]["abons_down_with_desc"], 3)
         self.assertEqual(device1_data["interfaces_count"]["abons_down_no_desc"], 1)
 
-    def test_get_queryset(self):
-        queryset = DevicesInterfacesWorkloadCollector().get_queryset()
-        self.assertEqual(queryset.count(), 1)
-
     def test_get_serializer_class(self):
-        serializer_class = DevicesInterfacesWorkloadCollector().get_serializer_class()
+        serializer_class = DevicesInterfacesWorkloadCollector(Devices.objects.all()).get_serializer_class()
         self.assertEqual(serializer_class.Meta.model, Devices)
 
     def test_get_interfaces_load(self):
         # Test with device that has one up and one down interface
-        interfaces_load = DevicesInterfacesWorkloadCollector().get_interfaces_load(self.device_info)
+        interfaces_load = DevicesInterfacesWorkloadCollector(Devices.objects.all()).get_interfaces_load(
+            self.device_info
+        )
         self.assertEqual(interfaces_load["count"], 7)
         self.assertEqual(interfaces_load["abons"], 6)
         self.assertEqual(interfaces_load["abons_up"], 2)
@@ -159,7 +157,9 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
 
         # Test with device that has no interface
         device = DevicesInfo()
-        interfaces_load = DevicesInterfacesWorkloadCollector().get_interfaces_load(device)
+        interfaces_load = DevicesInterfacesWorkloadCollector(Devices.objects.all()).get_interfaces_load(
+            device
+        )
         self.assertEqual(interfaces_load["count"], 0)
         self.assertEqual(interfaces_load["abons"], 0)
         self.assertEqual(interfaces_load["abons_up"], 0)

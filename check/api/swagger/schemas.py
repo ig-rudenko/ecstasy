@@ -1,9 +1,9 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-from check.api.serializers import PortControlSerializer
+from check.api.serializers import PortControlSerializer, DevicesSerializer, MacSerializer
 
-from .query_params import DeviceQueryParamsSerializer
+from .query_params import DeviceInterfacesQueryParamsSerializer, DeviceQueryParamsSerializer
 from .requests import ChangeDescriptionRequestSwaggerSerializer
 from .responses import (
     BrasPairSessionResultSwaggerSerializer,
@@ -12,7 +12,7 @@ from .responses import (
     CutBrasSessionSwaggerSerializer,
     DeviceInfoSwaggerSerializer,
     DevicesConfigListSwaggerSerializer,
-    DevicesInterfaceWorkloadSwaggerSerializer,
+    DevicesInterfaceWorkloadResultSwaggerSerializer,
     InterfaceDetailInfoSwaggerSerializer,
     InterfacesListSwaggerSerializer,
     InterfaceWorkloadSwaggerSerializer,
@@ -46,10 +46,17 @@ config_files_list_api_doc = swagger_auto_schema(
 )
 
 
+devices_list_api_doc = swagger_auto_schema(
+    query_serializer=DeviceQueryParamsSerializer(),
+    responses={
+        200: DevicesSerializer(many=True),
+    },
+)
+
 devices_interfaces_workload_list_api_doc = swagger_auto_schema(
     responses={
-        200: DevicesInterfaceWorkloadSwaggerSerializer(many=True),
-    }
+        200: DevicesInterfaceWorkloadResultSwaggerSerializer(),
+    },
 )
 
 
@@ -61,7 +68,7 @@ interfaces_workload_api_doc = swagger_auto_schema(
 
 
 interfaces_list_api_doc = swagger_auto_schema(
-    query_serializer=DeviceQueryParamsSerializer(),
+    query_serializer=DeviceInterfacesQueryParamsSerializer(),
     responses={
         200: InterfacesListSwaggerSerializer(),
     },
@@ -133,9 +140,10 @@ change_description_api_doc = swagger_auto_schema(
 )
 
 bras_get_session_api_doc = swagger_auto_schema(
+    query_serializer=MacSerializer(),
     responses={
         200: BrasPairSessionResultSwaggerSerializer(),
-    }
+    },
 )
 
 cut_bras_session_api_doc = swagger_auto_schema(

@@ -101,19 +101,6 @@ class Finder:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
 
-        Возвращаем кортеж из списка результатов поиска и количество найденных описаний
-
-        Список результатов содержит следующие элементы:
-
-        ```python
-            {
-                "Device": "Имя оборудования",
-                "Interface": "Порт",
-                "Description": "Описание",
-                "SavedTime": "Дата и время" # В формате "%d.%m.%Y %H:%M:%S",
-            }
-        ```
-
         :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
         :param is_regex: Флаг, указывающий, является ли pattern_str регулярным выражением.
         :return: Список результатов поиска
@@ -146,7 +133,7 @@ class Finder:
                 interface_comments = comments.get_interface(device_name, line["Interface"])
 
                 if find_on_desc or interface_comments:
-                    with contextlib.suppress(KeyError):
+                    with contextlib.suppress(KeyError):  # Игнорируем, если ошибка ключа
                         result.append(
                             {
                                 "device": device_name,
@@ -168,7 +155,7 @@ class Finder:
 
     def _add_comments_to_result(self, comments: Comments, result: list[DescriptionFinderResult]) -> None:
         for dev_name, dev_intf_comments in comments.devices.items():
-            if not dev_name in self.devices:
+            if dev_name not in self.devices:
                 continue
 
             for interface in dev_intf_comments.interfaces:

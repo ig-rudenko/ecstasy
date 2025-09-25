@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_filters",
-    "drf_yasg",
     "check",
     "net_tools",
     "maps",
@@ -81,6 +80,7 @@ INSTALLED_APPS = [
     "news",
     "import_export",
     "corsheaders",
+    "drf_yasg",
 ]
 if ENV == "dev":
     INSTALLED_APPS += ["debug_toolbar"]
