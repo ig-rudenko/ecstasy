@@ -31,6 +31,7 @@ class RingStructure:
     port_start: str
     devices: list[BaseRingPoint]
     port_end: str
+    _settings: AccessRingSettings
     _admin_down: list[AdminDownInfo] = field(default_factory=list)
 
     def find_links(self) -> None:
@@ -69,7 +70,8 @@ class RingStructure:
 
         for ring_dev in self.devices:
             for interface in ring_dev.interfaces:
-                match = re.findall(r"SVSL\S+[AS]SW\d", interface.desc)
+                match = re.findall(self._settings.access_dev_name_regexp, interface.desc)
+                match.extend(re.findall(self._settings.agg_dev_name_regexp, interface.desc))
 
                 # Если нашли на порту оборудование кольца и порт выключен
                 if match and match[0] in ring_devices_names and interface.is_admin_down:
@@ -104,9 +106,9 @@ class AggregationRingFinder:
     Принимает объект агрегации и находит кольцевые подключения доступов.
     """
 
-    def __init__(self, agg: Devices):
+    def __init__(self, agg: Devices, settings: AccessRingSettings):
         self._agg: Devices = agg
-        self._settings = AccessRingSettings.load()
+        self._settings = settings
         self._result_rings: list[RingStructure] = []
         self._current_agg_port: str = ""
         self._passed_devices: list[str] = []
@@ -169,6 +171,7 @@ class AggregationRingFinder:
                 port_start=self._current_agg_port,
                 devices=self._temp_result_rings,
                 port_end=agg_end_interface_name,
+                _settings=self._settings,
             )
         )
         self._passed_agg_ports.append(agg_end_interface_name)

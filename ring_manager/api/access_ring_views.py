@@ -4,7 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from app_settings.models import AccessRingSettings
+from check.api.permissions import DevicePermission
 from check.models import Devices
+from check.services.filters import filter_devices_qs_by_user
 
 from ..base.helpers import collect_current_interfaces, thread_ping
 from ..ring_finder import AggregationRingFinder
@@ -18,21 +20,20 @@ class ListAccessRingsAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, AccessRingPermission]
 
     def get_queryset(self):
-        user_available_groups = self.request.user.profile.devices_groups.all().values_list("id", flat=True)
         ring_settings = AccessRingSettings.load()
         if not ring_settings.agg_dev_name_regexp:
             return Devices.objects.none()
 
-        return Devices.objects.filter(
-            name__iregex=ring_settings.agg_dev_name_regexp,
-            group_id__in=user_available_groups,
+        return filter_devices_qs_by_user(
+            Devices.objects.filter(name__iregex=ring_settings.agg_dev_name_regexp), self.request.user
         ).select_related("devicesinfo")
 
     def list(self, request, *args, **kwargs):
+        ring_settings = AccessRingSettings.load()
         access_rings = []
 
         for agg in self.get_queryset():
-            ring_finder = AggregationRingFinder(agg)
+            ring_finder = AggregationRingFinder(agg, ring_settings)
             ring_finder.start_find()
             access_rings.extend(ring_finder.get_rings())
 
@@ -40,7 +41,7 @@ class ListAccessRingsAPIView(generics.ListAPIView):
 
 
 class AccessRingDetailAPIView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, AccessRingPermission]
+    permission_classes = [IsAuthenticated, AccessRingPermission, DevicePermission]
 
     def get(self, request, head_name: str, *args, **kwargs):
         """
@@ -51,7 +52,8 @@ class AccessRingDetailAPIView(generics.GenericAPIView):
         device = get_object_or_404(Devices, name=head_name)
         self.check_object_permissions(request, device)
 
-        ring_finder = AggregationRingFinder(device)
+        ring_settings = AccessRingSettings.load()
+        ring_finder = AggregationRingFinder(device, ring_settings)
         ring_finder.start_find()
 
         request_ports = self.request.GET.get("ports", "")
