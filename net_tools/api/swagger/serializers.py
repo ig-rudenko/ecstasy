@@ -13,14 +13,25 @@ class CommentSerializer(serializers.Serializer):
 
 
 class FoundInterfaceSerializer(serializers.Serializer):
-    Description = serializers.CharField()
-    Device = serializers.CharField()
-    Interface = serializers.CharField()
-    SavedTime = serializers.DateTimeField(help_text='Формат: "31.01.2024 08:03:55"')
-    Comment = CommentSerializer(many=True)
+    name = serializers.CharField()
+    status = serializers.CharField()
+    description = serializers.CharField()
+    vlans = serializers.CharField()
+    savedTime = serializers.DateTimeField(help_text='Формат: "2 года, 6 месяцев назад"')
+
+
+class FoundDeviceInterfacesSerializer(serializers.Serializer):
+    devices = serializers.CharField()
+    comments = CommentSerializer(many=True)
+    interfaces = FoundInterfaceSerializer()
+
+
+class SearchInterfaceByDescResultSerializer(serializers.Serializer):
+    interfaces = FoundDeviceInterfacesSerializer(many=True)
 
 
 class FindByDescQuerySerializer(serializers.Serializer):
+    is_regex = serializers.BooleanField(default=False)
     pattern = serializers.CharField()
 
 

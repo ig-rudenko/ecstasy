@@ -13,7 +13,7 @@ from ..serializers import DeviceMediaSerializer
 class DeviceMediaListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = DeviceMediaSerializer
-    lookup_url_kwarg = "device_name"
+    lookup_url_kwarg = "device_name_or_ip"
     lookup_field = "name"
 
     def get_device(self) -> Devices:

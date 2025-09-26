@@ -90,12 +90,12 @@ class DevicesInterfaceWorkloadResultSwaggerSerializer(SwaggerSerializer):
 class LinkToAnotherDeviceSwaggerSerializer(SwaggerSerializer):
     """
     "Link": {
-        "device_name": "DEVICE-1",
+        "deviceName": "DEVICE-1",
         "url": "/device/DEVICE-1"
     },
     """
 
-    device_name = serializers.CharField()
+    deviceName = serializers.CharField()
     url = serializers.URLField()
 
 
@@ -123,14 +123,15 @@ class InterfaceInfoSwaggerSerializer(SwaggerSerializer):
     Пример:
 
         {
-            "Interface": "gi1/0/1",
-            "Status": "up",
-            "Description": "To_DEVICE-1",
-            "Link": {
-                "device_name": "DEVICE-1",
+            "name": "gi1/0/1",
+            "status": "up",
+            "description": "To_DEVICE-1",
+            "vlans": [12, 13],
+            "link": {
+                "deviceName": "DEVICE-1",
                 "url": "/device/DEVICE-1"
             },
-            "Comments": [
+            "comments": [
                 {
                     "text": "Какой-то комментарий",
                     "user": "irudenko",
@@ -140,21 +141,12 @@ class InterfaceInfoSwaggerSerializer(SwaggerSerializer):
         }
     """
 
-    Interface = serializers.CharField()
-    Status = serializers.CharField()
-    Description = serializers.CharField()
-    VLANS = serializers.ListField(allow_null=True, required=False)
-    Link = LinkToAnotherDeviceSwaggerSerializer(allow_null=True, required=False)
-    Comments = InterfaceCommentSerializer(many=True, allow_null=True, required=False)
-
-    def __init__(self, **kwargs):
-        """
-        Меняем поле `VLANS` на `VLAN's`
-        """
-        super().__init__(**kwargs)
-        if self._declared_fields.get("VLANS"):
-            self._declared_fields["VLAN's"] = self._declared_fields["VLANS"]
-            del self._declared_fields["VLANS"]
+    name = serializers.CharField()
+    status = serializers.CharField()
+    description = serializers.CharField()
+    vlans = serializers.ListField(child=serializers.IntegerField())
+    link = LinkToAnotherDeviceSwaggerSerializer(allow_null=True, required=False)
+    comments = InterfaceCommentSerializer(many=True, allow_null=True, required=False)
 
 
 class InterfacesListSwaggerSerializer(SwaggerSerializer):

@@ -2,7 +2,6 @@ import re
 from datetime import timedelta
 from itertools import islice
 
-import orjson
 from django.conf import settings
 from django.utils import timezone
 
@@ -114,22 +113,12 @@ class MacAddressTableGather:
         if not self.interfaces:
             return
 
-        interfaces_to_save = [
-            {
-                "Interface": line.name,
-                "Status": line.status,
-                "Description": line.desc,
-            }
-            for line in self.interfaces
-        ]
-
         try:
             device_history = DevicesInfo.objects.get(dev_id=self.device.id)
         except DevicesInfo.DoesNotExist:
             device_history = DevicesInfo.objects.create(dev=self.device)
 
-        device_history.interfaces = orjson.dumps(interfaces_to_save).decode()
-        device_history.interfaces_date = timezone.now()
+        device_history.update_interfaces_state(self.interfaces)
         device_history.save(update_fields=["interfaces", "interfaces_date"])
 
     def get_desc(self, interface_name: str) -> str:

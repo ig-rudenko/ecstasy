@@ -45,38 +45,12 @@ class Interfaces:
 
     >>> Interfaces([{"Interface": "eth1", "Status": "up", "Description": "desc", "VLAN's": [10, 20]}])
 
+    >>> Interfaces([{"name": "eth1", "status": "up", "description": "desc", "vlans": [10, 20]}])
+
     >>> Interfaces([{'Interface': '1', 'Admin Status': 'up', 'Link': 'up', 'Description': 'desc', "VLAN's": [1, 2]}])
 
     >>> Interfaces([Interface()])
-
     """
-
-    @staticmethod
-    def _parse_vlans_line(vlans: list) -> list[int]:
-        """
-        Эта функция принимает список VLAN, преобразует любые диапазоны VLAN, указанные в виде строк, в список
-        целых чисел и возвращает список всех VLAN в виде целых чисел.
-
-        Сначала функция проверяет, является ли каждый элемент во входном списке строкой или целым числом.
-        Если это строка, она использует функцию `range_to_numbers()`, чтобы преобразовать ее в список целых чисел
-        и добавить ее в `vlans_list`.
-
-        :param vlans: Ожидается, что параметр "vlans" будет списком VLAN, который может быть либо целым числом, либо
-        строкой, представляющей диапазон VLAN.
-
-        :return: Список целых чисел, представляющих VLAN. Если ввод не является списком, возвращается пустой список.
-        """
-
-        if not isinstance(vlans, list):
-            return []
-
-        vlans_list = []
-        for vlan in vlans:
-            if isinstance(vlan, str):
-                vlans_list += range_to_numbers(vlan)
-            if isinstance(vlan, int):
-                vlans_list.append(vlan)
-        return vlans_list
 
     def __init__(self, data: Sequence | None = None):
         self.__interfaces: list[Interface] = []
@@ -86,15 +60,27 @@ class Interfaces:
         for intf in data:
             # Если был передан словарь
             if isinstance(intf, dict):
-                if intf.get("Status") is None:
-                    intf["Status"] = "admin down" if intf["Admin Status"] == "down" else intf["Link"]
+                if (
+                    intf.get("Status") is None
+                    and intf.get("status") is None
+                    and intf.get("Admin Status")
+                    and intf.get("Link")
+                ):
+                    # Преобразование из старого формата
+                    status = "admin down" if intf["Admin Status"] == "down" else intf["Link"]
+                else:
+                    status = intf.get("Status", "") or intf.get("status", "")
+
+                interface_name: str = intf.get("Interface", "") or intf.get("name", "")
+                interface_desc: str = intf.get("Description", "") or intf.get("description", "")
+                vlans: list = intf.get("VLAN's", []) or intf.get("vlans", [])
 
                 self.__interfaces.append(
                     Interface(
-                        intf["Interface"].strip(),
-                        intf["Status"],
-                        intf["Description"].strip(),
-                        self._parse_vlans_line(intf.get("VLAN's", [])),
+                        name=interface_name.strip(),
+                        status=status.strip(),
+                        desc=interface_desc.strip(),
+                        vlan=self._parse_vlans_line(vlans),
                     )
                 )
 
@@ -172,10 +158,10 @@ class Interfaces:
     def json(self):
         return [
             {
-                "Interface": line.name,
-                "Status": line.status,
-                "Description": line.desc,
-                "VLAN's": line.vlan,
+                "name": line.name,
+                "status": line.status,
+                "description": line.desc,
+                "vlans": line.vlan,
             }
             for line in self.__interfaces
         ]
@@ -321,3 +307,30 @@ class Interfaces:
     def filter_by_name(self, pattern: str):
         """Интерфейсы, имя которых совпадает с шаблоном"""
         return Interfaces([i for i in self.__interfaces if re.match(pattern, i.name)])
+
+    @staticmethod
+    def _parse_vlans_line(vlans: list) -> list[int]:
+        """
+        Эта функция принимает список VLAN, преобразует любые диапазоны VLAN, указанные в виде строк, в список
+        целых чисел и возвращает список всех VLAN в виде целых чисел.
+
+        Сначала функция проверяет, является ли каждый элемент во входном списке строкой или целым числом.
+        Если это строка, она использует функцию `range_to_numbers()`, чтобы преобразовать ее в список целых чисел
+        и добавить ее в `vlans_list`.
+
+        :param vlans: Ожидается, что параметр "vlans" будет списком VLAN, который может быть либо целым числом, либо
+        строкой, представляющей диапазон VLAN.
+
+        :return: Список целых чисел, представляющих VLAN. Если ввод не является списком, возвращается пустой список.
+        """
+
+        if not isinstance(vlans, list):
+            return []
+
+        vlans_list = []
+        for vlan in vlans:
+            if isinstance(vlan, str):
+                vlans_list += range_to_numbers(vlan)
+            if isinstance(vlan, int):
+                vlans_list.append(vlan)
+        return vlans_list

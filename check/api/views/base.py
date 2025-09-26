@@ -9,7 +9,7 @@ from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 class DeviceAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
-    lookup_url_kwarg = "device_name"
+    lookup_url_kwarg = "device_name_or_ip"
     lookup_field = "name"
 
     def get_queryset(self):

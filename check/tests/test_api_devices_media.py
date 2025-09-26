@@ -50,7 +50,7 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
     def test_get_device_media_list(self):
         url = reverse(
             "devices-api:device-media-list-create",
-            kwargs={"device_name": self.device.name},
+            kwargs={"device_name_or_ip": self.device.name},
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -59,7 +59,7 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
     def test_create_device_media(self):
         url = reverse(
             "devices-api:device-media-list-create",
-            kwargs={"device_name": self.device.name},
+            kwargs={"device_name_or_ip": self.device.name},
         )
         with pathlib.Path(__file__).open("rb") as f:
             response = self.client.post(

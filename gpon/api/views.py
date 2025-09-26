@@ -12,6 +12,7 @@ from rest_framework.generics import (
 from rest_framework.response import Response
 
 from check.models import Devices
+from devicemanager.device import Interfaces
 
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 from ..services.tech_data import get_all_tech_data
@@ -176,9 +177,9 @@ class DevicePortsList(DevicesNamesListAPIView):
         except Devices.DoesNotExist:
             return Response({"error": "Оборудование не существует"}, status=400)
 
-        interfaces = orjson.loads(device.devicesinfo.interfaces or "[]")
+        interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
 
-        interfaces_names = list(map(lambda x: x["Interface"], interfaces))
+        interfaces_names = list(map(lambda x: x.name, interfaces))
         return Response(interfaces_names)
 
 

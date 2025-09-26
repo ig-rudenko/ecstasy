@@ -89,26 +89,33 @@ export async function findInterfacesByDescription(pattern: string, isRegex = fal
 
 export function newInterface(data: any): DeviceInterface {
     let comments: InterfaceComment[] = []
-    if (data.Comments) {
+    if (data.Comments) {  // old format
         comments = data.Comments
+    } else if (data.comments) {  // new format
+        comments = data.comments
     }
 
     let vlans: number[] = []
-    if (data["VLAN's"]) {
+    if (data["VLAN's"]) {  // old format
         vlans = data["VLAN's"].map(Number)
+    } else if (data["vlans"]) {  // new format
+        vlans = data["vlans"].map(Number)
     }
+
     let link: DeviceLink | undefined = undefined;
-    if (data.Link) {
+    if (data.Link) {  // old format
         link = {deviceName: data.Link.device_name, url: data.Link.url}
+    } else if (data.link) {  // new format
+        link = {deviceName: data.link.deviceName, url: data.link.url}
     }
 
     return {
-        name: data.Interface,
-        status: data.Status,
-        description: data.Description,
+        name: data.Interface || data.name,
+        status: data.Status || data.status,
+        description: data.Description || data.description,
         vlans: vlans,
         comments: comments,
-        graphsLink: data.GraphsLink,
+        graphsLink: data.GraphsLink || data.graphsLink,
         link: link,
     }
 }

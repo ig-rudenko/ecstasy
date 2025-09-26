@@ -10,24 +10,27 @@ from app_settings.models import LogsElasticStackSettings
 from check import models
 from check.models import Devices
 from check.services.device.extra import get_device_stats
-from check.services.device.interfaces_collector import InterfacesBuilder, get_device_interfaces
+from check.services.device.interfaces_collector import (
+    DeviceInterfacesResult,
+    InterfacesBuilder,
+    get_device_interfaces,
+)
 from check.services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 from check.services.remote_terminal import get_console_url
 from check.services.zabbix import get_zabbix_host_map_and_uptime
 from devicemanager.device import DeviceManager, zabbix_api
 from ecstasy_project.types.api import UserAuthenticatedAPIView
-from net_tools.models import DevicesInfo as ModelDeviceInfo
 
 from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
-from ..filters import DeviceFilter, DeviceInfoFilter
+from ..filters import DeviceFilter
 from ..serializers import DevicesSerializer, DeviceVlanSerializer
 from ..swagger.schemas import (
     device_info_api_doc,
     devices_interfaces_workload_list_api_doc,
+    devices_list_api_doc,
     interfaces_list_api_doc,
     interfaces_workload_api_doc,
-    devices_list_api_doc,
 )
 from .base import DeviceAPIView
 
@@ -107,22 +110,10 @@ class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
 
 
 @method_decorator(interfaces_workload_api_doc, name="get")
-class DeviceInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
-    lookup_url_kwarg = "device_name"
-    lookup_field = "dev__name"
-
-    def get_queryset(self):
-        return (
-            ModelDeviceInfo.objects.filter(
-                dev__in=filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
-            )
-            .select_related("dev")
-            .order_by("dev__name")
-        )
-
+class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
-        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(instance)
+        device = self.get_object()
+        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device.devicesinfo)
         return Response(result)
 
 
@@ -138,28 +129,29 @@ class DeviceInterfacesAPIView(DeviceAPIView):
             {
                 "interfaces": [
                     {
-                        "Interface": "gi1/0/1",
-                        "Status": "up",
-                        "Description": "To_DEVICE-1",
-                        "Link": {
-                            "device_name": "DEVICE-1",
+                        "name": "gi1/0/1",
+                        "status": "up",
+                        "description": "To_DEVICE-1",
+                        "link": {
+                            "deviceName": "DEVICE-1",
                             "url": "/device/DEVICE-1"
                         },
-                        "Comments": [
+                        "comments": [
                             {
                                 "text": "Какой-то комментарий",
                                 "user": "irudenko",
                                 "id": 14
                             }
-                        ]
+                        ],
+                        "vlans": [],
                     },
 
                     ...
 
                     {
-                        "Interface": "te1/0/4",
-                        "Status": "down",
-                        "Description": ""
+                        "name": "te1/0/4",
+                        "status": "down",
+                        "description": ""
                     }
                 ],
                 "deviceAvailable": true,
@@ -174,7 +166,7 @@ class DeviceInterfacesAPIView(DeviceAPIView):
         with_vlans = request.GET.get("vlans") in status_on
         check_status = request.GET.get("check_status", "true") in status_on
 
-        interfaces_data = None
+        interfaces_data: DeviceInterfacesResult | None = None
         cache_key = (
             f"interfaces:{device.name}:cs:{current_status}:vlans:{with_vlans}:check_status:{check_status}"
         )
@@ -192,14 +184,20 @@ class DeviceInterfacesAPIView(DeviceAPIView):
             cache.set(cache_key, interfaces_data, timeout=4)
 
         interfaces_builder = InterfacesBuilder(device)
-        interfaces_data["interfaces"] = interfaces_builder.build(
-            interfaces=interfaces_data["interfaces"],
+        interfaces = interfaces_builder.build(
+            interfaces=interfaces_data.interfaces.json(),
             add_links=request.GET.get("add_links", "1") in status_on,
             add_comments=request.GET.get("add_comments", "1") in status_on,
             add_zabbix_graph=request.GET.get("add_zabbix_graph", "1") in status_on,
         )
 
-        return Response(interfaces_data)
+        return Response(
+            {
+                "interfaces": interfaces,
+                "deviceAvailable": interfaces_data.device_available,
+                "collected": interfaces_data.collected,
+            }
+        )
 
 
 @method_decorator(device_info_api_doc, name="get")
@@ -240,9 +238,9 @@ class DeviceInfoAPIView(DeviceAPIView):
 
     """
 
-    def get(self, request, device_name: str, *args, **kwargs):
+    def get(self, request, device_name_or_ip: str, *args, **kwargs):
         device: models.Devices = self.get_object()
-        zabbix_info = DeviceManager(name=device_name).zabbix_info
+        zabbix_info = DeviceManager(name=device_name_or_ip).zabbix_info
 
         devices_maps, uptime = get_zabbix_host_map_and_uptime(zabbix_info.hostid)
 

@@ -10,16 +10,16 @@ TEST_DEVICES = [
         "name": "ring-dev11",
         "interfaces_vlans": [
             {
-                "Interface": "GE0/1/3",
-                "Status": "up",  # ================= TO DEV3 - UP
-                "Description": "desc3_to_ring-dev13",
-                "VLAN's": ["1-4", "30 to 32"],
+                "name": "GE0/1/3",
+                "status": "up",  # ================= TO DEV3 - UP
+                "description": "desc3_to_ring-dev13",
+                "vlans": ["1-4", "30 to 32"],
             },
             {
-                "Interface": "GE0/1/4",
-                "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc4_to_ring-dev12",
-                "VLAN's": ["1-4", "30 to 32"],
+                "name": "GE0/1/4",
+                "status": "up",  # ================== TO DEV2 - UP
+                "description": "desc4_to_ring-dev12",
+                "vlans": ["1-4", "30 to 32"],
             },
         ],
     },
@@ -28,14 +28,14 @@ TEST_DEVICES = [
         "name": "ring-dev12",
         "interfaces": [
             {
-                "Interface": "GE0/2/3",
-                "Status": "up",  # ================== TO DEV1 - UP
-                "Description": "desc3_to_ring-dev11",
+                "name": "GE0/2/3",
+                "status": "up",  # ================== TO DEV1 - UP
+                "description": "desc3_to_ring-dev11",
             },
             {
-                "Interface": "GE0/2/4",
-                "Status": "up",  # ================== TO DEV3 - UP
-                "Description": "desc4_to_ring-dev13",
+                "name": "GE0/2/4",
+                "status": "up",  # ================== TO DEV3 - UP
+                "description": "desc4_to_ring-dev13",
             },
         ],
     },
@@ -44,14 +44,14 @@ TEST_DEVICES = [
         "name": "ring-dev13",
         "interfaces": [
             {
-                "Interface": "GE0/3/3",
-                "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc3_to_ring-dev12",
+                "name": "GE0/3/3",
+                "status": "up",  # ================== TO DEV2 - UP
+                "description": "desc3_to_ring-dev12",
             },
             {
-                "Interface": "GE0/3/4",
-                "Status": "up",  # ================== TO DEV4 - UP
-                "Description": "desc4_to_ring-dev14",
+                "name": "GE0/3/4",
+                "status": "up",  # ================== TO DEV4 - UP
+                "description": "desc4_to_ring-dev14",
             },
         ],
     },
@@ -60,14 +60,14 @@ TEST_DEVICES = [
         "name": "ring-dev14",
         "interfaces": [
             {
-                "Interface": "GE0/4/3",
-                "Status": "up",  # ================ TO DEV3 - UP
-                "Description": "desc3_to_ring-dev13",
+                "name": "GE0/4/3",
+                "status": "up",  # ================ TO DEV3 - UP
+                "description": "desc3_to_ring-dev13",
             },
             {
-                "Interface": "GE0/4/4",
-                "Status": "up",  # ================ TO DEV5 - UP
-                "Description": "desc4_to_ring-dev15",
+                "name": "GE0/4/4",
+                "status": "up",  # ================ TO DEV5 - UP
+                "description": "desc4_to_ring-dev15",
             },
         ],
     },
@@ -76,16 +76,16 @@ TEST_DEVICES = [
         "name": "ring-dev15",
         "interfaces_vlans": [
             {
-                "Interface": "GE0/5/3",
-                "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_ring-dev14",
-                "VLAN's": ["4", "30 to 32"],
+                "name": "GE0/5/3",
+                "status": "up",  # ================ TO DEV4 - UP
+                "description": "desc3_to_ring-dev14",
+                "vlans": ["4", "30 to 32"],
             },
             {
-                "Interface": "GE0/5/4",
-                "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_ring-dev11",
-                "VLAN's": ["4", "30 to 32"],
+                "name": "GE0/5/4",
+                "status": "up",  # ================ TO DEV1 - UP
+                "description": "desc4_to_ring-dev11",
+                "vlans": ["4", "30 to 32"],
             },
         ],
     },

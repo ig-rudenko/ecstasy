@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from check.models import Devices
+from devicemanager.device import Interfaces
 from gpon.models import Address, End3, HouseB, HouseOLTState, OLTState
 
 from .address import AddressSerializer
@@ -51,14 +52,14 @@ class OLTStateSerializer(serializers.ModelSerializer):
         if self._device is None:
             return value
         try:
-            interfaces = orjson.loads(self._device.devicesinfo.interfaces or "[]")
+            interfaces = Interfaces(orjson.loads(self._device.devicesinfo.interfaces or "[]"))
         except ObjectDoesNotExist as exc:
             raise ValidationError(
                 "Данное оборудование не имеет портов для проверки, пожалуйста, откройте его, чтобы опросить"
             ) from exc
         else:
             for intf in interfaces:
-                if intf["Interface"] == value:
+                if intf.name == value:
                     return value
 
         raise ValidationError(f"Данное оборудование не имеет порта `{value}`")

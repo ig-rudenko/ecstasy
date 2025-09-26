@@ -63,6 +63,7 @@ class MacTraceroute:
         exist_nodes_id = []
 
         for record in macs_objects:  # type: MacQueryValues
+            print(record)
             next_device_id, next_device_label = self.get_next_device(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.

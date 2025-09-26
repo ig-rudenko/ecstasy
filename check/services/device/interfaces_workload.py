@@ -5,7 +5,6 @@ from rest_framework.serializers import BaseSerializer
 
 from check.api.serializers import DevicesSerializer
 from check.models import Devices
-from check.services.filters import filter_devices_qs_by_user
 from devicemanager.device.interfaces import Interfaces
 from net_tools.models import DevicesInfo
 

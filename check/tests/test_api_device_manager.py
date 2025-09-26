@@ -41,16 +41,16 @@ class PortControlAPIViewTestCase(APITestCase):
             interfaces=orjson.dumps(
                 [
                     {
-                        "Interface": "Fa1/0/1",
-                        "Status": "up",
-                        "Description": "desc1",
-                        "VLAN's": [1, 2],
+                        "name": "Fa1/0/1",
+                        "status": "up",
+                        "description": "desc1",
+                        "vlans": [1, 2],
                     },
                     {
-                        "Interface": "Gi0/1",
-                        "Status": "up",
-                        "Description": "CORE-1",
-                        "VLAN's": [3, 4],
+                        "name": "Gi0/1",
+                        "status": "up",
+                        "description": "CORE-1",
+                        "vlans": [3, 4],
                     },
                 ]
             ).decode(),

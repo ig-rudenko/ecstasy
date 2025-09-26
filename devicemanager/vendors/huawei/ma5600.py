@@ -473,12 +473,12 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         ```
 
         """
-        if info := self._ont_port_info_cache.get(indexes):
-            return info
+        data: list[dict[str, str]] = []  # Общий список
+        if data := self._ont_port_info_cache.get(indexes, []):
+            return data
 
         i: tuple[str, ...] = indexes  # Упрощаем запись переменной
         info = self.send_command(f"display ont wan-info {i[0]}/{i[1]} {i[2]} {i[3]}", expect_command=False)
-        data: list[dict[str, str]] = []  # Общий список
 
         # Разделяем на сервисы
         parts = info.split("---------------------------------------------------------------")
@@ -803,7 +803,15 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
             macs = []
             for service in data:
                 if service.get("mac"):  # Если есть МАС для сервиса
-                    macs.append((service.get("manage_vlan", 0), service["mac"]))
+                    try:
+                        macs.append(
+                            (
+                                int(service.get("manage_vlan", 0)),
+                                service["mac"],
+                            )
+                        )
+                    except ValueError:
+                        macs.append((0, service["mac"]))
             return macs
 
         if len(indexes) != 3:  # Неверный порт

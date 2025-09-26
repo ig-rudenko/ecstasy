@@ -141,7 +141,7 @@ class MacAddressesAdmin(admin.ModelAdmin):
 
     @admin.display(description="MAC")
     def mac_address(self, obj: MacAddress):
-        return "{}{}:{}{}:{}{}:{}{}:{}{}".format(*list(obj.address))
+        return "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*list(obj.address))
 
     def get_queryset(self, request):
         return (

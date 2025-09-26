@@ -61,7 +61,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
 
     @method_decorator(profile_permission(models.Profile.BRAS))
-    def get(self, request, device_name: str, file_name: str):
+    def get(self, request, device_name_or_ip: str, file_name: str):
         """
         ## Отправляет содержимое файла конфигурации
         """
@@ -70,7 +70,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
         return FileResponse(storage.open(file_name), filename=file_name)
 
     @method_decorator(profile_permission(models.Profile.BRAS))
-    def delete(self, request, device_name: str, file_name: str):
+    def delete(self, request, device_name_or_ip: str, file_name: str):
         """
         ## Удаляет файл конфигурации
         """
@@ -85,7 +85,7 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
 
     @schemas.config_files_list_api_doc
     @method_decorator(profile_permission(models.Profile.BRAS))
-    def get(self, requests, device_name: str):
+    def get(self, requests, *args, **kwargs):
         """
         ## Перечень файлов конфигураций указанного оборудования
 
@@ -112,7 +112,7 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
 
     @method_decorator(profile_permission(models.Profile.BRAS))
-    def post(self, request, device_name: str):
+    def post(self, request, *args, **kwargs):
         """
         ## В реальном времени смотрим и сохраняем конфигурацию оборудования
 

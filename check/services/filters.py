@@ -18,12 +18,12 @@ def filter_devices_qs_by_user(
     """
     if user.is_superuser:
         return qs
-    elif user.is_anonymous:
+    if user.is_anonymous:
         return qs.none()
 
     return (
         qs.filter(
-            Q(group__profile__user_id=user.id)  # доступ через профиль
+            Q(group__profile__user=user)  # доступ через профиль
             | Q(access_groups__users=user)
             | Q(access_groups__user_groups__in=user.groups.all())
         )

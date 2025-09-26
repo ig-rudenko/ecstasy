@@ -29,9 +29,9 @@ class TestOLTStateSerializer(TestCase):
             dev=self.device,
             interfaces=json.dumps(
                 [
-                    {"Interface": "0/1/1"},
-                    {"Interface": "0/1/2"},
-                    {"Interface": "0/1/3"},
+                    {"name": "0/1/1"},
+                    {"name": "0/1/2"},
+                    {"name": "0/1/3"},
                 ]
             ),
         )
@@ -271,9 +271,9 @@ class TestCreateTechDataSerializer(TestCase):
             dev=self.device,
             interfaces=json.dumps(
                 [
-                    {"Interface": "0/1/1"},
-                    {"Interface": "0/1/2"},
-                    {"Interface": "0/1/3"},
+                    {"name": "0/1/1"},
+                    {"name": "0/1/2"},
+                    {"name": "0/1/3"},
                 ]
             ),
         )

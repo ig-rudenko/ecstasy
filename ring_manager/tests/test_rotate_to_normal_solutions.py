@@ -19,16 +19,16 @@ TEST_DEVICES = [
         "name": "ring-dev51",
         "interfaces_vlans": [
             {
-                "Interface": "GE0/1/3",
-                "Status": "up",  # ================= TO DEV3 - UP
-                "Description": "desc3_to_ring-dev53",
-                "VLAN's": ["1-4", "30 to 32"],
+                "name": "GE0/1/3",
+                "status": "up",  # ================= TO DEV3 - UP
+                "description": "desc3_to_ring-dev53",
+                "vlans": ["1-4", "30 to 32"],
             },
             {
-                "Interface": "GE0/1/4",
-                "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc4_to_ring-dev52",
-                "VLAN's": ["1-4", "30 to 32"],
+                "name": "GE0/1/4",
+                "status": "up",  # ================== TO DEV2 - UP
+                "description": "desc4_to_ring-dev52",
+                "vlans": ["1-4", "30 to 32"],
             },
         ],
     },
@@ -37,14 +37,14 @@ TEST_DEVICES = [
         "name": "ring-dev52",
         "interfaces": [
             {
-                "Interface": "GE0/2/3",
-                "Status": "up",  # ================== TO DEV1 - UP
-                "Description": "desc3_to_ring-dev51",
+                "name": "GE0/2/3",
+                "status": "up",  # ================== TO DEV1 - UP
+                "description": "desc3_to_ring-dev51",
             },
             {
-                "Interface": "GE0/2/4",
-                "Status": "up",  # ================== TO DEV3 - UP
-                "Description": "desc4_to_ring-dev53",
+                "name": "GE0/2/4",
+                "status": "up",  # ================== TO DEV3 - UP
+                "description": "desc4_to_ring-dev53",
             },
         ],
     },
@@ -53,14 +53,14 @@ TEST_DEVICES = [
         "name": "ring-dev53",
         "interfaces": [
             {
-                "Interface": "GE0/3/3",
-                "Status": "up",  # ================== TO DEV2 - UP
-                "Description": "desc3_to_ring-dev52",
+                "name": "GE0/3/3",
+                "status": "up",  # ================== TO DEV2 - UP
+                "description": "desc3_to_ring-dev52",
             },
             {
-                "Interface": "GE0/3/4",
-                "Status": "admin down",  # ================== TO DEV4 - ADMIN DOWN
-                "Description": "desc4_to_ring-dev54",
+                "name": "GE0/3/4",
+                "status": "admin down",  # ================== TO DEV4 - ADMIN DOWN
+                "description": "desc4_to_ring-dev54",
             },
         ],
     },
@@ -69,14 +69,14 @@ TEST_DEVICES = [
         "name": "ring-dev54",
         "interfaces": [
             {
-                "Interface": "GE0/4/3",
-                "Status": "down",  # ================ TO DEV3 - UP
-                "Description": "desc3_to_ring-dev53",
+                "name": "GE0/4/3",
+                "status": "down",  # ================ TO DEV3 - UP
+                "description": "desc3_to_ring-dev53",
             },
             {
-                "Interface": "GE0/4/4",
-                "Status": "up",  # ================ TO DEV5 - UP
-                "Description": "desc4_to_ring-dev55",
+                "name": "GE0/4/4",
+                "status": "up",  # ================ TO DEV5 - UP
+                "description": "desc4_to_ring-dev55",
             },
         ],
     },
@@ -85,16 +85,16 @@ TEST_DEVICES = [
         "name": "ring-dev55",
         "interfaces_vlans": [
             {
-                "Interface": "GE0/5/3",
-                "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_ring-dev54",
-                "VLAN's": ["1-4", "30 to 32"],  # ============ HAS VLANS
+                "name": "GE0/5/3",
+                "status": "up",  # ================ TO DEV4 - UP
+                "description": "desc3_to_ring-dev54",
+                "vlans": ["1-4", "30 to 32"],  # ============ HAS VLANS
             },
             {
-                "Interface": "GE0/5/4",
-                "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_ring-dev51",
-                "VLAN's": ["4", "30 to 32"],
+                "name": "GE0/5/4",
+                "status": "up",  # ================ TO DEV1 - UP
+                "description": "desc4_to_ring-dev51",
+                "vlans": ["4", "30 to 32"],
             },
         ],
     },
@@ -137,16 +137,16 @@ class FakeTailSession(RemoteDevice):
         """
         return [
             {
-                "Interface": "GE0/5/3",
-                "Status": "up",  # ================ TO DEV4 - UP
-                "Description": "desc3_to_ring-dev54",
-                "VLAN's": cls.port_vlans,  # ============ NO VLANS
+                "name": "GE0/5/3",
+                "status": "up",  # ================ TO DEV4 - UP
+                "description": "desc3_to_ring-dev54",
+                "vlans": cls.port_vlans,  # ============ NO VLANS
             },
             {
-                "Interface": "GE0/5/4",
-                "Status": "up",  # ================ TO DEV1 - UP
-                "Description": "desc4_to_ring-dev51",
-                "VLAN's": ["4", "30 to 32"],
+                "name": "GE0/5/4",
+                "status": "up",  # ================ TO DEV1 - UP
+                "description": "desc4_to_ring-dev51",
+                "vlans": ["4", "30 to 32"],
             },
         ]
 
@@ -174,14 +174,14 @@ class FakeTailAndDev3Session(FakeTailSession):
         return (
             [
                 {
-                    "Interface": "GE0/3/3",
-                    "Status": "up",  # ================== TO DEV2 - UP
-                    "Description": "desc3_to_ring-dev52",
+                    "name": "GE0/3/3",
+                    "status": "up",  # ================== TO DEV2 - UP
+                    "description": "desc3_to_ring-dev52",
                 },
                 {
-                    "Interface": "GE0/3/4",
-                    "Status": cls.port_status,  # ==================
-                    "Description": "desc4_to_ring-dev54",
+                    "name": "GE0/3/4",
+                    "status": cls.port_status,  # ==================
+                    "description": "desc4_to_ring-dev54",
                 },
             ],
         )
@@ -198,7 +198,7 @@ class TestRotateToNormalSolutions(TestRingBase):
     def test_rotate_to_normal_solutions(self):
         """
         Кольцо уже было развернуто, на оборудовании ring-dev53 порт выключен в сторону ring-dev54.
-        На ring-dev55 (tail) необходимые VLAN's добавлены.
+        На ring-dev55 (tail) необходимые VLAN добавлены.
         Необходимо проверить создание решений, для разворота в штатное состояние
         :return:
         """
@@ -276,8 +276,6 @@ class TestRotateToNormalSolutions(TestRingBase):
             dev.ping = True
 
         solutions = r.create_solutions().solutions
-
-        print(solutions)
 
         # Найдено 3 решения
         self.assertEqual(len(solutions), 3)

@@ -181,7 +181,7 @@ class TestEdgeCoreInterfaces(SimpleTestCase):
         )
 
     def test_get_vlans(self):
-        # Получение интерфейсов и VLAN's от объекта edge_core.
+        # Получение интерфейсов и VLAN от объекта edge_core.
         interfaces_vlans = self.edge_core.get_vlans()
         self.assertEqual(
             interfaces_vlans,

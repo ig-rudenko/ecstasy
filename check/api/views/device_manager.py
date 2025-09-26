@@ -20,7 +20,7 @@ from devicemanager.remote.exceptions import InvalidMethod
 from ...models import DeviceCommand
 from ...services.device.commands import execute_command, validate_command
 from ..decorators import except_connection_errors
-from ..permissions import DevicePermission
+from ..permissions import has_user_access_to_device
 from ..serializers import (
     ADSLProfileSerializer,
     DeviceCommandsSerializer,
@@ -137,8 +137,6 @@ class ChangeDescriptionAPIView(DeviceAPIView):
 
 @method_decorator(mac_list_api_doc, name="get")
 class MacListAPIView(DeviceAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
         """
@@ -285,7 +283,6 @@ class InterfaceInfoAPIView(DeviceAPIView):
 
 @method_decorator(change_dsl_profile_api_doc, name="post")
 class ChangeDSLProfileAPIView(DeviceAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
     serializer_class = ADSLProfileSerializer
 
     @except_connection_errors
@@ -324,11 +321,13 @@ class CreateInterfaceCommentAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        if not has_user_access_to_device(self.request.user, serializer.validated_data["device"]):
+            self.permission_denied(self.request, message="У вас нет доступа к данному устройству")
         serializer.save(user=self.request.user)
 
 
 class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.InterfacesComments.objects.all()
+    queryset = models.InterfacesComments.objects.all().select_related("device")
     serializer_class = InterfacesCommentsSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = "pk"
@@ -337,7 +336,6 @@ class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class DeviceCommandsListAPIView(DeviceAPIView):
     serializer_class = DeviceCommandsSerializer
-    permission_classes = [IsAuthenticated, DevicePermission]
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs):
@@ -351,8 +349,6 @@ class DeviceCommandsListAPIView(DeviceAPIView):
 
 
 class ExecuteDeviceCommandAPIView(DeviceAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
@@ -379,8 +375,6 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):
-    permission_classes = [IsAuthenticated, DevicePermission]
-
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:

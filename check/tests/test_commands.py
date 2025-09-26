@@ -20,8 +20,8 @@ class BaseCommandsTestCase(TestCase):
         )
         cls.interfaces = Interfaces(
             [
-                {"Interface": "Ethernet1/1", "Status": "up", "Description": "test"},
-                {"Interface": "Ethernet1/2", "Status": "up", "Description": "test"},
+                {"name": "Ethernet1/1", "status": "up", "description": "test"},
+                {"name": "Ethernet1/2", "status": "up", "description": "test"},
             ]
         )
         cls.device_info = DevicesInfo(dev=cls.device)

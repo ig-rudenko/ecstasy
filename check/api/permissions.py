@@ -3,7 +3,7 @@ from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.request import Request
 
-from check.models import AccessGroup, DeviceMedia, Devices, Profile
+from check.models import AccessGroup, DeviceMedia, Devices, InterfacesComments, Profile
 
 
 def has_access_by_profile(user_id: int, group_id: int) -> bool:
@@ -40,3 +40,10 @@ class DeviceMediaPermission(permissions.BasePermission):
 
     def has_object_permission(self, request: Request, view, obj: DeviceMedia) -> bool:
         return request.user.is_staff and has_user_access_to_device(request.user, obj.device)
+
+
+class DeviceCommentPermission(permissions.BasePermission):
+    """Разрешение на изменение комментария к порту на оборудовании"""
+
+    def has_object_permission(self, request: Request, view, obj: InterfacesComments) -> bool:
+        return request.user.is_superuser or has_user_access_to_device(request.user, obj.device)

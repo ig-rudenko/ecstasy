@@ -102,13 +102,13 @@ class AllDevicesInterfacesWorkLoadAPIViewTests(APITestCase):
             dev=self.device,
             interfaces=orjson.dumps(
                 [
-                    {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1"},
-                    {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2"},
-                    {"Interface": "Fa1/0/3", "Status": "down", "Description": "desc3"},
-                    {"Interface": "Fa1/0/4", "Status": "admin down", "Description": "desc4"},
-                    {"Interface": "Fa1/0/5", "Status": "down", "Description": "desc5"},
-                    {"Interface": "Fa1/0/6", "Status": "up", "Description": "CORE"},
-                    {"Interface": "Fa1/0/7", "Status": "down", "Description": ""},
+                    {"name": "Fa1/0/1", "status": "up", "description": "desc1"},
+                    {"name": "Fa1/0/2", "status": "up", "description": "desc2"},
+                    {"name": "Fa1/0/3", "status": "down", "description": "desc3"},
+                    {"name": "Fa1/0/4", "status": "admin down", "description": "desc4"},
+                    {"name": "Fa1/0/5", "status": "down", "description": "desc5"},
+                    {"name": "Fa1/0/6", "status": "up", "description": "CORE"},
+                    {"name": "Fa1/0/7", "status": "down", "description": ""},
                 ]
             ).decode(),
         )
@@ -198,16 +198,16 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         interfaces = [
             {
-                "Interface": "Fa1/0/1",
-                "Status": "up",
-                "Description": "desc1",
-                "VLAN's": [1, 2],
+                "name": "Fa1/0/1",
+                "status": "up",
+                "description": "desc1",
+                "vlans": [1, 2],
             },
             {
-                "Interface": "Fa1/0/2",
-                "Status": "up",
-                "Description": "desc2",
-                "VLAN's": [3, 4],
+                "name": "Fa1/0/2",
+                "status": "up",
+                "description": "desc2",
+                "vlans": [3, 4],
             },
         ]
 
@@ -244,11 +244,11 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             {
                 "interfaces": [
                     {
-                        "Interface": "Fa1/0/1",
-                        "Status": "up",
-                        "Description": "desc1",
-                        "VLAN's": [1, 2],
-                        "Comments": [
+                        "name": "Fa1/0/1",
+                        "status": "up",
+                        "description": "desc1",
+                        "vlans": [1, 2],
+                        "comments": [
                             {
                                 "text": self.comment.comment,
                                 "user": self.comment.user.username if self.comment.user else "Anonymous",
@@ -258,11 +258,11 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
                         ],
                     },
                     {
-                        "Interface": "Fa1/0/2",
-                        "Status": "up",
-                        "Description": "desc2",
-                        "VLAN's": [3, 4],
-                        "Comments": [],
+                        "name": "Fa1/0/2",
+                        "status": "up",
+                        "description": "desc2",
+                        "vlans": [3, 4],
+                        "comments": [],
                     },
                 ],
                 "deviceAvailable": True,
@@ -288,9 +288,9 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             orjson.loads(device_info.interfaces or "[]"),
             [
                 {
-                    "Interface": line["Interface"],
-                    "Status": line["Status"],
-                    "Description": line["Description"],
+                    "name": line["name"],
+                    "status": line["status"],
+                    "description": line["description"],
                 }
                 for line in interfaces
             ],
@@ -301,8 +301,8 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
     def test_get_current_interfaces_with_snmp_no_vlans(self, mock_connect: Mock, mock_available: Mock):
         mock_available.return_value = True
         interfaces = [
-            {"Interface": "Fa1/0/1", "Status": "up", "Description": "desc1"},
-            {"Interface": "Fa1/0/2", "Status": "up", "Description": "desc2"},
+            {"name": "Fa1/0/1", "status": "up", "description": "desc1"},
+            {"name": "Fa1/0/2", "status": "up", "description": "desc2"},
         ]
         self.device.port_scan_protocol = "snmp"
         self.device.save()
@@ -347,9 +347,9 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
             orjson.loads(device_info.interfaces or "[]"),
             [
                 {
-                    "Interface": line["Interface"],
-                    "Status": line["Status"],
-                    "Description": line["Description"],
+                    "name": line["name"],
+                    "status": line["status"],
+                    "description": line["description"],
                 }
                 for line in interfaces
             ],
@@ -504,7 +504,7 @@ class TestDeviceStatsInfoAPIView(APITestCase):
         self.client.force_authenticate(user=user)
 
         # DevicePermission разрешает только владельцу устройства доступ
-        url = reverse("devices-api:device-stats-info", kwargs={"device_name": self.device.name})
+        url = reverse("devices-api:device-stats-info", kwargs={"device_name_or_ip": self.device.name})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

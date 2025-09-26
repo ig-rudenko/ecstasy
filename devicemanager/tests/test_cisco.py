@@ -327,7 +327,7 @@ Vl106                          up             up
         )
 
     def test_get_vlans(self):
-        # Получение интерфейсов и VLAN's от объекта cisco.
+        # Получение интерфейсов и VLAN от объекта cisco.
         interfaces_vlans = self.cisco.get_vlans()
         self.assertEqual(
             interfaces_vlans,

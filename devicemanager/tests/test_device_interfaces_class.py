@@ -42,14 +42,14 @@ class TestInterfacesClass(SimpleTestCase):
         self.assertEqual(str(intf.filter_by_desc("invalid")), str(Interfaces()))
 
         interfaces_as_dict_list = [
-            {"Interface": "eth1", "Status": "up", "Description": "description1"},
-            {"Interface": "eth2", "Status": "down", "Description": "description2"},
+            {"name": "eth1", "status": "up", "description": "description1"},
+            {"name": "eth2", "status": "down", "description": "description2"},
             {
-                "Interface": "eth3",
-                "Status": "admin down",
-                "Description": "description3",
+                "name": "eth3",
+                "status": "admin down",
+                "description": "description3",
             },
-            {"Interface": "eth4", "Status": "up", "Description": "description4"},
+            {"name": "eth4", "status": "up", "description": "description4"},
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на основе словарей дают одинаковые данные.
         self.assertEqual(str(Interfaces(interfaces_as_dict_list)), str(Interfaces(interfaces_list)))
@@ -90,28 +90,28 @@ class TestInterfacesClass(SimpleTestCase):
 
         interfaces_dict = [
             {
-                "Interface": "eth1",
-                "Status": "up",
-                "Description": "description1",
-                "VLAN's": [11, 21],
+                "name": "eth1",
+                "status": "up",
+                "description": "description1",
+                "vlans": [11, 21],
             },
             {
-                "Interface": "eth2",
-                "Status": "down",
-                "Description": "description2",
-                "VLAN's": [12, 22],
+                "name": "eth2",
+                "status": "down",
+                "description": "description2",
+                "vlans": [12, 22],
             },
             {
-                "Interface": "eth3",
-                "Status": "admin down",
-                "Description": "description3",
-                "VLAN's": [13, 23],
+                "name": "eth3",
+                "status": "admin down",
+                "description": "description3",
+                "vlans": [13, 23],
             },
             {
-                "Interface": "eth4",
-                "Status": "up",
-                "Description": "description4",
-                "VLAN's": [14, 24],
+                "name": "eth4",
+                "status": "up",
+                "description": "description4",
+                "vlans": [14, 24],
             },
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на основе словарей дают одинаковые данные.
@@ -129,17 +129,17 @@ class TestInterfacesClass(SimpleTestCase):
         interfaces_mixed = [
             ["eth1", "up", "description1", [11, 21]],
             {
-                "Interface": "eth2",
-                "Status": "down",
-                "Description": "description2",
-                "VLAN's": [12, 22],
+                "name": "eth2",
+                "status": "down",
+                "description": "description2",
+                "vlans": [12, 22],
             },
             ["eth3", "admin down", "description3", [13, 23]],
             {
-                "Interface": "eth4",
-                "Status": "up",
-                "Description": "description4",
-                "VLAN's": [14, 24],
+                "name": "eth4",
+                "status": "up",
+                "description": "description4",
+                "vlans": [14, 24],
             },
         ]
         # Сравниваем, что интерфейсы созданные на основе списков и на смешанной основе дают одинаковые данные.

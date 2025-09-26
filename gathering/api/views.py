@@ -1,3 +1,5 @@
+import re
+
 from django.core.cache import cache
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -31,9 +33,12 @@ class MacTracerouteAPIView(GenericAPIView):
             vlan = int(request.GET.get("vlan", 0))
         except ValueError:
             vlan = 0
+        mac_clean = "".join(re.findall(r"[0-9a-fA-F]+", mac)).lower()
+        if len(mac_clean) != 12:
+            return Response({"error": "Invalid MAC address"}, status=400)
 
         traceroute = MacTraceroute()
-        return Response(traceroute.get_mac_graph(mac=mac, vlan=vlan))
+        return Response(traceroute.get_mac_graph(mac=mac_clean, vlan=vlan))
 
 
 class MacGatherStatusAPIView(GenericAPIView):

@@ -1,7 +1,7 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-from check.api.serializers import PortControlSerializer, DevicesSerializer, MacSerializer
+from check.api.serializers import DevicesSerializer, MacSerializer, PortControlSerializer
 
 from .query_params import DeviceInterfacesQueryParamsSerializer, DeviceQueryParamsSerializer
 from .requests import ChangeDescriptionRequestSwaggerSerializer

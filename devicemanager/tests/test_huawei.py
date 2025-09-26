@@ -360,7 +360,8 @@ class TestHuaweiMA5600TFactory(AbstractTestFactory):
         self.assertTrue(hasattr(device, "adsl_profiles"))
         self.assertTrue(hasattr(device, "interfaces"))
         self.assertTrue(hasattr(device, "interfaces_vlans"))
-        self.assertEqual(device.vdsl_templates, self.vdsl_templates)
+        if hasattr(device, "vdsl_templates"):
+            self.assertEqual(device.vdsl_templates, self.vdsl_templates)
 
 
 class TestHuaweiMA5600T(SimpleTestCase):

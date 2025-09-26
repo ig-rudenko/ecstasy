@@ -39,19 +39,13 @@ class DevicesInfo(models.Model):
             interfaces = Interfaces(interfaces)
 
         def get_intf_dict(interface) -> dict:
+            res = {
+                "name": interface.name,
+                "status": interface.status,
+                "description": interface.desc.strip(),
+            }
             if with_vlans:
-                res = {
-                    "Interface": interface.name,
-                    "Status": interface.status,
-                    "Description": interface.desc.strip(),
-                    "VLAN's": interface.vlan,
-                }
-            else:
-                res = {
-                    "Interface": interface.name,
-                    "Status": interface.status,
-                    "Description": interface.desc.strip(),
-                }
+                res["vlans"] = interface.vlan
             return res
 
         interfaces_list = [get_intf_dict(line) for line in interfaces]

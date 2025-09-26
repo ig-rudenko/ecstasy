@@ -62,17 +62,20 @@ def get_vendor(request: Request, mac: str) -> Response:
     try:
         resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2, proxies=proxies)
     except requests_lib.RequestException:
-        return Response({"vendor": "Got exception!"})
+        return Response({"detail": "Got exception!"}, status=500)
 
-    if resp.status_code == 200:
-        data = resp.json()
-        return Response(
-            {
-                "vendor": data["company"],
-                "address": data["address"],
-            }
-        )
-    return Response({"vendor": resp.status_code})
+    if resp.status_code == 400:
+        return Response({"detail": resp.json().get("error", "Invalid MAC")}, status=400)
+    if resp.status_code != 200:
+        return Response({"detail": "Invalid MAC"}, status=400)
+
+    data = resp.json()
+    return Response(
+        {
+            "vendor": data.get("company", "Unknown"),
+            "address": data.get("address", "Unknown"),
+        }
+    )
 
 
 @find_by_description_schema

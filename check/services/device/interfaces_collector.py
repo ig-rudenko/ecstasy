@@ -1,6 +1,7 @@
 import re
+from dataclasses import dataclass
 from datetime import datetime
-from typing import TypedDict, TypeVar
+from typing import TypeVar
 
 import orjson
 from django.utils import timezone
@@ -8,7 +9,7 @@ from django.utils import timezone
 from check.models import Devices
 from check.services.device.extra import get_all_device_names_list
 from check.services.zabbix import get_zabbix_graphs
-from devicemanager.device import DeviceManager, zabbix_api
+from devicemanager.device import DeviceManager, Interfaces, zabbix_api
 from devicemanager.zabbix_info_dataclasses import ZabbixInventory
 from net_tools.models import DevicesInfo
 
@@ -43,30 +44,29 @@ class DeviceInterfacesGather:
                 self.device.interface_pattern
             )
 
-    def get_last_interfaces(self) -> tuple[list, datetime]:
+    def get_last_interfaces(self) -> tuple[Interfaces, datetime]:
         """
         ## Возвращает кортеж из последних собранных интерфейсов и времени их последнего изменения.
 
             (
-                [ { "Interface": "GE0/0/2", "Status": "down", "Description": "desc" }, ... ] ,
+                [ { "name": "GE0/0/2", "status": "down", "description": "desc" }, ... ] ,
                 datetime
             )
         """
 
-        interfaces: list = []
         collected_time: datetime = timezone.now()
 
         try:
             device_info = DevicesInfo.objects.get(dev=self.device)
         except DevicesInfo.DoesNotExist:
-            return interfaces, collected_time
+            return Interfaces(), collected_time
 
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
-            interfaces = orjson.loads(device_info.vlans or "[]")
+            interfaces = Interfaces(orjson.loads(device_info.vlans or "[]"))
             collected_time = device_info.vlans_date or timezone.now()
         else:
-            interfaces = orjson.loads(device_info.interfaces or "[]")
+            interfaces = Interfaces(orjson.loads(device_info.interfaces or "[]"))
             collected_time = device_info.interfaces_date or timezone.now()
 
         return interfaces, collected_time
@@ -114,9 +114,10 @@ class DeviceDBSynchronizer(DeviceInterfacesGather):
             device_info.save(update_fields=["interfaces", "interfaces_date"])
 
 
-class DeviceInterfacesResult(TypedDict):
-    interfaces: list
-    deviceAvailable: bool
+@dataclass(frozen=True, kw_only=True, slots=True)
+class DeviceInterfacesResult:
+    interfaces: Interfaces
+    device_available: bool
     collected: datetime
 
 
@@ -145,11 +146,11 @@ def get_device_interfaces(
     if not current_status:
         last_interfaces, last_datetime = device_sync.get_last_interfaces()
 
-        return {
-            "interfaces": last_interfaces,
-            "deviceAvailable": available > 0,
-            "collected": last_datetime,
-        }
+        return DeviceInterfacesResult(
+            interfaces=last_interfaces,
+            device_available=available > 0,
+            collected=last_datetime,
+        )
 
     # Собираем состояние интерфейсов оборудования в данный момент.
     device_sync.collect_current_interfaces(make_session_global=True)
@@ -164,21 +165,21 @@ def get_device_interfaces(
     # Если не собрали интерфейсы.
     if not device_sync.device_collector.interfaces:
         # Возвращает пустой список интерфейсов.
-        return {
-            "interfaces": [],
-            "deviceAvailable": bool(available),
-            "collected": timezone.now(),
-        }
+        return DeviceInterfacesResult(
+            interfaces=Interfaces(),
+            device_available=bool(available),
+            collected=timezone.now(),
+        )
 
     # Если собирали интерфейсы, то сохраняем их в БД.
     device_sync.save_interfaces_to_db()
 
     # Далее возвращаем интерфейсы.
-    return {
-        "interfaces": device_sync.device_collector.interfaces.json(),
-        "deviceAvailable": bool(available),
-        "collected": timezone.now(),
-    }
+    return DeviceInterfacesResult(
+        interfaces=device_sync.device_collector.interfaces,
+        device_available=bool(available),
+        collected=timezone.now(),
+    )
 
 
 INTF = TypeVar("INTF", bound=list)
@@ -216,10 +217,10 @@ class InterfacesBuilder:
         ## Добавляет к интерфейсам ссылку на оборудование "Link", которое находится в описании
 
             {
-                "Interface": "te1/0/2",
-                "Status": "up",
-                "Description": "To_DEVICE-1_pTe0/1|DF|",
-                "Link": {
+                "name": "te1/0/2",
+                "status": "up",
+                "description": "To_DEVICE-1_pTe0/1|DF|",
+                "link": {
                     "device_name": "DEVICE-1",
                     "url": "/device/DEVICE-1"
                 }
@@ -231,9 +232,9 @@ class InterfacesBuilder:
         devices_names = get_all_device_names_list()
         for intf in interfaces:
             for dev_name in devices_names:
-                if dev_name in intf["Description"]:
-                    intf["Link"] = {
-                        "device_name": dev_name,
+                if dev_name in intf["description"]:
+                    intf["link"] = {
+                        "deviceName": dev_name,
                         "url": f"/device/{dev_name}",
                     }
 
@@ -244,10 +245,10 @@ class InterfacesBuilder:
         ## Берет список интерфейсов и добавляет к ним существующие комментарии
 
             {
-                "Interface": "Eth0/0/6",
-                "Status": "up",
-                "Description": "Teplostroy",
-                "Comments": [
+                "name": "Eth0/0/6",
+                "status": "up",
+                "description": "Teplostroy",
+                "comments": [
                     {
                         "text": "Стоит медиаконвертор",
                         "user": "irudenko",
@@ -264,7 +265,7 @@ class InterfacesBuilder:
         )
 
         for intf in interfaces:
-            intf["Comments"] = [
+            intf["comments"] = [
                 {
                     "text": comment.comment,
                     "user": comment.user.username if comment.user else "Anonymous",
@@ -272,7 +273,7 @@ class InterfacesBuilder:
                     "createdTime": comment.datetime.isoformat(),
                 }
                 for comment in interfaces_comments
-                if comment.interface == intf["Interface"]
+                if comment.interface == intf["name"]
             ]
 
         return interfaces
@@ -282,8 +283,8 @@ class InterfacesBuilder:
         host_id, graphs = get_zabbix_graphs(self._device.name)
 
         for intf in interfaces:
-            intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['Interface']}[a-zA-Z\s(]")
-            intf_desc = intf["Description"]
+            intf_pattern = re.compile(rf"\s(Gi0/|1/)?\s?{intf['name']}[a-zA-Z\s(]")
+            intf_desc = intf["description"]
             valid_graph_ids = []
 
             for g in graphs:
@@ -298,7 +299,7 @@ class InterfacesBuilder:
 
             if graphs_ids_params:
                 # Создаем ссылку на графики zabbix, если получилось их найти.
-                intf["GraphsLink"] = (
+                intf["graphsLink"] = (
                     f"{zabbix_api.zabbix_url}/zabbix.php?"
                     f"view_as=showgraph&action=charts.view&from=now-24h&to=now&"
                     f"filter_hostids%5B%5D={host_id}&filter_search_type=0&"
