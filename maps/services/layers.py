@@ -25,6 +25,7 @@ def get_zabbix_layer_data(zbx_session: ZabbixAPI, layer: Layers) -> dict:
 
     # Находим группу в Zabbix
     group = zbx_session.hostgroup.get(filter={"name": layer.zabbix_group_name})
+    print(group)
 
     features: dict = {}
     if group and layer.zabbix_group_name is not None:  # Если такая группа существует
@@ -108,7 +109,7 @@ def get_zbx_group_data(zbx_session: ZabbixAPI, group_id: int, group_name: str, c
         groupids=group_id,
         output=["description", "name", "status"],
         selectInterfaces=["ip"],
-        selectInventory="extend",
+        selectInventory=["location_lat", "location_lon"],
     )
 
     for host in hosts:
