@@ -1,5 +1,7 @@
 import binascii
+import io
 import re
+from pathlib import Path
 from re import findall, sub
 from typing import Literal
 
@@ -7,7 +9,7 @@ import pexpect
 import textfsm
 
 from .. import UnknownDeviceError
-from .base.device import BaseDevice
+from .base.device import BaseDevice, AbstractConfigDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     TEMPLATE_FOLDER,
@@ -20,7 +22,7 @@ from .base.types import (
 )
 
 
-class Juniper(BaseDevice):
+class Juniper(BaseDevice, AbstractConfigDevice):
     """
     # Для оборудования от производителя Juniper
     """
@@ -32,6 +34,7 @@ class Juniper(BaseDevice):
 
     def __init__(self, session, ip: str, auth: DeviceAuthDict, *args, **kwargs):
         super().__init__(session, ip, auth, *args, **kwargs)
+        self.send_command("set cli screen-length 0", expect_command=False)
         self.send_command("show version", expect_command=False)
 
     @BaseDevice.lock_session
@@ -224,14 +227,17 @@ class Juniper(BaseDevice):
     def set_description(self, port: str, desc: str) -> dict:
         return {}
 
+    @BaseDevice.lock_session
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": ""}
+        output = self.send_command(f"show interfaces {port} detail", expect_command=False)
+        return {"type": "text", "data": output}
 
     def get_port_type(self, port: str) -> str:
         return ""
 
+    @BaseDevice.lock_session
     def get_port_config(self, port: str) -> str:
-        return ""
+        return self.send_command(f"show configuration interfaces {port}", expect_command=False)
 
     def get_port_errors(self, port: str) -> str:
         return ""
@@ -242,6 +248,11 @@ class Juniper(BaseDevice):
     @BaseDevice.lock_session
     def execute_command(self, cmd: str) -> str:
         return self.send_command(cmd.strip(), expect_command=False, before_catch=cmd[1:])
+
+    @BaseDevice.lock_session
+    def get_current_configuration(self) -> io.BytesIO | Path:
+        data = self.send_command("show configuration", expect_command=False)
+        return io.BytesIO(data.encode())
 
 
 class JuniperFactory(AbstractDeviceFactory):
