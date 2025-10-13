@@ -313,7 +313,7 @@ export default defineComponent({
             )
             .then(value => {
               if (!value.length) return
-              file.content = this.formatConfigFile(value)
+              file.content = value
               this.visibleConfigText = true;
             })
       }
