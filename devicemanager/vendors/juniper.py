@@ -34,8 +34,8 @@ class Juniper(BaseDevice, AbstractConfigDevice):
 
     def __init__(self, session, ip: str, auth: DeviceAuthDict, *args, **kwargs):
         super().__init__(session, ip, auth, *args, **kwargs)
-        self.send_command("set cli screen-length 0", expect_command=False)
         self.send_command("show version", expect_command=False)
+        self.send_command("set cli screen-length 0", expect_command=False)
 
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
