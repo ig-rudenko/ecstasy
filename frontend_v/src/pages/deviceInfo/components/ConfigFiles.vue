@@ -102,7 +102,7 @@
       <div class="flex-wrap break-all px-2">Конфигурация <br> {{ selectedFile?.name }}</div>
     </template>
     <div v-if="selectedFile?.content">
-      <div style="font-family: monospace; padding: 1rem" v-html="textToHtml(selectedFile.content)"></div>
+      <pre style="white-space: pre-wrap; font-family: monospace; padding: 1rem">{{ selectedFile.content }}</pre>
     </div>
     <div v-else class="flex justify-center">
       <i class="pi pi-spin pi-spinner text-6xl"/>
