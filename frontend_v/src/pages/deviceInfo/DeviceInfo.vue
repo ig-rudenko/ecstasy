@@ -384,6 +384,7 @@ export default defineComponent({
       return api.get<GeneralInfo>(url).then(
           value => {
             this.generalInfo = value.data;
+            document.title = value.data.deviceName + " (" + value.data.deviceIP + ")"
             this.deviceName = value.data.deviceName
           },
           (reason: any) => this.showToastError(reason)
