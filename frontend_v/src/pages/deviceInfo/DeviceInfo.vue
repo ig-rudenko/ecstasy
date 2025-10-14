@@ -329,6 +329,7 @@ export default defineComponent({
 
   mounted() {
     this.deviceName = this.$route.params.deviceName.toString();
+    document.title = this.deviceName
     TimeAgo.addDefaultLocale(ru)
 
     // Смотрим предыдущую загруженность интерфейсов оборудования
