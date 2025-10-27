@@ -62,7 +62,6 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         self.serialno = self.find_or_empty(r"Serial Number\s+: (\S+)", sys_info)
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
         self._grant_privileges()
-        self._ports_info: dict[str, str] = {}
 
     def _grant_privileges(self):
         self.session.sendline("enable")
@@ -109,9 +108,9 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         int_desc_dict = {row[0]: row[1].strip() for row in intf_desc}
 
         interfaces: InterfaceListType = []
-        for name, _, link_status in intf_status:
+        for name, admin_status, link_status in intf_status:
             status: InterfaceType = "up"
-            if link_status.lower() == "no":
+            if admin_status.lower() == "no":
                 status = "admin down"
             elif "down" in link_status.lower():
                 status = "down"
@@ -212,9 +211,6 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
 
     @validate_port()
     def _get_port_info(self, port: str) -> str:
-        if info := self._ports_info.get(port):
-            return info
-
         no_trk_port = self._get_no_trk(port)
 
         show_int_brief_cmd = f"show interface brief ethernet {no_trk_port}"
@@ -224,8 +220,6 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         show_int_cmd = f"show interfaces ethernet {no_trk_port}"
         output = self.send_command(show_int_cmd)
         result += re.sub(show_int_cmd, "", output)
-
-        self._ports_info[port] = result
         return result
 
     @validate_port(if_invalid_return={"type": "text", "data": ""})
