@@ -125,6 +125,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
+        timeout=20,
     ) -> str:
         return super().send_command(
             command,
@@ -135,6 +136,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
             prompt=prompt,
             pages_limit=pages_limit,
             command_linesep=command_linesep,
+            timeout=timeout,
         )
 
     def _get_dsl_profiles(self) -> list:

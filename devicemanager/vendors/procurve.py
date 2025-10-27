@@ -81,6 +81,7 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
+        timeout=10,
     ) -> str:
         return super().send_command(
             command=command,
@@ -91,6 +92,7 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
             prompt=prompt,
             pages_limit=pages_limit,
             command_linesep=command_linesep,
+            timeout=timeout,
         )
 
     @BaseDevice.lock_session

@@ -149,6 +149,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\r",
+        timeout=10,
     ) -> str:
         return super().send_command(
             command,
@@ -159,6 +160,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             prompt,
             pages_limit,
             command_linesep,
+            timeout,
         )
 
     @BaseDevice.lock_session

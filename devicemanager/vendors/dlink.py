@@ -168,6 +168,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
+        timeout=10,
     ):
         return super().send_command(
             command,
@@ -178,6 +179,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             prompt=prompt,
             pages_limit=pages_limit,
             command_linesep=command_linesep,
+            timeout=timeout,
         )
 
     @BaseDevice.lock_session

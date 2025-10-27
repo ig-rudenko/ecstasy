@@ -105,6 +105,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
+        timeout=20,
     ) -> str:
         """
         ## Отправляет команду на оборудование и считывает её вывод
@@ -124,6 +125,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды
         :param pages_limit: Кол-во страниц, если надо, которые будут выведены при постраничном отображении
         :param command_linesep: Символ отправки команды (по умолчанию ```\\\\n```)
+        :param timeout: Время ожидания ответа от оборудования.
         :return: Строка с результатом команды
         """
         if space_prompt is None:
@@ -150,7 +152,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
                         pexpect.TIMEOUT,  # 2
                         r"\}:",  # 3 { <cr>|ontid<U><0,255> }:
                     ],
-                    timeout=20,
+                    timeout=timeout,
                 )
 
                 # Управляющие последовательности ANSI
@@ -178,7 +180,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             with contextlib.suppress(pexpect.TIMEOUT):
-                self.session.expect(prompt, timeout=20)
+                self.session.expect(prompt, timeout=timeout)
             before = (self.session.before or b"").decode(errors="ignore")
             output = re.sub(r"\\x1[bB]\[\d\d\S", "", before)
         return output

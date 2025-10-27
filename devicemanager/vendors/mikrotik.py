@@ -135,6 +135,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\r",
+        timeout=10,
     ) -> str:
         return super().send_command(
             command,
@@ -145,6 +146,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
             prompt,
             pages_limit,
             command_linesep,
+            timeout,
         )
 
     @BaseDevice.lock_session
