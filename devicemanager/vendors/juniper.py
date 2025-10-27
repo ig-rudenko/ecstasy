@@ -9,7 +9,7 @@ import pexpect
 import textfsm
 
 from .. import UnknownDeviceError
-from .base.device import BaseDevice, AbstractConfigDevice
+from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.types import (
     TEMPLATE_FOLDER,

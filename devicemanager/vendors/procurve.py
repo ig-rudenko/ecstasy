@@ -1,7 +1,9 @@
+import io
 import re
 import time
+from pathlib import Path
 
-from .base.device import BaseDevice
+from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template
 from .base.types import (
@@ -39,7 +41,7 @@ def validate_port(if_invalid_return=None):
     return validate_and_format_port(if_invalid_return=if_invalid_return, validator=procurve_port_formatter)
 
 
-class ProCurve(BaseDevice):
+class ProCurve(BaseDevice, AbstractConfigDevice):
     prompt = r"\S+[#>] "
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
     vendor = "ProCurve"
@@ -261,6 +263,14 @@ class ProCurve(BaseDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+    def get_current_configuration(self) -> io.BytesIO | Path:
+        data = self.send_command(
+            "show running-config",
+            expect_command=False,
+            before_catch=r"Running configuration:",
+        )
+        return io.BytesIO(data.encode())
 
 
 class ProCurveFactory(AbstractDeviceFactory):
