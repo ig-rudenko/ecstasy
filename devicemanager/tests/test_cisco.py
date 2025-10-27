@@ -444,8 +444,8 @@ class TestCiscoPortControl(SimpleTestCase):
             [
                 "configure terminal",
                 "interface TenGigabitEthernet 0/1/2",
-                "no shutdown",
-                "end",
+                "no shutdown\n",
+                "end\n",
                 "write",
             ],
         )
@@ -459,8 +459,8 @@ class TestCiscoPortControl(SimpleTestCase):
             [
                 "configure terminal",
                 "interface TenGigabitEthernet 0/1/2",
-                "no shutdown",
-                "end",
+                "no shutdown\n",
+                "end\n",
             ],
         )
 
@@ -482,8 +482,8 @@ class TestCiscoPortControl(SimpleTestCase):
             [
                 "configure terminal",
                 "interface FastEthernet 0/2",
-                "shutdown",
-                "end",
+                "shutdown\n",
+                "end\n",
                 "write",
             ],
         )
