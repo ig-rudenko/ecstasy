@@ -336,6 +336,7 @@ class BaseDevice(AbstractDevice, ABC):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
+        timeout: int = 20,
     ) -> str:
         """
         ## Отправляет команду на оборудование и считывает её вывод.
@@ -351,6 +352,7 @@ class BaseDevice(AbstractDevice, ABC):
         :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды.
         :param pages_limit: Кол-во страниц, если надо, которые будут выведены при постраничном отображении.
         :param command_linesep: Символ отправки команды (по умолчанию ```\\n```).
+        :param timeout: Время ожидания ответа от оборудования.
         :return: Строка с результатом команды.
         """
 
@@ -358,6 +360,9 @@ class BaseDevice(AbstractDevice, ABC):
             space_prompt = self.space_prompt
         if prompt is None:
             prompt = self.prompt
+
+        # Убираем предыдущий вывод до промпта, если он был.
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)
 
         output = ""
         self.session.send(command + command_linesep)  # Отправляем команду
@@ -378,7 +383,7 @@ class BaseDevice(AbstractDevice, ABC):
                         space_prompt,  # 1 - далее
                         pexpect.TIMEOUT,  # 2
                     ],
-                    timeout=20,
+                    timeout=timeout,
                 )
 
                 output += remove_ansi_escape_codes(self.session.before)
@@ -399,7 +404,7 @@ class BaseDevice(AbstractDevice, ABC):
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             with contextlib.suppress(pexpect.TIMEOUT):
-                self.session.expect(prompt, timeout=20)
+                self.session.expect(prompt, timeout=timeout)
             # Убираем управляющие последовательности ANSI
             output += remove_ansi_escape_codes(self.session.before)
         return output
