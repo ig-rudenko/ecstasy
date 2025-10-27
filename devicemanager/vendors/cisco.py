@@ -107,10 +107,15 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show interfaces description", expect_command=False)
-        output = re.sub(".+\nInterface", "Interface", output)
+        result: list[list[str]] = []
 
-        result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
+        for _ in range(2):
+            output = self.send_command("show interfaces description", expect_command=False)
+            output = re.sub(".+\nInterface", "Interface", output)
+
+            result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
+            if result:
+                break
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
