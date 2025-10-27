@@ -280,8 +280,10 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.expect(self.prompt)
         if status == "up":
             self.session.sendline("no shutdown")
+            self.session.expect(self.prompt)
         elif status == "down":
             self.session.sendline("shutdown")
+            self.session.expect(self.prompt)
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
@@ -378,7 +380,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         """
 
         # Получаем информацию о порте.
-        port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
+        port_info = self.get_port_info(port).get("data", "")
 
         media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
@@ -492,11 +494,14 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         if desc == "":  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
             res = self.send_command("no description", expect_command=False)
+            self.session.expect(self.prompt)
 
         else:  # В другом случае, меняем описание на оборудовании
             res = self.send_command(f"description {desc}", expect_command=False)
+            self.session.expect(self.prompt)
 
         self.session.sendline("end")  # Выходим из режима редактирования
+        self.session.expect(self.prompt)
 
         self.lock = False
 
