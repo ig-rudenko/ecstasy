@@ -1,3 +1,5 @@
+import re
+
 from django.utils.decorators import method_decorator
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
@@ -344,7 +346,12 @@ class DeviceCommandsListAPIView(DeviceAPIView):
         if not request.user.is_superuser:
             commands = commands.filter(perm_groups__user=request.user)
 
-        serializer = self.get_serializer(commands, many=True)
+        valid_commands = []
+        for command in commands:  # type: DeviceCommand
+            if not command.model_regexp or re.compile(command.model_regexp).search(str(device.model)):
+                valid_commands.append(command)
+
+        serializer = self.get_serializer(valid_commands, many=True)
         return Response(serializer.data)
 
 
