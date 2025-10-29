@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from time import sleep
 from typing import Literal
 
+import pexpect
+
 from ..base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
@@ -496,7 +498,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         now = datetime.now()
         if port_info is None or port_info.exp < now:
             new_port_info = _PortInfo(
-                info=self.send_command(f"display interface {port}"),
+                info=self.send_command(f"display interface {port}", expect_command=False, timeout=5),
                 exp=now + timedelta(seconds=5),
             )
             self.__ports_info[port] = new_port_info
@@ -806,16 +808,20 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
+        self.lock = False
         port_type = self.get_port_type(port)
+        self.lock = True
         if port_type in ["COPPER", "COMBO-COPPER"]:
             self.session.sendline("system-view")
+            self.session.expect(self.prompt)
             self.session.sendline(f"interface {port}")
             self.session.expect(self.prompt)
             self.session.sendline("virtual-cable-test")
-            self.session.expect("virtual-cable-test")
-            if self.session.expect([self.prompt, "continue"]):  # Требуется подтверждение?
+            if (
+                self.session.expect([self.prompt, "continue", pexpect.TIMEOUT, pexpect.EOF], timeout=2) == 1
+            ):  # Требуется подтверждение?
                 self.session.sendline("Y")
-                self.session.expect(self.prompt)
+            self.session.expect(self.prompt)
             cable_test_data = (self.session.before or b"").decode("utf-8")
 
             self.session.sendline("quit")
