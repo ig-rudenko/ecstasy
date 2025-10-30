@@ -392,7 +392,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 "SFP" in media_type
                 or "LC" in media_type
                 or "FIBER" in media_type
-                or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type)
+                or re.search(rf"BASE-({'|'.join(FIBER_TYPES)})$", media_type, flags=re.IGNORECASE)
             ):
                 self._port_type_cache[port] = "SFP"
                 return "SFP"
@@ -400,7 +400,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             if (
                 "BASE-T" in media_type
                 or "COPPER" in media_type
-                or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type)
+                or re.search(rf"BASE-({'|'.join(COOPER_TYPES)})$", media_type, flags=re.IGNORECASE)
             ):
                 self._port_type_cache[port] = "COPPER"
                 return "COPPER"
@@ -650,7 +650,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         port_type = self.get_port_type(port)
         self.lock = True
 
-        if port_type in ["COPPER"]:
+        if port_type in ["COPPER", "?"]:
             diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
             if "Available commands" in diag_output:
@@ -672,12 +672,12 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             if re.findall(r"Link (Up|Down)\s+OK", diag_output):
                 # Если статус OK
-                match = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
-                if len(match) == 2:
-                    result["len"] = match[1]  # Длина
-                    result["status"] = match[0]  # Up или Down
+                match = re.findall(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
+                if match and len(match[0]) == 2:
+                    result["len"] = match[0][1]  # Длина
+                    result["status"] = match[0][0]  # Up или Down
             else:
-                # C ошибкой
+                # С ошибкой
                 result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
                 # Смотрим по очереди 4 пары
                 for i in range(1, 5):
@@ -692,6 +692,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                         }
 
             return result
+
         elif port_type in ["SFP"]:
             sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
             return {"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)}
