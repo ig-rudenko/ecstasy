@@ -11,6 +11,7 @@ export interface Device {
     group: string;
     vendor: string;
     interfaces_count?: InterfacesCount;
+    console_url: string;
 }
 
 export interface DevicesWithCount {
@@ -37,7 +38,7 @@ export class DevicesService {
 
     async getDevicesList(): Promise<Device[]> {
         try {
-            let resp = await api.get<Device[]>("/api/v1/devices/?return-fields=name,ip,vendor,group,model");
+            let resp = await api.get<Device[]>("/api/v1/devices/?return-fields=name,ip,vendor,group,model,console_url");
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))

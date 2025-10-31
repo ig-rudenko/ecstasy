@@ -57,34 +57,67 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
+        return_fields = self.return_fields
 
-        all_fields = self.serializer_class.Meta.fields.copy()
-        return_fields = (
-            self.request.GET.get("return_fields", "") or self.request.GET.get("return-fields", "")
-        ).split(",")
-        return_fields = list(set(return_fields) & set(all_fields))
-
-        if not return_fields:
-            return_fields = all_fields
-
+        # Если запрашивается поле group, то нужно добавить связь с моделью Group
         if "group" in return_fields:
             queryset = queryset.select_related("group")
             return_fields.remove("group")
             return_fields.append("group__name")
 
-        queryset = queryset.values(*return_fields)
+        # Если запрашивается поле console_url, то нужно добавить дополнительные поля.
+        if "console_url" in return_fields:
+            return_fields += ["cmd_protocol", "ip", "name"]
+
+        # Получаем список полей модели
+        model_fields = [f.name for f in queryset.model._meta.fields] + ["group__name"]
+        # Оставляем поля, которые есть в модели
+        queryset = queryset.values(*[f for f in return_fields if f in model_fields])
         return queryset
+
+    @property
+    def return_fields(self) -> list[str]:
+        # Формируем список полей, которые могут быть возвращены в ответе.
+        all_fields = self.serializer_class.Meta.fields.copy()
+        return_fields = (
+            self.request.GET.get("return_fields", "") or self.request.GET.get("return-fields", "")
+        ).split(",")
+
+        # Оставляем только поля, которые есть в списке all_fields.
+        return_fields = list(set(return_fields) & set(all_fields))
+
+        # Если не указано ни одного поля, то возвращаем все поля.
+        if not return_fields:
+            return_fields = all_fields
+
+        return return_fields
 
     def get(self, request, *args, **kwargs):
         """
         ## Возвращаем список всех устройств, без пагинации
         """
         data = self.filter_queryset(self.get_queryset())
+        return_fields = self.return_fields
 
         for item in data:
+            # Форматируем поле group
             if item.get("group__name"):
                 item["group"] = item["group__name"]
                 del item["group__name"]
+
+            # Добавляем поле console_url
+            if "console_url" in return_fields:
+                item["console_url"] = get_console_url(
+                    self.current_user.profile,
+                    ip=item["ip"],
+                    name=item["name"],
+                    cmd_protocol=item["cmd_protocol"],
+                )
+
+            # Оставляем только нужные поля
+            for key in list(item.keys()):
+                if key not in return_fields:
+                    item.pop(key)
 
         return Response(data)
 
@@ -264,7 +297,12 @@ class DeviceInfoAPIView(DeviceAPIView):
                 },
                 "permission": self.current_user.profile.perm_level,
                 "coords": zabbix_info.inventory.coordinates(),
-                "consoleURL": get_console_url(self.current_user.profile, device),
+                "consoleURL": get_console_url(
+                    self.current_user.profile,
+                    ip=device.ip,
+                    name=device.name,
+                    cmd_protocol=device.cmd_protocol,
+                ),
                 "uptime": uptime,
             }
         )

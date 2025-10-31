@@ -42,6 +42,8 @@ class DevicesListAPIViewTestCase(APITestCase):
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             serializer_data = DevicesSerializer([self.device], many=True).data
+            self.assertIn("console_url", response.data[0])
+            response.data[0].pop("console_url")
             self.assertDictEqual(response.data[0], serializer_data[0])
 
     def test_get_devices_list_with_authentication_and_params(self):

@@ -14,6 +14,7 @@ class DevicesSerializer(serializers.ModelSerializer):
     """
 
     group = serializers.CharField(source="group.name")
+    console_url = serializers.URLField(read_only=True)
 
     class Meta:
         model = Devices
@@ -33,6 +34,7 @@ class DevicesSerializer(serializers.ModelSerializer):
             "collect_vlan_info",
             "collect_configurations",
             "connection_pool_size",
+            "console_url",
         ]
 
 
