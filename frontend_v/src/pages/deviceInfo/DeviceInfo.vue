@@ -6,7 +6,7 @@
     <DeviceStatusName
         v-if="generalInfo"
         :status="deviceAvailable"
-        :device="{name: deviceName, ip: generalInfo.deviceIP, vendor: generalInfo.vendor || '', model: generalInfo.model || '', group: ''}"
+        :device="{name: deviceName, ip: generalInfo.deviceIP, vendor: generalInfo.vendor || '', model: generalInfo.model || '', group: '', console_url: generalInfo.consoleURL}"
         :console-url="generalInfo.consoleURL"/>
   </div>
 
