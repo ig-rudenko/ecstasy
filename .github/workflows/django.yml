@@ -50,12 +50,15 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Merge migration conflicts
-        run: |
-          uv run python manage.py makemigrations --merge --no-input
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Check mypy
         run: uvx mypy .
+
+      - name: Merge django migration conflicts
+        run: |
+          uv run python manage.py makemigrations --merge --no-input
 
       - name: Run Tests
         run: |

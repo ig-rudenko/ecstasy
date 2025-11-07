@@ -1,3 +1,0 @@
-pdoc>=15.0.2
-django-debug-toolbar>=5.1.0
-black[d]
