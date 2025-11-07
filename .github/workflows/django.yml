@@ -54,7 +54,7 @@ jobs:
         run: uv sync --locked --all-extras --dev
 
       - name: Check mypy
-        run: uvx mypy .
+        run: uv run mypy .
 
       - name: Merge django migration conflicts
         run: |
