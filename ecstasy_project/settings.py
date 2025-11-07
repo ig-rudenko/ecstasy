@@ -206,7 +206,6 @@ if os.getenv("DJANGO_COLLECT_STATIC", "0") == "1":
 else:
     STATICFILES_DIRS = [
         BASE_DIR / "static",
-        BASE_DIR / "frontend_v/dist",
     ]
 
 MEDIA_URL = "media/"
