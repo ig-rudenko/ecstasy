@@ -54,6 +54,9 @@ jobs:
         run: |
           uv run python manage.py makemigrations --merge --no-input
 
+      - name: Check mypy
+        run: uvx mypy .
+
       - name: Run Tests
         run: |
           uv add coverage
