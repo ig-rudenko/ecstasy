@@ -1,4 +1,4 @@
-from check.models import Devices, Profile
+from check.models import Profile
 
 
 def get_console_url(profile: Profile, ip: str, name: str, cmd_protocol: str) -> str:
