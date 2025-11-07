@@ -94,3 +94,10 @@ lint.ignore = [
     # Module level import not at top of file
     "E402"
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "ecstasy_project.settings"
