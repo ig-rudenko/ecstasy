@@ -370,8 +370,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
         # Для fasteth портов
         if port_type == "fasteth":
             output = self.send_command(f"show bridge mactable interface fasteth{port_number}")
-            macs = re.findall(rf"(\d+)\s+({self.mac_format})", output)
-            return macs
+            return re.findall(rf"(\d+)\s+({self.mac_format})", output)
 
         # Для dsl портов
         for sp in self._get_service_ports:  # смотрим маки на сервис портах

@@ -57,7 +57,7 @@ class LocalConfigStorage(ConfigStorage):
             return False
 
         # Если передали только путь к файлу
-        elif not file_content and file_path is not None:
+        if not file_content and file_path is not None:
             new_file_path = self._storage / new_file_name
 
             # Если это один и тот же файл

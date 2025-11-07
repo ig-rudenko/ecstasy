@@ -200,11 +200,10 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
         return [(int(vid), mac) for mac, vid, *_ in mac_table]
 
     def _parse_mac_address_string(self, string: str) -> list[tuple[str, str, str, str, str, MACType]]:
-        mac_table = re.findall(
+        return re.findall(
             rf"({self.mac_format})\s+(\d+)/\S+/\S+\s+((25|100)GE\d+/\d+/\d+(\.\d+)?)\s+(dynamic|static|security)",
             string,
         )
-        return mac_table
 
     @validate_huawei_ce6865_port(if_invalid_return={"type": "error", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> PortInfoType:
@@ -343,12 +342,11 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
             > display current-configuration interface {port}
         """
 
-        config = self.send_command(
+        return self.send_command(
             f"display current-configuration interface {port}",
             expect_command=False,
             before_catch=r"#",
         )
-        return config
 
     @BaseDevice.lock_session
     @validate_huawei_ce6865_port(if_invalid_return={"error": "Неверный порт", "status": "fail"})

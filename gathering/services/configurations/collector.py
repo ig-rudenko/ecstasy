@@ -90,7 +90,7 @@ class ConfigurationGather:
 
         if isinstance(new_config, str):
             return self._save_by_content(current_config=new_config, file_format=file_format or ".txt")
-        elif isinstance(new_config, bytes):
+        if isinstance(new_config, bytes):
             return self._save_by_content(current_config=new_config, file_format=file_format or "")
 
         return False

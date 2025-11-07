@@ -693,7 +693,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             return result
 
-        elif port_type in ["SFP"]:
+        if port_type in ["SFP"]:
             sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
             return {"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)}
 

@@ -17,11 +17,11 @@ class UserBasePermission(BasePermission):
     def message(self) -> str:
         if self.method in SAFE_METHODS:
             return "У вас нет доступа для просмотра данной информации"
-        elif self.method == "POST":
+        if self.method == "POST":
             return "У вас нет доступа для создания"
-        elif self.method in ["PUT", "PATCH"]:
+        if self.method in ["PUT", "PATCH"]:
             return "У вас нет доступа для изменения данного элемента"
-        elif self.method == "DELETE":
+        if self.method == "DELETE":
             return "У вас нет доступа для удаления данной записи"
         return "Данный метод не разрешен"
 
@@ -34,11 +34,11 @@ class UserBasePermission(BasePermission):
                     self.safe_permissions_list,
                 )
             )
-        elif request.method == "POST":
+        if request.method == "POST":
             return bool(self.create_permissions_list and request.user.has_perms(self.create_permissions_list))
-        elif request.method in ["PUT", "PATCH"]:
+        if request.method in ["PUT", "PATCH"]:
             return bool(self.update_permissions_list and request.user.has_perms(self.update_permissions_list))
-        elif request.method == "DELETE":
+        if request.method == "DELETE":
             return bool(self.delete_permissions_list and request.user.has_perms(self.delete_permissions_list))
         return False
 

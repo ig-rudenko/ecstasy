@@ -153,8 +153,7 @@ def get_zabbix_groups():
     except (RequestException, ZabbixAPIException):
         groups = []
 
-    choices_groups = ((g["name"], g["name"]) for g in groups)
-    return choices_groups
+    return ((g["name"], g["name"]) for g in groups)
 
 
 class LayerFrom(forms.ModelForm):

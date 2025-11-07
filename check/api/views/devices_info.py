@@ -72,8 +72,7 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         # Получаем список полей модели
         model_fields = [f.name for f in queryset.model._meta.fields] + ["group__name"]
         # Оставляем поля, которые есть в модели
-        queryset = queryset.values(*[f for f in return_fields if f in model_fields])
-        return queryset
+        return queryset.values(*[f for f in return_fields if f in model_fields])
 
     @property
     def return_fields(self) -> list[str]:

@@ -73,16 +73,15 @@ class FTPCollector(AbstractFTPCollector):
 
             return self.local_dir / folder_or_pattern
 
-        elif isinstance(folder_or_pattern, Pattern):
+        if isinstance(folder_or_pattern, Pattern):
             folder = self._find_folder(pattern=folder_or_pattern)
             self._mirror_ftp_dir(folder)
             return self.local_dir / folder
 
-        else:
-            raise ValueError(
-                f"Неверный тип параметра `folder_or_pattern`, "
-                f"требуется `str` или `Pattern`, а был передан {type(folder_or_pattern)}"
-            )
+        raise ValueError(
+            f"Неверный тип параметра `folder_or_pattern`, "
+            f"требуется `str` или `Pattern`, а был передан {type(folder_or_pattern)}",
+        )
 
     def _list_dir(self, path: str) -> list[FTPItem]:
         """

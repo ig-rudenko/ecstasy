@@ -127,15 +127,14 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
             if gather.collect_config_file():
                 # Файл конфигурации был добавлен
                 return Response({"status": "Была получена новая конфигурация"})
-            else:
-                # Файл конфигурации не потребовалось добавлять
-                return Response(
-                    {
-                        "status": "Текущая конфигурация не отличается от последней сохраненной,"
-                        " так что файл не был создан"
-                    },
-                    status=200,
-                )
+            # Файл конфигурации не потребовалось добавлять
+            return Response(
+                {
+                    "status": "Текущая конфигурация не отличается от последней сохраненной,"
+                    " так что файл не был создан"
+                },
+                status=200,
+            )
 
         except ConfigFileError as error:
             return Response({"error": error.message}, status=500)

@@ -147,12 +147,11 @@ class CreateHouseOLTStateSerializer(serializers.ModelSerializer):
             },
         )
 
-        house_olt_state = HouseOLTState.objects.create(
+        return HouseOLTState.objects.create(
             house=house,
             description=validated_data["description"],
             entrances=validated_data["entrances"],
         )
-        return house_olt_state
 
 
 class End3CreateSerializer(serializers.Serializer):

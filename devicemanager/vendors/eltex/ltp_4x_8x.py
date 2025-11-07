@@ -285,7 +285,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
 
         # Если указан порт конкретного ONT `0/1`, то используем другую команду
         # И другое регулярное выражение
-        elif port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
+        if port_type == "pon-port" and re.match(r"^\d+/\d+$", port_number):
             macs_list = re.findall(
                 rf"(\d+)\s+({self.mac_format})",
                 self.send_command(f"show mac interface ont {port_number}"),

@@ -177,8 +177,7 @@ class SolutionsPerformer:
             raise SolutionsPerformerError(
                 f"Неправильный тип для решений, ожидается `Sequence`, а был передан {type(self._ring.solutions)}"
             )
-        else:
-            self._solutions: Sequence[dict] = self._ring.solutions
+        self._solutions: Sequence[dict] = self._ring.solutions
 
     @classmethod
     def is_solution_expired(cls, solution_time: datetime) -> bool:
@@ -493,8 +492,7 @@ class SolutionsPerformer:
                     continue
 
                 # Если ни одно из этих условий не выполняется, то выходим из цикла.
-                else:
-                    break
+                break
 
             else:
                 # Этот блок «else» выполняется, когда цикл завершает все итерации, не встречая оператора «break».

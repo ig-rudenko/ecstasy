@@ -12,7 +12,6 @@ def get_console_url(profile: Profile, ip: str, name: str, cmd_protocol: str) -> 
         return (
             f"{profile.console_url}&command=/usr/share/connections/tc.sh {ip}" f"&title={ip} ({name}) telnet"
         )
-    elif cmd_protocol == "ssh":
+    if cmd_protocol == "ssh":
         return f"{profile.console_url}&command=/usr/share/connections/sc.sh {ip}" f"&title={ip} ({name}) ssh"
-    else:
-        return profile.console_url
+    return profile.console_url

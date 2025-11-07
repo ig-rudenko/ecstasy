@@ -255,8 +255,7 @@ class Qtech(BaseDevice):
 
         (self.session.before or b"").decode(errors="ignore")
         self.lock = False
-        s = self.save_config() if save_config else "Without saving"
-        return s
+        return self.save_config() if save_config else "Without saving"
 
     @BaseDevice.lock_session
     def save_config(self):

@@ -649,12 +649,11 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             > display current-configuration interface {port}
         """
 
-        config = self.send_command(
+        return self.send_command(
             f"display current-configuration interface {port}",
             expect_command=False,
             before_catch=r"#",
         )
-        return config
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})

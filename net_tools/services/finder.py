@@ -181,8 +181,7 @@ class Finder:
     def get_natural_time(time_str: datetime | None) -> str:
         if time_str is not None:
             return naturaltime(time_str)
-        else:
-            return "No Datetime"
+        return "No Datetime"
 
     def get_comments(self, regex: re.Pattern[str]) -> Comments:
         """Возвращает список всех комментариев поискового запроса."""

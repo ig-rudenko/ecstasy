@@ -112,7 +112,7 @@ class EdgeCore(BaseDevice):
 
         # Распаковка кортежа `line` и добавление кортежа `vlans` в конец нового кортежа.
         # Создание списка кортежей.
-        interfaces_vlans = [
+        return [
             (
                 line[0],  # Интерфейс
                 line[1],  # Статус
@@ -121,8 +121,6 @@ class EdgeCore(BaseDevice):
             )
             for line in interfaces
         ]
-
-        return interfaces_vlans
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -221,8 +219,7 @@ class EdgeCore(BaseDevice):
         self.session.expect(self.prompt)
 
         self.lock = False
-        s = self.save_config() if save_config else "Without saving"
-        return s
+        return self.save_config() if save_config else "Without saving"
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()

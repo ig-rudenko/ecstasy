@@ -200,7 +200,7 @@ class RingStatus:
                 return
 
             # Если нашли обрыв, то надо закрыть порт со стороны `head`
-            elif len(self.broken_links) == 1:
+            if len(self.broken_links) == 1:
                 b_link = self.broken_links[0]
 
                 self.solutions.port_set_down(

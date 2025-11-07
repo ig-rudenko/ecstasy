@@ -73,6 +73,7 @@ line-length = 120
 lint.extend-select = [
     # pycodestyle
     "E",
+    "W",
     # Pyflakes
     "F",
     # pyupgrade
@@ -81,8 +82,16 @@ lint.extend-select = [
     "B",
     # flake8-simplify
     "SIM",
+    # flake8-return
+    "RET",
+    # flake8-raise
+    "RSE",
     # isort
     "I",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
 ]
 lint.ignore = [
     # Line too long
@@ -92,7 +101,11 @@ lint.ignore = [
     # Use ternary operator instead of `if`-`else`-block
     "SIM108",
     # Module level import not at top of file
-    "E402"
+    "E402",
+    # Trailing whitespace
+    "W291",
+    # Blank line contains whitespace
+    "W293",
 ]
 
 [tool.mypy]

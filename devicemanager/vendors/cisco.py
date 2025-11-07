@@ -396,12 +396,11 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             # show running-config interface {port}
         """
 
-        config = self.send_command(
+        return self.send_command(
             f"show running-config interface {port}",
             before_catch=r"Current configuration.+?\!",
             expect_command=False,
         ).strip()
-        return config
 
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
@@ -551,8 +550,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             flags=re.IGNORECASE,
         )
 
-        flash_percent = int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
-        return flash_percent
+        return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
 
     def get_ram_utilization(self) -> int:
         """
@@ -567,9 +565,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             pattern = r"Process\s+(\d+)\s+(\d+)"
 
         ram = self.find_or_empty(pattern, output, flags=re.IGNORECASE)
-        dram_percent = int(int(ram[1]) / int(ram[0]) * 100) if ram else -1
-
-        return dram_percent
+        return int(int(ram[1]) / int(ram[0]) * 100) if ram else -1
 
     def get_temp(self) -> dict:
         output = self.send_command("show env temp status", expect_command=False)

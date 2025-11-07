@@ -79,7 +79,7 @@ class DeviceSessionFactory:
         )
 
         if not hasattr(device_connection, method):
-            raise MethodError()
+            raise MethodError
 
         session_method = getattr(device_connection, method)
 
@@ -90,7 +90,10 @@ class DeviceSessionFactory:
             raise exc
 
         logger.debug(
-            "Device: %s | Method=%s DeviceVendor=%s", self.ip, method, device_connection.__class__.__name__
+            "Device: %s | Method=%s DeviceVendor=%s",
+            self.ip,
+            method,
+            device_connection.__class__.__name__,
         )
         return data
 
@@ -183,7 +186,7 @@ class DeviceSessionFactory:
 
             if connection is not None and not isinstance(connection, Exception):
                 return connection
-            elif isinstance(connection, Exception):
+            if isinstance(connection, Exception):
                 raise connection
 
         if isinstance(connection, Exception):

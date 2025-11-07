@@ -47,7 +47,7 @@ class LargeTablePaginator(Paginator):
                 row = cursor.fetchone()
                 return int(row[0]) if row and row[0] is not None else 0
 
-            elif engine in ("mysql", "mariadb"):
+            if engine in ("mysql", "mariadb"):
                 cursor.execute("SHOW TABLE STATUS WHERE Name = %s", [table_name])
                 row = cursor.fetchone()
                 if row:

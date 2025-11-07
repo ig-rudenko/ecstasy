@@ -53,11 +53,8 @@ class TechDataListCreateAPIView(GenericAPIView):
     Предназначен для создания и просмотра технических данных
     """
 
+    serializer_class = CreateTechDataSerializer
     permission_classes = [TechDataPermission]
-
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return CreateTechDataSerializer
 
     def get(self, request) -> Response:
         data = get_all_tech_data()
@@ -109,7 +106,7 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = (
+            return (
                 HouseB.objects.all()
                 .select_related("address")
                 .prefetch_related(
@@ -119,7 +116,6 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
                     "house_olt_states__statement__device",
                 )
             )
-            return queryset
         return HouseB.objects.all()
 
 
@@ -189,12 +185,11 @@ class End3TechCapabilityAPIView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = (
+            return (
                 End3.objects.all()
                 .select_related("address")
                 .prefetch_related("techcapability_set", "techcapability_set__subscriber_connection")
             )
-            return queryset
         return End3.objects.all()
 
 
@@ -216,8 +211,7 @@ class TechCapabilityAPIView(RetrieveUpdateAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = TechCapability.objects.all().prefetch_related("subscriber_connection")
-            return queryset
+            return TechCapability.objects.all().prefetch_related("subscriber_connection")
         return TechCapability.objects.all()
 
 
@@ -227,12 +221,11 @@ class RetrieveUpdateOLTStateAPIView(RetrieveUpdateAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = (
+            return (
                 OLTState.objects.all()
                 .select_related("device")
                 .only("device__name", "olt_port", "fiber", "description")
             )
-            return queryset
         return OLTState.objects.all()
 
 
@@ -241,12 +234,11 @@ class RetrieveUpdateHouseOLTState(RetrieveUpdateAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = (
+            return (
                 HouseOLTState.objects.all()
                 .select_related("house")
                 .prefetch_related("end3_set", "end3_set__address")
             )
-            return queryset
         return HouseOLTState.objects.all()
 
     def get_serializer_class(self):

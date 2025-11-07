@@ -37,9 +37,9 @@ class CustomerSerializer(serializers.ModelSerializer):
         if validated_data["type"] == Customer.Type.person.value:
             if not validated_data.get("first_name"):
                 raise ValidationError("Вы должны указать имя для физ. лица")
-            elif not validated_data.get("surname"):
+            if not validated_data.get("surname"):
                 raise ValidationError("Вы должны указать фамилию для физ. лица")
-            elif not validated_data.get("last_name"):
+            if not validated_data.get("last_name"):
                 raise ValidationError("Вы должны указать отчество для физ. лица")
         else:
             if not validated_data.get("company_name"):

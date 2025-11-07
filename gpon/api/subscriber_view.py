@@ -36,7 +36,7 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            queryset = Customer.objects.all().prefetch_related(
+            return Customer.objects.all().prefetch_related(
                 "connections",
                 "connections__address",
                 "connections__services",
@@ -47,7 +47,6 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
                 "connections__tech_capability__end3__house_olt_states__house__address",
                 "connections__tech_capability__end3__house_olt_states__statement__device",
             )
-            return queryset
         return Customer.objects.all()
 
     def put(self, request: Request, *args, **kwargs) -> Response:

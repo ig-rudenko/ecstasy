@@ -1,7 +1,7 @@
 import os
 import re
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, Never
 
 import requests
 
@@ -64,7 +64,7 @@ class RemoteDevice(
         self._session = requests.Session()
         self._session.headers.update({"Token": os.getenv("DEVICE_CONNECTOR_TOKEN", "")})
 
-    def _handle_error(self, error: dict):
+    def _handle_error(self, error: dict) -> Never:
         self._delete_pool()  # Удаляем пул соединений, чтобы он создался заново
         if hasattr(exceptions, error["type"]):
             some_exception: type[exceptions.BaseDeviceException] = getattr(exceptions, error["type"])
@@ -104,15 +104,14 @@ class RemoteDevice(
 
         if 200 <= resp.status_code <= 299:
             return self._handle_response(resp)
-        elif resp.status_code == 401:
+        if resp.status_code == 401:
             raise RemoteAuthenticationFailed(resp.json().get("message"), ip=self.ip)
-        elif 400 <= resp.status_code <= 499:
+        if 400 <= resp.status_code <= 499:
             raise InvalidMethod(f'Метод "{method}" отсутствует', ip=self.ip)
-        elif resp.status_code >= 500:
-            self._handle_error(resp.json())
+        return self._handle_error(resp.json())
 
     @staticmethod
-    def _handle_response(resp):
+    def _handle_response(resp: requests.Response):
         if "filename" in resp.headers.get("Content-Disposition", ""):
             file_name_match = re.findall(r"filename=(\S+)", resp.headers.get("Content-Disposition"))
             file_name = file_name_match[0] if file_name_match else "file_name"
@@ -120,6 +119,7 @@ class RemoteDevice(
 
         if resp.headers.get("Content-Type") == "application/json":
             return resp.json().get("data")
+        return resp.text
 
     def get_system_info(self) -> SystemInfo:
         return self._remote_call("get_system_info")

@@ -5,7 +5,7 @@ import pathlib
 from ipaddress import IPv4Address
 from typing import TypedDict
 
-from flask import Flask, after_this_request, jsonify, request, send_file
+from flask import Flask, Response, after_this_request, jsonify, request, send_file
 
 from devicemanager.dc import SimpleAuthObject
 from devicemanager.device_connector.exceptions import MethodError
@@ -45,7 +45,7 @@ def handle_method_data(data):
     return jsonify({"data": data})
 
 
-def check_token():
+def check_token() -> Response | None:
     request_token = request.headers.get("Token")
     if not request_token or request_token != TOKEN:
         resp = jsonify(
@@ -56,12 +56,13 @@ def check_token():
         )
         resp.status_code = 401
         return resp
+    return None
 
 
 @app.route("/connector/<ip>/<method>", methods=["POST"])
 def connector(ip: str, method: str):
     token_error = check_token()
-    if token_error:
+    if token_error is not None:
         return token_error
 
     try:

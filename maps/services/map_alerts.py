@@ -33,8 +33,7 @@ def get_group_problems(zbx_session: ZabbixAPI, zabbix_group_name: str) -> list[d
     )
 
     # Перебор списка проблем.
-    problems = [get_host_acknowledges(zbx_session, problem) for problem in hosts_problems_list]
-    return problems
+    return [get_host_acknowledges(zbx_session, problem) for problem in hosts_problems_list]
 
 
 def get_host_acknowledges(zbx_session: ZabbixAPI, problem: dict) -> dict:
