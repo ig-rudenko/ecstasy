@@ -1,6 +1,7 @@
 import orjson
 from django.db.models import QuerySet
 from django.db.transaction import atomic
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
     GenericAPIView,
@@ -8,11 +9,14 @@ from rest_framework.generics import (
     RetrieveAPIView,
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
+    ListCreateAPIView,
 )
 from rest_framework.response import Response
 
+from check.api.views.paginators import End3PageNumberPagination
 from check.models import Devices
 from devicemanager.device import Interfaces
+from .filters import End3Filer
 
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 from ..services.tech_data import get_all_tech_data
@@ -54,6 +58,7 @@ class TechDataListCreateAPIView(GenericAPIView):
     """
 
     serializer_class = CreateTechDataSerializer
+    queryset = OLTState.objects.all()
     permission_classes = [TechDataPermission]
 
     def get(self, request) -> Response:
@@ -193,10 +198,32 @@ class End3TechCapabilityAPIView(RetrieveUpdateDestroyAPIView):
         return End3.objects.all()
 
 
-class End3CreateAPIView(GenericAPIView):
-    queryset = End3.objects.all()
-    serializer_class = AddEnd3ToHouseOLTStateSerializer
+class End3CreateAPIView(ListCreateAPIView):
     permission_classes = [End3Permission]
+    filter_backends = [DjangoFilterBackend]
+    pagination_class = End3PageNumberPagination
+    filterset_class = End3Filer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            return (
+                End3.objects.all()
+                .distinct()
+                .select_related("address")
+                .prefetch_related(
+                    "techcapability_set",
+                    "techcapability_set__subscriber_connection",
+                    "techcapability_set__subscriber_connection__customer",
+                )
+                .order_by("-id")
+            )
+
+        return End3.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return End3TechCapabilitySerializer
+        return AddEnd3ToHouseOLTStateSerializer
 
     def post(self, request, *args, **kwargs) -> Response:
         serializer = self.serializer_class(data=self.request.data)

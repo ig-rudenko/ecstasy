@@ -22,13 +22,13 @@
       <div>{{ customerLineNumbers(line) }}</div>
 
       <div>
-        <Button v-if="line.detailInfo" @click="$emit('deleteInfo', index)" severity="warn" outlined rounded
+        <Button v-if="line.detailInfo || line.capability?.length" @click="$emit('deleteInfo', index)" severity="warn" outlined rounded
                 size="small" label="свернуть"/>
         <Button v-else @click="$emit('getInfo', index)" outlined rounded size="small" label="подробнее"/>
       </div>
 
       <div v-if="editMode && hasPermissionToDeleteEnd3">
-        <Button v-if="line.detailInfo" @click="deleteEnd3($event, line, index)" rounded size="small"
+        <Button v-if="line.detailInfo || line.capability?.length" @click="deleteEnd3($event, line, index)" rounded size="small"
                 severity="danger" icon="pi pi-trash"
                 label="удалить"/>
       </div>
@@ -39,14 +39,14 @@
       <br> {{ line.errorMessage || '' }} <br> Статус: {{ line.errorStatus }}
     </div>
 
-    <div v-if="line.detailInfo" class="px-3 rounded-0 overflow-auto">
+    <div v-if="line.detailInfo || line.capability?.length" class="px-3 rounded-0 overflow-auto">
 
       <End3PortsViewEdit
           @getInfo="$emit('getInfo', index)"
           :edit-mode="editMode"
           :user-permissions="userPermissions"
           :end3-object="line"
-          :end3-ports-array="line.detailInfo"
+          :end3-ports-array="line.detailInfo || line.capability"
 
           :device-name="deviceName"
           :device-port="devicePort"
@@ -57,7 +57,7 @@
   </template>
 
   <!-- ДОБАВЛЕНИЕ НОВОГО СПЛИТТЕРА / РАЙЗЕРА -->
-  <div class="py-2">
+  <div v-if="showAddButton" class="py-2">
     <Button @click="showAddNewEnd3Dialog=!showAddNewEnd3Dialog" text severity="success">
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
         <path fill-rule="evenodd"
@@ -172,6 +172,7 @@ export default {
     devicePort: {required: false, default: null, type: String},
     buildingAddress: {required: false, default: null, type: Object},
     editMode: {required: false, default: false, type: Boolean},
+    showAddButton: {required: false, default: true, type: Boolean},
   },
 
   emits: ["getInfo", "deleteInfo", "deletedEnd3", "createNewEnd3"],

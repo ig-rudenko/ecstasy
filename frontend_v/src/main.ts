@@ -9,6 +9,7 @@ import {
     DataTable,
     DatePicker,
     Dialog,
+    Divider,
     Drawer,
     Fieldset,
     IftaLabel,
@@ -59,6 +60,7 @@ app.component("ConfirmPopup", ConfirmPopup);
 app.component("DatePicker", DatePicker);
 app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);
+app.component("Divider", Divider);
 app.component("Drawer", Drawer);
 app.component("IftaLabel", IftaLabel);
 app.component("InputGroup", InputGroup);

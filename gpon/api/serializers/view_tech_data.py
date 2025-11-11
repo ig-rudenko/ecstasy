@@ -60,8 +60,8 @@ class ViewHouseBTechDataSerializer(BuildingAddressSerializer):
 
 class ShortViewSubscriberConnectionSerializer(serializers.ModelSerializer):
     customerName = serializers.CharField(source="customer.full_name")
-    customerID = serializers.CharField(source="customer.id")
-    connectionID = serializers.CharField(source="id")
+    customerID = serializers.IntegerField(source="customer.id")
+    connectionID = serializers.IntegerField(source="id")
 
     class Meta:
         model = SubscriberConnection
