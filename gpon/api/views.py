@@ -226,7 +226,7 @@ class End3CreateAPIView(ListCreateAPIView):
         return AddEnd3ToHouseOLTStateSerializer
 
     def post(self, request, *args, **kwargs) -> Response:
-        serializer = self.serializer_class(data=self.request.data)
+        serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
         end3_list: list[End3] = serializer.save()
         return Response(End3Serializer(end3_list, many=True).data, status=201)
