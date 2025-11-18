@@ -31,7 +31,7 @@
     "postcss": "^8.5.3",
     "postcss-import": "^16.1.0",
     "sass-embedded": "^1.86.3",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
     "vue-tsc": "^3.1.3"
