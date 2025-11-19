@@ -5,9 +5,9 @@ import {useStore} from "vuex";
 const store = useStore()
 const logoutVisible = ref(false);
 
-function logout() {
-  store.dispatch("auth/logout");
-  location.href = "/login";
+async function logout() {
+  await store.dispatch("auth/logout");
+  location.href = "/account/login";
 }
 
 </script>

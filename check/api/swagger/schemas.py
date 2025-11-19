@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 from check.api.serializers import DevicesSerializer, MacSerializer, PortControlSerializer
 
-from .query_params import DeviceInterfacesQueryParamsSerializer, DeviceQueryParamsSerializer
+from .query_params import DeviceInterfacesQueryParamsSerializer
 from .requests import ChangeDescriptionRequestSwaggerSerializer
 from .responses import (
     BrasPairSessionResultSwaggerSerializer,
@@ -47,7 +47,7 @@ config_files_list_api_doc = swagger_auto_schema(
 
 
 devices_list_api_doc = swagger_auto_schema(
-    query_serializer=DeviceQueryParamsSerializer(),
+    # query_serializer=DeviceQueryParamsSerializer(),
     responses={
         200: DevicesSerializer(many=True),
     },

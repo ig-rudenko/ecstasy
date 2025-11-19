@@ -30,6 +30,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+TRUE_VALUES = ["1", "true", "yes"]
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
@@ -37,7 +38,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
+DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in TRUE_VALUES
 ENV = os.getenv("DJANGO_ENV", "dev")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
@@ -343,9 +344,25 @@ if not DEBUG:
         },
     }
 
-# ================= JWT ===================
 
-SIMPLE_JWT = {
+# =============================================== KEYCLOAK ===================================================
+
+KEYCLOAK_ENABLE = os.getenv("KEYCLOAK_ENABLE", "0").lower() in TRUE_VALUES
+KEYCLOAK_JWT_LEEWAY = int(os.getenv("KEYCLOAK_JWT_LEEWAY", 0))
+KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
+KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")
+KEYCLOAK_URL = os.getenv("KEYCLOAK_URL")
+KEYCLOAK_JWKS_URL = (
+    os.getenv("KEYCLOAK_JWKS_URL") or f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
+)
+KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER")
+KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", KEYCLOAK_CLIENT_ID)
+KEYCLOAK_USER_ID_FIELD = os.getenv("KEYCLOAK_USER_ID_FIELD", "username")
+KEYCLOAK_USER_ID_CLAIM = os.getenv("KEYCLOAK_USER_ID_CLAIM", "preferred_username")
+
+# ================================================= JWT ======================================================
+
+SIMPLE_JWT: dict = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=15),
     "ROTATE_REFRESH_TOKENS": True,
@@ -364,7 +381,7 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "AUTH_TOKEN_CLASSES": ["rest_framework_simplejwt.tokens.AccessToken"],
     "TOKEN_TYPE_CLAIM": "token_type",
     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
     "JTI_CLAIM": "jti",
@@ -378,6 +395,11 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+if KEYCLOAK_ENABLE:
+    SIMPLE_JWT["AUTH_TOKEN_CLASSES"].append("ecstasy_project.authentication.KeycloakToken")
+
+# ============================================================================================================
 
 JAZZMIN_SETTINGS = {
     # "show_ui_builder": True,

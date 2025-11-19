@@ -9,7 +9,9 @@ def has_permission_to_device(device_to_check: models.Devices, user: models.User)
     """
     ## Определяет, имеет ли пользователь "user" право взаимодействовать с оборудованием "device_to_check"
     """
-    return bool((device_to_check.group_id or 0) in user.profile.devices_groups.all().values_list("id", flat=True))
+    return bool(
+        (device_to_check.group_id or 0) in user.profile.devices_groups.all().values_list("id", flat=True)
+    )
 
 
 def profile_permission(required_perm=models.Profile.READ):

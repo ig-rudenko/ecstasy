@@ -4,6 +4,7 @@ import store from "@/store";
 import router from "@/router";
 import {UserTokens} from "@/services/user";
 
+
 export async function refreshAccessToken() {
     if (tokenService.isRefreshing) {
         // Если токен обновляется, то ожидаем его обновления и успешно выходим
@@ -17,6 +18,7 @@ export async function refreshAccessToken() {
     tokenService.isRefreshing = true;
 
     const logout = async () => {
+        tokenService.isRefreshing = false;
         await store.dispatch("auth/logout")
         await router.push("/account/login");
         return false;
@@ -33,11 +35,11 @@ export async function refreshAccessToken() {
         // Обновляем access и refresh токены.
         await store.dispatch('auth/refreshTokens', rs.data);
         tokenService.setTokens(access, refresh);
+        tokenService.isRefreshing = false;
         return true
 
     } catch (error) {
         console.error(error);
-        tokenService.isRefreshing = false;
         return logout();
     }
 

@@ -5,6 +5,7 @@ import {LoginUser} from "@/services/user";
 import {useStore} from "vuex";
 import getVerboseAxiosError from "@/errorFmt";
 import router from "@/router.ts";
+import keycloakConnector from "@/keycloak.ts";
 
 const store = useStore();
 
@@ -41,6 +42,16 @@ function handleLogin() {
       )
 }
 
+function handleOIDCLogin() {
+  keycloakConnector.keycloakLoginState.setAutoLogin();
+  keycloakConnector.keycloak.login();
+}
+
+async function logout() {
+  await store.dispatch("auth/logout");
+  location.href = "/account/login";
+}
+
 </script>
 
 <template>
@@ -52,29 +63,42 @@ function handleLogin() {
     <div class="flex flex-col gap-3 mx-6 w-full md:mx-20 md:w-[20rem]">
       <h1 class="mb-4 text-2xl md:w-[20rem] text-center text-gray-200">Пожалуйста, войдите в систему Ecstasy</h1>
 
-      <Message v-if="userError" severity="error" icon="pi pi-exclamation-triangle" class="text-center my-4">{{userError}}</Message>
+      <Message v-if="userError" severity="error" icon="pi pi-exclamation-triangle" class="text-center my-4">
+        {{ userError }}
+      </Message>
 
       <div>
         <IftaLabel>
-          <InputText id="username" class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid :invalid="!user.valid.username" v-model="user.username"/>
+          <InputText id="username" class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid
+                     :invalid="!user.valid.username" v-model="user.username"/>
           <label class="text-[0.85rem]" for="username">Логин</label>
         </IftaLabel>
-        <Message v-if="!user.valid.username" severity="error" icon="pi pi-exclamation-triangle" class="text-center"><div class="text-xs">{{user.valid.usernameError}}</div></Message>
+        <Message v-if="!user.valid.username" severity="error" icon="pi pi-exclamation-triangle" class="text-center">
+          <div class="text-xs">{{ user.valid.usernameError }}</div>
+        </Message>
 
       </div>
 
       <div>
         <IftaLabel>
-          <Password id="password" input-class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid :feedback="false" v-model="user.password"/>
+          <Password id="password" input-class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid
+                    :feedback="false" v-model="user.password"/>
           <label class="text-[0.85rem]" for="username">Пароль</label>
         </IftaLabel>
-        <Message v-if="!user.valid.password" severity="error" icon="pi pi-exclamation-triangle" class="text-center"><div class="text-xs">{{user.valid.passwordError}}</div></Message>
+        <Message v-if="!user.valid.password" severity="error" icon="pi pi-exclamation-triangle" class="text-center">
+          <div class="text-xs">{{ user.valid.passwordError }}</div>
+        </Message>
       </div>
 
       <Button type="button" @click="handleLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
-              label="Войти" fluid outlined class="w-full my-4 hover:bg-primary hover:text-primary-contrast"/>
+              label="Войти" fluid outlined class="w-full mt-4 hover:bg-primary hover:text-primary-contrast"/>
+      <Button v-if="keycloakConnector.enabled" type="button" @click="handleOIDCLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
+              label="Войти через OIDC" fluid text class="w-full hover:bg-primary hover:text-primary-contrast"/>
+      <div>
+        <i v-tooltip="'Перезапросить'" @click="logout" class="pi pi-wrench text-gray-400 hover:text-gray-100 cursor-pointer"/>
+      </div>
 
-      <p class="mt-5 text-muted-color text-center">Ecstasy &copy; 2022-{{new Date().getFullYear()}}</p>
+      <p class="mt-5 text-muted-color text-center">Ecstasy &copy; 2022-{{ new Date().getFullYear() }}</p>
     </div>
 
   </div>

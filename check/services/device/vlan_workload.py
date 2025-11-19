@@ -1,4 +1,3 @@
-
 from django.core.cache import cache
 from django.db.models import QuerySet
 from rest_framework.serializers import BaseSerializer

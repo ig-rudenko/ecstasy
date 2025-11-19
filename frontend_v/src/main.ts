@@ -41,6 +41,7 @@ import 'primeicons/primeicons.css';
 import {app} from '@/appInstance';
 import store from "@/store";
 import router from "@/router";
+import keycloakConnector from "@/keycloak";
 import setupInterceptors from '@/services/api/setupInterceptors';
 
 setupInterceptors();
@@ -50,6 +51,24 @@ app.use(ToastService);
 app.use(ConfirmationService);
 app.use(store);
 app.use(router);
+
+keycloakConnector.initKeycloak().then(() => {
+    if (!keycloakConnector.enabled) return;  // Если OIDC вышлючен на backend.
+
+    // Если вошли через OIDC.
+    if (keycloakConnector.keycloakLoginState.isLogin) {
+        keycloakConnector.autoRefreshToken();  // Автоматическое обновление токена.
+        store.dispatch('auth/keycloakLogin')
+    }
+
+    // Если необходимо авторизоваться.
+    if (keycloakConnector.keycloakLoginState.autoLogin) {
+        store.dispatch('auth/keycloakLogin').then(
+            () => setTimeout(() => location.href = "/", 100)
+        )
+        keycloakConnector.keycloakLoginState.deleteAutoLogin()
+    }
+});
 
 app.component("Avatar", Avatar);
 app.component("Badge", Badge);

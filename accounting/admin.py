@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.sessions.models import Session
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
@@ -31,3 +32,11 @@ class CustomTokenAdmin(admin.ModelAdmin):
     @admin.display()
     def verbose_allowed_ips(self, obj: UserAPIToken):
         return mark_safe("<br>".join(obj.allowed_ips.split(",")))
+
+
+@admin.register(Session)
+class SessionAdmin(admin.ModelAdmin):
+    def _session_data(self, obj):
+        return obj.get_decoded()
+
+    list_display = ["session_key", "_session_data", "expire_date"]

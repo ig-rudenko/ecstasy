@@ -41,8 +41,13 @@ export const auth = {
                 }
             );
         },
-        logout({ commit }: any) {
-            AuthService.logout();
+        async keycloakLogin({commit}: any) {
+            await AuthService.keycloakLogin();
+            commit('loginSuccess')
+            return Promise.resolve()
+        },
+        async logout({ commit }: any) {
+            await AuthService.logout();
             commit('logout');
         },
         refreshTokens({ commit }: any, tokens: any) {
