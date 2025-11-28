@@ -12,6 +12,7 @@ def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> li
     Возвращает список карт Zabbix, в которых находится узел сети Zabbix по его id.
     """
     hosts_map_ids: list[dict[str, str | int]] = []
+    passed_map_ids = set()
     if not host_id:
         return []
 
@@ -21,7 +22,8 @@ def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> li
 
         for element in map_.get("selements", []):
             for host in element.get("elements", []):
-                if host.get("hostid") == str(host_id):
+                if host.get("hostid") == str(host_id) and host_id not in passed_map_ids:
+                    passed_map_ids.add(host_id)  # Добавляем карту в список уже записанных.
                     hosts_map_ids.append(
                         {
                             "sysmapid": int(map_["sysmapid"]),  # ID карты
