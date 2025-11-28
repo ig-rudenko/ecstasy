@@ -21,12 +21,13 @@ def get_device_zabbix_maps_ids(zbx_session: ZabbixAPI, host_id: int | str) -> li
             continue
 
         for element in map_.get("selements", []):
+            sysmap_id = map_["sysmapid"]
             for host in element.get("elements", []):
-                if host.get("hostid") == str(host_id) and host_id not in passed_map_ids:
-                    passed_map_ids.add(host_id)  # Добавляем карту в список уже записанных.
+                if host.get("hostid") == str(host_id) and sysmap_id not in passed_map_ids:
+                    passed_map_ids.add(sysmap_id)  # Добавляем карту в список уже записанных.
                     hosts_map_ids.append(
                         {
-                            "sysmapid": int(map_["sysmapid"]),  # ID карты
+                            "sysmapid": int(sysmap_id),  # ID карты
                             "name": map_.get("name", "Без названия"),  # Название карты
                         },
                     )
