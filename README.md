@@ -85,6 +85,13 @@ Web-console позволит подключаться к оборудовани�
 cp .env.example .env
 ```
 
+Создайте папки для хранения данных. И дайте права на запись.
+
+```shell
+mkdir logs static media map_layer_files configurations
+chmod 777 logs static media map_layer_files configurations
+```
+
 Теперь запустите контейнеры.
 
 ```shell
