@@ -93,6 +93,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
         # print("JWTAuthenticationMiddleware", request.user, request.user.is_authenticated)
         if request.user.is_authenticated:
+            setattr(request, "_force_auth_user", request.user)
             return
 
         auth = CustomJWTAuthentication()
