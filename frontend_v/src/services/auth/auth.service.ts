@@ -4,6 +4,7 @@ import {LoginUser} from "@/services/user";
 import UserService from "@/services/auth/user.service";
 import {tokenService} from "@/services/auth/token.service";
 import keycloakConnector from "@/keycloak";
+import pinnedDevices from "@/services/pinnedDevices.ts";
 
 class AuthService {
     async login(user: LoginUser) {
@@ -30,7 +31,12 @@ class AuthService {
         keycloakConnector.keycloakLoginState.setLogout()  // Выход из OIDC
         tokenService.removeTokens();
         UserService.removeUser();
+
+        // Очищаем всё хранилище.
         localStorage.clear();
+
+        // Возвращаем в хранилище избранные устройства.
+        pinnedDevices.save();
     }
 
 }
