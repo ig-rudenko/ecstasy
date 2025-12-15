@@ -99,3 +99,7 @@ export class TokenService {
 const tokenService = new TokenService();
 
 export {tokenService}
+
+export function setTokens(access: string, refresh: string) {
+    tokenService.setTokens(access, refresh)
+}
