@@ -95,9 +95,12 @@ class KeycloakConnector {
         }
     }
 
-    autoRefreshToken() {
+    autoRefreshToken(callback: null | ((access: string, refresh: string) => void) = null) {
         const update = async () => {
             await this.keycloak.updateToken(this.refreshTokenTimeout + 10)
+            if (callback && this.keycloak.token && this.keycloak.refreshToken) {
+                callback(this.keycloak.token, this.keycloak.refreshToken)
+            }
             setTimeout(update, this.refreshTokenTimeout)
         }
         setTimeout(update, this.refreshTokenTimeout)

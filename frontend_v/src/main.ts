@@ -43,6 +43,7 @@ import store from "@/store";
 import router from "@/router";
 import keycloakConnector from "@/keycloak";
 import setupInterceptors from '@/services/api/setupInterceptors';
+import {tokenService} from "@/services/auth/token.service.ts";
 
 setupInterceptors();
 app.directive('ripple', Ripple);
@@ -57,7 +58,7 @@ keycloakConnector.initKeycloak().then(() => {
 
     // Если вошли через OIDC.
     if (keycloakConnector.keycloakLoginState.isLogin) {
-        keycloakConnector.autoRefreshToken();  // Автоматическое обновление токена.
+        keycloakConnector.autoRefreshToken(tokenService.setTokens);  // Автоматическое обновление токена.
         store.dispatch('auth/keycloakLogin')
     }
 
