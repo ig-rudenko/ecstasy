@@ -145,7 +145,7 @@ class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
 class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
     def get(self, request, *args, **kwargs):
         device = self.get_object()
-        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device.devicesinfo)
+        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device.devicesinfo or {})
         return Response(result)
 
 

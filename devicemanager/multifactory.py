@@ -15,6 +15,7 @@ from .vendors.mikrotik import MikrotikFactory
 from .vendors.procurve import ProCurveFactory
 from .vendors.qtech import QtechFactory
 from .vendors.zte import ZTEFactory
+from .vendors.zyxel import ZyxelFactory
 
 
 class DeviceMultiFactory(AbstractDeviceFactory):
@@ -71,6 +72,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
             QtechFactory,
             ZTEFactory,
             EdgeCoreFactory,
+            ZyxelFactory,
             JuniperFactory,
             ProCurveFactory,
             AlmatekFactory,
