@@ -323,8 +323,18 @@ class Zyxel(BaseDevice):
             },
         }
 
+    def _get_port_types_map(self):
+        ether_stats = self.send_command("statistics enet show", expect_command=False)
+        ether_parsed = re.findall(r"(\S+\d+)\s+(link up|link down|disabled)\s+(\S+)\s+", ether_stats)
+        for port, status, port_type in ether_parsed:
+            self.port_type_map[port] = port_type  # Добавляем тип порта (cooper, fiber)
+
+    @BaseDevice.lock_session
     @validate_port(if_invalid_return="?")
     def get_port_type(self, port: str) -> str:
+        if not self.port_type_map:
+            self._get_port_types_map()
+
         if port.isdigit():  # Для ADSL портов
             return "COPPER"
 
