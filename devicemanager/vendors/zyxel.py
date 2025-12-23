@@ -144,7 +144,7 @@ class Zyxel(BaseDevice):
     @validate_port()
     def get_mac(self, port: str) -> MACListType:
         mac_list: MACListType = []
-        output = self.send_command(f"statistics mac {port}")
+        output = self.send_command(f"statistics mac {port}", expect_command=False)
         parsed = re.findall(rf"\d+\s+(\d+)\s+({self.mac_format})", output)
         for vid, mac in parsed:
             mac_list.append((int(vid), mac))
@@ -154,14 +154,14 @@ class Zyxel(BaseDevice):
     @validate_port()
     def reload_port(self, port: str, save_config=True) -> str:
         if port.startswith("enet"):
-            self.send_command(f"switch enet disable {port}")
+            self.send_command(f"switch enet disable {port}", expect_command=False)
             time.sleep(1)
-            self.send_command(f"switch enet enable {port}")
+            self.send_command(f"switch enet enable {port}", expect_command=False)
 
         else:
-            self.send_command(f"adsl disable {port}")
+            self.send_command(f"adsl disable {port}", expect_command=False)
             time.sleep(1)
-            self.send_command(f"adsl enable {port}")
+            self.send_command(f"adsl enable {port}", expect_command=False)
 
         result = f"reloaded port {port}"
         if save_config:
@@ -176,9 +176,9 @@ class Zyxel(BaseDevice):
         new_status = "enable" if status == "up" else "disable"
 
         if port.startswith("enet"):
-            self.send_command(f"switch enet {new_status} {port}")
+            self.send_command(f"switch enet {new_status} {port}", expect_command=False)
         else:
-            self.send_command(f"adsl {new_status} {port}")
+            self.send_command(f"adsl {new_status} {port}", expect_command=False)
 
         self.lock = False
         result = f"port {port} set {status}"
@@ -190,7 +190,7 @@ class Zyxel(BaseDevice):
 
     @BaseDevice.lock_session
     def save_config(self) -> str:
-        output = self.send_command("config save")
+        output = self.send_command("config save", expect_command=False)
         if "saving configuration to flash" in output:
             return self.SAVED_OK
         return self.SAVED_ERR
@@ -209,9 +209,9 @@ class Zyxel(BaseDevice):
             }
 
         if port.isdigit():
-            self.send_command(f'adsl name {port} "{desc}"')
+            self.send_command(f'adsl name {port} "{desc}"', expect_command=False)
         else:
-            self.send_command(f'switch enet name {port} "{desc}"')
+            self.send_command(f'switch enet name {port} "{desc}"', expect_command=False)
 
         self.lock = False
         return {
