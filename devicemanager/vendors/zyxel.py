@@ -341,7 +341,7 @@ class Zyxel(BaseDevice):
         if "copper" in self.port_type_map.get(port, ""):
             return "COPPER"
         elif "fiber" in self.port_type_map.get(port, ""):
-            return "FIBER"
+            return "SFP"
 
         return "?"
 
