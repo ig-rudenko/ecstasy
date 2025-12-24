@@ -39,7 +39,7 @@ class ZyxelPexpectFaker:
 
         if command == "config save":
             # Для случая 'OK'
-            self.expect_cmd = 1
+            self.expect_cmd = 0
 
         elif command == "sys info show":
             self.before = b"""sys info show
