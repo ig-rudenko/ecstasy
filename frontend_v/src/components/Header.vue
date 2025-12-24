@@ -10,6 +10,7 @@ import permissions from "@/services/permissions";
 import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
 import {MenuItem} from "primevue/menuitem";
 import pinnedDevices from "@/services/pinnedDevices.ts";
+import AppLink from "@/components/AppLink.vue";
 
 const store = useStore()
 const user: User | null = store.state.auth.user
@@ -134,7 +135,7 @@ function showDevicePinned(): boolean {
       </template>
 
       <template #item="{ item }">
-        <router-link :to="item.url || ''" :target="item.newPage?'_blank':''">
+        <AppLink :to="item.url || ''" :target="item.newPage?'_blank':''">
           <div
               :class="isCurrent(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
               class="ps-4 md:ps-0 flex items-center md:block">
@@ -144,7 +145,7 @@ function showDevicePinned(): boolean {
               <span class="m-0 p-0 text-xl md:text-[0.7rem] text-gray-300 text-center">{{ item.label }}</span>
             </div>
           </div>
-        </router-link>
+        </AppLink>
       </template>
 
       <template #end>
