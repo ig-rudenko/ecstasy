@@ -37,9 +37,9 @@
             </svg>
 
             <div class="px-5">
-              <a class="point-name hover:text-primary" :href="getURLForDevice(dev.name)" target="_blank">
+              <router-link class="point-name hover:text-primary" :to="getURLForDevice(dev.name)" target="_blank">
                 {{ dev.name }}
-              </a>
+              </router-link>
             </div>
           </div>
 

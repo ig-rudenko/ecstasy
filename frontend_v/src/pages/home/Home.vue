@@ -9,7 +9,3 @@ import Welcome from "@/pages/home/Welcome.vue";
   <Welcome/>
   <Footer/>
 </template>
-
-<style scoped>
-
-</style>

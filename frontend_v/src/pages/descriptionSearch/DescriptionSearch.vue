@@ -56,9 +56,9 @@
 
           <Column field="device" header="Оборудование" :sortable="true" class="font-mono">
             <template #body="{data}">
-              <a :href="'/device/' + data.device" target="_blank">
+              <router-link :to="'/device/' + data.device" target="_blank">
                 <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']"/>
-              </a>
+              </router-link>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
@@ -71,8 +71,9 @@
               <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск порта"/>
             </template>
             <template #body="{data}">
-              <a :href="'/device/' + data.device + '?port=' + data.interface.name" target="_blank"
-                 class="p-2 rounded bg-indigo-200 dark:bg-indigo-600">{{ data.interface.name }}</a>
+              <router-link :to="'/device/' + data.device + '?port=' + data.interface.name" target="_blank"
+                           class="p-2 rounded bg-indigo-200 dark:bg-indigo-600">{{ data.interface.name }}
+              </router-link>
             </template>
           </Column>
 

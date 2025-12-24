@@ -14,10 +14,10 @@ import Footer from "@/components/Footer.vue";
       <div class="text-2xl">
         Транспортные кольца
       </div>
-      <a href="/ring-manager/transport-ring" class="text-center h-full p-4 rounded-xl shadow-xl"
-         style="background-image: url('/img/ring_manager/background/transport_ring.jpg');
+      <router-link to="/ring-manager/transport-ring" class="text-center h-full p-4 rounded-xl shadow-xl"
+                   style="background-image: url('/img/ring_manager/background/transport_ring.jpg');
                              background-size: cover; padding: 180px 200px;">
-      </a>
+      </router-link>
       <span>
           Кольца агрегаций, используются для разворота VLAN
       </span>
@@ -27,10 +27,10 @@ import Footer from "@/components/Footer.vue";
       <div class="text-2xl">
         Абонентские кольца
       </div>
-      <a href="ring-manager/access-ring" class="text-center h-100 p-4 rounded-xl shadow"
-         style="background-image: url('/img/ring_manager/background/access_ring.jpg');
+      <router-link to="/ring-manager/access-ring" class="text-center h-100 p-4 rounded-xl shadow"
+                   style="background-image: url('/img/ring_manager/background/access_ring.jpg');
                              background-size: cover; padding: 180px 200px;">
-      </a>
+      </router-link>
       <span>
           Оборудование доступа, которые имею топологию "кольцо".
       </span>

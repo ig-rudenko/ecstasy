@@ -7,7 +7,7 @@ import api from "@/services/api";
 import {MapDetail, MapService} from "@/pages/maps/maps";
 
 const route = useRoute();
-const mapId = route.params.id.toString();
+let updateMapTimer = null as null | number;
 const search = ref("");
 const showSearch = ref(false);
 
@@ -15,6 +15,7 @@ let mapService: MapService | null = null;
 const mapData = ref<MapDetail | null>(null)
 
 onMounted(async () => {
+  const mapId = route.params.id.toString();
 
   mapService = new MapService(mapId, "map");
 
@@ -24,7 +25,7 @@ onMounted(async () => {
 
   mapData.value = await mapService.getMapData();
   if (mapData.value?.type == "external") {
-    const res = window.open(mapData.value.map_url, );
+    const res = window.open(mapData.value.map_url,);
     if (!res) {
       location.href = mapData.value.map_url
     } else {
@@ -48,7 +49,11 @@ onMounted(async () => {
   await mapService.renderMapGroups();
 
   if (mapData.value?.interactive) {
-    mapService.renderMarkers().then(() => update());
+    mapService.renderMarkers().then(() => {
+      updateMapTimer = window.setInterval(() => {
+        update()
+      }, 5_000)
+    });
   } else {
     mapService.renderMarkers()
   }
@@ -58,14 +63,14 @@ onMounted(async () => {
 })
 
 function update() {
-  mapService?.update().then(
-      () => setTimeout(() => mapService?.update(), 15000)
-  );
+  mapService?.update()
 }
 
 
 onUnmounted(() => {
+  if (mapService) mapService.map.remove()
   mapService = null;
+  if (updateMapTimer) clearTimeout(updateMapTimer);
 })
 
 function searchElement() {

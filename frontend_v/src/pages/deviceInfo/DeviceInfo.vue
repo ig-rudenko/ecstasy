@@ -76,7 +76,7 @@
 
       </div>
 
-      <DeviceStats v-if="deviceStats" :stats="deviceStats" :uptime="generalInfo.uptime"/>
+      <DeviceStats v-if="deviceStats" :stats="deviceStats" :uptime="Number(generalInfo.uptime)"/>
 
     </div>
 
@@ -136,6 +136,7 @@
 
         <template v-for="_interface in interfaces">
           <DetailInterfaceInfo
+              @change-device="dev => init(dev)"
               :device-name="generalInfo.deviceName"
               :dynamic-opacity="dynamicOpacity"
               :interface="_interface"
@@ -287,6 +288,8 @@ export default defineComponent({
 
   data() {
     return {
+      _getting_interfaces: false,
+      _init_started: false,
       deviceStats: null as HardwareStats | null,
       interfacesWorkload: {} as InterfacesCount,
       generalInfo: null as GeneralInfo | null,
@@ -315,6 +318,10 @@ export default defineComponent({
         display: false
       },
 
+      updateInterfacesTimer: null as null | number,
+      updateStatsTimer: null as null | number,
+      secondsTimer: null as null | number,
+
     }
   },
 
@@ -328,35 +335,131 @@ export default defineComponent({
   },
 
   mounted() {
-    this.deviceName = this.$route.params.deviceName.toString();
-    document.title = this.deviceName
-    TimeAgo.addDefaultLocale(ru)
+    try {
+      TimeAgo.addDefaultLocale(ru)
+    } catch (e) {
+    }
 
-    // Смотрим предыдущую загруженность интерфейсов оборудования
-    this.getInterfacesWorkload()
+    this.init(this.$route.params.deviceName.toString())
+  },
 
-    // Сначала смотрим предыдущие интерфейсы
-    this.getInterfaces(false)?.then(
-        () => {
-          // Далее опрашиваем текущий статус интерфейсов
-          this.currentStatus = true
-          this.getInterfaces()
+  updated() {
+    console.log("Обновление страницы", this.$route.params.deviceName.toString())
+    if (this.deviceName !== this.$route.params.deviceName.toString()) {
+      this.init(
+          this.$route.params.deviceName.toString()
+      )
+    }
+  },
 
-          this.timer()
-
-          // Смотрим информацию оборудования
-          this.getStats()
-
-          // Смотрим текущую загруженность интерфейсов оборудования
-          this.getInterfacesWorkload()
-        }
-    )
-
-    this.getInfo()
-
+  unmounted() {
+    this.clearTimers()
   },
 
   methods: {
+    init(deviceName: string) {
+      if (this._init_started) return;
+
+      this._init_started = true
+      this.clearTimers()
+      this.clearData()
+
+      this.$router.push({
+        name: 'device',
+        params: {
+          deviceName: deviceName
+        },
+        query: {...this.$route.query}
+      })
+
+      console.log("INIT", deviceName)
+
+      this.deviceName = deviceName;
+      document.title = this.deviceName
+
+      // Смотрим предыдущую загруженность интерфейсов оборудования
+      this.getInterfacesWorkload()
+
+      // Сначала смотрим предыдущие интерфейсы
+      this.getInterfaces()?.then(
+          () => {
+            // Далее опрашиваем текущий статус интерфейсов
+            this.currentStatus = true
+            this.getInterfaces()
+
+            // Смотрим информацию оборудования
+            this.getStats()
+
+            // Смотрим текущую загруженность интерфейсов оборудования
+            this.getInterfacesWorkload()
+
+            this.updateInterfacesTimer = window.setInterval(() => {
+              this.getInterfaces()
+              console.log("Опрос интерфейсов")
+            }, 4000)
+
+            this.secondsTimer = window.setInterval(() => {
+              this.timer()
+              console.log("Timer")
+            }, 1000)
+
+            this.updateStatsTimer = window.setInterval(() => {
+              this.getStats()
+              console.log("getStats")
+            }, 60_000)
+            this._init_started = false;
+
+          }
+      )
+
+      this.getInfo()
+
+    },
+
+    clearTimers() {
+      if (this.updateInterfacesTimer) {
+        clearInterval(this.updateInterfacesTimer)
+        this.updateInterfacesTimer = null
+        console.log("Интерфейсный таймер остановлен")
+      }
+      if (this.secondsTimer) {
+        clearInterval(this.secondsTimer)
+        this.secondsTimer = null
+        console.log("Таймер остановлен")
+      }
+      if (this.updateStatsTimer) {
+        clearInterval(this.updateStatsTimer)
+        this.updateStatsTimer = null
+        console.log("updateStatsTimer остановлен")
+      }
+    },
+
+    clearData() {
+      this._getting_interfaces = false
+      this.deviceStats = null
+      this.interfacesWorkload = {} as InterfacesCount
+      this.generalInfo = null
+      this.interfaces = []
+
+      this.timePassedFromLastUpdate = ""
+      this.collected = new Date()
+      this.seconds_pass = 0
+
+      this.deviceAvailable = -1 // Оборудование доступно?
+      this.withVlans = false // Собирать VLAN?
+      this.currentStatus = false // Собирать интерфейсы в реальном времени?
+      this.autoUpdateInterfaces = true // Автоматически обновлять интерфейсы
+
+      this.findMacAddress = ""
+      this.findMacDialogVisible = false
+      this.sessionControl = {
+        mac: "",
+        port: "",
+        display: false,
+      }
+
+      this.configFiles = {display: false}
+    },
 
     /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
@@ -394,14 +497,11 @@ export default defineComponent({
     },
 
     /** Смотрим интерфейсы оборудования */
-    async getInterfaces(infinity = true) {
+    async getInterfaces() {
       this.seconds_pass = Math.floor((new Date().getTime() - this.collected.getTime()) / 1000)
 
       // Если автообновление интерфейсов отключено, то ожидаем 2сек и запускаем метод снова
-      if (!this.autoUpdateInterfaces) {
-        setTimeout(this.getInterfaces, 2000)
-        return
-      }
+      if (this._getting_interfaces || !this.autoUpdateInterfaces) return;
 
       let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
       if (this.withVlans) {
@@ -413,29 +513,26 @@ export default defineComponent({
         url += "&current_status=1"
       }
 
-      return api.get(url).then(
-          (value: any) => {
-            this.interfaces = newInterfacesList(value.data.interfaces);
-            this.collected = new Date(value.data.collected);
-            this.deviceAvailable = value.data.deviceAvailable ? 1 : 0;
-            // Если оборудование недоступно, то автообновление тоже недоступно
-            this.autoUpdateInterfaces = Boolean(this.autoUpdateInterfaces && this.deviceAvailable);
+      const currentDeviceName = this.deviceName;
+      this._getting_interfaces = true;
+      try {
+        const resp = await api.get(url)
+        // Если устройство поменялось, то выходим.
+        if (currentDeviceName !== this.deviceName) return
 
-            // Через 4 сек запускаем метод снова
-            if (infinity) setTimeout(this.getInterfaces, 4000);
-          },
-          (reason: any) => this.showToastError(reason)
-      ).catch(
-          (reason: any) => this.showToastError(reason)
-      )
-
+        this.interfaces = newInterfacesList(resp.data.interfaces);
+        this.collected = new Date(resp.data.collected);
+        this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
+      } catch (error: any) {
+      }
+      this._getting_interfaces = false;
     },
 
     toggleInterfacesWithVlans() {
       this.withVlans = !this.withVlans;
       if (this.withVlans) {
         this.currentStatus = false;
-        this.getInterfaces(false);
+        this.getInterfaces();
         this.currentStatus = true;
       }
     },
@@ -459,7 +556,7 @@ export default defineComponent({
         const timeAgo = new TimeAgo('ru-RU')
         this.timePassedFromLastUpdate = timeAgo.format(this.collected)
       }
-      setTimeout(this.timer, 1000)
+      // setTimeout(this.timer, 1000)
     },
 
     showToastError(reason: any) {

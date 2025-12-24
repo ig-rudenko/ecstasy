@@ -73,7 +73,7 @@
             <div class="p-2">OLT оборудование</div>
             <div>
               <span id="deviceName" class="flex items-center gap-3 text-primary font-mono">
-                <a :href="'/device/'+oltState.statement.deviceName" target="_blank">
+                <router-link :to="'/device/'+oltState.statement.deviceName" target="_blank">
                   <Button text>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
                          viewBox="0 0 16 16">
@@ -81,7 +81,7 @@
                           d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
                     </svg>
                   </Button>
-                </a>
+                </router-link>
                 <span>{{ oltState.statement.deviceName }}</span>
                 <OltPortsSubscriberStatistic :device-name="oltState.statement.deviceName"/>
               </span>
@@ -93,7 +93,7 @@
           <div class="py-2 grid grid-cols-2">
             <div class="p-2">Порт</div>
             <div>
-              <a :href="getOLTTechDataURL(oltState.statement)">
+              <router-link :to="getOLTTechDataURL(oltState.statement)">
                 <Button text class="font-mono">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
                        viewBox="0 0 16 16">
@@ -104,7 +104,7 @@
                   </svg>
                   {{ oltState.statement.devicePort }}
                 </Button>
-              </a>
+              </router-link>
             </div>
           </div>
 

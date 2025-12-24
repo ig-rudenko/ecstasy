@@ -1,6 +1,7 @@
 <template>
   <div v-if="displayMode" class="flex gap-2 items-center p-2 group">
-    <div v-if="dynamicDescription.length" class="font-mono max-sm:text-sm" v-html="dynamicDescription"></div>
+    <div v-if="dynamicDescription.length" class="font-mono max-sm:text-sm" v-html="dynamicDescription"
+         @click="() => {if (interface.link) $emit('changeDevice', interface.link.deviceName)}"></div>
     <div v-else class="text-gray-300 dark:text-gray-600 text-[10px]">нет описания</div>
     <div class="group-hover:opacity-100 opacity-0 transition-opacity duration-200">
       <svg @click="startEditDesc" class="cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -38,6 +39,7 @@ export default defineComponent({
     deviceName: {required: true, type: String},
     interface: {required: true, type: Object as PropType<DeviceInterface>}
   },
+  emits: ['changeDevice'],
   data() {
     return {
       displayMode: true,
@@ -52,7 +54,7 @@ export default defineComponent({
 
       return this.interface.description.replace(
           new RegExp(this.interface.link.deviceName, 'ig'),
-          s => `<span class="bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70"><a class="text-dark text-decoration-none" href="${this.interface.link!.url}">${s}</a></span>`
+          s => `<span class="bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70"><span class="text-dark text-decoration-none cursor-pointer">${s}</span></span>`
       )
     },
     inputClasses(): string[] {

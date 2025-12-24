@@ -70,7 +70,7 @@
 
               <!-- Device Name -->
               <span v-else id="deviceName" class="items-center flex flex-wrap gap-3 text-primary font-mono">
-                <a :href="'/device/'+detailData.deviceName" target="_blank">
+                <router-link :to="'/device/'+detailData.deviceName" target="_blank">
                   <Button text>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
                          viewBox="0 0 16 16">
@@ -78,7 +78,7 @@
                           d="M2 9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zM2 2a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm.5 3a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm2 0a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
                     </svg>
                   </Button>
-                </a>
+                </router-link>
                 <span>{{ detailData.deviceName }}</span>
                 <OltPortsSubscriberStatistic :device-name="detailData.deviceName"/>
               </span>
@@ -158,11 +158,11 @@
             </svg>
             <div class="text-xl font-semibold m-0 me-3">
               <span class="p-2">Адрес:</span>
-              <a :href="'/gpon/tech-data/building/'+building.address.id">
+              <router-link :to="'/gpon/tech-data/building/'+building.address.id">
                 <Button outlined rounded
                         :icon="building.address.building_type === 'building'?'pi pi-building':'pi pi-home'"
                         :label="getFullAddress(building.address)"/>
-              </a>
+              </router-link>
             </div>
           </div>
         </template>

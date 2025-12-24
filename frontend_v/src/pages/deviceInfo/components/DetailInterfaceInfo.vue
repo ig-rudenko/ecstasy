@@ -44,7 +44,8 @@
             </Button>
           </div>
 
-          <Button icon="pi pi-info-circle" size="small" class="sm:hidden mx-1" outlined @click="showPortControlsPopover"/>
+          <Button icon="pi pi-info-circle" size="small" class="sm:hidden mx-1" outlined
+                  @click="showPortControlsPopover"/>
 
         </div>
         <Popover ref="portControls">
@@ -81,7 +82,8 @@
 
     <!--Описание порта-->
     <td>
-      <ChangeDescription :device-name="deviceName" :interface="interface"/>
+      <ChangeDescription :device-name="deviceName" :interface="interface"
+                         @change-device="dev => $emit('changeDevice', dev)"/>
     </td>
 
     <!--VLANS-->
@@ -207,6 +209,8 @@ export default defineComponent({
     dynamicOpacity: {required: true, type: Object as PropType<{ opacity: Number }>},
     showVlans: {required: false, type: Boolean, default: true},
   },
+
+  emits: ["changeDevice"],
 
   data() {
     return {
