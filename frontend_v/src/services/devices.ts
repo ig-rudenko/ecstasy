@@ -37,8 +37,9 @@ export class DevicesService {
 
 
     async getDevicesList(): Promise<Device[]> {
+        const url = "/api/v1/devices/?return-fields=name,ip,vendor,group,model,console_url&active=1";
         try {
-            let resp = await api.get<Device[]>("/api/v1/devices/?return-fields=name,ip,vendor,group,model,console_url");
+            let resp = await api.get<Device[]>(url);
             return resp.data;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason))
