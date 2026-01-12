@@ -170,6 +170,16 @@ class SessionController:
             name="Devices connections cleaner",
         ).start()
 
+    def get_pool_status(self, ip: str) -> list[bool]:
+        pool = self._sessions.get(ip)
+        if pool is None:
+            return []
+
+        statuses = []
+        for conn in pool:  # type: GlobalSession
+            statuses.append(conn.alive)
+        return statuses
+
 
 DEVICE_SESSIONS = SessionController()
 DEVICE_SESSIONS.run_session_cleaner()

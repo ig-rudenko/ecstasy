@@ -108,7 +108,7 @@ def connector(ip: str, method: str):
         return resp
 
 
-@app.route("/pool/<ip>", methods=["DELETE"])
+@app.route("/pool/<ip>", methods=["GET", "DELETE"])
 def delete_connection_pool(ip: str):
     """Очистить пул соединений"""
     token_error = check_token()
@@ -122,11 +122,14 @@ def delete_connection_pool(ip: str):
         resp.status_code = 400
         return resp
 
-    DEVICE_SESSIONS.delete_pool(valid_ip)
-    resp = jsonify({"message": "Connection pool deleted"})
-    resp.status_code = 204
-    return resp
+    if request.method == "DELETE":
+        DEVICE_SESSIONS.delete_pool(valid_ip)
+        resp = jsonify({"message": "Connection pool deleted"})
+        resp.status_code = 204
+        return resp
 
+    statuses = DEVICE_SESSIONS.get_pool_status(valid_ip)
+    return jsonify({"statuses": statuses})
 
 if __name__ == "__main__":
     app.run(

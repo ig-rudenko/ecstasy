@@ -98,4 +98,9 @@ urlpatterns = [
         "<device_name_or_ip>/commands/<int:command_id>/validate",
         device_manager.ValidateDeviceCommandAPIView.as_view(),
     ),
+    path("<device_name_or_ip>/pool", device_manager.DevicePoolManager.as_view()),
+    # ===========================================
+    #               Device Viewings
+    # ===========================================
+    path("<device_name_or_ip>/viewings", user_actions.ViewingDeviceAPIView.as_view()),
 ]

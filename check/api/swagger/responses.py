@@ -215,3 +215,8 @@ class BrasPairSessionResultSwaggerSerializer(SwaggerSerializer):
 class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
     errors = serializers.ListSerializer(child=serializers.CharField())  # type: ignore
     portReloadStatus = serializers.CharField()
+
+
+class DevicePoolStatusesSwaggerSerializer(SwaggerSerializer):
+    connectionPoolSize = serializers.IntegerField(min_value=1)
+    statuses = serializers.ListSerializer(child=serializers.BooleanField())  # type: ignore

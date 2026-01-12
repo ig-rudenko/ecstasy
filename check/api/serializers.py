@@ -167,3 +167,12 @@ class DeviceCommandsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeviceCommand
         fields = ["id", "name", "description", "command", "device_vendor"]
+
+
+class DeviceViewingsSerializer(serializers.Serializer):
+    username = serializers.CharField(read_only=True)
+    started = serializers.DateTimeField(read_only=True)
+    updated = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        fields = ["username", "started", "updated"]

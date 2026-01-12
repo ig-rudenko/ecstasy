@@ -94,7 +94,7 @@
   </div>
 
 
-  <div class="container mx-auto">
+  <div class="container mx-auto flex flex-wrap justify-between gap-2 items-center">
     <div class="py-2">
       <!--  Время обновления интерфейсов-->
       <InterfacesHelpText
@@ -112,6 +112,10 @@
           <label for="auto-update-interfaces">Обновлять автоматически</label>
         </div>
       </div>
+    </div>
+
+    <div class="w-full sm:w-auto">
+      <DeviceViewings :device-name="deviceName"/>
     </div>
   </div>
 
@@ -255,11 +259,13 @@ import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
 import Commands from "@/pages/deviceInfo/components/Commands.vue";
+import DeviceViewings from "@/pages/deviceInfo/components/DeviceViewings.vue";
 
 export default defineComponent({
   name: 'device',
 
   components: {
+    DeviceViewings,
     DeviceVlanInfo,
     Commands,
     Header,
@@ -344,7 +350,6 @@ export default defineComponent({
   },
 
   updated() {
-    console.log("Обновление страницы", this.$route.params.deviceName.toString())
     if (this.deviceName !== this.$route.params.deviceName.toString()) {
       this.init(
           this.$route.params.deviceName.toString()
@@ -372,8 +377,6 @@ export default defineComponent({
         query: {...this.$route.query}
       })
 
-      console.log("INIT", deviceName)
-
       this.deviceName = deviceName;
       document.title = this.deviceName
 
@@ -395,12 +398,10 @@ export default defineComponent({
 
             this.updateInterfacesTimer = window.setInterval(() => {
               this.getInterfaces()
-              console.log("Опрос интерфейсов")
             }, 4000)
 
             this.secondsTimer = window.setInterval(() => {
               this.timer()
-              console.log("Timer")
             }, 1000)
 
             this.updateStatsTimer = window.setInterval(() => {

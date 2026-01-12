@@ -20,6 +20,9 @@
       </svg>
     </span>
 
+    <div class="flex">
+      <i class="pi pi-wrench text-gray-400 hover:text-primary cursor-pointer" @click="toggleStatus"/>
+    </div>
 
     <!--  Название оборудования-->
     <div class="flex flex-wrap flex-row sm:flex-row font-mono justify-center items-center gap-4">
@@ -35,13 +38,51 @@
     </div>
 
   </div>
+
+  <Popover ref="deviceStatus">
+    <div v-if="poolStatus" class="text-sm">
+      <div>Лимит одновременных подключений:
+        <Badge class="font-mono" :value="poolStatus.connectionPoolSize"/>
+      </div>
+      <template v-if="poolStatus.statuses.length">
+        <div class="pb-2">
+          Переподключиться
+          <Button :disabled="resetPoolLoading" :loading="resetPoolLoading" icon="pi pi-sync" severity="warn" outlined
+                  rounded size="small" @click="resetPool"/>
+        </div>
+        <div class="flex gap-1 flex-col">
+          <div v-for="(isActive, index) in poolStatus.statuses" :key="index" class="flex gap-2 items-center">
+          <span v-if="isActive" class="relative flex size-3">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75"></span>
+            <span class="relative inline-flex size-3 rounded-full bg-teal-500"></span>
+          </span>
+            <span v-else class="relative inline-flex size-3 rounded-full bg-red-500"></span>
+            Подключение {{ index + 1 }} {{ isActive ? 'активно' : 'неактивно' }}
+          </div>
+        </div>
+      </template>
+      <div v-else>Нет подключений</div>
+    </div>
+    <div v-else-if="poolStatusLoading">
+      Загрузка...
+    </div>
+  </Popover>
+
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
+
+import api from "@/services/api";
 import pinnedDevices from "@/services/pinnedDevices";
 import {Device} from "@/services/devices";
 import PinDevice from "@/components/PinDevice.vue";
+
+
+interface PoolStatus {
+  connectionPoolSize: number
+  statuses: boolean[]
+}
 
 
 export default defineComponent({
@@ -54,7 +95,27 @@ export default defineComponent({
   data() {
     return {
       copied: false,
-      copiedStatus: ""
+      copiedStatus: "",
+      poolStatus: null as null | PoolStatus,
+      poolStatusLoading: false,
+      resetPoolLoading: false,
+      poolStatusTimer: null as null | number,
+    }
+  },
+  mounted(): any {
+    this.poolStatusTimer = window.setInterval(
+        async () => {
+          if ((<any>this.$refs.deviceStatus).visible) {
+            // console.log("getPoolStatus", this.device.name);
+            await this.getPoolStatus()
+          }
+        },
+        1000)
+  },
+  unmounted(): any {
+    if (this.poolStatusTimer) {
+      clearInterval(this.poolStatusTimer)
+      this.poolStatusTimer = null;
     }
   },
   computed: {
@@ -73,6 +134,37 @@ export default defineComponent({
           });
       setTimeout(() => this.copied = false, 1000)
     },
+
+    toggleStatus(event: Event) {
+      this.getPoolStatus();
+      {
+        (<any>this.$refs.deviceStatus).toggle(event);
+      }
+    },
+
+    async getPoolStatus() {
+      this.poolStatusLoading = true;
+      try {
+        const resp = await api.get<PoolStatus>(`/api/v1/devices/${this.device.name}/pool`)
+        this.poolStatus = resp.data;
+      } catch (e) {
+      }
+      this.poolStatusLoading = false;
+    },
+
+    async resetPool() {
+      if (this.resetPoolLoading) return;
+
+      this.resetPoolLoading = true;
+      try {
+        await api.delete(`/api/v1/devices/${this.device.name}/pool`)
+      } catch (e) {
+      }
+      setTimeout(() => {
+        this.resetPoolLoading = false;
+      }, 3000)
+    },
+
   }
 })
 </script>

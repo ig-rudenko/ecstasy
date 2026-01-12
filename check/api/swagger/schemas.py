@@ -11,6 +11,7 @@ from .responses import (
     ConfigFileSwaggerSerializer,
     CutBrasSessionSwaggerSerializer,
     DeviceInfoSwaggerSerializer,
+    DevicePoolStatusesSwaggerSerializer,
     DevicesConfigListSwaggerSerializer,
     DevicesInterfaceWorkloadResultSwaggerSerializer,
     InterfaceDetailInfoSwaggerSerializer,
@@ -149,5 +150,20 @@ bras_get_session_api_doc = swagger_auto_schema(
 cut_bras_session_api_doc = swagger_auto_schema(
     responses={
         200: CutBrasSessionSwaggerSerializer(),
+    }
+)
+
+
+set_device_viewings_api_doc = swagger_auto_schema(
+    request_body=None,
+    responses={
+        200: ""
+    }
+)
+
+
+get_device_pool_status_api_doc = swagger_auto_schema(
+    responses={
+        200: DevicePoolStatusesSwaggerSerializer()
     }
 )

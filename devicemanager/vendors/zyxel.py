@@ -326,7 +326,7 @@ class Zyxel(BaseDevice):
     def _get_port_types_map(self):
         ether_stats = self.send_command("statistics enet show", expect_command=False)
         ether_parsed = re.findall(r"(\S+\d+)\s+(link up|link down|disabled)\s+(\S+)\s+", ether_stats)
-        for port, status, port_type in ether_parsed:
+        for port, _status, port_type in ether_parsed:
             self.port_type_map[port] = port_type  # Добавляем тип порта (cooper, fiber)
 
     @BaseDevice.lock_session
@@ -340,7 +340,7 @@ class Zyxel(BaseDevice):
 
         if "copper" in self.port_type_map.get(port, ""):
             return "COPPER"
-        elif "fiber" in self.port_type_map.get(port, ""):
+        if "fiber" in self.port_type_map.get(port, ""):
             return "SFP"
 
         return "?"

@@ -1,7 +1,7 @@
 import re
 
 from django.utils.decorators import method_decorator
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -17,6 +17,7 @@ from check.services.device.interfaces import (
     get_mac_addresses_on_interface,
     set_interface_description,
 )
+from devicemanager.remote.connector import pool_controller
 from devicemanager.remote.exceptions import InvalidMethod
 
 from ...models import DeviceCommand
@@ -34,6 +35,7 @@ from ..swagger import schemas
 from ..swagger.schemas import (
     change_description_api_doc,
     change_dsl_profile_api_doc,
+    get_device_pool_status_api_doc,
     interface_info_api_doc,
     mac_list_api_doc,
 )
@@ -405,3 +407,29 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": exc.detail}, status=400)
 
         return Response({"command": valid_command})
+
+
+# @method_decorator(get_device_pool_status_api_doc, name="get")
+class DevicePoolManager(DeviceAPIView):
+
+    @get_device_pool_status_api_doc
+    def get(self, request, *args, **kwargs):
+        """
+        Возвращает максимальное кол-во сессий в пуле подключений и список статусов работоспособности текущих пулов.
+        """
+        device = self.get_object()
+        return Response(
+            {
+                "connectionPoolSize": device.connection_pool_size,
+                "statuses": pool_controller.get_pool_status(device.ip),
+            }
+        )
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Очищает пул всех текущих подключений
+        """
+        device = self.get_object()
+        if pool_controller.clear_pool(device.ip):
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
