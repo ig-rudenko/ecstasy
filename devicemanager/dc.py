@@ -182,19 +182,19 @@ class DeviceRemoteConnector:
                 if expect_index == 0:
                     # KexAlgorithms
                     session.expect(pexpect.EOF)
-                    ssh_spawn.get_kex_algorithms(session.before.decode("utf-8"))
+                    ssh_spawn.get_kex_algorithms(session.before.decode("utf-8", errors="ignore"))
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 1:
                     # HostKeyAlgorithms
                     session.expect(pexpect.EOF)
-                    ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8"))
+                    ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8", errors="ignore"))
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 2:
                     # Cipher
                     session.expect(pexpect.EOF)
-                    ssh_spawn.get_ciphers(session.before.decode("utf-8"))
+                    ssh_spawn.get_ciphers(session.before.decode("utf-8", errors="ignore"))
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 3:
@@ -218,7 +218,7 @@ class DeviceRemoteConnector:
                 elif expect_index in (7, 9):
                     session.close()
                     raise SSHConnectionError(
-                        "SSH недоступен" + session.before.decode("utf-8"),
+                        "SSH недоступен" + session.before.decode("utf-8", errors="ignore"),
                         ip=self.ip,
                     )
                 elif expect_index == 10:

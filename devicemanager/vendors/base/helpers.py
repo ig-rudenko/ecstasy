@@ -10,7 +10,7 @@ def remove_ansi_escape_codes(string: bytes | str | None) -> str:
     if string is not None:
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
         if isinstance(string, bytes):
-            clean_string = string.decode("utf-8")
+            clean_string = string.decode("utf-8", errors="ignore")
         else:
             clean_string = str(string)
 
