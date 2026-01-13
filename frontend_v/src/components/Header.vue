@@ -234,7 +234,7 @@ const toggleProfile = (event: Event) => {
                 v-tooltip.bottom="'Включить темную тему'" severity="contrast"
                 class="hover:text-gray-200 hover:bg-gray-900"
                 outlined/>
-        <Button icon="pi pi-sun" v-if="currentTheme == 'dark'" @click="toggle"
+        <Button icon="pi pi-sun" v-if="currentTheme == 'dark' || currentTheme == 'auto'" @click="toggle"
                 v-tooltip.bottom="'Включить светлую тему'" severity="contrast"
                 class="hover:text-gray-900 hover:bg-gray-200"
                 outlined/>
