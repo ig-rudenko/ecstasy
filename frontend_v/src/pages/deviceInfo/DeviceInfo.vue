@@ -114,7 +114,7 @@
       </div>
     </div>
 
-    <div class="w-full sm:w-auto">
+    <div v-if="deviceName.length" class="w-full sm:w-auto">
       <DeviceViewings :device-name="deviceName"/>
     </div>
   </div>
