@@ -7,7 +7,7 @@ import LogoutButton from "@/components/LogoutButton.vue";
 import {getAvatar} from "@/formats";
 import {User} from "@/services/user";
 import permissions from "@/services/permissions";
-import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
+import {getCurrentTheme, setDarkTheme, setLightTheme, ThemesValues} from "@/services/themes";
 import {MenuItem} from "primevue/menuitem";
 import pinnedDevices from "@/services/pinnedDevices.ts";
 import AppLink from "@/components/AppLink.vue";
