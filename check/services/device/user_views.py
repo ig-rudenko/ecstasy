@@ -31,7 +31,7 @@ class DeviceUserViews:
             filter(lambda dv: dv.updated > (datetime.now() - timedelta(seconds=self.view_ttl)), views)
         )
 
-        if update_expired and len(filtered_views) != len(views):
+        if update_expired and len(filtered_views) != len(views) and filtered_views:
             cache.set(self.cache_key, filtered_views, timeout=self.view_ttl + 5)
 
         return filtered_views
