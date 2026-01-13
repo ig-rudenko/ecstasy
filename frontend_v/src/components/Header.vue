@@ -11,6 +11,7 @@ import {getCurrentTheme, setAutoTheme, setDarkTheme, setLightTheme, ThemesValues
 import {MenuItem} from "primevue/menuitem";
 import pinnedDevices from "@/services/pinnedDevices.ts";
 import AppLink from "@/components/AppLink.vue";
+import decorConfig from "@/services/decor.ts";
 
 const store = useStore()
 const user: User | null = store.state.auth.user
@@ -102,9 +103,9 @@ function isCurrent(url: string) {
 const currentTheme = ref<ThemesValues>(getCurrentTheme());
 
 const toggle = () => {
-  if (currentTheme.value == "auto") setLightTheme();
+  if (currentTheme.value == "dark") setLightTheme();
   if (currentTheme.value == "light") setDarkTheme();
-  if (currentTheme.value == "dark") setAutoTheme();
+  // if (currentTheme.value == "dark") setAutoTheme();
   currentTheme.value = getCurrentTheme();
 }
 
@@ -115,6 +116,11 @@ const togglePinedDevices = (event: Event) => {
 
 function showDevicePinned(): boolean {
   return location.href.includes('device') && pinnedDevices.pinnedDevices.value.length > 0;
+}
+
+const profileRef = ref();
+const toggleProfile = (event: Event) => {
+  profileRef.value.toggle(event);
 }
 
 </script>
@@ -149,29 +155,8 @@ function showDevicePinned(): boolean {
       </template>
 
       <template #end>
-        <div class="flex items-center gap-2">
-          <a v-if="user && user.isStaff" href="/admin/">
-            <Button icon="pi pi-cog" size="large" text
-                    v-tooltip.bottom="'Панель администратора'"/>
-          </a>
-          <Avatar v-if="user" :image="getAvatar(user.username)" v-tooltip.bottom="user.firstName" shape="circle"
-                  :size="'large'"/>
-          <div class="flex flex-col">
-            <Button icon="pi pi-circle" v-if="currentTheme == 'auto'" @click="toggle"
-                    v-tooltip.left="'Включить светлую тему'"
-                    class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
-                    text/>
-            <Button icon="pi pi-sun" v-if="currentTheme == 'light'" @click="toggle"
-                    v-tooltip.left="'Включить темную тему'"
-                    class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
-                    text/>
-            <Button icon="pi pi-moon" v-if="currentTheme == 'dark'" @click="toggle"
-                    v-tooltip.left="'Выбрать тему автоматически'"
-                    class="hover:text-gray-900 dark:text-gray-400 hover:dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 bg-opacity-15"
-                    text/>
-            <LogoutButton/>
-          </div>
-        </div>
+        <Avatar v-if="user" :image="getAvatar(user.username)" class="cursor-pointer"
+                @click="toggleProfile" size="large"/>
       </template>
     </Menubar>
   </div>
@@ -224,6 +209,52 @@ function showDevicePinned(): boolean {
       <div v-if="pinnedDevices.pinnedDevices.value.length == 0">
         Нет избранных устройств
       </div>
+    </div>
+  </Popover>
+
+  <Popover ref="profileRef">
+    <div>
+      <div v-if="user" class="flex gap-3 items-center">
+        <Avatar :image="getAvatar(user.username)" shape="circle" size="large"/>
+        <div>
+          <div class="flex gap-0.5 items-center">
+            <div class="font-mono text-sm">{{ user.username }}</div>
+            <Badge v-if="user.isStaff" value="S" size="small" severity="contrast" v-tooltip="'Staff'"/>
+            <Badge v-if="user.isSuperuser" value="S" size="small" severity="warn" v-tooltip="'Superuser'"/>
+          </div>
+          <div class="text-sm">{{ user.firstName + ' ' + user.lastName }}</div>
+        </div>
+      </div>
+
+      <div class="flex gap-1 items-center justify-center mt-3">
+        <a v-if="user && user.isStaff" href="/admin/">
+          <Button icon="pi pi-cog" outlined v-tooltip.bottom="'Панель администратора'" severity="secondary" class="hover:text-primary hover:bg-primary-100"/>
+        </a>
+        <Button icon="pi pi-moon" v-if="currentTheme == 'light'" @click="toggle"
+                v-tooltip.bottom="'Включить темную тему'" severity="contrast"
+                class="hover:text-gray-200 hover:bg-gray-900"
+                outlined/>
+        <Button icon="pi pi-sun" v-if="currentTheme == 'dark'" @click="toggle"
+                v-tooltip.bottom="'Включить светлую тему'" severity="contrast"
+                class="hover:text-gray-900 hover:bg-gray-200"
+                outlined/>
+        <LogoutButton/>
+      </div>
+
+
+      <div class="mt-4" v-if="[0, 1, 11].indexOf((new Date()).getMonth()) !== -1">
+        <label
+            class="flex gap-2 items-center border border-gray-300 dark:border-gray-600 rounded p-3 w-full cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+               :class="decorConfig.winterDecor?'fill-primary':'fill-gray-500'" viewBox="0 0 16 16">
+            <path
+                d="M8 16a.5.5 0 0 1-.5-.5v-1.293l-.646.647a.5.5 0 0 1-.707-.708L7.5 12.793V8.866l-3.4 1.963-.496 1.85a.5.5 0 1 1-.966-.26l.237-.882-1.12.646a.5.5 0 0 1-.5-.866l1.12-.646-.884-.237a.5.5 0 1 1 .26-.966l1.848.495L7 8 3.6 6.037l-1.85.495a.5.5 0 0 1-.258-.966l.883-.237-1.12-.646a.5.5 0 1 1 .5-.866l1.12.646-.237-.883a.5.5 0 1 1 .966-.258l.495 1.849L7.5 7.134V3.207L6.147 1.854a.5.5 0 1 1 .707-.708l.646.647V.5a.5.5 0 1 1 1 0v1.293l.647-.647a.5.5 0 1 1 .707.708L8.5 3.207v3.927l3.4-1.963.496-1.85a.5.5 0 1 1 .966.26l-.236.882 1.12-.646a.5.5 0 0 1 .5.866l-1.12.646.883.237a.5.5 0 1 1-.26.966l-1.848-.495L9 8l3.4 1.963 1.849-.495a.5.5 0 0 1 .259.966l-.883.237 1.12.646a.5.5 0 0 1-.5.866l-1.12-.646.236.883a.5.5 0 1 1-.966.258l-.495-1.849-3.4-1.963v3.927l1.353 1.353a.5.5 0 0 1-.707.708l-.647-.647V15.5a.5.5 0 0 1-.5.5z"/>
+          </svg>
+          <span class="">Зимний декор</span>
+          <ToggleSwitch v-model="decorConfig.winterDecor"/>
+        </label>
+      </div>
+
     </div>
   </Popover>
 

@@ -13,9 +13,9 @@ async function logout() {
 </script>
 
 <template>
-  <Button v-tooltip.left="'Выйти'" icon="pi pi-sign-out" @click="logoutVisible=true"
+  <Button v-tooltip.bottom="'Выйти'" icon="pi pi-sign-out" @click="logoutVisible=true" severity="secondary"
           class="dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-gray-600 bg-opacity-10"
-          text/>
+          outlined/>
 
   <Dialog v-model:visible="logoutVisible" modal
           pt:root:class="border-0 bg-surface-200 dark:bg-surface-800 rounded-xl p-2"
