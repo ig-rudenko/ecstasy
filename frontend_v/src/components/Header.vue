@@ -103,9 +103,8 @@ function isCurrent(url: string) {
 const currentTheme = ref<ThemesValues>(getCurrentTheme());
 
 const toggle = () => {
-  if (currentTheme.value == "dark") setLightTheme();
+  if (currentTheme.value == "dark" || currentTheme.value == "auto") setLightTheme();
   if (currentTheme.value == "light") setDarkTheme();
-  // if (currentTheme.value == "dark") setAutoTheme();
   currentTheme.value = getCurrentTheme();
 }
 
