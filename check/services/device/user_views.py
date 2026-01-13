@@ -26,13 +26,13 @@ class DeviceUserViews:
         if views is None:
             return []
 
-        # Оставляем только те просмотры, которые обновлялись не позже 30 сек назад.
+        # Оставляем только те просмотры, которые обновлялись не позже `view_ttl` сек назад.
         filtered_views = list(
             filter(lambda dv: dv.updated > (datetime.now() - timedelta(seconds=self.view_ttl)), views)
         )
 
         if update_expired and len(filtered_views) != len(views):
-            cache.set(self.cache_key, views, timeout=self.view_ttl)
+            cache.set(self.cache_key, filtered_views, timeout=self.view_ttl + 5)
 
         return filtered_views
 
@@ -46,4 +46,4 @@ class DeviceUserViews:
         else:
             current_viewing.append(DeviceView(username=username))
 
-        cache.set(self.cache_key, current_viewing, timeout=self.view_ttl)
+        cache.set(self.cache_key, current_viewing, timeout=self.view_ttl + 5)
