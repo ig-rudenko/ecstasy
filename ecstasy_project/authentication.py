@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import gettext_lazy as _
+from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from rest_framework import serializers
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework_simplejwt.authentication import AuthUser, JWTAuthentication
@@ -118,3 +119,24 @@ class TokenVerifySerializer(serializers.Serializer):
                 raise ValidationError("Token is blacklisted")
 
         return {}
+
+
+class KeycloakBackend(OIDCAuthenticationBackend):
+
+    def get_username(self, claims):
+        return claims.get(settings.KEYCLOAK_USER_ID_CLAIM) or super().get_username(claims)
+
+    def create_user(self, claims):
+        user = super().create_user(claims)
+        return self.update_user(user, claims)
+
+    def update_user(self, user, claims):
+        user.email = claims.get("email")
+        user.first_name = claims.get("given_name", "")
+        user.last_name = claims.get("family_name", "")
+        user.save()
+        return user
+
+
+def context_preprocessor_keycloak_enable(request):
+    return {"keycloak_enabled": settings.KEYCLOAK_ENABLE}

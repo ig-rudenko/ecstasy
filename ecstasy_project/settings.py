@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
+    "mozilla_django_oidc",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -131,6 +132,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "news.context_preprocessors.global_news",
+                "ecstasy_project.authentication.context_preprocessor_keycloak_enable",
             ],
             "builtins": ["app_settings.templatetags.customtags"],
             "libraries": {
@@ -218,8 +220,8 @@ MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/admin/"
+LOGOUT_REDIRECT_URL = "/admin/"
 
 NON_ABON_INTERFACES_PATTERN = re.compile(
     os.getenv(
@@ -359,6 +361,26 @@ KEYCLOAK_ISSUER = os.getenv("KEYCLOAK_ISSUER")
 KEYCLOAK_AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", KEYCLOAK_CLIENT_ID)
 KEYCLOAK_USER_ID_FIELD = os.getenv("KEYCLOAK_USER_ID_FIELD", "username")
 KEYCLOAK_USER_ID_CLAIM = os.getenv("KEYCLOAK_USER_ID_CLAIM", "preferred_username")
+
+if KEYCLOAK_ENABLE:
+    AUTHENTICATION_BACKENDS = (
+        "ecstasy_project.authentication.KeycloakBackend",
+        "django.contrib.auth.backends.ModelBackend",
+    )
+
+    OIDC_RP_CLIENT_ID = KEYCLOAK_CLIENT_ID
+    OIDC_RP_CLIENT_SECRET = None
+    OIDC_USE_PKCE = True
+    OIDC_CREATE_USER = os.getenv("OIDC_CREATE_USER", "0").lower() in TRUE_VALUES
+
+    OIDC_OP_AUTHORIZATION_ENDPOINT = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth"
+    OIDC_OP_TOKEN_ENDPOINT = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+    OIDC_OP_USER_ENDPOINT = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
+    OIDC_OP_JWKS_ENDPOINT = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
+    OIDC_RP_SIGN_ALGO = "RS256"
+
+    OIDC_RP_SCOPES = "openid profile email"
+    LOGIN_URL = "/oidc/authenticate/"
 
 # ================================================= JWT ======================================================
 

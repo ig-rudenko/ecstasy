@@ -1,0 +1,14 @@
+{% extends "admin/login.html" %}
+{% load i18n %}
+
+{% block content %}
+    {{ block.super }}
+
+    {% if keycloak_enabled %}
+        <a href="{% url 'oidc_authentication_init' %}"
+           class="btn btn-success btn-block mt-2">
+            <span class="fas fa-key mr-2"></span>
+            {% trans "Войти через OIDC" %}
+        </a>
+    {% endif %}
+{% endblock %}
