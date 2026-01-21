@@ -1,8 +1,8 @@
-FROM python:3.13.3-alpine AS builder
+FROM python:3.14.2-alpine AS builder
 LABEL authors="ig-rudenko"
 
 SHELL ["/bin/sh", "-exc"]
-ARG python_version=3.13
+ARG python_version=3.14
 
 WORKDIR /app
 
@@ -35,7 +35,7 @@ RUN --mount=type=cache,destination=/root/.cache/uv uv sync \
   --frozen
 
 
-FROM python:3.13.3-alpine
+FROM python:3.14.2-alpine
 
 ARG user_id=1000
 ARG group_id=1001
