@@ -11,7 +11,7 @@
   "dependencies": {
     "@primevue/themes": "^4.3.4",
     "axios": "^1.13.2",
-    "diff": "^7.0.0",
+    "diff": "^8.0.3",
     "javascript-time-ago": "^2.5.11",
     "keycloak-js": "^26.2.1",
     "leaflet": "^1.9.4",
