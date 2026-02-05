@@ -435,7 +435,10 @@ class BaseDevice(AbstractDevice, ABC):
                     output += remove_ansi_escape_codes(self.session.before)
 
                 cmd_outputs.append(output)
+                self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.2)
 
             else:
                 cmd_outputs.append(self.send_command(line["command"].strip(), expect_command=False))
+
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.2)
         return cmd_outputs
