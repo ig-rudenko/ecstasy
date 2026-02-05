@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError
 
 from check.models import DeviceCommand, Devices
 from devicemanager.device.interfaces import Interfaces
+from devicemanager.device_connector.types import RemoteCommand, RemoteCommandCondition
 
 
 @dataclass(frozen=True)
@@ -54,31 +55,36 @@ def validate_number(number_string: str, min_value: str, max_value: str) -> None:
         raise ValidationError(f"Число должно быть меньше или равно {max_value}")
 
 
-def validate_command(device: Devices, command: str, context: dict) -> str:
+def validate_command(device: Devices, command: str, context: dict) -> list[RemoteCommand]:
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",
-            pattern=re.compile(r"\{ip(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{ip(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, ip: validate_ip(ip),
         ),
         ContextValidator(
             key="port",
-            pattern=re.compile(r"\{port(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{port(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, port: validate_device_port(device, port),
         ),
         ContextValidator(
             key="mac",
-            pattern=re.compile(r"\{mac(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{mac(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, mac: validate_mac(mac),
         ),
         ContextValidator(
             key="number",
-            pattern=re.compile(r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, v: validate_number(v, m.group("start"), m.group("end")),
         ),
         ContextValidator(
             key="word",
-            pattern=re.compile(r"\{word(?:#(?P<name>\S+)?)?}"),
+            pattern=re.compile(r"\{word(?:#(?P<name>\S+?)?)?}"),
+            validate=lambda m, word: validate_word(word),
+        ),
+        ContextValidator(
+            key="if",
+            pattern=re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.+?)?)?(?<!\\)}"),
             validate=lambda m, word: validate_word(word),
         ),
     ]
@@ -88,38 +94,65 @@ def validate_command(device: Devices, command: str, context: dict) -> str:
     match: re.Match | None = None
     first = True
 
-    for validator in context_validators:
-        while match or first:
-            match = validator.pattern.search(command)
-            if match is None:
-                first = True
-                break
+    validated_commands: list[RemoteCommand] = []
 
-            first = False
+    for cmd_line in command.splitlines():
 
-            key_context: dict = context.get(validator.key, {})
+        valid_cmd_line: RemoteCommand = {"command": cmd_line.strip(), "conditions": []}
 
-            key = match.group("name") or default_key
-            value = str(key_context.get(key)).strip()
+        for validator in context_validators:
+            while match or first:
+                match = validator.pattern.search(valid_cmd_line["command"])
+                if match is None:
+                    first = True
+                    break
 
-            if value is None:
-                raise ValidationError(f"Необходимо указать ключ `{key}` для параметра {validator.key}")
+                first = False
 
-            validator.validate(match, value)
+                if validator.key == "if":
+                    condition: RemoteCommandCondition = {
+                        "expect": str(match.group("condition")),
+                        "command": str(match.group("command")),
+                    }
+                    # Убираем экранируемые символы
+                    condition["expect"] = condition["expect"].replace("\\\\", "\\")
 
-            start_pos, end_pos = match.span()
+                    valid_cmd_line["conditions"].append(condition)
 
-            command = command[:start_pos] + str(value) + command[end_pos:]
+                    start_pos, end_pos = match.span()
+                    valid_cmd_line["command"] = (valid_cmd_line["command"][:start_pos] + valid_cmd_line["command"][end_pos:]).strip()
+                    continue
 
-    return command
+                key_context: dict = context.get(validator.key, {})
+
+                if not isinstance(key_context, dict):
+                    valid_format = {"key": "value"}
+                    raise ValidationError(
+                        f"Неверный формат данных для ключа {validator.key} - `{key_context}`. "
+                        f"Должен быть формат: `{valid_format}`"
+                    )
+
+                key = match.group("name") or default_key
+                value = str(key_context.get(key)).strip()
+
+                if value is None:
+                    raise ValidationError(f"Необходимо указать ключ `{key}` для параметра {validator.key}")
+
+                validator.validate(match, value)
+
+                start_pos, end_pos = match.span()
+
+                valid_cmd_line["command"] = (
+                    valid_cmd_line["command"][:start_pos] + str(value) + valid_cmd_line["command"][end_pos:]
+                )
+
+        validated_commands.append(valid_cmd_line)
+
+    return validated_commands
 
 
 def execute_command(device: Devices, command: DeviceCommand, context: dict) -> str:
-    valid_command = validate_command(device, command.command, context)
-    cmd_lines = valid_command.split("\n")
+    validated_commands = validate_command(device, command.command, context)
 
-    if len(cmd_lines) > 1:
-        outputs = device.connect().execute_commands_list(cmd_lines)
-        return "\n".join(outputs)
-
-    return device.connect().execute_command(valid_command)
+    outputs = device.connect().execute_commands_list(validated_commands)
+    return "\n\n".join(outputs)

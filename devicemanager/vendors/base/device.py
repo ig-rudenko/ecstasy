@@ -10,6 +10,8 @@ from typing import Literal
 
 import pexpect
 
+from devicemanager.device_connector.types import RemoteCommand
+
 from .helpers import remove_ansi_escape_codes
 from .types import (
     ArpInfoResult,
@@ -414,14 +416,26 @@ class BaseDevice(AbstractDevice, ABC):
         return self.send_command(cmd.strip())
 
     @lock_session
-    def execute_commands_list(self, commands: list[str]) -> list[str]:
+    def execute_commands_list(self, commands: list[RemoteCommand]) -> list[str]:
         """
         Отправляет список команд на оборудование и считывает их вывод.
 
         :param commands: Список команд, которые необходимо выполнить на оборудовании.
         :return: Список строк с результатами команд.
         """
-        output = []
-        for command in commands:
-            output.append(self.send_command(command.strip(), expect_command=False))
-        return output
+        cmd_outputs = []
+        for line in commands:
+            if line["conditions"]:
+                self.session.sendline(line["command"])
+                output = ""
+                for condition in line["conditions"]:
+                    ex_match = self.session.expect([self.prompt, condition["expect"]], timeout=20)
+                    if ex_match == 1:
+                        self.session.sendline(condition["command"])
+                    output += remove_ansi_escape_codes(self.session.before)
+
+                cmd_outputs.append(output)
+
+            else:
+                cmd_outputs.append(self.send_command(line["command"].strip(), expect_command=False))
+        return cmd_outputs

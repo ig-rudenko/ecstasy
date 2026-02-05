@@ -58,6 +58,7 @@ async function openCommands() {
     const resp = await api.get<CommandType[]>(`/api/v1/devices/${props.deviceName}/commands`);
     resp.data.forEach(
         (c: CommandType) => {
+          c.command = c.command.replaceAll(/\{if.+(?<!\\)}/g, '')
           c.context = {};
           markCommandKeys(c);
         }
@@ -81,11 +82,11 @@ function getKeyName(key: string): string {
 }
 
 
-const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+)?)?}/
-const portRegex = /\{port(#(\S+)?)?}/
-const ipRegex = /\{ip(#(\S+)?)?}/
-const macRegex = /\{mac(#(\S+)?)?}/
-const wordRegex = /\{word(#(\S+)?)?}/
+const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/
+const portRegex = /\{port(#(\S+?)?)?}/
+const ipRegex = /\{ip(#(\S+?)?)?}/
+const macRegex = /\{mac(#(\S+?)?)?}/
+const wordRegex = /\{word(#(\S+?)?)?}/
 
 
 function markCommandKeys(command: CommandType) {
@@ -95,11 +96,11 @@ function markCommandKeys(command: CommandType) {
   command.context.mac = {};
   command.context.word = {};
 
-  const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+)?)?}/g
-  const portRegex = /\{port(#(\S+)?)?}/g
-  const ipRegex = /\{ip(#(\S+)?)?}/g
-  const macRegex = /\{mac(#(\S+)?)?}/g
-  const wordRegex = /\{word(#(\S+)?)?}/g
+  const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/g
+  const portRegex = /\{port(#(\S+?)?)?}/g
+  const ipRegex = /\{ip(#(\S+?)?)?}/g
+  const macRegex = /\{mac(#(\S+?)?)?}/g
+  const wordRegex = /\{word(#(\S+?)?)?}/g
 
   let match;
 
@@ -213,7 +214,7 @@ function commandIsValid(command: CommandType) {
 
   if (command.context.number) {
     for (const key in command.context.number) {
-      if (!command.context.number[key] || isNaN(command.context.number[key])) {
+      if (command.context.number[key] == null || isNaN(command.context.number[key])) {
         console.log("NUMBER INVALID")
         return false;
       }
@@ -223,12 +224,23 @@ function commandIsValid(command: CommandType) {
   return true;
 }
 
+interface CommandValidateResult {
+  command: string
+  conditions: { expect: string, command: string }[]
+}
+
 
 async function getValidatedCommand(command: CommandType): Promise<string> {
   try {
     let url = `/api/v1/devices/${props.deviceName}/commands/${command.id}/validate`
-    const validateRes = await api.post<{ command: string }>(url, command.context);
-    return validateRes.data.command;
+    const validateRes = await api.post<{ command: CommandValidateResult[] }>(url, command.context);
+
+    let validated_commands = '';
+    for (const commandElement of validateRes.data.command) {
+      validated_commands += commandElement.command + '\n';
+    }
+    return validated_commands
+
   } catch (e: any) {
     console.error(e);
     return command.command;
@@ -275,8 +287,8 @@ async function executeCommand(command: CommandType) {
         <Column header="Команда">
           <template #body="{ data }">
             <div class="flex flex-col gap-2 items-start">
-              <div v-for="line in data.command.split('\n')" class="flex gap-2 items-center">
-                <template v-for="part in line.split(' ')" :key="part">
+              <div v-for="line in data.command.split('\n')" class="flex flex-row gap-2 items-center">
+                <template v-for="part in line.split(/(?={)|(?<=})/)" :key="part">
                   <Select v-if="data.context.port && portRegex.test(part)" :options="interfacesNames"
                           v-tooltip="getKeyName(part)"
                           v-model="data.context.port[getKeyName(part)]" filter
@@ -300,10 +312,11 @@ async function executeCommand(command: CommandType) {
 
                   <InputNumber v-tooltip="getKeyName(part)+': '+numberVerboseRange(part)"
                                v-else-if="data.context.number && numberRegex.test(part)"
-                               :min="numberMinValue(part)" :max="numberMaxValue(part)"
-                               v-model="data.context.number[getKeyName(part)]" placeholder="Целое число"/>
+                               :min="numberMinValue(part)" :max="numberMaxValue(part)" input-class="w-[80px]"
+                               size="small"
+                               v-model="data.context.number[getKeyName(part)]" :placeholder="getKeyName(part)"/>
 
-                  <div v-else class="font-mono">{{ part }}</div>
+                  <div v-else class="font-mono text-sm">{{ part }}</div>
                 </template>
               </div>
             </div>
@@ -328,7 +341,7 @@ async function executeCommand(command: CommandType) {
               <template #legend="{toggleCallback}">
                 <div class="flex items-center gap-2 p-2">
                   <i class="pi pi-fw pi-angle-double-down cursor-pointer" @click="toggleCallback"/>
-                  <div class="p-2"><span v-html="textToHtml(data.command)"></span></div>
+                  <div class="p-2"><span class="whitespace-pre font-mono">{{ data.command }}</span></div>
                   <Button severity="danger" icon="pi pi-trash" rounded outlined @click="results.splice(index, 1)"/>
                 </div>
               </template>

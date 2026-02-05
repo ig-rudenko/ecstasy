@@ -6,6 +6,7 @@ from typing import Literal, Never
 import requests
 
 from devicemanager import exceptions
+from devicemanager.device_connector.types import RemoteCommand
 from devicemanager.vendors.base.device import (
     AbstractCableTestDevice,
     AbstractDevice,
@@ -220,5 +221,5 @@ class RemoteDevice(
     def execute_command(self, cmd: str) -> str:
         return self._remote_call("execute_command", cmd=cmd)
 
-    def execute_commands_list(self, command_list: list[str]) -> list[str]:
+    def execute_commands_list(self, command_list: list[RemoteCommand]) -> list[str]:
         return self._remote_call("execute_commands_list", commands=command_list)
