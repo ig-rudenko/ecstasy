@@ -1,3 +1,4 @@
+import re
 
 from django.test import TestCase
 from rest_framework.exceptions import ValidationError
@@ -505,7 +506,7 @@ class TestConditionCommands(BaseCommandsTestCase):
         self.assertEqual(valid_commands, res)
 
     def test_many_condition_command_with_symbols(self):
-        command = r"""show port {port} {if:{Y/n\}:y} {if:need \:save:yes} {if:\\s/:cmd} {if:\d+:y}
+        command = r"""show port {port} {if:{Y/n\}:y} {if:need \:save:yes} {if:\\s/:cmd} {if:\d+:y} {if:\}:}
         cmd 2"""
         valid_commands = [
             {
@@ -515,6 +516,7 @@ class TestConditionCommands(BaseCommandsTestCase):
                     {"expect": r"need \:save", "command": "yes"},
                     {"expect": "\\s/", "command": "cmd"},
                     {"expect": r"\d+", "command": "y"},
+                    {"expect": r"\}", "command": ""},
                 ],
             },
             {

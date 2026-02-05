@@ -84,7 +84,7 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
         ),
         ContextValidator(
             key="if",
-            pattern=re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.+?)?)?(?<!\\)}"),
+            pattern=re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.*?)?)?(?<!\\)}"),
             validate=lambda m, word: validate_word(word),
         ),
     ]
