@@ -13,7 +13,7 @@
     "axios": "^1.13.2",
     "diff": "^7.0.0",
     "javascript-time-ago": "^2.5.11",
-    "keycloak-js": "^26.2.1",
+    "keycloak-js": "^26.2.2",
     "leaflet": "^1.9.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.4",
