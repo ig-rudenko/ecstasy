@@ -400,7 +400,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": "Command not found"}, status=404)
 
         try:
-            valid_command: str = validate_command(device, command.command, request.data)
+            valid_command = validate_command(device, command.command, request.data)
         except InvalidMethod:
             return Response({"detail": "Unsupported for this device"}, status=400)
         except ValidationError as exc:
