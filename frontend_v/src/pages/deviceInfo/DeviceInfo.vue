@@ -351,9 +351,10 @@ export default defineComponent({
 
   updated() {
     if (this.deviceName !== this.$route.params.deviceName.toString() && this.generalInfo?.deviceIP !== this.$route.params.deviceName.toString()) {
-      this.init(
-          this.$route.params.deviceName.toString()
-      )
+      this.init(this.$route.params.deviceName.toString())
+    }
+    if (this.generalInfo && this.generalInfo.deviceIP === this.$route.params.deviceName.toString()) {
+      this.init(this.generalInfo.deviceName)
     }
   },
 
