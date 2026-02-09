@@ -66,7 +66,7 @@ class HuaweiFactory(AbstractDeviceFactory):
                     session.sendcontrol("C")
                 else:
                     break
-            if re.findall(r"PRODUCT\s*:? MA5600", version_output):
+            if re.search(r"PRODUCT\s*:?\s*MA5600", version_output):
                 device = HuaweiMA5600T(session, ip, auth, model="MA5600T", snmp_community=snmp_community)
                 os_version = device.find_or_empty(r"VERSION\s*:?\s*(MA5600\S+)", version_output)
                 patch = device.find_or_empty(r"PATCH\s*:?\s*(\S+)", version_output)
