@@ -349,7 +349,7 @@ async function executeCommand(command: CommandType) {
                 <Message v-if="data.error" severity="error">
                   <div v-html="textToHtml(data.error)"></div>
                 </Message>
-                <div v-else-if="data.output" class="whitespace-pre font-mono" v-html="data.output"></div>
+                <div v-else-if="data.output" class="whitespace-pre font-mono">{{ data.output }}</div>
                 <div v-else>
                   <ProgressSpinner/>
                 </div>
