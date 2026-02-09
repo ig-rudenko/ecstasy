@@ -439,6 +439,7 @@ class BaseDevice(AbstractDevice, ABC):
 
             else:
                 cmd_outputs.append(self.send_command(line["command"].strip(), expect_command=False))
+                self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.1)
 
         self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.2)
         return cmd_outputs
