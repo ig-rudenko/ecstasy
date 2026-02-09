@@ -81,7 +81,7 @@ class DeviceRemoteConnector:
     login_input_expect = "|".join(
         [
             r"[Ll]ogin(?![-\siT]).*:\s*$",
-            r"[Uu]ser\s(?![lfp]).*:\s*$",
+            r"[Uu]ser\s(?![Alfp]).*:\s*$",
             r"User:$",
             r"[Nn]ame.*:\s*$",
             r"Enter Login Name",
