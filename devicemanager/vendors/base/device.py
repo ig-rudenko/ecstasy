@@ -424,6 +424,7 @@ class BaseDevice(AbstractDevice, ABC):
         :return: Список строк с результатами команд.
         """
         cmd_outputs = []
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.1)
         for line in commands:
             if line["conditions"]:
                 self.session.sendline(line["command"])
