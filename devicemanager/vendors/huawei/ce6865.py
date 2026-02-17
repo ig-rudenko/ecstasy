@@ -19,8 +19,8 @@ from ..base.validators import validate_and_format_port
 
 def normalize_interface_name(intf: str) -> str:
     interface = str(intf).strip()
-    res = re.findall(r"^(25|100)GE(\d+([/\\]?\d{0,4})*(\.(\d{1,4}))?)$", interface)
-    if res and (not res[0][-1] or 0 < int(res[0][-1]) < 4096):
+    res = re.findall(r"^(25|100)?(GE|Eth-Trunk)(\d+([/\\]?\d{0,4})*(\.(\d+))?)$", interface)
+    if res:
         return interface
     return ""
 
