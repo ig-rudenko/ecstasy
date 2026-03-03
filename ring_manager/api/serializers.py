@@ -13,13 +13,6 @@ class TransportRingSerializer(serializers.ModelSerializer):
         fields = ["name", "description", "vlans"]
 
 
-class AccessRingSerializer(serializers.Serializer):
-    head_name = serializers.CharField()
-    ports = serializers.CharField()
-    description = serializers.CharField()
-    is_normal_rotate_status = serializers.BooleanField()
-
-
 class PointInterfacesSerializer(serializers.Serializer):
     name = serializers.CharField()
     status = serializers.CharField()
@@ -33,3 +26,12 @@ class PointRingSerializer(serializers.Serializer):
     available = serializers.BooleanField(source="ping")
     port_to_prev_dev = PointInterfacesSerializer()
     port_to_next_dev = PointInterfacesSerializer()
+
+
+class AccessRingSerializer(serializers.Serializer):
+    head_name = serializers.CharField()
+    ports = serializers.CharField()
+    description = serializers.CharField()
+    is_normal_rotate_status = serializers.BooleanField()
+
+    points = PointRingSerializer(many=True, source="devices")

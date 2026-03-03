@@ -9,6 +9,7 @@ from devicemanager.device import Interfaces
 from devicemanager.device.interfaces import Interface
 
 from .base.finder import find_links_between_points
+from .base.helpers import collect_current_interfaces, thread_ping
 from .base.types import BaseRingPoint
 
 
@@ -222,3 +223,28 @@ class AggregationRingFinder:
             if dev == self._agg:
                 self._passed_devices = self._temp_passed_devices
                 self._clear_temp()
+
+
+def get_ring_by_device(
+    device: Devices, *, request_ports: str, current_status: bool, collect_vlans: bool
+) -> RingStructure | None:
+
+    ring_settings = AccessRingSettings.load()
+    ring_finder = AggregationRingFinder(device, ring_settings)
+    ring_finder.start_find()
+
+    for ring in ring_finder.get_rings():
+        if ring.ports == request_ports:
+            if current_status:
+                thread_ping(ring.devices)
+
+            for point in ring.devices:
+                point.ping = current_status
+                point.collect_vlans = collect_vlans
+
+            collect_current_interfaces(ring.devices)
+            ring.find_links()
+            ring.get_admin_down_info()
+            return ring
+
+    return None
