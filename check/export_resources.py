@@ -24,9 +24,13 @@ class DevicesResource(resources.ModelResource):
             "vendor",
             "model",
             "serial_number",
+            "os_version",
+            "snmp_community",
             "auth_group",
             "group",
             "connection_pool_size",
+            "port_scan_protocol",
+            "cmd_protocol",
         )
         export_order = (
             "ip",
@@ -35,7 +39,11 @@ class DevicesResource(resources.ModelResource):
             "vendor",
             "model",
             "serial_number",
+            "os_version",
+            "snmp_community",
             "auth_group",
             "group",
             "connection_pool_size",
+            "port_scan_protocol",
+            "cmd_protocol",
         )
