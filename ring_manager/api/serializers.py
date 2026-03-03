@@ -28,10 +28,14 @@ class PointRingSerializer(serializers.Serializer):
     port_to_next_dev = PointInterfacesSerializer()
 
 
+class ShortPointRingSerializer(serializers.Serializer):
+    name = serializers.CharField(source="device.name")
+    ip = serializers.CharField(source="device.ip")
+
+
 class AccessRingSerializer(serializers.Serializer):
     head_name = serializers.CharField()
     ports = serializers.CharField()
     description = serializers.CharField()
     is_normal_rotate_status = serializers.BooleanField()
-
-    points = PointRingSerializer(many=True, source="devices")
+    points = ShortPointRingSerializer(many=True, source="devices")
