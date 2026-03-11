@@ -22,7 +22,7 @@
         <div v-if="generalInfo.osVersion"> Версия ОС: {{ generalInfo.osVersion }}</div>
       </div>
 
-      <div class="border flex flex-wrap mb-4 p-3 rounded-xl">
+      <div class="border flex flex-wrap mb-4 p-3 rounded-xl border-gray-200 dark:border-gray-600">
         <div v-for="(imageURL, i) in images" class="p-3">
           <Image :src="imageURL" :alt="'image'+i" width="120" preview/>
         </div>
@@ -76,7 +76,9 @@ export default defineComponent({
           const resp = await api.head(url)
           if (resp.status !== 200 || resp.headers["content-type"] == "text/html") break;
           this.images.push(url)
-        } catch (e) { break;}
+        } catch (e) {
+          break;
+        }
       }
     },
   }

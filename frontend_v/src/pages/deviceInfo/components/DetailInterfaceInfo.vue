@@ -97,7 +97,8 @@
 
   <tr v-if="showDetailInfo">
 
-    <td v-if="complexInfo" colspan="5" class="border dark:bg-transparent bg-zinc-50 dark:border-gray-600 shadow p-3">
+    <td v-if="complexInfo" colspan="5"
+        class="border dark:bg-transparent bg-zinc-50 border-gray-200 dark:border-gray-600 shadow p-3">
 
       <!--      DETAIL PORT INFO  -->
       <div v-if="complexInfo.portDetailInfo" class="container py-3">
@@ -106,7 +107,7 @@
           <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
         </div>
 
-        <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3 "
+        <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
              v-html="complexInfo.portDetailInfo.data"></div>
 
         <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
@@ -114,18 +115,18 @@
         </div>
 
         <!--      MIKROTIK -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3 border rounded shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
           <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
                                  :interface="interface"/>
         </div>
 
         <!--      ADSL -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3 border rounded shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
           <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
         </div>
 
         <!--      GPON -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3 border rounded shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
           <GPONInterfaceInfo
               :device-name="deviceName"
               :gpon-data="complexInfo.portDetailInfo.data"
@@ -134,7 +135,7 @@
         </div>
 
         <!--      ELTEX OLT -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3 border rounded shadow py-3">
+        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
           <OLTInterfaceInfo
               :device-name="deviceName"
               :data="complexInfo.portDetailInfo.data"
@@ -245,7 +246,7 @@ export default defineComponent({
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow", "border", "sticky", "top-0", "bg-white", "dark:bg-gray-800"];
+      if (this.showDetailInfo) return ["shadow", "border", "sticky", "top-0", "bg-white", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {

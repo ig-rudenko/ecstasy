@@ -35,7 +35,7 @@ onMounted(() => {
   <div class="container mx-auto">
     <div v-if="maps" class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 py-5">
       <div v-for="map in maps.results" :key="map.id">
-        <div class="border rounded-xl shadow-sm h-full">
+        <div class="border rounded-xl shadow-sm h-full border-gray-300 dark:border-gray-700">
 
           <router-link :to="'/maps/'+map.id">
             <div v-if="map.preview_image" class="rounded-t-xl" :style="{backgroundImage: 'url('+map.preview_image+')'}"
@@ -62,7 +62,8 @@ onMounted(() => {
       </div>
     </div>
 
-    <Paginator :total-records="maps?.count" :rows="perPage" @page="p => {currentPage=p.page+1;getMaps()}"/>
+    <Paginator :always-show="false" :total-records="maps?.count" :rows="perPage"
+               @page="p => {currentPage=p.page+1;getMaps()}"/>
 
   </div>
 

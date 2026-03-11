@@ -168,7 +168,8 @@ const toggleProfile = (event: Event) => {
   </div>
 
   <Popover ref="pinnedDevicesRef" class="p-1">
-    <div class="pb-2 mb-2 flex w-full justify-between items-center gap-2 border-b-[1px]">
+    <div
+        class="pb-2 mb-2 flex w-full justify-between items-center gap-2 border-b-[1px] border-gray-200 dark:border-gray-700">
       <div>Ваши избранные устройства</div>
       <Button v-if="pinnedDevices.pinnedDevices.value.length != 0" outlined icon="pi pi-trash" size="small"
               v-tooltip="'Очистить избранное'"
@@ -227,7 +228,8 @@ const toggleProfile = (event: Event) => {
 
       <div class="flex gap-1 items-center justify-center mt-3">
         <a v-if="user && user.isStaff" href="/admin/">
-          <Button icon="pi pi-cog" outlined v-tooltip.bottom="'Панель администратора'" severity="secondary" class="hover:text-primary hover:bg-primary-100"/>
+          <Button icon="pi pi-cog" outlined v-tooltip.bottom="'Панель администратора'" severity="secondary"
+                  class="hover:text-primary hover:bg-primary-100"/>
         </a>
         <Button icon="pi pi-moon" v-if="currentTheme == 'light'" @click="toggle"
                 v-tooltip.bottom="'Включить темную тему'" severity="contrast"

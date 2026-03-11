@@ -117,7 +117,8 @@ onMounted(async () => {
     <!--      Конфигурация порта -->
     <div v-show="portDetailMenu==='portConfig'">
 
-      <div v-if="complexInfo.portConfig.length>0" class="p-4 m-2 border max-sm:text-xs rounded shadow font-mono whitespace-pre">
+      <div v-if="complexInfo.portConfig.length>0"
+           class="text-left p-4 m-2 max-sm:text-xs font-mono whitespace-pre">
         {{ complexInfo.portConfig }}
       </div>
 
@@ -142,7 +143,7 @@ onMounted(async () => {
     <!--      Диагностика кабеля -->
     <div v-show="portDetailMenu==='cableDiag'">
 
-      <div v-if="complexInfo.hasCableDiag" class="px-4 m-2 border rounded shadow">
+      <div v-if="complexInfo.hasCableDiag" class="px-4 m-2">
         <CableDiag :device-name="deviceName" :port="interface.name"/>
       </div>
 

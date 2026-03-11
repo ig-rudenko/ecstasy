@@ -1,61 +1,41 @@
-<div class="row">
+<div class="flex flex-wrap gap-3">
     {% for service in ont_info %}
-        <div class="col-md-auto">
+        <div class="p-3 border rounded border-gray-300 dark:border-gray-700">
+            <div class="text-center text-xl font-mono pb-2">{{ service.index }} | {{ service.type }}</div>
 
-            <div class="accordion">
+            <div id="panel-{{ service.type }}" class="accordion-collapse collapse"
+                 aria-labelledby="panelsStayOpen-headingOne">
+                <div class="flex flex-wrap gap-3 items-start">
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="panelsStayOpen-headingOne">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#panel-{{ service.type }}" aria-expanded="true"
-                                aria-controls="panelsStayOpen-collapseOne">
-                            {{ service.index }} | {{ service.type }}
-                        </button>
-                    </h2>
-
-                    <div id="panel-{{ service.type }}" class="accordion-collapse collapse"
-                         aria-labelledby="panelsStayOpen-headingOne">
-                        <div class="accordion-body">
-
-                            <div class="alert alert-secondary text-center" role="alert">
-                                {% if service.mac %}
-                                    {{ service.mac }}
-                                {% else %}
-                                    no MAC
-                                {% endif %}
-                            </div>
-
-                            <div>
-                                <div class="btn-group" role="group">
-                                    <button type="button"
-                                            class="btn btn-primary">{{ service.ipv4_access_type }}</button>
-                                    {% if service.ipv4_status == 'Disconnected' %}
-                                        <button type="button" class="btn btn-danger">Disconnected</button>
-                                    {% elif service.ipv4_status == 'Connecting' %}
-                                        <button type="button" class="btn btn-secondary">Connecting...</button>
-                                    {% else %}
-                                        <a style="user-select: text"
-                                           class="btn btn-light">{{ service.ipv4_address }}</a>
-                                        <button type="button" class="btn btn-dark">{{ service.subnet_mask }}</button>
-                                    {% endif %}
-
-                                </div>
-                            </div>
-                            <br>
-                            <div>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-primary">Manage VLAN</button>
-                                    <button type="button" class="btn btn-light">{{ service.manage_vlan }}</button>
-                                </div>
-                            </div>
-
-                        </div>
+                    <div class="font-mono px-2 py-1 border rounded border-green-500 dark:border-green-800">
+                        {% if service.mac %}
+                            {{ service.mac }}
+                        {% else %}
+                            no MAC
+                        {% endif %}
                     </div>
+
+                    <div>
+                        <div>{{ service.ipv4_access_type }}</div>
+                        {% if service.ipv4_status == 'Disconnected' %}
+                            <div>Disconnected</div>
+                        {% elif service.ipv4_status == 'Connecting' %}
+                            <div>Connecting...</div>
+                        {% else %}
+                            <a style="user-select: text"
+                               class="font-mono">{{ service.ipv4_address }}</a>
+                            <div class="font-mono">{{ service.subnet_mask }}</div>
+                        {% endif %}
+
+                    </div>
+
+                    <div class="flex flex-row gap-2 items-center">
+                        <div>Manage VLAN</div>
+                        <div class="px-2 py-1 font-mono border rounded border-gray-300 dark:border-gray-700">{{ service.manage_vlan }}</div>
+                    </div>
+
                 </div>
-
             </div>
-
         </div>
     {% endfor %}
-
 </div>

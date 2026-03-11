@@ -12,7 +12,8 @@
 
   <div v-if="generalInfo" class="xl:container mx-auto my-3">
 
-    <div class="sm:border rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
+    <div
+        class="sm:border border-gray-200 dark:border-gray-600 rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
 
       <div class="p-3 flex flex-wrap items-center gap-1 scale-90 sm:scale-100">
         <!--    Кнопка для отображения панели с информацией Zabbix-->

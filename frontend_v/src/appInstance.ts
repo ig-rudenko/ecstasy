@@ -1,11 +1,9 @@
 import {createApp} from "vue";
-import {definePreset} from "@primevue/themes";
+import {definePreset} from "@primeuix/themes";
 import PrimeVue from "primevue/config";
-
-import Aura from '@primevue/themes/aura/';
-import "@primevue/themes/aura/"
-
+import Aura from '@primeuix/themes/aura';
 import App from "@/App.vue";
+
 const MyPreset = definePreset(Aura, {
     semantic: {
         primary: {
@@ -32,7 +30,7 @@ app.use(PrimeVue, {
             darkModeSelector: '.dark',
             cssLayer: {
                 name: 'primevue',
-                order: 'tailwind-base, primevue, tailwind-utilities'
+                order: 'base, primevue, tailwind-utilities'
             }
         }
     }

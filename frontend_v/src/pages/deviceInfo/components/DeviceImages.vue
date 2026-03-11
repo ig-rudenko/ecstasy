@@ -268,9 +268,6 @@ export default defineComponent({
                 this.removeElement(this.items, this.currentItem)
                 this.currentItem = null
                 this.deleteForm.show = false
-              },
-              (reason: any) => {
-                this.deleteForm.notification.error = reason.response
               }
           )
           .catch(

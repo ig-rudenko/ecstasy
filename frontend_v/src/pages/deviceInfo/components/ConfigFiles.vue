@@ -1,6 +1,6 @@
 <template>
   <div class="py-2">
-    <div class="p-4 border rounded-xl shadow-xl">
+    <div class="p-4 border rounded-xl shadow-xl border-gray-200 dark:border-gray-600">
       <div>
 
         <!--  HEADER-->
@@ -339,7 +339,11 @@ export default defineComponent({
             // create "a" HTML element with href to file & click
             const link = document.createElement('a');
             link.href = href;
-            link.setAttribute('download', file.name); //or any other extension
+
+            let filename = file.name;
+            if (!filename.endsWith(".txt")) filename = filename + ".txt";
+
+            link.setAttribute('download', filename); //or any other extension
             document.body.appendChild(link);
             link.click();
             // clean up "a" element & remove ObjectURL
@@ -351,6 +355,3 @@ export default defineComponent({
 })
 
 </script>
-
-<style scoped>
-</style>

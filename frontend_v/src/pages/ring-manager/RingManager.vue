@@ -14,7 +14,7 @@ import Footer from "@/components/Footer.vue";
       <div class="text-2xl">
         Транспортные кольца
       </div>
-      <router-link to="/ring-manager/transport-ring" class="text-center h-full p-4 rounded-xl shadow-xl"
+      <router-link to="/ring-manager/transport-ring" class="text-center h-100 p-4 rounded-xl shadow-xl"
                    style="background-image: url('/img/ring_manager/background/transport_ring.jpg');
                              background-size: cover; padding: 180px 200px;">
       </router-link>
