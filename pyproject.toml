@@ -67,6 +67,7 @@ dev = [
     "types-pygments>=2.19.0.20251121",
     "types-pysftp>=0.2.17.20241117",
     "types-tabulate>=0.10.0.20260308",
+    "types-requests>=2.32.4.20260107",
 ]
 
 [tool.ruff]
