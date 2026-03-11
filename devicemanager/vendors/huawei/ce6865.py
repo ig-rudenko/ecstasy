@@ -96,7 +96,7 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
 
         interfaces = []
         for port_name, phy, protocol, desc in result:
-            if port_name.startswith("NULL") or port_name.startswith("V"):
+            if re.match(r"Null|Loop|V|Me|Nv", port_name, flags=re.IGNORECASE):
                 continue
 
             status: InterfaceType = "up"

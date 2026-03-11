@@ -159,6 +159,7 @@ HUAWEI CE6865-48S8CQ-EI uptime is 70 days, 0 hour, 3 minutes"""
 class TestCE6865Template(TestCase):
     def test_interfaces_find_template(self):
         parse_data = parse_by_template("interfaces/huawei-ce6865.template", dis_int_desc_output)
+        print(parse_data)
         self.assertListEqual(
             [
                 ["25GE1/0/1", "up", "up", "Desc1"],
@@ -177,6 +178,16 @@ class TestCE6865Template(TestCase):
                 ["25GE1/0/8", "up", "up", ""],
                 ["100GE1/0/6", "up", "up", "This:25GE1/0/3"],
                 ["100GE1/0/7", "up", "down", "This:25GE1/0/2"],
+                ["Loop0", "up", "up(s)", ""],
+                ["MEth0/0/0", "up", "up", ""],
+                ["NULL0", "up", "up(s)", ""],
+                ["Nve1", "up", "up", ""],
+                ["Vbdif1004", "up", "up", ""],
+                ["Vbdif1005", "up", "up", ""],
+                ["Vbdif14010", "up", "up", ""],
+                ["Vlanif300", "up", "up", ""],
+                ["Vlanif301", "down", "down", ""],
+                ["Vlanif3995", "up", "up", ""],
             ],
             parse_data,
         )
