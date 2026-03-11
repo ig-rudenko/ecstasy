@@ -2,6 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![Code style: black](https://img.shields.io/badge/code_style-black-black.svg)
+![codecov](https://img.shields.io/codecov/c/github/ig-rudenko/ecstasy)
 ![CI](https://github.com/ig-rudenko/ecstasy/actions/workflows/django.yml/badge.svg)
 
 [![](https://skillicons.dev/icons?i=vite,vue,tailwind,python,django)](https://skillicons.dev)
