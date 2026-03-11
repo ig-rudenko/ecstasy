@@ -130,7 +130,8 @@ onMounted(async () => {
     <!--      Ошибки на порту -->
     <div v-show="portDetailMenu==='portErrors'">
 
-      <div v-if="complexInfo.portErrors.length>0" class="p-4 m-2 border rounded shadow font-mono">
+      <div v-if="complexInfo.portErrors.length>0"
+           class="p-4 m-2 border rounded shadow font-mono border-gray-200 dark:border-gray-600">
         <span v-html="textToHtml(complexInfo.portErrors)"></span>
       </div>
 
