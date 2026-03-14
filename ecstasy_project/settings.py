@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "gpon",
     "accounting",
     "news",
+    "notifications",
     "import_export",
     "corsheaders",
     "drf_yasg",
@@ -293,6 +294,8 @@ SWAGGER_SETTINGS = {
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+if ENV == "dev":
+    CELERY_TASK_ALWAYS_EAGER = True
 
 # ========== CONFIGURATION STORAGE ===========
 

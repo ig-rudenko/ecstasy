@@ -1,4 +1,5 @@
 from re import findall
+from typing import Any
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -48,7 +49,7 @@ class DevicesSerializer(serializers.ModelSerializer):
             "console_url",
         ]
 
-    def create(self, validated_data):
+    def create(self, validated_data: Any):
         group_name_dict: dict[str, str] = validated_data.pop("group", None)
         if group_name_dict is None:
             raise ValidationError("Group name is required")
