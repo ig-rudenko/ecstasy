@@ -5,7 +5,15 @@ from rest_framework.exceptions import ValidationError
 
 from gathering.models import Vlan, VlanPort
 
-from ..models import DeviceCommand, DeviceMedia, Devices, InterfacesComments, UsersActions
+from ..models import (
+    AuthGroup,
+    DeviceCommand,
+    DeviceGroup,
+    DeviceMedia,
+    Devices,
+    InterfacesComments,
+    UsersActions,
+)
 
 
 class DevicesSerializer(serializers.ModelSerializer):
@@ -14,15 +22,18 @@ class DevicesSerializer(serializers.ModelSerializer):
     """
 
     group = serializers.CharField(source="group.name")
+    auth_group = serializers.PrimaryKeyRelatedField(queryset=AuthGroup.objects.all(), write_only=True)
     console_url = serializers.URLField(read_only=True)
 
     class Meta:
         model = Devices
         fields = [
+            "id",
             "ip",
             "name",
             "vendor",
             "group",
+            "auth_group",
             "model",
             "serial_number",
             "os_version",
@@ -36,6 +47,62 @@ class DevicesSerializer(serializers.ModelSerializer):
             "connection_pool_size",
             "console_url",
         ]
+
+    def create(self, validated_data):
+        group_name_dict: dict[str, str] = validated_data.pop("group", None)
+        if group_name_dict is None:
+            raise ValidationError("Group name is required")
+
+        try:
+            group = DeviceGroup.objects.get(name=group_name_dict["name"])
+        except DeviceGroup.DoesNotExist as exc:
+            raise ValidationError(f"Group {group_name_dict["name"]} does not exist") from exc
+        validated_data["group"] = group
+        return super().create(validated_data)
+
+
+class DeviceGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceGroup
+        fields = ["id", "name", "description"]
+
+
+class DeviceAuthGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuthGroup
+        fields = ["id", "name", "description"]
+
+
+class DevicesDetailUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Devices
+        fields = [
+            "id",
+            "ip",
+            "name",
+            "model",
+            "vendor",
+            "serial_number",
+            "os_version",
+            "auth_group",
+            "group",
+            "snmp_community",
+            "port_scan_protocol",
+            "cmd_protocol",
+            "interface_pattern",
+            "active",
+            "collect_interfaces",
+            "collect_mac_addresses",
+            "collect_vlan_info",
+            "collect_configurations",
+            "connection_pool_size",
+        ]
+
+
+class DevicesDetailSerializer(DevicesDetailUpdateSerializer):
+    group = DeviceGroupSerializer()
+    auth_group = DeviceAuthGroupSerializer()
 
 
 class DeviceMediaSerializer(serializers.ModelSerializer):

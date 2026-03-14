@@ -26,7 +26,6 @@ urlpatterns = [
     # ===========================================
     #               Devices Info
     # ===========================================
-    path("", devices_info.DevicesListAPIView.as_view(), name="devices-list"),
     path(
         "workload/interfaces",
         devices_info.AllDevicesInterfacesWorkLoadAPIView.as_view(),
@@ -103,4 +102,10 @@ urlpatterns = [
     #               Device Viewings
     # ===========================================
     path("<device_name_or_ip>/viewings", user_actions.ViewingDeviceAPIView.as_view()),
+    # ===========================================
+    #               Devices Info
+    # ===========================================
+    path("", devices_info.DevicesListCreateAPIView.as_view(), name="devices-list"),
+    path("_all", devices_info.AllDevicesListCreateAPIView.as_view(), name="devices-list-all"),
+    path("<device_name_or_ip>", devices_info.DevicesDetailAPIView.as_view(), name="devices-list"),
 ]
