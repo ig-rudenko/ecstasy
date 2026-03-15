@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group as UserGroup
+from django.core.validators import URLValidator
 from django.db import models
 from django.utils.safestring import mark_safe
 
@@ -7,10 +8,68 @@ from check.models import DeviceGroup, Devices
 from ecstasy_project.types.models import DateTimeModel
 
 
-class TelegramNotification(DateTimeModel):
-    name = models.CharField(max_length=512, verbose_name="Название оповещения")
+class ProxyURLField(models.URLField):
+    default_validators = [URLValidator(schemes=["socks5", "http", "https"])]
 
-    telegram_api_url = models.CharField(
+
+class WebhookNotification(DateTimeModel):
+    name = models.CharField(
+        max_length=512,
+        verbose_name="Название оповещения",
+        help_text=mark_safe(
+            'Смотрите <a href="https://github.com/ig-rudenko/ecstasy/wiki" target="_blank">WIKI</a>'
+        ),
+    )
+    active = models.BooleanField(default=True, help_text="Активно ли оповещение.")
+
+    url = models.URLField(verbose_name="URL")
+    proxy_url = ProxyURLField(verbose_name="Proxy URL", null=True, blank=True)
+    method = models.CharField(max_length=64, default="POST")
+    timeout = models.PositiveIntegerField(default=5)
+
+    headers = models.TextField(
+        null=True,
+        blank=True,
+        default="Content-Type: application/json",
+        help_text="Укажите дополнительные заголовки каждый в отдельной строке в виде 'Content-Type: application/json'",
+    )
+    body = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Поддерживается шаблонизатор Django, "
+        "передаваемые объекты: device, trigger_name, result, request, user",
+    )
+
+    notification_conditions = models.ManyToManyField(
+        "NotificationCondition",
+        related_name="webhook_notifications",
+        help_text="Если условий несколько, то будет выбрано хотя бы одно сработанное.\nРеализуется логическое ИЛИ.",
+    )  # type: ignore
+
+    def __str__(self):
+        return f"Webhook Notification: {self.name}"
+
+    def __repr__(self):
+        return self.__str__()
+
+    class Meta:
+        db_table = "notifications_by_webhook"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["active"], name="notif_webhook_active_index"),
+        ]
+
+
+class TelegramNotification(DateTimeModel):
+    name = models.CharField(
+        max_length=512,
+        verbose_name="Название оповещения",
+        help_text=mark_safe(
+            'Смотрите <a href="https://github.com/ig-rudenko/ecstasy/wiki" target="_blank">WIKI</a>'
+        ),
+    )
+
+    telegram_api_url = models.URLField(
         max_length=2048, default="https://api.telegram.org/", verbose_name="Telegram API URL"
     )
     bot_token = models.CharField(max_length=256)
@@ -38,7 +97,9 @@ class TelegramNotification(DateTimeModel):
         MarkdownV2 = "MarkdownV2"
 
     parse_mode = models.CharField(
-        max_length=16, default=ParseModeChoices.HTML, choices=ParseModeChoices.choices  # noqa
+        max_length=16,
+        default=ParseModeChoices.HTML,
+        choices=ParseModeChoices.choices,  # noqa
     )
 
     active = models.BooleanField(default=True, help_text="Активно ли оповещение.")
@@ -60,7 +121,7 @@ class TelegramNotification(DateTimeModel):
     text = models.TextField(
         max_length=4096,
         help_text="Текст отправляемого сообщения. 1-4096 символов после обработки сущностей!\n"
-        "Поддерживается шаблонизатор Django, передаваемые объекты: device, result, request, user",
+        "Поддерживается шаблонизатор Django, передаваемые объекты: device, trigger_name, result, request, user",
     )
 
     reply_markup = models.JSONField(
@@ -112,7 +173,7 @@ class NotificationCondition(DateTimeModel):
         max_length=512,
         verbose_name="Название условия",
         help_text=mark_safe(
-            'Смотрите <a href="https://github.com/ig-rudenko/ecstasy/wiki" target="_blank">wiki</a>'
+            'Смотрите <a href="https://github.com/ig-rudenko/ecstasy/wiki" target="_blank">WIKI</a>'
         ),
     )
     active = models.BooleanField(default=True, help_text="Включает проверку данного условия.")

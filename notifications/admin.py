@@ -1,7 +1,75 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 
-from .models import NotificationCondition, TelegramNotification
+from .models import NotificationCondition, TelegramNotification, WebhookNotification
+
+
+@admin.register(WebhookNotification)
+class WebhookNotificationAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "active",
+        "url_preview",
+        "method",
+        "proxy_url",
+        "timeout",
+        "conditions_count",
+        "created_at",
+    )
+    list_filter = ("active", "method", "created_at")
+    search_fields = ("name", "url", "body", "headers")
+    readonly_fields = ("created_at", "updated_at")
+    filter_horizontal = ("notification_conditions",)
+
+    fieldsets = (
+        (
+            "Основная информация",
+            {
+                "fields": ("name", "active"),
+            },
+        ),
+        (
+            "Настройки вебхука",
+            {
+                "fields": (
+                    "url",
+                    "proxy_url",
+                    "method",
+                    "timeout",
+                ),
+            },
+        ),
+        (
+            "Данные запроса",
+            {
+                "fields": (
+                    "headers",
+                    "body",
+                ),
+            },
+        ),
+        (
+            "Условия отправки",
+            {
+                "fields": ("notification_conditions",),
+            },
+        ),
+        (
+            "Мета-информация",
+            {
+                "classes": ("collapse",),
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
+    )
+
+    @admin.display(description="URL (превью)")
+    def url_preview(self, obj):
+        return obj.url if len(obj.url) < 50 else obj.url[:47] + "..."
+
+    @admin.display(description="Кол-во условий")
+    def conditions_count(self, obj: TelegramNotification):
+        return obj.notification_conditions.count()
 
 
 @admin.register(TelegramNotification)

@@ -1,11 +1,12 @@
 from typing import Any
 
+from django.db.models import Q
 from django.template import Context, Template
 
 from check.models import Devices
 
-from ..models import NotificationCondition, TelegramNotification
-from ..tasks import send_telegram_notification
+from ..models import NotificationCondition, TelegramNotification, WebhookNotification
+from ..tasks import send_telegram_notification, send_webhook_notification
 
 
 def run_device_trigger(trigger_name: str, request, request_device: Devices, action_result: Any):
@@ -14,14 +15,15 @@ def run_device_trigger(trigger_name: str, request, request_device: Devices, acti
     conditions = (
         NotificationCondition.objects.filter(
             active=True,
-            triggers__name=trigger_name,
-            telegram_notifications__active=True,
+            triggers__name=str(trigger_name),
         )
+        .filter(Q(telegram_notifications__active=True) | Q(webhook_notifications__active=True))
         .prefetch_related("users", "users_groups", "devices", "devices_groups")
         .distinct()
     )
 
     telegram_notifications = set()
+    webhook_notifications = set()
 
     for condition in conditions:
 
@@ -60,13 +62,57 @@ def run_device_trigger(trigger_name: str, request, request_device: Devices, acti
 
         # Добавляем оповещения телеграмм, которые прошли проверку условий.
         telegram_notifications.update(condition.telegram_notifications.filter(active=True))  # type: ignore
+        # Добавляем оповещения webhook, которые прошли проверку условий.
+        webhook_notifications.update(condition.webhook_notifications.filter(active=True))  # type: ignore
 
     for tg_notification in telegram_notifications:
-        prepare_telegram_notification(tg_notification, request, request_device, action_result)
+        prepare_telegram_notification(
+            tg_notification,
+            request=request,
+            request_device=request_device,
+            trigger_name=trigger_name,
+            action_result=action_result,
+        )
+
+    for webhook_notification in webhook_notifications:
+        prepare_webhook_notification(
+            webhook_notification,
+            request=request,
+            request_device=request_device,
+            trigger_name=trigger_name,
+            action_result=action_result,
+        )
+
+
+def prepare_webhook_notification(
+    wh_notification: WebhookNotification,
+    *,
+    request,
+    request_device: Devices,
+    trigger_name: str,
+    action_result: Any,
+):
+    template = Template(wh_notification.body or "")
+    context = Context(
+        {
+            "request": request,
+            "device": request_device,
+            "result": action_result,
+            "trigger_name": trigger_name,
+            "user": request.user,
+        }
+    )
+    body_text = template.render(context)
+    send_webhook_notification.delay(wh_notification.id, body_text)
 
 
 def prepare_telegram_notification(
-    tg_notification: TelegramNotification, request, request_device: Devices, action_result: Any
+    tg_notification: TelegramNotification,
+    *,
+    request,
+    request_device: Devices,
+    trigger_name: str,
+    action_result: Any,
 ):
     template = Template(tg_notification.text)
     context = Context(
@@ -74,6 +120,7 @@ def prepare_telegram_notification(
             "request": request,
             "device": request_device,
             "result": action_result,
+            "trigger_name": trigger_name,
             "user": request.user,
         }
     )
