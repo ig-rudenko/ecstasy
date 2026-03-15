@@ -11,8 +11,8 @@ class TelegramNotificationAdmin(admin.ModelAdmin):
         "active",
         "bot_token_preview",
         "chat_id",
+        "conditions_count",
         "created_at",
-        "updated_at",
     )
     list_filter = ("active", "parse_mode", "disable_notification", "protect_content", "created_at")
     search_fields = ("name", "bot_token", "chat_id", "text")
@@ -66,12 +66,15 @@ class TelegramNotificationAdmin(admin.ModelAdmin):
         ),
     )
 
-    def bot_token_preview(self, obj):
+    @admin.display(description="Превью токена бота")
+    def bot_token_preview(self, obj: TelegramNotification):
         if obj.bot_token:
             return f"{obj.bot_token[:10]}..."
         return "-"
 
-    bot_token_preview.short_description = "Превью токена бота"
+    @admin.display(description="Кол-во условий")
+    def conditions_count(self, obj: TelegramNotification):
+        return obj.notification_conditions.count()
 
 
 @admin.register(NotificationCondition)
@@ -150,6 +153,9 @@ class NotificationConditionAdmin(admin.ModelAdmin):
         max_rows = 10
         text = '<ul style="font-family: monospace;">'
         total_count = getattr(obj, value_name).count()
+        if not total_count:
+            return "Все"
+
         for value in getattr(obj, value_name).all()[:10].values_list(field_name, flat=True):
             text += f"<li>{value}</li>"
         if total_count > max_rows:

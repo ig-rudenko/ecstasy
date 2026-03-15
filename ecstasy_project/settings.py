@@ -255,7 +255,7 @@ else:
 
 # ================ REST FRAMEWORK =================
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK: dict = {
     "DEFAULT_RENDERER_CLASSES": [
         "drf_orjson_renderer.renderers.ORJSONRenderer",
     ],

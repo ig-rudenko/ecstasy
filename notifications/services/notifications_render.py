@@ -8,7 +8,9 @@ from ..models import NotificationCondition, TelegramNotification
 from ..tasks import send_telegram_notification
 
 
-def run_trigger(trigger_name: str, request, request_device: Devices, action_result: Any):
+def run_device_trigger(trigger_name: str, request, request_device: Devices, action_result: Any):
+    """Запускает обработку событий триггера, связанного с действиями над оборудованием."""
+
     conditions = (
         NotificationCondition.objects.filter(
             active=True,
@@ -57,7 +59,7 @@ def run_trigger(trigger_name: str, request, request_device: Devices, action_resu
             break
 
         # Добавляем оповещения телеграмм, которые прошли проверку условий.
-        telegram_notifications.update(condition.telegram_notifications.filter(active=True))
+        telegram_notifications.update(condition.telegram_notifications.filter(active=True))  # type: ignore
 
     for tg_notification in telegram_notifications:
         prepare_telegram_notification(tg_notification, request, request_device, action_result)

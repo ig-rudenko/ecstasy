@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group as UserGroup
 from django.db import models
+from django.utils.safestring import mark_safe
 
 from check.models import DeviceGroup, Devices
 from ecstasy_project.types.models import DateTimeModel
@@ -74,7 +75,7 @@ class TelegramNotification(DateTimeModel):
         "NotificationCondition",
         related_name="telegram_notifications",
         help_text="Если условий несколько, то будет выбрано хотя бы одно сработанное.\nРеализуется логическое ИЛИ.",
-    )
+    )  # type: ignore
 
     def __str__(self):
         return f"Telegram Notification: {self.name}"
@@ -84,8 +85,6 @@ class TelegramNotification(DateTimeModel):
 
     class Meta:
         db_table = "notifications_by_telegram"
-        verbose_name = "Telegram Notification"
-        verbose_name_plural = "Telegram Notifications"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["active"], name="notif_telegram_active_index"),
@@ -109,7 +108,13 @@ class NotificationTrigger(models.Model):
 
 
 class NotificationCondition(DateTimeModel):
-    name = models.CharField(max_length=512, verbose_name="Название условия")
+    name = models.CharField(
+        max_length=512,
+        verbose_name="Название условия",
+        help_text=mark_safe(
+            'Смотрите <a href="https://github.com/ig-rudenko/ecstasy/wiki" target="_blank">wiki</a>'
+        ),
+    )
     active = models.BooleanField(default=True, help_text="Включает проверку данного условия.")
 
     devices = models.ManyToManyField(
@@ -131,7 +136,7 @@ class NotificationCondition(DateTimeModel):
         verbose_name="Пользователи",
         blank=True,
         related_name="notification_conditions",
-    )
+    )  # type: ignore
     users_groups = models.ManyToManyField(
         UserGroup,
         verbose_name="Группы пользователей",
@@ -148,14 +153,15 @@ class NotificationCondition(DateTimeModel):
         help_text="Какие действия будут провоцировать оповещение.",
     )
 
-    class Meta:
-        db_table = "notification_conditions"
-        indexes = [
-            models.Index(fields=["active"], name="notif_cond_active_index"),
-        ]
-
     def __str__(self):
         return f"{self.name}"
 
     def __repr__(self):
         return self.__str__()
+
+    class Meta:
+        db_table = "notification_conditions"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["active"], name="notif_cond_active_index"),
+        ]
