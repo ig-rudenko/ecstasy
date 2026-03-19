@@ -122,7 +122,7 @@
                 </div>
               </div>
             </div>
-            <div class="px-10 secondary-text pb-2">Дата подключения: {{verboseDatetime(line.connected_at)}}</div>
+            <div class="px-10 secondary-text pb-2">Дата подключения: {{verboseDate(line.connected_at)}}</div>
           </td>
 
           <!-- АДРЕС -->
@@ -168,7 +168,7 @@
 import Pill from "./Pill.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 import Paginator from "./Paginator.vue";
-import {verboseDatetime} from "@/formats.ts";
+import {verboseDate} from "@/formats.ts";
 
 export default {
   name: "Table",
@@ -227,7 +227,7 @@ export default {
   },
 
   methods: {
-    verboseDatetime,
+    verboseDate,
 
     getFullAddress(address) {
       let str = ""

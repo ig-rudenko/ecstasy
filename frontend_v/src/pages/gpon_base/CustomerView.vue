@@ -333,7 +333,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                       <div class="fw-bold me-4">Подключён</div>
-                      <div class="font-mono">{{ verboseDatetime(connection.connected_at) }}</div>
+                      <div class="font-mono">{{ verboseDate(connection.connected_at) }}</div>
                     </div>
                   </div>
                 </div>
@@ -394,7 +394,7 @@ import Asterisk from "./components/Asterisk.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api from "@/services/api";
-import {formatAddress, verboseDatetime} from "@/formats";
+import {formatAddress, verboseDate} from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
 import printElementById from "@/helpers/print";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
@@ -482,7 +482,7 @@ export default {
   },
 
   methods: {
-    verboseDatetime,
+    verboseDate,
 
     goBack() {
       history.go(-1)
