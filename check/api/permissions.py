@@ -47,3 +47,25 @@ class DeviceCommentPermission(permissions.BasePermission):
 
     def has_object_permission(self, request: Request, view, obj: InterfacesComments) -> bool:
         return request.user.is_superuser or has_user_access_to_device(request.user, obj.device)
+
+
+class DevicesAdminPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        if request.method is permissions.SAFE_METHODS or request.user.is_superuser:
+            return True
+        if request.method == "POST" and request.user.is_staff and request.user.has_perm("check.add_devices"):
+            return True
+        if (
+            request.method in {"PUT", "PATCH"}
+            and request.user.is_staff
+            and request.user.has_perm("check.change_devices")
+        ):
+            return True
+        return bool(
+            request.method == "DELETE"
+            and request.user.is_staff
+            and request.user.has_perm("check.change_devices")
+        )

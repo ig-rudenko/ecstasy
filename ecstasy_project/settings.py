@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "gpon",
     "accounting",
     "news",
+    "notifications",
     "import_export",
     "corsheaders",
     "drf_yasg",
@@ -254,7 +255,7 @@ else:
 
 # ================ REST FRAMEWORK =================
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK: dict = {
     "DEFAULT_RENDERER_CLASSES": [
         "drf_orjson_renderer.renderers.ORJSONRenderer",
     ],
@@ -271,6 +272,7 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    "PAGE_SIZE": 100,
 }
 if ENV == "dev":
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append("rest_framework.renderers.BrowsableAPIRenderer")
@@ -292,6 +294,8 @@ SWAGGER_SETTINGS = {
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+if ENV == "dev":
+    CELERY_TASK_ALWAYS_EAGER = True
 
 # ========== CONFIGURATION STORAGE ===========
 

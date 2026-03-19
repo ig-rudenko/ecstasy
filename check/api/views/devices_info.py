@@ -2,8 +2,10 @@ from django.core.cache import cache
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_headers
+from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from app_settings.models import LogsElasticStackSettings
@@ -24,7 +26,13 @@ from ecstasy_project.types.api import UserAuthenticatedAPIView
 from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter
-from ..serializers import DevicesSerializer, DeviceVlanSerializer
+from ..permissions import DevicesAdminPermission
+from ..serializers import (
+    DevicesDetailSerializer,
+    DevicesDetailUpdateSerializer,
+    DevicesSerializer,
+    DeviceVlanSerializer,
+)
 from ..swagger.schemas import (
     device_info_api_doc,
     devices_interfaces_workload_list_api_doc,
@@ -35,10 +43,42 @@ from ..swagger.schemas import (
 from .base import DeviceAPIView
 
 
+class DevicesListCreateAPIView(UserAuthenticatedAPIView, ListCreateAPIView):
+    """
+    ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
+    """
+
+    serializer_class = DevicesSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DeviceFilter
+    pagination_class = PageNumberPagination
+    permission_classes = [DevicesAdminPermission]
+
+    def get_queryset(self):
+        """
+        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        через Profile.devices_groups или AccessGroup (users / user_groups),
+        при этом исключаются устройства, явно запрещённые в AccessGroup.
+        """
+        return filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
+
+
+class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return DevicesDetailSerializer
+        return DevicesDetailUpdateSerializer
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
+
+
 @method_decorator(devices_list_api_doc, name="get")
 @method_decorator(cache_page(60 * 2), name="dispatch")
 @method_decorator(vary_on_headers("Authorization"), name="dispatch")
-class DevicesListAPIView(UserAuthenticatedAPIView):
+@method_decorator(vary_on_cookie, name="dispatch")
+class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
     """
     ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
     """
@@ -57,7 +97,9 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        return_fields = self.return_fields
+        return_fields = self.get_return_fields()
+        if "auth_group" in return_fields:
+            return_fields.remove("auth_group")
 
         # Если запрашивается поле group, то нужно добавить связь с моделью Group
         if "group" in return_fields:
@@ -65,17 +107,12 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
             return_fields.remove("group")
             return_fields.append("group__name")
 
-        # Если запрашивается поле console_url, то нужно добавить дополнительные поля.
-        if "console_url" in return_fields:
-            return_fields += ["cmd_protocol", "ip", "name"]
-
         # Получаем список полей модели
         model_fields = [f.name for f in queryset.model._meta.fields] + ["group__name"]
         # Оставляем поля, которые есть в модели
         return queryset.values(*[f for f in return_fields if f in model_fields])
 
-    @property
-    def return_fields(self) -> list[str]:
+    def get_return_fields(self) -> list[str]:
         # Формируем список полей, которые могут быть возвращены в ответе.
         all_fields = self.serializer_class.Meta.fields.copy()
         return_fields = (
@@ -89,6 +126,10 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         if not return_fields:
             return_fields = all_fields
 
+        # Если запрашивается поле console_url, то нужно добавить дополнительные поля.
+        if "console_url" in return_fields:
+            return_fields += ["cmd_protocol", "ip", "name"]
+
         return return_fields
 
     def get(self, request, *args, **kwargs):
@@ -96,7 +137,7 @@ class DevicesListAPIView(UserAuthenticatedAPIView):
         ## Возвращаем список всех устройств, без пагинации
         """
         data = self.filter_queryset(self.get_queryset())
-        return_fields = self.return_fields
+        return_fields = self.get_return_fields()
 
         for item in data:
             # Форматируем поле group

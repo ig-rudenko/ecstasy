@@ -19,6 +19,8 @@ from check.services.device.interfaces import (
 )
 from devicemanager.remote.connector import pool_controller
 from devicemanager.remote.exceptions import InvalidMethod
+from notifications.services.notifications_render import run_device_trigger
+from notifications.services.triggers import TriggerNames
 
 from ...models import DeviceCommand
 from ...services.device.commands import execute_command, validate_command
@@ -76,6 +78,14 @@ class InterfaceControlAPIView(DeviceAPIView):
         # Логи
         log(self.current_user, device, f"{port_status} port {port_name} ({interface.desc}) \n{change_status}")
 
+        # Запускаем триггер на изменение статуса порта.
+        run_device_trigger(
+            TriggerNames.get_name_for_device_port_status(port_status),
+            request,
+            device,
+            action_result={**serializer.validated_data, "status": change_status},
+        )
+
         return Response(serializer.validated_data, status=200)
 
 
@@ -128,7 +138,16 @@ class ChangeDescriptionAPIView(DeviceAPIView):
             device, interface_name=port, description=new_description
         )
 
+        # Логи
         log(self.current_user, device, str(description_status))
+
+        # Запускаем триггер на изменение описания порта.
+        run_device_trigger(
+            TriggerNames.device_port_change_description,
+            request,
+            device,
+            action_result=description_status,
+        )
 
         return Response(
             {
@@ -226,27 +245,49 @@ class SetPoEAPIView(DeviceAPIView):
     @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request: Request, *args, **kwargs):
         """Устанавливает PoE статус на порту"""
-
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
         poe_status = serializer.validated_data["status"]
         port_name = serializer.validated_data["port"]
 
         # Находим оборудование
         device = self.get_object()
+        result = self.change_poe_status(device, port=port_name, poe_status=poe_status)
+
+        # Запускаем триггер на изменение PoE порта.
+        run_device_trigger(
+            TriggerNames.device_port_set_poe_status,
+            request,
+            device,
+            action_result=result,
+        )
+
+        return Response(result)
+
+    @staticmethod
+    def change_poe_status(device, port: str, poe_status: str) -> tuple[dict, int]:
+        error_status = 0
+        result: dict = {"status": poe_status, "port_name": port}
 
         # Если оборудование недоступно
         if not device.available:
-            return Response({"detail": "Device unavailable"}, status=500)
+            error_status = 500
+            result["detail"] = "Device unavailable"
 
-        try:
-            _, err = device.connect().set_poe_out(port_name, poe_status)
-        except InvalidMethod:
-            return Response({"detail": "Unsupported for this device"}, status=400)
+        if not error_status:
+            try:
+                _, got_error = device.connect().set_poe_out(port, poe_status)
+            except InvalidMethod:
+                error_status = 400
+                result["detail"] = "Unsupported for this device"
+            else:
+                if got_error:
+                    error_status = 400
+                    result["detail"] = f"Invalid data ({poe_status})"
 
-        if not err:
-            return Response({"status": poe_status})
-        return Response({"detail": f"Invalid data ({poe_status})"}, status=400)
+        result["has_error"] = bool(error_status)
+
+        return result, error_status
 
 
 @method_decorator(interface_info_api_doc, name="get")
@@ -310,14 +351,22 @@ class ChangeDSLProfileAPIView(DeviceAPIView):
         # Подключаемся к оборудованию
         session = device.connect()
         try:
-            status = session.change_profile(
+            change_profile_status = session.change_profile(
                 serializer.validated_data["port"], serializer.validated_data["index"]
             )
         except InvalidMethod:
             # Нельзя менять профиль для данного устройства
             return Response({"error": "Device can't change profile"}, status=400)
-        else:
-            return Response({"status": status})
+
+        # Запускаем триггер на изменение ADSL профиля.
+        run_device_trigger(
+            TriggerNames.device_port_change_adsl_profile,
+            request,
+            device,
+            action_result={**serializer.validated_data, "status": change_profile_status},
+        )
+
+        return Response({"status": change_profile_status})
 
 
 class CreateInterfaceCommentAPIView(generics.CreateAPIView):
@@ -411,7 +460,6 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
 
 # @method_decorator(get_device_pool_status_api_doc, name="get")
 class DevicePoolManager(DeviceAPIView):
-
     @get_device_pool_status_api_doc
     def get(self, request, *args, **kwargs):
         """

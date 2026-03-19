@@ -189,7 +189,7 @@ class RemoteDevice(
     def get_current_configuration(self) -> tuple[str | bytes, str]:
         return self._remote_call("get_current_configuration")
 
-    def set_poe_out(self, port: str, status: str):
+    def set_poe_out(self, port: str, status: str) -> tuple[str, bool]:
         return self._remote_call("set_poe_out", port=port, status=status)
 
     def change_profile(self, port: str, profile_index: int) -> str:

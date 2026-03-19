@@ -18,7 +18,7 @@ from ..services.device.interfaces_workload import DevicesInterfacesWorkloadColle
 class DevicesListAPIViewTestCase(APITestCase):
     def setUp(self) -> None:
         cache.clear()
-        self.url = reverse("devices-api:devices-list")
+        self.url = reverse("devices-api:devices-list-all")
         self.user: User = User.objects.create_user(username="test_user", password="password")
         self.group = DeviceGroup.objects.create(name="ASW")
         self.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
