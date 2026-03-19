@@ -282,7 +282,8 @@
                     </div>
                     <div class="w-full">
                       <div class="p-2">Дата подключения</div>
-                      <DatePicker id="calendar-24h" dateFormat="dd/mm/yy" v-model="connection.connected_at"
+                      <DatePicker id="calendar-24h" dateFormat="yy-mm-dd" :model-value="new Date(connection.connected_at)"
+                                  @value-change="value => connection.connected_at = value"
                                   showTime fluid show-icon hourFormat="24"/>
                     </div>
                   </div>
@@ -329,6 +330,10 @@
                     <div class="grid grid-cols-2 gap-2">
                       <div class="fw-bold me-4">Наряд</div>
                       <div class="font-mono">{{ connection.order }}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div class="fw-bold me-4">Подключён</div>
+                      <div class="font-mono">{{ verboseDatetime(connection.connected_at) }}</div>
                     </div>
                   </div>
                 </div>
@@ -389,7 +394,7 @@ import Asterisk from "./components/Asterisk.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import api from "@/services/api";
-import {formatAddress} from "@/formats";
+import {formatAddress, verboseDatetime} from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
 import printElementById from "@/helpers/print";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
@@ -477,6 +482,7 @@ export default {
   },
 
   methods: {
+    verboseDatetime,
 
     goBack() {
       history.go(-1)

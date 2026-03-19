@@ -81,7 +81,7 @@
     <!-- TABLE -->
     <div class="overflow-auto">
       <table :style="{opacity: show_filter?0.4:1}" class="w-full">
-        <thead class="dark:border-gray-600 border-b-2">
+        <thead class="dark:border-gray-600 border-b-1">
         <tr>
           <th scope="col" class="p-2 px-10 text-left">Абонент</th>
           <th scope="col" class="p-2 text-left">Адрес подключения</th>
@@ -92,34 +92,37 @@
 
         <tbody>
         <tr v-for="line in tableData"
-            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
+            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-1">
 
           <!-- АБОНЕНТ -->
-          <td class="flex items-center font-bold p-4 px-10 gap-3 dark:text-gray-300">
-            <router-link :to="{name: 'gpon-view-subscriber', params: {id: line.customer.id}}"
-                         class="hover:text-primary">
-              {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
-              {{ line.customer.companyName }}
-            </router-link>
-            <div class="secondary-text flex">
-              <div v-if="line.customer.contract" class="flex items-center me-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
-                     viewBox="0 0 16 16">
-                  <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                  <path
-                      d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
-                </svg>
-                <span class="font-mono">{{ line.customer.contract }}</span>
-              </div>
-              <div v-if="line.customer.phone" class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
-                     viewBox="0 0 16 16">
-                  <path fill-rule="evenodd"
-                        d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
-                </svg>
-                <span class="font-mono">{{ line.customer.phone }}</span>
+          <td class="flex flex-col font-bold dark:text-gray-300">
+            <div class="flex items-center font-bold p-4 pb-0 px-10 gap-3 dark:text-gray-300">
+              <router-link :to="{name: 'gpon-view-subscriber', params: {id: line.customer.id}}"
+                           class="hover:text-primary">
+                {{ line.customer.surname }} {{ line.customer.firstName }} {{ line.customer.lastName }}
+                {{ line.customer.companyName }}
+              </router-link>
+              <div class="secondary-text flex">
+                <div v-if="line.customer.contract" class="flex items-center me-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
+                       viewBox="0 0 16 16">
+                    <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                    <path
+                        d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
+                  </svg>
+                  <span class="font-mono">{{ line.customer.contract }}</span>
+                </div>
+                <div v-if="line.customer.phone" class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2"
+                       viewBox="0 0 16 16">
+                    <path fill-rule="evenodd"
+                          d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+                  </svg>
+                  <span class="font-mono">{{ line.customer.phone }}</span>
+                </div>
               </div>
             </div>
+            <div class="px-10 secondary-text pb-2">Дата подключения: {{verboseDatetime(line.connected_at)}}</div>
           </td>
 
           <!-- АДРЕС -->
@@ -165,6 +168,7 @@
 import Pill from "./Pill.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 import Paginator from "./Paginator.vue";
+import {verboseDatetime} from "@/formats.ts";
 
 export default {
   name: "Table",
@@ -223,6 +227,7 @@ export default {
   },
 
   methods: {
+    verboseDatetime,
 
     getFullAddress(address) {
       let str = ""
