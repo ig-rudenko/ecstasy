@@ -100,6 +100,11 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.os_version = self.find_or_empty("software, (Version .+)", version)
 
         if "S2403" in self.model:
+            self.send_command("undo terminal logging", expect_command=False)
+            self.send_command("undo terminal debugging", expect_command=False)
+            self.send_command("undo terminal monitor", expect_command=False)
+            self.send_command("undo terminal trapping", expect_command=False)
+
             manuinfo = self.send_command("display device manuinfo")
             # Нахождение MAC-адреса устройства.
             self.mac = self.find_or_empty(r"MAC ADDRESS\s+:\s+(\S+)", manuinfo)
