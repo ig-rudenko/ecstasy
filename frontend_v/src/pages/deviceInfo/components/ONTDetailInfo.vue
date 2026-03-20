@@ -55,7 +55,7 @@
       </div>
 
       <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
+      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="ontInterface" :device-name="deviceName"/>
 
     </td>
 

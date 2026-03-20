@@ -33,7 +33,7 @@
         <template v-for="line in data.onts_lines">
           <OLT_ONT_Detail_info
               :device-name="deviceName"
-              :interface="getGetOntInterface(interface, line)"
+              :interface="interface"
               :permission-level="permissionLevel"
               :line="line"
               :show-subscribers-data="showSubscribersData"
@@ -84,11 +84,6 @@ export default defineComponent({
   },
 
   methods: {
-
-    getGetOntInterface(intf: DeviceInterface, ontLine: string[]) {
-      if (ontLine[0]) return {...intf, name: `${intf.name}/${ontLine[0]}`}
-      return intf
-    },
 
     getSubscribersData() {
       if (this.isEmpty(this.subscribersData)) {

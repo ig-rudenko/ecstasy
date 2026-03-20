@@ -72,7 +72,7 @@
       </div>
 
       <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo v-if="complexInfo" :complex-info="complexInfo" :interface="interface"
+      <ComplexInterfaceInfo v-if="complexInfo" :complex-info="complexInfo" :interface="ontInterface"
                             :device-name="deviceName"/>
 
     </td>
