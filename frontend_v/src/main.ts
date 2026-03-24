@@ -56,6 +56,10 @@ app.use(router);
 keycloakConnector.initKeycloak().then(() => {
     if (!keycloakConnector.enabled) return;  // Если OIDC вышлючен на backend.
 
+    if (window.location.hash) {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     // Если вошли через OIDC.
     if (keycloakConnector.keycloakLoginState.isLogin) {
         keycloakConnector.autoRefreshToken(setTokens);  // Автоматическое обновление токена.
