@@ -20,7 +20,7 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-from maps.protected_serve import MapMediaServeLimitation
+from apps.maps.protected_serve import MapMediaServeLimitation
 
 from .protected_serve import LoginRequiredLimitation, protected_serve
 from .swagger import schema_view
@@ -28,13 +28,13 @@ from .swagger import schema_view
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API Endpoints
-    path("api/v1/devices/", include("check.api.urls")),
-    path("api/v1/tools/", include("net_tools.api.urls")),
-    path("api/v1/maps/", include("maps.api.urls")),
-    path("api/v1/gather/", include("gathering.api.urls")),
-    path("api/v1/gpon/", include("gpon.api.urls")),
-    path("api/v1/ring-manager/", include("ring_manager.api.urls")),
-    path("api/v1/accounts/", include("accounting.urls")),
+    path("api/v1/devices/", include("apps.check.api.urls")),
+    path("api/v1/tools/", include("apps.net_tools.api.urls")),
+    path("api/v1/maps/", include("apps.maps.api.urls")),
+    path("api/v1/gather/", include("apps.gathering.api.urls")),
+    path("api/v1/gpon/", include("apps.gpon.api.urls")),
+    path("api/v1/ring-manager/", include("apps.ring_manager.api.urls")),
+    path("api/v1/accounts/", include("apps.accounting.urls")),
     # JWT
     path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),

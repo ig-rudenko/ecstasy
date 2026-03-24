@@ -94,6 +94,12 @@ class RemoteDevice(
 
         raise exceptions.DeviceException(error["message"], ip=self.ip)
 
+    def ping_device(self) -> bool:
+        resp = self._session.post(f"{self._remote_connector_address}/ping/{self.ip}", timeout=2)
+        if resp.status_code == 200:
+            return resp.json()["available"]
+        return False
+
     def _delete_pool(self):
         self._session.delete(f"{self._remote_connector_address}/pool/{self.ip}", timeout=3)
 
