@@ -5,8 +5,8 @@ import shutil
 from functools import lru_cache
 from time import sleep
 
-from gathering.services.ftp import FTPCollector
-from gathering.services.ftp.exceptions import NotFound
+from apps.gathering.services.ftp import FTPCollector
+from apps.gathering.services.ftp.exceptions import NotFound
 
 from .. import UnknownDeviceError
 from .base.device import AbstractConfigDevice, AbstractDSLProfileDevice, BaseDevice

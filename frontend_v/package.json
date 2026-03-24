@@ -1,10 +1,10 @@
 {
   "name": "ecstasy",
   "private": true,
-  "version": "18.7.11",
+  "version": "18.8.4",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },

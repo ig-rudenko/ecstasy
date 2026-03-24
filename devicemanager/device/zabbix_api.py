@@ -5,7 +5,7 @@ from django.conf import settings
 from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import RequestException, Session
 
-from app_settings.lazy_settings import LazyConfigLoader, LazyStringAttribute
+from apps.app_settings.lazy_settings import LazyConfigLoader, LazyStringAttribute
 
 
 class ZabbixAPIConnector(LazyConfigLoader):

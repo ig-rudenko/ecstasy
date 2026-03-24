@@ -6,7 +6,7 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.authentication import SessionAuthentication
 
-from accounting.api_tokens import CustomTokenAuthentication
+from apps.accounting.api_tokens import CustomTokenAuthentication
 from ecstasy_project.authentication import CustomJWTAuthentication
 
 access_token_lifetime_seconds: float = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].seconds / 60  # type: ignore
@@ -63,13 +63,13 @@ API токен можно создать в панели администрат�
     ),
     # Это список всех конечных точек, которые будут отображаться в Swagger.
     patterns=[
-        path("api/v1/accounts/", include("accounting.urls")),
-        path("api/v1/devices/", include("check.api.urls")),
-        path("api/v1/tools/", include("net_tools.api.urls")),
-        path("api/v1/maps/", include("maps.api.urls")),
-        path("api/v1/gather/", include("gathering.api.urls")),
-        path("api/v1/gpon/", include("gpon.api.urls")),
-        path("api/v1/ring-manager/", include("ring_manager.api.urls")),
+        path("api/v1/accounts/", include("apps.accounting.urls")),
+        path("api/v1/devices/", include("apps.check.api.urls")),
+        path("api/v1/tools/", include("apps.net_tools.api.urls")),
+        path("api/v1/maps/", include("apps.maps.api.urls")),
+        path("api/v1/gather/", include("apps.gathering.api.urls")),
+        path("api/v1/gpon/", include("apps.gpon.api.urls")),
+        path("api/v1/ring-manager/", include("apps.ring_manager.api.urls")),
     ],
     generator_class=CustomSchemaGenerator,
     authentication_classes=[
