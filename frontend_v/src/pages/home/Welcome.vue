@@ -85,15 +85,10 @@ const quickCards = computed(() => {
 
       <div class="relative grid gap-8 px-5 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1.2fr),minmax(24rem,0.8fr)] xl:gap-10 xl:px-10 xl:py-10">
         <div>
-          <div class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-slate-300">
-            <span>Ecstasy</span>
-            <span class="h-1 w-1 rounded-full bg-sky-500"></span>
-            <span>network operations</span>
+          <div class="mt-5 max-w-4xl text-3xl font-semibold tracking-wide text-slate-950 dark:text-white sm:text-5xl flex flex-col gap-2">
+            <span class="text-3xl sm:text-6xl">Ecstasy</span>
+            <span>Единая панель управления сетью</span>
           </div>
-
-          <h1 class="mt-5 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Единая панель управления сетью для диагностики, поиска и работы с конфигурациями.
-          </h1>
 
           <p class="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
             Добро пожаловать, <span class="font-semibold text-slate-900 dark:text-slate-100">{{ user?.firstName || user?.username }}</span>.

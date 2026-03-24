@@ -273,8 +273,8 @@ const closeMobileMenu = () => {
           class="w-88 max-w-[90vw]"
           :pt="{
             root: {
-              class: 'border-none !shadow-none dark:!bg-gray-900/55 dark:backdrop-blur-xl ' +
-                  'dark:border-r dark:border-gray-700/60 bg-white/95 dark:!ring-1 dark:!ring-white/5',
+              class: 'border-none shadow-none! dark:bg-gray-900/55! dark:backdrop-blur-xl ' +
+                  'dark:border-r dark:border-gray-700/60 bg-white/95 dark:ring-1! dark:ring-white/5!',
             },
             header: { class: 'border-b border-gray-200/70 dark:border-gray-700/70 bg-white/80 dark:bg-transparent' },
             content: { class: 'p-3 bg-transparent' }
@@ -313,10 +313,10 @@ const closeMobileMenu = () => {
 
   <Popover ref="profileRef" :pt="{
     root: {
-      class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 ' +
+      class: 'before:hidden! overflow-hidden rounded-2xl border border-gray-200/80 ' +
           'dark:border-gray-700/60 bg-white/95 shadow-lg dark:bg-gray-900/55 dark:backdrop-blur-xl dark:!ring-1 dark:!ring-white/5',
     },
-    content: { class: '!p-0' },
+    content: { class: 'p-0!' },
   }">
     <div class="p-3">
       <div v-if="user" class="flex gap-3 items-center">

@@ -1,6 +1,6 @@
 <template>
   <a :href="zabbixUrl + '/hostinventories.php?hostid=' + zabbixHostId" class="items-center flex" target="_blank">
-    <Button v-if="zabbixHostId" text :class="blockClasses" severity="danger"
+    <Button v-if="zabbixHostId" text :class="blockClasses" severity="danger" class="rounded-2xl shadow-sm border-none"
             v-tooltip.bottom="monitoringAvailable?'В Zabbix':'Снято с мониторинга'">
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 64 64">
         <path d="M0 0h64v64H0z" fill="#d31f26"/>

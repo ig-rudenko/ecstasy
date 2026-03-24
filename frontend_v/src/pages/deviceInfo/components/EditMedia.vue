@@ -7,8 +7,8 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <Button @click="updateItem" label="Сохранить" icon="pi pi-check" class="!rounded-2xl" />
-        <Button @click="closeForm" label="Отмена" icon="pi pi-times" severity="secondary" outlined class="!rounded-2xl" />
+        <Button @click="updateItem" label="Сохранить" icon="pi pi-check" class="rounded-2xl!" />
+        <Button @click="closeForm" label="Отмена" icon="pi pi-times" severity="secondary" outlined class="rounded-2xl!" />
       </div>
     </div>
 

@@ -237,7 +237,7 @@ async function executeCommand(command: CommandType) {
 </script>
 
 <template>
-  <Button v-tooltip.right="'Команды'" outlined @click="openCommands">
+  <Button v-tooltip.right="'Команды'" outlined @click="openCommands" class="rounded-2xl shadow-sm border-none">
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
         <path
             d="M2 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4a.5.5 0 0 1-1 0V4a1 1 0 0 0-1-1z"/>
@@ -246,7 +246,7 @@ async function executeCommand(command: CommandType) {
       </svg>
   </Button>
 
-  <Dialog v-model:visible="visible" modal maximizable header="Выполнение команд" class="w-[min(96vw,1500px)]" content-class="!p-0">
+  <Dialog v-model:visible="visible" modal maximizable header="Выполнение команд" class="w-[min(96vw,1500px)]" content-class="p-0!">
     <div class="flex flex-col gap-6 bg-gray-50/60 p-4 dark:bg-gray-950/30 sm:p-6">
       <section class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55">
         <div class="flex flex-col gap-4">
@@ -348,7 +348,7 @@ async function executeCommand(command: CommandType) {
                         @click="() => executeCommand(data)"
                         icon="pi pi-play"
                         label="Выполнить"
-                        class="!rounded-2xl"
+                        class="rounded-2xl!"
                     />
                   </div>
                 </div>

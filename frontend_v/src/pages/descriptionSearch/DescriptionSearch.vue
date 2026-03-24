@@ -1,9 +1,10 @@
 <template>
   <Header/>
 
-  <div class="mx-auto max-w-375 sm:px-4 py-2 sm:py-6 px-2 sm:px-6 sm:py-8 lg:px-8">
+  <div class="mx-auto py-2 sm:py-6 lg:px-8">
     <div class="flex flex-col gap-4 sm:gap-6">
-      <section class="
+      <div class="flex flex-col gap-4 sm:gap-6 justify-center mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8">
+        <section class="
           relative overflow-hidden
           rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
           bg-white/80
@@ -35,61 +36,62 @@
         </div>
       </section>
 
-      <section
-          class="
-            rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
-            bg-white/80
-            p-4 sm:p-6
-            backdrop-blur
-            transition hover:-translate-y-0.5
-            delay-0
-            hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
-          "
-          :class="{ 'ring-2! ring-indigo-400/60! dark:ring-indigo-500/40!': isRegexPattern }"
-      >
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <label
-                for="isRegexPattern"
-                class="cursor-pointer inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
-                :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': waitResult }"
-            >
-              <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
-              <span>Искать по регулярному выражению</span>
-            </label>
+        <section
+            class="
+              rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
+              bg-white/80
+              p-4 sm:p-6
+              backdrop-blur
+              transition hover:-translate-y-0.5
+              delay-0
+              hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+            "
+            :class="{ 'ring-2! ring-indigo-400/60! dark:ring-indigo-500/40!': isRegexPattern }"
+        >
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <label
+                  for="isRegexPattern"
+                  class="cursor-pointer inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
+                  :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': waitResult }"
+              >
+                <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
+                <span>Искать по регулярному выражению</span>
+              </label>
 
-            <div v-if="isRegexPattern" class="text-sm text-gray-500 dark:text-gray-400">
-              Проверка шаблона:
-              <a href="https://regex101.com/" target="_blank" rel="noopener noreferrer"
-                 class="text-indigo-600 hover:underline dark:text-indigo-400">
-                regex101.com
-              </a>
+              <div v-if="isRegexPattern" class="text-sm text-gray-500 dark:text-gray-400">
+                Проверка шаблона:
+                <a href="https://regex101.com/" target="_blank" rel="noopener noreferrer"
+                   class="text-indigo-600 hover:underline dark:text-indigo-400">
+                  regex101.com
+                </a>
+              </div>
             </div>
+
+            <SearchInput
+                @submit_input="searchDescription"
+                @update:modelValue="(v: string) => pattern = v"
+                :init-search="$route.query.pattern?.toString()"
+                :active-mode="true"
+                input-class="font-mono"
+                placeholder="Введите строку для поиска"
+            />
           </div>
+        </section>
 
-          <SearchInput
-              @submit_input="searchDescription"
-              @update:modelValue="(v: string) => pattern = v"
-              :init-search="$route.query.pattern?.toString()"
-              :active-mode="true"
-              input-class="font-mono"
-              placeholder="Введите строку для поиска"
-          />
+        <div
+            v-if="waitResult"
+            class="rounded-4xl border border-gray-200/70 bg-white/80 px-6 py-10 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+        >
+          <p class="text-base text-gray-800 dark:text-gray-100 sm:text-lg">
+            Поиск по паттерну:
+            <code class="mx-1 rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-sm dark:bg-gray-800">{{ pattern }}</code>
+          </p>
+          <img class="mx-auto mt-6 h-50 object-contain" src="/img/load_desc.gif" alt="loading">
         </div>
-      </section>
-
-      <div
-          v-if="waitResult"
-          class="rounded-4xl border border-gray-200/70 bg-white/80 px-6 py-10 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
-      >
-        <p class="text-base text-gray-800 dark:text-gray-100 sm:text-lg">
-          Поиск по паттерну:
-          <code class="mx-1 rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-sm dark:bg-gray-800">{{ pattern }}</code>
-        </p>
-        <img class="mx-auto mt-6 h-50 object-contain" src="/img/load_desc.gif" alt="loading">
       </div>
 
-      <template v-else-if="lastPattern">
+      <template v-if="lastPattern">
         <section
             v-if="interfaces.length"
             class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
@@ -108,7 +110,7 @@
 
               <div class="flex flex-wrap items-center gap-2">
                 <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" outlined label="CSV"
-                        class="!rounded-2xl"/>
+                        class="rounded-2xl!"/>
                 <Button
                     v-if="hasActiveFilters || sortState.key"
                     severity="secondary"
@@ -223,7 +225,7 @@
                   >
                     <td class="px-4 py-3">
                       <router-link :to="'/device/' + data.device" target="_blank" rel="noopener noreferrer">
-                        <Button text icon="pi pi-box" class="!rounded-2xl max-w-full" :label="data.device"/>
+                        <Button text icon="pi pi-box" class="rounded-2xl! max-w-full" :label="data.device"/>
                       </router-link>
                     </td>
 
@@ -240,7 +242,7 @@
 
                     <td class="px-4 py-3">
                       <div :class="statusClass(data.interface.status)"
-                           class="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium">
+                           class="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium">
                         <span>{{ data.interface.status }}</span>
                         <i class="pi pi-clock text-xs"/>
                       </div>
@@ -296,7 +298,7 @@
 
         <div
             v-else
-            class="rounded-[2rem] border border-dashed border-gray-200/80 bg-white/70 px-6 py-12 text-center backdrop-blur dark:border-gray-700/60 dark:bg-gray-900/30"
+            class="rounded-4xl border border-dashed border-gray-200/80 bg-white/70 px-6 py-12 text-center backdrop-blur dark:border-gray-700/60 dark:bg-gray-900/30"
         >
           <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
             По паттерну
@@ -314,9 +316,9 @@
       ref="vlansList"
       :pt="{
         root: {
-          class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/95 dark:bg-gray-900/80 dark:backdrop-blur-xl shadow-lg dark:!ring-1 dark:!ring-white/5',
+          class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/95 dark:bg-gray-900/80 dark:backdrop-blur-xl shadow-lg dark:ring-1! dark:ring-white/5!',
         },
-        content: { class: '!p-4 max-w-md' },
+        content: { class: 'p-4! max-w-md' },
       }"
   >
     <div class="border-b border-gray-200/70 pb-3 text-xs text-gray-500 dark:border-gray-700/60 dark:text-gray-400">

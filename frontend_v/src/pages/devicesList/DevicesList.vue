@@ -34,7 +34,7 @@
                     icon="pi pi-chart-pie"
                     label="Нагрузка по портам"
                     text
-                    class="rounded-2xl!"
+                    class="rounded-2xl! hover:shadow-sm"
                 />
                 <Button
                     v-else-if="displayMode === 'waiting'"
@@ -42,7 +42,7 @@
                     label="Загружаю нагрузку..."
                     text
                     disabled
-                    class="rounded-2xl!"
+                    class="rounded-2xl! hover:shadow-sm"
                 />
                 <Button
                     v-else-if="displayMode === 'interfaces_loading'"
@@ -50,7 +50,7 @@
                     icon="pi pi-list"
                     label="Обычный вид"
                     text
-                    class="rounded-2xl!"
+                    class="rounded-2xl! hover:shadow-sm"
                 />
               </div>
 
@@ -76,7 +76,7 @@
 
             <div class="hidden xl:block w-130 shrink-0">
               <div
-                  class="rounded-[1.75rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60">
+                  class="rounded-[1.75rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 hover:shadow-sm">
                 <img class="w-full opacity-95" :src="`/img/device-icon-${imageIndex}.svg`" alt="devices">
               </div>
             </div>

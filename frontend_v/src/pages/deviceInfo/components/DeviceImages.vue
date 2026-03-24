@@ -2,7 +2,7 @@
   <Button
       text
       v-tooltip.bottom="'Медиафайлы'"
-      class="flex items-center gap-2 !rounded-2xl"
+      class="flex items-center gap-2 rounded-2xl! shadow-md"
       :severity="items.length ? 'success' : 'secondary'"
       @click="dialogVisible = true"
   >
@@ -38,12 +38,12 @@
                 редактирования.
               </div>
             </div>
-            <Button @click="setCurrentItem()" label="Добавить" icon="pi pi-plus" size="small" class="!rounded-2xl"/>
+            <Button @click="setCurrentItem()" label="Добавить" icon="pi pi-plus" size="small" class="rounded-2xl!"/>
           </div>
 
           <IconField>
             <InputIcon class="pi pi-search"/>
-            <InputText v-model.trim="searchQuery" placeholder="Поиск по названию и описанию" fluid/>
+            <InputText v-model.trim="searchQuery" placeholder="Поиск по названию и описанию" fluid class="rounded-2xl"/>
           </IconField>
 
           <div class="flex max-h-[58vh] flex-col gap-2 overflow-auto pr-1">
@@ -109,9 +109,9 @@
           </Message>
           <div class="flex flex-wrap justify-center gap-2">
             <Button icon="pi pi-times" @click="deleteForm.show = false" label="Отмена" severity="secondary" outlined
-                    class="!rounded-2xl"/>
+                    class="rounded-2xl!"/>
             <Button icon="pi pi-trash" @click="deleteCurrentItem" label="Удалить" severity="danger"
-                    class="!rounded-2xl"/>
+                    class="rounded-2xl!"/>
           </div>
         </div>
 
@@ -134,9 +134,9 @@
 
             <div class="flex flex-wrap items-center gap-2">
               <Button @click="showEditForm(currentItemIndex)" icon="pi pi-pencil" label="Редактировать"
-                      severity="contrast" outlined class="!rounded-2xl"/>
+                      severity="contrast" outlined class="rounded-2xl!"/>
               <Button @click="showDeleteFrom" icon="pi pi-trash" label="Удалить" severity="danger" outlined
-                      class="!rounded-2xl"/>
+                      class="rounded-2xl!"/>
             </div>
           </div>
 
@@ -144,14 +144,14 @@
               v-if="currentItem.isImage"
               :href="currentItem.url"
               target="_blank"
-              class="flex min-h-[24rem] flex-1 items-center justify-center overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-800/40"
+              class="flex min-h-96 flex-1 items-center justify-center overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-800/40"
           >
             <img class="max-h-[60vh] max-w-full rounded-2xl object-contain" :src="currentItem.url" alt="image"/>
           </a>
 
           <div
               v-else
-              class="flex min-h-[24rem] flex-1 flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200/80 bg-gray-50/80 p-6 text-center dark:border-gray-700/80 dark:bg-gray-800/40"
+              class="flex min-h-96 flex-1 flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200/80 bg-gray-50/80 p-6 text-center dark:border-gray-700/80 dark:bg-gray-800/40"
           >
             <i class="pi pi-file text-7xl text-gray-400 dark:text-gray-500"/>
             <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ currentItem.name }}</div>
@@ -160,7 +160,7 @@
                 @click="downloadFile(currentItem.url)"
                 icon="pi pi-download"
                 label="Скачать"
-                class="!rounded-2xl"
+                class="rounded-2xl!"
             />
             <ProgressSpinner v-else style="width: 56px; height: 56px" strokeWidth="6" fill="transparent"
                              animationDuration=".5s" aria-label="downloading"/>

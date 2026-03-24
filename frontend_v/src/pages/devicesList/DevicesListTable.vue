@@ -387,7 +387,7 @@ function exportCSV(): void {
         >
           <td class="px-4 py-3">
             <div class="group/ip flex items-center gap-3">
-              <div class="font-mono text-gray-900 dark:text-gray-100">{{ dev.ip }}</div>
+              <div class="font-mono text-gray-900 dark:text-gray-100 xl:text-lg">{{ dev.ip }}</div>
               <a
                   v-if="(dev as any).console_url"
                   :href="(dev as any).console_url"
@@ -411,9 +411,9 @@ function exportCSV(): void {
           </td>
 
           <td class="px-4 py-3">
-            <div class="group/device-name flex items-center gap-2">
+            <div class="group/device-name flex items-center gap-2 font-mono">
               <router-link :to="'/device/' + dev.name">
-                <Button text icon="pi pi-box" :label="dev.name" class="rounded-2xl!"/>
+                <Button text icon="pi pi-box" :label="dev.name" class="rounded-2xl! hover:shadow-sm"/>
               </router-link>
               <span :class="{ 'opacity-100!': pinned.isPinned(dev.name) }"
                     class="opacity-50 sm:opacity-0 transition group-hover/device-name:opacity-100">
@@ -430,7 +430,7 @@ function exportCSV(): void {
           <td class="px-4 py-3">
             <button
                 v-if="dev.vendor"
-                class="inline-flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-white/70 dark:hover:bg-gray-900/40 cursor-pointer border border-transparent hover:border-primary-200"
+                class="hover:shadow-sm inline-flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-white/70 dark:hover:bg-gray-900/40 cursor-pointer border border-transparent hover:border-primary-500/20"
                 @click="vendorFilter = dev.vendor"
             >
               <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: stringToColour(dev.vendor) }"/>

@@ -12,7 +12,7 @@
             <ToggleSwitch input-id="showOnlyDiff" v-model="showOnlyDiff" />
             <label for="showOnlyDiff" class="cursor-pointer">Только отличия</label>
           </div>
-          <Button @click="compareConfigs" :loading="compareLoading" icon="pi pi-sliders-h" label="Сравнить" class="!rounded-2xl" />
+          <Button @click="compareConfigs" :loading="compareLoading" icon="pi pi-sliders-h" label="Сравнить" class="rounded-2xl!" />
         </div>
       </div>
 

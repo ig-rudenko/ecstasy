@@ -23,17 +23,17 @@ function toggle(event: Event) {
         :label="showText?'Избранное (' + count + ')':''"
         text
         :severity="count>0?'success':'secondary'"
-        class="rounded-2xl! "
+        class="rounded-2xl! hover:shadow-sm"
         @click="toggle"/>
 
     <Popover
         ref="popoverRef"
         :pt="{
           root: {
-            class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 ' +
+            class: 'before:hidden! overflow-hidden rounded-2xl border border-gray-200/80 ' +
                 'dark:border-gray-700/60 bg-white/95 shadow-lg dark:bg-gray-900/70 dark:backdrop-blur-xl dark:!ring-1 dark:!ring-white/5',
           },
-          content: { class: '!p-0' },
+          content: { class: 'p-0!' },
         }">
       <div class="p-4">
         <div

@@ -184,7 +184,7 @@ onMounted(async () => {
               :rows="10"
               paginator-position="both"
               :pt="{
-                header: { class: '!hidden' },
+                header: { class: 'hidden!' },
                 column: { headerCell: { class: 'bg-gray-50/80 dark:bg-gray-900/80 border-b border-gray-200/80 dark:border-gray-700/80 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400' } },
                 pcPaginator: { root: { class: 'border-t border-gray-200/80 dark:border-gray-700/80 px-2 py-2 bg-white/60 dark:bg-gray-900/50' } }
               }"
@@ -213,7 +213,7 @@ onMounted(async () => {
 
             <Column header="" field="mac">
               <template #body="{ data }">
-                <Button size="small" @click="() => checkBrasSessions(data.mac)" text label="BRAS" class="!rounded-xl" />
+                <Button size="small" @click="() => checkBrasSessions(data.mac)" text label="BRAS" class="rounded-xl!" />
               </template>
             </Column>
           </DataTable>

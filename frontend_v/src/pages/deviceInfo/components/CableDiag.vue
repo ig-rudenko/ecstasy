@@ -184,15 +184,15 @@ export default defineComponent({
         icon="pi pi-play"
         :loading="diagnosticsStarted"
         :label="diagnosticsStarted ? 'Диагностика выполняется' : 'Запустить диагностику'"
-        class="!rounded-2xl !px-4 !py-2.5"
+        class="rounded-2xl! px-4! py-2.5!"
       />
     </div>
 
-    <Message v-if="error" severity="error" class="!rounded-2xl">
+    <Message v-if="error" severity="error" class="rounded-2xl!">
       {{ error }}
     </Message>
 
-    <div v-if="diagnosticsStarted" class="flex items-center justify-center rounded-[1.5rem] border border-dashed border-sky-200/80 bg-sky-50/60 px-4 py-10 dark:border-sky-900/70 dark:bg-sky-950/20">
+    <div v-if="diagnosticsStarted" class="flex items-center justify-center rounded-3xl border border-dashed border-sky-200/80 bg-sky-50/60 px-4 py-10 dark:border-sky-900/70 dark:bg-sky-950/20">
       <div class="flex flex-col items-center gap-3 text-center">
         <ProgressSpinner class="h-11 w-11" strokeWidth="5" />
         <div class="text-sm font-medium text-slate-700 dark:text-slate-200">Собираем данные диагностики</div>

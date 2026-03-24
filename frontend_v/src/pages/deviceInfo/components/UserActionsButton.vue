@@ -1,5 +1,5 @@
 <template>
-  <Button text @click="openDialog" v-tooltip.bottom="'Пользовательские действия'" >
+  <Button text @click="openDialog" v-tooltip.bottom="'Пользовательские действия'" class="rounded-2xl shadow-sm border-none">
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
       <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"></path>
     </svg>
@@ -11,21 +11,21 @@
         Ошибка загрузки: {{ error.status }}. {{ error.msg }}
       </Message>
 
-      <section class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55">
+      <section v-if="filteredActions?.length" class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">История действий</div>
             <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Фильтрация по пользователю и тексту действия.</div>
           </div>
 
-          <div class="grid gap-3 md:grid-cols-2 lg:min-w-[32rem]">
+          <div class="grid gap-3 md:grid-cols-2 lg:min-w-lg">
             <IconField>
               <InputIcon class="pi pi-search" />
-              <InputText v-model.trim="filters.user" placeholder="Фильтр по пользователю" fluid />
+              <InputText v-model.trim="filters.user" placeholder="Фильтр по пользователю" fluid class="rounded-2xl"/>
             </IconField>
             <IconField>
               <InputIcon class="pi pi-search" />
-              <InputText v-model.trim="filters.action" placeholder="Фильтр по действию" fluid />
+              <InputText v-model.trim="filters.action" placeholder="Фильтр по действию" fluid class="rounded-2xl"/>
             </IconField>
           </div>
         </div>

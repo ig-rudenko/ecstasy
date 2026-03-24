@@ -62,7 +62,7 @@ async function find() {
 <template>
   <Header/>
 
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full">
     <div class="flex flex-col gap-6">
       <div
           class="
