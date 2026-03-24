@@ -1,7 +1,7 @@
 <template>
   <div class="px-1">
     <DataTable ref="dt" :value="devicesFiltered" v-model:filters="filters" :paginator-position="paginatorPosition"
-               :loading="loading" class="font-mono !bg-transparent"
+               :loading="loading" class="font-mono bg-transparent!"
                paginator :rows="50" :rowsPerPageOptions="[10, 20, 50]"
                export-filename="devices" @valueChange="filterDevices"
                filterDisplay="menu" stripedRows size="small" removableSort resizableColumns
@@ -54,7 +54,7 @@
               <Button text icon="pi pi-box" :label="data.name"/>
             </router-link>
             <span class="opacity-0 group-hover/device-name:opacity-100"
-                  :class="{'!opacity-100': pinnedDevices.isPinned(data.name)}">
+                  :class="{'opacity-100!': pinnedDevices.isPinned(data.name)}">
               <PinDevice :device="data"/>
             </span>
           </div>
@@ -134,7 +134,7 @@
         <template #filter="{ filterModel, filterCallback }">
           <Select v-model="filterModel.value" :showClear="true"
                   filter
-                  optionGroupLabel="label" optionGroupChildren="items" @change="filterCallback()" :options="models"
+                  optionGroupLabel="label" optionGroupChildren="items" @change="filterCallback()" :options="filteredModels"
                   scroll-height="400px"
                   placeholder="Выберите модель" class="md:w-80 w-full relative">
             <template #optiongroup="slotProps">
@@ -248,6 +248,13 @@ export default defineComponent({
       set(value: any) {
         this._filters = value
       }
+    },
+
+    filteredModels() {
+      if (this.filters.vendor.value) {
+        return this.models.filter(value => value.label == this.filters.vendor.value)
+      }
+      return this.models
     },
 
     devicesFiltered(): Device[] {
