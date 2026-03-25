@@ -1,6 +1,6 @@
 from celery import shared_task
-from gpon.services.subscriber_data import get_all_subscriber_connections
-from gpon.services.tech_data import get_all_tech_data
+from .services.subscriber_data import get_all_subscriber_connections
+from .services.tech_data import get_all_tech_data
 
 
 @shared_task(ignore_result=True)
