@@ -21,7 +21,7 @@ import urllib3
 from import_export.formats.base_formats import CSV, JSON, XLSX
 from pyzabbix.api import logger as zabbix_api_logger
 
-from gathering.services.ftp import FTPCollector
+from apps.gathering.services.ftp import FTPCollector
 
 _locale._getdefaultlocale = lambda *args: ["en_US", "utf8"]  # type: ignore
 
@@ -66,21 +66,21 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_filters",
-    "check",
-    "net_tools",
-    "maps",
-    "app_settings",
-    "gathering",
+    "apps.check",
+    "apps.net_tools",
+    "apps.maps",
+    "apps.app_settings",
+    "apps.gathering",
     "django.contrib.humanize",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
-    "ring_manager",
+    "apps.ring_manager",
     "dbbackup",
     "django_celery_beat",
-    "gpon",
-    "accounting",
-    "news",
-    "notifications",
+    "apps.gpon",
+    "apps.accounting",
+    "apps.news",
+    "apps.notifications",
     "import_export",
     "corsheaders",
     "drf_yasg",
@@ -132,12 +132,12 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "news.context_preprocessors.global_news",
+                "apps.news.context_preprocessors.global_news",
                 "ecstasy_project.authentication.context_preprocessor_keycloak_enable",
             ],
-            "builtins": ["app_settings.templatetags.customtags"],
+            "builtins": ["apps.app_settings.templatetags.customtags"],
             "libraries": {
-                "ring_manager_perms": "ring_manager.templatetags.ring_manager_perms",
+                "ring_manager_perms": "apps.ring_manager.templatetags.ring_manager_perms",
             },
         },
     },
@@ -264,7 +264,7 @@ REST_FRAMEWORK: dict = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "accounting.api_tokens.CustomTokenAuthentication",
+        "apps.accounting.api_tokens.CustomTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PARSER_CLASSES": [

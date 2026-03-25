@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Literal, Never
 
 import requests
+from ping3 import ping
 
 from devicemanager import exceptions
 from devicemanager.device_connector.types import RemoteCommand
@@ -93,6 +94,16 @@ class RemoteDevice(
             raise some_exception(error["message"], ip=self.ip)
 
         raise exceptions.DeviceException(error["message"], ip=self.ip)
+
+    def ping_device(self) -> bool:
+        if not self._remote_connector_address:
+            p = ping(self.ip, timeout=2)
+            return isinstance(p, float)
+
+        resp = self._session.post(f"{self._remote_connector_address}/ping/{self.ip}", timeout=2)
+        if resp.status_code == 200:
+            return resp.json()["available"]
+        return False
 
     def _delete_pool(self):
         self._session.delete(f"{self._remote_connector_address}/pool/{self.ip}", timeout=3)

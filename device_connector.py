@@ -6,6 +6,7 @@ from ipaddress import IPv4Address
 from typing import TypedDict
 
 from flask import Flask, Response, after_this_request, jsonify, request, send_file
+from ping3 import ping
 
 from devicemanager.dc import SimpleAuthObject
 from devicemanager.device_connector.exceptions import MethodError
@@ -130,6 +131,17 @@ def delete_connection_pool(ip: str):
 
     statuses = DEVICE_SESSIONS.get_pool_status(valid_ip)
     return jsonify({"statuses": statuses})
+
+
+@app.route("/ping/<ip>", methods=["POST"])
+def ping_pong_device(ip: str):
+    token_error = check_token()
+    if token_error:
+        return token_error
+
+    p = ping(ip, timeout=2)
+    return jsonify({"available": isinstance(p, float)})
+
 
 if __name__ == "__main__":
     app.run(

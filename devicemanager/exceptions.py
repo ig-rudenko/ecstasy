@@ -1,4 +1,4 @@
-from check.logger import django_actions_logger
+from apps.check.logger import django_actions_logger
 
 
 class BaseDeviceException(Exception):

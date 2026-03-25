@@ -5,8 +5,8 @@ from ping3 import ping as socket_ping
 from pyzabbix.api import ZabbixAPIException
 from requests import RequestException
 
-from check.models import Devices
-from check.services.zabbix import get_zabbix_host_info
+from apps.check.models import Devices
+from apps.check.services.zabbix import get_zabbix_host_info
 from devicemanager.remote import RemoteDevice, remote_connector
 from devicemanager.zabbix_info_dataclasses import ZabbixHostGroup, ZabbixHostInfo, ZabbixInventory
 
@@ -142,7 +142,7 @@ class DeviceManager:
                     raise exc
 
     def _get_interfaces_from_history(self, with_vlans: bool):
-        from net_tools.models import DevicesInfo
+        from apps.net_tools.models import DevicesInfo
 
         try:
             device_data_history = DevicesInfo.objects.get(dev__name=self.name)
