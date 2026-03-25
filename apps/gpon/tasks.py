@@ -1,4 +1,5 @@
 from celery import shared_task
+
 from .services.subscriber_data import get_all_subscriber_connections
 from .services.tech_data import get_all_tech_data
 

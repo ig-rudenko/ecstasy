@@ -9,7 +9,6 @@ from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.text import slugify
-from ping3 import ping
 
 from devicemanager.dc import SimpleAuthObject
 from devicemanager.remote import remote_connector
