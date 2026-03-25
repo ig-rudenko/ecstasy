@@ -1,4 +1,5 @@
 from celery import shared_task
+
 from .models import Devices
 from .services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
