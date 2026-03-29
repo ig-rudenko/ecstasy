@@ -26,7 +26,7 @@
                     ? 'shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'"
                   class="px-4 py-2 rounded-xl text-sm font-medium transition"
-                  @click="tracerouteMode = 'vlan'">
+                  @click="setTracerouteMode('vlan')">
                 VLAN
               </button>
               <button
@@ -35,7 +35,7 @@
                     ? 'shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'"
                   class="px-4 py-2 rounded-xl text-sm font-medium transition"
-                  @click="tracerouteMode = 'mac'">
+                  @click="setTracerouteMode('mac')">
                 MAC
               </button>
             </div>
@@ -51,11 +51,11 @@
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">VLAN traceroute</h2>
           <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
             <template v-if="vlanScanStatus.running && vlanScanStatus.progress && vlanScanStatus.progress > 0">
-              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
+              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
               <span>Сканирование: {{ vlanScanStatus.progress }}%</span>
             </template>
             <template v-else-if="vlanScanStatus.running">
-              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
+              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
               <span>Идёт сканирование VLAN…</span>
             </template>
             <template v-else-if="!vlanScanStatus.running && vlanScanStatus.available">
@@ -245,45 +245,46 @@
       </div>
 
       <div
-          class="relative rounded-3xl border border-gray-200/40 dark:border-gray-700/50 overflow-hidden bg-black/35 dark:bg-black/50 backdrop-blur-[2px] shadow-inner min-h-[480px]">
-        <div v-show="tracerouteMode === 'vlan'" class="relative">
+          :class="[
+            'relative rounded-3xl border shadow-inner min-h-[480px]',
+            graphAreaTransparent ? 'border-gray-200/40 dark:border-gray-700/50 overflow-hidden bg-black/35 dark:bg-black/50 backdrop-blur-[2px]' : 'border-gray-700 overflow-hidden bg-neutral-950',
+            graphMaximized ? '!overflow-visible !rounded-none border-0 shadow-none min-h-0' : '',
+          ]">
+        <div v-show="tracerouteMode === 'vlan'" class="relative min-h-[480px]">
           <Button
               v-if="vlanTracerouteOptions.rendered"
-              class="!absolute z-20 top-3 right-3 !rounded-xl"
-              icon="pi pi-expand"
+              class="!absolute z-[10001] top-3 right-3 !rounded-xl"
+              :icon="vlanTracerouteOptions.maximized ? 'pi pi-times' : 'pi pi-expand'"
               rounded
               severity="secondary"
-              v-tooltip.bottom="'На весь экран'"
+              v-tooltip.bottom="vlanTracerouteOptions.maximized ? 'Выйти из полного экрана' : 'На весь экран'"
               @click="toggleMaximizeVlanTraceroute"/>
-          <div id="vlan-network" :class="vlanTracerouteOptions.maximized ? 'maximized' : ''"/>
+          <div
+              id="vlan-network"
+              :class="[
+                'min-h-[480px]',
+                vlanTracerouteOptions.maximized ? 'maximized' : '',
+              ]"/>
         </div>
-        <div v-show="tracerouteMode === 'mac'" class="relative">
+        <div v-show="tracerouteMode === 'mac'" class="relative min-h-[480px]">
           <Button
               v-if="macTracerouteOptions.rendered"
-              class="!absolute z-20 top-3 right-3 !rounded-xl"
-              icon="pi pi-expand"
+              class="!absolute z-[10001] top-3 right-3 !rounded-xl"
+              :icon="macTracerouteOptions.maximized ? 'pi pi-times' : 'pi pi-expand'"
               rounded
               severity="secondary"
-              v-tooltip.bottom="'На весь экран'"
+              v-tooltip.bottom="macTracerouteOptions.maximized ? 'Выйти из полного экрана' : 'На весь экран'"
               @click="toggleMaximizeMACTraceroute"/>
-          <div id="mac-network" :class="macTracerouteOptions.maximized ? 'maximized' : ''"/>
+          <div
+              id="mac-network"
+              :class="[
+                'min-h-[480px]',
+                macTracerouteOptions.maximized ? 'maximized' : '',
+              ]"/>
         </div>
       </div>
     </div>
   </div>
-
-  <Button
-      v-if="macTracerouteOptions.maximized"
-      class="!fixed z-[120] top-6 left-6 !rounded-xl"
-      icon="pi pi-expand"
-      severity="secondary"
-      @click="toggleMaximizeMACTraceroute"/>
-  <Button
-      v-if="vlanTracerouteOptions.maximized"
-      class="!fixed z-[120] top-6 left-6 !rounded-xl"
-      icon="pi pi-expand"
-      severity="secondary"
-      @click="toggleMaximizeVlanTraceroute"/>
 
   <Footer/>
 </template>
@@ -297,6 +298,7 @@ import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import ScanStatus, {getInputVlanInfo} from "@/services/traceroute";
 import {InputNumberInputEvent} from "primevue";
+import {applyTracerouteForcedDark} from "@/services/themes";
 
 
 interface VlanCountInfo {
@@ -350,43 +352,52 @@ export default defineComponent({
       macTracerouteVLANInfo: [] as VlanCountInfo[],
 
       vlanNetwork: new TracerouteNetwork("vlan-network"),
-      macNetwork: new TracerouteNetwork("mac-network")
+      macNetwork: new TracerouteNetwork("mac-network"),
 
+      restoreGlobalTheme: null as null | (() => void),
     }
   },
 
+  computed: {
+    graphAreaTransparent(): boolean {
+      const vlanShown = this.tracerouteMode === 'vlan';
+      const macShown = this.tracerouteMode === 'mac';
+      const hasForMode =
+          (vlanShown && this.vlanTracerouteOptions.rendered) ||
+          (macShown && this.macTracerouteOptions.rendered);
+      return !hasForMode;
+    },
+    graphMaximized(): boolean {
+      return this.vlanTracerouteOptions.maximized || this.macTracerouteOptions.maximized;
+    },
+  },
+
   created() {
+    this.restoreGlobalTheme = applyTracerouteForcedDark();
     this.vlanScanStatus.checkScanStatus();
     this.macScanStatus.checkScanStatus();
     document.body.classList.add('traceroute-back')
   },
 
   unmounted() {
+    this.restoreGlobalTheme?.();
+    this.restoreGlobalTheme = null;
     document.body.classList.remove("traceroute-back")
   },
 
   methods: {
 
+    setTracerouteMode(mode: 'vlan' | 'mac') {
+      if (this.tracerouteMode !== mode) {
+        this.vlanTracerouteOptions.maximized = false;
+        this.macTracerouteOptions.maximized = false;
+      }
+      this.tracerouteMode = mode;
+    },
+
     getInputVlanInfo(event: InputNumberInputEvent) {
       const vid = parseInt(event.value?.toString() || "")
       getInputVlanInfo(vid).then(value => this.inputVlanInfo = value);
-    },
-
-    /**
-     * Метод, возвращающий копию объекта baseVisOptions с изменениями, в зависимости от значения свойства tracerouteMode.
-     */
-    getVisOptions(...update: any): any {
-      if (!update) update = {};
-
-      if (this.tracerouteMode === 'vlan') {
-        this.vlanNetwork.options.edges.arrows.middle.enabled = false;
-        return {...this.vlanNetwork.options, ...update};
-
-      } else {
-        this.macNetwork.options.edges.arrows.middle.enabled = true;
-        return {...this.macNetwork.options, ...update};
-      }
-
     },
 
     /**
@@ -477,18 +488,15 @@ export default defineComponent({
 
 <style scoped>
 .maximized {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 110;
-  background-color: rgba(10, 10, 12, 0.92);
-  height: 100vh;
-  width: 100vw;
-  max-height: 100%;
-  max-width: 100%;
-}
-
-:root:not(.dark) .maximized {
-  background-color: rgba(30, 35, 45, 0.94);
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  background-color: #000000 !important;
+  border-radius: 0 !important;
 }
 </style>
