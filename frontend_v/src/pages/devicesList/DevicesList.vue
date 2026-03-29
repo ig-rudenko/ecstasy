@@ -1,81 +1,110 @@
 <template>
   <Header/>
 
-  <div class="xl:container mx-auto py-4">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div class="flex flex-col gap-6">
+      <div class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
+        <div class="relative p-6 sm:p-8">
+          <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div class="max-w-2xl">
+              <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+                Устройства
+              </h1>
+              <p class="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+                Поиск по имени/IP, фильтры по вендору/модели/группе, закрепление избранных. Опционально — режим сводной
+                загрузки интерфейсов.
+              </p>
 
-    <div class="flex flex-wrap justify-center md:grid sm:grid-cols-4 items-center p-4">
+              <div class="mt-5 flex flex-wrap items-center gap-2">
+                <Button v-if="displayMode === 'default'" @click="getDeviceWithStats" icon="pi pi-chart-pie" label="Нагрузка по портам" outlined />
+                <Button v-else-if="displayMode === 'waiting'" icon="pi pi-spin pi-spinner" label="Загружаю нагрузку..." outlined disabled />
+                <Button v-else-if="displayMode === 'interfaces_loading'" @click="getDevices" icon="pi pi-list" label="Обычный вид" outlined />
+                <Button @click="getDevices" icon="pi pi-refresh" label="Обновить" severity="secondary" outlined />
+              </div>
+            </div>
 
-      <div class="text-2xl font-bold py-4">Выберите оборудование</div>
-
-      <!--Переключение режимов работы-->
-      <!--Нагрузка по портам-->
-      <div v-if="displayMode === 'default'" class=" py-2">
-        <Button @click="getDeviceWithStats" text>
-          <img src="/img/loading_circle.svg" class="me-2 w-[50px]" alt="loading-circle">
-          Нагрузка по портам
-        </Button>
-      </div>
-      <!--Ожидание-->
-      <div v-if="displayMode === 'waiting'" class=" py-2">
-        <Button text>
-          <img src="/img/loading_circle.svg" class="pi-spin me-2 w-[50px]" alt="loading-circle">
-          Нагрузка по портам
-        </Button>
-      </div>
-      <!--Обычный режим-->
-      <div v-if="displayMode === 'interfaces_loading'" class=" py-2">
-        <Button @click="getDevices" text>
-          <img src="/img/default_view.svg" class="me-2 w-[50px]" alt="default-view">
-          Обычный вид
-        </Button>
-      </div>
-
-      <!--Картинка оборудования-->
-      <div class="col-span-2 w-full" style="text-align: right">
-        <img class="w-full" :src="'/img/device-icon-'+imageIndex+'.svg'" alt="search-description-image">
-      </div>
-    </div>
-
-    <!--Отображение подсказки по нагрузке портов-->
-    <div v-show="displayMode === 'interfaces_loading'" class="border my-4 mx-2 rounded-xl row shadow"
-         style="padding: 20px;">
-      <!--Просмотр загрузки оборудования-->
-      <div v-if="chartData.length > 0">
-        <div class="text-2xl">Общая загрузка интерфейсов</div>
-        <div class="flex flex-wrap justify-center items-center">
-          <div style="display: block; box-sizing: border-box; height: 270px; width: 270px;">
-            <DoughnutChart :data="chartData"/>
+            <div class="hidden lg:block w-[360px]">
+              <img class="w-full opacity-90" :src="'/img/device-icon-'+imageIndex+'.svg'" alt="devices">
+            </div>
           </div>
-          <div style="display: block; box-sizing: border-box; height: 100%; max-width: 770px; width: 100%;">
-            <BarChart :data="chartData"/>
+
+          <div v-show="displayMode === 'interfaces_loading'" class="mt-6 grid gap-4 lg:grid-cols-12">
+            <div class="lg:col-span-8 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Общая загрузка интерфейсов
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  (по текущему фильтру)
+                </div>
+              </div>
+
+              <div v-if="chartData.length > 0" class="mt-4 flex flex-col xl:flex-row items-center gap-6">
+                <div class="w-[260px] h-[260px] shrink-0">
+                  <DoughnutChart :data="chartData"/>
+                </div>
+                <div class="w-full max-w-[900px]">
+                  <BarChart :data="chartData"/>
+                </div>
+              </div>
+
+              <div v-else class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                Нет данных для построения графиков.
+              </div>
+            </div>
+
+            <div class="lg:col-span-4 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+              <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Легенда</div>
+              <div class="mt-3 grid gap-2 text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded bg-green-700"></span>
+                  <span class="text-gray-700 dark:text-gray-200">Активные порты с описанием</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded bg-green-500"></span>
+                  <span class="text-gray-700 dark:text-gray-200">Активные порты без описания</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded bg-red-300"></span>
+                  <span class="text-gray-700 dark:text-gray-200">Неактивные порты с описанием</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded bg-gray-300"></span>
+                  <span class="text-gray-700 dark:text-gray-200">Незадействованные порты</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded bg-blue-400"></span>
+                  <span class="text-gray-700 dark:text-gray-200">Служебные порты</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!--Расшифровка цвета-->
-      <div class="py-2 text-muted-color">Расшифровка цвета</div>
-      <div class="flex flex-wrap text-center">
-        <div class="rounded-l-xl bg-green-700 w-full sm:w-[20%] text-gray-200">Активные порты с описанием</div>
-        <div class="text-gray-900 bg-green-500 w-full sm:w-[20%]">Активные порты без описания</div>
-        <div class="text-gray-900 bg-red-300 w-full sm:w-[20%]">Неактивные порты с описанием</div>
-        <div class="text-gray-900 bg-gray-300 w-full sm:w-[20%]">Незадействованные порты</div>
-        <div class="rounded-r-xl text-gray-900 bg-blue-400 w-full sm:w-[20%]">Служебные порты</div>
+      <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-4 sm:p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div class="w-full md:max-w-xl">
+            <SearchInput @update:modelValue="(v: string) => search = v"
+                         :active-mode="true"
+                         :init-search="search"
+                         placeholder="Поиск по имени или IP адресу"/>
+          </div>
+          <div class="font-mono text-sm text-gray-600 dark:text-gray-300">
+            Найдено: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ devices_count }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <DevicesListTable :globalSearch="search" :devices="devices"
+                            :groups="groups" :vendors="vendors" :models="models"
+                            @filter:devices="processFilteredDevices"
+                            @filter:clear="() => search = ''"
+                            @update:data="getDevices"/>
+        </div>
       </div>
     </div>
-
-
-    <!-- Строка поиска-->
-    <SearchInput @update:modelValue="(v: string) => search = v" :active-mode="true"
-                 :init-search="search"
-                 placeholder="Поиск по Имени или IP адресу"/>
-
-    <div class="p-4 py-2 font-mono">Найдено: {{ devices_count }}</div>
-
-    <DevicesListTable :globalSearch="search" :devices="devices"
-                      :groups="groups" :vendors="vendors" :models="models"
-                      @filter:devices="processFilteredDevices"
-                      @filter:clear="() => search = ''"
-                      @update:data="getDevices"/>
   </div>
 
   <Footer/>

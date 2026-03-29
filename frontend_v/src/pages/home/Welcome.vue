@@ -50,196 +50,183 @@ setTimeout(timer, 300);
 </script>
 
 <template>
-
-  <main class="container mx-auto py-5">
-    <div class="flex flex-col gap-4">
-
-      <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-3xl shadow">
-        <div class="p-3">
-          <div class="flex align-items">
-            <div class="text-2xl font-bold me-2 text-gray-900 dark:text-gray-200">Добро пожаловать,
-              {{ user?.firstName || user?.username }}
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#ffa22b" viewBox="0 0 16 16">
-              <path
-                  d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5M4.285 9.567a.5.5 0 0 1 .683.183A3.5 3.5 0 0 0 8 11.5a3.5 3.5 0 0 0 3.032-1.75.5.5 0 1 1 .866.5A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1-3.898-2.25.5.5 0 0 1 .183-.683M10 8c-.552 0-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5S10.552 8 10 8"></path>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <router-link to="/devices"
-                   class="rounded-3xl px-5 sm:px-10 py-5 border shadow flex flex-col md:flex-row justify-between gap-4">
-        <div class="">
-          <div class="text-2xl py-5 font-bold">Управление оборудованием</div>
-
-          <div class="flex flex-col gap-3">
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#list-icon"></use>
-                </svg>
-              </div>
-              <div>Отображение интерфейсов оборудования в реальном времени</div>
-            </div>
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#up-down-icon"></use>
-                </svg>
-              </div>
-              <div>Управление состоянием порта</div>
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
+      <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
+      <div class="relative p-6 sm:p-10">
+        <div class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+          <div class="max-w-2xl">
+            <div class="inline-flex items-center gap-2 rounded-full border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 px-3 py-1 text-sm text-gray-700 dark:text-gray-200">
+              <span class="font-medium">Ecstasy</span>
+              <span class="text-gray-400">·</span>
+              <span>real-time управление сетевым оборудованием</span>
             </div>
 
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#bar-icon"></use>
-                </svg>
-              </div>
-              <div>Просмотр MAC адресов на порту</div>
-            </div>
+            <h1 class="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Добро пожаловать, <span class="font-bold">{{ user?.firstName || user?.username }}</span>
+            </h1>
 
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#gear-icon"></use>
-                </svg>
-              </div>
-              <div>Просмотр текущей конфигурации порта</div>
-            </div>
-
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#journals-icon"></use>
-                </svg>
-              </div>
-              <div>Перенаправление для просмотра логов в Elastic Stack</div>
-            </div>
-
-            <div class="flex gap-2 utems-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#warning-icon"></use>
-                </svg>
-              </div>
-              <div>Просмотр ошибок на порту</div>
-            </div>
-
-            <div class="flex gap-2 items-center">
-              <div>
-                <svg width="16" height="16" role="img">
-                  <use xlink:href="#radios-grid-icon"></use>
-                </svg>
-              </div>
-              <div>Возможность просматривать и сбрасывать текущую сессию по MAC адресу</div>
-            </div>
-
-          </div>
-        </div>
-
-        <div class="flex justify-center">
-          <img class="h-[200px] sm:h-[350px]" src="/img/dev-box.svg" alt="device">
-        </div>
-      </router-link>
-
-      <router-link to="/gpon" v-if="showGPONCard">
-        <div class="rounded-3xl shadow w-full text-gray-100"
-             style="background-image: url('/img/gpon/sphere-global.jpeg'); background-position: left; background-size: cover">
-          <div class="p-10">
-            <div class="text-2xl font-bold">База GPON</div>
-            <div class="flex flex-col gap-3 py-3">
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#list-icon"></use>
-                </svg>
-                <div>Отображение технических данных GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#splitter"></use>
-                </svg>
-                <div>Просмотр задействованных OLT портов</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#building"></use>
-                </svg>
-                <div>Подключение строений к сети GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#people"></use>
-                </svg>
-                <div>Управление абонентами GPON</div>
-              </div>
-              <div class="flex gap-2 items-center">
-                <svg class="bi me-2" width="16" height="16" role="img">
-                  <use xlink:href="#node-plus"></use>
-                </svg>
-                <div>Создание и просмотр подключений абонентов</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </router-link>
-
-      <router-link to="/maps" v-if="showMapsCard" class="p-4 rounded-3xl shadow"
-                   style="background-image: url('/img/maps/background.png'); background-position: center center; height: 200px">
-        <div class="text-2xl text-gray-900 font-bold">Интерактивные карты</div>
-      </router-link>
-
-      <div class="md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-
-        <router-link to="/tools/traceroute" v-if="showTracerouteCard">
-          <div class="text-center h-full p-4 py-8 rounded-3xl text-gray-200 shadow"
-               style="
-             background-image: url('/img/background.png');
-             background-position: center center;
-             background-size: cover;
-            ">
-            <div class="text-2xl font-bold">Traceroute</div>
-            <div class="py-5">
-              <svg class="bi me-2 fill-orange-400" width="100%" height="200px">
-                <use xlink:href="#vlan-icon"></use>
-              </svg>
-            </div>
-
-            <div class="">Отображение топологии конкретного VLAN, а также прохождение MAC адреса</div>
-          </div>
-        </router-link>
-
-        <router-link to="/tools/search" v-if="showDescSearchCard">
-          <div class="text-center h-full p-4 py-8 border rounded-3xl shadow">
-            <div class="text-2xl font-bold">Description search</div>
-            <div class="py-5">
-              <img class="h-[12rem] mx-auto" src="/img/home-search-description.svg">
-            </div>
-            <p>
-              Поиск конкретной строки в описании порта и его комментариев на всех собранных заранее
-              интерфейсах у каждого оборудования
+            <p class="mt-3 text-base sm:text-lg text-gray-600 dark:text-gray-300">
+              Единая панель для поиска устройств, мониторинга интерфейсов в реальном времени, диагностики и работы с конфигурациями —
+              без ручного ввода консольных команд.
             </p>
-          </div>
-        </router-link>
 
-        <router-link to="/tools/wtf" v-if="showWTFCard">
-          <div class="text-center h-full p-4 py-8 border rounded-3xl shadow bg-gray-800 text-gray-200">
-            <div class="text-2xl font-bold">WTF search</div>
-
-            <div class="py-20 font-mono text-3xl">
-              <div>{{ randomIP }}</div>
-              <div>{{ randomMAC }}</div>
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <router-link to="/devices">
+                <Button label="Открыть устройства" icon="pi pi-box" />
+              </router-link>
+              <router-link to="/devices?search=">
+                <Button label="Быстрый поиск" icon="pi pi-search" severity="secondary" outlined />
+              </router-link>
             </div>
-
-            <p>Осуществляет поиск по IP/MAC адресам в таблицах arp. Также отображает соответствие с базой Zabbix</p>
-
           </div>
-        </router-link>
+
+          <div class="w-full lg:w-[420px]">
+            <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Фокус: устройства</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">поиск · фильтры · real-time</div>
+              </div>
+              <div class="mt-4 flex items-center justify-between gap-6">
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                  Открой список оборудования — и дальше все инструменты доступны прямо из карточки устройства.
+                </div>
+                <img class="h-20 w-auto opacity-90 hidden sm:block" src="/img/home-devices-control.svg" alt="devices-control">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+            <div class="flex items-start gap-3">
+              <div class="rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 p-2">
+                <i class="pi pi-wave-pulse text-lg"/>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-gray-100">Интерфейсы в реальном времени</div>
+                <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                  Состояние портов, MAC на порту, ошибки, конфигурация и диагностика.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+            <div class="flex items-start gap-3">
+              <div class="rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 p-2">
+                <i class="pi pi-sliders-h text-lg"/>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-gray-100">Управление и команды</div>
+                <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                  Up/Down порта, шаблоны команд, сбор и хранение конфигураций.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5">
+            <div class="flex items-start gap-3">
+              <div class="rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300 p-2">
+                <i class="pi pi-share-alt text-lg"/>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-gray-100">Визуализация и поиск</div>
+                <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                  Топологии VLAN/MAC, поиск по описанию, интерактивные карты.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <router-link to="/devices"
+                       class="group rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition">
+            <div class="flex items-center justify-between gap-6">
+              <div>
+                <div class="flex items-center gap-2">
+                  <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">Устройства</div>
+                  <i class="pi pi-arrow-right text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition"/>
+                </div>
+                <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  Быстрый поиск по имени/IP, фильтры по вендору/модели/группе, закрепление избранных.
+                </div>
+              </div>
+              <img class="hidden sm:block h-24 w-auto opacity-90" src="/img/dev-box.svg" alt="device">
+            </div>
+          </router-link>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <router-link v-if="showTracerouteCard" to="/tools/traceroute"
+                         class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">Traceroute</div>
+                  <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">Топология VLAN и прохождение MAC адреса.</div>
+                </div>
+                <img class="h-12 w-12 opacity-90" src="/img/vlan-traceroute-icon.svg" alt="traceroute">
+              </div>
+            </router-link>
+
+            <router-link v-if="showDescSearchCard" to="/tools/search"
+                         class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">Description search</div>
+                  <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">Поиск строки в описаниях интерфейсов.</div>
+                </div>
+                <img class="h-12 w-12 opacity-90" src="/img/search-description-icon.svg" alt="description-search">
+              </div>
+            </router-link>
+
+            <router-link v-if="showMapsCard" to="/maps"
+                         class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition sm:col-span-2">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">Интерактивные карты</div>
+                  <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">Слои, Zabbix-группы, geojson и внешние карты.</div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-map text-xl text-sky-600 dark:text-sky-300"/>
+                  <i class="pi pi-layer-group text-xl text-indigo-600 dark:text-indigo-300"/>
+                </div>
+              </div>
+            </router-link>
+
+            <router-link v-if="showGPONCard" to="/gpon"
+                         class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition sm:col-span-2">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">GPON</div>
+                  <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">Технические данные, абоненты, подключения и сплиттеры.</div>
+                </div>
+                <img class="h-12 w-12 opacity-90" src="/img/gpon/splitter.svg" alt="gpon">
+              </div>
+            </router-link>
+
+            <router-link v-if="showWTFCard" to="/tools/wtf"
+                         class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-6 hover:bg-white/90 dark:hover:bg-gray-900/60 transition sm:col-span-2">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 dark:text-gray-100">WTF search</div>
+                  <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                    Поиск IP/MAC в arp-таблицах и сопоставление с Zabbix.
+                  </div>
+                  <div class="mt-3 font-mono text-xs text-gray-600 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">ip:</span> {{ randomIP }}
+                    <span class="mx-2 text-gray-400">·</span>
+                    <span class="text-gray-500 dark:text-gray-400">mac:</span> {{ randomMAC }}
+                  </div>
+                </div>
+                <img class="h-12 w-12 opacity-90" src="/img/mac-icon.svg" alt="wtf">
+              </div>
+            </router-link>
+          </div>
+        </div>
       </div>
-
     </div>
-
   </main>
 
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">

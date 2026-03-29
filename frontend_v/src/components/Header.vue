@@ -24,10 +24,17 @@ const items = ref<MenuItem[]>([
   }
 ]);
 
+function buildMenuItems(): MenuItem[] {
+  const built: MenuItem[] = [
+    {
+      label: 'Оборудование',
+      icon: 'devices',
+      url: "/devices",
+    }
+  ];
 
-const menuItems = computed(() => {
   if (permissions.hasConsoleAccess()) {
-    items.value.push({
+    built.push({
       label: 'Консоль',
       icon: 'console',
       url: permissions.getConsoleUrl() || "#",
@@ -36,7 +43,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.hasEcstasyLoopPermission()) {
-    items.value.push({
+    built.push({
       label: 'Loop Detector',
       icon: 'loop',
       url: permissions.getEcstasyLoopUrl() || "#",
@@ -45,7 +52,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.has("auth.can_view_maps")) {
-    items.value.push({
+    built.push({
       label: 'Карты',
       icon: 'map',
       url: '/maps',
@@ -53,7 +60,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.has("auth.access_desc_search")) {
-    items.value.push({
+    built.push({
       label: 'Поиск',
       icon: 'search',
       url: '/tools/search',
@@ -61,7 +68,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.has("auth.access_traceroute")) {
-    items.value.push({
+    built.push({
       label: 'Трассировка',
       icon: 'topology',
       url: '/tools/traceroute',
@@ -69,7 +76,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.has("auth.access_wtf_search")) {
-    items.value.push({
+    built.push({
       label: 'WTF',
       icon: 'radar',
       url: '/tools/wtf'
@@ -77,7 +84,7 @@ const menuItems = computed(() => {
   }
 
   if (permissions.has("auth.access_rings") || permissions.has("auth.access_transport_rings")) {
-    items.value.push({
+    built.push({
       label: 'Кольца',
       icon: 'ring',
       url: '/ring-manager'
@@ -85,15 +92,19 @@ const menuItems = computed(() => {
   }
 
   if (permissions.hasGPONAnyPermission()) {
-    items.value.push({
+    built.push({
       label: 'GPON',
       icon: 'gpon',
       url: '/gpon',
     })
   }
 
-  return items;
+  return built;
+}
 
+const menuItems = computed(() => {
+  items.value = buildMenuItems();
+  return items;
 });
 
 function isCurrent(url: string) {
@@ -122,42 +133,88 @@ const toggleProfile = (event: Event) => {
   profileRef.value.toggle(event);
 }
 
+const mobileMenuOpen = ref(false);
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false;
+}
+
 </script>
 
 <template>
-  <div class="bg-zinc-800 dark:bg-gray-950">
-    <Menubar :model="menuItems.value"
-             class="xl:container mx-auto bg-zinc-800 dark:bg-gray-950 !border-none !rounded-none"
-             :pt="{itemContent: {class: 'bg-zinc-800 dark:!bg-gray-950'}}">
-      <template #start>
-        <router-link to="/" class="flex items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none z-10">
-          <img class="me-3 !w-[96px] !h-[96px] rounded-full" src="/video/logo.webp" alt="logo">
-          <div style="font-family: 'Century Gothic', fantasy;"
-               class="hidden sm:block ps-4 pr-10 text-gray-300 text-2xl sm:text-[2rem]">
-            Ecstasy
-          </div>
-        </router-link>
-      </template>
-
-      <template #item="{ item }">
-        <AppLink :to="item.url || ''" :target="item.newPage?'_blank':''">
-          <div
-              :class="isCurrent(item.url || '_')?'border-s-4 md:border-s-0 md:border-t-2 border-indigo-500':''"
-              class="ps-4 md:ps-0 flex items-center md:block">
-            <img :src="'/img/menu/'+item.icon+'.png'" class="md:mx-auto w-[48px] md:w-[54px] xl:w-[64px] mb-1"
-                 :alt="item.icon"/>
-            <div class="flex flex-col">
-              <span class="m-0 p-0 text-xl md:text-[0.7rem] text-gray-300 text-center">{{ item.label }}</span>
+  <div class="sticky top-0 z-30">
+    <div class="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8 py-2">
+      <div
+          class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
+        <!-- Mobile header -->
+        <div class="relative flex items-center justify-between gap-3 px-3 py-3 sm:hidden">
+          <router-link to="/" class="flex items-center gap-3" @click="closeMobileMenu">
+            <img class="w-10 h-10 rounded-full" src="/video/logo.webp" alt="logo">
+            <div>
+              <div style="font-family: 'Century Gothic', fantasy;" class="text-gray-900 dark:text-gray-100 text-xl leading-none">
+                Ecstasy
+              </div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">Network equipment control</div>
             </div>
-          </div>
-        </AppLink>
-      </template>
+          </router-link>
 
-      <template #end>
-        <Avatar v-if="user" :image="getAvatar(user.username)" class="cursor-pointer"
-                @click="toggleProfile" size="large"/>
-      </template>
-    </Menubar>
+          <div class="flex items-center gap-2">
+            <Button icon="pi pi-bars" severity="secondary" outlined size="small"
+                    v-tooltip.bottom="'Меню'" @click="mobileMenuOpen = true"/>
+            <Avatar v-if="user" :image="getAvatar(user.username)" class="cursor-pointer"
+                    @click="toggleProfile" size="large"/>
+          </div>
+        </div>
+
+        <!-- Desktop header -->
+        <div class="hidden sm:block relative">
+          <Menubar :model="menuItems.value"
+                   class="relative !border-none !rounded-none !bg-transparent"
+                   :pt="{
+                      root: {class: 'px-2 sm:px-4 py-2 !bg-transparent'},
+                      start: {class: 'flex items-center gap-3'},
+                      end: {class: 'flex items-center'},
+                      menu: {class: 'gap-1'},
+                      item: {class: 'rounded-2xl'},
+                      itemContent: {class: '!bg-transparent rounded-2xl hover:!bg-white/70 dark:hover:!bg-gray-900/50 transition'},
+                      itemLink: {class: 'px-3 py-2'},
+                    }">
+            <template #start>
+              <router-link to="/" class="flex items-center gap-3 text-decoration-none">
+                <img class="w-10 h-10 sm:w-12 sm:h-12 rounded-full" src="/video/logo.webp" alt="logo">
+                <div class="hidden sm:block">
+                  <div style="font-family: 'Century Gothic', fantasy;"
+                       class="text-gray-900 dark:text-gray-100 text-xl sm:text-2xl leading-none">
+                    Ecstasy
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    Network equipment control
+                  </div>
+                </div>
+              </router-link>
+            </template>
+
+            <template #item="{ item }">
+              <AppLink :to="item.url || ''" :target="item.newPage?'_blank':''">
+                <div
+                    :class="isCurrent(item.url || '_')?'ring-2 ring-indigo-500/50':''"
+                    class="flex items-center gap-2 rounded-2xl px-3 py-2">
+                  <img :src="'/img/menu/'+item.icon+'.png'" class="w-7 h-7 opacity-90" :alt="item.icon"/>
+                  <span class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{{ item.label }}</span>
+                </div>
+              </AppLink>
+            </template>
+
+            <template #end>
+              <div class="flex items-center gap-2">
+                <Avatar v-if="user" :image="getAvatar(user.username)" class="cursor-pointer"
+                        @click="toggleProfile" size="large"/>
+              </div>
+            </template>
+          </Menubar>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="md:sticky top-0 z-10 w-fit backdrop-blur-sm rounded-md">
@@ -211,6 +268,41 @@ const toggleProfile = (event: Event) => {
       </div>
     </div>
   </Popover>
+
+  <Drawer v-model:visible="mobileMenuOpen" position="left"
+          class="w-[22rem] max-w-[90vw]"
+          :pt="{
+            root: { class: 'border-none' },
+            header: { class: 'border-b border-gray-200/70 dark:border-gray-700/70' },
+            content: { class: 'p-3' }
+          }">
+    <template #header>
+      <div class="flex items-center gap-3">
+        <img class="w-10 h-10 rounded-full" src="/video/logo.webp" alt="logo">
+        <div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100">Меню</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">быстрые переходы</div>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex flex-col gap-2">
+      <AppLink v-for="item in menuItems.value" :key="item.url || item.label"
+               :to="item.url || ''" :target="item.newPage?'_blank':''"
+               @click="closeMobileMenu">
+        <div
+            :class="isCurrent(item.url || '_')?'ring-2 ring-indigo-500/50 bg-white/70 dark:bg-gray-900/40':''"
+            class="flex items-center gap-3 rounded-2xl px-3 py-2 hover:bg-white/70 dark:hover:bg-gray-900/40 transition">
+          <img :src="'/img/menu/'+item.icon+'.png'" class="w-8 h-8 opacity-90" :alt="item.icon"/>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ item.label }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.url }}</div>
+          </div>
+          <i class="pi pi-angle-right text-gray-400"/>
+        </div>
+      </AppLink>
+    </div>
+  </Drawer>
 
   <Popover ref="profileRef">
     <div>
