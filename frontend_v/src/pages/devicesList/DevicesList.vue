@@ -17,6 +17,7 @@
               </p>
 
               <div class="mt-5 flex flex-wrap items-center gap-2">
+                <PinnedDevicesPopover/>
                 <Button v-if="displayMode === 'default'" @click="getDeviceWithStats" icon="pi pi-chart-pie" label="Нагрузка по портам" outlined />
                 <Button v-else-if="displayMode === 'waiting'" icon="pi pi-spin pi-spinner" label="Загружаю нагрузку..." outlined disabled />
                 <Button v-else-if="displayMode === 'interfaces_loading'" @click="getDevices" icon="pi pi-list" label="Обычный вид" outlined />
@@ -117,6 +118,7 @@ import ScrollTop from "primevue/scrolltop";
 
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
+import PinnedDevicesPopover from "@/components/PinnedDevicesPopover.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import BarChart from "./BarChart.vue";
 import DoughnutChart from "./DoughnutChart.vue";
@@ -130,6 +132,7 @@ export default defineComponent({
   components: {
     Footer,
     Header,
+    PinnedDevicesPopover,
     BarChart,
     DoughnutChart,
     DevicesListTable,
