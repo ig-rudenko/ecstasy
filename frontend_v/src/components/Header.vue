@@ -145,7 +145,7 @@ const closeMobileMenu = () => {
     <div class="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8 py-2">
       <div
           class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
-        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
+        <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
         <!-- Mobile header -->
         <div class="relative flex items-center justify-between gap-3 px-3 py-3 sm:hidden">
           <router-link to="/" class="flex items-center gap-3" @click="closeMobileMenu">
@@ -226,7 +226,7 @@ const closeMobileMenu = () => {
 
   <Popover ref="pinnedDevicesRef" class="p-1">
     <div
-        class="pb-2 mb-2 flex w-full justify-between items-center gap-2 border-b-[1px] border-gray-200 dark:border-gray-700">
+        class="pb-2 mb-2 flex w-full justify-between items-center gap-2 border-b border-gray-200 dark:border-gray-700">
       <div>Ваши избранные устройства</div>
       <Button v-if="pinnedDevices.pinnedDevices.value.length != 0" outlined icon="pi pi-trash" size="small"
               v-tooltip="'Очистить избранное'"
@@ -272,9 +272,12 @@ const closeMobileMenu = () => {
   <Drawer v-model:visible="mobileMenuOpen" position="left"
           class="w-[22rem] max-w-[90vw]"
           :pt="{
-            root: { class: 'border-none' },
-            header: { class: 'border-b border-gray-200/70 dark:border-gray-700/70' },
-            content: { class: 'p-3' }
+            root: {
+              class: 'border-none !shadow-none dark:!bg-gray-900/55 dark:backdrop-blur-xl ' +
+                  'dark:border-r dark:border-gray-700/60 bg-white/95 dark:!ring-1 dark:!ring-white/5',
+            },
+            header: { class: 'border-b border-gray-200/70 dark:border-gray-700/70 bg-white/80 dark:bg-transparent' },
+            content: { class: 'p-3 bg-transparent' }
           }">
     <template #header>
       <div class="flex items-center gap-3">
@@ -304,8 +307,14 @@ const closeMobileMenu = () => {
     </div>
   </Drawer>
 
-  <Popover ref="profileRef">
-    <div>
+  <Popover ref="profileRef" :pt="{
+    root: {
+      class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 ' +
+          'dark:border-gray-700/60 bg-white/95 shadow-lg dark:bg-gray-900/55 dark:backdrop-blur-xl dark:!ring-1 dark:!ring-white/5',
+    },
+    content: { class: '!p-0' },
+  }">
+    <div class="p-3">
       <div v-if="user" class="flex gap-3 items-center">
         <Avatar :image="getAvatar(user.username)" shape="circle" size="large"/>
         <div>

@@ -260,9 +260,9 @@ function exportCSV(): void {
           </div>
         </div>
 
-        <div class="grid gap-3 lg:grid-cols-12">
-          <div class="lg:col-span-4">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Вендор</div>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="min-w-0">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Вендор</div>
             <Select v-model="vendorFilter" :options="vendors" placeholder="Все" class="w-full"
                     :showClear="true" scroll-height="300px">
               <template #option="slotProps">
@@ -274,8 +274,8 @@ function exportCSV(): void {
             </Select>
           </div>
 
-          <div class="lg:col-span-4">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Модель</div>
+          <div class="min-w-0 sm:col-span-2 xl:col-span-1">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Модель</div>
             <Select v-model="modelFilter" :options="filteredModelGroups" optionGroupLabel="label" optionGroupChildren="items"
                     filter :showClear="true" placeholder="Все" class="w-full" scroll-height="350px">
               <template #optiongroup="slotProps">
@@ -290,8 +290,8 @@ function exportCSV(): void {
             </Select>
           </div>
 
-          <div class="lg:col-span-4">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Группа</div>
+          <div class="min-w-0">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Группа</div>
             <Select v-model="groupFilter" :options="groups" placeholder="Все" class="w-full"
                     :showClear="true" scroll-height="300px">
               <template #option="slotProps">
@@ -300,18 +300,13 @@ function exportCSV(): void {
             </Select>
           </div>
 
-          <div v-if="hasInterfacesCount" class="lg:col-span-6">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Абоненты (от / до)</div>
-            <div class="flex items-center gap-2">
-              <InputNumber v-model="workloadRange[0]" input-class="w-full" class="w-full" />
-              <span class="text-gray-400">—</span>
-              <InputNumber v-model="workloadRange[1]" input-class="w-full" class="w-full" />
+          <div v-if="hasInterfacesCount" class="sm:col-span-2 xl:col-span-3">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Абоненты (от / до)</div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <InputNumber v-model="workloadRange[0]" input-class="w-full" class="w-full max-w-none sm:max-w-[10rem]" />
+              <span class="hidden sm:inline text-gray-400 shrink-0 text-center">—</span>
+              <InputNumber v-model="workloadRange[1]" input-class="w-full" class="w-full max-w-none sm:max-w-[10rem]" />
             </div>
-          </div>
-
-          <div class="lg:col-span-6">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Строк на страницу</div>
-            <Select v-model="rows" :options="(rowsPerPageOptions as unknown as number[])" class="w-full" />
           </div>
         </div>
       </div>
