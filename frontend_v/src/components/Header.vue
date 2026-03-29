@@ -132,7 +132,7 @@ const closeMobileMenu = () => {
 
 <template>
   <div class="sticky top-0 z-30">
-    <div class="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8 py-2">
+    <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
       <div
           class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
         <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10"/>
@@ -170,7 +170,7 @@ const closeMobileMenu = () => {
                       itemLink: {class: 'px-3 py-2'},
                     }">
             <template #start>
-              <router-link to="/" class="flex items-center gap-3 text-decoration-none">
+              <router-link to="/" class="flex items-center gap-3 text-decoration-none pr-4">
                 <img class="w-10 h-10 sm:w-12 sm:h-12 rounded-full" src="/video/logo.webp" alt="logo">
                 <div class="hidden sm:block">
                   <div style="font-family: 'Century Gothic', fantasy;"

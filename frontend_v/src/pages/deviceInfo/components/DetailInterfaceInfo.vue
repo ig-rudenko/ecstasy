@@ -1,9 +1,9 @@
 <template>
 
   <tr :id="'interface-'+interface.name" :style="interfaceStyles" :class="interfaceClasses"
-      class="hover:bg-gray-100 dark:hover:bg-gray-800">
+      class="rounded-2xl bg-white/80 dark:bg-gray-950/35 hover:bg-gray-100 dark:hover:bg-gray-800/70">
 
-    <td>
+    <td class="rounded-l-2xl px-2 py-3 align-top">
       <div class="flex gap-1 px-2">
         <!--       COMMENTS-->
         <Comment :interface="interface" :device-name="deviceName" :allow-edit="true"/>
@@ -14,7 +14,7 @@
     </td>
 
     <!--ПОРТ-->
-    <td class="btn-fog" style="text-align: right">
+    <td class="btn-fog px-3 py-3 align-top" style="text-align: right">
 
       <div class="flex items-center justify-between">
 
@@ -25,7 +25,7 @@
 
         <div>
           <div class="hidden sm:flex items-center">
-            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-xs" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
 
@@ -64,7 +64,7 @@
               </svg>
             </Button>
 
-            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-xs" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
           </div>
@@ -76,29 +76,29 @@
     <!--Статус порта-->
     <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm text-center sm:min-w-[6rem] px-3 font-mono">
+        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm text-center sm:min-w-[6rem] px-3 py-3 font-mono align-top">
       <span>{{ formatStatus(interface.status) }}</span>
     </td>
 
     <!--Описание порта-->
-    <td>
+    <td class="px-3 py-3 align-top">
       <ChangeDescription :device-name="deviceName" :interface="interface"
                          @change-device="dev => $emit('changeDevice', dev)"/>
     </td>
 
     <!--VLANS-->
     <td v-if="showVlans && interface.vlans.length" @click="toggleVlansList"
-        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3 font-mono">
+        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3 py-3 font-mono align-top">
       {{ compressVlanRange }}
     </td>
-    <td v-else></td>
+    <td v-else class="rounded-r-2xl"></td>
 
   </tr>
 
   <tr v-if="showDetailInfo">
 
     <td v-if="complexInfo" colspan="5"
-        class="border dark:bg-transparent bg-zinc-50 border-gray-200 dark:border-gray-600 shadow p-3">
+        class="rounded-2xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-600 shadow-sm p-3">
 
       <!--      DETAIL PORT INFO  -->
       <div v-if="complexInfo.portDetailInfo" class="container py-3">
@@ -246,7 +246,7 @@ export default defineComponent({
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow", "border", "sticky", "top-0", "bg-white", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
+      if (this.showDetailInfo) return ["shadow-sm", "border", "sticky", "top-0", "z-[2]", "bg-white", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {
