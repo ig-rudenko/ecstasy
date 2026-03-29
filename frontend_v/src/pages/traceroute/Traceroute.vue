@@ -248,9 +248,14 @@
           :class="[
             'relative rounded-3xl border shadow-inner min-h-[480px]',
             graphAreaTransparent ? 'border-gray-200/40 dark:border-gray-700/50 overflow-hidden bg-black/35 dark:bg-black/50 backdrop-blur-[2px]' : 'border-gray-700 overflow-hidden bg-neutral-950',
-            graphMaximized ? '!overflow-visible !rounded-none border-0 shadow-none min-h-0' : '',
+            graphMaximized ? '!overflow-visible !rounded-none border-0 shadow-none min-h-0 bg-transparent' : '',
           ]">
-        <div v-show="tracerouteMode === 'vlan'" class="relative min-h-[480px]">
+        <div
+            v-show="tracerouteMode === 'vlan'"
+            :class="[
+              'relative min-h-[480px] h-[900px]',
+              vlanTracerouteOptions.maximized ? 'maximized-shell' : '',
+            ]">
           <Button
               v-if="vlanTracerouteOptions.rendered"
               class="!absolute z-[10001] top-3 right-3 !rounded-xl"
@@ -262,11 +267,16 @@
           <div
               id="vlan-network"
               :class="[
-                'min-h-[480px]',
+                'min-h-[480px] h-full w-full',
                 vlanTracerouteOptions.maximized ? 'maximized' : '',
               ]"/>
         </div>
-        <div v-show="tracerouteMode === 'mac'" class="relative min-h-[480px]">
+        <div
+            v-show="tracerouteMode === 'mac'"
+            :class="[
+              'relative min-h-[480px] h-[900px]',
+              macTracerouteOptions.maximized ? 'maximized-shell' : '',
+            ]">
           <Button
               v-if="macTracerouteOptions.rendered"
               class="!absolute z-[10001] top-3 right-3 !rounded-xl"
@@ -278,7 +288,7 @@
           <div
               id="mac-network"
               :class="[
-                'min-h-[480px]',
+                'min-h-[480px] h-full w-full',
                 macTracerouteOptions.maximized ? 'maximized' : '',
               ]"/>
         </div>
@@ -487,10 +497,19 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.maximized {
+.maximized-shell {
   position: fixed !important;
   inset: 0 !important;
   z-index: 10000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: #000000 !important;
+  border-radius: 0 !important;
+}
+
+.maximized {
   width: 100vw !important;
   height: 100vh !important;
   max-width: 100vw !important;
@@ -498,5 +517,11 @@ export default defineComponent({
   margin: 0 !important;
   background-color: #000000 !important;
   border-radius: 0 !important;
+}
+
+.maximized :deep(.vis-network),
+.maximized :deep(.vis-network > canvas) {
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>
