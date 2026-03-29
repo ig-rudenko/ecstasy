@@ -62,7 +62,7 @@
           Поиск по паттерну:
           <code class="mx-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 font-mono text-sm">{{ pattern }}</code>
         </p>
-        <img class="mx-auto mt-6 h-[200px] object-contain" src="/img/load_desc.gif" alt="Р—Р°РіСЂСѓР·РєР°">
+        <img class="mx-auto mt-6 h-[200px] object-contain" src="/img/load_desc.gif" alt="Загрузка">
       </div>
 
       <template v-else-if="lastPattern">
@@ -74,7 +74,7 @@
               Результаты по паттерну
               <code class="ml-1 text-indigo-700 dark:text-indigo-300 font-mono text-base">{{ lastPattern }}</code>
             </h2>
-            <p class="text-sm font-mono text-gray-600 dark:text-gray-300">РќР°Р№РґРµРЅРѕ: {{ interfaces.length }}</p>
+            <p class="text-sm font-mono text-gray-600 dark:text-gray-300">Найдено: {{ interfaces.length }}</p>
           </div>
 
           <div class="flex flex-col gap-4">
@@ -82,34 +82,34 @@
               <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5 flex-1">
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ
+                    Оборудование
                   </div>
-                  <InputText v-model="filters.device" class="w-full" placeholder="РџРѕРёСЃРє РїРѕ РёРјРµРЅРё"/>
+                  <InputText v-model="filters.device" class="w-full" placeholder="Поиск по имени"/>
                 </div>
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    РџРѕСЂС‚
+                    Порт
                   </div>
-                  <InputText v-model="filters.port" class="w-full" placeholder="РџРѕРёСЃРє РїРѕСЂС‚Р°"/>
+                  <InputText v-model="filters.port" class="w-full" placeholder="Поиск порта"/>
                 </div>
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    РЎС‚Р°С‚СѓСЃ
+                    Статус
                   </div>
-                  <Select v-model="filters.status" :options="statusOptions" placeholder="Р’СЃРµ" class="w-full"
+                  <Select v-model="filters.status" :options="statusOptions" placeholder="Все" class="w-full"
                           :showClear="true"/>
                 </div>
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    РћРїРёСЃР°РЅРёРµ
+                    Описание
                   </div>
-                  <InputText v-model="filters.description" class="w-full" placeholder="РџРѕРёСЃРє"/>
+                  <InputText v-model="filters.description" class="w-full" placeholder="Поиск"/>
                 </div>
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     VLAN
                   </div>
-                  <InputText v-model="filters.vlans" class="w-full" placeholder="РџРѕРёСЃРє VLAN"/>
+                  <InputText v-model="filters.vlans" class="w-full" placeholder="Поиск VLAN"/>
                 </div>
               </div>
 
@@ -121,13 +121,13 @@
                     outlined
                     label="CSV"
                     class="shrink-0"
-                    v-tooltip.left="'Р­РєСЃРїРѕСЂС‚ С‚РµРєСѓС‰РµР№ С‚Р°Р±Р»РёС†С‹ РїРѕ С„РёР»СЊС‚СЂСѓ, РЅРѕ Р±РµР· СЃРѕСЂС‚РёСЂРѕРІРєРё'"/>
+                    v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'"/>
                 <Button
                     v-if="hasActiveFilters || sortState.key"
                     severity="secondary"
                     outlined
                     icon="pi pi-filter-slash"
-                    label="РЎР±СЂРѕСЃРёС‚СЊ"
+                    label="Сбросить"
                     @click="clearTableState"/>
                 <Select
                     v-model="rows"
@@ -137,7 +137,7 @@
             </div>
 
             <div class="text-sm font-mono text-gray-600 dark:text-gray-300">
-              {{ filteredInterfaces.length }} СЃС‚СЂРѕРє
+              {{ filteredInterfaces.length }} строк
             </div>
 
             <div
@@ -148,25 +148,25 @@
                 <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                       @click="toggleSort('device')">
-                    РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ <span
+                    Оборудование <span
                       v-if="sortState.key === 'device'">{{ sortState.dir === 'asc' ? '↑' : '↓' }}</span>
                   </th>
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none" @click="toggleSort('port')">
-                    РџРѕСЂС‚ <span v-if="sortState.key === 'port'">{{ sortState.dir === 'asc' ? '↑' : '↓' }}</span>
+                    Порт <span v-if="sortState.key === 'port'">{{ sortState.dir === 'asc' ? '↑' : '↓' }}</span>
                   </th>
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                       @click="toggleSort('status')">
-                    РЎС‚Р°С‚СѓСЃ <span v-if="sortState.key === 'status'">{{
+                    Статус <span v-if="sortState.key === 'status'">{{
                       sortState.dir === 'asc' ? '↑' : '↓'
                     }}</span>
                   </th>
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none"
                       @click="toggleSort('description')">
-                    РћРїРёСЃР°РЅРёРµ <span v-if="sortState.key === 'description'">{{
+                    Описание <span v-if="sortState.key === 'description'">{{
                       sortState.dir === 'asc' ? '↑' : '↓'
                     }}</span>
                   </th>
-                  <th class="px-4 py-3 text-left font-semibold">РљРѕРјРјРµРЅС‚Р°СЂРёРё</th>
+                  <th class="px-4 py-3 text-left font-semibold">Комментарии</th>
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none" @click="toggleSort('vlans')">
                     VLAN <span v-if="sortState.key === 'vlans'">{{ sortState.dir === 'asc' ? '↑' : '↓' }}</span>
                   </th>
@@ -194,7 +194,7 @@
                   </td>
                   <td class="px-4 py-3">
                     <div
-                        v-tooltip="'Р’СЂРµРјСЏ РѕРїСЂРѕСЃР°: ' + data.interface.savedTime.toString()"
+                        v-tooltip="'Время опроса: ' + data.interface.savedTime.toString()"
                         class="text-nowrap p-2 flex items-center justify-center rounded-lg mx-auto max-w-[8rem]"
                         :style="statusStyle(data.interface.status)">
                       <span class="me-1">{{ data.interface.status }}</span>
@@ -220,11 +220,9 @@
 
                 <tr v-if="!pageItems.length">
                   <td colspan="6" class="px-4 py-10 text-center">
-                    <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">РџРѕ С„РёР»СЊС‚СЂР°Рј
-                      РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ
+                    <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">По фильтрам ничего не найдено
                     </div>
-                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">РР·РјРµРЅРёС‚Рµ С„РёР»СЊС‚СЂС‹ РёР»Рё
-                      СЃР±СЂРѕСЃСЊС‚Рµ РёС….
+                    <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">Измените фильтры или сбросьте их.
                     </div>
                   </td>
                 </tr>
@@ -250,11 +248,11 @@
             v-else
             class="rounded-3xl border border-dashed border-gray-200/80 dark:border-gray-700/60 bg-white/50 dark:bg-gray-900/30 backdrop-blur px-6 py-12 text-center">
           <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
-            РџРѕ РїР°С‚С‚РµСЂРЅСѓ
+            По паттерну
             <code class="mx-1 px-2 py-0.5 rounded-lg bg-amber-100/90 dark:bg-amber-900/40 font-mono">{{
                 lastPattern
               }}</code>
-            СЃРѕРІРїР°РґРµРЅРёР№ РЅРµС‚
+            совпадений нет
           </h2>
           <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" fill="currentColor"
                class="mx-auto mt-6 text-gray-400 dark:text-gray-500" viewBox="0 0 16 16">
