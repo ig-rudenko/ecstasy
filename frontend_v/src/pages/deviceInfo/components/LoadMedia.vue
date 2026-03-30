@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 h-full">
     <Message v-if="notification.type" :severity="notification.type" class="rounded-2xl">
       {{ notification.text }}
     </Message>
 
-    <div id="drag-drop-area" class="flex flex-col gap-4 rounded-3xl border border-dashed border-gray-300/80 bg-gray-50/70 p-5 dark:border-gray-700/80 dark:bg-gray-800/40">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div id="drag-drop-area" class="flex flex-col gap-4 rounded-3xl border border-dashed border-gray-300/80 bg-gray-50/70 p-5 dark:border-gray-700/80 dark:bg-gray-800/40 h-full">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between h-full">
         <div>
           <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Загрузка медиа</div>
           <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Перетащите файлы сюда или выберите их вручную.</div>

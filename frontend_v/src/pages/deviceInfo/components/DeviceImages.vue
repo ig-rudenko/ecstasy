@@ -27,9 +27,9 @@
       class="w-[min(96vw,1400px)]"
       content-class="!p-0"
   >
-    <div class="grid min-h-[75vh] gap-0 xl:grid-cols-[22rem,minmax(0,1fr)]">
+    <div class="grid h-full min-h-[75vh] gap-0 xl:grid-cols-2">
       <aside
-          class="border-b border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-900/60 xl:border-b-0 xl:border-r">
+          class="border-b border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-900/60 xl:border-b-0 xl:border-r col-md-2">
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between gap-3">
             <div>

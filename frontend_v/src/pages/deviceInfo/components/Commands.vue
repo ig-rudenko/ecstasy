@@ -297,28 +297,29 @@ async function executeCommand(command: CommandType) {
                             :options="interfacesNames"
                             filter
                             placeholder="Порт"
-                            class="min-w-[11rem]"
+                            size="small"
+                            class="min-w-[11rem] rounded-full! text-xs!"
                             v-tooltip="getKeyName(part)"
                         />
                         <InputText
                             v-else-if="data.context.mac && macRegex.test(part)"
                             v-model="data.context.mac[getKeyName(part)]"
                             placeholder="MAC адрес"
-                            class="min-w-[11rem]"
+                            class="min-w-[11rem] rounded-full! text-xs"
                             v-tooltip="getKeyName(part)"
                         />
                         <InputText
                             v-else-if="data.context.ip && ipRegex.test(part)"
                             v-model="data.context.ip[getKeyName(part)]"
                             placeholder="IP адрес"
-                            class="min-w-[11rem]"
+                            class="min-w-[11rem] rounded-full! text-xs"
                             v-tooltip="getKeyName(part)"
                         />
                         <InputText
                             v-else-if="data.context.word && wordRegex.test(part)"
                             v-model="data.context.word[getKeyName(part)]"
                             :placeholder="getKeyName(part)"
-                            class="min-w-[11rem]"
+                            class="min-w-[11rem] rounded-full! text-xs"
                             v-tooltip="getKeyName(part)"
                         />
                         <InputNumber
@@ -327,7 +328,7 @@ async function executeCommand(command: CommandType) {
                             :min="numberMinValue(part)"
                             :max="numberMaxValue(part)"
                             :placeholder="getKeyName(part)"
-                            input-class="w-[96px]"
+                            input-class="w-[96px] rounded-full! text-xs"
                             size="small"
                             v-tooltip="`${getKeyName(part)}: ${numberVerboseRange(part)}`"
                         />

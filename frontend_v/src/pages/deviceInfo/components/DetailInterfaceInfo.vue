@@ -1,7 +1,7 @@
 <template>
 
   <tr :id="'interface-'+interface.name" :style="interfaceStyles" :class="interfaceClasses"
-      class="rounded-2xl bg-white/80 dark:bg-gray-950/35 hover:bg-gray-100 dark:hover:bg-gray-800/70">
+      class="rounded-2xl hover:rounded-xl! hover:bg-linear-90 hover:from-sky-500/10  hover:to-transparent dark:hover:from-sky-700/20">
 
     <td class="rounded-l-2xl px-2">
       <div class="flex items-center gap-1 px-1">
@@ -20,12 +20,12 @@
 
         <!--Название Интерфейса-->
         <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer">
-          <span class="w-full break-all font-mono text-sm font-semibold md:text-base">{{ interface.name }}</span>
+          <div class="w-full font-mono text-sm font-semibold md:text-base">{{ interface.name }}</div>
         </div>
 
         <div>
           <div class="hidden sm:flex items-center">
-            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-[10px]" :style="portTypeStyles">
+            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
 
@@ -95,59 +95,60 @@
 
   </tr>
 
-  <tr v-if="showDetailInfo">
+  <tr v-if="showDetailInfo" class="rounded-2xl">
 
-    <td v-if="complexInfo" colspan="5"
-        class="rounded-2xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-600 shadow-sm p-3">
+    <td v-if="complexInfo" colspan="5">
+      <div class="rounded-2xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3">
 
-      <!--      DETAIL PORT INFO  -->
-      <div v-if="complexInfo.portDetailInfo" class="container py-3">
+        <!--      DETAIL PORT INFO  -->
+        <div v-if="complexInfo.portDetailInfo" class="container py-3">
 
-        <div class="flex justify-end">
-          <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
+          <div class="flex justify-end">
+            <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
+          </div>
+
+          <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
+               v-html="complexInfo.portDetailInfo.data"></div>
+
+          <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
+            {{ complexInfo.portDetailInfo.data }}
+          </div>
+
+          <!--      MIKROTIK -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
+            <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
+                                   :interface="interface"/>
+          </div>
+
+          <!--      ADSL -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
+            <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
+          </div>
+
+          <!--      GPON -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
+            <GPONInterfaceInfo
+                :device-name="deviceName"
+                :gpon-data="complexInfo.portDetailInfo.data"
+                :permission-level="permissionLevel"
+                :interface="interface"/>
+          </div>
+
+          <!--      ELTEX OLT -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
+            <OLTInterfaceInfo
+                :device-name="deviceName"
+                :data="complexInfo.portDetailInfo.data"
+                :permission-level="permissionLevel"
+                :interface="interface"/>
+          </div>
+
         </div>
 
-        <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
-             v-html="complexInfo.portDetailInfo.data"></div>
-
-        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
-          {{ complexInfo.portDetailInfo.data }}
-        </div>
-
-        <!--      MIKROTIK -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
-          <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
-                                 :interface="interface"/>
-        </div>
-
-        <!--      ADSL -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
-          <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
-        </div>
-
-        <!--      GPON -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
-          <GPONInterfaceInfo
-              :device-name="deviceName"
-              :gpon-data="complexInfo.portDetailInfo.data"
-              :permission-level="permissionLevel"
-              :interface="interface"/>
-        </div>
-
-        <!--      ELTEX OLT -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
-          <OLTInterfaceInfo
-              :device-name="deviceName"
-              :data="complexInfo.portDetailInfo.data"
-              :permission-level="permissionLevel"
-              :interface="interface"/>
-        </div>
+        <!--      ANOTHER INFO  -->
+        <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
 
       </div>
-
-      <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
-
     </td>
 
     <td v-else colspan="5">
@@ -246,11 +247,11 @@ export default defineComponent({
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow-sm", "border", "sticky", "top-0", "z-[2]", "bg-white", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
+      if (this.showDetailInfo) return ["shadow-sm", "z-[2]", "bg-white/55", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {
-      let styles: any = {"font-size": "0.8rem"}
+      let styles: any = {"font-size": "0.7rem"}
 
       if (!this.complexInfo?.portType) return styles;
 

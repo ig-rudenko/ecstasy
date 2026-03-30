@@ -8,7 +8,7 @@
     </Button>
   </div>
 
-  <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:!w-80 lg:!w-[30rem]">
+  <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:w-80! lg:w-140!" position="right" :modal="false" :dismissable="false">
     <div v-if="generalInfo.zabbixInfo">
 
       <div v-if="!generalInfo.zabbixInfo.monitoringAvailable" class="alert alert-danger text-right text-red-400 mb-2">

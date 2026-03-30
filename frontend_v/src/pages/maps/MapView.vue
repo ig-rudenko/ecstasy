@@ -88,19 +88,20 @@ function searchElement() {
   <div class="relative h-screen w-screen overflow-hidden bg-slate-950">
     <div id="map" class="h-full w-full"></div>
 
-    <div class="pointer-events-none absolute inset-x-0 top-0 z-[9999] p-4 sm:p-6">
-      <div class="mx-auto flex max-w-7xl flex-col gap-3">
-        <div class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/70 p-4 text-white shadow-2xl backdrop-blur-xl sm:p-5">
+    <div class="pointer-events-none absolute inset-x-0 -top-8 z-9999">
+      <div class="mx-auto flex max-w-7xl flex-col">
+        <div
+            class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/10 p-2 text-white shadow-xl backdrop-blur-xl pt-10">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <Button as="a" href="/maps" text severity="secondary" icon="pi pi-arrow-left" label="К списку"/>
+            <div class="min-w-0 px-4">
+              <div class="flex flex-wrap items-center justify-center gap-2">
+                <router-link :to="'/maps'" class="flex items-center gap-2">
+                  <i class="pi pi-arrow-left text-xs" />
+                  <span>К списку</span>
+                </router-link>
                 <Tag severity="contrast" :value="mapTypeLabel"/>
               </div>
-              <div class="mt-3 text-xl font-semibold sm:text-2xl">{{ mapData?.name || "Карта" }}</div>
-              <div v-if="mapData?.description" class="mt-2 max-w-3xl text-sm text-slate-200/85">
-                {{ mapData.description }}
-              </div>
+              <div class="font-semibold">{{ mapData?.name || "Карта" }}</div>
             </div>
 
             <div v-if="showSearch" class="w-full lg:w-auto lg:min-w-[24rem]">

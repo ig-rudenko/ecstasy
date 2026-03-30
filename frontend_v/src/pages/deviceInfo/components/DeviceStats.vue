@@ -11,7 +11,7 @@
       <article
           v-for="item in statItems"
           :key="item.label"
-          class="not-sm:w-full flex items-center gap-3 rounded-2xl border border-gray-200/70 bg-white/75 px-3 py-3 dark:border-gray-700/70 dark:bg-gray-800/45"
+          class=" flex items-center gap-3 rounded-2xl border border-gray-200/70 bg-white/75 px-3 py-3 dark:border-gray-700/70 dark:bg-gray-800/45"
       >
         <div
             class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gray-100/80 dark:bg-gray-700/40"
@@ -23,7 +23,7 @@
           <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400 font-mono">
             {{ item.label }}
           </div>
-          <div class="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100 font-mono">
+          <div class="truncate text-gray-900 dark:text-gray-100 font-mono">
             {{ item.value }}
           </div>
         </div>
@@ -39,8 +39,8 @@ import {HardwareStats} from "../hardwareStats";
 function iconWrapper(paths: string[]) {
   return () => h("svg", {
     xmlns: "http://www.w3.org/2000/svg",
-    width: 20,
-    height: 20,
+    width: 26,
+    height: 26,
     viewBox: "0 0 16 16",
     fill: "currentColor"
   }, paths.map((d) => h("path", {d})));
@@ -79,25 +79,25 @@ export default defineComponent({
       return [
         {
           label: "CPU",
-          value: this.stats.cpu ? `cpu ${this.stats.cpu.util.join(", ")}%` : "cpu -",
+          value: this.stats.cpu ? `${this.stats.cpu.util.join(", ")}%` : "-",
           color: this.stats.cpu ? this.valueColor(Math.max(...this.stats.cpu.util)) : "#94a3b8",
           icon: CpuIcon
         },
         {
           label: "RAM",
-          value: this.stats.ram ? `ram ${this.stats.ram.util}%` : "ram -",
+          value: this.stats.ram ? `${this.stats.ram.util}%` : "-",
           color: this.stats.ram ? this.valueColor(this.stats.ram.util) : "#94a3b8",
           icon: RamIcon
         },
         {
           label: "Flash",
-          value: this.stats.flash ? `flash ${this.stats.flash.util}%` : "flash -",
+          value: this.stats.flash ? ` ${this.stats.flash.util}%` : "-",
           color: this.stats.flash ? this.valueColor(this.stats.flash.util) : "#94a3b8",
           icon: FlashIcon
         },
         {
           label: "Temp",
-          value: this.stats.temp ? `${this.stats.temp.value}℃` : "temp -",
+          value: this.stats.temp?.value ? `${this.stats.temp.value}℃` : "-",
           color: this.tempColor,
           icon: TempIcon
         }
