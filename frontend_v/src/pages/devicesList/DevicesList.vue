@@ -9,11 +9,6 @@
         <div class="relative p-5 sm:p-8">
           <div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
             <div class="max-w-4xl">
-              <div class="inline-flex items-center gap-2 rounded-full border border-gray-200/80 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-gray-300">
-                <span>Devices</span>
-                <span class="h-1 w-1 rounded-full bg-sky-500"></span>
-                <span>inventory and workload</span>
-              </div>
 
               <h1 class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
                 Устройства сети
@@ -73,7 +68,7 @@
               </div>
             </div>
 
-            <div class="hidden xl:block w-[320px] shrink-0">
+            <div class="hidden xl:block w-[520px] shrink-0">
               <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60">
                 <img class="w-full opacity-95" :src="`/img/device-icon-${imageIndex}.svg`" alt="devices">
               </div>
