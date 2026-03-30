@@ -246,13 +246,7 @@ export default defineComponent({
       file.display = !file.display;
     },
     formatConfigFile(content: string): string {
-      let formattedContent = "";
-      for (const line of content.split("\n")) {
-        const formattedLine = line.replace(/^\s+|\s+$|(\r\n|\n|\r)/gm, "");
-        if (!formattedLine.length) continue;
-        formattedContent += formattedLine + "\n";
-      }
-      return formattedContent;
+      return content.replace(/\r\n?/g, "\n");
     },
     downloadFile(file: ConfigFile) {
       api.get(`/api/v1/devices/${this.deviceName}/config/${file.name}`, {responseType: "blob"})

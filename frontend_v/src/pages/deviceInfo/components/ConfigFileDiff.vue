@@ -19,17 +19,6 @@
       <div class="grid gap-3 lg:grid-cols-2">
         <FloatLabel variant="on">
           <Select
-              v-model="config1"
-              :options="configFiles"
-              optionLabel="modTime"
-              input-id="new-config"
-              fluid
-          />
-          <label for="new-config">Новая конфигурация</label>
-        </FloatLabel>
-
-        <FloatLabel variant="on">
-          <Select
               v-model="config2"
               :options="configFiles"
               optionLabel="modTime"
@@ -37,6 +26,17 @@
               fluid
           />
           <label for="old-config">Старая конфигурация</label>
+        </FloatLabel>
+
+        <FloatLabel variant="on">
+          <Select
+              v-model="config1"
+              :options="configFiles"
+              optionLabel="modTime"
+              input-id="new-config"
+              fluid
+          />
+          <label for="new-config">Новая конфигурация</label>
         </FloatLabel>
       </div>
     </div>
@@ -93,7 +93,7 @@
               <div class="flex w-8 shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
                 {{ changeMarker(row.left?.type) }}
               </div>
-              <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ row.left?.text ?? " " }}</pre>
+              <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ displayLine(row.left?.text) }}</pre>
             </div>
           </div>
 
@@ -105,7 +105,7 @@
               <div class="flex w-8 shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
                 {{ changeMarker(row.right?.type) }}
               </div>
-              <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ row.right?.text ?? " " }}</pre>
+              <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ displayLine(row.right?.text) }}</pre>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@
 
 <script lang="ts">
 import {defineComponent} from "vue";
-import {diffLines} from "diff";
+import {diffArrays} from "diff";
 import api from "@/services/api";
 
 interface ConfigFile {
@@ -184,7 +184,7 @@ export default defineComponent({
       try {
         const oldContent = await this.getConfigContent(this.config2);
         const newContent = await this.getConfigContent(this.config1);
-        const diff = diffLines(oldContent, newContent);
+        const diff = diffArrays(this.tokenizeLines(oldContent), this.tokenizeLines(newContent));
 
         let oldLine = 1;
         let newLine = 1;
@@ -257,13 +257,25 @@ export default defineComponent({
       }
       return config.content || "";
     },
-    toLines(value: string): string[] {
-      return value.split("\n").filter((line, index, arr) => !(line === "" && index === arr.length - 1));
+    tokenizeLines(value: string): string[] {
+      const normalized = value.replace(/\r\n?/g, "\n");
+      const lines = normalized.split("\n");
+      if (normalized.endsWith("\n")) {
+        lines.pop();
+      }
+      return lines;
+    },
+    toLines(value: unknown): string[] {
+      if (Array.isArray(value)) return value.map((line) => String(line));
+      return String(value).split("\n");
     },
     changeMarker(type?: "added" | "removed" | "same"): string {
       if (type === "added") return "+";
       if (type === "removed") return "-";
       return "";
+    },
+    displayLine(text?: string | null): string {
+      return text === "" || text == null ? " " : text;
     },
     sideClasses(type?: "added" | "removed" | "same"): string {
       if (type === "added") return "bg-[#dafbe1] text-[#1f2328] dark:bg-[rgba(46,160,67,0.15)] dark:text-[#e6edf3]";

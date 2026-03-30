@@ -14,31 +14,6 @@ const showTracerouteCard = computed(() => permissions.has("auth.access_tracerout
 const showDescSearchCard = computed(() => permissions.has("auth.access_desc_search"));
 const showWTFCard = computed(() => permissions.has("auth.access_wtf_search"));
 
-const alphabet = "abcdef1234567890";
-const randomMAC = ref("");
-const randomIP = ref("");
-let hintTimer: number | null = null;
-
-function macGenerator() {
-  let randomMac = "";
-  for (let i = 0; i < 17; i++) {
-    randomMac += i % 3 === 2 ? ":" : alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  randomMAC.value = randomMac;
-}
-
-function ipGenerator() {
-  const randomIp: number[] = [];
-  for (let i = 0; i < 4; i++) {
-    randomIp.push(Math.floor(Math.random() * 254) + 1);
-  }
-  randomIP.value = randomIp.join(".");
-}
-
-function updateHints() {
-  macGenerator();
-  ipGenerator();
-}
 
 const quickCards = computed(() => {
   const cards = [
@@ -95,26 +70,12 @@ const quickCards = computed(() => {
       to: "/tools/wtf",
       accent: "from-slate-500/15 to-sky-500/5",
       visible: showWTFCard.value,
-      meta: () => `ip ${randomIP.value}  mac ${randomMAC.value}`,
     }
   ];
 
   return cards.filter((card) => card.visible);
 });
 
-onMounted(() => {
-  updateHints();
-  if (showWTFCard.value) {
-    hintTimer = window.setInterval(updateHints, 2400);
-  }
-});
-
-onUnmounted(() => {
-  if (hintTimer) {
-    window.clearInterval(hintTimer);
-    hintTimer = null;
-  }
-});
 </script>
 
 <template>
