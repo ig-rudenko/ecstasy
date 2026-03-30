@@ -13,7 +13,8 @@
         </div>
       </div>
 
-      <div v-if="generalInfo" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr),minmax(18rem,0.55fr)]">
+      <div v-if="generalInfo" class="gap-4 grid xl:grid-cols-2">
+
         <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-4 backdrop-blur xl:sticky xl:top-4">
           <div class="flex flex-wrap items-center gap-2 sm:gap-3">
             <DeviceDetailInfo :general-info="generalInfo"/>
@@ -90,7 +91,7 @@
 
       <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-2 sm:p-4 backdrop-blur overflow-hidden">
         <div v-if="interfaces.length && generalInfo" class="overflow-x-auto">
-          <table class="min-w-full border-separate border-spacing-y-2">
+          <table class="min-w-full">
             <thead>
             <tr class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
               <th class="w-12"></th>
