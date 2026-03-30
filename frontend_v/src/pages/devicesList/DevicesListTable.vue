@@ -32,20 +32,27 @@ const vendorFilter = ref<string | null>(null);
 const modelFilter = ref<string | null>(null);
 const groupFilter = ref<string | null>(null);
 const workloadRange = ref<[number, number]>([0, 1000]);
-
 const rowsPerPageOptions = [10, 20, 50] as const;
-const rows = ref<number>(50);
+const rows = ref<number>(10);
 const page = ref<number>(0);
-
 const sortKey = ref<SortKey | null>(null);
 const sortDir = ref<SortDir>("asc");
+const emitTimer = ref<number | null>(null);
 
 const pinned = computed(() => pinnedDevices);
 const hasInterfacesCount = computed(() => !!props.devices?.length && !!(props.devices as any)[0]?.interfaces_count);
 
+const preparedDevices = computed(() =>
+    props.devices.map((device) => ({
+      ...device,
+      _nameLower: (device.name || "").toLowerCase(),
+      _ip: device.ip || "",
+    }))
+);
+
 const filteredModelGroups = computed<ModelGroup[]>(() => {
   if (vendorFilter.value) {
-    return props.models.filter(g => g.label === vendorFilter.value);
+    return props.models.filter((g) => g.label === vendorFilter.value);
   }
   return props.models;
 });
@@ -77,9 +84,9 @@ function levenshtein(a: string, b: string): number {
         matrix[i][j] = matrix[i - 1][j - 1];
       } else {
         matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
         );
       }
     }
@@ -91,64 +98,58 @@ function similarity(a: string, b: string): number {
   const longer = a.length > b.length ? a : b;
   const shorter = a.length > b.length ? b : a;
   const distance = levenshtein(longer, shorter);
-  return (longer.length - distance) / longer.length;
+  return longer.length ? (longer.length - distance) / longer.length : 0;
 }
 
-function smartSearch(searchStr: string, list: string[], minSimilarity = 0.5): string[] {
+function smartSearch(searchStr: string, list: string[], minSimilarity = 0.72): string[] {
   const s = searchStr.toLowerCase();
+  const words = s.split(/\s+/).filter(Boolean);
   return list
-    .map(item => {
-      const itemLower = item.toLowerCase();
-      let score = 0;
-      if (s.includes(itemLower) || itemLower.includes(s)) {
-        score = 1;
-      } else {
-        const words = s.split(/\s+/).filter(Boolean);
-        const wordScores = words.map(w => similarity(w, itemLower));
-        score = Math.max(...wordScores);
-      }
-      return { item, score };
-    })
-    .filter(r => r.score >= minSimilarity)
-    .sort((a, b) => b.score - a.score)
-    .map(r => r.item);
+      .map((item) => {
+        const itemLower = item.toLowerCase();
+        let score = 0;
+        if (s.includes(itemLower) || itemLower.includes(s)) {
+          score = 1;
+        } else if (words.length) {
+          score = Math.max(...words.map((w) => similarity(w, itemLower)));
+        }
+        return {item, score};
+      })
+      .filter((r) => r.score >= minSimilarity)
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.item);
 }
 
 const searchedDevices = computed<Device[]>(() => {
   const s = search.value.trim();
   if (!s) return props.devices;
 
-  const defaultFiltered = props.devices.filter(d => {
-    const name = (d.name || "").toLowerCase();
-    return name.includes(s.toLowerCase()) || (d.ip || "").includes(s);
-  });
-  if (defaultFiltered.length) return defaultFiltered;
+  const query = s.toLowerCase();
+  const direct = preparedDevices.value.filter((d) => d._nameLower.includes(query) || d._ip.includes(s));
+  if (direct.length || s.length < 3) return direct as unknown as Device[];
 
-  const names = props.devices.map(d => d.name);
-  const matched = smartSearch(s, names, 0.7);
+  const matched = smartSearch(s, props.devices.map((d) => d.name), 0.76);
   const out: Device[] = [];
   for (const name of matched) {
-    const dev = props.devices.find(d => d.name === name);
-    if (dev) out.push({ ...dev });
+    const dev = props.devices.find((d) => d.name === name);
+    if (dev) out.push(dev);
   }
   return out;
 });
 
 const filteredDevicesUnsorted = computed<Device[]>(() => {
   let list = searchedDevices.value;
-
-  if (vendorFilter.value) list = list.filter(d => d.vendor === vendorFilter.value);
-  if (modelFilter.value) list = list.filter(d => d.model === modelFilter.value);
-  if (groupFilter.value) list = list.filter(d => d.group === groupFilter.value);
+  if (vendorFilter.value) list = list.filter((d) => d.vendor === vendorFilter.value);
+  if (modelFilter.value) list = list.filter((d) => d.model === modelFilter.value);
+  if (groupFilter.value) list = list.filter((d) => d.group === groupFilter.value);
 
   if (hasInterfacesCount.value) {
     const [min, max] = workloadRange.value;
-    list = list.filter(d => {
-      const v = getAbonsUp(d);
-      return v >= min && v <= max;
+    list = list.filter((d) => {
+      const value = getAbonsUp(d);
+      return value >= min && value <= max;
     });
   }
-
   return list;
 });
 
@@ -171,20 +172,17 @@ const filteredDevices = computed<Device[]>(() => {
 });
 
 const total = computed(() => filteredDevices.value.length);
-const paginatorPosition = computed<"top" | "bottom" | "both" | undefined>(() => {
-  if (total.value > 10) return "both";
-  if (total.value > 0) return "top";
-  return undefined;
-});
-
 const pageStart = computed(() => page.value * rows.value);
 const pageEnd = computed(() => Math.min(pageStart.value + rows.value, total.value));
 const pageItems = computed<Device[]>(() => filteredDevices.value.slice(pageStart.value, pageEnd.value));
 
-watch(filteredDevicesUnsorted, (v) => {
-  emit("filter:devices", v);
-  if (pageStart.value >= v.length) page.value = 0;
-});
+watch(filteredDevicesUnsorted, (value) => {
+  if (emitTimer.value) clearTimeout(emitTimer.value);
+  emitTimer.value = window.setTimeout(() => {
+    emit("filter:devices", value);
+  }, 100);
+  if (pageStart.value >= value.length) page.value = 0;
+}, {immediate: true});
 
 function clearFilters(): void {
   emit("filter:clear");
@@ -217,6 +215,11 @@ function toggleSort(key: SortKey): void {
   }
 }
 
+function sortIcon(key: SortKey): string {
+  if (sortKey.value !== key) return "pi pi-sort-alt";
+  return sortDir.value === "asc" ? "pi pi-sort-amount-up-alt" : "pi pi-sort-amount-down";
+}
+
 function exportCSV(): void {
   const rowsToExport = filteredDevicesUnsorted.value;
   const header = ["ip", "name", "abons_up", "vendor", "model", "group"];
@@ -229,10 +232,10 @@ function exportCSV(): void {
       d.vendor ?? "",
       d.model ?? "",
       d.group ?? "",
-    ].map(v => `"${String(v).replaceAll('\"', '\"\"')}"`);
+    ].map((v) => `"${String(v).replaceAll("\"", "\"\"")}"`);
     lines.push(row.join(","));
   }
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([lines.join("\n")], {type: "text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -243,44 +246,68 @@ function exportCSV(): void {
 </script>
 
 <template>
-  <div class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur overflow-hidden">
-    <div class="p-4 border-b border-gray-200/70 dark:border-gray-700/70">
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+  <div
+      class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40">
+    <div class="border-b border-gray-200/70 p-4 dark:border-gray-700/70">
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex flex-wrap items-center gap-2">
             <Button @click="updateData" icon="pi pi-refresh" severity="secondary" outlined size="small"
-                    v-tooltip.bottom="'Обновить данные и сбросить фильтры'"/>
-            <Button @click="exportCSV" icon="pi pi-file-excel" severity="success" outlined size="small"
-                    v-tooltip.bottom="'Экспорт по фильтру (без сортировки)'" label="CSV"/>
-            <Button v-if="vendorFilter || modelFilter || groupFilter || sortKey"
-                    @click="clearFilters" icon="pi pi-filter-slash" severity="secondary" outlined size="small" label="Сбросить"/>
+                    class="!rounded-2xl"/>
+            <Button @click="exportCSV" icon="pi pi-file-excel" severity="success" outlined size="small" label="CSV"
+                    class="!rounded-2xl"/>
+            <Button
+                v-if="vendorFilter || modelFilter || groupFilter || sortKey"
+                @click="clearFilters"
+                icon="pi pi-filter-slash"
+                severity="secondary"
+                outlined
+                size="small"
+                label="Сбросить"
+                class="!rounded-2xl"
+            />
           </div>
-          <div class="text-sm font-mono text-gray-600 dark:text-gray-300">
+
+          <div
+              class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm font-mono text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
             {{ total }} строк
           </div>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div class="min-w-0">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Вендор</div>
-            <Select v-model="vendorFilter" :options="vendors" placeholder="Все" class="w-full"
-                    :showClear="true" scroll-height="300px">
+            <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Вендор
+            </div>
+            <Select v-model="vendorFilter" :options="vendors" placeholder="Все" class="w-full" :showClear="true"
+                    scroll-height="300px">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <span class="h-2.5 w-2.5 rounded-full" :style="{backgroundColor: stringToColour(slotProps.option)}"/>
+                  <span class="h-2.5 w-2.5 rounded-full"
+                        :style="{ backgroundColor: stringToColour(slotProps.option) }"/>
                   <span class="font-mono">{{ slotProps.option }}</span>
                 </div>
               </template>
             </Select>
           </div>
 
-          <div class="min-w-0 sm:col-span-2 xl:col-span-1">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Модель</div>
-            <Select v-model="modelFilter" :options="filteredModelGroups" optionGroupLabel="label" optionGroupChildren="items"
-                    filter :showClear="true" placeholder="Все" class="w-full" scroll-height="350px">
+          <div class="min-w-0">
+            <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Модель
+            </div>
+            <Select
+                v-model="modelFilter"
+                :options="filteredModelGroups"
+                optionGroupLabel="label"
+                optionGroupChildren="items"
+                filter
+                :showClear="true"
+                placeholder="Все"
+                class="w-full"
+                scroll-height="350px"
+            >
               <template #optiongroup="slotProps">
                 <div class="flex items-center gap-2">
-                  <span class="h-2.5 w-2.5 rounded-full" :style="{backgroundColor: stringToColour(slotProps.option.label)}"/>
+                  <span class="h-2.5 w-2.5 rounded-full"
+                        :style="{ backgroundColor: stringToColour(slotProps.option.label) }"/>
                   <span class="font-mono">{{ slotProps.option.label }}</span>
                 </div>
               </template>
@@ -291,21 +318,23 @@ function exportCSV(): void {
           </div>
 
           <div class="min-w-0">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Группа</div>
-            <Select v-model="groupFilter" :options="groups" placeholder="Все" class="w-full"
-                    :showClear="true" scroll-height="300px">
+            <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Группа
+            </div>
+            <Select v-model="groupFilter" :options="groups" placeholder="Все" class="w-full" :showClear="true"
+                    scroll-height="300px">
               <template #option="slotProps">
                 <div class="font-mono">{{ slotProps.option }}</div>
               </template>
             </Select>
           </div>
 
-          <div v-if="hasInterfacesCount" class="sm:col-span-2 xl:col-span-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium tracking-wide uppercase">Абоненты (от / до)</div>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <InputNumber v-model="workloadRange[0]" input-class="w-full" class="w-full max-w-none sm:max-w-[10rem]" />
-              <span class="hidden sm:inline text-gray-400 shrink-0 text-center">—</span>
-              <InputNumber v-model="workloadRange[1]" input-class="w-full" class="w-full max-w-none sm:max-w-[10rem]" />
+          <div v-if="hasInterfacesCount" class="min-w-0">
+            <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Абоненты
+            </div>
+            <div class="flex items-center gap-2">
+              <InputNumber v-model="workloadRange[0]" input-class="w-full" class="w-full"/>
+              <span class="text-gray-400">—</span>
+              <InputNumber v-model="workloadRange[1]" input-class="w-full" class="w-full"/>
             </div>
           </div>
         </div>
@@ -313,44 +342,79 @@ function exportCSV(): void {
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-[900px] w-full text-sm">
-        <thead class="bg-white/80 dark:bg-gray-900/70 backdrop-blur border-b border-gray-200/70 dark:border-gray-700/70">
+      <table class="min-w-[960px] w-full text-sm">
+        <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
         <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
-          <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('ip')">IP</th>
-          <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('name')">Имя</th>
-          <th v-if="hasInterfacesCount" class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('interfaces_count.abons_up')">
-            Абоненты
+          <th class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('ip')">
+              <span>IP</span>
+              <i :class="sortIcon('ip')"/>
+            </button>
           </th>
-          <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('vendor')">Вендор</th>
-          <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('model')">Модель</th>
-          <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" @click="toggleSort('group')">Группа</th>
+          <th class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('name')">
+              <span>Имя</span>
+              <i :class="sortIcon('name')"/>
+            </button>
+          </th>
+          <th v-if="hasInterfacesCount" class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('interfaces_count.abons_up')">
+              <span>Абоненты</span>
+              <i :class="sortIcon('interfaces_count.abons_up')"/>
+            </button>
+          </th>
+          <th class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('vendor')">
+              <span>Вендор</span>
+              <i :class="sortIcon('vendor')"/>
+            </button>
+          </th>
+          <th class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('model')">
+              <span>Модель</span>
+              <i :class="sortIcon('model')"/>
+            </button>
+          </th>
+          <th class="px-4 py-3 text-left font-semibold">
+            <button class="inline-flex items-center gap-2" @click="toggleSort('group')">
+              <span>Группа</span>
+              <i :class="sortIcon('group')"/>
+            </button>
+          </th>
         </tr>
         </thead>
 
         <tbody>
-        <tr v-for="dev in pageItems" :key="dev.ip"
-            class="border-b border-gray-200/60 dark:border-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-900/40 transition">
+        <tr
+            v-for="dev in pageItems"
+            :key="dev.ip"
+            class="border-b border-gray-200/60 transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
+        >
           <td class="px-4 py-3">
-            <div class="flex items-center gap-3 group/ip">
+            <div class="group/ip flex items-center gap-3">
               <div class="font-mono text-gray-900 dark:text-gray-100">{{ dev.ip }}</div>
-              <a v-if="(dev as any).console_url" :href="(dev as any).console_url" target="_blank"
-                 class="opacity-0 group-hover/ip:opacity-100 text-indigo-600 dark:text-indigo-300">
+              <a
+                  v-if="(dev as any).console_url"
+                  :href="(dev as any).console_url"
+                  target="_blank"
+                  class="opacity-0 transition group-hover/ip:opacity-100 text-indigo-600 dark:text-indigo-300"
+              >
                 <i class="pi pi-desktop"/>
               </a>
             </div>
           </td>
 
           <td class="px-4 py-3">
-            <div class="flex items-center gap-2 group/device-name">
-              <router-link :to="'/device/'+dev.name">
-                <Button text icon="pi pi-box" :label="dev.name"/>
+            <div class="group/device-name flex items-center gap-2">
+              <router-link :to="'/device/' + dev.name">
+                <Button text icon="pi pi-box" :label="dev.name" class="!rounded-2xl"/>
               </router-link>
-              <span class="opacity-0 group-hover/device-name:opacity-100"
-                    :class="{'opacity-100!': pinned.isPinned(dev.name)}">
-                <PinDevice :device="dev"/>
-              </span>
+              <span :class="{ '!opacity-100': pinned.isPinned(dev.name) }"
+                    class="opacity-0 transition group-hover/device-name:opacity-100">
+                  <PinDevice :device="dev"/>
+                </span>
             </div>
-            <InterfacesWorkload class="p-2" :dev="dev"/>
+            <InterfacesWorkload class="px-2 pb-1" :dev="dev"/>
           </td>
 
           <td v-if="hasInterfacesCount" class="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">
@@ -358,10 +422,12 @@ function exportCSV(): void {
           </td>
 
           <td class="px-4 py-3">
-            <button v-if="dev.vendor"
-                    class="inline-flex items-center gap-2 rounded-xl px-2 py-1 hover:bg-white/70 dark:hover:bg-gray-900/40 transition"
-                    @click="vendorFilter = dev.vendor">
-              <span class="h-2.5 w-2.5 rounded-full" :style="{backgroundColor: stringToColour(dev.vendor)}"/>
+            <button
+                v-if="dev.vendor"
+                class="inline-flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-white/70 dark:hover:bg-gray-900/40"
+                @click="vendorFilter = dev.vendor"
+            >
+              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: stringToColour(dev.vendor) }"/>
               <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.vendor }}</span>
             </button>
           </td>
@@ -369,16 +435,20 @@ function exportCSV(): void {
           <td class="px-4 py-3">
             <div v-if="dev.model" class="flex items-center gap-2">
               <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.model }}</span>
-              <Button v-if="modelFilter !== dev.model" @click="modelFilter = dev.model" icon="pi pi-filter" size="small" outlined />
-              <Button v-else @click="modelFilter = null" icon="pi pi-filter-slash" size="small" outlined />
+              <Button v-if="modelFilter !== dev.model" @click="modelFilter = dev.model" icon="pi pi-filter" size="small"
+                      outlined class="!rounded-xl"/>
+              <Button v-else @click="modelFilter = null" icon="pi pi-filter-slash" size="small" outlined
+                      class="!rounded-xl"/>
             </div>
           </td>
 
           <td class="px-4 py-3">
             <div v-if="dev.group" class="flex items-center gap-2">
               <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.group }}</span>
-              <Button v-if="groupFilter !== dev.group" @click="groupFilter = dev.group" icon="pi pi-filter" size="small" outlined />
-              <Button v-else @click="groupFilter = null" icon="pi pi-filter-slash" size="small" outlined />
+              <Button v-if="groupFilter !== dev.group" @click="groupFilter = dev.group" icon="pi pi-filter" size="small"
+                      outlined class="!rounded-xl"/>
+              <Button v-else @click="groupFilter = null" icon="pi pi-filter-slash" size="small" outlined
+                      class="!rounded-xl"/>
             </div>
           </td>
         </tr>
@@ -393,13 +463,17 @@ function exportCSV(): void {
       </table>
     </div>
 
-    <div v-if="paginatorPosition" class="p-3">
-      <Paginator :rows="rows" :totalRecords="total" :first="pageStart"
-                 :rowsPerPageOptions="(rowsPerPageOptions as unknown as number[])"
-                 @page="(e: any) => { page = e.page; rows = e.rows; }"
-                 :pt="{
-                   root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
-                 }"/>
+    <div v-if="total > 0" class="p-3">
+      <Paginator
+          :rows="rows"
+          :totalRecords="total"
+          :first="pageStart"
+          :rowsPerPageOptions="(rowsPerPageOptions as unknown as number[])"
+          @page="(e: any) => { page = e.page; rows = e.rows; }"
+          :pt="{
+            root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
+          }"
+      />
     </div>
   </div>
 </template>

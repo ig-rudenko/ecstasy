@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, onUnmounted, ref} from "vue";
+import {computed} from "vue";
 import {useStore} from "vuex";
 
 import {User} from "@/services/user";
@@ -79,8 +79,8 @@ const quickCards = computed(() => {
 </script>
 
 <template>
-  <main class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-    <section class="relative overflow-hidden rounded-[2rem] border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
+  <main class="mx-auto max-w-375 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <section class="relative overflow-hidden rounded-4xl border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(99,102,241,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.3),transparent)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(99,102,241,0.2),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.35),transparent)]" />
 
       <div class="relative grid gap-8 px-5 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1.2fr),minmax(24rem,0.8fr)] xl:gap-10 xl:px-10 xl:py-10">
@@ -102,10 +102,10 @@ const quickCards = computed(() => {
 
           <div class="mt-7 flex flex-wrap items-center gap-3">
             <router-link to="/devices">
-              <Button label="Открыть устройства" icon="pi pi-box" class="!rounded-2xl" />
+              <Button label="Открыть устройства" icon="pi pi-box" class="rounded-2xl!" />
             </router-link>
             <router-link to="/devices?search=">
-              <Button label="Быстрый поиск" icon="pi pi-search" severity="secondary" outlined class="!rounded-2xl" />
+              <Button label="Быстрый поиск" icon="pi pi-search" severity="secondary" outlined class="rounded-2xl!" />
             </router-link>
           </div>
 
@@ -165,14 +165,11 @@ const quickCards = computed(() => {
                   :to="card.to"
                   class="group relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/80 p-4 transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg dark:border-gray-700/80 dark:bg-gray-950/35 dark:hover:border-sky-500"
               >
-                <div :class="['absolute inset-0 bg-gradient-to-br opacity-90 transition group-hover:opacity-100', card.accent]"></div>
+                <div :class="['absolute inset-0 bg-linear-to-br opacity-90 transition group-hover:opacity-100', card.accent]"></div>
                 <div class="relative flex items-start justify-between gap-4">
                   <div class="min-w-0">
                     <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ card.title }}</div>
                     <div class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ card.description }}</div>
-                    <div v-if="card.meta" class="mt-3 font-mono text-xs text-slate-500 dark:text-slate-400">
-                      {{ card.meta() }}
-                    </div>
                   </div>
                   <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-slate-700 shadow-sm dark:bg-gray-900/80 dark:text-slate-200">
                     <i :class="[card.icon, 'text-lg']" />

@@ -78,7 +78,7 @@
           </div>
 
           <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between ">
               <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5 flex-1">
                 <div class="min-w-0">
                   <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -154,7 +154,7 @@
                   <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none" @click="toggleSort('port')">
                     Порт <span v-if="sortState.key === 'port'">{{ sortState.dir === 'asc' ? '↑' : '↓' }}</span>
                   </th>
-                  <th class="px-4 py-3 text-left font-semibold cursor-pointer select-none"
+                  <th class="px-4 py-3 text-center font-semibold cursor-pointer select-none"
                       @click="toggleSort('status')">
                     Статус <span v-if="sortState.key === 'status'">{{
                       sortState.dir === 'asc' ? '↑' : '↓'

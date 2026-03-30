@@ -31,7 +31,7 @@ function toggle(event: Event) {
           },
           content: { class: '!p-0' },
         }">
-      <div class="w-[min(22rem,92vw)] p-4">
+      <div class="p-4">
         <div
             class="pb-3 mb-3 flex w-full justify-between items-start gap-3 border-b border-gray-200/80 dark:border-gray-700/70">
           <div>
@@ -96,7 +96,7 @@ function toggle(event: Event) {
               </a>
               <button
                   type="button"
-                  class="inline-flex p-1 rounded-lg text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white/80 dark:hover:bg-gray-900/50"
+                  class="inline-flex p-1 rounded-lg text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white/80 dark:hover:bg-gray-900/50 cursor-pointer"
                   v-tooltip.bottom="'Убрать из избранного'"
                   @click="pinnedDevices.removeDevice(dev)">
                 <i class="pi pi-times text-sm"/>
