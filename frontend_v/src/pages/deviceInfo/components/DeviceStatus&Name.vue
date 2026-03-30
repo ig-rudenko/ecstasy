@@ -25,7 +25,7 @@
 
       <div class="flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-3">
-          <div class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">{{ device.name }}</div>
+          <div class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl font-mono">{{ device.name }}</div>
           <PinDevice :device="device"/>
         </div>
 

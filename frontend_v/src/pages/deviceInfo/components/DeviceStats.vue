@@ -1,73 +1,66 @@
 <template>
-  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-    <div v-if="uptime>0" v-tooltip.bottom="'Время работы'" class="stat-card sm:col-span-2 xl:col-span-3">
-      <div class="stat-icon text-indigo-500 dark:text-indigo-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z"/>
-          <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z"/>
-          <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Uptime</div>
-        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ formatUptime(uptime) }}</div>
+  <div class="flex flex-wrap justify-between gap-3">
+    <div class="flex items-center justify-between gap-3">
+      <div v-if="uptime > 0" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-gray-50/80 px-3 py-2 text-xs text-gray-600 dark:border-gray-700/70 dark:bg-gray-800/60 dark:text-gray-300">
+        <i class="pi pi-clock text-[0.8rem] text-indigo-500 dark:text-indigo-300" />
+        <span class="font-medium">{{ formatUptime(uptime) }}</span>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-icon" :style="{ color: stats.cpu ? valueColor(Math.max(...stats.cpu.util)) : 'grey' }">
-        <svg class="bi bi-cpu" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
-          <path fill="currentColor" d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0zm-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3h-7zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5v-3zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">CPU</div>
-        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ stats.cpu ? `cpu ${stats.cpu.util.join(', ')}%` : 'cpu -' }}</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon" :style="{ color: stats.ram ? valueColor(stats.ram.util) : 'grey' }">
-        <svg class="bi bi-memory" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
-          <path fill="currentColor" d="M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.586a1 1 0 0 0 .707-.293l.353-.353a.5.5 0 0 1 .708 0l.353.353a1 1 0 0 0 .707.293H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H1Zm.5 1h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm5 0h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm4.5.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4ZM2 10v2H1v-2h1Zm2 0v2H3v-2h1Zm2 0v2H5v-2h1Zm3 0v2H8v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">RAM</div>
-        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ stats.ram ? `ram ${stats.ram.util}%` : 'ram -' }}</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon" :style="{ color: stats.flash ? valueColor(stats.flash.util) : 'grey' }">
-        <svg class="bi bi-sd-card-fill" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
-          <path fill="currentColor" d="M12.5 0H5.914a1.5 1.5 0 0 0-1.06.44L2.439 2.853A1.5 1.5 0 0 0 2 3.914V14.5A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 12.5 0Zm-7 2.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2 0a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2.75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 1.5 0Zm1.25-.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Flash</div>
-        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ stats.flash ? `flash ${stats.flash.util}%` : 'flash -' }}</div>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon" :style="{ color: tempColor }">
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M9.5 12.5a1.5 1.5 0 1 1-2-1.415V2.5a.5.5 0 0 1 1 0v8.585a1.5 1.5 0 0 1 1 1.415z"/>
-          <path d="M5.5 2.5a2.5 2.5 0 0 1 5 0v7.55a3.5 3.5 0 1 1-5 0V2.5zM8 1a1.5 1.5 0 0 0-1.5 1.5v7.987l-.167.15a2.5 2.5 0 1 0 3.333 0l-.166-.15V2.5A1.5 1.5 0 0 0 8 1z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Temperature</div>
-        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ stats.temp ? `${stats.temp.value}℃` : 'temp -' }}</div>
-      </div>
+    <div class="flex flex-wrap gap-2">
+      <article
+          v-for="item in statItems"
+          :key="item.label"
+          class="not-sm:w-full flex items-center gap-3 rounded-2xl border border-gray-200/70 bg-white/75 px-3 py-3 dark:border-gray-700/70 dark:bg-gray-800/45"
+      >
+        <div
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gray-100/80 dark:bg-gray-700/40"
+            :style="{ color: item.color }"
+        >
+          <component :is="item.icon" />
+        </div>
+        <div class="min-w-0">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400 font-mono">
+            {{ item.label }}
+          </div>
+          <div class="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100 font-mono">
+            {{ item.value }}
+          </div>
+        </div>
+      </article>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
+import {defineComponent, h, PropType} from "vue";
 import {HardwareStats} from "../hardwareStats";
+
+function iconWrapper(paths: string[]) {
+  return () => h("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    width: 20,
+    height: 20,
+    viewBox: "0 0 16 16",
+    fill: "currentColor"
+  }, paths.map((d) => h("path", {d})));
+}
+
+const CpuIcon = iconWrapper([
+  "M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0zm-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3h-7z",
+  "M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"
+]);
+const RamIcon = iconWrapper([
+  "M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.586a1 1 0 0 0 .707-.293l.353-.353a.5.5 0 0 1 .708 0l.353.353a1 1 0 0 0 .707.293H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H1Zm.5 1h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm5 0h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5Zm4.5.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-4Z",
+  "M2 10v2H1v-2h1Zm2 0v2H3v-2h1Zm2 0v2H5v-2h1Zm3 0v2H8v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Zm2 0v2h-1v-2h1Z"
+]);
+const FlashIcon = iconWrapper([
+  "M12.5 0H5.914a1.5 1.5 0 0 0-1.06.44L2.439 2.853A1.5 1.5 0 0 0 2 3.914V14.5A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 12.5 0Zm-7 2.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2 0a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Zm2.75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 1.5 0Zm1.25-.75a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 1 .75-.75Z"
+]);
+const TempIcon = iconWrapper([
+  "M9.5 12.5a1.5 1.5 0 1 1-2-1.415V2.5a.5.5 0 0 1 1 0v8.585a1.5 1.5 0 0 1 1 1.415z",
+  "M5.5 2.5a2.5 2.5 0 0 1 5 0v7.55a3.5 3.5 0 1 1-5 0V2.5zM8 1a1.5 1.5 0 0 0-1.5 1.5v7.987l-.167.15a2.5 2.5 0 1 0 3.333 0l-.166-.15V2.5A1.5 1.5 0 0 0 8 1z"
+]);
 
 export default defineComponent({
   props: {
@@ -76,88 +69,88 @@ export default defineComponent({
   },
   computed: {
     tempColor(): string {
-      if (!this.stats.temp) return "grey";
+      if (!this.stats.temp) return "#94a3b8";
       if (this.stats.temp.status === "low") return "#2563eb";
       if (this.stats.temp.status === "normal") return "#16a34a";
       if (this.stats.temp.status === "medium") return "#f59e0b";
       return "#dc2626";
+    },
+    statItems(): { label: string; value: string; color: string; icon: any }[] {
+      return [
+        {
+          label: "CPU",
+          value: this.stats.cpu ? `cpu ${this.stats.cpu.util.join(", ")}%` : "cpu -",
+          color: this.stats.cpu ? this.valueColor(Math.max(...this.stats.cpu.util)) : "#94a3b8",
+          icon: CpuIcon
+        },
+        {
+          label: "RAM",
+          value: this.stats.ram ? `ram ${this.stats.ram.util}%` : "ram -",
+          color: this.stats.ram ? this.valueColor(this.stats.ram.util) : "#94a3b8",
+          icon: RamIcon
+        },
+        {
+          label: "Flash",
+          value: this.stats.flash ? `flash ${this.stats.flash.util}%` : "flash -",
+          color: this.stats.flash ? this.valueColor(this.stats.flash.util) : "#94a3b8",
+          icon: FlashIcon
+        },
+        {
+          label: "Temp",
+          value: this.stats.temp ? `${this.stats.temp.value}℃` : "temp -",
+          color: this.tempColor,
+          icon: TempIcon
+        }
+      ];
     }
   },
   methods: {
     valueColor(value: number): string {
-      if (!value) return "grey"
+      if (!value) return "#94a3b8";
       if (value < 30) return "#198754";
       if (value < 80) return "#ff9836";
       return "#dc3545";
     },
     formatUptime(seconds: number) {
-      if (seconds < 0) return ""
+      if (seconds < 0) return "";
       const units = [
-        {name: 'год', seconds: 365 * 24 * 60 * 60},
-        {name: 'месяц', seconds: 30 * 24 * 60 * 60},
-        {name: 'день', seconds: 24 * 60 * 60},
-        {name: 'час', seconds: 60 * 60},
-        {name: 'минута', seconds: 60},
-        {name: 'секунда', seconds: 1}
+        {name: "год", seconds: 365 * 24 * 60 * 60},
+        {name: "месяц", seconds: 30 * 24 * 60 * 60},
+        {name: "день", seconds: 24 * 60 * 60},
+        {name: "час", seconds: 60 * 60},
+        {name: "минута", seconds: 60},
+        {name: "секунда", seconds: 1}
       ];
 
-      let result: string[] = [];
+      const result: string[] = [];
 
-      for (let unit of units) {
+      for (const unit of units) {
         const quotient = Math.floor(seconds / unit.seconds);
         if (quotient > 0) {
           result.push(`${quotient} ${this.decline(unit.name, quotient)}`);
           seconds -= quotient * unit.seconds;
         }
-        if (result.length === 3) {
+        if (result.length === 2) {
           break;
         }
       }
 
-      return result.join(', ');
+      return result.join(", ");
     },
-
     decline(unit: string, count: number): string {
-      const declensions: any = {
-        'год': ['год', 'года', 'лет'],
-        'месяц': ['месяц', 'месяца', 'месяцев'],
-        'день': ['день', 'дня', 'дней'],
-        'час': ['час', 'часа', 'часов'],
-        'минута': ['минута', 'минуты', 'минут'],
-        'секунда': ['секунда', 'секунды', 'секунд']
+      const declensions: Record<string, string[]> = {
+        "год": ["год", "года", "лет"],
+        "месяц": ["месяц", "месяца", "месяцев"],
+        "день": ["день", "дня", "дней"],
+        "час": ["час", "часа", "часов"],
+        "минута": ["минута", "минуты", "минут"],
+        "секунда": ["секунда", "секунды", "секунд"]
       };
 
-      let forms = declensions[unit];
-      return (count % 10 == 1 && count % 100 != 11) ? forms[0] :
+      const forms = declensions[unit];
+      return (count % 10 === 1 && count % 100 !== 11) ? forms[0] :
           (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) ? forms[1] : forms[2];
     }
   }
-})
+});
 </script>
-
-<style scoped>
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 1.25rem;
-  padding: 0.95rem 1rem;
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.dark .stat-card {
-  background: rgba(15, 23, 42, 0.35);
-  border-color: rgba(71, 85, 105, 0.45);
-}
-
-.stat-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 1rem;
-  background: rgba(148, 163, 184, 0.12);
-}
-</style>

@@ -1,10 +1,10 @@
 <template>
   <Header/>
 
-  <div class="mx-auto max-w-[1700px] px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
-    <div class="flex flex-col gap-6">
+  <div class="mx-auto max-w-425 px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div class="flex flex-col gap-4">
       <div v-if="generalInfo" class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
-        <div class="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10 pointer-events-none"/>
+        <div class="absolute inset-0 bg-linear-to-br from-sky-500/10 via-transparent to-indigo-500/10 pointer-events-none"/>
         <div class="relative p-4 sm:p-6">
           <DeviceStatusName
               :status="deviceAvailable"
@@ -13,8 +13,8 @@
         </div>
       </div>
 
-      <div v-if="generalInfo" class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr),minmax(22rem,0.8fr)]">
-        <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur">
+      <div v-if="generalInfo" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr),minmax(18rem,0.55fr)]">
+        <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-4 backdrop-blur xl:sticky xl:top-4">
           <div class="flex flex-wrap items-center gap-2 sm:gap-3">
             <DeviceDetailInfo :general-info="generalInfo"/>
             <Commands :device-name="deviceName" :interfaces="interfaces"/>
@@ -40,7 +40,7 @@
             </div>
 
             <a v-if="generalInfo.consoleURL.length" :href="generalInfo.consoleURL" target="_blank" class="inline-flex">
-              <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'" class="!rounded-2xl">
+              <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"/>
                 </svg>
@@ -66,23 +66,23 @@
       </div>
 
       <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex flex-col gap-3">
-            <InterfacesHelpText
-                @update="updateCurrentStatus"
-                :time-passed="timePassedFromLastUpdate"
-                :device-status="deviceAvailable"
-                :auto-update="autoUpdateInterfaces"
-                :current-status="currentStatus"
-                :last-interface-update="collected"/>
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div class="flex flex-1 flex-col gap-3">
+<!--            <InterfacesHelpText-->
+<!--                @update="updateCurrentStatus"-->
+<!--                :time-passed="timePassedFromLastUpdate"-->
+<!--                :device-status="deviceAvailable"-->
+<!--                :auto-update="autoUpdateInterfaces"-->
+<!--                :current-status="currentStatus"-->
+<!--                :last-interface-update="collected"/>-->
 
-            <div v-if="currentStatus" class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <div v-if="currentStatus" class="inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
               <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
               <label for="auto-update-interfaces" class="cursor-pointer">Обновлять автоматически</label>
             </div>
           </div>
 
-          <div v-if="deviceName.length" class="w-full lg:w-auto">
+          <div v-if="deviceName.length" class="w-full xl:w-auto">
             <DeviceViewings :device-name="deviceName"/>
           </div>
         </div>
@@ -94,12 +94,12 @@
             <thead>
             <tr class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
               <th class="w-12"></th>
-              <th class="w-[24rem]"></th>
-              <th class="w-[8rem]"></th>
+              <th class="w-68"></th>
+              <th class="w-26"></th>
               <th></th>
-              <th class="w-[8rem] font-mono">
+              <th class="w-24 font-mono">
                 <Button outlined size="small" @click="toggleInterfacesWithVlans"
-                        :label="withVlans?'no VLAN':'+ VLAN'" class="!rounded-xl"/>
+                        :label="withVlans?'no VLAN':'+ VLAN'" class="rounded-xl!"/>
               </th>
             </tr>
             </thead>
