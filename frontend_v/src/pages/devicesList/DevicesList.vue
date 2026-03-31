@@ -74,7 +74,8 @@
           </div>
 
           <div v-show="displayMode === 'interfaces_loading'" class="mt-8 grid gap-4 xl:grid-cols-12">
-            <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-8">
+
+            <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-9">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">Общая загрузка интерфейсов</div>
@@ -82,11 +83,11 @@
                 </div>
               </div>
 
-              <div v-if="chartData.length > 0" class="mt-5 flex flex-col gap-6 gap-y-24 2xl:flex-row 2xl:items-center">
-                <div class="mx-auto h-62.5 w-75 shrink-0">
+              <div v-if="chartData.length > 0" class="mt-5 sm:flex flex-wrap gap-6 xl:flex-row xl:items-center">
+                <div class="mx-auto sm:shrink-0">
                   <DoughnutChart :data="chartData"/>
                 </div>
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 sm:flex-1">
                   <BarChart :data="chartData"/>
                 </div>
               </div>
@@ -96,7 +97,7 @@
               </div>
             </div>
 
-            <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-4">
+            <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-3">
               <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Легенда</div>
               <div class="mt-4 grid gap-3 text-sm">
                 <div class="flex items-center gap-3">

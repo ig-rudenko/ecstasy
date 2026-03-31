@@ -23,8 +23,8 @@ async function logout() {
     <template #container="{ closeCallback }">
       <div class="p-4 text-xl font-semibold text-surface-800 dark:text-surface-200">Вы уверены, что хотите выйти?</div>
       <div class="flex justify-end gap-2 p-2">
-        <Button type="button" label="Нет" severity="secondary" autofocus @click="closeCallback"></Button>
-        <Button type="button" label="Выйти" severity="danger" @click="logout"></Button>
+        <Button type="button" label="Нет" severity="secondary" autofocus @click="closeCallback" class="rounded-2xl"/>
+        <Button type="button" label="Выйти" severity="danger" @click="logout" class="rounded-2xl"/>
       </div>
     </template>
   </Dialog>
