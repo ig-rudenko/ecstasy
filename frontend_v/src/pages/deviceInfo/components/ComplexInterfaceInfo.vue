@@ -79,7 +79,7 @@ onMounted(async () => {
       <!--        BUTTON-->
       <!--        Конфигурация порта-->
       <div v-if="complexInfo.portConfig.length">
-        <Button severity="contrast" size="small" @click="portDetailMenu=portDetailMenu=='portConfig'?'':'portConfig'"
+        <Button severity="contrast" class="rounded-xl" size="small" @click="portDetailMenu=portDetailMenu=='portConfig'?'':'portConfig'"
                 :outlined="portDetailMenu!=='portConfig'">
           <svg width="16" height="16" role="img">
             <use xlink:href="#gear-icon"></use>
@@ -91,7 +91,7 @@ onMounted(async () => {
       <!--        BUTTON-->
       <!--        Ошибки на порту-->
       <div v-if="complexInfo.portErrors.length">
-        <Button severity="warn" size="small" @click="portDetailMenu=portDetailMenu=='portErrors'?'':'portErrors'"
+        <Button severity="warn" class="rounded-xl" size="small" @click="portDetailMenu=portDetailMenu=='portErrors'?'':'portErrors'"
                 :outlined="portDetailMenu!=='portErrors'">
           <svg width="16" height="16" role="img">
             <use xlink:href="#warning-icon"></use>
@@ -103,7 +103,7 @@ onMounted(async () => {
       <!--        BUTTON-->
       <!--        Диагностика кабеля-->
       <div v-if="complexInfo.hasCableDiag">
-        <Button severity="primary" size="small" @click="portDetailMenu=portDetailMenu=='cableDiag'?'':'cableDiag'"
+        <Button severity="primary" class="rounded-xl" size="small" @click="portDetailMenu=portDetailMenu=='cableDiag'?'':'cableDiag'"
                 :outlined="portDetailMenu!=='cableDiag'">
           <svg width="16" height="16">
             <use xlink:href="#cable-diag-icon"></use>
