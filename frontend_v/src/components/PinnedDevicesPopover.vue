@@ -2,6 +2,10 @@
 import {computed, ref} from "vue";
 import pinnedDevices from "@/services/pinnedDevices.ts";
 
+defineProps({
+  showText: {required: false, default: true}
+})
+
 const popoverRef = ref();
 const count = computed(() => pinnedDevices.pinnedDevices.value.length);
 const visible = computed(() => count.value > 0);
@@ -16,7 +20,7 @@ function toggle(event: Event) {
     <Button
         type="button"
         icon="pi pi-bookmark-fill"
-        :label="'Избранное (' + count + ')'"
+        :label="showText?'Избранное (' + count + ')':''"
         text
         :severity="count>0?'success':'secondary'"
         class="rounded-2xl! "

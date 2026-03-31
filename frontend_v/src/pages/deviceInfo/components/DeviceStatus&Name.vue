@@ -56,7 +56,7 @@
               {{ copiedStatus || "Скопировано!" }}
             </span>
           </div>
-          <PinnedDevicesPopover/>
+          <PinnedDevicesPopover :show-text="false"/>
         </div>
       </div>
     </div>

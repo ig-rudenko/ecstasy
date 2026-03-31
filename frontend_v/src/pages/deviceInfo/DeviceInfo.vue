@@ -268,7 +268,6 @@ import {HardwareStats} from "./hardwareStats";
 import {DeviceInterface, InterfacesCount, reconcileInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
-import PinnedDevicesPopover from "@/components/PinnedDevicesPopover.vue";
 import {errorToast} from "@/services/my.toast.ts";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
 import Commands from "@/pages/deviceInfo/components/Commands.vue";
@@ -281,7 +280,6 @@ export default defineComponent({
     DeviceViewings,
     DeviceVlanInfo,
     Commands,
-    PinnedDevicesPopover,
     Header,
     Footer,
     UserActionsButton,

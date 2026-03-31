@@ -31,14 +31,14 @@
                     @click="getDeviceWithStats"
                     icon="pi pi-chart-pie"
                     label="Нагрузка по портам"
-                    outlined
+                    text
                     class="rounded-2xl!"
                 />
                 <Button
                     v-else-if="displayMode === 'waiting'"
                     icon="pi pi-spin pi-spinner"
                     label="Загружаю нагрузку..."
-                    outlined
+                    text
                     disabled
                     class="rounded-2xl!"
                 />
@@ -47,10 +47,9 @@
                     @click="getDevices"
                     icon="pi pi-list"
                     label="Обычный вид"
-                    outlined
+                    text
                     class="rounded-2xl!"
                 />
-                <Button @click="getDevices" icon="pi pi-refresh" label="Обновить" severity="secondary" outlined class="rounded-2xl!" />
               </div>
 
               <div class="mt-2 sm:mt-8 grid gap-3 sm:grid-cols-3">
