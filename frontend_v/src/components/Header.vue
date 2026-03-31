@@ -110,6 +110,56 @@ function isCurrent(url: string) {
   return location.pathname.startsWith(url);
 }
 
+function getMenuIconClass(icon?: string) {
+  switch (icon) {
+    case "devices":
+      return "pi pi-box";
+    case "console":
+      return "pi pi-desktop";
+    case "loop":
+      return "pi pi-sync";
+    case "map":
+      return "pi pi-map";
+    case "search":
+      return "pi pi-search";
+    case "topology":
+      return "pi pi-share-alt";
+    case "radar":
+      return "pi pi-bolt";
+    case "ring":
+      return "pi pi-circle";
+    case "gpon":
+      return "pi pi-sitemap";
+    default:
+      return "pi pi-circle";
+  }
+}
+
+function getMenuIconAccent(icon?: string) {
+  switch (icon) {
+    case "devices":
+      return "from-sky-500/15 to-cyan-500/5";
+    case "console":
+      return "from-slate-500/15 to-slate-700/5";
+    case "loop":
+      return "from-emerald-500/15 to-teal-500/5";
+    case "map":
+      return "from-indigo-500/15 to-violet-500/5";
+    case "search":
+      return "from-amber-500/15 to-orange-500/5";
+    case "topology":
+      return "from-teal-500/15 to-sky-500/5";
+    case "radar":
+      return "from-slate-500/15 to-sky-500/5";
+    case "ring":
+      return "from-fuchsia-500/15 to-pink-500/5";
+    case "gpon":
+      return "from-fuchsia-500/15 to-pink-500/5";
+    default:
+      return "from-gray-500/15 to-gray-400/5";
+  }
+}
+
 const currentTheme = ref<ThemesValues>(getCurrentTheme());
 
 const toggle = () => {
@@ -197,7 +247,11 @@ const closeMobileMenu = () => {
                 <div
                     :class="isCurrent(item.url || '_')?'ring-1 ring-indigo-500/20':''"
                     class="flex items-center gap-2 rounded-2xl pl-1 pr-3 py-1">
-                  <img :src="'/img/menu/'+item.icon+'.png'" class="w-10 h-10 opacity-90" :alt="item.icon"/>
+                  <div
+                      :class="getMenuIconAccent(item.icon as string)"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200">
+                    <i :class="[getMenuIconClass(item.icon as string), 'text-base']"/>
+                  </div>
                   <span class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{{ item.label }}</span>
                 </div>
               </AppLink>
@@ -242,7 +296,11 @@ const closeMobileMenu = () => {
         <div
             :class="isCurrent(item.url || '_')?'ring-2 ring-indigo-500/50 bg-white/70 dark:bg-gray-900/40':''"
             class="flex items-center gap-3 rounded-2xl px-3 py-2 hover:bg-white/70 dark:hover:bg-gray-900/40 transition">
-          <img :src="'/img/menu/'+item.icon+'.png'" class="w-8 h-8 opacity-90" :alt="item.icon"/>
+          <div
+              :class="getMenuIconAccent(item.icon as string)"
+              class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200">
+            <i :class="[getMenuIconClass(item.icon as string), 'text-base']"/>
+          </div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ item.label }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.url }}</div>
@@ -276,15 +334,15 @@ const closeMobileMenu = () => {
       <div class="flex gap-1 items-center justify-center mt-3">
         <a v-if="user && user.isStaff" href="/admin/">
           <Button icon="pi pi-cog" outlined v-tooltip.bottom="'Панель администратора'" severity="secondary"
-                  class="hover:text-primary hover:bg-primary-100"/>
+                  class="hover:text-primary hover:bg-primary-100 rounded-2xl"/>
         </a>
         <Button icon="pi pi-moon" v-if="currentTheme == 'light'" @click="toggle"
                 v-tooltip.bottom="'Включить темную тему'" severity="contrast"
-                class="hover:text-gray-200 hover:bg-gray-900"
+                class="hover:text-gray-200 hover:bg-gray-900 rounded-2xl border-gray-300"
                 outlined/>
         <Button icon="pi pi-sun" v-if="currentTheme == 'dark' || currentTheme == 'auto'" @click="toggle"
                 v-tooltip.bottom="'Включить светлую тему'" severity="contrast"
-                class="hover:text-gray-900 hover:bg-gray-200"
+                class="hover:text-gray-900 hover:bg-gray-200 rounded-2xl border-gray-700"
                 outlined/>
         <LogoutButton/>
       </div>
