@@ -29,7 +29,7 @@
 
         <div>
           <div class="hidden sm:flex items-center">
-            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm" :style="portTypeStyles">
+            <span v-if="complexInfo?.portType" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
 

@@ -1,7 +1,7 @@
 <template>
-  <div class="table-plate shadow-xl dark:shadow-gray-500 rounded">
+  <div class="table-plate shadow-xl dark:shadow-gray-500 rounded-3xl">
     <div>
-      <Button @click="show_filter = !show_filter" class="filter-button" outlined>
+      <Button @click="show_filter = !show_filter" class="filter-button rounded-2xl" outlined>
         <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
              fill="#8B83BA" viewBox="0 0 16 16">
           <path
@@ -74,7 +74,7 @@
     <!-- TABLE -->
     <div class="overflow-auto">
       <table :style="{opacity: show_filter?0.4:1}" class="w-full">
-        <thead class="dark:border-gray-600 border-b-2">
+        <thead class="border-gray-300 dark:border-gray-600 border-b">
         <tr>
           <th scope="col" class="py-2">Адрес</th>
           <th scope="col" class="py-2">Порт olt</th>
@@ -85,7 +85,7 @@
 
         <tbody>
         <tr v-for="line in tableData"
-            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-2">
+            class="dark:hover:bg-gray-800 hover:bg-purple-50 border-gray-300 dark:border-gray-600 border-b">
 
           <!-- АДРЕС -->
           <td class="items-center flex font-bold py-2 px-10 gap-3">
@@ -336,7 +336,6 @@ tr, tr * {
 .filter-button {
   margin: 15px;
   padding: 7px 10px;
-  border-radius: 6px;
 }
 
 .secondary-text {

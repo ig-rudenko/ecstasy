@@ -2,59 +2,63 @@
 
   <ConfirmPopup/>
 
-  <template v-for="(line, index) in customerLines">
+  <div>
+    <template v-for="(line, index) in customerLines">
+      <div
+          class="flex flex-wrap justify-center sm:justify-start items-center gap-x-10 gap-y-4 p-2 first:rounded-t-2xl last:rounded-b-2xl odd:bg-gray-200 dark:odd:bg-gray-800">
 
-    <div
-        class="flex flex-wrap justify-center sm:justify-start items-center gap-x-10 gap-y-4 p-2 odd:bg-gray-200 dark:odd:bg-gray-800">
+        <router-link :to="{name: 'gpon-end3-tech-data', params: {id: line.id}, query: {backref: $route.href}}">
+          <Button text class="font-bold">
+            {{ customerLineTypeName(line.type) }} {{ index + 1 }}
+          </Button>
+        </router-link>
 
-      <router-link :to="{name: 'gpon-end3-tech-data', params: {id: line.id}, query: {backref: $route.href}}">
-        <Button text class="font-bold">
-          {{ customerLineTypeName(line.type) }} {{ index + 1 }}
-        </Button>
-      </router-link>
+        <div>
+          {{ getFullAddress(line.address) }}
+          <br>
+          Локация: {{ line.location }}.
+        </div>
 
-      <div>
-        {{ getFullAddress(line.address) }}
-        <br>
-        Локация: {{ line.location }}.
+        <div>{{ customerLineNumbers(line) }}</div>
+
+        <div>
+          <Button v-if="line.detailInfo || line.capability?.length" @click="$emit('deleteInfo', index)" severity="warn"
+                  outlined rounded
+                  size="small" label="свернуть"/>
+          <Button v-else @click="$emit('getInfo', index)" outlined rounded size="small" label="подробнее"/>
+        </div>
+
+        <div v-if="editMode && hasPermissionToDeleteEnd3">
+          <Button v-if="line.detailInfo || line.capability?.length" @click="deleteEnd3($event, line, index)" rounded
+                  size="small"
+                  severity="danger" icon="pi pi-trash"
+                  label="удалить"/>
+        </div>
+
+        <div v-if="line.errorStatus" class="alert alert-danger">Ошибка при загрузке данных.
+          <br> {{ line.errorMessage || '' }} <br> Статус: {{ line.errorStatus }}
+        </div>
+
       </div>
 
-      <div>{{ customerLineNumbers(line) }}</div>
+      <div v-if="line.detailInfo || line.capability?.length" class="px-3 rounded-0 overflow-auto">
 
-      <div>
-        <Button v-if="line.detailInfo || line.capability?.length" @click="$emit('deleteInfo', index)" severity="warn" outlined rounded
-                size="small" label="свернуть"/>
-        <Button v-else @click="$emit('getInfo', index)" outlined rounded size="small" label="подробнее"/>
+        <End3PortsViewEdit
+            @getInfo="$emit('getInfo', index)"
+            :edit-mode="editMode"
+            :user-permissions="userPermissions"
+            :end3-object="line"
+            :end3-ports-array="line.detailInfo || line.capability"
+
+            :device-name="deviceName"
+            :device-port="devicePort"
+            :building-address="buildingAddress"
+        />
       </div>
 
-      <div v-if="editMode && hasPermissionToDeleteEnd3">
-        <Button v-if="line.detailInfo || line.capability?.length" @click="deleteEnd3($event, line, index)" rounded size="small"
-                severity="danger" icon="pi pi-trash"
-                label="удалить"/>
-      </div>
+    </template>
 
-    </div>
-
-    <div v-if="line.errorStatus" class="alert alert-danger">Ошибка при загрузке данных.
-      <br> {{ line.errorMessage || '' }} <br> Статус: {{ line.errorStatus }}
-    </div>
-
-    <div v-if="line.detailInfo || line.capability?.length" class="px-3 rounded-0 overflow-auto">
-
-      <End3PortsViewEdit
-          @getInfo="$emit('getInfo', index)"
-          :edit-mode="editMode"
-          :user-permissions="userPermissions"
-          :end3-object="line"
-          :end3-ports-array="line.detailInfo || line.capability"
-
-          :device-name="deviceName"
-          :device-port="devicePort"
-          :building-address="buildingAddress"
-      />
-    </div>
-
-  </template>
+  </div>
 
   <!-- ДОБАВЛЕНИЕ НОВОГО СПЛИТТЕРА / РАЙЗЕРА -->
   <div v-if="showAddButton" class="py-2">
@@ -66,7 +70,7 @@
       <span>Добавить</span>
     </Button>
 
-    <Dialog v-model:visible="showAddNewEnd3Dialog" modal header="Добавление end3">
+    <Dialog v-model:visible="showAddNewEnd3Dialog" modal header="Добавление end3" class="max-w-200 w-full">
       <div>
         <SplittersRizersFind :init="newEnd3.existingSplitter"
                              :type="newEnd3.type"
@@ -95,7 +99,7 @@
               Количество портов на сплиттере
               <Asterisk/>
             </div>
-            <Select v-model="newEnd3.portCount" :options="[4, 8, 12, 16, 24]" fluid/>
+            <Select v-model="newEnd3.portCount" :options="[4, 8, 12, 16, 24]" fluid class="rounded-2xl"/>
           </div>
         </div>
 

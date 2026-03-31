@@ -17,7 +17,7 @@ function toggle(event: Event) {
         type="button"
         icon="pi pi-bookmark-fill"
         :label="'Избранное (' + count + ')'"
-        outlined
+        text
         :severity="count>0?'success':'secondary'"
         class="rounded-2xl! "
         @click="toggle"/>

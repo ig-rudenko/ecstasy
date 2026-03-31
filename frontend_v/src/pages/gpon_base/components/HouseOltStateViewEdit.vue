@@ -18,7 +18,7 @@
     <div class="flex items-center gap-2 py-4">
 
       <!-- РЕДАКТИРОВАНИЕ АДРЕСА ДОМА -->
-      <div v-if="editMode && hasPermissionToUpdateHouseB">
+      <div v-if="editMode && hasPermissionToUpdateHouseB" class="w-full">
         <AddressGetCreate :is-mobile="isMobile" :allow-create="true" :data="buildingData"></AddressGetCreate>
       </div>
 
@@ -39,19 +39,21 @@
     </div>
 
     <!-- ПОДЪЕЗДЫ В ДОМЕ -->
-    <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2"
+    <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2 rounded-2xl"
          :class="editMode?'':'bg-gray-200 dark:bg-gray-800'">
-      <div class="p-2">Задействованные подъезды в доме для данного OLT порта</div>
+      <div class="pl-6 p-2">Задействованные подъезды в доме для данного OLT порта</div>
       <div v-if="editMode && hasPermissionToUpdateHouseOLTState">
-        <InputText v-model.trim="buildingData.entrances" fluid placeholder="Укажите подъезды"/>
+        <InputText v-model.trim="buildingData.entrances" fluid placeholder="Укажите подъезды"
+                   class="rounded-2xl"/>
       </div>
       <div v-else class="p-2">{{ buildingData.entrances || '-' }}</div>
     </div>
 
     <!-- ОПИСАНИЕ -->
     <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2">
-      <div class="p-2">Описание сплиттера 2го каскада</div>
+      <div class="pl-6 p-2">Описание сплиттера 2го каскада</div>
       <Textarea v-if="editMode && hasPermissionToUpdateHouseOLTState" fluid auto-resize
+                class="rounded-2xl"
                 v-model="buildingData.description" rows="5"/>
       <div v-else class="p-2">{{ buildingData.description || '-' }}</div>
     </div>

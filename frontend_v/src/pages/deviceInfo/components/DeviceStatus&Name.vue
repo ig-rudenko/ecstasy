@@ -32,7 +32,7 @@
         <i class="pi pi-wrench text-lg"/>
       </button>
 
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-4">
         <div class="flex flex-wrap items-center gap-3">
           <div class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl font-mono">
             {{ device.name }}
@@ -56,6 +56,7 @@
               {{ copiedStatus || "Скопировано!" }}
             </span>
           </div>
+          <PinnedDevicesPopover/>
         </div>
       </div>
     </div>
@@ -117,6 +118,8 @@ import api from "@/services/api";
 import pinnedDevices from "@/services/pinnedDevices";
 import {Device} from "@/services/devices";
 import PinDevice from "@/components/PinDevice.vue";
+import PinnedDevicesPopover from "@/components/PinnedDevicesPopover.vue";
+import Commands from "@/pages/deviceInfo/components/Commands.vue";
 
 interface PoolStatus {
   connectionPoolSize: number
@@ -124,7 +127,7 @@ interface PoolStatus {
 }
 
 export default defineComponent({
-  components: {PinDevice},
+  components: {Commands, PinnedDevicesPopover, PinDevice},
   props: {
     status: {required: true, type: Number},
     device: {required: true, type: Object as PropType<Device>},

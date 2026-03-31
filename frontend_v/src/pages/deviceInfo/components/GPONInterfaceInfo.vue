@@ -11,7 +11,7 @@
     </div>
 
     <div class=" w-full">
-      <table class="w-full ">
+      <table class="w-full">
         <thead>
         <tr>
           <th scope="col" class="px-3 py-2">ONT ID</th>
