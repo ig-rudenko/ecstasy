@@ -9,7 +9,7 @@
   </div>
 
   <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:w-80! lg:w-140!" position="right" :modal="false" :dismissable="false">
-    <div v-if="generalInfo.zabbixInfo">
+    <div v-if="generalInfo.zabbixInfo" class="flex flex-col gap-3">
 
       <div v-if="!generalInfo.zabbixInfo.monitoringAvailable" class="alert alert-danger text-right text-red-400 mb-2">
         Не мониторится в Zabbix
@@ -22,7 +22,7 @@
         <div v-if="generalInfo.osVersion"> Версия ОС: {{ generalInfo.osVersion }}</div>
       </div>
 
-      <div class="border flex flex-wrap mb-4 p-3 rounded-xl border-gray-200 dark:border-gray-600">
+      <div v-if="images.length" class="border flex flex-wrap p-3 rounded-xl border-gray-200 dark:border-gray-600">
         <div v-for="(imageURL, i) in images" class="p-3">
           <Image :src="imageURL" :alt="'image'+i" width="120" preview/>
         </div>

@@ -2,9 +2,17 @@
   <Header/>
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-    <div class="flex flex-col gap-10">
+    <div class="flex flex-col gap-6 sm:gap-8 md:gap-10 lg:gap-16 xl:gap-24">
       <div
-          class="relative overflow-hidden rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur">
+          class="
+          relative overflow-hidden
+          rounded-3xl border border-gray-200/50 dark:border-gray-700/50
+          bg-white/75 dark:bg-gray-900/45
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          ">
         <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10 pointer-events-none"/>
         <div class="relative p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
@@ -19,13 +27,13 @@
           <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Режим</span>
             <div
-                class="inline-flex rounded-2xl p-1 border border-gray-200/80 dark:border-gray-700/60 bg-gray-100/80 dark:bg-gray-950/40">
+                class="inline-flex w-fit rounded-2xl p-1 border border-gray-200/80 dark:border-gray-700/60 bg-gray-100/80 dark:bg-gray-950/40">
               <button
                   type="button"
                   :class="tracerouteMode === 'vlan'
                     ? 'shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'"
-                  class="px-4 py-2 rounded-xl text-sm font-medium transition"
+                  class="cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition"
                   @click="setTracerouteMode('vlan')">
                 VLAN
               </button>
@@ -34,7 +42,7 @@
                   :class="tracerouteMode === 'mac'
                     ? 'shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'"
-                  class="px-4 py-2 rounded-xl text-sm font-medium transition"
+                  class="cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition"
                   @click="setTracerouteMode('mac')">
                 MAC
               </button>
@@ -46,23 +54,32 @@
       <!-- VLAN -->
       <div
           v-show="tracerouteMode === 'vlan'"
-          class="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur p-5 sm:p-6 space-y-5">
+          class="
+            w-fit
+            rounded-3xl border border-gray-200/50 dark:border-gray-700/50
+            bg-white/75 dark:bg-gray-900/45
+            backdrop-blur
+            p-5 sm:p-6 space-y-5
+            transition hover:-translate-y-0.5
+            delay-0
+            hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          ">
         <div class="flex flex-wrap items-center gap-3">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">VLAN traceroute</h2>
           <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
             <template v-if="vlanScanStatus.running && vlanScanStatus.progress && vlanScanStatus.progress > 0">
-              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
+              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
               <span>Сканирование: {{ vlanScanStatus.progress }}%</span>
             </template>
             <template v-else-if="vlanScanStatus.running">
-              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
+              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
               <span>Идёт сканирование VLAN…</span>
             </template>
             <template v-else-if="!vlanScanStatus.running && vlanScanStatus.available">
               <button
                   type="button"
-                  class="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition"
-                  v-tooltip.bottom="'Обновить справочник VLAN'"
+                  class="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition cursor-pointer"
+                  v-tooltip.bottom="'Запустить скан VLAN\'ов'"
                   @click="vlanScanStatus.run_vlans_scan">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
@@ -84,7 +101,6 @@
 
         <div class="flex flex-wrap items-end gap-3">
           <div>
-            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">VLAN ID</label>
             <InputNumber
                 :min="1"
                 :max="4096"
@@ -97,7 +113,7 @@
           </div>
           <Button
               rounded
-              class="!rounded-2xl"
+              class="rounded-2xl!"
               :loading="vlanTracerouteStarted"
               v-tooltip.bottom="'Построить граф'"
               @click="load_vlan_traceroute">
@@ -145,22 +161,31 @@
       <!-- MAC -->
       <div
           v-show="tracerouteMode === 'mac'"
-          class="rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur p-5 sm:p-6 space-y-5">
+          class="
+            w-fit
+            rounded-3xl border border-gray-200/50 dark:border-gray-700/50
+            bg-white/75 dark:bg-gray-900/45
+            backdrop-blur
+            p-5 sm:p-6 space-y-5
+            transition hover:-translate-y-0.5
+            delay-0
+            hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+            ">
         <div class="flex flex-wrap items-center gap-3">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">MAC traceroute</h2>
           <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
             <template v-if="macScanStatus.running && macScanStatus.progress && macScanStatus.progress > 0">
-              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
+              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
               <span>Сканирование: {{ macScanStatus.progress }}%</span>
             </template>
             <template v-else-if="macScanStatus.running">
-              <ProgressSpinner class="!w-6 !h-6" stroke-width="4"/>
+              <ProgressSpinner class="w-6! h-6!" stroke-width="4"/>
               <span>Идёт сканирование MAC…</span>
             </template>
             <template v-else-if="!macScanStatus.running && macScanStatus.available">
               <button
                   type="button"
-                  class="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition"
+                  class="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition cursor-pointer"
                   v-tooltip.bottom="'Запустить скан MAC'"
                   @click="macScanStatus.run_vlans_scan">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
@@ -181,18 +206,17 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap items-end gap-3">
+        <div class="flex flex-wrap items-center jus gap-3">
           <div>
-            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">MAC-адрес</label>
             <InputText
                 v-model="input.mac"
                 placeholder="MAC"
-                class="mt-1 !rounded-2xl !font-mono !text-lg !min-w-[14rem] !bg-white/95 dark:!bg-gray-950/60 !text-gray-900 dark:!text-gray-100 !border-gray-200/80 dark:!border-gray-700/60"
+                class="mt-1 rounded-2xl! font-mono! min-w-56! bg-white/95! dark:bg-gray-950/60! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
                 @keyup.enter="load_mac_traceroute"/>
           </div>
           <Button
               rounded
-              class="!rounded-2xl"
+              class="rounded-2xl!"
               :loading="macTracerouteStarted"
               :disabled="macTracerouteStarted"
               v-tooltip.bottom="'Построить граф'"
@@ -204,10 +228,9 @@
             </svg>
           </Button>
           <div>
-            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Фильтр VLAN</label>
             <InputNumber
                 v-model="macTracerouteOptions.vlanFilter"
-                placeholder="опц."
+                placeholder="Фильтр VLAN"
                 :min="1"
                 :max="4096"
                 class="mt-1 block"
@@ -219,7 +242,7 @@
       <div v-if="vlanTracerouteStarted || macTracerouteStarted" class="flex justify-center py-10">
         <div
             class="inline-flex flex-col items-center gap-4 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/50 px-10 py-8 backdrop-blur">
-          <ProgressSpinner class="!w-16 !h-16" stroke-width="3"/>
+          <ProgressSpinner class="w-16! h-16!" stroke-width="3"/>
           <span class="text-sm text-gray-600 dark:text-gray-300">Строим граф…</span>
         </div>
       </div>
@@ -235,7 +258,7 @@
           </button>
           <span
               v-tooltip.bottom="vlanInfo.description || 'Нет описания'"
-              class="py-1.5 px-2 bg-gray-600 text-white dark:bg-gray-700 max-w-[12rem] truncate">
+              class="py-1.5 px-2 bg-gray-600 text-white dark:bg-gray-700 max-w-48 truncate">
             {{ vlanInfo.name }}
           </span>
           <span v-tooltip.bottom="'Количество'" class="py-1.5 pl-2 pr-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
@@ -246,9 +269,9 @@
 
       <div
           :class="[
-            'relative rounded-3xl border shadow-inner min-h-[480px]',
+            'relative rounded-3xl border shadow-inner min-h-120',
             graphAreaTransparent ? 'border-gray-200/40 dark:border-gray-700/50 overflow-hidden bg-black/35 dark:bg-black/50 backdrop-blur-[2px]' : 'border-gray-700 overflow-hidden bg-neutral-950',
-            graphMaximized ? '!overflow-visible !rounded-none border-0 shadow-none min-h-0 bg-transparent' : '',
+            graphMaximized ? 'overflow-visible! rounded-none! border-0 shadow-none min-h-0 bg-transparent' : '',
           ]">
         <div
             v-show="tracerouteMode === 'vlan'"

@@ -18,10 +18,10 @@ function toggle(event: Event) {
         icon="pi pi-bookmark-fill"
         :label="'Избранное (' + count + ')'"
         outlined
-        severity="secondary"
-        size="small"
-        class="rounded-2xl! border-gray-200/80! dark:border-gray-600/80! bg-white/60! dark:bg-gray-900/50! backdrop-blur-sm! text-gray-800! dark:text-gray-100!"
+        :severity="count>0?'success':'secondary'"
+        class="rounded-2xl! "
         @click="toggle"/>
+
     <Popover
         ref="popoverRef"
         :pt="{

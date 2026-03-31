@@ -32,7 +32,15 @@ onMounted(() => {
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
     <div class="flex flex-col gap-6">
-      <div class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
+      <div class="
+          relative overflow-hidden
+          rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+          bg-white/70 dark:bg-gray-900/40
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+        ">
         <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 pointer-events-none"/>
         <div class="relative p-6 sm:p-8">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -66,7 +74,7 @@ onMounted(() => {
               <rect width="100%" height="100%" fill="#334155"/>
             </svg>
 
-            <div class="absolute inset-0 bg-gradient-to-t from-gray-950/75 via-gray-950/25 to-transparent"/>
+            <div class="absolute inset-0 bg-linear-to-t from-gray-950/75 via-gray-950/25 to-transparent"/>
             <div class="absolute left-4 top-4 flex items-center gap-2">
               <Tag v-if="map.interactive" severity="success" value="Интерактивная"/>
               <Tag v-else severity="secondary" value="Статическая"/>

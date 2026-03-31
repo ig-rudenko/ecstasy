@@ -4,7 +4,7 @@
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
     <div v-if="rings.selectedRing === null" class="flex flex-col gap-6">
       <div class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
-        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10 pointer-events-none"/>
+        <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10 pointer-events-none"/>
         <div class="relative p-6 sm:p-8">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div class="max-w-3xl">
@@ -26,7 +26,7 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="flex-1">
             <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Поиск</div>
-            <InputText class="w-full" placeholder="Введите имя головного узла" v-model.trim="search"/>
+            <InputText class="w-full rounded-2xl" placeholder="Введите имя головного узла" v-model.trim="search"/>
           </div>
 
           <label class="cursor-pointer flex items-center gap-3 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">

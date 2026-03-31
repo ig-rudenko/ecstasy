@@ -79,8 +79,8 @@ const quickCards = computed(() => {
 </script>
 
 <template>
-  <main class="mx-auto max-w-375 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-    <section class="relative overflow-hidden rounded-4xl border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
+  <main class="mx-auto max-w-375 px-2 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <section class="relative overflow-hidden rounded-4xl border border-gray-200/70 bg-white/80 sm:shadow-[0_20px_70px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(99,102,241,0.16),transparent_24%),linear-gradient(135deg,rgba(255,255,255,0.3),transparent)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28%),radial-gradient(circle_at_85%_15%,rgba(99,102,241,0.2),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.35),transparent)]" />
 
       <div class="relative grid gap-8 px-5 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1.2fr),minmax(24rem,0.8fr)] xl:gap-10 xl:px-10 xl:py-10">
@@ -126,7 +126,7 @@ const quickCards = computed(() => {
         </div>
 
         <div class="flex h-full flex-col gap-4">
-          <div class="rounded-[1.75rem] border border-white/70 bg-slate-950 px-5 py-5 text-white shadow-[0_30px_80px_-45px_rgba(2,6,23,0.85)] dark:border-slate-800">
+          <div class="rounded-[1.75rem] border border-white/70 bg-slate-950 px-5 py-5 text-white dark:border-slate-800">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Control panel</div>

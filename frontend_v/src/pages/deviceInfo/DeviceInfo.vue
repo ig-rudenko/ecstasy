@@ -11,7 +11,7 @@
            rounded-3xl border border-gray-200/70 dark:border-gray-700/70
            bg-white/70 dark:bg-gray-900/40
            backdrop-blur
-           hover:shadow-md
+           hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
           ">
         <div
             class="absolute inset-0 bg-linear-to-br from-sky-500/10 via-transparent to-indigo-500/10 pointer-events-none"/>
@@ -96,7 +96,7 @@
         <ConfigFiles :device-name="generalInfo.deviceName"/>
       </div>
 
-      <div
+      <div v-if="interfacesWorkload.count"
           class="
           rounded-3xl border border-gray-200/70 dark:border-gray-700/70
           bg-white/70 dark:bg-gray-900/40
@@ -121,14 +121,6 @@
           ">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div class="flex flex-1 flex-col gap-3">
-            <!--            <InterfacesHelpText-->
-            <!--                @update="updateCurrentStatus"-->
-            <!--                :time-passed="timePassedFromLastUpdate"-->
-            <!--                :device-status="deviceAvailable"-->
-            <!--                :auto-update="autoUpdateInterfaces"-->
-            <!--                :current-status="currentStatus"-->
-            <!--                :last-interface-update="collected"/>-->
-
             <div v-if="currentStatus"
                  class="inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
               <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>

@@ -28,7 +28,15 @@ const cards = [
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
     <div class="flex flex-col gap-6">
-      <div class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur">
+      <div class="
+          relative overflow-hidden
+          rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+          bg-white/70 dark:bg-gray-900/40
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+        ">
         <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10 pointer-events-none"/>
         <div class="relative p-6 sm:p-8">
           <div class="max-w-3xl">

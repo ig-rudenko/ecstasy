@@ -195,9 +195,9 @@ const closeMobileMenu = () => {
             <template #item="{ item }">
               <AppLink :to="item.url || ''" :target="item.newPage?'_blank':''">
                 <div
-                    :class="isCurrent(item.url || '_')?'ring-2 ring-indigo-500/50':''"
-                    class="flex items-center gap-2 rounded-2xl px-3 py-2">
-                  <img :src="'/img/menu/'+item.icon+'.png'" class="w-7 h-7 opacity-90" :alt="item.icon"/>
+                    :class="isCurrent(item.url || '_')?'ring-1 ring-indigo-500/50':''"
+                    class="flex items-center gap-2 rounded-2xl pr-2">
+                  <img :src="'/img/menu/'+item.icon+'.png'" class="w-10 h-10 opacity-90" :alt="item.icon"/>
                   <span class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{{ item.label }}</span>
                 </div>
               </AppLink>

@@ -247,15 +247,15 @@ function exportCSV(): void {
 
 <template>
   <div
-      class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40">
+      class="overflow-hidden rounded-[1.75rem] sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40">
     <div class="border-b border-gray-200/70 p-4 dark:border-gray-700/70">
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex flex-wrap items-center gap-2">
             <Button @click="updateData" icon="pi pi-refresh" severity="secondary" outlined size="small"
-                    class="!rounded-2xl"/>
+                    class="rounded-2xl!"/>
             <Button @click="exportCSV" icon="pi pi-file-excel" severity="success" outlined size="small" label="CSV"
-                    class="!rounded-2xl"/>
+                    class="rounded-2xl!"/>
             <Button
                 v-if="vendorFilter || modelFilter || groupFilter || sortKey"
                 @click="clearFilters"
@@ -264,21 +264,17 @@ function exportCSV(): void {
                 outlined
                 size="small"
                 label="Сбросить"
-                class="!rounded-2xl"
+                class="rounded-2xl!"
             />
           </div>
 
-          <div
-              class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm font-mono text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
-            {{ total }} строк
-          </div>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div class="min-w-0">
             <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Вендор
             </div>
-            <Select v-model="vendorFilter" :options="vendors" placeholder="Все" class="w-full" :showClear="true"
+            <Select v-model="vendorFilter" :options="vendors" placeholder="Все" class="w-full rounded-2xl" :showClear="true"
                     scroll-height="300px">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
@@ -301,7 +297,7 @@ function exportCSV(): void {
                 filter
                 :showClear="true"
                 placeholder="Все"
-                class="w-full"
+                class="w-full rounded-2xl"
                 scroll-height="350px"
             >
               <template #optiongroup="slotProps">
@@ -320,7 +316,7 @@ function exportCSV(): void {
           <div class="min-w-0">
             <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Группа
             </div>
-            <Select v-model="groupFilter" :options="groups" placeholder="Все" class="w-full" :showClear="true"
+            <Select v-model="groupFilter" :options="groups" placeholder="Все" class="w-full rounded-2xl" :showClear="true"
                     scroll-height="300px">
               <template #option="slotProps">
                 <div class="font-mono">{{ slotProps.option }}</div>
@@ -342,7 +338,7 @@ function exportCSV(): void {
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-[960px] w-full text-sm">
+      <table class="min-w-240 w-full text-sm">
         <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
         <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
           <th class="px-4 py-3 text-left font-semibold">
@@ -407,10 +403,10 @@ function exportCSV(): void {
           <td class="px-4 py-3">
             <div class="group/device-name flex items-center gap-2">
               <router-link :to="'/device/' + dev.name">
-                <Button text icon="pi pi-box" :label="dev.name" class="!rounded-2xl"/>
+                <Button text icon="pi pi-box" :label="dev.name" class="rounded-2xl!"/>
               </router-link>
-              <span :class="{ '!opacity-100': pinned.isPinned(dev.name) }"
-                    class="opacity-0 transition group-hover/device-name:opacity-100">
+              <span :class="{ 'opacity-100!': pinned.isPinned(dev.name) }"
+                    class="opacity-50 sm:opacity-0 transition group-hover/device-name:opacity-100">
                   <PinDevice :device="dev"/>
                 </span>
             </div>
@@ -424,7 +420,7 @@ function exportCSV(): void {
           <td class="px-4 py-3">
             <button
                 v-if="dev.vendor"
-                class="inline-flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-white/70 dark:hover:bg-gray-900/40"
+                class="inline-flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-white/70 dark:hover:bg-gray-900/40 cursor-pointer border border-transparent hover:border-primary-200"
                 @click="vendorFilter = dev.vendor"
             >
               <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: stringToColour(dev.vendor) }"/>
@@ -433,22 +429,22 @@ function exportCSV(): void {
           </td>
 
           <td class="px-4 py-3">
-            <div v-if="dev.model" class="flex items-center gap-2">
+            <div v-if="dev.model" class="flex items-center gap-2 group">
               <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.model }}</span>
               <Button v-if="modelFilter !== dev.model" @click="modelFilter = dev.model" icon="pi pi-filter" size="small"
-                      outlined class="!rounded-xl"/>
+                      outlined class="rounded-xl! opacity-0 group-hover:opacity-100"/>
               <Button v-else @click="modelFilter = null" icon="pi pi-filter-slash" size="small" outlined
-                      class="!rounded-xl"/>
+                      class="rounded-xl!"/>
             </div>
           </td>
 
           <td class="px-4 py-3">
-            <div v-if="dev.group" class="flex items-center gap-2">
+            <div v-if="dev.group" class="flex items-center gap-2 group">
               <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.group }}</span>
               <Button v-if="groupFilter !== dev.group" @click="groupFilter = dev.group" icon="pi pi-filter" size="small"
-                      outlined class="!rounded-xl"/>
+                      outlined class="rounded-xl! opacity-0 group-hover:opacity-100"/>
               <Button v-else @click="groupFilter = null" icon="pi pi-filter-slash" size="small" outlined
-                      class="!rounded-xl"/>
+                      class="rounded-xl!"/>
             </div>
           </td>
         </tr>
@@ -468,7 +464,7 @@ function exportCSV(): void {
           :rows="rows"
           :totalRecords="total"
           :first="pageStart"
-          :rowsPerPageOptions="(rowsPerPageOptions as unknown as number[])"
+          :pageLinkSize="3"
           @page="(e: any) => { page = e.page; rows = e.rows; }"
           :pt="{
             root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }

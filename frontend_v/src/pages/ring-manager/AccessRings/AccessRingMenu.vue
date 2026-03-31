@@ -15,6 +15,7 @@
           severity="secondary"
           icon="pi pi-refresh"
           label="Обновить"
+          class="rounded-2xl"
           @click="reloadRing"/>
     </div>
 

@@ -1,10 +1,19 @@
 <template>
   <Header/>
 
-  <div class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-    <div class="flex flex-col gap-6">
-      <section class="relative overflow-hidden rounded-[2rem] border border-gray-200/70 bg-white/80 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_25%),radial-gradient(circle_at_85%_20%,rgba(14,165,233,0.14),transparent_22%)]" />
+  <div class="mx-auto max-w-375 sm:px-4 py-2 sm:py-6 px-2 sm:px-6 sm:py-8 lg:px-8">
+    <div class="flex flex-col gap-4 sm:gap-6">
+      <section class="
+          relative overflow-hidden
+          rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
+          bg-white/80
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+        ">
+        <div
+            class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_25%),radial-gradient(circle_at_85%_20%,rgba(14,165,233,0.14),transparent_22%)]"/>
         <div class="relative p-5 sm:p-8">
           <div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
             <div class="max-w-4xl">
@@ -27,14 +36,22 @@
       </section>
 
       <section
-          class="rounded-[2rem] border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
-          :class="{ '!ring-2 !ring-indigo-400/60 dark:!ring-indigo-500/40': isRegexPattern }"
+          class="
+            rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
+            bg-white/80
+            p-4 sm:p-6
+            backdrop-blur
+            transition hover:-translate-y-0.5
+            delay-0
+            hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          "
+          :class="{ 'ring-2! ring-indigo-400/60! dark:ring-indigo-500/40!': isRegexPattern }"
       >
         <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <label
                 for="isRegexPattern"
-                class="inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
+                class="cursor-pointer inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
                 :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': waitResult }"
             >
               <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
@@ -43,7 +60,8 @@
 
             <div v-if="isRegexPattern" class="text-sm text-gray-500 dark:text-gray-400">
               Проверка шаблона:
-              <a href="https://regex101.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline dark:text-indigo-400">
+              <a href="https://regex101.com/" target="_blank" rel="noopener noreferrer"
+                 class="text-indigo-600 hover:underline dark:text-indigo-400">
                 regex101.com
               </a>
             </div>
@@ -62,19 +80,19 @@
 
       <div
           v-if="waitResult"
-          class="rounded-[2rem] border border-gray-200/70 bg-white/80 px-6 py-10 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+          class="rounded-4xl border border-gray-200/70 bg-white/80 px-6 py-10 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
       >
         <p class="text-base text-gray-800 dark:text-gray-100 sm:text-lg">
           Поиск по паттерну:
           <code class="mx-1 rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-sm dark:bg-gray-800">{{ pattern }}</code>
         </p>
-        <img class="mx-auto mt-6 h-[200px] object-contain" src="/img/load_desc.gif" alt="loading">
+        <img class="mx-auto mt-6 h-50 object-contain" src="/img/load_desc.gif" alt="loading">
       </div>
 
       <template v-else-if="lastPattern">
         <section
             v-if="interfaces.length"
-            class="rounded-[2rem] border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+            class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
         >
           <div class="flex flex-col gap-5">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -83,157 +101,179 @@
                   Результаты по паттерну
                   <code class="ml-2 font-mono text-base text-indigo-700 dark:text-indigo-300">{{ lastPattern }}</code>
                 </h2>
-                <p class="mt-1 text-sm font-mono text-gray-600 dark:text-gray-300">Найдено: {{ filteredInterfaces.length }}</p>
+                <p class="mt-1 text-sm font-mono text-gray-600 dark:text-gray-300">Найдено: {{
+                    filteredInterfaces.length
+                  }}</p>
               </div>
 
               <div class="flex flex-wrap items-center gap-2">
-                <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" outlined label="CSV" class="!rounded-2xl" />
+                <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" outlined label="CSV"
+                        class="!rounded-2xl"/>
                 <Button
                     v-if="hasActiveFilters || sortState.key"
                     severity="secondary"
                     outlined
                     icon="pi pi-filter-slash"
                     label="Сбросить"
-                    class="!rounded-2xl"
+                    class="rounded-2xl!"
                     @click="clearTableState"
                 />
               </div>
             </div>
 
-            <div class="rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40 overflow-hidden">
-              <div class="border-b border-gray-200/70 p-4 dark:border-gray-700/70">
+            <div
+                class="rounded-[1.75rem] sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40 overflow-hidden">
+              <div class="sm:border-b border-gray-200/70 sm:p-4 dark:border-gray-700/70">
                 <div class="flex flex-col gap-4">
                   <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm font-mono text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
+                    <div
+                        class="rounded-2xl sm:border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm font-mono text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
                       {{ filteredInterfaces.length }} строк
                     </div>
-                    <div class="w-full lg:w-[6rem]">
-                      <Select v-model="rows" :options="rowsPerPageOptions" class="w-full" />
+                    <div class="w-full lg:w-24">
+                      <Select v-model="rows" :options="rowsPerPageOptions" class="w-full rounded-2xl"/>
                     </div>
                   </div>
 
                   <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Оборудование</div>
-                      <InputText v-model="filters.device" class="w-full" placeholder="Поиск по имени" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Оборудование
+                      </div>
+                      <InputText v-model="filters.device" class="w-full rounded-2xl" placeholder="Поиск по имени"/>
                     </div>
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Порт</div>
-                      <InputText v-model="filters.port" class="w-full" placeholder="Поиск порта" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Порт
+                      </div>
+                      <InputText v-model="filters.port" class="w-full rounded-2xl" placeholder="Поиск порта"/>
                     </div>
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Статус</div>
-                      <Select v-model="filters.status" :options="statusOptions" placeholder="Все" class="w-full" :showClear="true" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Статус
+                      </div>
+                      <Select v-model="filters.status" :options="statusOptions" placeholder="Все" class="w-full rounded-2xl"
+                              :showClear="true"/>
                     </div>
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Описание</div>
-                      <InputText v-model="filters.description" class="w-full" placeholder="Поиск" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Описание
+                      </div>
+                      <InputText v-model="filters.description" class="w-full rounded-2xl" placeholder="Поиск"/>
                     </div>
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Комментарии</div>
-                      <InputText v-model="filters.comments" class="w-full" placeholder="Поиск" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Комментарии
+                      </div>
+                      <InputText v-model="filters.comments" class="w-full rounded-2xl" placeholder="Поиск"/>
                     </div>
                     <div class="min-w-0">
-                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">VLAN</div>
-                      <InputText v-model="filters.vlans" class="w-full" placeholder="Поиск VLAN" />
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        VLAN
+                      </div>
+                      <InputText v-model="filters.vlans" class="w-full rounded-2xl" placeholder="Поиск VLAN"/>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="overflow-x-auto">
-                <table class="min-w-[1200px] w-full text-sm">
+              <div class="overflow-x-auto mt-2">
+                <table class="min-w-300 w-full text-sm">
                   <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
-                    <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                      <th class="px-4 py-3 text-left font-semibold">
-                        <button class="inline-flex items-center gap-2" @click="toggleSort('device')">
-                          <span>Оборудование</span>
-                          <i :class="sortIcon('device')" />
-                        </button>
-                      </th>
-                      <th class="px-4 py-3 text-left font-semibold">
-                        <button class="inline-flex items-center gap-2" @click="toggleSort('port')">
-                          <span>Порт</span>
-                          <i :class="sortIcon('port')" />
-                        </button>
-                      </th>
-                      <th class="px-4 py-3 text-left font-semibold">
-                        <button class="inline-flex items-center gap-2" @click="toggleSort('status')">
-                          <span>Статус</span>
-                          <i :class="sortIcon('status')" />
-                        </button>
-                      </th>
-                      <th class="px-4 py-3 text-left font-semibold">
-                        <button class="inline-flex items-center gap-2" @click="toggleSort('description')">
-                          <span>Описание</span>
-                          <i :class="sortIcon('description')" />
-                        </button>
-                      </th>
-                      <th class="px-4 py-3 text-left font-semibold">Комментарии</th>
-                      <th class="px-4 py-3 text-left font-semibold">
-                        <button class="inline-flex items-center gap-2" @click="toggleSort('vlans')">
-                          <span>VLAN</span>
-                          <i :class="sortIcon('vlans')" />
-                        </button>
-                      </th>
-                    </tr>
+                  <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('device')">
+                        <span>Оборудование</span>
+                        <i :class="sortIcon('device')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('port')">
+                        <span>Порт</span>
+                        <i :class="sortIcon('port')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('status')">
+                        <span>Статус</span>
+                        <i :class="sortIcon('status')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('description')">
+                        <span>Описание</span>
+                        <i :class="sortIcon('description')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">Комментарии</th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('vlans')">
+                        <span>VLAN</span>
+                        <i :class="sortIcon('vlans')"/>
+                      </button>
+                    </th>
+                  </tr>
                   </thead>
 
                   <tbody>
-                    <tr
-                        v-for="data in pageItems"
-                        :key="`${data.device}-${data.interface.name}-${data.interface.savedTime}`"
-                        class="border-b border-gray-200/60 align-top transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
-                    >
-                      <td class="px-4 py-3">
-                        <router-link :to="'/device/' + data.device" target="_blank" rel="noopener noreferrer">
-                          <Button text icon="pi pi-box" class="!rounded-2xl max-w-full" :label="data.device" />
-                        </router-link>
-                      </td>
+                  <tr
+                      v-for="data in pageItems"
+                      :key="`${data.device}-${data.interface.name}-${data.interface.savedTime}`"
+                      class="border-b border-gray-200/60 align-top transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
+                  >
+                    <td class="px-4 py-3">
+                      <router-link :to="'/device/' + data.device" target="_blank" rel="noopener noreferrer">
+                        <Button text icon="pi pi-box" class="!rounded-2xl max-w-full" :label="data.device"/>
+                      </router-link>
+                    </td>
 
-                      <td class="px-4 py-3">
-                        <router-link
-                            :to="'/device/' + data.device + '?port=' + data.interface.name"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="inline-flex items-center rounded-xl bg-indigo-100 px-3 py-1.5 font-mono text-sm text-indigo-900 transition hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-100 dark:hover:bg-indigo-500/30"
-                        >
-                          {{ data.interface.name }}
-                        </router-link>
-                      </td>
+                    <td class="px-4 py-3">
+                      <router-link
+                          :to="'/device/' + data.device + '?port=' + data.interface.name"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="inline-flex items-center rounded-xl bg-indigo-100 px-3 py-1.5 font-mono text-sm text-indigo-900 transition hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-100 dark:hover:bg-indigo-500/30"
+                      >
+                        {{ data.interface.name }}
+                      </router-link>
+                    </td>
 
-                      <td class="px-4 py-3">
-                        <div :class="statusClass(data.interface.status)" class="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium">
-                          <span>{{ data.interface.status }}</span>
-                          <i class="pi pi-clock text-xs" />
-                        </div>
-                      </td>
+                    <td class="px-4 py-3">
+                      <div :class="statusClass(data.interface.status)"
+                           class="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium">
+                        <span>{{ data.interface.status }}</span>
+                        <i class="pi pi-clock text-xs"/>
+                      </div>
+                    </td>
 
-                      <td class="px-4 py-3">
-                        <div class="font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200" v-html="markDescription(data.interface.description)" />
-                      </td>
+                    <td class="px-4 py-3">
+                      <div class="font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200"
+                           v-html="markDescription(data.interface.description)"/>
+                    </td>
 
-                      <td class="px-4 py-3">
-                        <Comment :interface="getInterface(data)" :markedText="lastPattern" :device-name="data.device"/>
-                      </td>
+                    <td class="px-4 py-3">
+                      <Comment :interface="getInterface(data)" :markedText="lastPattern" :device-name="data.device"/>
+                    </td>
 
-                      <td class="px-4 py-3">
-                        <button
-                            type="button"
-                            class="font-mono text-indigo-600 transition hover:underline dark:text-indigo-400"
-                            @click="toggleVlansList($event, data.interface)"
-                        >
-                          {{ truncateVlans(data.interface.vlans) }}
-                        </button>
-                      </td>
-                    </tr>
+                    <td class="px-4 py-3">
+                      <button
+                          type="button"
+                          class="font-mono text-indigo-600 transition hover:underline dark:text-indigo-400"
+                          @click="toggleVlansList($event, data.interface)"
+                      >
+                        {{ truncateVlans(data.interface.vlans) }}
+                      </button>
+                    </td>
+                  </tr>
 
-                    <tr v-if="!pageItems.length">
-                      <td colspan="6" class="px-4 py-10 text-center">
-                        <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">По фильтрам ничего не найдено</div>
-                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">Измените фильтры или сбросьте их.</div>
-                      </td>
-                    </tr>
+                  <tr v-if="!pageItems.length">
+                    <td colspan="6" class="px-4 py-10 text-center">
+                      <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">По фильтрам ничего не
+                        найдено
+                      </div>
+                      <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">Измените фильтры или сбросьте их.</div>
+                    </td>
+                  </tr>
                   </tbody>
                 </table>
               </div>
@@ -243,7 +283,7 @@
                     :rows="rows"
                     :totalRecords="filteredInterfaces.length"
                     :first="page * rows"
-                    :rowsPerPageOptions="rowsPerPageOptions"
+                    :pageLinkSize="3"
                     @page="onPage"
                     :pt="{
                       root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
@@ -260,7 +300,9 @@
         >
           <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
             По паттерну
-            <code class="mx-1 rounded-lg bg-amber-100/90 px-2 py-0.5 font-mono dark:bg-amber-900/40">{{ lastPattern }}</code>
+            <code class="mx-1 rounded-lg bg-amber-100/90 px-2 py-0.5 font-mono dark:bg-amber-900/40">{{
+                lastPattern
+              }}</code>
             совпадений нет
           </h2>
         </div>
@@ -430,7 +472,7 @@ export default defineComponent({
       if (normalized === "admin down") return "bg-red-200 text-red-950 dark:bg-red-500/20 dark:text-red-100";
       if (normalized === "notpresent" || normalized === "nopresent") return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
       if (normalized === "dormant") return "bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-100";
-      if (normalized !== "down") return "bg-emerald-100 text-emerald-950 dark:bg-emerald-500/20 dark:text-emerald-100";
+      if (normalized !== "down") return "bg-emerald-300 text-emerald-950 dark:bg-emerald-500/20 dark:text-emerald-100";
       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200";
     },
     truncateVlans(vlans: string): string {

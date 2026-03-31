@@ -1,9 +1,15 @@
 <template>
   <Header/>
 
-  <div class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+  <div class="mx-auto max-w-375 px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
     <div class="flex flex-col gap-6">
-      <section class="relative overflow-hidden rounded-[2rem] border border-gray-200/70 bg-white/80 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45">
+      <section class="
+          relative overflow-hidden
+          rounded-3xl sm:rounded-4xl border border-gray-200/70 bg-white/80 dark:border-gray-700/70 dark:bg-gray-900/45
+          backdrop-blur
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+         ">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_25%),radial-gradient(circle_at_85%_20%,rgba(14,165,233,0.14),transparent_22%)]" />
 
         <div class="relative p-5 sm:p-8">
@@ -26,7 +32,7 @@
                     icon="pi pi-chart-pie"
                     label="Нагрузка по портам"
                     outlined
-                    class="!rounded-2xl"
+                    class="rounded-2xl!"
                 />
                 <Button
                     v-else-if="displayMode === 'waiting'"
@@ -34,7 +40,7 @@
                     label="Загружаю нагрузку..."
                     outlined
                     disabled
-                    class="!rounded-2xl"
+                    class="rounded-2xl!"
                 />
                 <Button
                     v-else-if="displayMode === 'interfaces_loading'"
@@ -42,12 +48,12 @@
                     icon="pi pi-list"
                     label="Обычный вид"
                     outlined
-                    class="!rounded-2xl"
+                    class="rounded-2xl!"
                 />
-                <Button @click="getDevices" icon="pi pi-refresh" label="Обновить" severity="secondary" outlined class="!rounded-2xl" />
+                <Button @click="getDevices" icon="pi pi-refresh" label="Обновить" severity="secondary" outlined class="rounded-2xl!" />
               </div>
 
-              <div class="mt-8 grid gap-3 sm:grid-cols-3">
+              <div class="mt-2 sm:mt-8 grid gap-3 sm:grid-cols-3">
                 <div class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60">
                   <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Всего</div>
                   <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ devices.length }}</div>
@@ -58,17 +64,10 @@
                   <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ devices_count }}</div>
                   <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">После фильтрации и поиска</div>
                 </div>
-                <div class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60">
-                  <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Режим</div>
-                  <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {{ displayMode === 'interfaces_loading' ? 'Нагрузка' : 'Список' }}
-                  </div>
-                  <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Текущий формат представления</div>
-                </div>
               </div>
             </div>
 
-            <div class="hidden xl:block w-[520px] shrink-0">
+            <div class="hidden xl:block w-130 shrink-0">
               <div class="rounded-[1.75rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60">
                 <img class="w-full opacity-95" :src="`/img/device-icon-${imageIndex}.svg`" alt="devices">
               </div>
@@ -85,7 +84,7 @@
               </div>
 
               <div v-if="chartData.length > 0" class="mt-5 flex flex-col gap-6 gap-y-24 2xl:flex-row 2xl:items-center">
-                <div class="mx-auto h-[250px] w-[300px] shrink-0">
+                <div class="mx-auto h-62.5 w-75 shrink-0">
                   <DoughnutChart :data="chartData"/>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -127,7 +126,7 @@
         </div>
       </section>
 
-      <section class="rounded-[2rem] border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6">
+      <section class="rounded-3xl sm:rounded-4xl border border-gray-200/70 bg-white/80 sm:p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div class="w-full md:max-w-xl">
             <SearchInput
@@ -137,12 +136,12 @@
                 placeholder="Поиск по имени или IP адресу"
             />
           </div>
-          <div class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-4 py-2 font-mono text-sm text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
+          <div class="rounded-2xl sm:border border-gray-200/80 bg-gray-50/80 px-4 py-2 font-mono text-sm text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
             Найдено: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ devices_count }}</span>
           </div>
         </div>
 
-        <div class="mt-5">
+        <div class="sm:mt-5">
           <DevicesListTable
               :globalSearch="search"
               :devices="devices"

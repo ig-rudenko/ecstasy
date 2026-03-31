@@ -27,7 +27,7 @@
       </span>
 
       <button type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
+              class="cursor-pointer inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
               @click="toggleStatus">
         <i class="pi pi-wrench text-lg"/>
       </button>
