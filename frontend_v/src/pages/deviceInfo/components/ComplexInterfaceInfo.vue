@@ -153,7 +153,7 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section v-if="macs.length > 0" class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.4)] dark:border-gray-700/80 dark:bg-gray-900/55">
+    <section v-if="macs.length > 0" class="rounded-[1.75rem] border border-gray-200/80 bg-white/80 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55 mb-">
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>

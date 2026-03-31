@@ -1,7 +1,11 @@
 <template>
 
-  <tr :id="'interface-'+interface.name" :style="interfaceStyles" :class="interfaceClasses"
-      class="rounded-2xl hover:rounded-xl! hover:bg-linear-90 hover:from-sky-500/10  hover:to-transparent dark:hover:from-sky-700/20">
+  <tr
+      :id="'interface-'+interface.name"
+      :style="interfaceStyles"
+      :class="interfaceClasses"
+      class="rounded-2xl border-b border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
+  >
 
     <td class="rounded-l-2xl px-2">
       <div class="flex items-center gap-1 px-1">
@@ -19,8 +23,8 @@
       <div class="flex items-center justify-between gap-2">
 
         <!--Название Интерфейса-->
-        <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer">
-          <div class="w-full font-mono text-sm font-semibold md:text-base">{{ interface.name }}</div>
+        <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer w-full">
+          <div class="w-full font-mono text-sm font-semibold md:text-base text-nowrap">{{ interface.name }}</div>
         </div>
 
         <div>
@@ -98,7 +102,7 @@
   <tr v-if="showDetailInfo" class="rounded-2xl">
 
     <td v-if="complexInfo" colspan="5">
-      <div class="rounded-2xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3">
+      <div class="rounded-t-2xl rounded-b-3xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3">
 
         <!--      DETAIL PORT INFO  -->
         <div v-if="complexInfo.portDetailInfo" class="container py-3">
@@ -172,7 +176,6 @@ import {defineComponent, PropType} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "@/components/Comment.vue";
-import CableDiag from "./CableDiag.vue";
 import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
@@ -197,7 +200,6 @@ export default defineComponent({
     ChangeDescription,
     PortControlButtons,
     Comment,
-    CableDiag,
     ADSLInterfaceInfo,
     GPONInterfaceInfo,
     OLTInterfaceInfo,
@@ -247,7 +249,7 @@ export default defineComponent({
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow-sm", "z-[2]", "bg-white/55", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
+      if (this.showDetailInfo) return ["shadow-sm", "z-[2]", "bg-white/55", "border-sky-200/70", "dark:border-sky-800/70", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {
@@ -270,7 +272,7 @@ export default defineComponent({
     },
 
     compressVlanRange(): string {
-      const list = this.interface.vlans;
+      const list = [...this.interface.vlans];
 
       if (!list || !list.length) return "";
 
@@ -351,7 +353,9 @@ export default defineComponent({
       this.$router.push({query: newQuery});
 
       if (this.showDetailInfo) {
-        this.getDetailInfo();
+        if (!this.complexInfo) {
+          this.getDetailInfo();
+        }
       }
     },
 

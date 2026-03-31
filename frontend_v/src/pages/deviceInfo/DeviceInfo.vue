@@ -149,7 +149,7 @@
           border-gray-200/70 dark:border-gray-700/70
           bg-white/70 dark:bg-gray-900/40
           p-2 sm:p-4
-          backdrop-blur overflow-hidden
+          overflow-hidden
         ">
         <div v-if="interfaces.length && generalInfo" class="overflow-x-auto">
           <table class="min-w-full">
@@ -249,7 +249,6 @@
 <script lang="ts">
 import {defineComponent} from "vue";
 import ScrollTop from "primevue/scrolltop";
-import Toast from "primevue/toast";
 import TimeAgo from 'javascript-time-ago';
 import ru from 'javascript-time-ago/locale/ru';
 
@@ -259,7 +258,6 @@ import ElasticStackLink from "./components/ElasticStackLink.vue";
 import MapCoordLink from "./components/MapCoordLink.vue";
 import ToZabbixLink from "./components/ToZabbixLink.vue";
 import DeviceDetailInfo from "./components/DeviceDetailInfo.vue";
-import InterfacesHelpText from "./components/InterfacesHelpText.vue";
 import ModalPortControl from "./components/ModalPortControl.vue";
 import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
@@ -275,7 +273,7 @@ import UserActionsButton from "./components/UserActionsButton.vue";
 import api from "@/services/api";
 import {GeneralInfo} from "./GeneralInfo";
 import {HardwareStats} from "./hardwareStats";
-import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/interfaces";
+import {DeviceInterface, InterfacesCount, reconcileInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
@@ -301,7 +299,6 @@ export default defineComponent({
     FindMac,
     DeviceStatusName,
     ElasticStackLink,
-    InterfacesHelpText,
     MapCoordLink,
     ToZabbixLink,
     DeviceDetailInfo,
@@ -310,7 +307,6 @@ export default defineComponent({
     CommentControl,
     BrasSession,
     ScrollTop,
-    Toast,
     ZabbixMapsDropdown,
   },
 
@@ -323,9 +319,8 @@ export default defineComponent({
       generalInfo: null as GeneralInfo | null,
       interfaces: [] as DeviceInterface[],
 
-      timePassedFromLastUpdate: "",
       collected: new Date(Date.now()) as Date,
-      seconds_pass: 0,
+      staleTick: 0,
 
       deviceAvailable: -1,
       withVlans: false,
@@ -348,35 +343,48 @@ export default defineComponent({
 
       updateInterfacesTimer: null as null | number,
       updateStatsTimer: null as null | number,
-      secondsTimer: null as null | number,
+      staleStateTimer: null as null | number,
 
     }
   },
 
   computed: {
+    secondsFromLastCollection(): number {
+      this.staleTick;
+      return Math.floor((Date.now() - this.collected.getTime()) / 1000)
+    },
     dynamicOpacity(): { opacity: number } {
-      if (this.deviceAvailable === -1 || this.seconds_pass >= 60) {
+      if (this.deviceAvailable === -1 || this.secondsFromLastCollection >= 60) {
         return {'opacity': 0.6}
       }
       return {'opacity': 1}
     },
   },
 
-  mounted() {
+  watch: {
+    '$route.params.deviceName': {
+      immediate: true,
+      handler(deviceName) {
+        const routeDeviceName = deviceName?.toString();
+        if (!routeDeviceName) return;
+        const generalInfo = this.generalInfo;
+
+        if (generalInfo && generalInfo.deviceIP === routeDeviceName) {
+          this.init(generalInfo.deviceName, false)
+          return;
+        }
+
+        if (this.deviceName !== routeDeviceName) {
+          this.init(routeDeviceName, false)
+        }
+      }
+    }
+  },
+
+  created() {
     try {
       TimeAgo.addDefaultLocale(ru)
     } catch (e) {
-    }
-
-    this.init(this.$route.params.deviceName.toString())
-  },
-
-  updated() {
-    if (this.deviceName !== this.$route.params.deviceName.toString() && this.generalInfo?.deviceIP !== this.$route.params.deviceName.toString()) {
-      this.init(this.$route.params.deviceName.toString())
-    }
-    if (this.generalInfo && this.generalInfo.deviceIP === this.$route.params.deviceName.toString()) {
-      this.init(this.generalInfo.deviceName)
     }
   },
 
@@ -385,20 +393,22 @@ export default defineComponent({
   },
 
   methods: {
-    init(deviceName: string) {
+    init(deviceName: string, syncRoute = true) {
       if (this._init_started) return;
 
       this._init_started = true
       this.clearTimers()
       this.clearData()
 
-      this.$router.push({
-        name: 'device',
-        params: {
-          deviceName: deviceName
-        },
-        query: {...this.$route.query}
-      })
+      if (syncRoute && this.$route.params.deviceName?.toString() !== deviceName) {
+        this.$router.push({
+          name: 'device',
+          params: {
+            deviceName: deviceName
+          },
+          query: {...this.$route.query}
+        })
+      }
 
       this.deviceName = deviceName;
       document.title = this.deviceName
@@ -416,13 +426,12 @@ export default defineComponent({
               this.getInterfaces()
             }, 4000)
 
-            this.secondsTimer = window.setInterval(() => {
-              this.timer()
-            }, 1000)
+            this.staleStateTimer = window.setInterval(() => {
+              this.staleTick += 1
+            }, 15000)
 
             this.updateStatsTimer = window.setInterval(() => {
               this.getStats()
-              console.log("getStats")
             }, 60_000)
             this._init_started = false;
 
@@ -438,15 +447,13 @@ export default defineComponent({
         this.updateInterfacesTimer = null
         console.log("Интерфейсный таймер остановлен")
       }
-      if (this.secondsTimer) {
-        clearInterval(this.secondsTimer)
-        this.secondsTimer = null
-        console.log("Таймер остановлен")
+      if (this.staleStateTimer) {
+        clearInterval(this.staleStateTimer)
+        this.staleStateTimer = null
       }
       if (this.updateStatsTimer) {
         clearInterval(this.updateStatsTimer)
         this.updateStatsTimer = null
-        console.log("updateStatsTimer остановлен")
       }
     },
 
@@ -457,9 +464,8 @@ export default defineComponent({
       this.generalInfo = null
       this.interfaces = []
 
-      this.timePassedFromLastUpdate = ""
       this.collected = new Date()
-      this.seconds_pass = 0
+      this.staleTick = 0
 
       this.deviceAvailable = -1
       this.withVlans = false
@@ -511,8 +517,6 @@ export default defineComponent({
     },
 
     async getInterfaces() {
-      this.seconds_pass = Math.floor((new Date().getTime() - this.collected.getTime()) / 1000)
-
       if (this._getting_interfaces || !this.autoUpdateInterfaces) return;
 
       let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
@@ -531,8 +535,9 @@ export default defineComponent({
         const resp = await api.get(url)
         if (currentDeviceName !== this.deviceName) return
 
-        this.interfaces = newInterfacesList(resp.data.interfaces);
+        this.interfaces = reconcileInterfacesList(this.interfaces, resp.data.interfaces);
         this.collected = new Date(resp.data.collected);
+        this.staleTick = 0
         this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
       } catch (error: any) {
       }
@@ -545,20 +550,6 @@ export default defineComponent({
         this.currentStatus = false;
         this.getInterfaces();
         this.currentStatus = true;
-      }
-    },
-
-    updateCurrentStatus() {
-      this.currentStatus = true
-      this.autoUpdateInterfaces = true
-    },
-
-    timer() {
-      if (this.seconds_pass < 60) {
-        this.timePassedFromLastUpdate = `${this.seconds_pass} сек. назад`
-      } else {
-        const timeAgo = new TimeAgo('ru-RU')
-        this.timePassedFromLastUpdate = timeAgo.format(this.collected)
       }
     },
 
