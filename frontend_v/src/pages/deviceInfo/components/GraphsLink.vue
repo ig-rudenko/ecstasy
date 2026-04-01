@@ -1,6 +1,6 @@
 <template>
   <a v-if="interface.graphsLink" :href="interface.graphsLink" target="_blank" class="relative">
-    <Button @mouseover="showHelpText=true" @mouseleave="showHelpText=false" text class="">
+    <Button @mouseover="showHelpText=true" @mouseleave="showHelpText=false" text class="rounded-2xl">
       <svg :fill="interface.graphsLink?'#63af4f':'#d5d5d5'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
            viewBox="0 0 16 16">
         <path fill-rule="evenodd"

@@ -86,11 +86,11 @@
             class="grid grid-cols-2 border-b border-[#d0d7de] text-sm last:border-b-0 dark:border-[#30363d]"
         >
           <div :class="['min-w-0 border-r border-[#d0d7de] dark:border-[#30363d]', sideClasses(row.left?.type)]">
-            <div class="flex min-w-0 items-stretch">
+            <div class="flex min-w-0 items-center">
               <div class="flex w-14 shrink-0 items-start justify-end border-r border-black/5 px-2 py-1.5 font-mono text-[11px] text-gray-400 dark:border-white/5 dark:text-gray-500">
                 {{ row.left?.lineNumber ?? "" }}
               </div>
-              <div class="flex w-8 shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
+              <div class="flex  shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
                 {{ changeMarker(row.left?.type) }}
               </div>
               <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ displayLine(row.left?.text) }}</pre>
@@ -98,11 +98,11 @@
           </div>
 
           <div :class="['min-w-0', sideClasses(row.right?.type)]">
-            <div class="flex min-w-0 items-stretch">
+            <div class="flex min-w-0 items-center">
               <div class="flex w-14 shrink-0 items-start justify-end border-r border-black/5 px-2 py-1.5 font-mono text-[11px] text-gray-400 dark:border-white/5 dark:text-gray-500">
                 {{ row.right?.lineNumber ?? "" }}
               </div>
-              <div class="flex w-8 shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
+              <div class="flex  shrink-0 items-start justify-center px-1 py-1.5 font-mono text-[12px] font-semibold">
                 {{ changeMarker(row.right?.type) }}
               </div>
               <pre class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 font-mono text-[12px] leading-6">{{ displayLine(row.right?.text) }}</pre>

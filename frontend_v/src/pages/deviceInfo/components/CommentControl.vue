@@ -34,11 +34,11 @@
 
     <!--      BUTTONS-->
     <div class="flex justify-end gap-2">
-      <Button label="Нет" autofocus @click="commentService.dialogVisible = false" icon="pi pi-times" severity="secondary" />
+      <Button label="Нет" autofocus @click="commentService.dialogVisible = false" icon="pi pi-times" severity="secondary" class="rounded-2xl" />
 
-      <Button v-if="commentService.commentObject.action === 'delete'" icon="pi pi-trash" label="Да" severity="danger"
+      <Button v-if="commentService.commentObject.action === 'delete'" icon="pi pi-trash" label="Да" severity="danger" class="rounded-2xl"
               @click="() => submit()" />
-      <Button v-else @click="() => submit()" icon="pi pi-check" label="Да"  severity="success" />
+      <Button v-else @click="() => submit()" icon="pi pi-check" label="Да"  severity="success" class="rounded-2xl" />
     </div>
 
   </Dialog>

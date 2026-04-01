@@ -1,7 +1,7 @@
 <template>
   <div v-if="permissionLevel >= 2" class="flex sm:flex-col gap-1 my-2">
     <!--     ВКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-green-600 sm:h-[20px]" text
+    <Button class="text-green-600 sm:h-5 rounded-2xl" text
             @click="() => registerAction('up', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -13,7 +13,7 @@
     </Button>
 
     <!--     ВЫКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-red-600 sm:h-[20px]" text
+    <Button class="text-red-600 sm:h-5 rounded-2xl" text
             @click="() => registerAction('down', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -28,7 +28,7 @@
   <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
   <Button v-if="permissionLevel >= 1" text
           @click="() => registerAction('reload', interface.name, interface.description, deviceName)"
-          class="text-orange-500">
+          class="text-orange-500 rounded-2xl">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" class="bi bi-arrow-clockwise"
          viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"></path>

@@ -40,7 +40,7 @@
                 :permission-level="permissionLevel"/>
 
             <!--Посмотреть порт -->
-            <Button @click="toggleDetailInfo" text>
+            <Button @click="toggleDetailInfo" text class="rounded-2xl">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                 <path
                     d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
@@ -78,10 +78,12 @@
     </td>
 
     <!--Статус порта-->
-    <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
+    <td>
+      <div :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
         :class="interface.status.toLowerCase()==='down'?'dark:text-white!':''"
-        class="text-gray-950 dark:opacity-70! text-nowrap text-xs text-center sm:min-w-22 px-2 py-2.5 font-mono">
-      <span>{{ formatStatus(interface.status) }}</span>
+          class="text-gray-950 dark:opacity-70! text-nowrap text-xs text-center sm:min-w-22 rounded-2xl px-2 py-2.5 font-mono hover:shadow-md">
+        <span>{{ formatStatus(interface.status) }}</span>
+      </div>
     </td>
 
     <!--Описание порта-->
