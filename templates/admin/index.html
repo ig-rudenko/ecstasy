@@ -1,0 +1,102 @@
+{% extends "admin/base.html" %}
+
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} |
+    {{ site_title|default:_("Django site admin") }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+    <div class="ec-admin-dashboard-grid">
+        <div class="flex flex-col gap-6">
+            <section class="ec-admin-hero px-6 py-6 sm:px-8 sm:py-8">
+                <div class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-slate-300">
+                    <span>Ecstasy</span>
+                    <span class="h-1 w-1 rounded-full bg-sky-500"></span>
+                    <span>admin panel</span>
+                </div>
+
+                <h1 class="mt-5 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                    Управление платформой Ecstasy.
+                </h1>
+
+                <p class="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                    Здесь собраны каталоги оборудования, карты, настройки платформы, контент и доступ пользователей.
+                    Используйте быстрые переходы для ключевых сценариев администрирования.
+                </p>
+
+                <div class="ec-admin-quicklinks mt-6">
+                    <a href="/" target="_blank" rel="noopener noreferrer" class="ec-admin-linkcard p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    Открыть сайт
+                                </div>
+                                <div class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    Переход в основной интерфейс Ecstasy.
+                                </div>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-500 dark:text-slate-300">
+                                arrow_outward
+                            </span>
+                        </div>
+                    </a>
+
+                    <a href="/admin/check/devices/" class="ec-admin-linkcard p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    Оборудование
+                                </div>
+                                <div class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    Каталог устройств, групп и авторизации.
+                                </div>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-500 dark:text-slate-300">
+                                memory
+                            </span>
+                        </div>
+                    </a>
+
+                    <a href="/swagger-ui/" target="_blank" rel="noopener noreferrer" class="ec-admin-linkcard p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    API Docs
+                                </div>
+                                <div class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    Документация и тестирование API.
+                                </div>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-500 dark:text-slate-300">
+                                data_object
+                            </span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <section class="app-list-card p-4 sm:p-5">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                            Registry
+                        </div>
+                        <div class="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                            Приложения и модели
+                        </div>
+                    </div>
+                    <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/75 text-slate-700 shadow-sm dark:bg-gray-900/80 dark:text-slate-200">
+                        <span class="material-symbols-outlined">inventory_2</span>
+                    </span>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    {% include "unfold/helpers/app_list_default.html" %}
+    {% include "unfold/helpers/history.html" %}
+{% endblock %}

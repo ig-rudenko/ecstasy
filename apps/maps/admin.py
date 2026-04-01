@@ -9,6 +9,7 @@ from django.utils.html import format_html
 from django.utils.safestring import SafeString, mark_safe
 from pyzabbix import ZabbixAPIException
 from requests import RequestException
+from unfold.admin import ModelAdmin
 
 from devicemanager.device.zabbix_api import zabbix_api
 
@@ -185,7 +186,7 @@ class LayerFrom(forms.ModelForm):
 
 
 @admin.register(Layers)
-class LayersAdmin(admin.ModelAdmin):
+class LayersAdmin(ModelAdmin):
     list_display = ("layer_name", "icon", "layer_type", "description", "download_layer")
     form = LayerFrom
     search_fields = ("name", "description")
@@ -390,7 +391,7 @@ class LayersAdmin(admin.ModelAdmin):
 
 
 @admin.register(Maps)
-class MapsAdmin(admin.ModelAdmin):
+class MapsAdmin(ModelAdmin):
     readonly_fields = ("map_image",)
     list_display = ("name", "map_image", "map_layers", "description", "url")
     filter_horizontal = ("users", "layers")

@@ -10,6 +10,8 @@
 
 media
 
+scripts/
+htmlcov/
 templates/tools/vlans
 templates/test*
 templates/maps/external

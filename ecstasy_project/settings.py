@@ -57,7 +57,15 @@ PROXY_URL = os.getenv("PROXY_URL", "")
 
 # Application definition
 INSTALLED_APPS = [
-    "jazzmin",
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    "unfold.contrib.simple_history",  # optional, if django-simple-history package is used
+    "unfold.contrib.location_field",  # optional, if django-location-field package is used
+    "unfold.contrib.constance",  # optional, if django-constance package is used
     "django.contrib.admin",
     "django.contrib.auth",
     "mozilla_django_oidc",
@@ -426,80 +434,73 @@ if KEYCLOAK_ENABLE:
     SIMPLE_JWT["AUTH_TOKEN_CLASSES"].append("ecstasy_project.authentication.KeycloakToken")
 
 # ============================================================================================================
-
-JAZZMIN_SETTINGS = {
-    # "show_ui_builder": True,
-    "site_title": "Панель администратора",
-    "site_header": "Ecstasy",
-    "site_brand": "Ecstasy",
-    "site_icon": "flavico.ico",
-    "site_logo": "flavico.ico",
-    "welcome_sign": "Добро пожаловать в панель администратора",
-    "copyright": "ig-rudenko",
-    "topmenu_links": [
-        {"name": "Вернуться на сайт", "url": "/"},
-        {"name": "Документация API", "url": "swagger-ui", "new_window": True},
-        {"model": "auth.User"},
+UNFOLD = {
+    "SITE_TITLE": "Ecstasy Admin",
+    "SITE_HEADER": "Ecstasy",
+    "SITE_SUBHEADER": "Network operations control",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "settings_ethernet",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "ENVIRONMENT": "ecstasy_project.admin_theme.environment_label",
+    # "STYLES": ["ecstasy_project.admin_theme.admin_stylesheet"],
+    "SITE_DROPDOWN": "ecstasy_project.admin_theme.site_dropdown",
+    "SITE_FAVICONS": [
+        {
+            "href": "ecstasy_project.admin_theme.admin_favicon",
+            "rel": "icon",
+            "type": "image/x-icon",
+        }
     ],
-    "navigation_expanded": False,
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "check.AccessGroup": "fas fa-lock",
-        "check.AuthGroup": "fas fa-key",
-        "check.Bras": "fas fa-box",
-        "check.DeviceGroup": "fas fa-object-group",
-        "check.Devices": "fas fa-server",
-        "check.Profile": "fas fa-id-card",
-        "check.UsersActions": "fas fa-font",
-        "check.DeviceMedia": "fas fa-images",
-        "check.DeviceCommand": "fas fa-cog",
-        "accounting.UserAPIToken": "fas fa-key",
-        "app_settings.LogsElasticStackSettings": "fas fas fa-wrench",
-        "app_settings.AccessRingSettings": "fas fas fa-wrench",
-        "app_settings.ZabbixConfig": "fas fas fa-wrench",
-        "app_settings.VlanTracerouteConfig": "fas fas fa-wrench",
-        "gathering.MacAddress": "fas fa-ethernet",
-        "maps.Layers": "fas fa-layer-group",
-        "maps.Maps": "fas fa-map",
-        "net_tools.VlanName": "fas fa-network-wired",
-        "net_tools.DevicesForMacSearch": "fas fa-server",
-        "news.GlobalNews": "fas fa-newspaper",
+    "BORDER_RADIUS": "1.25rem",
+    "COLORS": {
+        "base": {
+            "50": "oklch(98.4% 0.003 247.858)",
+            "100": "oklch(96.8% 0.006 255.328)",
+            "200": "oklch(92.9% 0.013 255.508)",
+            "300": "oklch(86.8% 0.024 252.894)",
+            "400": "oklch(70.2% 0.047 256.788)",
+            "500": "oklch(55.2% 0.047 257.417)",
+            "600": "oklch(44.6% 0.043 257.281)",
+            "700": "oklch(37.2% 0.044 257.287)",
+            "800": "oklch(27.8% 0.041 260.031)",
+            "900": "oklch(20.9% 0.039 265.754)",
+            "950": "oklch(13.1% 0.031 263.229)",
+        },
+        "primary": {
+            "50": "oklch(97.6% 0.018 236.62)",
+            "100": "oklch(94.3% 0.039 234.632)",
+            "200": "oklch(89.1% 0.077 233.972)",
+            "300": "oklch(81.2% 0.131 232.661)",
+            "400": "oklch(72.1% 0.182 234.451)",
+            "500": "oklch(63.5% 0.205 239.392)",
+            "600": "oklch(55.9% 0.211 252.819)",
+            "700": "oklch(48.9% 0.196 257.102)",
+            "800": "oklch(42.4% 0.163 258.614)",
+            "900": "oklch(38.1% 0.126 258.338)",
+            "950": "oklch(28.2% 0.092 260.031)",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",
+            "subtle-dark": "var(--color-base-400)",
+            "default-light": "var(--color-base-600)",
+            "default-dark": "var(--color-base-300)",
+            "important-light": "var(--color-base-900)",
+            "important-dark": "var(--color-base-100)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "command_search": True,
+        "show_all_applications": True,
+        "navigation": "ecstasy_project.admin_theme.sidebar_navigation",
+    },
+    "ACCOUNT": {
+        "navigation": "ecstasy_project.admin_theme.account_links",
     },
 }
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-purple",
-    "accent": "accent-lightblue",
-    "navbar": "navbar-dark",
-    "no_navbar_border": False,
-    "navbar_fixed": False,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
-    "sidebar_nav_small_text": True,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": True,
-    "theme": "litera",
-    "dark_mode_theme": "darkly",
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success",
-    },
-    "actions_sticky_top": True,
-}
+
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
 

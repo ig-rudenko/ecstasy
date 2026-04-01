@@ -1,28 +1,11 @@
 """
-## Админка для указания основных настроек для работы с Zabbix, Elastic, VLAN Traceroute
-
-Настройка Zabbix позволяет Ecstasy подключаться через API и брать информацию оборудования
-
-Для Elastic указываются:
-
-    Kibana discover URL: http://kibana:5601/app/discover#/
-    Глубина временного диапазона: Например: 1d, 24h или 30m
-    Колонки: Поля через запятую, которые должны отображаться как колонки.
-    Например: message,host.ip
-    Язык запросов: KQL
-    Строка для поиска: Необходимо указать, как будет произведен поиск логов для отдельного устройства.
-    Timestamp поле: @timestamp
-
-Для VLAN Traceroute:
-
-    Имя оборудования для начала трассировки:
-    Регулярное выражение. Оно используется для того,
-    чтобы найти в описании порта имя другого оборудования и продолжить трассировку
+Admin configuration for platform settings models.
 """
 
 from django import forms
 from django.contrib import admin
 from requests import RequestException
+from unfold.admin import ModelAdmin
 
 from apps.app_settings.models import (
     AccessRingSettings,
@@ -34,46 +17,57 @@ from devicemanager.device.zabbix_api import zabbix_api
 
 
 @admin.register(LogsElasticStackSettings)
-class LogsElasticStackSettingsAdmin(admin.ModelAdmin):
-    """
-    ## Админка для настроек ElasticStack
-    """
+class LogsElasticStackSettingsAdmin(ModelAdmin):
+    """Admin for Elastic Stack integration settings."""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["kibana_url", "time_range", "query_str"]
+    fieldsets = (
+        ("Kibana", {"classes": ("tab",), "fields": ("kibana_url", "time_range", "time_field")}),
+        ("Query", {"classes": ("tab",), "fields": ("query_lang", "query_str", "output_columns")}),
+    )
 
 
 @admin.register(ZabbixConfig)
-class ZabbixConfigAdmin(admin.ModelAdmin):
-    """
-    ## Админка для настроек Zabbix API
-    """
+class ZabbixConfigAdmin(ModelAdmin):
+    """Admin for Zabbix API settings."""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["url", "login", "connectable"]
+    fieldsets = (
+        ("Подключение", {"classes": ("tab",), "fields": ("url", "login", "password")}),
+    )
 
     @admin.display(description="Connectable")
     def connectable(self, obj: ZabbixConfig) -> str:
-        """
-        Отображает, можно ли подключиться к Zabbix по указанным настройкам
-        """
+        """Return the current connectivity status for Zabbix API."""
         zabbix_api.set_lazy_attributes(obj)
         try:
             with zabbix_api.connect() as conn:
                 return "✅ Подключено" if conn.is_authenticated else "❌ Не подключено"
-        # pylint: disable-next=broad-exception-caught
-        except (Exception, RequestException) as exc:
+        except (Exception, RequestException) as exc:  # pylint: disable=broad-exception-caught
             return str(exc)
 
 
 @admin.register(VlanTracerouteConfig)
-class VlanTracerouteConfigAdmin(admin.ModelAdmin):
-    """
-    ## Админка для настроек работы VLAN Traceroute
-    """
+class VlanTracerouteConfigAdmin(ModelAdmin):
+    """Admin for VLAN traceroute settings."""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["find_device_pattern", "vlan_start", "vlan_start_regex", "ip_pattern", "cache_timeout"]
+    fieldsets = (
+        ("Старт", {"classes": ("tab",), "fields": ("vlan_start", "vlan_start_regex")}),
+        ("Поиск", {"classes": ("tab",), "fields": ("find_device_pattern", "ip_pattern")}),
+        ("Кеш", {"classes": ("tab",), "fields": ("cache_timeout",)}),
+    )
 
 
 class AccessRingSettingsModelForm(forms.ModelForm):
+    """Styled form for access ring regex settings."""
+
     class Meta:
         model = AccessRingSettings
         fields = "__all__"
@@ -88,10 +82,14 @@ class AccessRingSettingsModelForm(forms.ModelForm):
 
 
 @admin.register(AccessRingSettings)
-class AccessRingSettingsAdmin(admin.ModelAdmin):
-    """
-    ## Админка для настроек работы Access Ring
-    """
+class AccessRingSettingsAdmin(ModelAdmin):
+    """Admin for access ring matching rules."""
 
     form = AccessRingSettingsModelForm
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["id", "agg_dev_name_regexp", "access_dev_name_regexp"]
+    fieldsets = (
+        ("Агрегация", {"classes": ("tab",), "fields": ("agg_dev_name_regexp",)}),
+        ("Доступ", {"classes": ("tab",), "fields": ("access_dev_name_regexp",)}),
+    )
