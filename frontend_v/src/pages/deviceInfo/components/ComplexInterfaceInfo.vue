@@ -216,7 +216,7 @@ onMounted(async () => {
               </template>
               <template v-if="macs.length > 10" #filter="{ filterModel, filterCallback }">
                 <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                           placeholder="Search by VLAN" class="w-full"/>
+                           class="w-full"/>
               </template>
             </Column>
 
@@ -234,7 +234,7 @@ onMounted(async () => {
                 </button>
               </template>
               <template v-if="macs.length > 10" #filter="{ filterModel, filterCallback }">
-                <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Search by MAC"
+                <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
                            class="w-full"/>
               </template>
             </Column>

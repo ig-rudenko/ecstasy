@@ -1,7 +1,7 @@
 <template>
   <div v-if="permissionLevel >= 2" class="flex sm:flex-col gap-1 my-2">
     <!--     ВКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-green-600 sm:h-5 rounded-2xl" text
+    <Button class="text-green-600 sm:h-5 rounded-2xl" text severity="success"
             @click="() => registerAction('up', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -13,7 +13,7 @@
     </Button>
 
     <!--     ВЫКЛЮЧИТЬ ПОРТ -->
-    <Button class="text-red-600 sm:h-5 rounded-2xl" text
+    <Button class="text-red-600 sm:h-5 rounded-2xl" text severity="danger"
             @click="() => registerAction('down', interface.name, interface.description, deviceName)">
           <span data-bs-toggle="modal" data-bs-target="#modal">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -26,7 +26,7 @@
   </div>
 
   <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
-  <Button v-if="permissionLevel >= 1" text
+  <Button v-if="permissionLevel >= 1" text severity="warn"
           @click="() => registerAction('reload', interface.name, interface.description, deviceName)"
           class="text-orange-500 rounded-2xl">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" class="bi bi-arrow-clockwise"

@@ -1,6 +1,9 @@
 <template>
   <div v-if="interface.comments && interface.comments.length" class="inline-flex relative">
-    <span class="absolute text-white dark:text-gray-950 text-xs px-2 -right-1 -top-0.5 py-0 rounded-full z-10 bg-amber-500 dark:bg-amber-400">{{ interface.comments?.length }}</span>
+    <span
+        class="absolute text-white dark:text-gray-950 text-xs px-2 -right-1 -top-0.5 py-0 rounded-full z-10 bg-amber-500 dark:bg-amber-400">{{
+        interface.comments?.length
+      }}</span>
     <Button
         @click="showCommentsPopup"
         text badgeSeverity="warn"
@@ -9,15 +12,14 @@
         :pt="{
             root: { class: 'hover:shadow-sm hover:border-gray-300/90 dark:hover:border-gray-700/60 bg-white/60 dark:bg-gray-900/25 backdrop-blur-sm hover:bg-white/85 dark:hover:bg-gray-900/45 transition' },
             label: { class: 'hidden' },
-            pcBadge: { class: 'text-xs!' },
           }">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
            class="text-amber-500 dark:text-amber-400" viewBox="0 0 16 16">
-          <path
-              d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
-          <path
-              d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
-        </svg>
+        <path
+            d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
+        <path
+            d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+      </svg>
     </Button>
 
     <Popover

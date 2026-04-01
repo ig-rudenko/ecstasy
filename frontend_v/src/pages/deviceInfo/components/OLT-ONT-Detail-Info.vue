@@ -33,7 +33,7 @@
     <td v-if="showSubscribersData">
       <div v-for="customer in subscriberSummary.customers" :key="customer.id">
         <router-link :to="{ name: 'gpon-view-subscriber', params: { id: customer.id } }" target="_blank">
-          <Button text size="small" class="w-full" icon="pi pi-user" :label="customer.fullName"/>
+          <Button text size="small" class="w-full rounded-2xl" icon="pi pi-user" :label="customer.fullName"/>
         </router-link>
       </div>
     </td>
