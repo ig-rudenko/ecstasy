@@ -1,6 +1,6 @@
 <template>
   <a v-if="interface.graphsLink" :href="interface.graphsLink" target="_blank" class="relative">
-    <Button @mouseover="showHelpText=true" @mouseleave="showHelpText=false" text class="rounded-2xl">
+    <Button @mouseover="showHelpText=true" @mouseleave="showHelpText=false" text severity="success" class="rounded-2xl">
       <svg :fill="interface.graphsLink?'#63af4f':'#d5d5d5'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
            viewBox="0 0 16 16">
         <path fill-rule="evenodd"
@@ -8,7 +8,7 @@
       </svg>
     </Button>
     <span v-show="showHelpText" :class="helpTextClasses"
-          class="graphs-help-text shadow-md rounded px-2 text-gray-800 whitespace-nowrap backdrop-blur-sm">
+          class="rounded-2xl text-xs graphs-help-text shadow-md px-2 mt-1.5 text-gray-800 whitespace-nowrap backdrop-blur-sm">
       {{ helpText }}
     </span>
   </a>
@@ -40,9 +40,9 @@ export default defineComponent({
     },
     helpText() {
       if (this.interface.graphsLink) {
-        return "Графики"
+        return "графики"
       } else {
-        return "Нет графиков"
+        return "нет графиков"
       }
     }
   }
