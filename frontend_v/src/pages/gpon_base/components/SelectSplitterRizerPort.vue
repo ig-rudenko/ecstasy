@@ -6,6 +6,7 @@
   <Select v-model="selectedPort" :options="capability" filter showClear
           @change="e => $emit('change', e)"
           :class="valid?'':'p-invalid'"
+          class="rounded-2xl"
           optionLabel="port" placeholder="Выберите">
     <template #value="slotProps">
       <div v-if="slotProps.value" class="flex items-center">

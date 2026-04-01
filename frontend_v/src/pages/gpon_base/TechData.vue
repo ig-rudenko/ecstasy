@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="p-2 mx-auto">
+  <div class="p-2 mx-auto pb-12">
 
     <div class="flex max-md:flex-col gap-5 justify-around items-center py-5">
       <div class="text-3xl font-semibold px-3">Технические данные</div>
@@ -10,7 +10,7 @@
       <div class="flex flex-wrap gap-2">
         <CheckTechCapability/>
         <router-link :to="{name: 'gpon-create-tech-data'}" v-if="hasPermissionsToCreate">
-          <Button outlined class="add-button">
+          <Button outlined class="add-button rounded-2xl!">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#6D5BD0" viewBox="0 0 16 16">
               <path fill-rule="evenodd"
                     d="M8 5.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V10a.5.5 0 0 1-1 0V8.5H6a.5.5 0 0 1 0-1h1.5V6a.5.5 0 0 1 .5-.5z"/>

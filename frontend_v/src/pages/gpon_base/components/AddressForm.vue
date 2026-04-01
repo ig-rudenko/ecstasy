@@ -12,6 +12,7 @@
           <Asterisk/>
         </h6>
         <InputText v-model.trim="address.region" :class="regionClasses" fluid
+                   class="rounded-2xl w-full"
                    placeholder="Регион"/>
 
         <h6 class="px-2 flex items-center gap-1">
@@ -19,6 +20,7 @@
           <Asterisk/>
         </h6>
         <InputText v-model.trim="address.settlement" :class="settlementClasses" fluid
+                   class="rounded-2xl w-full"
                    placeholder="Севастополь/Балаклава/Любимовка/Верхнесадовое"/>
       </div>
     </div>
@@ -26,12 +28,14 @@
     <div>
       <div class="p-2">СНТ/ТСН</div>
       <InputText v-model.trim="address.planStructure" :class="planStructureClasses" fluid
+                 class="rounded-2xl w-full"
                  placeholder="Рыбак-7/Сатурн-2"/>
     </div>
 
     <div>
       <div class="p-2">Улица</div>
       <InputText v-model.trim="address.street" :class="streetClasses" fluid
+                  class="rounded-2xl w-full"
                  placeholder="Полное название с указанием типа (улица/проспект/проезд/бульвар/шоссе/переулок/тупик)"/>
     </div>
 
@@ -53,12 +57,13 @@
           Дом
           <Asterisk/>
         </h6>
-        <InputText v-model.trim="address.house" :class="houseClasses" class="w-[100px]"/>
+        <InputText v-model.trim="address.house" :class="houseClasses" class="w-25! rounded-2xl"/>
       </div>
 
       <div class="me-3">
         <h6 class="px-2">Корпус</h6>
-        <InputNumber :input-style="{width: '75px'}" :min="1" :max="200" v-model.number="address.block"/>
+        <InputNumber :input-style="{width: '75px'}" :min="1" :max="200" v-model.number="address.block"
+                    input-class="rounded-2xl"/>
       </div>
 
       <template v-if="address.building_type === 'building'">
@@ -66,22 +71,26 @@
         <template v-if="subscriberAddress">
           <div class="me-3">
             <h6 class="px-2">Номер этажа</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.floor"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.floor"
+                    input-class="rounded-2xl"/>
           </div>
           <div class="me-3">
             <h6 class="px-2">Квартира</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.apartment"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.apartment"
+                    input-class="rounded-2xl"/>
           </div>
         </template>
 
         <template v-else>
           <div class="me-3">
             <h6 class="px-2">Этажность</h6>
-            <InputNumber :input-style="{width: '100px'}" :min="1" v-model.number="address.floors"/>
+            <InputNumber :input-style="{width: '100px'}" :min="1" v-model.number="address.floors"
+                    class="rounded-2xl"/>
           </div>
           <div class="me-3">
             <h6 class="px-2">Количество подъездов</h6>
-            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.total_entrances"/>
+            <InputNumber :input-style="{width: '200px'}" :min="1" v-model.number="address.total_entrances"
+                    class="rounded-2xl"/>
           </div>
         </template>
 
@@ -90,8 +99,8 @@
     </div>
 
     <div style="text-align: right" class="py-3">
-      <Button class="me-3" @click="dismiss" severity="secondary" size="small" icon="pi pi-times" label="Не сохранять"/>
-      <Button @click="validate" severity="success" icon="pi pi-check" size="small" label="Подтвердить"/>
+      <Button class="me-3 rounded-2xl" @click="dismiss" severity="secondary" size="small" icon="pi pi-times" label="Не сохранять"/>
+      <Button @click="validate" severity="success" icon="pi pi-check" size="small" label="Подтвердить" class="rounded-2xl"/>
     </div>
 
   </div>

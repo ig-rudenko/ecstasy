@@ -1,13 +1,13 @@
 <template>
   <Header/>
 
-  <div>
+  <div class="pb-12">
     <div class="header py-5">
       <img class="header-image" src="/img/gpon/tech-data.svg" alt="create-tech-data-image">
       <div class="text-4xl">Добавление технических данных</div>
     </div>
 
-    <div class="plate shadow py-4 px-2 xl:w-2/3 mx-auto">
+    <div class="border border-gray-300 dark:border-gray-800 rounded-4xl shadow py-4 px-2 xl:w-2/3 mx-auto">
 
       <StepMenu
           class="p-2"
@@ -27,7 +27,7 @@
             </div>
             <Select v-model="formData.oltState.deviceName" :options="devicesList" filter
                     :class="formState.firstStep.deviceName.valid?'':'p-invalid'"
-                    class="w-full" fluid
+                    class="w-full rounded-2xl" fluid
                     :option-label="x => x"
                     :virtualScrollerOptions="{ itemSize: 38 }"
                     @change="deviceNameSelected" placeholder="Выберите устройство">
@@ -47,7 +47,7 @@
               <Asterisk/>
             </div>
             <Select v-model="formData.oltState.devicePort" :options="devicePortList" filter
-                    :class="formState.firstStep.devicePort.valid?[]:['p-invalid']" fluid class="w-full"
+                    :class="formState.firstStep.devicePort.valid?[]:['p-invalid']" fluid class="w-full rounded-2xl"
                     :option-label="x => x" placeholder="Выберите порт">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
@@ -64,7 +64,7 @@
 
         <div class="w-100">
           <h6 class="px-2 pb-2">Волокно</h6>
-          <InputText v-model.trim="formData.oltState.fiber" fluid
+          <InputText v-model.trim="formData.oltState.fiber" fluid class="rounded-2xl"
                      placeholder="Название кабеля/номер волокна в кабеле"/>
         </div>
 
@@ -72,7 +72,7 @@
 
         <div>
           <h6 class="px-2 pb-2">Описание сплиттера 1го каскада</h6>
-          <Textarea fluid auto-resize v-model="formData.oltState.description" rows="5"/>
+          <Textarea fluid auto-resize v-model="formData.oltState.description" rows="5" class="rounded-2xl"/>
         </div>
 
       </div>
@@ -87,13 +87,13 @@
           <div v-if="formData.houseB.address && formData.houseB.address.building_type === 'building'"
                class="w-100 py-2">
             <div class="p-2">Задействованные подъезды в доме для данного OLT порта</div>
-            <InputText class="w-100" v-model.trim="formData.houseB.entrances" fluid
+            <InputText class="w-100 rounded-2xl" v-model.trim="formData.houseB.entrances" fluid
                        placeholder="Укажите подъезды"/>
           </div>
 
           <div>
             <div class="p-2">Описание сплиттера 2го каскада</div>
-            <Textarea v-model="formData.houseB.description" rows="5" fluid auto-resize/>
+            <Textarea v-model="formData.houseB.description" rows="5" fluid auto-resize class="rounded-2xl"/>
           </div>
 
         </div>
@@ -286,8 +286,8 @@
           </tr>
 
           <tr>
-            <td>Количество портов</td>
-            <td>{{ formData.end3.portCount }}</td>
+            <td class="p-2">Количество портов</td>
+            <td class="p-2">{{ formData.end3.portCount }}</td>
           </tr>
           <tr v-if="end3PortCountError">
             <td colspan="2" class="pb-5">
@@ -296,8 +296,8 @@
           </tr>
 
           <tr v-if="formData.end3.existingSplitter" class="odd:bg-gray-200 dark:odd:bg-gray-700">
-            <td>Выбран существующий сплиттер</td>
-            <td>
+            <td class="p-2">Выбран существующий сплиттер</td>
+            <td class="p-2">
               {{ getFullAddress(formData.end3.existingSplitter.address) }}
               Локация: {{ formData.end3.existingSplitter.location }}.
               Кол-во портов: {{ formData.end3.existingSplitter.capacity }}
@@ -311,8 +311,8 @@
 
           <template v-for="(sp, index) in formData.end3.list">
             <tr class="odd:bg-gray-200 dark:odd:bg-gray-700">
-              <td>{{ formData.end3.type }} {{ index + 1 }}</td>
-              <td>
+              <td class="p-2">{{ formData.end3.type }} {{ index + 1 }}</td>
+              <td class="p-2">
                 Адрес:
                 <template v-if="!sp.buildAddress">{{ getFullAddress(sp.address) }}</template>
                 <template v-else>в этом же доме</template>
@@ -687,10 +687,6 @@ export default {
 </script>
 
 <style scoped>
-.plate {
-  border-radius: 14px;
-}
-
 .header {
   margin: auto;
   display: flex;

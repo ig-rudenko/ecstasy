@@ -2,13 +2,13 @@
 
   <Header v-if="!isModalView"/>
 
-  <div>
+  <div class="pb-15">
     <div class="flex items-center flex-wrap justify-center my-5">
       <img class="header-image" src="/img/gpon/subscriber-data.svg" alt="create-tech-data-image">
       <div class="text-2xl sm:text-4xl">Добавление абонентских данных</div>
     </div>
 
-    <div class="md:border rounded-xl md:shadow py-4 px-2 xl:w-2/3 mx-auto">
+    <div class="md:border rounded-3xl md:shadow py-4 pb-8 px-2 xl:w-2/3 mx-auto border-gray-300 dark:border-gray-700">
 
       <StepMenu
           class="p-2"
@@ -30,6 +30,7 @@
                     :option-label="x => x" fluid
                     :virtualScrollerOptions="{ itemSize: 38 }"
                     :class="formState.firstStep.deviceName.valid?'':'p-invalid'"
+                    class="rounded-2xl"
                     @change="deviceHasChanged" placeholder="Выберите устройство">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
@@ -49,6 +50,7 @@
                     :option-label="x => x" fluid
                     :virtualScrollerOptions="{ itemSize: 38 }"
                     @change="portHasChanged"
+                    class="rounded-2xl"
                     optionLabel="name" placeholder="Выберите порт">
               <template #value="slotProps">
                 <div v-if="slotProps.value">{{ slotProps.value }}</div>
@@ -108,11 +110,13 @@
           <div class="flex gap-1 py-1">
             <CustomerSearch @select="selectedSubscriber" :is-mobile="isMobile"/>
             <Button v-if="formState.secondStep.selected" size="small" @click="unselectSubscriber"
+                    class="rounded-2xl" outlined
                     label="Указать вручную"/>
           </div>
 
           <Select v-model="formData.customer.type" :disabled="formState.secondStep.selected"
-                  :options="['person','company','contract']" style="width: 100%"
+                  :options="['person','company','contract']"
+                    class="rounded-2xl"
                   placeholder="Выберите тип абонента" fluid>
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex justify-center items-center"
@@ -133,6 +137,7 @@
             </div>
             <InputText :disabled="formState.secondStep.selected"
                        v-model.trim="formData.customer.surname" fluid
+                       class="rounded-2xl"
                        :class="!formState.secondStep.person.surname.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerFirstNameError" severity="error">{{ customerFirstNameError }}</InlineMessage>
           </div>
@@ -144,6 +149,7 @@
             </div>
             <InputText :disabled="formState.secondStep.selected"
                        v-model.trim="formData.customer.firstName" fluid
+                       class="rounded-2xl"
                        :class="!formState.secondStep.person.firstName.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerSurnameError" severity="error">{{ customerSurnameError }}</InlineMessage>
           </div>
@@ -155,6 +161,7 @@
             </div>
             <InputText :disabled="formState.secondStep.selected"
                        v-model.trim="formData.customer.lastName" fluid
+                       class="rounded-2xl"
                        :class="!formState.secondStep.person.lastName.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerLastNameError" severity="error">{{ customerLastNameError }}</InlineMessage>
           </div>
@@ -168,6 +175,7 @@
             </div>
             <InputText v-if="!formState.secondStep.selected"
                        v-model.trim="formData.customer.companyName" type="text" style="width: 100%"
+                        class="rounded-2xl"
                        :class="!formState.secondStep.companyName.valid?'p-invalid':''"/>
             <div v-else class="w-100 p-3 border rounded-2">{{ formData.customer.companyName }}</div>
             <InlineMessage v-if="customerCompanyNameError" severity="error">{{
@@ -184,6 +192,7 @@
             </div>
             <InputText :disabled="formState.secondStep.selected"
                        v-model.number="formData.customer.contract" type="number" style="width: 100%"
+                        class="rounded-2xl"
                        :class="!formState.secondStep.contract.valid?'p-invalid':''"/>
             <InlineMessage v-if="customerContractError" severity="error">{{ customerContractError }}</InlineMessage>
           </div>
@@ -195,6 +204,7 @@
             <InputText v-model.number="formData.transit"
                        @change="() => formState.secondStep.transit.valid = true"
                        :class="!formState.secondStep.transit.valid?'p-invalid':''"
+                        class="rounded-2xl"
                        style="width: 100%" type="number"/>
             <InlineMessage v-if="transitError" severity="error">{{ transitError }}</InlineMessage>
           </div>
@@ -203,6 +213,7 @@
             <div class="flex-auto">
               <InputMask :disabled="formState.secondStep.selected"
                          v-model="formData.customer.phone" date="phone" style="width: 100%"
+                        class="rounded-2xl"
                          :class="!formState.secondStep.phone.valid?'p-invalid':''"
                          mask="+7 (999) 999-99-99"/>
               <InlineMessage v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</InlineMessage>
@@ -216,19 +227,23 @@
         <InlineMessage v-if="servicesError" severity="error">{{ servicesError }}</InlineMessage>
         <div class="flex flex-wrap gap-4 p-2">
           <div class="flex items-center gap-2 select-none">
-            <Checkbox v-model="formData.services" input-id="service-internet" value="internet"/>
+            <Checkbox v-model="formData.services" input-id="service-internet" value="internet"
+                    class="rounded-3xl"/>
             <label for="service-internet" class="cursor-pointer"> Интернет </label>
           </div>
           <div class="flex items-center gap-2 select-none">
-            <Checkbox v-model="formData.services" input-id="service-tv" value="tv"/>
+            <Checkbox v-model="formData.services" input-id="service-tv" value="tv"
+                    class="rounded-3xl"/>
             <label for="service-tv" class="cursor-pointer"> Телевидение </label>
           </div>
           <div class="flex items-center gap-2 select-none">
-            <Checkbox v-model="formData.services" input-id="service-voip" value="voip"/>
+            <Checkbox v-model="formData.services" input-id="service-voip" value="voip"
+                    class="rounded-3xl"/>
             <label for="service-voip" class="cursor-pointer"> VOIP </label>
           </div>
           <div class="flex items-center gap-2 select-none">
-            <Checkbox v-model="formData.services" input-id="service-static" value="static"/>
+            <Checkbox v-model="formData.services" input-id="service-static" value="static"
+                    class="rounded-3xl"/>
             <label for="service-static" class="cursor-pointer"> Статический IP </label>
           </div>
         </div>
@@ -251,17 +266,19 @@
               <Asterisk/>
             </div>
             <InputText v-model.number="formData.ont_id" type="number" style="width: 100%"
+                       class="rounded-2xl"
                        :class="formState.thirdStep.ont_id.valid?[]:['p-invalid']"/>
             <InlineMessage v-if="ontIDError" severity="error">{{ ontIDError }}</InlineMessage>
           </div>
           <div class="input-part">
             <div class="px-2 pb-2">Серийный номер ONT</div>
-            <InputText v-model.trim="formData.ont_serial" type="text" style="width: 100%"/>
+            <InputText v-model.trim="formData.ont_serial" type="text" style="width: 100%"
+            class="rounded-2xl"/>
             <InlineMessage v-if="ontSerialError" severity="error">{{ ontSerialError }}</InlineMessage>
           </div>
           <div class="input-part">
             <div class="px-2 pb-2">MAC адрес ONT</div>
-            <InputText v-model.trim="formData.ont_mac" type="text" style="width: 100%"/>
+            <InputText v-model.trim="formData.ont_mac" type="text" style="width: 100%" class="rounded-2xl"/>
             <InlineMessage v-if="ontMACError" severity="error">{{ ontMACError }}</InlineMessage>
           </div>
         </div>
@@ -269,18 +286,18 @@
         <div class="flex flex-wrap">
           <div class="input-part">
             <div class="px-2 pb-2">IP Адрес</div>
-            <InputText v-model.trim="formData.ip" type="text" style="width: 100%"/>
+            <InputText v-model.trim="formData.ip" type="text" style="width: 100%" class="rounded-2xl"/>
             <InlineMessage v-if="ontIPError" severity="error">{{ ontIPError }}</InlineMessage>
           </div>
           <div class="input-part">
             <div class="px-2 pb-2">Номер наряда</div>
-            <InputText v-model.number="formData.order" type="number" style="width: 100%"/>
+            <InputText v-model.number="formData.order" type="number" style="width: 100%" class="rounded-2xl"/>
             <InlineMessage v-if="orderError" severity="error">{{ orderError }}</InlineMessage>
           </div>
           <div class="input-part">
             <div class="px-2 pb-2">Дата подключения</div>
             <DatePicker id="calendar-24h" dateFormat="dd/mm/yy" v-model="formData.connected_at" showTime show-icon
-                        hourFormat="24"
+                        hourFormat="24" input-class="rounded-l-2xl"
                         style="width: 100%"/>
             <InlineMessage v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</InlineMessage>
           </div>
@@ -289,7 +306,7 @@
         <div class="d-flex flex-wrap py-2">
           <div class="px-2 pb-2">Описание подключения</div>
           <div class="px-2" style="width: 100%;">
-            <Textarea v-model.trim="formData.description" auto-resize fluid/>
+            <Textarea v-model.trim="formData.description" auto-resize fluid class="rounded-2xl"/>
           </div>
         </div>
 

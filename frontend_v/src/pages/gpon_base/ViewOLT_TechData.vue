@@ -20,7 +20,8 @@
       <br> Статус: {{ errorStatus }}
     </Message>
 
-    <div v-if="detailData" id="tech-data-block" class="plate">
+    <div v-if="detailData" id="tech-data-block"
+         class="px-2 md:p-6 border border-gray-300 dark:border-gray-800 rounded-4xl">
 
       <!-- Станционные данные -->
       <div class="py-3">
@@ -45,7 +46,7 @@
 
           <!-- ОБОРУДОВАНИЕ -->
           <div class="py-2 sm:grid grid-cols-2">
-            <div class="p-2">OLT оборудование</div>
+            <div class="pl-6 p-2">OLT оборудование</div>
             <div>
 
               <!-- Редактирование имени оборудования -->
@@ -53,6 +54,7 @@
                 <Select v-model="detailData.deviceName" :options="devicesList" filter
                         :option-label="x => x" fluid
                         :virtualScrollerOptions="{ itemSize: 38 }"
+                        class="rounded-2xl"
                         @change="deviceNameSelected" placeholder="Выберите устройство">
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center">
@@ -92,14 +94,15 @@
           </div>
 
           <!-- ПОРТ -->
-          <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2"
+          <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2 rounded-2xl"
                :class="editMode?'':'bg-gray-200 dark:bg-gray-800'">
-            <div class="p-2">Порт</div>
+            <div class="pl-6 p-2">Порт</div>
             <div>
 
               <!-- Редактирование порта -->
               <div v-if="editMode && hasPermissionToUpdateOLTState">
                 <Select v-model="detailData.devicePort" :options="devicePortList" filter fluid
+                        class="rounded-2xl"
                         :option-label="x => x" placeholder="Выберите порт">
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center">
@@ -129,17 +132,19 @@
 
           <!-- ВОЛОКНО -->
           <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2">
-            <div class="p-2">Волокно</div>
+            <div class="pl-6 p-2">Волокно</div>
             <InputText v-if="editMode && hasPermissionToUpdateOLTState" v-model.trim="detailData.fiber" fluid
+                       class="rounded-2xl"
                        placeholder="Название кабеля/номер волокна в кабеле"/>
             <div v-else class="p-2">{{ detailData.fiber }}</div>
           </div>
 
           <!-- ОПИСАНИЕ -->
-          <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2"
+          <div class="py-2 flex flex-wrap items-center justify-around sm:grid grid-cols-2 rounded-2xl"
                :class="editMode?'':'bg-gray-200 dark:bg-gray-800'">
-            <div class="p-2">Описание сплиттера 1го каскада</div>
+            <div class="pl-6 p-2">Описание сплиттера 1го каскада</div>
             <Textarea v-if="editMode && hasPermissionToUpdateOLTState" auto-resize fluid
+                      class="rounded-2xl"
                       v-model="detailData.description" rows="5"/>
             <div v-else class="p-2">{{ detailData.description }}</div>
           </div>
@@ -148,8 +153,7 @@
 
       </div>
 
-
-      <Fieldset v-for="(building, BIndex) in detailData.structures" :toggleable="true" class="my-2">
+      <Fieldset v-for="(building, BIndex) in detailData.structures" :toggleable="true" class="my-2 bg-transparent">
         <template #legend="{toggleCallback}">
           <div class="flex items-center p-1">
             <svg width="32" height="32" fill="#633BBC" @click="toggleCallback" viewBox="0 0 16 16"
@@ -439,7 +443,6 @@ export default {
 }
 
 .plate {
-  padding: 40px;
   border-radius: 14px;
   border: 1px solid #A3A3A3;
 }

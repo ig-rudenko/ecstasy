@@ -2,7 +2,7 @@ import "vis-network/dist/dist/vis-network.min.css";
 
 
 const baseVisOptions = {
-    height: '900',
+    height: '100%',
     locale: 'ru',
     configure: {
         enabled: false

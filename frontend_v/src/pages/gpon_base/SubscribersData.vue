@@ -2,7 +2,7 @@
 
   <Header/>
 
-  <div class="p-2 mx-auto">
+  <div class="p-2 mx-auto pb-12">
 
     <div class="flex gap-2 justify-around items-center py-5">
       <div class="text-3xl font-semibold px-3">Абонентские данные</div>

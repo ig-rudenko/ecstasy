@@ -127,3 +127,55 @@ export function newInterfacesList(data: any[]): DeviceInterface[] {
     }
     return res
 }
+
+function sameComments(left?: InterfaceComment[], right?: InterfaceComment[]): boolean {
+    if (!left?.length && !right?.length) return true;
+    if (!left || !right || left.length !== right.length) return false;
+
+    for (let i = 0; i < left.length; i++) {
+        if (
+            left[i].id !== right[i].id ||
+            left[i].user !== right[i].user ||
+            left[i].text !== right[i].text ||
+            left[i].createdTime !== right[i].createdTime
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function sameVlans(left: number[], right: number[]): boolean {
+    if (left.length !== right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] !== right[i]) return false;
+    }
+    return true;
+}
+
+function sameLink(left?: DeviceLink, right?: DeviceLink): boolean {
+    if (!left && !right) return true;
+    if (!left || !right) return false;
+    return left.deviceName === right.deviceName && left.url === right.url;
+}
+
+export function reconcileInterfacesList(current: DeviceInterface[], nextRaw: any[]): DeviceInterface[] {
+    const currentByName = new Map(current.map((item) => [item.name, item]));
+    const next = newInterfacesList(nextRaw);
+
+    return next.map((item) => {
+        const prev = currentByName.get(item.name);
+        if (!prev) return item;
+
+        const unchanged =
+            prev.status === item.status &&
+            prev.description === item.description &&
+            prev.graphsLink === item.graphsLink &&
+            sameVlans(prev.vlans, item.vlans) &&
+            sameComments(prev.comments, item.comments) &&
+            sameLink(prev.link, item.link);
+
+        return unchanged ? prev : item;
+    });
+}

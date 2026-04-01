@@ -1,5 +1,5 @@
 <template>
-  <span class="px-2 rounded font-mono" :class="getStatusClasses">{{ status }}</span>
+  <span class="px-2 rounded-full font-mono" :class="getStatusClasses">{{ status }}</span>
 </template>
 
 <script>

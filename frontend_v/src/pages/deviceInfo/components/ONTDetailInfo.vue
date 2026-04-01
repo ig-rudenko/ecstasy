@@ -123,7 +123,7 @@ export default defineComponent({
       if (status === "offline") return {"background-color": "#ffcacf"}
     },
     lineStyle(status: string): any {
-      if (status.toLowerCase() === "offline") return {"background-color": "rgba(255,138,148,0.5)"}
+      if (status.toLowerCase() === "offline") return {"background-color": "rgba(255,138,148,0.1)"}
       if (this.showDetailInfo) return {"background-color": "rgba(129,164,255,0.29)", "top": "56px"}
     },
 

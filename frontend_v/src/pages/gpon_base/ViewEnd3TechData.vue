@@ -18,7 +18,7 @@
       <br> Статус: {{ errorStatus }}
     </Message>
 
-    <div v-else id="tech-data-block" class="plate px-10 py-5">
+    <div v-else id="tech-data-block" class="px-10 py-5 border border-gray-300 dark:border-gray-800 rounded-4xl">
 
       <div class="flex items-center justify-center flex-wrap">
 
@@ -29,6 +29,7 @@
           <span v-else class="p-2 text-2xl">{{ end3Address }}</span>
 
           <InputText v-if="editMode && hasPermissionToUpdateEnd3" v-model.trim="detailData.location" fluid
+                        class="rounded-2xl"
                      type="text" placeholder="Локация"/>
           <span v-else class="p-2 text-2xl">{{ detailData.location }}</span>
 
@@ -69,7 +70,7 @@
             <div class="flex items-center flex-wrap gap-3">
               <div>Изменение ёмкости</div>
               <Select v-model.number="detailData.capacity" @change="changeCapacity" :options="[4, 8, 12, 16, 24]"
-                      class="w-fit"/>
+                      class="w-fit rounded-2xl"/>
 
               <Message class="my-2" v-if="capacityWarning" :severity="errorSeverity">
                 {{ capacityWarning }}
@@ -278,10 +279,6 @@ export default {
 </script>
 
 <style scoped>
-.plate {
-  border-radius: 14px;
-  border: 1px solid #A3A3A3;
-}
 
 .save-button {
   border-radius: 12px;

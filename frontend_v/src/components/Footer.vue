@@ -3,45 +3,52 @@
 </script>
 
 <template>
-  <div class="container mx-auto dark:text-gray-300 relative mt-16">
-    <footer class="sticky bottom-0 p-5">
-
-      <hr class="dark:border-gray-700 border-gray-400 py-3">
-
-      <div class="sm:grid grid-cols-2 md:grid-cols-3">
-        <div class="py-2 flex flex-col gap-2">
-          <div class="text-xl font-semibold">Навигация</div>
-          <div><a class="link-secondary text-decoration-none" href="/admin/">Панель администратора</a></div>
-          <div><a class="link-secondary text-decoration-none" href="/">Главная</a></div>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
+    <footer class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-6 sm:p-8">
+      <div class="grid gap-8 md:grid-cols-3">
+        <div class="flex flex-col gap-3">
+          <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Навигация</div>
+          <div class="flex flex-col gap-2 text-sm">
+            <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100" href="/admin/">
+              Панель администратора
+            </a>
+            <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100" href="/">
+              Главная
+            </a>
+          </div>
         </div>
 
-        <div class="py-2 flex flex-col gap-2">
-          <div class="text-xl font-semibold">Документация</div>
-          <div><a class="link-secondary text-decoration-none" target="_blank" href="/api/swagger/">API</a></div>
+        <div class="flex flex-col gap-3">
+          <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Документация</div>
+          <div class="flex flex-col gap-2 text-sm">
+            <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100" target="_blank"
+               href="/api/swagger/">
+              API (Swagger)
+            </a>
+          </div>
         </div>
 
-        <div class="py-2 flex flex-col gap-2">
-          <div class="text-xl font-semibold">О программе</div>
-          <span class="text-muted">
-              Ecstasy - Equipment Control System To Assist You - программа для управления сетевым оборудованием
-          </span>
+        <div class="flex flex-col gap-3">
+          <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">О программе</div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">
+            Ecstasy — Equipment Control System To Assist You — программа для управления сетевым оборудованием.
+          </div>
         </div>
-
       </div>
 
-      <div class="flex gap-4 justify-between">
+      <div class="my-8 h-px bg-gray-200/70 dark:bg-gray-700/70"/>
 
-        <div class="flex items-center text-muted-color">
-          <img class="me-3 w-[70px] h-[70px] rounded-full" src="/video/logo.webp">
-          <span class="nowrap">© 2022-{{ new Date().getFullYear() }} Ecstasy</span>
+      <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div class="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+          <img class="w-12 h-12 rounded-full" src="/video/logo.webp" alt="logo">
+          <span class="whitespace-nowrap">© 2022-{{ new Date().getFullYear() }} Ecstasy</span>
         </div>
 
-        <div class="py-4 col justify-content-end list-unstyled d-flex">
-          <a class="text-dark" href="https://github.com/ig-rudenko/ecstasy" target="_blank" title="GitHub">
-            <i class="pi pi-github text-[60px]"/>
-          </a>
-        </div>
-
+        <a class="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+           href="https://github.com/ig-rudenko/ecstasy" target="_blank" title="GitHub">
+          <i class="pi pi-github text-3xl"/>
+          <span class="text-sm font-medium">GitHub</span>
+        </a>
       </div>
     </footer>
   </div>
