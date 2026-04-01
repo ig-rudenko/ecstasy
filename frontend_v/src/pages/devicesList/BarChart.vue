@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-3xl border border-gray-200/80 bg-white/80 p-4 dark:border-gray-700/80 dark:bg-gray-950/35">
+  <div class="rounded-3xl border border-gray-200/80 bg-white/30 p-4 dark:border-gray-700/80 dark:bg-gray-950/35">
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
         <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Bar Chart</div>
@@ -85,7 +85,7 @@ export default defineComponent({
             ticks: {
               color: "#64748b",
               font: {
-                size: 11,
+                size: 0,
               },
             },
             border: {

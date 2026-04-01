@@ -1,5 +1,5 @@
 <template>
-  <div class="relative rounded-[1.5rem] border border-gray-200/80 bg-white/80 p-4 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.35)] dark:border-gray-700/80 dark:bg-gray-950/35">
+  <div class="flex items-center flex-col justify-center h-full relative rounded-3xl border border-gray-200/80 bg-white/80 p-4 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.35)] dark:border-gray-700/80 dark:bg-gray-950/35">
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
         <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Doughnut</div>
