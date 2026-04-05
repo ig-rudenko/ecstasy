@@ -12,6 +12,8 @@ import {
     Divider,
     Drawer,
     Fieldset,
+    IconField,
+    InputIcon,
     IftaLabel,
     Image,
     InputGroup,
@@ -86,6 +88,8 @@ app.component("DataTable", DataTable);
 app.component("Dialog", Dialog);
 app.component("Divider", Divider);
 app.component("Drawer", Drawer);
+app.component("IconField", IconField);
+app.component("InputIcon", InputIcon);
 app.component("IftaLabel", IftaLabel);
 app.component("InputGroup", InputGroup);
 app.component("InputNumber", InputNumber);
