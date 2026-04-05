@@ -313,8 +313,8 @@ const closeMobileMenu = () => {
 
   <Popover ref="profileRef" :pt="{
     root: {
-      class: 'before:hidden! overflow-hidden rounded-2xl border border-gray-200/80 ' +
-          'dark:border-gray-700/60 bg-white/95 shadow-lg dark:bg-gray-900/55 dark:backdrop-blur-xl dark:!ring-1 dark:!ring-white/5',
+      class: 'before:hidden! overflow-hidden rounded-2xl border-gray-100/30! ' +
+          'dark:border-gray-700/60! bg-white/25 shadow-lg dark:bg-gray-900/55 backdrop-blur ',
     },
     content: { class: 'p-0!' },
   }">
@@ -334,15 +334,15 @@ const closeMobileMenu = () => {
       <div class="flex gap-1 items-center justify-center mt-3">
         <a v-if="user && user.isStaff" href="/admin/">
           <Button icon="pi pi-cog" outlined v-tooltip.bottom="'Панель администратора'" severity="secondary"
-                  class="hover:text-primary hover:bg-primary-100 rounded-2xl"/>
+                  class="hover:text-primary hover:bg-primary-100 rounded-2xl shadow-sm"/>
         </a>
         <Button icon="pi pi-moon" v-if="currentTheme == 'light'" @click="toggle"
                 v-tooltip.bottom="'Включить темную тему'" severity="contrast"
-                class="hover:text-gray-200 hover:bg-gray-900 rounded-2xl border-gray-300"
+                class="hover:text-gray-200 hover:bg-gray-900 rounded-2xl border-gray-300 shadow-sm"
                 outlined/>
         <Button icon="pi pi-sun" v-if="currentTheme == 'dark' || currentTheme == 'auto'" @click="toggle"
                 v-tooltip.bottom="'Включить светлую тему'" severity="contrast"
-                class="hover:text-gray-900 hover:bg-gray-200 rounded-2xl border-gray-700"
+                class="hover:text-gray-900 hover:bg-gray-200 rounded-2xl border-gray-700 shadow-sm"
                 outlined/>
         <LogoutButton/>
       </div>

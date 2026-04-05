@@ -9,6 +9,13 @@ export async function getMyselfData(): Promise<User> {
 class UserService {
     private user: User | null = null;
 
+    constructor() {
+        getMyselfData().then((user: User) => {
+            this.user = user
+            this.setUser(user)
+        })
+    }
+
     getUser(): User | null {
         if (this.user) return this.user;
         const data = localStorage.getItem("user")
