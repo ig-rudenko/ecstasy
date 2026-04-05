@@ -3,9 +3,11 @@ from drf_yasg.utils import swagger_auto_schema
 
 from ...api.serializers import DevicesSerializer, MacSerializer, PortControlSerializer
 from .query_params import DeviceInterfacesQueryParamsSerializer
-from .requests import ChangeDescriptionRequestSwaggerSerializer
+from .requests import ChangeDescriptionRequestSwaggerSerializer, ExecuteBulkDeviceCommandRequestSwaggerSerializer
 from .responses import (
     BrasPairSessionResultSwaggerSerializer,
+    BulkCommandLaunchResponseSwaggerSerializer,
+    BulkCommandTaskStatusSwaggerSerializer,
     ChangeDescriptionSwaggerSerializer,
     ConfigFileSwaggerSerializer,
     CutBrasSessionSwaggerSerializer,
@@ -157,3 +159,22 @@ set_device_viewings_api_doc = swagger_auto_schema(request_body=None, responses={
 
 
 get_device_pool_status_api_doc = swagger_auto_schema(responses={200: DevicePoolStatusesSwaggerSerializer()})
+
+
+execute_bulk_device_command_api_doc = swagger_auto_schema(
+    request_body=ExecuteBulkDeviceCommandRequestSwaggerSerializer(),
+    responses={
+        202: BulkCommandLaunchResponseSwaggerSerializer(),
+        400: "Bad Request",
+        403: "Permission denied",
+        404: "Command not found",
+    },
+)
+
+
+bulk_device_command_task_status_api_doc = swagger_auto_schema(
+    responses={
+        200: BulkCommandTaskStatusSwaggerSerializer(),
+        403: "Permission denied",
+    },
+)

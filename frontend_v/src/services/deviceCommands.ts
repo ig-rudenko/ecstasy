@@ -54,10 +54,14 @@ export interface BulkCommandTaskStatus {
 }
 
 export interface BulkCommandDeviceResult {
-    device_id: number;
-    command_id: number;
-    command_text: string;
+    deviceId: number;
+    deviceName: string;
+    status: string;
+    commandId: number;
+    commandText: string;
     output: string;
+    detail: string;
+    error: string;
     duration: number;
 }
 

@@ -19,10 +19,18 @@ import {
   getBulkCommandTaskStatus,
 } from "@/services/deviceCommands";
 
-interface TaskDeviceState extends BulkCommandDeviceResult {
+type TaskDeviceStatus = "PENDING" | "RUNNING" | "SUCCESS" | "ERROR" | "SKIPPED";
+
+interface TaskDeviceState {
   deviceId: number;
   deviceName: string;
-  status: "PENDING" | "RUNNING" | "DONE" | "SKIPPED";
+  status: TaskDeviceStatus;
+  commandId: number | null;
+  commandText: string;
+  output: string;
+  detail: string;
+  error: string;
+  duration: number;
   canRetry: boolean;
 }
 
@@ -46,6 +54,7 @@ interface TaskHistoryEntry {
   currentPage: number;
   pageSize: number;
   resultDeviceIds: number[];
+  deviceFilter: string;
 }
 
 const devices = ref<Device[]>([]);
@@ -192,7 +201,7 @@ function showDeviceOutput(device: TaskDeviceState): void {
  * Returns whether a task is completed.
  */
 function isTaskFinished(task: TaskHistoryEntry): boolean {
-  return getTaskSummary(task).waiting === 0;
+  return getTaskSummary(task).waiting === 0 || ["SUCCESS", "FAILURE", "REVOKED"].includes(task.status);
 }
 
 /**
@@ -201,8 +210,8 @@ function isTaskFinished(task: TaskHistoryEntry): boolean {
 function getTaskSummary(task: TaskHistoryEntry): TaskSummary {
   const allDevices = [...task.devices, ...task.skipped];
   return {
-    success: allDevices.filter((device) => device.status === "DONE").length,
-    error: 0,
+    success: allDevices.filter((device) => device.status === "SUCCESS").length,
+    error: allDevices.filter((device) => device.status === "ERROR").length,
     skipped: allDevices.filter((device) => device.status === "SKIPPED").length,
     waiting: allDevices.filter((device) => ["PENDING", "RUNNING"].includes(device.status)).length,
   };
@@ -230,28 +239,31 @@ function createTaskEntry(response: BulkCommandTaskLaunch, command: DeviceCommand
     devices: response.devices.map((device) => ({
       deviceId: device.deviceId,
       deviceName: device.deviceName,
-      device_id: device.deviceId,
-      command_id: command.id,
-      command_text: command.command,
+      commandId: command.id,
+      commandText: command.command,
       status: "PENDING",
       output: "",
+      detail: "",
+      error: "",
       duration: 0,
       canRetry: true,
     })),
     skipped: response.skipped.map((device) => ({
       deviceId: device.deviceId,
       deviceName: device.deviceName,
-      device_id: device.deviceId,
-      command_id: command.id,
-      command_text: command.command,
+      commandId: command.id,
+      commandText: command.command,
       status: "SKIPPED",
       output: "",
+      detail: device.detail || "",
+      error: "",
       duration: 0,
       canRetry: true,
     })),
     currentPage: 1,
     pageSize: 20,
     resultDeviceIds: [],
+    deviceFilter: "",
   };
 }
 
@@ -302,11 +314,11 @@ async function retryDevice(task: TaskHistoryEntry, deviceId: number): Promise<vo
  * Repeats command for all failed devices in the task.
  */
 async function retryFailedDevices(task: TaskHistoryEntry): Promise<void> {
-  const completedIds = task.devices.filter((device) => device.status === "DONE").map((device) => device.deviceId);
-  if (!completedIds.length) {
+  const failedIds = task.devices.filter((device) => device.status === "ERROR").map((device) => device.deviceId);
+  if (!failedIds.length) {
     return;
   }
-  await launchTask(cloneCommandTemplate(task.command), completedIds);
+  await launchTask(cloneCommandTemplate(task.command), failedIds);
 }
 
 /**
@@ -322,8 +334,17 @@ function applyTaskStatus(task: TaskHistoryEntry, status: BulkCommandTaskStatus):
   const completedIds = new Set(task.resultDeviceIds);
   task.devices.forEach((device) => {
     if (completedIds.has(device.deviceId)) {
-      device.status = "DONE";
-    } else if (!isTaskFinished(task)) {
+      return;
+    }
+    if (["FAILURE", "REVOKED"].includes(task.status)) {
+      device.status = "ERROR";
+      if (!device.detail) {
+        device.detail = "Задача завершилась с ошибкой до получения результата";
+      }
+      if (!device.error) {
+        device.error = device.detail;
+      }
+    } else {
       device.status = "RUNNING";
     }
   });
@@ -333,16 +354,32 @@ function applyTaskStatus(task: TaskHistoryEntry, status: BulkCommandTaskStatus):
  * Applies single device result to a task.
  */
 function applyTaskDeviceResult(task: TaskHistoryEntry, result: BulkCommandDeviceResult): void {
-  const target = task.devices.find((device) => device.deviceId === result.device_id);
+  const target = task.devices.find((device) => device.deviceId === result.deviceId);
   if (!target) {
     return;
   }
 
-  target.command_id = result.command_id;
-  target.command_text = result.command_text;
+  target.commandId = result.commandId;
+  target.commandText = result.commandText;
   target.output = result.output;
+  target.detail = result.detail;
+  target.error = result.error;
   target.duration = result.duration;
-  target.status = "DONE";
+  target.status = normalizeResultStatus(result.status);
+}
+
+/**
+ * Normalizes backend task result status for the UI.
+ */
+function normalizeResultStatus(status: string): TaskDeviceStatus {
+  switch (status) {
+    case "SUCCESS":
+    case "ERROR":
+    case "SKIPPED":
+      return status;
+    default:
+      return "RUNNING";
+  }
 }
 
 /**
@@ -396,8 +433,10 @@ function stopPolling(): void {
  */
 function getDeviceSeverity(status: string): "success" | "danger" | "warn" | "secondary" | "info" | "contrast" {
   switch (status) {
-    case "DONE":
+    case "SUCCESS":
       return "success";
+    case "ERROR":
+      return "danger";
     case "SKIPPED":
       return "warn";
     default:
@@ -406,19 +445,50 @@ function getDeviceSeverity(status: string): "success" | "danger" | "warn" | "sec
 }
 
 /**
+ * Returns filtered device rows for the task.
+ */
+function getFilteredTaskDevices(task: TaskHistoryEntry): TaskDeviceState[] {
+  const allDevices = [...task.devices, ...task.skipped];
+  const query = task.deviceFilter.trim().toLowerCase();
+  if (!query) {
+    return allDevices;
+  }
+  return allDevices.filter((device) => device.deviceName.toLowerCase().includes(query));
+}
+
+/**
  * Returns a page of devices for the task.
  */
 function getPagedTaskDevices(task: TaskHistoryEntry): TaskDeviceState[] {
-  const allDevices = [...task.devices, ...task.skipped];
+  const filteredDevices = getFilteredTaskDevices(task);
   const startIndex = (task.currentPage - 1) * task.pageSize;
-  return allDevices.slice(startIndex, startIndex + task.pageSize);
+  return filteredDevices.slice(startIndex, startIndex + task.pageSize);
 }
 
 /**
  * Returns total rows for task pagination.
  */
 function getTaskTotalDevices(task: TaskHistoryEntry): number {
-  return task.devices.length + task.skipped.length;
+  return getFilteredTaskDevices(task).length;
+}
+
+/**
+ * Returns short details for a task row.
+ */
+function getTaskDeviceDetail(device: TaskDeviceState): string {
+  if (device.status === "ERROR") {
+    return device.error || device.detail || "Ошибка выполнения";
+  }
+  if (device.status === "SKIPPED") {
+    return device.detail || "Устройство пропущено";
+  }
+  if (device.output) {
+    return `Вывод получен за ${device.duration.toFixed(3)} c`;
+  }
+  if (device.status === "RUNNING") {
+    return "Команда выполняется";
+  }
+  return "Ожидание результата";
 }
 
 onMounted(() => {
@@ -455,7 +525,7 @@ onBeforeUnmount(() => {
               <p class="mt-3 max-w-4xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base">
                 Выберите оборудование галочками, задайте шаблон команды и наблюдайте прогресс выполнения в реальном
                 времени.
-                Результаты по каждому устройству сохраняются отдельно и доступны для повторного запуска.
+                Результаты по каждому устройству собираются в общем списке задачи и доступны для повторного запуска.
               </p>
             </div>
 
@@ -632,7 +702,7 @@ onBeforeUnmount(() => {
                 </template>
 
                 <div class="flex flex-col gap-4">
-                  <div class="grid gap-3 md:grid-cols-4">
+                  <div class="grid gap-3 md:grid-cols-5">
                     <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                       <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Прогресс</div>
                       <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{{
@@ -646,27 +716,47 @@ onBeforeUnmount(() => {
                       <div class="mt-2 text-lg font-semibold text-emerald-600">{{ getTaskSummary(task).success }}</div>
                     </div>
                     <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                      <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ошибки</div>
+                      <div class="mt-2 text-lg font-semibold text-rose-600">{{ getTaskSummary(task).error }}</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                       <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ожидают</div>
                       <div class="mt-2 text-lg font-semibold text-sky-600">{{ getTaskSummary(task).waiting }}</div>
                     </div>
                     <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                       <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Результатов</div>
-                      <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ task.resultDeviceIds.length }}</div>
+                      <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {{ task.resultDeviceIds.length }}
+                      </div>
                     </div>
                   </div>
 
                   <div class="flex flex-wrap items-center gap-2">
                     <Button
-                        v-if="task.devices.some((device) => device.status === 'DONE')"
+                        v-if="task.devices.some((device) => device.status === 'ERROR')"
                         icon="pi pi-refresh"
-                        label="Повторить выполненные"
+                        label="Повторить ошибки"
                         severity="danger"
                         outlined
                         class="rounded-2xl!"
                         @click="retryFailedDevices(task)"
                     />
+                    <Tag severity="danger" :value="`Ошибок ${getTaskSummary(task).error}`"/>
                     <Tag severity="warn" :value="`Пропущено ${getTaskSummary(task).skipped}`"/>
                     <Tag severity="info" :value="`Обработано ${task.processed}/${task.total}`"/>
+                  </div>
+
+                  <div class="w-full md:max-w-md">
+                    <IconField>
+                      <InputIcon class="pi pi-search"/>
+                      <InputText
+                          v-model.trim="task.deviceFilter"
+                          fluid
+                          placeholder="Фильтр по имени оборудования"
+                          class="rounded-2xl"
+                          @update:modelValue="task.currentPage = 1"
+                      />
+                    </IconField>
                   </div>
 
                   <div v-if="getWaitingDevices(task).length"
@@ -707,13 +797,13 @@ onBeforeUnmount(() => {
                         </td>
                         <td class="px-3 py-3">
                           <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
-                            {{ device.output ? `Вывод получен за ${device.duration.toFixed(3)} c` : "Ожидание результата" }}
+                            {{ getTaskDeviceDetail(device) }}
                           </div>
                         </td>
                         <td class="px-3 py-3">
                           <div class="flex justify-end gap-2">
                             <Button
-                                v-if="device.output"
+                                v-if="device.output || device.error || device.detail"
                                 icon="pi pi-file"
                                 label="Вывод"
                                 size="small"
@@ -732,6 +822,11 @@ onBeforeUnmount(() => {
                                 @click="retryDevice(task, device.deviceId)"
                             />
                           </div>
+                        </td>
+                      </tr>
+                      <tr v-if="!getPagedTaskDevices(task).length">
+                        <td colspan="4" class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                          По текущему фильтру оборудование не найдено
                         </td>
                       </tr>
                       </tbody>
@@ -769,6 +864,12 @@ onBeforeUnmount(() => {
         <Tag :severity="getDeviceSeverity(currentOutput.status)" :value="currentOutput.status"/>
         <Tag severity="secondary" :value="`ID ${currentOutput.deviceId}`"/>
         <Tag severity="info" :value="`${currentOutput.duration.toFixed(3)} c`"/>
+      </div>
+      <div
+          v-if="currentOutput.error || currentOutput.detail"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"
+      >
+        {{ currentOutput.error || currentOutput.detail }}
       </div>
       <pre
           class="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-2xl bg-gray-950 px-4 py-3 text-xs text-gray-100">{{

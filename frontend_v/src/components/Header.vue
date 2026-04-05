@@ -22,7 +22,7 @@ const items = ref<MenuItem[]>([
     url: "/devices",
   },
   {
-    label: 'РњР°СЃСЃРѕРІС‹Рµ РєРѕРјР°РЅРґС‹',
+    label: 'Массовые команды',
     icon: 'bulk-commands',
     url: "/devices/commands",
   }
@@ -36,7 +36,7 @@ function buildMenuItems(): MenuItem[] {
       url: "/devices",
     },
     {
-      label: 'РњР°СЃСЃРѕРІС‹Рµ РєРѕРјР°РЅРґС‹',
+      label: 'Массовые команды',
       icon: 'bulk-commands',
       url: "/devices/commands",
     }

@@ -176,11 +176,11 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
         <div class="grid gap-3 md:grid-cols-2 xl:min-w-136">
           <IconField>
             <InputIcon class="pi pi-search"/>
-            <InputText v-model.trim="searchByName" placeholder="Фильтр по названию" fluid/>
+            <InputText v-model.trim="searchByName" placeholder="Фильтр по названию" fluid class="rounded-2xl"/>
           </IconField>
           <IconField>
             <InputIcon class="pi pi-search"/>
-            <InputText v-model.trim="searchByCommand" placeholder="Фильтр по команде" fluid/>
+            <InputText v-model.trim="searchByCommand" placeholder="Фильтр по команде" fluid class="rounded-2xl"/>
           </IconField>
         </div>
       </div>

@@ -200,7 +200,6 @@ function clearSelection(): void {
           </div>
 
           <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-            <span>Строк на странице: <strong>50</strong></span>
             <span>Выбрано: <strong>{{ selectedDeviceIds.length }}</strong></span>
             <span v-if="allFilteredSelected"
                   class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
@@ -263,13 +262,6 @@ function clearSelection(): void {
             </Select>
           </div>
 
-          <div class="min-w-0">
-            <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Поиск</div>
-            <IconField>
-              <InputIcon class="pi pi-search"/>
-              <InputText v-model.trim="search" placeholder="Имя или IP" fluid/>
-            </IconField>
-          </div>
         </div>
       </div>
     </div>
@@ -386,6 +378,7 @@ function clearSelection(): void {
     <div v-if="filteredDevices.length > 0" class="p-3">
       <Paginator
           :rows="rows"
+          :always-show="false"
           :totalRecords="filteredDevices.length"
           :first="pageStart"
           :pageLinkSize="3"

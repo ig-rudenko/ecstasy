@@ -451,6 +451,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
 class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
     """Start background execution of a command on multiple devices."""
 
+    @schemas.execute_bulk_device_command_api_doc
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
         """Validate request and dispatch celery task."""
@@ -518,6 +519,7 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
 class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
     """Return celery status for bulk device command task."""
 
+    @schemas.bulk_device_command_task_status_api_doc
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs) -> Response:
         """Return current task state, progress and cached results."""
@@ -530,7 +532,7 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
             "taskId": task_id,
             "status": task_status,
             "resultsCount": len(results_map),
-            "resultDeviceIds": [result["device_id"] for result in sorted_results],
+            "resultDeviceIds": [result["deviceId"] for result in sorted_results],
             "results": sorted_results,
         }
         task_result = self.get_task_result(task_id)
@@ -548,8 +550,15 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
 
         return [
             {
-                "device_id": int(device_id),
-                **result,
+                "deviceId": result.get("device_id", int(device_id)),
+                "deviceName": result.get("device_name", ""),
+                "status": result.get("status", "SUCCESS"),
+                "commandId": result.get("command_id"),
+                "commandText": result.get("command_text", ""),
+                "output": result.get("output", ""),
+                "detail": result.get("detail", ""),
+                "error": result.get("error", ""),
+                "duration": result.get("duration", 0),
             }
             for device_id, result in sorted_items
         ]

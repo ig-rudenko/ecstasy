@@ -220,3 +220,38 @@ class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
 class DevicePoolStatusesSwaggerSerializer(SwaggerSerializer):
     connectionPoolSize = serializers.IntegerField(min_value=1)
     statuses = serializers.ListSerializer(child=serializers.BooleanField())  # type: ignore
+
+
+class BulkCommandLaunchDeviceSwaggerSerializer(SwaggerSerializer):
+    deviceId = serializers.IntegerField(min_value=1)
+    deviceName = serializers.CharField()
+    detail = serializers.CharField(required=False, allow_blank=True)
+
+
+class BulkCommandLaunchResponseSwaggerSerializer(SwaggerSerializer):
+    taskId = serializers.CharField()
+    devices = BulkCommandLaunchDeviceSwaggerSerializer(many=True)
+    skipped = BulkCommandLaunchDeviceSwaggerSerializer(many=True)
+
+
+class BulkCommandTaskResultSwaggerSerializer(SwaggerSerializer):
+    deviceId = serializers.IntegerField(min_value=1)
+    deviceName = serializers.CharField()
+    status = serializers.CharField()
+    commandId = serializers.IntegerField(min_value=1)
+    commandText = serializers.CharField()
+    output = serializers.CharField(allow_blank=True)
+    detail = serializers.CharField(allow_blank=True)
+    error = serializers.CharField(allow_blank=True)
+    duration = serializers.FloatField(min_value=0)
+
+
+class BulkCommandTaskStatusSwaggerSerializer(SwaggerSerializer):
+    taskId = serializers.CharField()
+    status = serializers.CharField()
+    progress = serializers.IntegerField(min_value=0, max_value=100, required=False)
+    processed = serializers.IntegerField(min_value=0, required=False)
+    total = serializers.IntegerField(min_value=0, required=False)
+    resultsCount = serializers.IntegerField(min_value=0)
+    resultDeviceIds = serializers.ListField(child=serializers.IntegerField(min_value=1))
+    results = BulkCommandTaskResultSwaggerSerializer(many=True)

@@ -35,12 +35,25 @@ def _build_bulk_command_result(device: Devices, status: str, output: str = "", d
     }
 
 
-def _build_bulk_command_cache_result(command: DeviceCommand, output: str, duration: float) -> dict:
+def _build_bulk_command_cache_result(
+    device: Devices,
+    command: DeviceCommand,
+    status: str,
+    output: str,
+    detail: str,
+    error: str,
+    duration: float,
+) -> dict:
     """Build cached execution payload for a single device."""
     return {
+        "device_id": device.id,
+        "device_name": device.name,
+        "status": status,
         "command_id": command.id,
         "command_text": command.command,
         "output": output,
+        "detail": detail,
+        "error": error,
         "duration": round(duration, 3),
     }
 
@@ -95,22 +108,34 @@ def execute_bulk_device_command_task(
         except (InvalidMethod, ValidationError) as exc:
             result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
             cache_result = _build_bulk_command_cache_result(
+                device=device,
                 command=command,
-                output=str(exc),
+                status="ERROR",
+                output="",
+                detail=str(exc),
+                error=str(exc),
                 duration=monotonic() - started_at,
             )
         except Exception as exc:
             result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
             cache_result = _build_bulk_command_cache_result(
+                device=device,
                 command=command,
-                output=str(exc),
+                status="ERROR",
+                output="",
+                detail=str(exc),
+                error=str(exc),
                 duration=monotonic() - started_at,
             )
         else:
             result = _build_bulk_command_result(device=device, status="SUCCESS", output=output)
             cache_result = _build_bulk_command_cache_result(
+                device=device,
                 command=command,
+                status="SUCCESS",
                 output=output,
+                detail="",
+                error="",
                 duration=monotonic() - started_at,
             )
             UsersActions.objects.create(

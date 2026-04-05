@@ -596,5 +596,6 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["resultsCount"], 1)
-        self.assertEqual(response.data["results"][0]["device_id"], self.device.id)
+        self.assertEqual(response.data["resultDeviceIds"], [self.device.id])
+        self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
         self.assertEqual(response.data["results"][0]["output"], "show version output")
