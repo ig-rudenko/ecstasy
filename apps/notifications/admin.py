@@ -12,7 +12,6 @@ from .models import (
     WebhookNotification,
 )
 
-
 MethodDropdownFilter = distinct_dropdown_filter("method", "method")
 
 

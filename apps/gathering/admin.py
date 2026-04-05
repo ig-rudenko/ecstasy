@@ -13,7 +13,6 @@ from ecstasy_project.admin_filters import distinct_dropdown_filter
 from .models import MacAddress, Vlan, VlanPort
 from .paginator import CachedLargeTablePaginator, LargeTablePaginator
 
-
 VlanDropdownFilter = distinct_dropdown_filter("vlan", "vlan")
 TypeDropdownFilter = distinct_dropdown_filter("type", "type")
 PortDropdownFilter = distinct_dropdown_filter("port", "port")

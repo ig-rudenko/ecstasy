@@ -35,8 +35,8 @@ from unfold.contrib.filters.admin import (
 )
 
 from apps.gathering.services.configurations import LocalConfigStorage
-from ecstasy_project.admin_filters import distinct_dropdown_filter
 from devicemanager.device import Interfaces
+from ecstasy_project.admin_filters import distinct_dropdown_filter
 
 from .export import DevicesInterfacesWorkloadExcelExport
 from .export_resources import DevicesResource

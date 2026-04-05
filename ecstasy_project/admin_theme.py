@@ -1,8 +1,7 @@
 from django.apps import apps
 from django.conf import settings
-from django.urls import NoReverseMatch, reverse_lazy
 from django.templatetags.static import static
-
+from django.urls import NoReverseMatch, reverse_lazy
 
 APP_GROUPS = {
     "check": {"title": "Оборудование", "icon": "memory"},

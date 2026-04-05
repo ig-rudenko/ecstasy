@@ -6,7 +6,6 @@ from ecstasy_project.admin_filters import distinct_dropdown_filter
 
 from .models import RingDev, TransportRing
 
-
 RingNameDropdownFilter = distinct_dropdown_filter("ring_name", "ring name")
 
 

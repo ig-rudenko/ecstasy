@@ -16,7 +16,6 @@ from .models import (
     TechCapability,
 )
 
-
 CapacityDropdownFilter = distinct_dropdown_filter("capacity", "capacity")
 FloorsDropdownFilter = distinct_dropdown_filter("floors", "floors")
 EntrancesDropdownFilter = distinct_dropdown_filter("total_entrances", "total entrances")
