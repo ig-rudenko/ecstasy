@@ -107,11 +107,6 @@ urlpatterns = [
         device_manager.BulkDeviceCommandTaskAPIView.as_view(),
         name="device-command-task-status",
     ),
-    path(
-        "commands/tasks/<str:task_id>/devices/<int:device_id>",
-        device_manager.BulkDeviceCommandTaskResultAPIView.as_view(),
-        name="device-command-task-result",
-    ),
     path("<device_name_or_ip>/pool", device_manager.DevicePoolManager.as_view()),
     # ===========================================
     #               Device Viewings

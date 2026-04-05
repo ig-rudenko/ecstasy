@@ -16,11 +16,13 @@ import {
   cloneCommandTemplate,
   DeviceCommandTemplate,
   executeBulkDeviceCommand,
-  getBulkCommandTaskDeviceResult,
   getBulkCommandTaskStatus,
 } from "@/services/deviceCommands";
 
 interface TaskDeviceState extends BulkCommandDeviceResult {
+  deviceId: number;
+  deviceName: string;
+  status: "PENDING" | "RUNNING" | "DONE" | "SKIPPED";
   canRetry: boolean;
 }
 
@@ -41,6 +43,9 @@ interface TaskHistoryEntry {
   launchedAt: number;
   devices: TaskDeviceState[];
   skipped: TaskDeviceState[];
+  currentPage: number;
+  pageSize: number;
+  resultDeviceIds: number[];
 }
 
 const devices = ref<Device[]>([]);
@@ -196,10 +201,10 @@ function isTaskFinished(task: TaskHistoryEntry): boolean {
 function getTaskSummary(task: TaskHistoryEntry): TaskSummary {
   const allDevices = [...task.devices, ...task.skipped];
   return {
-    success: allDevices.filter((device) => device.status === "SUCCESS").length,
-    error: allDevices.filter((device) => device.status === "ERROR").length,
+    success: allDevices.filter((device) => device.status === "DONE").length,
+    error: 0,
     skipped: allDevices.filter((device) => device.status === "SKIPPED").length,
-    waiting: allDevices.filter((device) => ["PENDING", "PROGRESS", "STARTED"].includes(device.status)).length,
+    waiting: allDevices.filter((device) => ["PENDING", "RUNNING"].includes(device.status)).length,
   };
 }
 
@@ -207,7 +212,7 @@ function getTaskSummary(task: TaskHistoryEntry): TaskSummary {
  * Returns waiting devices for a task.
  */
 function getWaitingDevices(task: TaskHistoryEntry): TaskDeviceState[] {
-  return task.devices.filter((device) => ["PENDING", "PROGRESS", "STARTED"].includes(device.status));
+  return task.devices.filter((device) => ["PENDING", "RUNNING"].includes(device.status));
 }
 
 /**
@@ -225,19 +230,28 @@ function createTaskEntry(response: BulkCommandTaskLaunch, command: DeviceCommand
     devices: response.devices.map((device) => ({
       deviceId: device.deviceId,
       deviceName: device.deviceName,
+      device_id: device.deviceId,
+      command_id: command.id,
+      command_text: command.command,
       status: "PENDING",
       output: "",
-      detail: "",
+      duration: 0,
       canRetry: true,
     })),
     skipped: response.skipped.map((device) => ({
       deviceId: device.deviceId,
       deviceName: device.deviceName,
+      device_id: device.deviceId,
+      command_id: command.id,
+      command_text: command.command,
       status: "SKIPPED",
       output: "",
-      detail: device.detail || "",
+      duration: 0,
       canRetry: true,
     })),
+    currentPage: 1,
+    pageSize: 20,
+    resultDeviceIds: [],
   };
 }
 
@@ -288,11 +302,11 @@ async function retryDevice(task: TaskHistoryEntry, deviceId: number): Promise<vo
  * Repeats command for all failed devices in the task.
  */
 async function retryFailedDevices(task: TaskHistoryEntry): Promise<void> {
-  const failedIds = task.devices.filter((device) => device.status === "ERROR").map((device) => device.deviceId);
-  if (!failedIds.length) {
+  const completedIds = task.devices.filter((device) => device.status === "DONE").map((device) => device.deviceId);
+  if (!completedIds.length) {
     return;
   }
-  await launchTask(cloneCommandTemplate(task.command), failedIds);
+  await launchTask(cloneCommandTemplate(task.command), completedIds);
 }
 
 /**
@@ -303,20 +317,32 @@ function applyTaskStatus(task: TaskHistoryEntry, status: BulkCommandTaskStatus):
   task.progress = status.progress || 0;
   task.processed = status.processed || 0;
   task.total = status.total || task.total;
+  task.resultDeviceIds = status.resultDeviceIds || [];
+
+  const completedIds = new Set(task.resultDeviceIds);
+  task.devices.forEach((device) => {
+    if (completedIds.has(device.deviceId)) {
+      device.status = "DONE";
+    } else if (!isTaskFinished(task)) {
+      device.status = "RUNNING";
+    }
+  });
 }
 
 /**
  * Applies single device result to a task.
  */
 function applyTaskDeviceResult(task: TaskHistoryEntry, result: BulkCommandDeviceResult): void {
-  const target = task.devices.find((device) => device.deviceId === result.deviceId);
+  const target = task.devices.find((device) => device.deviceId === result.device_id);
   if (!target) {
     return;
   }
 
-  target.status = result.status;
+  target.command_id = result.command_id;
+  target.command_text = result.command_text;
   target.output = result.output;
-  target.detail = result.detail;
+  target.duration = result.duration;
+  target.status = "DONE";
 }
 
 /**
@@ -333,22 +359,12 @@ async function pollTasks(): Promise<void> {
     try {
       const status = await getBulkCommandTaskStatus(task.taskId);
       applyTaskStatus(task, status);
+      status.results.forEach((result) => {
+        applyTaskDeviceResult(task, result);
+      });
     } catch (error: any) {
       console.error(error);
     }
-
-    await Promise.all(task.devices
-        .filter((device) => ["PENDING", "PROGRESS", "STARTED"].includes(device.status))
-        .map(async (device) => {
-          try {
-            const result = await getBulkCommandTaskDeviceResult(task.taskId, device.deviceId);
-            applyTaskDeviceResult(task, result);
-          } catch (error: any) {
-            if (error?.response?.status !== 404) {
-              console.error(error);
-            }
-          }
-        }));
   }));
 }
 
@@ -380,15 +396,29 @@ function stopPolling(): void {
  */
 function getDeviceSeverity(status: string): "success" | "danger" | "warn" | "secondary" | "info" | "contrast" {
   switch (status) {
-    case "SUCCESS":
+    case "DONE":
       return "success";
-    case "ERROR":
-      return "danger";
     case "SKIPPED":
       return "warn";
     default:
       return "info";
   }
+}
+
+/**
+ * Returns a page of devices for the task.
+ */
+function getPagedTaskDevices(task: TaskHistoryEntry): TaskDeviceState[] {
+  const allDevices = [...task.devices, ...task.skipped];
+  const startIndex = (task.currentPage - 1) * task.pageSize;
+  return allDevices.slice(startIndex, startIndex + task.pageSize);
+}
+
+/**
+ * Returns total rows for task pagination.
+ */
+function getTaskTotalDevices(task: TaskHistoryEntry): number {
+  return task.devices.length + task.skipped.length;
 }
 
 onMounted(() => {
@@ -616,20 +646,20 @@ onBeforeUnmount(() => {
                       <div class="mt-2 text-lg font-semibold text-emerald-600">{{ getTaskSummary(task).success }}</div>
                     </div>
                     <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                      <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ошибки</div>
-                      <div class="mt-2 text-lg font-semibold text-rose-600">{{ getTaskSummary(task).error }}</div>
-                    </div>
-                    <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                       <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ожидают</div>
                       <div class="mt-2 text-lg font-semibold text-sky-600">{{ getTaskSummary(task).waiting }}</div>
+                    </div>
+                    <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                      <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Результатов</div>
+                      <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ task.resultDeviceIds.length }}</div>
                     </div>
                   </div>
 
                   <div class="flex flex-wrap items-center gap-2">
                     <Button
-                        v-if="task.devices.some((device) => device.status === 'ERROR')"
+                        v-if="task.devices.some((device) => device.status === 'DONE')"
                         icon="pi pi-refresh"
-                        label="Повторить ошибки"
+                        label="Повторить выполненные"
                         severity="danger"
                         outlined
                         class="rounded-2xl!"
@@ -664,7 +694,7 @@ onBeforeUnmount(() => {
                       </thead>
                       <tbody>
                       <tr
-                          v-for="device in [...task.devices, ...task.skipped]"
+                          v-for="device in getPagedTaskDevices(task)"
                           :key="`${task.taskId}-${device.deviceId}`"
                           class="border-b border-gray-200/70 last:border-b-0 dark:border-gray-700/70"
                       >
@@ -677,7 +707,7 @@ onBeforeUnmount(() => {
                         </td>
                         <td class="px-3 py-3">
                           <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
-                            {{ device.detail || (device.output ? "Есть вывод" : "Ожидание результата") }}
+                            {{ device.output ? `Вывод получен за ${device.duration.toFixed(3)} c` : "Ожидание результата" }}
                           </div>
                         </td>
                         <td class="px-3 py-3">
@@ -707,6 +737,18 @@ onBeforeUnmount(() => {
                       </tbody>
                     </table>
                   </div>
+
+                  <Paginator
+                      v-if="getTaskTotalDevices(task) > task.pageSize"
+                      :rows="task.pageSize"
+                      :totalRecords="getTaskTotalDevices(task)"
+                      :first="(task.currentPage - 1) * task.pageSize"
+                      :pageLinkSize="3"
+                      @page="(event: any) => { task.currentPage = event.page + 1; }"
+                      :pt="{
+                        root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
+                      }"
+                  />
                 </div>
               </Fieldset>
             </div>
@@ -726,10 +768,8 @@ onBeforeUnmount(() => {
       <div class="flex flex-wrap items-center gap-2">
         <Tag :severity="getDeviceSeverity(currentOutput.status)" :value="currentOutput.status"/>
         <Tag severity="secondary" :value="`ID ${currentOutput.deviceId}`"/>
+        <Tag severity="info" :value="`${currentOutput.duration.toFixed(3)} c`"/>
       </div>
-      <Message v-if="currentOutput.detail && !currentOutput.output" severity="warn" class="rounded-2xl">
-        {{ currentOutput.detail }}
-      </Message>
       <pre
           class="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-2xl bg-gray-950 px-4 py-3 text-xs text-gray-100">{{
           currentOutput.output || "Вывод отсутствует"

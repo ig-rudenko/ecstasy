@@ -1,8 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+from time import monotonic
 
 from celery import shared_task
-from django.core.cache import cache
 from rest_framework.exceptions import ValidationError
 
 from devicemanager.remote.exceptions import InvalidMethod
@@ -10,8 +10,9 @@ from devicemanager.remote.exceptions import InvalidMethod
 from .models import DeviceCommand, Devices, UsersActions
 from .services.device.commands import (
     execute_command,
-    get_device_command_task_cache_key,
+    init_device_command_task_results_cache,
     is_command_available_for_device,
+    update_device_command_task_result,
 )
 from .services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
@@ -34,14 +35,19 @@ def _build_bulk_command_result(device: Devices, status: str, output: str = "", d
     }
 
 
+def _build_bulk_command_cache_result(command: DeviceCommand, output: str, duration: float) -> dict:
+    """Build cached execution payload for a single device."""
+    return {
+        "command_id": command.id,
+        "command_text": command.command,
+        "output": output,
+        "duration": round(duration, 3),
+    }
+
+
 def _get_bulk_command_workers_count(devices_count: int) -> int:
     """Return worker count for bulk command execution."""
     return max(1, min(devices_count, 32))
-
-
-def _save_bulk_command_result(task_id: str, device: Devices, result: dict) -> None:
-    """Save device command execution result to cache."""
-    cache.set(get_device_command_task_cache_key(task_id, device.id), result, timeout=None)
 
 
 @shared_task(bind=True, name="execute_bulk_device_command_task")
@@ -55,6 +61,7 @@ def execute_bulk_device_command_task(
     total = max(len(devices), 1)
     processed = 0
     progress_lock = Lock()
+    init_device_command_task_results_cache(task_id)
 
     def update_progress() -> None:
         """Update celery progress state."""
@@ -72,13 +79,14 @@ def execute_bulk_device_command_task(
 
     def run_for_device(device: Devices) -> dict:
         """Run the command for a single device and cache the result."""
+        started_at = monotonic()
+
         if not is_command_available_for_device(command, device):
             result = _build_bulk_command_result(
                 device=device,
                 status="SKIPPED",
                 detail="Command is unavailable for this device",
             )
-            _save_bulk_command_result(task_id, device, result)
             update_progress()
             return result
 
@@ -86,17 +94,32 @@ def execute_bulk_device_command_task(
             output = execute_command(device, command, context)
         except (InvalidMethod, ValidationError) as exc:
             result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
+            cache_result = _build_bulk_command_cache_result(
+                command=command,
+                output=str(exc),
+                duration=monotonic() - started_at,
+            )
         except Exception as exc:
             result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
+            cache_result = _build_bulk_command_cache_result(
+                command=command,
+                output=str(exc),
+                duration=monotonic() - started_at,
+            )
         else:
             result = _build_bulk_command_result(device=device, status="SUCCESS", output=output)
+            cache_result = _build_bulk_command_cache_result(
+                command=command,
+                output=output,
+                duration=monotonic() - started_at,
+            )
             UsersActions.objects.create(
                 user_id=user_id,
                 device=device,
                 action=f"execute bulk command {command.name}",
             )
 
-        _save_bulk_command_result(task_id, device, result)
+        update_device_command_task_result(task_id, device.id, cache_result)
         update_progress()
         return result
 

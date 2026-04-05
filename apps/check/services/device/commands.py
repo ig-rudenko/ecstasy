@@ -1,10 +1,14 @@
 import re
+import time
+import uuid
+from contextlib import contextmanager
 from collections.abc import Callable
 from dataclasses import dataclass
 from ipaddress import IPv4Address
 
 import orjson
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from rest_framework.exceptions import ValidationError
 
 from devicemanager.device.interfaces import Interfaces
@@ -193,9 +197,52 @@ def get_available_command_for_device(user: User, device: Devices, command_id: in
     return None
 
 
-def get_device_command_task_cache_key(task_id: str, device_id: int) -> str:
-    """Build a cache key for bulk command execution result."""
-    return f"device-command-task:{task_id}:device:{device_id}"
+def get_device_command_task_results_cache_key(task_id: str) -> str:
+    """Build a cache key for bulk command execution results."""
+    return f"device-command-task:{task_id}:results"
+
+
+def get_device_command_task_lock_cache_key(task_id: str) -> str:
+    """Build a cache key for bulk command execution lock."""
+    return f"device-command-task:{task_id}:lock"
+
+
+@contextmanager
+def device_command_task_cache_lock(task_id: str, timeout: int = 10, expires: int = 30):
+    """Lock cache updates for a bulk command task."""
+    lock_key = get_device_command_task_lock_cache_key(task_id)
+    lock_value = str(uuid.uuid4())
+    start_time = time.monotonic()
+
+    while not cache.add(lock_key, lock_value, timeout=expires):
+        if time.monotonic() - start_time > timeout:
+            raise TimeoutError("Timed out while waiting for bulk command cache lock")
+        time.sleep(0.05)
+
+    try:
+        yield
+    finally:
+        if cache.get(lock_key) == lock_value:
+            cache.delete(lock_key)
+
+
+def init_device_command_task_results_cache(task_id: str) -> None:
+    """Initialize task results cache."""
+    cache.set(get_device_command_task_results_cache_key(task_id), {}, timeout=None)
+
+
+def update_device_command_task_result(task_id: str, device_id: int, result: dict) -> None:
+    """Safely update task results cache for one device."""
+    with device_command_task_cache_lock(task_id):
+        cache_key = get_device_command_task_results_cache_key(task_id)
+        current_results = dict(cache.get(cache_key, {}))
+        current_results[str(device_id)] = result
+        cache.set(cache_key, current_results, timeout=None)
+
+
+def get_device_command_task_results(task_id: str) -> dict[str, dict]:
+    """Return all cached task results."""
+    return dict(cache.get(get_device_command_task_results_cache_key(task_id), {}))
 
 
 def dispatch_bulk_execute_command_task(
@@ -239,7 +286,6 @@ def dispatch_bulk_execute_command_task(
             {
                 "deviceId": device.id,
                 "deviceName": device.name,
-                "cacheKey": get_device_command_task_cache_key(str(task.id), device.id),
             }
             for device in eligible_devices
         ],

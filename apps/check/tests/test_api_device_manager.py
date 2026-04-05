@@ -12,7 +12,7 @@ from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 
 from ..models import AuthGroup, DeviceCommand, DeviceGroup, Devices, Group, User, UsersActions
-from ..services.device.commands import get_device_command_task_cache_key
+from ..services.device.commands import get_device_command_task_results_cache_key
 
 
 class PortControlAPIViewTestCase(APITestCase):
@@ -550,7 +550,6 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
                 {
                     "deviceId": self.device.id,
                     "deviceName": self.device.name,
-                    "cacheKey": get_device_command_task_cache_key("task-1", self.device.id),
                 }
             ],
             "skipped": [
@@ -577,23 +576,25 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(len(response.data["skipped"]), 1)
         dispatch_task.assert_called_once()
 
-    def test_get_bulk_command_device_result(self):
+    def test_get_bulk_command_task_status(self):
         cache.set(
-            get_device_command_task_cache_key("task-2", self.device.id),
+            get_device_command_task_results_cache_key("task-2"),
             {
-                "deviceId": self.device.id,
-                "deviceName": self.device.name,
-                "status": "SUCCESS",
-                "output": "show version output",
-                "detail": "",
+                str(self.device.id): {
+                    "command_id": self.command.id,
+                    "command_text": self.command.command,
+                    "output": "show version output",
+                    "duration": 0.231,
+                }
             },
             timeout=None,
         )
 
         response = self.client.get(
-            reverse("devices-api:device-command-task-result", args=("task-2", self.device.id))
+            reverse("devices-api:device-command-task-status", args=("task-2",))
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "SUCCESS")
-        self.assertEqual(response.data["output"], "show version output")
+        self.assertEqual(response.data["resultsCount"], 1)
+        self.assertEqual(response.data["results"][0]["device_id"], self.device.id)
+        self.assertEqual(response.data["results"][0]["output"], "show version output")

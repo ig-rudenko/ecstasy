@@ -33,7 +33,6 @@ export interface CommandValidateResult {
 export interface BulkCommandDeviceRef {
     deviceId: number;
     deviceName: string;
-    cacheKey?: string;
     detail?: string;
 }
 
@@ -49,14 +48,17 @@ export interface BulkCommandTaskStatus {
     progress?: number;
     processed?: number;
     total?: number;
+    resultsCount: number;
+    resultDeviceIds: number[];
+    results: BulkCommandDeviceResult[];
 }
 
 export interface BulkCommandDeviceResult {
-    deviceId: number;
-    deviceName: string;
-    status: string;
+    device_id: number;
+    command_id: number;
+    command_text: string;
     output: string;
-    detail: string;
+    duration: number;
 }
 
 export const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/;
@@ -290,13 +292,5 @@ export async function executeBulkDeviceCommand(
  */
 export async function getBulkCommandTaskStatus(taskId: string): Promise<BulkCommandTaskStatus> {
     const response = await api.get<BulkCommandTaskStatus>(`/api/v1/devices/commands/tasks/${taskId}`);
-    return response.data;
-}
-
-/**
- * Loads bulk task result for one device.
- */
-export async function getBulkCommandTaskDeviceResult(taskId: string, deviceId: number): Promise<BulkCommandDeviceResult> {
-    const response = await api.get<BulkCommandDeviceResult>(`/api/v1/devices/commands/tasks/${taskId}/devices/${deviceId}`);
     return response.data;
 }

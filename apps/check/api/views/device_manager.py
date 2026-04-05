@@ -1,5 +1,4 @@
 from celery.result import AsyncResult
-from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -22,7 +21,7 @@ from ...services.device.commands import (
     execute_command,
     get_available_command_for_device,
     get_available_commands_for_device,
-    get_device_command_task_cache_key,
+    get_device_command_task_results,
     validate_command,
 )
 from ...services.device.interfaces import (
@@ -521,33 +520,55 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs) -> Response:
-        """Return current task state and progress."""
-        task = AsyncResult(str(self.kwargs["task_id"]))
-        response = {"taskId": str(self.kwargs["task_id"]), "status": task.status}
-        if isinstance(task.result, dict):
-            response.update(task.result)
+        """Return current task state, progress and cached results."""
+        task_id = str(self.kwargs["task_id"])
+        results_map = get_device_command_task_results(task_id)
+        sorted_results = self.get_sorted_results(results_map)
+        task_status = self.get_task_status(task_id)
+
+        response = {
+            "taskId": task_id,
+            "status": task_status,
+            "resultsCount": len(results_map),
+            "resultDeviceIds": [result["device_id"] for result in sorted_results],
+            "results": sorted_results,
+        }
+        task_result = self.get_task_result(task_id)
+        if isinstance(task_result, dict):
+            response.update(task_result)
         return Response(response)
 
+    @staticmethod
+    def get_sorted_results(results_map: dict[str, dict]) -> list[dict]:
+        """Return sorted cached results."""
+        sorted_items = sorted(
+            results_map.items(),
+            key=lambda item: int(item[0]),
+        )
 
-class BulkDeviceCommandTaskResultAPIView(UserAuthenticatedAPIView):
-    """Return cached device result for bulk command task."""
+        return [
+            {
+                "device_id": int(device_id),
+                **result,
+            }
+            for device_id, result in sorted_items
+        ]
 
-    @method_decorator(profile_permission(models.Profile.CMD_RUN))
-    def get(self, request, *args, **kwargs) -> Response:
-        """Return cached result for one device."""
-        device_id = int(self.kwargs["device_id"])
-        device = filter_devices_qs_by_user(
-            models.Devices.objects.filter(id=device_id), self.current_user
-        ).first()
-        if device is None:
-            return Response({"detail": "Device not found or access denied"}, status=404)
+    @staticmethod
+    def get_task_status(task_id: str) -> str:
+        """Return celery task status."""
+        try:
+            return AsyncResult(task_id).status
+        except Exception:
+            return "PENDING"
 
-        cache_key = get_device_command_task_cache_key(str(self.kwargs["task_id"]), device.id)
-        result = cache.get(cache_key)
-        if result is None:
-            return Response({"detail": "Result not found"}, status=404)
-
-        return Response(result)
+    @staticmethod
+    def get_task_result(task_id: str) -> dict | None:
+        """Return celery task result."""
+        try:
+            return AsyncResult(task_id).result
+        except Exception:
+            return None
 
 
 # @method_decorator(get_device_pool_status_api_doc, name="get")
