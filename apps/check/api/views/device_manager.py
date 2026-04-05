@@ -1,4 +1,3 @@
-from celery.result import AsyncResult
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -529,7 +528,8 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
         task_id = str(self.kwargs["task_id"])
         results_map = get_device_command_task_results(task_id)
         sorted_results = self.get_sorted_results(results_map)
-        task_status = self.get_task_status(task_id)
+        execution = self.get_execution(task_id)
+        task_status = self.get_task_status(execution)
 
         response = {
             "taskId": task_id,
@@ -538,9 +538,14 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
             "resultDeviceIds": [result["deviceId"] for result in sorted_results],
             "results": sorted_results,
         }
-        task_result = self.get_task_result(task_id)
-        if isinstance(task_result, dict):
-            response.update(task_result)
+        if execution is not None:
+            response.update(
+                {
+                    "progress": execution.progress,
+                    "processed": execution.processed,
+                    "total": execution.total,
+                }
+            )
         return Response(response)
 
     @staticmethod
@@ -566,21 +571,21 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
             for device_id, result in sorted_items
         ]
 
-    @staticmethod
-    def get_task_status(task_id: str) -> str:
-        """Return celery task status."""
-        try:
-            return AsyncResult(task_id).status
-        except Exception:
-            return "PENDING"
+    def get_execution(self, task_id: str) -> models.BulkDeviceCommandExecution | None:
+        """Return persisted execution record for the task."""
+        queryset = models.BulkDeviceCommandExecution.objects.filter(task_id=task_id)
+        if not self.current_user.is_superuser:
+            queryset = queryset.filter(user=self.current_user)
+        return queryset.first()
 
     @staticmethod
-    def get_task_result(task_id: str) -> dict | None:
-        """Return celery task result."""
-        try:
-            return AsyncResult(task_id).result
-        except Exception:
-            return None
+    def get_task_status(
+        execution: models.BulkDeviceCommandExecution | None,
+    ) -> str:
+        """Return bulk task status from persisted execution state."""
+        if execution is None:
+            return "PENDING"
+        return execution.status
 
 
 class BulkDeviceCommandExecutionListAPIView(UserAuthenticatedAPIView, generics.ListAPIView):

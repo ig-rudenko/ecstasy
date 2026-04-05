@@ -548,3 +548,51 @@ class TestCommandAvailability(BaseCommandsTestCase):
         self.device.vendor = ""
         self.device.model = "DES-3200-28"
         self.assertFalse(is_command_available_for_device(command, self.device))
+
+    def test_command_available_for_case_insensitive_vendor_and_model_regexp(self):
+        command = DeviceCommand.objects.create(
+            name="show version",
+            command="show version",
+            device_vendor="d-link",
+            model_regexp=r"des-\d+",
+        )
+        self.device.vendor = " D-Link "
+        self.device.model = " des-3200-28 "
+
+        self.assertTrue(is_command_available_for_device(command, self.device))
+
+    def test_command_unavailable_for_invalid_model_regexp(self):
+        command = DeviceCommand.objects.create(
+            name="show version",
+            command="show version",
+            device_vendor="D-Link",
+            model_regexp=r"[DES-",
+        )
+        self.device.vendor = "D-Link"
+        self.device.model = "DES-3200-28"
+
+        self.assertFalse(is_command_available_for_device(command, self.device))
+
+    def test_command_unavailable_without_model_regexp(self):
+        command = DeviceCommand.objects.create(
+            name="show version",
+            command="show version",
+            device_vendor="D-Link",
+            model_regexp="",
+        )
+        self.device.vendor = "D-Link"
+        self.device.model = "DES-3200-28"
+
+        self.assertFalse(is_command_available_for_device(command, self.device))
+
+    def test_command_unavailable_without_vendor(self):
+        command = DeviceCommand.objects.create(
+            name="show version",
+            command="show version",
+            device_vendor="",
+            model_regexp=r"DES-\d+",
+        )
+        self.device.vendor = "D-Link"
+        self.device.model = "DES-3200-28"
+
+        self.assertFalse(is_command_available_for_device(command, self.device))

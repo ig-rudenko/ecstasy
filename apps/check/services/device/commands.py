@@ -29,6 +29,24 @@ class ContextValidator:
     validate: Callable
 
 
+def normalize_device_vendor(value: str | None) -> str:
+    """Return normalized device vendor for comparisons."""
+    return str(value or "").strip().casefold()
+
+
+def normalize_device_model(value: str | None) -> str:
+    """Return normalized device model for regex comparisons."""
+    return str(value or "").strip()
+
+
+def get_command_model_pattern(command: DeviceCommand) -> re.Pattern | None:
+    """Compile command model regexp safely."""
+    if not command.model_regexp:
+        return None
+
+    return re.compile(command.model_regexp.strip(), re.IGNORECASE)
+
+
 def validate_device_port(device: Devices, port: str) -> None:
     port = port.strip()
     interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
@@ -67,6 +85,7 @@ def validate_number(number_string: str, min_value: str, max_value: str) -> None:
 
 
 def validate_command(device: Devices, command: str, context: dict) -> list[RemoteCommand]:
+    """Validate command macros for one device and render command list."""
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",
@@ -180,21 +199,35 @@ def get_command_text_for_audit(device: Devices, command: DeviceCommand, context:
 
 def is_command_available_for_device(command: DeviceCommand, device: Devices) -> bool:
     """Check whether the command can be used for the given device."""
-    if not device.vendor or not device.model:
+    device_vendor = normalize_device_vendor(device.vendor)
+    device_model = normalize_device_model(device.model)
+    command_vendor = normalize_device_vendor(command.device_vendor)
+
+    if (
+        not device_vendor
+        or not device_model
+        or not command_vendor
+        or not str(command.model_regexp or "").strip()
+    ):
         return False
 
-    if command.device_vendor != device.vendor:
+    if command_vendor != device_vendor:
         return False
 
-    if not command.model_regexp:
-        return True
+    try:
+        model_pattern = get_command_model_pattern(command)
+    except re.error:
+        return False
 
-    return re.compile(command.model_regexp).search(str(device.model)) is not None
+    return model_pattern is not None and model_pattern.search(device_model) is not None
 
 
 def get_available_commands_for_device(user: User, device: Devices) -> list[DeviceCommand]:
     """Return commands available for the user and device."""
-    commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
+    if not device.vendor:
+        return []
+
+    commands = DeviceCommand.objects.filter(device_vendor__iexact=str(device.vendor).strip())
     if not user.is_superuser:
         commands = commands.filter(perm_groups__user=user)
 
@@ -241,6 +274,11 @@ def device_command_task_cache_lock(task_id: str, timeout: int = 10, expires: int
 def init_device_command_task_results_cache(task_id: str) -> None:
     """Initialize task results cache."""
     cache.set(get_device_command_task_results_cache_key(task_id), {}, timeout=None)
+
+
+def set_device_command_task_results(task_id: str, results: dict[str, dict]) -> None:
+    """Replace all task results in cache."""
+    cache.set(get_device_command_task_results_cache_key(task_id), dict(results), timeout=None)
 
 
 def update_device_command_task_result(task_id: str, device_id: int, result: dict) -> None:

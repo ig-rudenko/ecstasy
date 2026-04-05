@@ -1,3 +1,4 @@
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 from time import monotonic
@@ -20,7 +21,7 @@ from .services.device.commands import (
     get_command_text_for_audit,
     init_device_command_task_results_cache,
     is_command_available_for_device,
-    update_device_command_task_result,
+    set_device_command_task_results,
 )
 from .services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
 
@@ -68,6 +69,7 @@ def _build_bulk_command_cache_result(
 
 def _get_bulk_command_workers_count(devices_count: int) -> int:
     """Return worker count for bulk command execution."""
+    return 1  # TODO: Убрать
     return max(1, min(devices_count, 32))
 
 
@@ -81,8 +83,18 @@ def _update_execution_progress(task_id: str, processed: int, total: int) -> None
     )
 
 
+def _mark_execution_started(task_id: str, total: int) -> None:
+    """Mark bulk execution as started before first device result is received."""
+    BulkDeviceCommandExecution.objects.filter(task_id=task_id).update(
+        status=BulkDeviceCommandExecution.STATUS_PROGRESS,
+        processed=0,
+        total=total,
+        progress=0,
+    )
+
+
 def _save_execution_result(
-    task_id: str,
+    execution_id: int,
     device: Devices,
     status: str,
     command_text: str,
@@ -92,12 +104,8 @@ def _save_execution_result(
     duration: float,
 ) -> None:
     """Persist one device result for bulk command audit."""
-    execution = BulkDeviceCommandExecution.objects.filter(task_id=task_id).first()
-    if execution is None:
-        return
-
     BulkDeviceCommandExecutionResult.objects.update_or_create(
-        execution=execution,
+        execution_id=execution_id,
         device=device,
         defaults={
             "device_name": device.name,
@@ -119,17 +127,32 @@ def execute_bulk_device_command_task(
     devices = list(Devices.objects.filter(id__in=device_ids).select_related("auth_group"))
     command = DeviceCommand.objects.get(id=command_id)
     task_id = str(self.request.id)
+    execution = BulkDeviceCommandExecution.objects.get(task_id=task_id)
     total = max(len(devices), 1)
     processed = 0
     progress_lock = Lock()
+    results_lock = Lock()
+    cached_results: dict[str, dict] = {}
     init_device_command_task_results_cache(task_id)
+    _mark_execution_started(task_id, len(devices))
+
+    def sync_cache() -> None:
+        """Persist current in-memory results snapshot to cache."""
+        set_device_command_task_results(task_id, cached_results)
+
+    def register_result(device: Devices, cache_result: dict) -> None:
+        """Store one device result in the in-memory cache and persist snapshot."""
+        with results_lock:
+            cached_results[str(device.id)] = cache_result
+            sync_cache()
 
     def update_progress() -> None:
-        """Update celery progress state."""
+        """Update persisted progress state."""
         nonlocal processed
         with progress_lock:
             processed += 1
             _update_execution_progress(task_id, processed, len(devices))
+            print(self)
             self.update_state(
                 state="PROGRESS",
                 meta={
@@ -145,104 +168,127 @@ def execute_bulk_device_command_task(
         command_text = ""
 
         if not is_command_available_for_device(command, device):
-            result = _build_bulk_command_result(
+            detail = "Command is unavailable for this device"
+            cache_result = _build_bulk_command_cache_result(
                 device=device,
+                command=command,
                 status="SKIPPED",
-                detail="Command is unavailable for this device",
+                output="",
+                detail=detail,
+                error="",
+                duration=monotonic() - started_at,
             )
             _save_execution_result(
-                task_id=task_id,
+                execution_id=execution.id,
                 device=device,
                 status=BulkDeviceCommandExecutionResult.STATUS_SKIPPED,
                 command_text="",
                 output="",
-                detail="Command is unavailable for this device",
+                detail=detail,
                 error="",
                 duration=monotonic() - started_at,
             )
+            register_result(device, cache_result)
             update_progress()
-            return result
+            return _build_bulk_command_result(device=device, status="SKIPPED", detail=detail)
 
         try:
             command_text = get_command_text_for_audit(device, command, context)
             output = execute_command(device, command, context)
         except (InvalidMethod, ValidationError) as exc:
-            result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
+            error_text = str(exc)
             cache_result = _build_bulk_command_cache_result(
                 device=device,
                 command=command,
                 status="ERROR",
                 output="",
-                detail=str(exc),
-                error=str(exc),
+                detail=error_text,
+                error=error_text,
                 duration=monotonic() - started_at,
             )
             _save_execution_result(
-                task_id=task_id,
+                execution_id=execution.id,
                 device=device,
                 status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
                 command_text=command_text,
                 output="",
-                detail=str(exc),
-                error=str(exc),
+                detail=error_text,
+                error=error_text,
                 duration=monotonic() - started_at,
             )
+            register_result(device, cache_result)
+            update_progress()
+            return _build_bulk_command_result(device=device, status="ERROR", detail=error_text)
         except Exception as exc:
-            result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
+            print(exc)
+            error_text = str(exc)
             cache_result = _build_bulk_command_cache_result(
                 device=device,
                 command=command,
                 status="ERROR",
                 output="",
-                detail=str(exc),
-                error=str(exc),
+                detail=error_text,
+                error=error_text,
                 duration=monotonic() - started_at,
             )
             _save_execution_result(
-                task_id=task_id,
+                execution_id=execution.id,
                 device=device,
                 status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
                 command_text=command_text,
                 output="",
-                detail=str(exc),
-                error=str(exc),
+                detail=error_text,
+                error=error_text,
                 duration=monotonic() - started_at,
             )
-        else:
-            result = _build_bulk_command_result(device=device, status="SUCCESS", output=output)
-            cache_result = _build_bulk_command_cache_result(
-                device=device,
-                command=command,
-                status="SUCCESS",
-                output=output,
-                detail="",
-                error="",
-                duration=monotonic() - started_at,
-            )
-            _save_execution_result(
-                task_id=task_id,
-                device=device,
-                status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
-                command_text=command_text,
-                output=output,
-                detail="",
-                error="",
-                duration=monotonic() - started_at,
-            )
-            UsersActions.objects.create(
-                user_id=user_id,
-                device=device,
-                action=f"execute bulk command {command.name}",
-            )
+            register_result(device, cache_result)
+            update_progress()
+            return _build_bulk_command_result(device=device, status="ERROR", detail=error_text)
 
-        update_device_command_task_result(task_id, device.id, cache_result)
+        cache_result = _build_bulk_command_cache_result(
+            device=device,
+            command=command,
+            status="SUCCESS",
+            output=output,
+            detail="",
+            error="",
+            duration=monotonic() - started_at,
+        )
+        _save_execution_result(
+            execution_id=execution.id,
+            device=device,
+            status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+            command_text=command_text,
+            output=output,
+            detail="",
+            error="",
+            duration=monotonic() - started_at,
+        )
+        UsersActions.objects.create(
+            user_id=user_id,
+            device=device,
+            action=f"execute bulk command {command.name}",
+        )
+        register_result(device, cache_result)
         update_progress()
-        return result
+        return _build_bulk_command_result(device=device, status="SUCCESS", output=output)
 
-    with ThreadPoolExecutor(max_workers=_get_bulk_command_workers_count(len(devices))) as executor:
-        futures = [executor.submit(run_for_device, device) for device in devices]
-        for future in as_completed(futures):
-            future.result()
+    try:
+        with ThreadPoolExecutor(max_workers=_get_bulk_command_workers_count(len(devices))) as executor:
+            futures = [executor.submit(run_for_device, device) for device in devices]
+            for future in as_completed(futures):
+                print(future.result())
+    except Exception as exc:
+        print(exc)
+        traceback.print_exc()
+        BulkDeviceCommandExecution.objects.filter(task_id=task_id).update(
+            status=BulkDeviceCommandExecution.STATUS_FAILURE,
+            processed=processed,
+            total=len(devices),
+            progress=int(processed / total * 100),
+            finished_at=timezone.now(),
+        )
+        raise
 
     final_status = BulkDeviceCommandExecution.STATUS_SUCCESS
     if BulkDeviceCommandExecutionResult.objects.filter(
@@ -261,6 +307,8 @@ def execute_bulk_device_command_task(
 
     return {
         "taskId": task_id,
+        "status": final_status,
+        "progress": 100 if devices else 0,
         "total": len(devices),
         "processed": processed,
     }

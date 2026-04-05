@@ -587,6 +587,18 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         dispatch_task.assert_called_once()
 
     def test_get_bulk_command_task_status(self):
+        BulkDeviceCommandExecution.objects.create(
+            task_id="task-2",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={},
+            status=BulkDeviceCommandExecution.STATUS_PROGRESS,
+            progress=50,
+            processed=1,
+            total=2,
+        )
         cache.set(
             get_device_command_task_results_cache_key("task-2"),
             {
@@ -605,6 +617,10 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], BulkDeviceCommandExecution.STATUS_PROGRESS)
+        self.assertEqual(response.data["progress"], 50)
+        self.assertEqual(response.data["processed"], 1)
+        self.assertEqual(response.data["total"], 2)
         self.assertEqual(response.data["resultsCount"], 1)
         self.assertEqual(response.data["resultDeviceIds"], [self.device.id])
         self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)

@@ -23,7 +23,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
-from django.utils.html import escape, format_html
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from import_export.admin import ExportMixin
 from unfold.admin import ModelAdmin, TabularInline
@@ -170,7 +170,7 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
                     "collect_vlan_info",
                     "collect_configurations",
                     "connection_pool_size",
-                )
+                ),
             },
         ),
         (
@@ -245,7 +245,7 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
             .replace("\n", "<br>")
             .replace(" ", "&nbsp;")
         )
-        return format_html(f"""
+        return mark_safe(f"""
             <div style"overflow-x: scroll;">
                 <div style="font-family: monospace; white-space: nowrap;">
                     {interfaces}
@@ -466,7 +466,11 @@ class UsersActionsAdmin(ModelAdmin):
 
     list_filter_submit = True
     list_display = ["time", "user", "device", "action"]
-    list_filter = [("time", RangeDateTimeFilter), ("user", RelatedDropdownFilter), ("device", RelatedDropdownFilter)]
+    list_filter = [
+        ("time", RangeDateTimeFilter),
+        ("user", RelatedDropdownFilter),
+        ("device", RelatedDropdownFilter),
+    ]
     search_fields = ["action"]
     date_hierarchy = "time"
     readonly_fields = ["time", "user", "device", "action"]
@@ -729,4 +733,3 @@ class InterfacesCommentsAdmin(ModelAdmin):
         ("user", RelatedDropdownFilter),
         ("datetime", RangeDateTimeFilter),
     )
-
