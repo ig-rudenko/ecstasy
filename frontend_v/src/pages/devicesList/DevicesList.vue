@@ -28,6 +28,14 @@
 
               <div class="mt-6 flex flex-wrap items-center gap-2">
                 <PinnedDevicesPopover/>
+                <router-link to="/devices/commands">
+                  <Button
+                      icon="pi pi-send"
+                      label="Массовые команды"
+                      text
+                      class="rounded-2xl! hover:shadow-sm"
+                  />
+                </router-link>
                 <Button
                     v-if="displayMode === 'default'"
                     @click="getDeviceWithStats"

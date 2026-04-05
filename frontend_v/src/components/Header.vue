@@ -20,6 +20,11 @@ const items = ref<MenuItem[]>([
     label: 'Оборудование',
     icon: 'devices',
     url: "/devices",
+  },
+  {
+    label: 'РњР°СЃСЃРѕРІС‹Рµ РєРѕРјР°РЅРґС‹',
+    icon: 'bulk-commands',
+    url: "/devices/commands",
   }
 ]);
 
@@ -29,6 +34,11 @@ function buildMenuItems(): MenuItem[] {
       label: 'Оборудование',
       icon: 'devices',
       url: "/devices",
+    },
+    {
+      label: 'РњР°СЃСЃРѕРІС‹Рµ РєРѕРјР°РЅРґС‹',
+      icon: 'bulk-commands',
+      url: "/devices/commands",
     }
   ];
 
@@ -107,6 +117,9 @@ const menuItems = computed(() => {
 });
 
 function isCurrent(url: string) {
+  if (url === "/devices") {
+    return location.pathname === "/devices";
+  }
   return location.pathname.startsWith(url);
 }
 
@@ -114,6 +127,8 @@ function getMenuIconClass(icon?: string) {
   switch (icon) {
     case "devices":
       return "pi pi-box";
+    case "bulk-commands":
+      return "pi pi-send";
     case "console":
       return "pi pi-desktop";
     case "loop":
@@ -139,6 +154,8 @@ function getMenuIconAccent(icon?: string) {
   switch (icon) {
     case "devices":
       return "from-sky-500/15 to-cyan-500/5";
+    case "bulk-commands":
+      return "from-sky-500/15 to-emerald-500/5";
     case "console":
       return "from-slate-500/15 to-slate-700/5";
     case "loop":

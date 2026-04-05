@@ -126,19 +126,6 @@ const ontInterface = computed<DeviceInterface>(() => ({
 
 const lineClasses = computed(() => showDetailInfo.value ? ["shadow", "sticky-top"] : []);
 
-const rowStyle = computed<Record<string, string>>(() => {
-  if (status.value.toLowerCase() === "offline") {
-    return {"background-color": "rgba(255,138,148,0.13)", top: "0"};
-  }
-  if (showDetailInfo.value) {
-    return {
-      "background-color": "rgba(232,239,255,0.5)",
-      top: "56px",
-    };
-  }
-  return {"background-color": "transparent", top: "0"};
-});
-
 const statusCellStyle = computed<Record<string, string>>(() => {
   if (status.value === "OK") {
     return {"background-color": "#22e58b"};

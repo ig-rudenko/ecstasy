@@ -5,6 +5,7 @@ import {InterfacesCount} from "@/services/interfaces";
 
 
 export interface Device {
+    id?: number;
     ip: string;
     name: string;
     model: string;
@@ -37,7 +38,7 @@ export class DevicesService {
 
 
     async getDevicesList(): Promise<Device[]> {
-        const url = "/api/v1/devices/_all?return-fields=name,ip,vendor,group,model,console_url&active=1";
+        const url = "/api/v1/devices/_all?return-fields=id,name,ip,vendor,group,model,console_url&active=1";
         try {
             let resp = await api.get<Device[]>(url);
             return resp.data;
