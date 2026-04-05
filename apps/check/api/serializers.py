@@ -8,6 +8,8 @@ from apps.gathering.models import Vlan, VlanPort
 
 from ..models import (
     AuthGroup,
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
     DeviceCommand,
     DeviceGroup,
     DeviceMedia,
@@ -244,3 +246,77 @@ class DeviceViewingsSerializer(serializers.Serializer):
 
     class Meta:
         fields = ["username", "started", "updated"]
+
+
+class BulkDeviceCommandExecutionResultSerializer(serializers.ModelSerializer):
+    """Serialize one persisted bulk command result row."""
+
+    deviceId = serializers.IntegerField(source="device_id", allow_null=True)
+    deviceName = serializers.CharField(source="device_name")
+    commandText = serializers.CharField(source="command_text")
+
+    class Meta:
+        model = BulkDeviceCommandExecutionResult
+        fields = [
+            "id",
+            "deviceId",
+            "deviceName",
+            "status",
+            "commandText",
+            "output",
+            "detail",
+            "error",
+            "duration",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class BulkDeviceCommandExecutionSerializer(serializers.ModelSerializer):
+    """Serialize one persisted bulk command execution with nested results."""
+
+    user = serializers.CharField(source="user.username")
+    commandId = serializers.IntegerField(source="command_id", allow_null=True)
+    commandName = serializers.CharField(source="command_name")
+    commandBody = serializers.CharField(source="command_body")
+    launchedAt = serializers.DateTimeField(source="launched_at")
+    finishedAt = serializers.DateTimeField(source="finished_at", allow_null=True)
+    successCount = serializers.SerializerMethodField()
+    errorCount = serializers.SerializerMethodField()
+    skippedCount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BulkDeviceCommandExecution
+        fields = [
+            "id",
+            "task_id",
+            "user",
+            "commandId",
+            "commandName",
+            "commandBody",
+            "context",
+            "status",
+            "progress",
+            "processed",
+            "total",
+            "launchedAt",
+            "finishedAt",
+            "successCount",
+            "errorCount",
+            "skippedCount",
+        ]
+
+    @staticmethod
+    def get_successCount(obj: BulkDeviceCommandExecution) -> int:
+        """Return count of successful device runs."""
+        return sum(1 for result in obj.results.all() if result.status == result.STATUS_SUCCESS)
+
+    @staticmethod
+    def get_errorCount(obj: BulkDeviceCommandExecution) -> int:
+        """Return count of failed device runs."""
+        return sum(1 for result in obj.results.all() if result.status == result.STATUS_ERROR)
+
+    @staticmethod
+    def get_skippedCount(obj: BulkDeviceCommandExecution) -> int:
+        """Return count of skipped device runs."""
+        return sum(1 for result in obj.results.all() if result.status == result.STATUS_SKIPPED)

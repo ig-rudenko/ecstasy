@@ -3,13 +3,21 @@ from threading import Lock
 from time import monotonic
 
 from celery import shared_task
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from devicemanager.remote.exceptions import InvalidMethod
 
-from .models import DeviceCommand, Devices, UsersActions
+from .models import (
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
+    DeviceCommand,
+    Devices,
+    UsersActions,
+)
 from .services.device.commands import (
     execute_command,
+    get_command_text_for_audit,
     init_device_command_task_results_cache,
     is_command_available_for_device,
     update_device_command_task_result,
@@ -63,6 +71,46 @@ def _get_bulk_command_workers_count(devices_count: int) -> int:
     return max(1, min(devices_count, 32))
 
 
+def _update_execution_progress(task_id: str, processed: int, total: int) -> None:
+    """Persist execution progress for audit history."""
+    BulkDeviceCommandExecution.objects.filter(task_id=task_id).update(
+        status=BulkDeviceCommandExecution.STATUS_PROGRESS,
+        processed=processed,
+        total=total,
+        progress=int(processed / max(total, 1) * 100),
+    )
+
+
+def _save_execution_result(
+    task_id: str,
+    device: Devices,
+    status: str,
+    command_text: str,
+    output: str,
+    detail: str,
+    error: str,
+    duration: float,
+) -> None:
+    """Persist one device result for bulk command audit."""
+    execution = BulkDeviceCommandExecution.objects.filter(task_id=task_id).first()
+    if execution is None:
+        return
+
+    BulkDeviceCommandExecutionResult.objects.update_or_create(
+        execution=execution,
+        device=device,
+        defaults={
+            "device_name": device.name,
+            "status": status,
+            "command_text": command_text,
+            "output": output,
+            "detail": detail,
+            "error": error,
+            "duration": round(duration, 3),
+        },
+    )
+
+
 @shared_task(bind=True, name="execute_bulk_device_command_task")
 def execute_bulk_device_command_task(
     self, command_id: int, device_ids: list[int], context: dict, user_id: int
@@ -81,6 +129,7 @@ def execute_bulk_device_command_task(
         nonlocal processed
         with progress_lock:
             processed += 1
+            _update_execution_progress(task_id, processed, len(devices))
             self.update_state(
                 state="PROGRESS",
                 meta={
@@ -93,6 +142,7 @@ def execute_bulk_device_command_task(
     def run_for_device(device: Devices) -> dict:
         """Run the command for a single device and cache the result."""
         started_at = monotonic()
+        command_text = ""
 
         if not is_command_available_for_device(command, device):
             result = _build_bulk_command_result(
@@ -100,10 +150,21 @@ def execute_bulk_device_command_task(
                 status="SKIPPED",
                 detail="Command is unavailable for this device",
             )
+            _save_execution_result(
+                task_id=task_id,
+                device=device,
+                status=BulkDeviceCommandExecutionResult.STATUS_SKIPPED,
+                command_text="",
+                output="",
+                detail="Command is unavailable for this device",
+                error="",
+                duration=monotonic() - started_at,
+            )
             update_progress()
             return result
 
         try:
+            command_text = get_command_text_for_audit(device, command, context)
             output = execute_command(device, command, context)
         except (InvalidMethod, ValidationError) as exc:
             result = _build_bulk_command_result(device=device, status="ERROR", detail=str(exc))
@@ -111,6 +172,16 @@ def execute_bulk_device_command_task(
                 device=device,
                 command=command,
                 status="ERROR",
+                output="",
+                detail=str(exc),
+                error=str(exc),
+                duration=monotonic() - started_at,
+            )
+            _save_execution_result(
+                task_id=task_id,
+                device=device,
+                status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+                command_text=command_text,
                 output="",
                 detail=str(exc),
                 error=str(exc),
@@ -127,12 +198,32 @@ def execute_bulk_device_command_task(
                 error=str(exc),
                 duration=monotonic() - started_at,
             )
+            _save_execution_result(
+                task_id=task_id,
+                device=device,
+                status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+                command_text=command_text,
+                output="",
+                detail=str(exc),
+                error=str(exc),
+                duration=monotonic() - started_at,
+            )
         else:
             result = _build_bulk_command_result(device=device, status="SUCCESS", output=output)
             cache_result = _build_bulk_command_cache_result(
                 device=device,
                 command=command,
                 status="SUCCESS",
+                output=output,
+                detail="",
+                error="",
+                duration=monotonic() - started_at,
+            )
+            _save_execution_result(
+                task_id=task_id,
+                device=device,
+                status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+                command_text=command_text,
                 output=output,
                 detail="",
                 error="",
@@ -152,6 +243,21 @@ def execute_bulk_device_command_task(
         futures = [executor.submit(run_for_device, device) for device in devices]
         for future in as_completed(futures):
             future.result()
+
+    final_status = BulkDeviceCommandExecution.STATUS_SUCCESS
+    if BulkDeviceCommandExecutionResult.objects.filter(
+        execution__task_id=task_id,
+        status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+    ).exists():
+        final_status = BulkDeviceCommandExecution.STATUS_FAILURE
+
+    BulkDeviceCommandExecution.objects.filter(task_id=task_id).update(
+        status=final_status,
+        processed=processed,
+        total=len(devices),
+        progress=100 if devices else 0,
+        finished_at=timezone.now(),
+    )
 
     return {
         "taskId": task_id,

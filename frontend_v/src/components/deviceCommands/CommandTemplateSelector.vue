@@ -280,7 +280,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           v-tooltip="`${getCommandKeyName(part)}: ${numberVerboseRange(part)}`"
                           @update:modelValue="syncCommandContext(data)"
                       />
-                      <code v-else
+                      <code v-else-if="part.trim().length"
                             class="rounded-xl bg-gray-200/70 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700/70 dark:text-gray-200">{{
                           part
                         }}</code>

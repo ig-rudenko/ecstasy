@@ -44,6 +44,8 @@ from .models import (
     AccessGroup,
     AuthGroup,
     Bras,
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
     DeviceCommand,
     DeviceGroup,
     DeviceMedia,
@@ -52,6 +54,28 @@ from .models import (
     Profile,
     UsersActions,
 )
+
+
+class BulkDeviceCommandExecutionResultInline(TabularInline):
+    """Inline results for one bulk command execution."""
+
+    model = BulkDeviceCommandExecutionResult
+    extra = 0
+    tab = True
+    can_delete = False
+    readonly_fields = (
+        "device",
+        "device_name",
+        "status",
+        "command_text",
+        "output",
+        "detail",
+        "error",
+        "duration",
+        "created_at",
+        "updated_at",
+    )
+    fields = readonly_fields
 
 
 class ProfileInline(TabularInline):
@@ -448,6 +472,78 @@ class UsersActionsAdmin(ModelAdmin):
     readonly_fields = ["time", "user", "device", "action"]
     list_per_page = 25
     list_select_related = ["device", "user"]
+
+
+@admin.register(BulkDeviceCommandExecution)
+class BulkDeviceCommandExecutionAdmin(ModelAdmin):
+    """Browse persisted bulk command history."""
+
+    list_filter_submit = True
+    list_display = (
+        "launched_at",
+        "user",
+        "command_name",
+        "status",
+        "progress",
+        "processed",
+        "total",
+    )
+    list_filter = (
+        ("launched_at", RangeDateTimeFilter),
+        ("user", RelatedDropdownFilter),
+        "status",
+    )
+    search_fields = ("task_id", "command_name", "command_body", "user__username")
+    list_select_related = ("user", "command")
+    readonly_fields = (
+        "task_id",
+        "user",
+        "command",
+        "command_name",
+        "command_body",
+        "context",
+        "status",
+        "progress",
+        "processed",
+        "total",
+        "launched_at",
+        "finished_at",
+    )
+    inlines = [BulkDeviceCommandExecutionResultInline]
+
+
+@admin.register(BulkDeviceCommandExecutionResult)
+class BulkDeviceCommandExecutionResultAdmin(ModelAdmin):
+    """Browse persisted per-device bulk command results."""
+
+    list_filter_submit = True
+    list_display = (
+        "created_at",
+        "execution",
+        "device_name",
+        "status",
+        "duration",
+    )
+    list_filter = (
+        ("created_at", RangeDateTimeFilter),
+        ("execution", RelatedDropdownFilter),
+        "status",
+    )
+    search_fields = ("device_name", "command_text", "output", "detail", "error", "execution__task_id")
+    list_select_related = ("execution", "device")
+    readonly_fields = (
+        "execution",
+        "device",
+        "device_name",
+        "status",
+        "command_text",
+        "output",
+        "detail",
+        "error",
+        "duration",
+        "created_at",
+        "updated_at",
+    )
 
 
 @admin.register(DeviceMedia)

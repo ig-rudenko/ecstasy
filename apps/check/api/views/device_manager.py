@@ -36,6 +36,8 @@ from ..decorators import except_connection_errors
 from ..permissions import has_user_access_to_device
 from ..serializers import (
     ADSLProfileSerializer,
+    BulkDeviceCommandExecutionSerializer,
+    BulkDeviceCommandExecutionResultSerializer,
     DeviceCommandsSerializer,
     InterfacesCommentsSerializer,
     PoEPortStatusSerializer,
@@ -50,6 +52,7 @@ from ..swagger.schemas import (
     mac_list_api_doc,
 )
 from .base import DeviceAPIView
+from .paginators import BulkDeviceCommandExecutionPagination, BulkDeviceCommandExecutionResultPagination
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -578,6 +581,60 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
             return AsyncResult(task_id).result
         except Exception:
             return None
+
+
+class BulkDeviceCommandExecutionListAPIView(UserAuthenticatedAPIView, generics.ListAPIView):
+    """Return persisted bulk command executions for audit history."""
+
+    serializer_class = BulkDeviceCommandExecutionSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = BulkDeviceCommandExecutionPagination
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def get(self, request, *args, **kwargs):
+        """List bulk command executions with nested device results."""
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """Return filtered execution history for the current user."""
+        queryset = (
+            models.BulkDeviceCommandExecution.objects.select_related("user", "command")
+            .prefetch_related("results")
+            .order_by("-launched_at")
+        )
+
+        if not self.current_user.is_superuser:
+            queryset = queryset.filter(user=self.current_user)
+
+        return queryset
+
+
+class BulkDeviceCommandExecutionResultListAPIView(UserAuthenticatedAPIView, generics.ListAPIView):
+    """Return persisted device results for one bulk command execution."""
+
+    serializer_class = BulkDeviceCommandExecutionResultSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = BulkDeviceCommandExecutionResultPagination
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def get(self, request, *args, **kwargs):
+        """List paginated device results for one execution."""
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """Return filtered result rows for one execution."""
+        execution_queryset = models.BulkDeviceCommandExecution.objects.all()
+        if not self.current_user.is_superuser:
+            execution_queryset = execution_queryset.filter(user=self.current_user)
+
+        execution = generics.get_object_or_404(execution_queryset, pk=self.kwargs["execution_id"])
+        queryset = execution.results.select_related("device", "execution").order_by("device_name", "id")
+
+        search_query = str(self.request.query_params.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(device_name__icontains=search_query)
+
+        return queryset
 
 
 # @method_decorator(get_device_pool_status_api_doc, name="get")

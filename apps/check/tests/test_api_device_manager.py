@@ -11,7 +11,17 @@ from apps.net_tools.models import DevicesInfo, VlanName
 from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 
-from ..models import AuthGroup, DeviceCommand, DeviceGroup, Devices, Group, User, UsersActions
+from ..models import (
+    AuthGroup,
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
+    DeviceCommand,
+    DeviceGroup,
+    Devices,
+    Group,
+    User,
+    UsersActions,
+)
 from ..services.device.commands import get_device_command_task_results_cache_key
 
 
@@ -599,3 +609,67 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(response.data["resultDeviceIds"], [self.device.id])
         self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
         self.assertEqual(response.data["results"][0]["output"], "show version output")
+
+    def test_get_bulk_command_history(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-1",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={"word": {"_": "TEST"}},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.device,
+            device_name=self.device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+            command_text="show version",
+            output="show version output",
+            duration=0.231,
+        )
+
+        response = self.client.get(reverse("devices-api:device-command-history"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["task_id"], execution.task_id)
+        self.assertEqual(response.data["results"][0]["commandName"], self.command.name)
+
+    def test_get_bulk_command_history_results(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-2",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={"word": {"_": "TEST"}},
+            status=BulkDeviceCommandExecution.STATUS_FAILURE,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.device,
+            device_name=self.device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+            command_text="show version",
+            detail="boom",
+            error="boom",
+            duration=0.231,
+        )
+
+        response = self.client.get(
+            reverse("devices-api:device-command-history-results", args=(execution.id,)),
+            data={"search": "bulk-dev-1"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
+        self.assertEqual(response.data["results"][0]["error"], "boom")

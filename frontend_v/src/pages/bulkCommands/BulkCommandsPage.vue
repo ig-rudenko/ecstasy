@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {computed, onBeforeUnmount, onMounted, ref, watch} from "vue";
+import {useStore} from "vuex";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import SearchInput from "@/components/SearchInput.vue";
@@ -11,11 +12,15 @@ import errorFmt from "@/errorFmt";
 import {errorToast, successToast} from "@/services/my.toast";
 import {
   BulkCommandDeviceResult,
+  BulkCommandExecutionHistoryEntry,
+  BulkCommandExecutionHistoryResult,
   BulkCommandTaskLaunch,
   BulkCommandTaskStatus,
   cloneCommandTemplate,
   DeviceCommandTemplate,
   executeBulkDeviceCommand,
+  getBulkCommandHistory,
+  getBulkCommandHistoryResults,
   getBulkCommandTaskStatus,
 } from "@/services/deviceCommands";
 
@@ -57,6 +62,16 @@ interface TaskHistoryEntry {
   deviceFilter: string;
 }
 
+interface HistoryResultsState {
+  items: BulkCommandExecutionHistoryResult[];
+  page: number;
+  total: number;
+  search: string;
+  loaded: boolean;
+  loading: boolean;
+}
+
+const store = useStore();
 const devices = ref<Device[]>([]);
 const filteredDevices = ref<Device[]>([]);
 const vendors = ref<string[]>([]);
@@ -69,6 +84,12 @@ const referencePortOptions = ref<string[]>([]);
 const isLoadingDevices = ref(false);
 const isLaunchingTask = ref(false);
 const tasks = ref<TaskHistoryEntry[]>([]);
+const historyEntries = ref<BulkCommandExecutionHistoryEntry[]>([]);
+const historyPage = ref(1);
+const historyTotal = ref(0);
+const historyLoaded = ref(false);
+const isLoadingHistory = ref(false);
+const historyResults = ref<Record<number, HistoryResultsState>>({});
 const currentOutput = ref<TaskDeviceState | null>(null);
 const outputVisible = ref(false);
 let pollingTimer: number | null = null;
@@ -118,6 +139,11 @@ const latestTaskSummary = computed<TaskSummary>(() => {
 });
 
 /**
+ * Returns whether current user is a superuser.
+ */
+const isSuperuser = computed<boolean>(() => !!store.state.auth.user?.isSuperuser);
+
+/**
  * Fetches all devices for the page.
  */
 async function loadDevices(): Promise<void> {
@@ -130,6 +156,63 @@ async function loadDevices(): Promise<void> {
     buildDeviceFilters(loadedDevices);
   } finally {
     isLoadingDevices.value = false;
+  }
+}
+
+/**
+ * Loads persisted bulk command history.
+ */
+async function loadHistory(page = historyPage.value): Promise<void> {
+  isLoadingHistory.value = true;
+
+  try {
+    const response = await getBulkCommandHistory(page);
+    historyEntries.value = response.results;
+    historyPage.value = page;
+    historyTotal.value = response.count;
+    historyLoaded.value = true;
+  } catch (error: any) {
+    console.error(error);
+  } finally {
+    isLoadingHistory.value = false;
+  }
+}
+
+/**
+ * Returns local state for persisted execution results.
+ */
+function getHistoryResultsState(executionId: number): HistoryResultsState {
+  if (!historyResults.value[executionId]) {
+    historyResults.value[executionId] = {
+      items: [],
+      page: 1,
+      total: 0,
+      search: "",
+      loaded: false,
+      loading: false,
+    };
+  }
+
+  return historyResults.value[executionId];
+}
+
+/**
+ * Loads paginated persisted results for one execution.
+ */
+async function loadHistoryResults(executionId: number, page = 1): Promise<void> {
+  const state = getHistoryResultsState(executionId);
+  state.loading = true;
+
+  try {
+    const response = await getBulkCommandHistoryResults(executionId, page, state.search);
+    state.items = response.results;
+    state.page = page;
+    state.total = response.count;
+    state.loaded = true;
+  } catch (error: any) {
+    console.error(error);
+  } finally {
+    state.loading = false;
   }
 }
 
@@ -276,6 +359,9 @@ async function launchTask(command: DeviceCommandTemplate, deviceIds: number[]): 
   try {
     const response = await executeBulkDeviceCommand(command.id, deviceIds, command.context);
     tasks.value.unshift(createTaskEntry(response, command, deviceIds));
+    if (historyLoaded.value) {
+      await loadHistory(1);
+    }
     successToast("Задача отправлена", `Оборудование в задаче: ${deviceIds.length}`);
     ensurePolling();
     await pollTasks();
@@ -403,6 +489,10 @@ async function pollTasks(): Promise<void> {
       console.error(error);
     }
   }));
+
+  if (historyLoaded.value) {
+    await loadHistory(historyPage.value);
+  }
 }
 
 /**
@@ -489,6 +579,53 @@ function getTaskDeviceDetail(device: TaskDeviceState): string {
     return "Команда выполняется";
   }
   return "Ожидание результата";
+}
+
+/**
+ * Builds a retryable command template from persisted history.
+ */
+function createHistoryCommand(entry: BulkCommandExecutionHistoryEntry): DeviceCommandTemplate | null {
+  if (!entry.commandId) {
+    return null;
+  }
+
+  return {
+    id: entry.commandId,
+    name: entry.commandName,
+    description: "",
+    command: entry.commandBody,
+    device_vendor: "",
+    context: entry.context,
+  };
+}
+
+/**
+ * Opens output dialog for a persisted history result.
+ */
+function showHistoryResultOutput(entry: BulkCommandExecutionHistoryEntry, result: BulkCommandExecutionHistoryResult): void {
+  showDeviceOutput({
+    deviceId: result.deviceId || 0,
+    deviceName: result.deviceName,
+    status: ["SUCCESS", "ERROR", "SKIPPED"].includes(result.status) ? result.status as TaskDeviceStatus : "PENDING",
+    commandId: entry.commandId,
+    commandText: result.commandText || entry.commandBody,
+    output: result.output,
+    detail: result.detail,
+    error: result.error,
+    duration: result.duration,
+    canRetry: !!result.deviceId && !!entry.commandId,
+  });
+}
+
+/**
+ * Re-runs one device from persisted history.
+ */
+async function retryHistoryResult(entry: BulkCommandExecutionHistoryEntry, deviceId: number | null): Promise<void> {
+  const command = createHistoryCommand(entry);
+  if (!command || !deviceId) {
+    return;
+  }
+  await launchTask(command, [deviceId]);
 }
 
 onMounted(() => {
@@ -853,6 +990,225 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section
+          class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ isSuperuser ? "История запусков" : "Мои запуски" }}
+            </div>
+            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              История массовых команд из базы данных для аудита действий.
+            </div>
+          </div>
+          <Button
+              icon="pi pi-download"
+              :label="historyLoaded ? 'Обновить список' : 'Загрузить список'"
+              severity="secondary"
+              outlined
+              class="rounded-2xl!"
+              :loading="isLoadingHistory"
+              @click="loadHistory(historyLoaded ? historyPage : 1)"
+          />
+        </div>
+
+        <div v-if="historyLoaded && historyEntries.length" class="mt-5 flex flex-col gap-4">
+          <Fieldset
+              v-for="entry in historyEntries"
+              :key="entry.id"
+              toggleable
+              class="overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/50"
+          >
+            <template #legend="{ toggleCallback }">
+              <div class="flex w-full flex-wrap items-center gap-3 px-2 py-1">
+                <Button text rounded icon="pi pi-angle-down" @click="toggleCallback"/>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.commandName }}</div>
+                  <div class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ entry.task_id }}</div>
+                </div>
+                <Tag :severity="getDeviceSeverity(entry.status === 'FAILURE' ? 'ERROR' : entry.status)" :value="entry.status"/>
+              </div>
+            </template>
+
+            <div class="flex flex-col gap-4">
+              <div class="grid gap-3 md:grid-cols-6">
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Пользователь</div>
+                  <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.user }}</div>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Прогресс</div>
+                  <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.progress }}%</div>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Успешно</div>
+                  <div class="mt-2 text-sm font-semibold text-emerald-600">{{ entry.successCount }}</div>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ошибки</div>
+                  <div class="mt-2 text-sm font-semibold text-rose-600">{{ entry.errorCount }}</div>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Пропущено</div>
+                  <div class="mt-2 text-sm font-semibold text-amber-600">{{ entry.skippedCount }}</div>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Устройств</div>
+                  <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.processed }}/{{ entry.total }}</div>
+                </div>
+              </div>
+
+              <div class="grid gap-3 lg:grid-cols-[1.2fr,1fr]">
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Шаблон команды</div>
+                  <pre class="mt-2 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-950 px-3 py-2 text-xs text-gray-100">{{ entry.commandBody }}</pre>
+                </div>
+                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Время</div>
+                  <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">Запуск: {{ entry.launchedAt }}</div>
+                  <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">Завершение: {{ entry.finishedAt || "в процессе" }}</div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="w-full lg:max-w-md">
+                  <IconField>
+                    <InputIcon class="pi pi-search"/>
+                    <InputText
+                        v-model.trim="getHistoryResultsState(entry.id).search"
+                        fluid
+                        class="rounded-2xl"
+                        placeholder="Поиск по имени оборудования"
+                        @keyup.enter="loadHistoryResults(entry.id, 1)"
+                    />
+                  </IconField>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <Button
+                      icon="pi pi-search"
+                      label="Найти"
+                      outlined
+                      class="rounded-2xl!"
+                      :loading="getHistoryResultsState(entry.id).loading"
+                      @click="loadHistoryResults(entry.id, 1)"
+                  />
+                  <Button
+                      icon="pi pi-list"
+                      :label="getHistoryResultsState(entry.id).loaded ? 'Обновить устройства' : 'Загрузить устройства'"
+                      severity="secondary"
+                      outlined
+                      class="rounded-2xl!"
+                      :loading="getHistoryResultsState(entry.id).loading"
+                      @click="loadHistoryResults(entry.id, getHistoryResultsState(entry.id).loaded ? getHistoryResultsState(entry.id).page : 1)"
+                  />
+                </div>
+              </div>
+
+              <div v-if="getHistoryResultsState(entry.id).loaded" class="overflow-x-auto">
+                <table class="min-w-[920px] w-full text-sm">
+                  <thead>
+                  <tr class="border-b border-gray-200/80 text-left text-xs uppercase tracking-[0.2em] text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
+                    <th class="px-3 py-3">Устройство</th>
+                    <th class="px-3 py-3">Статус</th>
+                    <th class="px-3 py-3">Команда</th>
+                    <th class="px-3 py-3">Детали</th>
+                    <th class="px-3 py-3 text-right">Действия</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr
+                      v-for="result in getHistoryResultsState(entry.id).items"
+                      :key="result.id"
+                      class="border-b border-gray-200/70 last:border-b-0 dark:border-gray-700/70"
+                  >
+                    <td class="px-3 py-3">
+                      <div class="font-medium text-gray-900 dark:text-gray-100">{{ result.deviceName }}</div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ result.deviceId ?? "—" }}</div>
+                    </td>
+                    <td class="px-3 py-3">
+                      <Tag :severity="getDeviceSeverity(result.status)" :value="result.status"/>
+                    </td>
+                    <td class="px-3 py-3">
+                      <div class="max-w-xl truncate font-mono text-xs text-gray-700 dark:text-gray-200">{{ result.commandText || entry.commandBody }}</div>
+                    </td>
+                    <td class="px-3 py-3">
+                      <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
+                        {{ result.error || result.detail || (result.output ? `Вывод получен за ${result.duration.toFixed(3)} c` : "Без вывода") }}
+                      </div>
+                    </td>
+                    <td class="px-3 py-3">
+                      <div class="flex justify-end gap-2">
+                        <Button
+                            v-if="result.output || result.error || result.detail"
+                            icon="pi pi-file"
+                            label="Вывод"
+                            size="small"
+                            outlined
+                            class="rounded-2xl!"
+                            @click="showHistoryResultOutput(entry, result)"
+                        />
+                        <Button
+                            v-if="result.deviceId && entry.commandId"
+                            icon="pi pi-refresh"
+                            label="Повторить"
+                            size="small"
+                            severity="secondary"
+                            outlined
+                            class="rounded-2xl!"
+                            @click="retryHistoryResult(entry, result.deviceId)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="!getHistoryResultsState(entry.id).items.length">
+                    <td colspan="5" class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                      По текущему фильтру результаты не найдены
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div v-else class="rounded-2xl border border-dashed border-gray-300/80 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
+                Нажмите "Загрузить устройства", чтобы получить результаты по оборудованию
+              </div>
+
+              <Paginator
+                  v-if="getHistoryResultsState(entry.id).loaded && getHistoryResultsState(entry.id).total > 20"
+                  :rows="20"
+                  :totalRecords="getHistoryResultsState(entry.id).total"
+                  :first="(getHistoryResultsState(entry.id).page - 1) * 20"
+                  :pageLinkSize="3"
+                  @page="(event: any) => { loadHistoryResults(entry.id, event.page + 1); }"
+                  :pt="{
+                    root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
+                  }"
+              />
+            </div>
+          </Fieldset>
+        </div>
+
+        <div v-else-if="historyLoaded" class="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+          История запусков пока пуста
+        </div>
+
+        <div v-else class="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+          История не загружена
+        </div>
+
+        <Paginator
+            v-if="historyLoaded && historyTotal > 10"
+            :rows="10"
+            :totalRecords="historyTotal"
+            :first="(historyPage - 1) * 10"
+            :pageLinkSize="3"
+            @page="(event: any) => { loadHistory(event.page + 1); }"
+            :pt="{
+              root: { class: 'mt-5 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
+            }"
+        />
       </section>
     </div>
   </div>

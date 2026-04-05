@@ -57,12 +57,59 @@ export interface BulkCommandDeviceResult {
     deviceId: number;
     deviceName: string;
     status: string;
-    commandId: number;
+    commandId: number | null;
     commandText: string;
     output: string;
     detail: string;
     error: string;
     duration: number;
+}
+
+export interface BulkCommandExecutionHistoryEntry {
+    id: number;
+    task_id: string;
+    user: string;
+    commandId: number | null;
+    commandName: string;
+    commandBody: string;
+    context: CommandContext;
+    status: string;
+    progress: number;
+    processed: number;
+    total: number;
+    launchedAt: string;
+    finishedAt: string | null;
+    successCount: number;
+    errorCount: number;
+    skippedCount: number;
+}
+
+export interface BulkCommandExecutionHistoryResult {
+    id: number;
+    deviceId: number | null;
+    deviceName: string;
+    status: string;
+    commandText: string;
+    output: string;
+    detail: string;
+    error: string;
+    duration: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PaginatedBulkCommandExecutionHistory {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: BulkCommandExecutionHistoryEntry[];
+}
+
+export interface PaginatedBulkCommandExecutionHistoryResults {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: BulkCommandExecutionHistoryResult[];
 }
 
 export const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/;
@@ -296,5 +343,34 @@ export async function executeBulkDeviceCommand(
  */
 export async function getBulkCommandTaskStatus(taskId: string): Promise<BulkCommandTaskStatus> {
     const response = await api.get<BulkCommandTaskStatus>(`/api/v1/devices/commands/tasks/${taskId}`);
+    return response.data;
+}
+
+/**
+ * Loads persisted bulk command history.
+ */
+export async function getBulkCommandHistory(page = 1): Promise<PaginatedBulkCommandExecutionHistory> {
+    const response = await api.get<PaginatedBulkCommandExecutionHistory>(
+        `/api/v1/devices/commands/history?page=${page}`,
+    );
+    return response.data;
+}
+
+/**
+ * Loads paginated persisted results for one bulk execution.
+ */
+export async function getBulkCommandHistoryResults(
+    executionId: number,
+    page = 1,
+    search = "",
+): Promise<PaginatedBulkCommandExecutionHistoryResults> {
+    const searchParams = new URLSearchParams({page: String(page)});
+    if (search.trim()) {
+        searchParams.set("search", search.trim());
+    }
+
+    const response = await api.get<PaginatedBulkCommandExecutionHistoryResults>(
+        `/api/v1/devices/commands/history/${executionId}/results?${searchParams.toString()}`,
+    );
     return response.data;
 }

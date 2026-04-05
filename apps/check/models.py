@@ -450,3 +450,114 @@ class DeviceCommand(models.Model):
         db_table = "device_commands"
         verbose_name = "Команда для оборудования"
         verbose_name_plural = "Команды для оборудования"
+
+
+class BulkDeviceCommandExecution(models.Model):
+    """Audit record for a bulk device command execution."""
+
+    STATUS_PENDING = "PENDING"
+    STATUS_PROGRESS = "PROGRESS"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_FAILURE = "FAILURE"
+    STATUS_REVOKED = "REVOKED"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, STATUS_PENDING),
+        (STATUS_PROGRESS, STATUS_PROGRESS),
+        (STATUS_SUCCESS, STATUS_SUCCESS),
+        (STATUS_FAILURE, STATUS_FAILURE),
+        (STATUS_REVOKED, STATUS_REVOKED),
+    )
+
+    task_id = models.CharField(max_length=255, unique=True, verbose_name="Celery task ID")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="bulk_device_command_executions")
+    command = models.ForeignKey(
+        DeviceCommand,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bulk_executions",
+    )
+    command_name = models.CharField(max_length=100, verbose_name="Command name")
+    command_body = models.TextField(verbose_name="Command body")
+    context = models.JSONField(default=dict, blank=True, verbose_name="Command context")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        verbose_name="Status",
+    )
+    progress = models.PositiveSmallIntegerField(default=0, verbose_name="Progress")
+    processed = models.PositiveIntegerField(default=0, verbose_name="Processed devices")
+    total = models.PositiveIntegerField(default=0, verbose_name="Total devices")
+    launched_at = models.DateTimeField(auto_now_add=True, verbose_name="Launched at")
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Finished at")
+
+    class Meta:
+        db_table = "bulk_device_command_executions"
+        ordering = ("-launched_at",)
+        verbose_name = "Bulk device command execution"
+        verbose_name_plural = "Bulk device command executions"
+
+    def __str__(self):
+        return f"{self.task_id} | {self.command_name} | {self.user.username}"
+
+
+class BulkDeviceCommandExecutionResult(models.Model):
+    """Execution result for one device inside a bulk command task."""
+
+    STATUS_PENDING = "PENDING"
+    STATUS_RUNNING = "RUNNING"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_ERROR = "ERROR"
+    STATUS_SKIPPED = "SKIPPED"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, STATUS_PENDING),
+        (STATUS_RUNNING, STATUS_RUNNING),
+        (STATUS_SUCCESS, STATUS_SUCCESS),
+        (STATUS_ERROR, STATUS_ERROR),
+        (STATUS_SKIPPED, STATUS_SKIPPED),
+    )
+
+    execution = models.ForeignKey(
+        BulkDeviceCommandExecution,
+        on_delete=models.CASCADE,
+        related_name="results",
+    )
+    device = models.ForeignKey(
+        Devices,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bulk_command_results",
+    )
+    device_name = models.CharField(max_length=100, verbose_name="Device name")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        verbose_name="Status",
+    )
+    command_text = models.TextField(blank=True, verbose_name="Rendered command text")
+    output = models.TextField(blank=True, verbose_name="Output")
+    detail = models.TextField(blank=True, verbose_name="Detail")
+    error = models.TextField(blank=True, verbose_name="Error")
+    duration = models.FloatField(default=0, verbose_name="Duration")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated at")
+
+    class Meta:
+        db_table = "bulk_device_command_execution_results"
+        ordering = ("device_name", "id")
+        verbose_name = "Bulk command execution result"
+        verbose_name_plural = "Bulk command execution results"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("execution", "device"),
+                name="bulk_device_command_execution_device_unique",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.execution_id} | {self.device_name} | {self.status}"

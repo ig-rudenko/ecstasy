@@ -1,8 +1,8 @@
 import re
 import time
 import uuid
-from contextlib import contextmanager
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass
 from ipaddress import IPv4Address
 
@@ -14,7 +14,12 @@ from rest_framework.exceptions import ValidationError
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.device_connector.types import RemoteCommand, RemoteCommandCondition
 
-from ...models import DeviceCommand, Devices
+from ...models import (
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
+    DeviceCommand,
+    Devices,
+)
 
 
 @dataclass(frozen=True)
@@ -160,10 +165,17 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
 
 
 def execute_command(device: Devices, command: DeviceCommand, context: dict) -> str:
+    """Execute command on one device and return merged output."""
     validated_commands = validate_command(device, command.command, context)
 
     outputs = device.connect().execute_commands_list(validated_commands)
     return "\n\n".join(outputs)
+
+
+def get_command_text_for_audit(device: Devices, command: DeviceCommand, context: dict) -> str:
+    """Return rendered command text for audit storage."""
+    validated_commands = validate_command(device, command.command, context)
+    return "\n".join(item["command"] for item in validated_commands)
 
 
 def is_command_available_for_device(command: DeviceCommand, device: Devices) -> bool:
@@ -273,11 +285,39 @@ def dispatch_bulk_execute_command_task(
     if not eligible_devices:
         raise ValidationError({"detail": "Нет оборудования, подходящего для выполнения команды"})
 
-    task = execute_bulk_device_command_task.delay(
-        command.id,
-        [device.id for device in eligible_devices],
-        context,
-        user_id,
+    task_id = str(uuid.uuid4())
+    execution = BulkDeviceCommandExecution.objects.create(
+        task_id=task_id,
+        user_id=user_id,
+        command=command,
+        command_name=command.name,
+        command_body=command.command,
+        context=context,
+        status=BulkDeviceCommandExecution.STATUS_PENDING,
+        total=len(eligible_devices),
+    )
+
+    task = execute_bulk_device_command_task.apply_async(
+        args=(
+            command.id,
+            [device.id for device in eligible_devices],
+            context,
+            user_id,
+        ),
+        task_id=task_id,
+    )
+
+    BulkDeviceCommandExecutionResult.objects.bulk_create(
+        [
+            BulkDeviceCommandExecutionResult(
+                execution=execution,
+                device_id=device["deviceId"],
+                device_name=device["deviceName"],
+                status=BulkDeviceCommandExecutionResult.STATUS_SKIPPED,
+                detail=device["detail"],
+            )
+            for device in skipped_devices
+        ]
     )
 
     return {
