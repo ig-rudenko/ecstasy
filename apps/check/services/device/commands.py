@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from ipaddress import IPv4Address
 
 import orjson
+from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 
 from devicemanager.device.interfaces import Interfaces
@@ -159,3 +160,88 @@ def execute_command(device: Devices, command: DeviceCommand, context: dict) -> s
 
     outputs = device.connect().execute_commands_list(validated_commands)
     return "\n\n".join(outputs)
+
+
+def is_command_available_for_device(command: DeviceCommand, device: Devices) -> bool:
+    """Check whether the command can be used for the given device."""
+    if not device.vendor or not device.model:
+        return False
+
+    if command.device_vendor != device.vendor:
+        return False
+
+    if not command.model_regexp:
+        return True
+
+    return re.compile(command.model_regexp).search(str(device.model)) is not None
+
+
+def get_available_commands_for_device(user: User, device: Devices) -> list[DeviceCommand]:
+    """Return commands available for the user and device."""
+    commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
+    if not user.is_superuser:
+        commands = commands.filter(perm_groups__user=user)
+
+    return [command for command in commands.distinct() if is_command_available_for_device(command, device)]
+
+
+def get_available_command_for_device(user: User, device: Devices, command_id: int) -> DeviceCommand | None:
+    """Return a single available command for the user and device."""
+    for command in get_available_commands_for_device(user, device):
+        if command.id == command_id:
+            return command
+    return None
+
+
+def get_device_command_task_cache_key(task_id: str, device_id: int) -> str:
+    """Build a cache key for bulk command execution result."""
+    return f"device-command-task:{task_id}:device:{device_id}"
+
+
+def dispatch_bulk_execute_command_task(
+    command: DeviceCommand,
+    devices: list[Devices],
+    context: dict,
+    user_id: int,
+) -> dict:
+    """Send a celery task for bulk command execution."""
+    from ...tasks import execute_bulk_device_command_task
+
+    eligible_devices: list[Devices] = []
+    skipped_devices: list[dict] = []
+
+    for device in devices:
+        if is_command_available_for_device(command, device):
+            eligible_devices.append(device)
+            continue
+
+        skipped_devices.append(
+            {
+                "deviceId": device.id,
+                "deviceName": device.name,
+                "detail": "Command is unavailable for this device",
+            }
+        )
+
+    if not eligible_devices:
+        raise ValidationError({"detail": "Нет оборудования, подходящего для выполнения команды"})
+
+    task = execute_bulk_device_command_task.delay(
+        command.id,
+        [device.id for device in eligible_devices],
+        context,
+        user_id,
+    )
+
+    return {
+        "taskId": task.id,
+        "devices": [
+            {
+                "deviceId": device.id,
+                "deviceName": device.name,
+                "cacheKey": get_device_command_task_cache_key(str(task.id), device.id),
+            }
+            for device in eligible_devices
+        ],
+        "skipped": skipped_devices,
+    }

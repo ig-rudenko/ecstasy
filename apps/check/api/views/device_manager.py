@@ -1,5 +1,5 @@
-import re
-
+from celery.result import AsyncResult
+from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -11,12 +11,20 @@ from apps.notifications.services.notifications_render import run_device_trigger
 from apps.notifications.services.triggers import TriggerNames
 from devicemanager.remote.connector import pool_controller
 from devicemanager.remote.exceptions import InvalidMethod
+from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 from ... import models
 from ...logging import log
 from ...models import DeviceCommand
 from ...permissions import profile_permission
-from ...services.device.commands import execute_command, validate_command
+from ...services.device.commands import (
+    dispatch_bulk_execute_command_task,
+    execute_command,
+    get_available_command_for_device,
+    get_available_commands_for_device,
+    get_device_command_task_cache_key,
+    validate_command,
+)
 from ...services.device.interfaces import (
     change_port_state,
     check_user_interface_permission,
@@ -24,6 +32,7 @@ from ...services.device.interfaces import (
     get_mac_addresses_on_interface,
     set_interface_description,
 )
+from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
 from ..permissions import has_user_access_to_device
 from ..serializers import (
@@ -392,17 +401,11 @@ class DeviceCommandsListAPIView(DeviceAPIView):
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs):
+        """Return available commands for the selected device."""
         device = self.get_object()
-        commands = DeviceCommand.objects.filter(device_vendor=device.vendor)
-        if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user=request.user)
-
-        valid_commands = []
-        for command in commands:  # type: DeviceCommand
-            if not command.model_regexp or re.compile(command.model_regexp).search(str(device.model)):
-                valid_commands.append(command)
-
-        serializer = self.get_serializer(valid_commands, many=True)
+        serializer = self.get_serializer(
+            get_available_commands_for_device(self.current_user, device), many=True
+        )
         return Response(serializer.data)
 
 
@@ -410,15 +413,9 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
+        """Execute a command on a single device."""
         device = self.get_object()
-        commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
-        if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user=request.user)
-
-        if not commands.exists():
-            return Response({"detail": "Command not found"}, status=404)
-
-        command = commands.first()
+        command = get_available_command_for_device(self.current_user, device, int(self.kwargs["command_id"]))
         if command is None:
             return Response({"detail": "Command not found"}, status=404)
 
@@ -436,15 +433,9 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
+        """Validate a command for a single device."""
         device = self.get_object()
-        commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
-        if not request.user.is_superuser:
-            commands = commands.filter(perm_groups__user=request.user)
-
-        if not commands.exists():
-            return Response({"detail": "Command not found"}, status=404)
-
-        command = commands.first()
+        command = get_available_command_for_device(self.current_user, device, int(self.kwargs["command_id"]))
         if command is None:
             return Response({"detail": "Command not found"}, status=404)
 
@@ -456,6 +447,107 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             return Response({"detail": exc.detail}, status=400)
 
         return Response({"command": valid_command})
+
+
+class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
+    """Start background execution of a command on multiple devices."""
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def post(self, request, *args, **kwargs) -> Response:
+        """Validate request and dispatch celery task."""
+        command = self.get_command()
+        if command is None:
+            return Response({"detail": "Command not found"}, status=404)
+
+        device_ids = self.get_device_ids(request.data.get("device_ids"))
+        context = dict(request.data)
+        context.pop("device_ids", None)
+
+        requested_devices = {
+            device.id: device
+            for device in filter_devices_qs_by_user(
+                models.Devices.objects.filter(id__in=device_ids).select_related("auth_group"),
+                self.current_user,
+            )
+        }
+
+        devices = []
+        skipped = []
+        for device_id in device_ids:
+            device = requested_devices.get(device_id)
+            if device is None:
+                skipped.append(
+                    {
+                        "deviceId": device_id,
+                        "detail": "Device not found or access denied",
+                    }
+                )
+                continue
+            devices.append(device)
+
+        try:
+            result = dispatch_bulk_execute_command_task(command, devices, context, self.current_user.id)
+        except ValidationError as exc:
+            return Response(exc.detail, status=400)
+
+        result["skipped"] = [*result["skipped"], *skipped]
+        return Response(result, status=status.HTTP_202_ACCEPTED)
+
+    def get_command(self) -> DeviceCommand | None:
+        """Return command available for the current user."""
+        commands = DeviceCommand.objects.filter(id=self.kwargs["command_id"])
+        if not self.current_user.is_superuser:
+            commands = commands.filter(perm_groups__user=self.current_user)
+        return commands.distinct().first()
+
+    @staticmethod
+    def get_device_ids(device_ids: object) -> list[int]:
+        """Validate requested device identifiers."""
+        if not isinstance(device_ids, list) or not device_ids:
+            raise ValidationError({"device_ids": "Необходимо передать непустой список ID оборудования"})
+
+        validated_ids = []
+        for device_id in device_ids:
+            try:
+                validated_ids.append(int(device_id))
+            except (TypeError, ValueError) as exc:
+                raise ValidationError({"device_ids": "ID оборудования должны быть целыми числами"}) from exc
+
+        return validated_ids
+
+
+class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
+    """Return celery status for bulk device command task."""
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def get(self, request, *args, **kwargs) -> Response:
+        """Return current task state and progress."""
+        task = AsyncResult(str(self.kwargs["task_id"]))
+        response = {"taskId": str(self.kwargs["task_id"]), "status": task.status}
+        if isinstance(task.result, dict):
+            response.update(task.result)
+        return Response(response)
+
+
+class BulkDeviceCommandTaskResultAPIView(UserAuthenticatedAPIView):
+    """Return cached device result for bulk command task."""
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def get(self, request, *args, **kwargs) -> Response:
+        """Return cached result for one device."""
+        device_id = int(self.kwargs["device_id"])
+        device = filter_devices_qs_by_user(
+            models.Devices.objects.filter(id=device_id), self.current_user
+        ).first()
+        if device is None:
+            return Response({"detail": "Device not found or access denied"}, status=404)
+
+        cache_key = get_device_command_task_cache_key(str(self.kwargs["task_id"]), device.id)
+        result = cache.get(cache_key)
+        if result is None:
+            return Response({"detail": "Result not found"}, status=404)
+
+        return Response(result)
 
 
 # @method_decorator(get_device_pool_status_api_doc, name="get")

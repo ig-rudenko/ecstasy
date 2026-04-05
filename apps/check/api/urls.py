@@ -97,6 +97,21 @@ urlpatterns = [
         "<device_name_or_ip>/commands/<int:command_id>/validate",
         device_manager.ValidateDeviceCommandAPIView.as_view(),
     ),
+    path(
+        "commands/<int:command_id>/execute-multiple",
+        device_manager.ExecuteBulkDeviceCommandAPIView.as_view(),
+        name="device-command-execute-multiple",
+    ),
+    path(
+        "commands/tasks/<str:task_id>",
+        device_manager.BulkDeviceCommandTaskAPIView.as_view(),
+        name="device-command-task-status",
+    ),
+    path(
+        "commands/tasks/<str:task_id>/devices/<int:device_id>",
+        device_manager.BulkDeviceCommandTaskResultAPIView.as_view(),
+        name="device-command-task-result",
+    ),
     path("<device_name_or_ip>/pool", device_manager.DevicePoolManager.as_view()),
     # ===========================================
     #               Device Viewings

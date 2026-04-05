@@ -2,6 +2,7 @@ from typing import ClassVar  # noqa: F401
 from unittest.mock import MagicMock, Mock, patch
 
 import orjson
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -10,7 +11,8 @@ from apps.net_tools.models import DevicesInfo, VlanName
 from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 
-from ..models import AuthGroup, DeviceGroup, Devices, User, UsersActions
+from ..models import AuthGroup, DeviceCommand, DeviceGroup, Devices, Group, User, UsersActions
+from ..services.device.commands import get_device_command_task_cache_key
 
 
 class PortControlAPIViewTestCase(APITestCase):
@@ -490,3 +492,108 @@ class MacListAPIViewTestCase(APITestCase):
 
         self.assertEqual(device_connect.call_count, 1)
         device_connect.return_value.get_mac.assert_called_once_with("eth1")
+
+
+class BulkDeviceCommandAPIViewTestCase(APITestCase):
+    user = None  # type: ClassVar[User]
+    group = None  # type: ClassVar[DeviceGroup]
+    auth_group = None  # type: ClassVar[AuthGroup]
+    device = None  # type: ClassVar[Devices]
+    unmatched_device = None  # type: ClassVar[Devices]
+    command = None  # type: ClassVar[DeviceCommand]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user = User.objects.create_user(username="bulk_user", password="password")
+        cls.user.profile.permissions = cls.user.profile.CMD_RUN
+        cls.user.profile.save()
+
+        cls.group = DeviceGroup.objects.create(name="Bulk devices")
+        cls.user.profile.devices_groups.add(cls.group)
+        cls.auth_group = AuthGroup.objects.create(name="bulk_auth", login="user", password="pass")
+
+        cls.device = Devices.objects.create(
+            ip="172.31.176.31",
+            name="bulk-dev-1",
+            vendor="D-Link",
+            model="DES-3200-28",
+            group=cls.group,
+            auth_group=cls.auth_group,
+        )
+        cls.unmatched_device = Devices.objects.create(
+            ip="172.31.176.32",
+            name="bulk-dev-2",
+            vendor="Cisco",
+            model="C2960",
+            group=cls.group,
+            auth_group=cls.auth_group,
+        )
+
+        cmd_group = Group.objects.create(name="cmd-run-group")
+        cls.user.groups.add(cmd_group)
+        cls.command = DeviceCommand.objects.create(
+            name="Show version",
+            command="show version",
+            device_vendor="D-Link",
+            model_regexp=r"DES-\d+",
+        )
+        cls.command.perm_groups.add(cmd_group)
+
+    def setUp(self) -> None:
+        self.client.force_login(self.user)
+
+    @patch("apps.check.api.views.device_manager.dispatch_bulk_execute_command_task")
+    def test_execute_bulk_command(self, dispatch_task: Mock):
+        dispatch_task.return_value = {
+            "taskId": "task-1",
+            "devices": [
+                {
+                    "deviceId": self.device.id,
+                    "deviceName": self.device.name,
+                    "cacheKey": get_device_command_task_cache_key("task-1", self.device.id),
+                }
+            ],
+            "skipped": [
+                {
+                    "deviceId": self.unmatched_device.id,
+                    "deviceName": self.unmatched_device.name,
+                    "detail": "Command is unavailable for this device",
+                }
+            ],
+        }
+
+        response = self.client.post(
+            reverse("devices-api:device-command-execute-multiple", args=(self.command.id,)),
+            data={
+                "device_ids": [self.device.id, self.unmatched_device.id],
+                "word": {"_": "TEST"},
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data["taskId"], "task-1")
+        self.assertEqual(len(response.data["devices"]), 1)
+        self.assertEqual(len(response.data["skipped"]), 1)
+        dispatch_task.assert_called_once()
+
+    def test_get_bulk_command_device_result(self):
+        cache.set(
+            get_device_command_task_cache_key("task-2", self.device.id),
+            {
+                "deviceId": self.device.id,
+                "deviceName": self.device.name,
+                "status": "SUCCESS",
+                "output": "show version output",
+                "detail": "",
+            },
+            timeout=None,
+        )
+
+        response = self.client.get(
+            reverse("devices-api:device-command-task-result", args=("task-2", self.device.id))
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "SUCCESS")
+        self.assertEqual(response.data["output"], "show version output")
