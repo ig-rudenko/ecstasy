@@ -12,16 +12,18 @@ import {
     Divider,
     Drawer,
     Fieldset,
+    FloatLabel,
     IconField,
-    InputIcon,
     IftaLabel,
     Image,
     InputGroup,
+    InputIcon,
     InputMask,
     InputNumber,
     InputText,
     Menubar,
     Message,
+    OverlayBadge,
     Paginator,
     Password,
     Popover,
@@ -89,16 +91,18 @@ app.component("Dialog", Dialog);
 app.component("Divider", Divider);
 app.component("Drawer", Drawer);
 app.component("IconField", IconField);
-app.component("InputIcon", InputIcon);
 app.component("IftaLabel", IftaLabel);
 app.component("InputGroup", InputGroup);
+app.component("InputIcon", InputIcon);
 app.component("InputNumber", InputNumber);
 app.component("Image", Image);
 app.component("InputMask", InputMask);
 app.component("InputText", InputText);
 app.component("Fieldset", Fieldset);
+app.component("FloatLabel", FloatLabel);
 app.component("Menubar", Menubar);
 app.component("Message", Message);
+app.component("OverlayBadge", OverlayBadge);
 app.component("Password", Password);
 app.component("Paginator", Paginator);
 app.component("ProgressSpinner", ProgressSpinner);
