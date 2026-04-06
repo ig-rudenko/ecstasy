@@ -8,7 +8,6 @@ from celery import shared_task
 from django.db import close_old_connections, connection
 from django.db.utils import OperationalError
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
 
 from .models import (
     BulkDeviceCommandExecution,

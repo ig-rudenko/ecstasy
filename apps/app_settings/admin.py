@@ -4,6 +4,20 @@ Admin configuration for platform settings models.
 
 from django import forms
 from django.contrib import admin
+from django_celery_beat.admin import (
+    ClockedScheduleAdmin,
+    CrontabScheduleAdmin,
+    IntervalScheduleAdmin,
+    PeriodicTaskAdmin,
+    SolarScheduleAdmin,
+)
+from django_celery_beat.models import (
+    ClockedSchedule,
+    CrontabSchedule,
+    IntervalSchedule,
+    PeriodicTask,
+    SolarSchedule,
+)
 from requests import RequestException
 from unfold.admin import ModelAdmin
 
@@ -91,3 +105,35 @@ class AccessRingSettingsAdmin(ModelAdmin):
         ("Агрегация", {"classes": ("tab",), "fields": ("agg_dev_name_regexp",)}),
         ("Доступ", {"classes": ("tab",), "fields": ("access_dev_name_regexp",)}),
     )
+
+
+admin.site.unregister(PeriodicTask)
+admin.site.unregister(ClockedSchedule)
+admin.site.unregister(CrontabSchedule)
+admin.site.unregister(SolarSchedule)
+admin.site.unregister(IntervalSchedule)
+
+
+@admin.register(PeriodicTask)
+class UnfoldPeriodicTaskAdmin(PeriodicTaskAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(ClockedSchedule)
+class UnfoldClockedScheduleAdmin(ClockedScheduleAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(CrontabSchedule)
+class UnfoldCrontabScheduleAdmin(CrontabScheduleAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(SolarSchedule)
+class UnfoldSolarScheduleAdmin(SolarScheduleAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(IntervalSchedule)
+class UnfoldIntervalScheduleAdmin(IntervalScheduleAdmin, ModelAdmin):
+    pass

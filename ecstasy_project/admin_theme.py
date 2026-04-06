@@ -27,7 +27,7 @@ MODEL_ICONS = {
     "UsersActions": "history",
     "InterfacesComments": "comment",
     "DeviceCommand": "terminal",
-    "MacAddress": "fingerprint",
+    "MacAddress": "dns",
     "Vlan": "dataset",
     "VlanPort": "cable",
     "Address": "home_pin",
