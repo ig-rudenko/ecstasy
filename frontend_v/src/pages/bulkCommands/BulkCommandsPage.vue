@@ -654,11 +654,6 @@ onBeforeUnmount(() => {
         <div class="relative p-5 sm:p-8">
           <div class="flex flex-col gap-8 2xl:flex-row 2xl:items-start 2xl:justify-between">
             <div class="max-w-5xl">
-              <div
-                  class="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-700 dark:text-sky-300">
-                Bulk Command Center
-              </div>
-
               <h1 class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
                 Массовое выполнение команд
               </h1>

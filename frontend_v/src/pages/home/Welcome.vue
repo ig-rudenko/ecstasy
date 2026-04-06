@@ -168,10 +168,10 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
 
             <div class="mt-6 flex flex-wrap items-center gap-3">
               <router-link to="/devices">
-                <Button label="Перейти к оборудованию" icon="pi pi-server" class="rounded-2xl!"/>
+                <Button label="Перейти к оборудованию" icon="pi pi-server" text class="rounded-2xl hover:shadow-sm"/>
               </router-link>
               <router-link to="/maps" v-if="showMapsCard">
-                <Button label="Открыть карты" icon="pi pi-map" severity="secondary" outlined class="rounded-2xl!"/>
+                <Button label="Открыть карты" icon="pi pi-map" severity="secondary" text class="rounded-2xl hover:shadow-sm"/>
               </router-link>
             </div>
           </div>
@@ -187,7 +187,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
               <div class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Что есть в проекте</div>
             </div>
             <div
-                class="hidden rounded-full border border-gray-200/80 bg-white/75 px-4 py-2 text-sm text-slate-500 dark:border-gray-700/80 dark:bg-gray-900/45 dark:text-slate-300 sm:inline-flex">
+                class="hidden hover:shadow-md rounded-full border border-gray-200/80 bg-white/75 px-4 py-2 text-sm text-slate-500 dark:border-gray-700/80 dark:bg-gray-900/45 dark:text-slate-300 sm:inline-flex">
               Каждый блок описывает отдельный функциональный контур
             </div>
           </div>
@@ -197,7 +197,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                 v-for="module in modules"
                 :key="module.key"
                 :to="module.to"
-                class="group relative overflow-hidden rounded-[1.9rem] border border-gray-200/80 bg-white/80 p-5 transition duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-[0_24px_80px_-48px_rgba(15,23,42,0.42)] dark:border-gray-700/80 dark:bg-gray-950/35 dark:hover:border-sky-500"
+                class="group relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/80 p-5 transition duration-200 hover:-translate-y-0.5  hover:shadow-md dark:border-gray-700/80 dark:bg-gray-950/35 "
             >
               <div
                   :class="['absolute inset-0 bg-linear-to-br opacity-90 transition group-hover:opacity-100', module.accent]"/>
