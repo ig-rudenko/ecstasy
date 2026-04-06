@@ -245,18 +245,21 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
             .replace("\n", "<br>")
             .replace(" ", "&nbsp;")
         )
-        return mark_safe(f"""
+        return mark_safe(
+            f"""
             <div style"overflow-x: scroll;">
                 <div style="font-family: monospace; white-space: nowrap;">
                     {interfaces}
                 </div>
-            </div>""")
+            </div>"""
+        )
 
     @admin.display(description="Посмотреть")
     def show_device(self, obj: Devices):
         """Ссылка на страницу сканирования интерфейсов оборудования"""
 
-        return mark_safe(f"""<a target="_blank" href="{obj.get_absolute_url()}">
+        return mark_safe(
+            f"""<a target="_blank" href="{obj.get_absolute_url()}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" 
                 class="bi bi-box-arrow-in-right" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 
@@ -265,7 +268,8 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
                   <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 
                   7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
                 </svg>
-            </a>""")
+            </a>"""
+        )
 
     @admin.action(description="✅ Активировать")
     def activate_devices(self, request, queryset):
@@ -631,12 +635,13 @@ class DeviceCommandModelForm(forms.ModelForm):
             "command",
             "device_vendor",
             "model_regexp",
+            "valid_regexp",
             "perm_groups",
         ]
         widgets = {
             "command": forms.Textarea(
                 attrs={
-                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%;",
+                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%; border: 1px solid #00000007",
                     "wrap": "off",
                 },
             ),

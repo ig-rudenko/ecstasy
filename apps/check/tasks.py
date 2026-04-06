@@ -1,3 +1,4 @@
+import re
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
@@ -69,7 +70,6 @@ def _build_bulk_command_cache_result(
 
 def _get_bulk_command_workers_count(devices_count: int) -> int:
     """Return worker count for bulk command execution."""
-    return 1  # TODO: Убрать
     return max(1, min(devices_count, 32))
 
 
@@ -152,7 +152,6 @@ def execute_bulk_device_command_task(
         with progress_lock:
             processed += 1
             _update_execution_progress(task_id, processed, len(devices))
-            print(self)
             self.update_state(
                 state="PROGRESS",
                 meta={
@@ -195,32 +194,13 @@ def execute_bulk_device_command_task(
         try:
             command_text = get_command_text_for_audit(device, command, context)
             output = execute_command(device, command, context)
-        except (InvalidMethod, ValidationError) as exc:
-            error_text = str(exc)
-            cache_result = _build_bulk_command_cache_result(
-                device=device,
-                command=command,
-                status="ERROR",
-                output="",
-                detail=error_text,
-                error=error_text,
-                duration=monotonic() - started_at,
-            )
-            _save_execution_result(
-                execution_id=execution.id,
-                device=device,
-                status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
-                command_text=command_text,
-                output="",
-                detail=error_text,
-                error=error_text,
-                duration=monotonic() - started_at,
-            )
-            register_result(device, cache_result)
-            update_progress()
-            return _build_bulk_command_result(device=device, status="ERROR", detail=error_text)
+
+            # Если есть проверка выполнения команды.
+            if command.valid_regexp and not re.compile(command.valid_regexp).search(output):
+                raise ValidationError(output)
+
         except Exception as exc:
-            print(exc)
+            print(f"Task ID: {task_id} | Exception on device: {exc}")
             error_text = str(exc)
             cache_result = _build_bulk_command_cache_result(
                 device=device,
@@ -279,7 +259,7 @@ def execute_bulk_device_command_task(
             for future in as_completed(futures):
                 print(future.result())
     except Exception as exc:
-        print(exc)
+        print(f"Task ID: {task_id} | Exception after ThreadPoolExecutor: {exc}")
         traceback.print_exc()
         BulkDeviceCommandExecution.objects.filter(task_id=task_id).update(
             status=BulkDeviceCommandExecution.STATUS_FAILURE,

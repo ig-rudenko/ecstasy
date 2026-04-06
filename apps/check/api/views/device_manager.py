@@ -1,3 +1,5 @@
+import re
+
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -427,7 +429,12 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
         except ValidationError as exc:
             return Response({"detail": exc.detail}, status=400)
 
-        return Response({"output": output})
+        # Если есть проверка выполнения команды.
+        if not command.valid_regexp or re.compile(command.valid_regexp).search(output):
+            return Response({"output": output})
+
+        # Неверное выполнение команды
+        return Response({"detail": output}, status=500)
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):

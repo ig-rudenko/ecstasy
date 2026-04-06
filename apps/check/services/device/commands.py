@@ -29,12 +29,12 @@ class ContextValidator:
     validate: Callable
 
 
-def normalize_device_vendor(value: str | None) -> str:
+def normalize_device_vendor(value) -> str:
     """Return normalized device vendor for comparisons."""
     return str(value or "").strip().casefold()
 
 
-def normalize_device_model(value: str | None) -> str:
+def normalize_device_model(value) -> str:
     """Return normalized device model for regex comparisons."""
     return str(value or "").strip()
 
@@ -202,13 +202,9 @@ def is_command_available_for_device(command: DeviceCommand, device: Devices) -> 
     device_vendor = normalize_device_vendor(device.vendor)
     device_model = normalize_device_model(device.model)
     command_vendor = normalize_device_vendor(command.device_vendor)
+    print(device_vendor, command_vendor, command.model_regexp, device_model)
 
-    if (
-        not device_vendor
-        or not device_model
-        or not command_vendor
-        or not str(command.model_regexp or "").strip()
-    ):
+    if not device_vendor or (str(command.model_regexp or "").strip() and not device_model):
         return False
 
     if command_vendor != device_vendor:
@@ -219,7 +215,7 @@ def is_command_available_for_device(command: DeviceCommand, device: Devices) -> 
     except re.error:
         return False
 
-    return model_pattern is not None and model_pattern.search(device_model) is not None
+    return model_pattern is None or model_pattern.search(device_model) is not None
 
 
 def get_available_commands_for_device(user: User, device: Devices) -> list[DeviceCommand]:

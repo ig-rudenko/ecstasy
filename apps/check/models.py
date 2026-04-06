@@ -445,6 +445,13 @@ class DeviceCommand(models.Model):
         help_text="Команда будет доступна только оборудованию с той же моделью",
     )
     perm_groups = models.ManyToManyField(Group, verbose_name="Права доступа", blank=True)
+    valid_regexp = models.CharField(
+        max_length=512,
+        null=True,
+        blank=True,
+        verbose_name="Регулярное выражение проверки",
+        help_text="Проверяет, что команда верно выполнилась",
+    )
 
     class Meta:
         db_table = "device_commands"

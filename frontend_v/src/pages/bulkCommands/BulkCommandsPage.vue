@@ -23,6 +23,7 @@ import {
   getBulkCommandHistoryResults,
   getBulkCommandTaskStatus,
 } from "@/services/deviceCommands";
+import {verboseDatetime} from "@/formats.ts";
 
 type TaskDeviceStatus = "PENDING" | "RUNNING" | "SUCCESS" | "ERROR" | "SKIPPED";
 
@@ -259,7 +260,7 @@ async function loadReferenceDeviceInterfaces(): Promise<void> {
 
   try {
     const response = await api.get<{ interfaces: { name: string }[] }>(
-        `/api/v1/devices/${referenceDevice.value.name}/interfaces?vlans=0`,
+        `/api/v1/devices/${referenceDevice.value.name}/interfaces?vlans=0&current_status=0`,
     );
     referencePortOptions.value = response.data.interfaces.map((item) => item.name);
   } catch (error: any) {
@@ -910,7 +911,7 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div class="overflow-x-auto">
-                    <table class="min-w-[780px] w-full text-sm">
+                    <table class="min-w-195 w-full text-sm">
                       <thead>
                       <tr class="border-b border-gray-200/80 text-left text-xs uppercase tracking-[0.2em] text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
                         <th class="px-3 py-3">Устройство</th>
@@ -1067,8 +1068,8 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                   <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Время</div>
-                  <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">Запуск: {{ entry.launchedAt }}</div>
-                  <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">Завершение: {{ entry.finishedAt || "в процессе" }}</div>
+                  <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">Запуск: {{ verboseDatetime(entry.launchedAt) }}</div>
+                  <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">Завершение: {{ entry.finishedAt?verboseDatetime(entry.finishedAt):"в процессе" }}</div>
                 </div>
               </div>
 
@@ -1107,7 +1108,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div v-if="getHistoryResultsState(entry.id).loaded" class="overflow-x-auto">
-                <table class="min-w-[920px] w-full text-sm">
+                <table class="min-w-230 w-full text-sm">
                   <thead>
                   <tr class="border-b border-gray-200/80 text-left text-xs uppercase tracking-[0.2em] text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
                     <th class="px-3 py-3">Устройство</th>

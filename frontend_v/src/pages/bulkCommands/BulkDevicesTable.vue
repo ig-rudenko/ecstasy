@@ -29,7 +29,7 @@ const vendorFilter = ref<string | null>(null);
 const modelFilter = ref<string | null>(null);
 const groupFilter = ref<string | null>(null);
 const page = ref(0);
-const rows = ref(50);
+const rows = ref(10);
 const sortKey = ref<SortKey | null>(null);
 const sortDir = ref<SortDir>("asc");
 
@@ -208,7 +208,7 @@ function clearSelection(): void {
           </div>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div class="min-w-0">
             <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Вендор
             </div>
@@ -267,7 +267,7 @@ function clearSelection(): void {
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-[980px] w-full text-sm">
+      <table class="min-w-245 w-full text-sm">
         <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
         <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
           <th class="px-4 py-3 text-left font-semibold">
@@ -382,7 +382,7 @@ function clearSelection(): void {
           :totalRecords="filteredDevices.length"
           :first="pageStart"
           :pageLinkSize="3"
-          @page="(e: any) => { page = e.page; rows = 50; }"
+          @page="(e: any) => { page = e.page; rows = 10; }"
           :pt="{
             root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
           }"

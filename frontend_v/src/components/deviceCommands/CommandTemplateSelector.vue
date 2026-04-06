@@ -164,7 +164,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
   <section
       class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55">
     <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div class="flex flex-col flex-wrap gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ title }}</div>
           <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ description }}</div>
@@ -213,7 +213,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
               <div class="grid gap-4 command-grid">
                 <div class="space-y-2">
                   <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ data.name }}</div>
-                  <div class="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">{{
+                  <div class="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500">{{
                       data.device_vendor
                     }}
                   </div>
@@ -233,7 +233,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           filter
                           placeholder="Порт"
                           size="small"
-                          class="min-w-[11rem] rounded-full! text-xs!"
+                          class="min-w-44 rounded-full! text-xs!"
                           v-tooltip="getCommandKeyName(part)"
                           @update:modelValue="syncCommandContext(data)"
                       />
@@ -241,7 +241,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           v-else-if="data.context.port && portRegex.test(part)"
                           v-model="data.context.port[getCommandKeyName(part)]"
                           placeholder="Порт"
-                          class="min-w-[11rem] rounded-full! text-xs"
+                          class="min-w-44 rounded-full! text-xs"
                           v-tooltip="getCommandKeyName(part)"
                           @update:modelValue="syncCommandContext(data)"
                       />
@@ -249,7 +249,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           v-else-if="data.context.mac && macRegex.test(part)"
                           v-model="data.context.mac[getCommandKeyName(part)]"
                           placeholder="MAC адрес"
-                          class="min-w-[11rem] rounded-full! text-xs"
+                          class="min-w-44 rounded-full! text-xs"
                           v-tooltip="getCommandKeyName(part)"
                           @update:modelValue="syncCommandContext(data)"
                       />
@@ -257,7 +257,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           v-else-if="data.context.ip && ipRegex.test(part)"
                           v-model="data.context.ip[getCommandKeyName(part)]"
                           placeholder="IP адрес"
-                          class="min-w-[11rem] rounded-full! text-xs"
+                          class="min-w-44 rounded-full! text-xs"
                           v-tooltip="getCommandKeyName(part)"
                           @update:modelValue="syncCommandContext(data)"
                       />
@@ -265,7 +265,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           v-else-if="data.context.word && wordRegex.test(part)"
                           v-model="data.context.word[getCommandKeyName(part)]"
                           :placeholder="getCommandKeyName(part)"
-                          class="min-w-[11rem] rounded-full! text-xs"
+                          class="min-w-44 rounded-full! text-xs"
                           v-tooltip="getCommandKeyName(part)"
                           @update:modelValue="syncCommandContext(data)"
                       />
