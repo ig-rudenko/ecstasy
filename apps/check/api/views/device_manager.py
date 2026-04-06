@@ -34,11 +34,11 @@ from ...services.device.interfaces import (
 )
 from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
-from ..permissions import has_user_access_to_device
+from ..permissions import BulkDeviceCommandExecutionPermission, has_user_access_to_device
 from ..serializers import (
     ADSLProfileSerializer,
-    BulkDeviceCommandExecutionSerializer,
     BulkDeviceCommandExecutionResultSerializer,
+    BulkDeviceCommandExecutionSerializer,
     DeviceCommandsSerializer,
     InterfacesCommentsSerializer,
     PoEPortStatusSerializer,
@@ -438,6 +438,8 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):
+    permission_classes = [BulkDeviceCommandExecutionPermission]
+
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
@@ -459,6 +461,8 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
 
 class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
     """Start background execution of a command on multiple devices."""
+
+    permission_classes = [BulkDeviceCommandExecutionPermission]
 
     @schemas.execute_bulk_device_command_api_doc
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
@@ -527,6 +531,8 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
 
 class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
     """Return celery status for bulk device command task."""
+
+    permission_classes = [BulkDeviceCommandExecutionPermission]
 
     @schemas.bulk_device_command_task_status_api_doc
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
@@ -599,7 +605,7 @@ class BulkDeviceCommandExecutionListAPIView(UserAuthenticatedAPIView, generics.L
     """Return persisted bulk command executions for audit history."""
 
     serializer_class = BulkDeviceCommandExecutionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [BulkDeviceCommandExecutionPermission]
     pagination_class = BulkDeviceCommandExecutionPagination
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
@@ -625,7 +631,7 @@ class BulkDeviceCommandExecutionResultListAPIView(UserAuthenticatedAPIView, gene
     """Return persisted device results for one bulk command execution."""
 
     serializer_class = BulkDeviceCommandExecutionResultSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [BulkDeviceCommandExecutionPermission]
     pagination_class = BulkDeviceCommandExecutionResultPagination
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))

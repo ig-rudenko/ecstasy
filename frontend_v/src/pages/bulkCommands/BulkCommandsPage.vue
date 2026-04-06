@@ -24,6 +24,8 @@ import {
   getBulkCommandTaskStatus,
 } from "@/services/deviceCommands";
 import {verboseDatetime} from "@/formats.ts";
+import permissions from "@/services/permissions.ts";
+import {useRouter} from "vue-router";
 
 type TaskDeviceStatus = "PENDING" | "RUNNING" | "SUCCESS" | "ERROR" | "SKIPPED";
 
@@ -629,8 +631,9 @@ async function retryHistoryResult(entry: BulkCommandExecutionHistoryEntry, devic
   await launchTask(command, [deviceId]);
 }
 
-onMounted(() => {
-  loadDevices();
+onMounted(async () => {
+  if (!permissions.hasBulkDeviceCommandExecutePermission()) await useRouter().push("/")
+  await loadDevices();
 });
 
 onBeforeUnmount(() => {
@@ -711,7 +714,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section class="md:grid gap-6 xl:grid-cols-2">
+      <section class="xl:grid gap-6 xl:grid-cols-2">
         <div
             class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6">
           <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -818,7 +821,7 @@ onBeforeUnmount(() => {
               <Tag severity="secondary" :value="`История ${tasks.length}`"/>
             </div>
 
-            <div v-if="tasks.length" class="mt-5 flex flex-col gap-4">
+            <div v-if="tasks.length" class="mt-5 flex flex-col gap-4 overflow-auto">
               <Fieldset
                   v-for="task in tasks"
                   :key="task.taskId"
@@ -927,11 +930,11 @@ onBeforeUnmount(() => {
                           class="border-b border-gray-200/70 last:border-b-0 dark:border-gray-700/70"
                       >
                         <td class="px-3 py-3">
-                          <div class="font-medium text-gray-900 dark:text-gray-100">{{ device.deviceName }}</div>
-                          <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ device.deviceId }}</div>
+                          <div class="font-medium text-gray-900 dark:text-gray-100 text-nowrap font-mono">{{ device.deviceName }}</div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">ID: {{ device.deviceId }}</div>
                         </td>
                         <td class="px-3 py-3">
-                          <Tag :severity="getDeviceSeverity(device.status)" :value="device.status"/>
+                          <Badge :severity="getDeviceSeverity(device.status)" :value="device.status"/>
                         </td>
                         <td class="px-3 py-3">
                           <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
@@ -1026,10 +1029,14 @@ onBeforeUnmount(() => {
               <div class="flex w-full flex-wrap items-center gap-3 px-2 py-1">
                 <Button text rounded icon="pi pi-angle-down" @click="toggleCallback"/>
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.commandName }}</div>
+                  <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{
+                      entry.commandName
+                    }}
+                  </div>
                   <div class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ entry.task_id }}</div>
                 </div>
-                <Tag :severity="getDeviceSeverity(entry.status === 'FAILURE' ? 'ERROR' : entry.status)" :value="entry.status"/>
+                <Badge :severity="getDeviceSeverity(entry.status === 'FAILURE' ? 'ERROR' : entry.status)"
+                     :value="entry.status"/>
               </div>
             </template>
 
@@ -1057,19 +1064,29 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                   <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Устройств</div>
-                  <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ entry.processed }}/{{ entry.total }}</div>
+                  <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{
+                      entry.processed
+                    }}/{{ entry.total }}
+                  </div>
                 </div>
               </div>
 
               <div class="grid gap-3 lg:grid-cols-[1.2fr,1fr]">
                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                   <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Шаблон команды</div>
-                  <pre class="mt-2 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-950 px-3 py-2 text-xs text-gray-100">{{ entry.commandBody }}</pre>
+                  <pre
+                      class="mt-2 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-950 px-3 py-2 text-xs text-gray-100">{{
+                      entry.commandBody
+                    }}</pre>
                 </div>
                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                   <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Время</div>
-                  <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">Запуск: {{ verboseDatetime(entry.launchedAt) }}</div>
-                  <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">Завершение: {{ entry.finishedAt?verboseDatetime(entry.finishedAt):"в процессе" }}</div>
+                  <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">Запуск:
+                    {{ verboseDatetime(entry.launchedAt) }}
+                  </div>
+                  <div class="mt-1 text-sm text-gray-700 dark:text-gray-200">Завершение:
+                    {{ entry.finishedAt ? verboseDatetime(entry.finishedAt) : "в процессе" }}
+                  </div>
                 </div>
               </div>
 
@@ -1129,14 +1146,18 @@ onBeforeUnmount(() => {
                       <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ result.deviceId ?? "—" }}</div>
                     </td>
                     <td class="px-3 py-3">
-                      <Tag :severity="getDeviceSeverity(result.status)" :value="result.status"/>
+                      <Badge :severity="getDeviceSeverity(result.status)" :value="result.status"/>
                     </td>
                     <td class="px-3 py-3">
-                      <div class="max-w-xl truncate font-mono text-xs text-gray-700 dark:text-gray-200">{{ result.commandText || entry.commandBody }}</div>
+                      <div class="max-w-xl truncate font-mono text-xs text-gray-700 dark:text-gray-200">
+                        {{ result.commandText || entry.commandBody }}
+                      </div>
                     </td>
                     <td class="px-3 py-3">
                       <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
-                        {{ result.error || result.detail || (result.output ? `Вывод получен за ${result.duration.toFixed(3)} c` : "Без вывода") }}
+                        {{
+                          result.error || result.detail || (result.output ? `Вывод получен за ${result.duration.toFixed(3)} c` : "Без вывода")
+                        }}
                       </div>
                     </td>
                     <td class="px-3 py-3">
@@ -1172,7 +1193,8 @@ onBeforeUnmount(() => {
                 </table>
               </div>
 
-              <div v-else class="rounded-2xl border border-dashed border-gray-300/80 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
+              <div v-else
+                   class="rounded-2xl border border-dashed border-gray-300/80 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
                 Нажмите "Загрузить устройства", чтобы получить результаты по оборудованию
               </div>
 
@@ -1200,10 +1222,10 @@ onBeforeUnmount(() => {
         </div>
 
         <Paginator
-            v-if="historyLoaded && historyTotal > 10"
-            :rows="10"
+            v-if="historyLoaded && historyTotal > 1"
+            :rows="1"
             :totalRecords="historyTotal"
-            :first="(historyPage - 1) * 10"
+            :first="(historyPage - 1)"
             :pageLinkSize="3"
             @page="(event: any) => { loadHistory(event.page + 1); }"
             :pt="{
@@ -1224,7 +1246,7 @@ onBeforeUnmount(() => {
       </div>
       <div
           v-if="currentOutput.error || currentOutput.detail"
-          class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200 whitespace-pre-wrap"
       >
         {{ currentOutput.error || currentOutput.detail }}
       </div>

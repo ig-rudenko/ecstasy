@@ -36,9 +36,7 @@ class ZabbixConfigAdmin(ModelAdmin):
     compressed_fields = True
     warn_unsaved_form = True
     list_display = ["url", "login", "connectable"]
-    fieldsets = (
-        ("Подключение", {"classes": ("tab",), "fields": ("url", "login", "password")}),
-    )
+    fieldsets = (("Подключение", {"classes": ("tab",), "fields": ("url", "login", "password")}),)
 
     @admin.display(description="Connectable")
     def connectable(self, obj: ZabbixConfig) -> str:

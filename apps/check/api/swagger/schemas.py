@@ -3,7 +3,10 @@ from drf_yasg.utils import swagger_auto_schema
 
 from ...api.serializers import DevicesSerializer, MacSerializer, PortControlSerializer
 from .query_params import DeviceInterfacesQueryParamsSerializer
-from .requests import ChangeDescriptionRequestSwaggerSerializer, ExecuteBulkDeviceCommandRequestSwaggerSerializer
+from .requests import (
+    ChangeDescriptionRequestSwaggerSerializer,
+    ExecuteBulkDeviceCommandRequestSwaggerSerializer,
+)
 from .responses import (
     BrasPairSessionResultSwaggerSerializer,
     BulkCommandLaunchResponseSwaggerSerializer,

@@ -147,9 +147,7 @@ def _app_model_items(app_label: str):
 def _installed_app_labels() -> list[str]:
     """Return project app labels from INSTALLED_APPS in a stable order."""
     installed_labels = [
-        app_path.removeprefix("apps.")
-        for app_path in settings.INSTALLED_APPS
-        if app_path.startswith("apps.")
+        app_path.removeprefix("apps.") for app_path in settings.INSTALLED_APPS if app_path.startswith("apps.")
     ]
     ordered_labels = [label for label in APP_GROUPS if label in installed_labels]
     ordered_labels.extend(label for label in installed_labels if label not in ordered_labels)
@@ -181,7 +179,24 @@ def sidebar_navigation(request):
             "separator": False,
             "collapsible": False,
             "items": operations,
-        }
+        },
+        {
+            "title": "Пользователи и группы",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "Пользователи",
+                    "icon": "person",
+                    "link": "/admin/auth/user/",
+                },
+                {
+                    "title": "Группы",
+                    "icon": "person",
+                    "link": "/admin/auth/group/",
+                },
+            ],
+        },
     ]
 
     for index, app_label in enumerate(_installed_app_labels()):

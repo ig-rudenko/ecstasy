@@ -28,7 +28,7 @@
 
               <div class="mt-6 flex flex-wrap items-center gap-2">
                 <PinnedDevicesPopover/>
-                <router-link to="/devices/commands">
+                <router-link to="/devices/commands" v-if="showBulkDeviceCommandExecute">
                   <Button
                       icon="pi pi-send"
                       label="Массовые команды"
@@ -195,6 +195,7 @@ import DoughnutChart from "./DoughnutChart.vue";
 import DevicesListTable from "./DevicesListTable.vue";
 import devicesService, {Device} from "@/services/devices";
 import {calculateInterfacesWorkload} from "@/services/interfaces";
+import permissions from "@/services/permissions.ts";
 
 type DisplayMode = "default" | "waiting" | "interfaces_loading";
 
@@ -232,6 +233,11 @@ export default defineComponent({
       clearTimeout(this.searchSyncTimer);
       this.searchSyncTimer = null;
     }
+  },
+  computed: {
+    showBulkDeviceCommandExecute() {
+      return permissions.hasBulkDeviceCommandExecutePermission();
+    },
   },
   methods: {
     changeImageIndex(): void {

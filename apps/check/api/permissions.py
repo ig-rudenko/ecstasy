@@ -69,3 +69,13 @@ class DevicesAdminPermission(permissions.BasePermission):
             and request.user.is_staff
             and request.user.has_perm("check.change_devices")
         )
+
+
+class BulkDeviceCommandExecutionPermission(permissions.BasePermission):
+    def has_permission(self, request: Request, view):
+        perm = "auth.access_bulk_device_cmd"
+        return (
+            request.user
+            and request.user.is_authenticated
+            and (request.user.has_perm(perm) or request.user.is_superuser)
+        )

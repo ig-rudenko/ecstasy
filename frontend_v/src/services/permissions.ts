@@ -21,9 +21,12 @@ class Permissions {
 
         api.get<PermissionResponse>("/api/v1/accounts/myself/permissions")
             .then(value => {
+                const samePermissions =
+                    value.data.permissions.length === this.perms.value.permissions.length &&
+                    this.perms.value.permissions.every((p, i) => p === value.data.permissions[i]);
+
                 if (
-                    value.data.permissions.length !== this.perms.value.permissions?.length &&
-                    this.perms.value.permissions?.every((p, i) => p === value.data.permissions[i]) ||
+                    !samePermissions ||
                     this.perms.value.console !== value.data.console ||
                     this.perms.value.ecstasy_loop_url !== value.data.ecstasy_loop_url
                 ) {
@@ -64,6 +67,10 @@ class Permissions {
 
     hasGPONAnyPermission(): boolean {
         return this.perms.value.permissions.find(permission => permission.startsWith("gpon")) !== undefined;
+    }
+
+    hasBulkDeviceCommandExecutePermission(): boolean {
+        return this.has("auth.access_bulk_device_cmd")
     }
 
 }

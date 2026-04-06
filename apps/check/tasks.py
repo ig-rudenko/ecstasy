@@ -2,13 +2,13 @@ import re
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
-from time import monotonic
+from time import monotonic, sleep
 
 from celery import shared_task
+from django.db import close_old_connections, connection
+from django.db.utils import OperationalError
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
-
-from devicemanager.remote.exceptions import InvalidMethod
 
 from .models import (
     BulkDeviceCommandExecution,
@@ -119,6 +119,43 @@ def _save_execution_result(
     )
 
 
+def _is_sqlite_backend() -> bool:
+    """Return True when current configured database backend is SQLite."""
+    return connection.vendor == "sqlite"
+
+
+def _save_execution_result_with_retry(
+    execution_id: int,
+    device: Devices,
+    status: str,
+    command_text: str,
+    output: str,
+    detail: str,
+    error: str,
+    duration: float,
+) -> None:
+    """Persist one device result and retry short SQLite lock conflicts."""
+    attempts = 5 if _is_sqlite_backend() else 1
+    for attempt in range(attempts):
+        try:
+            _save_execution_result(
+                execution_id=execution_id,
+                device=device,
+                status=status,
+                command_text=command_text,
+                output=output,
+                detail=detail,
+                error=error,
+                duration=duration,
+            )
+            return
+        except OperationalError as exc:
+            is_locked = "database is locked" in str(exc).lower()
+            if not is_locked or attempt == attempts - 1:
+                raise
+            sleep(0.05 * (attempt + 1))
+
+
 @shared_task(bind=True, name="execute_bulk_device_command_task")
 def execute_bulk_device_command_task(
     self, command_id: int, device_ids: list[int], context: dict, user_id: int
@@ -132,6 +169,7 @@ def execute_bulk_device_command_task(
     processed = 0
     progress_lock = Lock()
     results_lock = Lock()
+    db_write_lock = Lock()
     cached_results: dict[str, dict] = {}
     init_device_command_task_results_cache(task_id)
     _mark_execution_started(task_id, len(devices))
@@ -151,7 +189,8 @@ def execute_bulk_device_command_task(
         nonlocal processed
         with progress_lock:
             processed += 1
-            _update_execution_progress(task_id, processed, len(devices))
+            with db_write_lock:
+                _update_execution_progress(task_id, processed, len(devices))
             self.update_state(
                 state="PROGRESS",
                 meta={
@@ -163,6 +202,7 @@ def execute_bulk_device_command_task(
 
     def run_for_device(device: Devices) -> dict:
         """Run the command for a single device and cache the result."""
+        close_old_connections()
         started_at = monotonic()
         command_text = ""
 
@@ -177,18 +217,18 @@ def execute_bulk_device_command_task(
                 error="",
                 duration=monotonic() - started_at,
             )
-            _save_execution_result(
-                execution_id=execution.id,
-                device=device,
-                status=BulkDeviceCommandExecutionResult.STATUS_SKIPPED,
-                command_text="",
-                output="",
-                detail=detail,
-                error="",
-                duration=monotonic() - started_at,
-            )
+            with db_write_lock:
+                _save_execution_result_with_retry(
+                    execution_id=execution.id,
+                    device=device,
+                    status=BulkDeviceCommandExecutionResult.STATUS_SKIPPED,
+                    command_text="",
+                    output="",
+                    detail=detail,
+                    error="",
+                    duration=monotonic() - started_at,
+                )
             register_result(device, cache_result)
-            update_progress()
             return _build_bulk_command_result(device=device, status="SKIPPED", detail=detail)
 
         try:
@@ -197,7 +237,7 @@ def execute_bulk_device_command_task(
 
             # Если есть проверка выполнения команды.
             if command.valid_regexp and not re.compile(command.valid_regexp).search(output):
-                raise ValidationError(output)
+                raise Exception(output)
 
         except Exception as exc:
             print(f"Task ID: {task_id} | Exception on device: {exc}")
@@ -211,18 +251,18 @@ def execute_bulk_device_command_task(
                 error=error_text,
                 duration=monotonic() - started_at,
             )
-            _save_execution_result(
-                execution_id=execution.id,
-                device=device,
-                status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
-                command_text=command_text,
-                output="",
-                detail=error_text,
-                error=error_text,
-                duration=monotonic() - started_at,
-            )
+            with db_write_lock:
+                _save_execution_result_with_retry(
+                    execution_id=execution.id,
+                    device=device,
+                    status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+                    command_text=command_text,
+                    output="",
+                    detail=error_text,
+                    error=error_text,
+                    duration=monotonic() - started_at,
+                )
             register_result(device, cache_result)
-            update_progress()
             return _build_bulk_command_result(device=device, status="ERROR", detail=error_text)
 
         cache_result = _build_bulk_command_cache_result(
@@ -234,30 +274,31 @@ def execute_bulk_device_command_task(
             error="",
             duration=monotonic() - started_at,
         )
-        _save_execution_result(
-            execution_id=execution.id,
-            device=device,
-            status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
-            command_text=command_text,
-            output=output,
-            detail="",
-            error="",
-            duration=monotonic() - started_at,
-        )
-        UsersActions.objects.create(
-            user_id=user_id,
-            device=device,
-            action=f"execute bulk command {command.name}",
-        )
+        with db_write_lock:
+            _save_execution_result_with_retry(
+                execution_id=execution.id,
+                device=device,
+                status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+                command_text=command_text,
+                output=output,
+                detail="",
+                error="",
+                duration=monotonic() - started_at,
+            )
+            UsersActions.objects.create(
+                user_id=user_id,
+                device=device,
+                action=f"execute bulk command {command.name}",
+            )
         register_result(device, cache_result)
-        update_progress()
         return _build_bulk_command_result(device=device, status="SUCCESS", output=output)
 
     try:
         with ThreadPoolExecutor(max_workers=_get_bulk_command_workers_count(len(devices))) as executor:
             futures = [executor.submit(run_for_device, device) for device in devices]
             for future in as_completed(futures):
-                print(future.result())
+                future.result()
+                update_progress()
     except Exception as exc:
         print(f"Task ID: {task_id} | Exception after ThreadPoolExecutor: {exc}")
         traceback.print_exc()

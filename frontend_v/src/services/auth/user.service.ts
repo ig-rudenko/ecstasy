@@ -2,6 +2,7 @@ import api from "@/services/api";
 import {createNewUser, User} from "@/services/user";
 
 export async function getMyselfData(): Promise<User> {
+    // console.log(tokenService.getUserTokens())
     const resp = await api.get("/api/v1/accounts/myself")
     return createNewUser(resp.data)
 }
@@ -10,10 +11,12 @@ class UserService {
     private user: User | null = null;
 
     constructor() {
-        getMyselfData().then((user: User) => {
+        setTimeout(
+            () => getMyselfData().then((user: User) => {
             this.user = user
             this.setUser(user)
-        })
+        }), 0
+        )
     }
 
     getUser(): User | null {

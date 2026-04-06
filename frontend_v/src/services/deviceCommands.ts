@@ -351,7 +351,7 @@ export async function getBulkCommandTaskStatus(taskId: string): Promise<BulkComm
  */
 export async function getBulkCommandHistory(page = 1): Promise<PaginatedBulkCommandExecutionHistory> {
     const response = await api.get<PaginatedBulkCommandExecutionHistory>(
-        `/api/v1/devices/commands/history?page=${page}`,
+        `/api/v1/devices/commands/history?page=${page}&page_size=1`,
     );
     return response.data;
 }

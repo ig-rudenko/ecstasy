@@ -211,11 +211,25 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                 class="border-t border-gray-200/80 px-4 py-4 first:border-t-0 dark:border-gray-700/80"
             >
               <div class="grid gap-4 command-grid">
-                <div class="space-y-2">
-                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ data.name }}</div>
-                  <div class="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500">{{
-                      data.device_vendor
-                    }}
+
+                <div class="space-y-2 flex flex-wrap gap-3 items-center">
+                  <div>
+                    <Button
+                        v-if="mode == 'select'"
+                        :severity="selectedCommandId === data.id ? 'contrast' : 'secondary'"
+                        :outlined="selectedCommandId !== data.id"
+                        :disabled="!commandIsValid(data)"
+                        @click="selectCommand(data)"
+                        :icon="selectedCommandId === data.id ? 'pi pi-check' : 'pi pi-plus'"
+                        :label="selectedCommandId === data.id ? 'Выбрана' : 'Выбрать'"
+                        class="rounded-2xl!" size="small"
+                    />
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ data.name }}</div>
+                    <div class="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                      {{ data.device_vendor }}
+                    </div>
                   </div>
                 </div>
 
@@ -223,7 +237,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                   <div
                       v-for="line in data.command.split('\n')"
                       :key="`${data.id}-${line}`"
-                      class="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/80 bg-gray-50/80 p-2 dark:border-gray-700/80 dark:bg-gray-800/70"
+                      class="flex w-fit items-center gap-2 rounded-2xl"
                   >
                     <template v-for="part in line.split(/(?={)|(?<=})/)" :key="part">
                       <Select
@@ -281,18 +295,18 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                           @update:modelValue="syncCommandContext(data)"
                       />
                       <code v-else-if="part.trim().length"
-                            class="rounded-xl bg-gray-200/70 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700/70 dark:text-gray-200">{{
+                            class="rounded-xl bg-gray-200/70 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700/70 dark:text-gray-200 text-nowrap">{{
                           part
                         }}</code>
                     </template>
                   </div>
                 </div>
 
-                <div class="text-sm leading-6 text-gray-600 dark:text-gray-300">
-                  {{ data.description || "Описание отсутствует" }}
+                <div class="flex items-center text-sm leading-6 text-gray-600 dark:text-gray-300">
+                  {{ data.description || "" }}
                 </div>
 
-                <div class="flex items-start justify-end">
+                <div class="flex items-center justify-end">
                   <Button
                       v-if="mode === 'execute'"
                       severity="success"
@@ -300,16 +314,6 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                       @click="executeCommand(data)"
                       icon="pi pi-play"
                       label="Выполнить"
-                      class="rounded-2xl!"
-                  />
-                  <Button
-                      v-else
-                      :severity="selectedCommandId === data.id ? 'contrast' : 'secondary'"
-                      :outlined="selectedCommandId !== data.id"
-                      :disabled="!commandIsValid(data)"
-                      @click="selectCommand(data)"
-                      :icon="selectedCommandId === data.id ? 'pi pi-check' : 'pi pi-plus'"
-                      :label="selectedCommandId === data.id ? 'Выбрана' : 'Выбрать'"
                       class="rounded-2xl!"
                   />
                 </div>
@@ -333,12 +337,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
 <style scoped>
 .command-grid {
   display: grid;
-  grid-template-columns: minmax(16rem, 0.8fr) minmax(26rem, 1.7fr) minmax(14rem, 0.9fr) 9rem;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(max-content, 100%) minmax(14rem, 0.9fr) 9rem;
 }
 
-@media (max-width: 1279px) {
-  .command-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

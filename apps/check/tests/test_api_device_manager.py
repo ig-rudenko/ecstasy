@@ -612,9 +612,7 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
             timeout=None,
         )
 
-        response = self.client.get(
-            reverse("devices-api:device-command-task-status", args=("task-2",))
-        )
+        response = self.client.get(reverse("devices-api:device-command-task-status", args=("task-2",)))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], BulkDeviceCommandExecution.STATUS_PROGRESS)

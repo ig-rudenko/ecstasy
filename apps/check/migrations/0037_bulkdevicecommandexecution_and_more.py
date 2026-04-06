@@ -27,9 +27,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "task_id",
-                    models.CharField(
-                        max_length=255, unique=True, verbose_name="Celery task ID"
-                    ),
+                    models.CharField(max_length=255, unique=True, verbose_name="Celery task ID"),
                 ),
                 (
                     "command_name",
@@ -38,9 +36,7 @@ class Migration(migrations.Migration):
                 ("command_body", models.TextField(verbose_name="Command body")),
                 (
                     "context",
-                    models.JSONField(
-                        blank=True, default=dict, verbose_name="Command context"
-                    ),
+                    models.JSONField(blank=True, default=dict, verbose_name="Command context"),
                 ),
                 (
                     "status",
@@ -59,21 +55,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "progress",
-                    models.PositiveSmallIntegerField(
-                        default=0, verbose_name="Progress"
-                    ),
+                    models.PositiveSmallIntegerField(default=0, verbose_name="Progress"),
                 ),
                 (
                     "processed",
-                    models.PositiveIntegerField(
-                        default=0, verbose_name="Processed devices"
-                    ),
+                    models.PositiveIntegerField(default=0, verbose_name="Processed devices"),
                 ),
                 (
                     "total",
-                    models.PositiveIntegerField(
-                        default=0, verbose_name="Total devices"
-                    ),
+                    models.PositiveIntegerField(default=0, verbose_name="Total devices"),
                 ),
                 (
                     "launched_at",
@@ -81,9 +71,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "finished_at",
-                    models.DateTimeField(
-                        blank=True, null=True, verbose_name="Finished at"
-                    ),
+                    models.DateTimeField(blank=True, null=True, verbose_name="Finished at"),
                 ),
                 (
                     "command",

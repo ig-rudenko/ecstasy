@@ -1,7 +1,11 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
-from unfold.contrib.filters.admin import ChoicesDropdownFilter, MultipleRelatedDropdownFilter, RangeDateTimeFilter
+from unfold.contrib.filters.admin import (
+    ChoicesDropdownFilter,
+    MultipleRelatedDropdownFilter,
+    RangeDateTimeFilter,
+)
 
 from ecstasy_project.admin_filters import distinct_dropdown_filter
 
