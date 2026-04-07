@@ -2,6 +2,7 @@ from typing import ClassVar  # noqa: F401
 from unittest.mock import MagicMock, Mock, patch
 
 import orjson
+from django.contrib.auth.models import Permission
 from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
@@ -516,6 +517,7 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create_user(username="bulk_user", password="password")
         cls.user.profile.permissions = cls.user.profile.CMD_RUN
+        cls.user.user_permissions.add(Permission.objects.get(codename="access_bulk_device_cmd"))
         cls.user.profile.save()
 
         cls.group = DeviceGroup.objects.create(name="Bulk devices")
@@ -552,6 +554,15 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
     def setUp(self) -> None:
         self.client.force_login(self.user)
 
+    def create_user_without_bulk_permission(self) -> User:
+        """Create authenticated user with CMD_RUN access but without bulk command permission."""
+        user = User.objects.create_user(username="bulk_user_no_perm", password="password")
+        user.profile.permissions = user.profile.CMD_RUN
+        user.profile.save()
+        user.profile.devices_groups.add(self.group)
+        user.groups.add(*self.user.groups.all())
+        return user
+
     @patch("apps.check.api.views.device_manager.dispatch_bulk_execute_command_task")
     def test_execute_bulk_command(self, dispatch_task: Mock):
         dispatch_task.return_value = {
@@ -585,6 +596,18 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(len(response.data["devices"]), 1)
         self.assertEqual(len(response.data["skipped"]), 1)
         dispatch_task.assert_called_once()
+
+    def test_execute_bulk_command_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.post(
+            reverse("devices-api:device-command-execute-multiple", args=(self.command.id,)),
+            data={"device_ids": [self.device.id], "word": {"_": "TEST"}},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_bulk_command_task_status(self):
         BulkDeviceCommandExecution.objects.create(
@@ -624,6 +647,14 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
         self.assertEqual(response.data["results"][0]["output"], "show version output")
 
+    def test_get_bulk_command_task_status_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(reverse("devices-api:device-command-task-status", args=("task-2",)))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_get_bulk_command_history(self):
         execution = BulkDeviceCommandExecution.objects.create(
             task_id="task-history-1",
@@ -653,6 +684,14 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["task_id"], execution.task_id)
         self.assertEqual(response.data["results"][0]["commandName"], self.command.name)
+
+    def test_get_bulk_command_history_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(reverse("devices-api:device-command-history"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_bulk_command_history_results(self):
         execution = BulkDeviceCommandExecution.objects.create(
@@ -687,3 +726,25 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
         self.assertEqual(response.data["results"][0]["error"], "boom")
+
+    def test_get_bulk_command_history_results_forbidden_without_permission(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-3",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(
+            reverse("devices-api:device-command-history-results", args=(execution.id,))
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

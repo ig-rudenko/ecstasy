@@ -573,7 +573,7 @@ class TestCommandAvailability(BaseCommandsTestCase):
 
         self.assertFalse(is_command_available_for_device(command, self.device))
 
-    def test_command_unavailable_without_model_regexp(self):
+    def test_command_available_without_model_regexp(self):
         command = DeviceCommand.objects.create(
             name="show version",
             command="show version",
@@ -583,7 +583,7 @@ class TestCommandAvailability(BaseCommandsTestCase):
         self.device.vendor = "D-Link"
         self.device.model = "DES-3200-28"
 
-        self.assertFalse(is_command_available_for_device(command, self.device))
+        self.assertTrue(is_command_available_for_device(command, self.device))
 
     def test_command_unavailable_without_vendor(self):
         command = DeviceCommand.objects.create(
