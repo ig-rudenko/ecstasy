@@ -127,7 +127,7 @@ def _app_model_items(app_label: str):
     app_config = apps.get_app_config(app_label)
     items = []
 
-    for model in sorted(app_config.get_models(), key=lambda item: item._meta.verbose_name_plural):
+    for model in sorted(app_config.get_models(), key=lambda item: item._meta.verbose_name_plural):  # type: ignore
         try:
             link = reverse_lazy(f"admin:{app_label}_{model._meta.model_name}_changelist")
         except NoReverseMatch:

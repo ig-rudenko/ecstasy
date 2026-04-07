@@ -231,10 +231,12 @@ class LayersAdmin(ModelAdmin):
         # Здесь вы можете создать ссылку на скачивание слоя
         # Например, если у вас есть поле layer_file, вы можете использовать его URL
         if instance.type == "file":
-            return format_html(f"""<a href="{instance.from_file.url}" target="_blank">
+            return format_html(
+                f"""<a href="{instance.from_file.url}" target="_blank">
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
 <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1m-1 4v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 11.293V7.5a.5.5 0 0 1 1 0"/>
-</svg></a>""")
+</svg></a>"""
+            )
         return ""
 
     @admin.display(description="Название слоя")
@@ -311,7 +313,7 @@ class LayersAdmin(ModelAdmin):
         """
         if instance.from_file:
             return mark_safe(
-                f'{svg_file_icon} <strong>"{instance.from_file.name.rsplit("/", 1)[-1]}"</strong>'
+                f'{svg_file_icon} <strong>"{str(instance.from_file.name).rsplit("/", 1)[-1]}"</strong>'
             )
         if instance.zabbix_group_name:
             return mark_safe(f'{svg_zabbix_icon} - <strong>"{instance.zabbix_group_name}"</strong>')
@@ -451,7 +453,7 @@ class MapsAdmin(ModelAdmin):
 
         elif instance.type == "file":
             text = f"""
-            <p style="white-space: nowrap;">{svg_file_icon} {instance.from_file.name.rsplit("/", 1)[-1]}</p>
+            <p style="white-space: nowrap;">{svg_file_icon} {str(instance.from_file.name).rsplit("/", 1)[-1]}</p>
             """
 
         return format_html(text)

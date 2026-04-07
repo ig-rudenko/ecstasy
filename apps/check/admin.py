@@ -583,7 +583,7 @@ class DeviceMediaAdmin(ModelAdmin):
 
     @admin.display(description="Имя файла")
     def file_name(self, obj: DeviceMedia) -> str:
-        return obj.file.name
+        return str(obj.file.name)
 
     @staticmethod
     def current_file(obj: DeviceMedia) -> str:
