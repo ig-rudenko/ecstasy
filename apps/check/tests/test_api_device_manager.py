@@ -2,6 +2,8 @@ from typing import ClassVar  # noqa: F401
 from unittest.mock import MagicMock, Mock, patch
 
 import orjson
+from django.contrib.auth.models import Permission
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -10,7 +12,18 @@ from apps.net_tools.models import DevicesInfo, VlanName
 from devicemanager.vendors.base.device import BaseDevice
 from devicemanager.vendors.base.types import SetDescriptionResult
 
-from ..models import AuthGroup, DeviceGroup, Devices, User, UsersActions
+from ..models import (
+    AuthGroup,
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
+    DeviceCommand,
+    DeviceGroup,
+    Devices,
+    Group,
+    User,
+    UsersActions,
+)
+from ..services.device.commands import get_device_command_task_results_cache_key
 
 
 class PortControlAPIViewTestCase(APITestCase):
@@ -490,3 +503,248 @@ class MacListAPIViewTestCase(APITestCase):
 
         self.assertEqual(device_connect.call_count, 1)
         device_connect.return_value.get_mac.assert_called_once_with("eth1")
+
+
+class BulkDeviceCommandAPIViewTestCase(APITestCase):
+    user = None  # type: ClassVar[User]
+    group = None  # type: ClassVar[DeviceGroup]
+    auth_group = None  # type: ClassVar[AuthGroup]
+    device = None  # type: ClassVar[Devices]
+    unmatched_device = None  # type: ClassVar[Devices]
+    command = None  # type: ClassVar[DeviceCommand]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user = User.objects.create_user(username="bulk_user", password="password")
+        cls.user.profile.permissions = cls.user.profile.CMD_RUN
+        cls.user.user_permissions.add(Permission.objects.get(codename="access_bulk_device_cmd"))
+        cls.user.profile.save()
+
+        cls.group = DeviceGroup.objects.create(name="Bulk devices")
+        cls.user.profile.devices_groups.add(cls.group)
+        cls.auth_group = AuthGroup.objects.create(name="bulk_auth", login="user", password="pass")
+
+        cls.device = Devices.objects.create(
+            ip="172.31.176.31",
+            name="bulk-dev-1",
+            vendor="D-Link",
+            model="DES-3200-28",
+            group=cls.group,
+            auth_group=cls.auth_group,
+        )
+        cls.unmatched_device = Devices.objects.create(
+            ip="172.31.176.32",
+            name="bulk-dev-2",
+            vendor="Cisco",
+            model="C2960",
+            group=cls.group,
+            auth_group=cls.auth_group,
+        )
+
+        cmd_group = Group.objects.create(name="cmd-run-group")
+        cls.user.groups.add(cmd_group)
+        cls.command = DeviceCommand.objects.create(
+            name="Show version",
+            command="show version",
+            device_vendor="D-Link",
+            model_regexp=r"DES-\d+",
+        )
+        cls.command.perm_groups.add(cmd_group)
+
+    def setUp(self) -> None:
+        self.client.force_login(self.user)
+
+    def create_user_without_bulk_permission(self) -> User:
+        """Create authenticated user with CMD_RUN access but without bulk command permission."""
+        user = User.objects.create_user(username="bulk_user_no_perm", password="password")
+        user.profile.permissions = user.profile.CMD_RUN
+        user.profile.save()
+        user.profile.devices_groups.add(self.group)
+        user.groups.add(*self.user.groups.all())
+        return user
+
+    @patch("apps.check.api.views.device_manager.dispatch_bulk_execute_command_task")
+    def test_execute_bulk_command(self, dispatch_task: Mock):
+        dispatch_task.return_value = {
+            "taskId": "task-1",
+            "devices": [
+                {
+                    "deviceId": self.device.id,
+                    "deviceName": self.device.name,
+                }
+            ],
+            "skipped": [
+                {
+                    "deviceId": self.unmatched_device.id,
+                    "deviceName": self.unmatched_device.name,
+                    "detail": "Command is unavailable for this device",
+                }
+            ],
+        }
+
+        response = self.client.post(
+            reverse("devices-api:device-command-execute-multiple", args=(self.command.id,)),
+            data={
+                "device_ids": [self.device.id, self.unmatched_device.id],
+                "word": {"_": "TEST"},
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data["taskId"], "task-1")
+        self.assertEqual(len(response.data["devices"]), 1)
+        self.assertEqual(len(response.data["skipped"]), 1)
+        dispatch_task.assert_called_once()
+
+    def test_execute_bulk_command_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.post(
+            reverse("devices-api:device-command-execute-multiple", args=(self.command.id,)),
+            data={"device_ids": [self.device.id], "word": {"_": "TEST"}},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_bulk_command_task_status(self):
+        BulkDeviceCommandExecution.objects.create(
+            task_id="task-2",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={},
+            status=BulkDeviceCommandExecution.STATUS_PROGRESS,
+            progress=50,
+            processed=1,
+            total=2,
+        )
+        cache.set(
+            get_device_command_task_results_cache_key("task-2"),
+            {
+                str(self.device.id): {
+                    "command_id": self.command.id,
+                    "command_text": self.command.command,
+                    "output": "show version output",
+                    "duration": 0.231,
+                }
+            },
+            timeout=None,
+        )
+
+        response = self.client.get(reverse("devices-api:device-command-task-status", args=("task-2",)))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], BulkDeviceCommandExecution.STATUS_PROGRESS)
+        self.assertEqual(response.data["progress"], 50)
+        self.assertEqual(response.data["processed"], 1)
+        self.assertEqual(response.data["total"], 2)
+        self.assertEqual(response.data["resultsCount"], 1)
+        self.assertEqual(response.data["resultDeviceIds"], [self.device.id])
+        self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
+        self.assertEqual(response.data["results"][0]["output"], "show version output")
+
+    def test_get_bulk_command_task_status_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(reverse("devices-api:device-command-task-status", args=("task-2",)))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_bulk_command_history(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-1",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={"word": {"_": "TEST"}},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.device,
+            device_name=self.device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+            command_text="show version",
+            output="show version output",
+            duration=0.231,
+        )
+
+        response = self.client.get(reverse("devices-api:device-command-history"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["task_id"], execution.task_id)
+        self.assertEqual(response.data["results"][0]["commandName"], self.command.name)
+
+    def test_get_bulk_command_history_forbidden_without_permission(self):
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(reverse("devices-api:device-command-history"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_bulk_command_history_results(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-2",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={"word": {"_": "TEST"}},
+            status=BulkDeviceCommandExecution.STATUS_FAILURE,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.device,
+            device_name=self.device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+            command_text="show version",
+            detail="boom",
+            error="boom",
+            duration=0.231,
+        )
+
+        response = self.client.get(
+            reverse("devices-api:device-command-history-results", args=(execution.id,)),
+            data={"search": "bulk-dev-1"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
+        self.assertEqual(response.data["results"][0]["error"], "boom")
+
+    def test_get_bulk_command_history_results_forbidden_without_permission(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-history-3",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(
+            reverse("devices-api:device-command-history-results", args=(execution.id,))
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -1,7 +1,7 @@
 <template>
   <div v-tooltip.bottom="'Конфигурации'" @click="configFiles.display=!configFiles.display">
 
-    <Button :text="!configFiles.display" :outlined="configFiles.display" severity="contrast">
+    <Button :text="!configFiles.display" :outlined="configFiles.display" severity="contrast" class="rounded-2xl shadow-sm border-none">
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-file-earmark-code"
            viewBox="0 0 16 16">
         <path

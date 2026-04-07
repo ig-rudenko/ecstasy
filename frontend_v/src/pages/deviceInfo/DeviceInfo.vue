@@ -1,176 +1,190 @@
 <template>
   <Header/>
 
-  <div class="container mx-auto md:my-5 sm:my-10 flex justify-center">
-    <!--    Имя оборудования и его статус-->
-    <DeviceStatusName
-        v-if="generalInfo"
-        :status="deviceAvailable"
-        :device="{name: deviceName, ip: generalInfo.deviceIP, vendor: generalInfo.vendor || '', model: generalInfo.model || '', group: '', console_url: generalInfo.consoleURL}"
-        :console-url="generalInfo.consoleURL"/>
-  </div>
-
-  <div v-if="generalInfo" class="xl:container mx-auto my-3">
-
-    <div
-        class="sm:border border-gray-200 dark:border-gray-600 rounded-xl sm:shadow sm:p-3 flex flex-wrap xl:grid xl:grid-cols-2 justify-between">
-
-      <div class="p-3 flex flex-wrap items-center gap-1 scale-90 sm:scale-100">
-        <!--    Кнопка для отображения панели с информацией Zabbix-->
-        <div>
-          <DeviceDetailInfo :general-info="generalInfo"/>
-        </div>
-
-        <div>
-          <Commands :device-name="deviceName" :interfaces="interfaces"/>
-        </div>
-
-        <!--    Ссылка на Zabbix-->
-        <div v-if="generalInfo.zabbixHostID">
-          <ToZabbixLink :monitoringAvailable="Boolean(generalInfo.zabbixInfo.monitoringAvailable)"
-                        :zabbix-host-id="generalInfo.zabbixHostID"
-                        :zabbix-url="generalInfo.zabbixURL"/>
-        </div>
-
-        <!--    Ссылка на Elastic Stack-->
-        <div v-if="generalInfo.elasticStackLink">
-          <ElasticStackLink :logs-url="generalInfo.elasticStackLink"/>
-        </div>
-
-        <!--    Ссылка на карту-->
-        <div v-if="generalInfo.coords.length">
-          <MapCoordLink :coords="generalInfo.coords"/>
-        </div>
-
-        <!--    Показать/Скрыть список конфигураций-->
-        <div>
-          <ConfigFilesSwitchButton :config-files="configFiles"/>
-        </div>
-        <!--    Медиафайлы-->
-        <div>
-          <DeviceImages :device-name="deviceName"/>
-        </div>
-
-        <!--    Карты Zabbix-->
-        <div v-if="generalInfo.zabbixInfo?.maps.length > 0">
-          <ZabbixMapsDropdown :zabbix-url="generalInfo.zabbixURL" :maps-data="generalInfo.zabbixInfo.maps"/>
-        </div>
-
-        <div class="py-4">
-          <DeviceVlanInfo :device-name="generalInfo.deviceName"/>
-        </div>
-
-        <div class="py-4">
-          <UserActionsButton v-if="generalInfo" :device-name="generalInfo.deviceName"/>
-        </div>
-
-        <div v-if="generalInfo.consoleURL.length">
-          <a :href="generalInfo.consoleURL" target="_blank" class="text-dark">
-            <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'">
-              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
-                <path
-                    d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"></path>
-              </svg>
-            </Button>
-          </a>
-        </div>
-
-      </div>
-
-      <DeviceStats v-if="deviceStats" :stats="deviceStats" :uptime="Number(generalInfo.uptime)"/>
-
-    </div>
-
-  </div>
-
-  <!--    Список конфигураций-->
-  <div v-if="generalInfo" v-show="configFiles.display" class="container mx-auto">
-    <ConfigFiles :device-name="generalInfo.deviceName"/>
-  </div>
-
-  <div class="container mx-auto">
-    <!--    Загруженность интерфейсов-->
-    <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
-
-  </div>
-
-
-  <div class="container mx-auto flex flex-wrap justify-between gap-2 items-center">
-    <div class="py-2">
-      <!--  Время обновления интерфейсов-->
-      <InterfacesHelpText
-          @update="updateCurrentStatus"
-          :time-passed="timePassedFromLastUpdate"
-          :device-status="deviceAvailable"
-          :auto-update="autoUpdateInterfaces"
-          :current-status="currentStatus"
-          :last-interface-update="collected"/>
-
-      <!--  Обновление интерфейсов-->
-      <div class="text-sm">
-        <div v-if="currentStatus" class="flex gap-2 items-center">
-          <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
-          <label for="auto-update-interfaces">Обновлять автоматически</label>
+  <div class="mx-auto max-w-425 px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div class="flex flex-col gap-4">
+      <div v-if="generalInfo"
+           class="
+           delay-0
+           transition hover:-translate-y-0.5
+           relative overflow-hidden
+           rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+           bg-white/70 dark:bg-gray-900/40
+           backdrop-blur
+           hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          ">
+        <div
+            class="absolute inset-0 bg-linear-to-br from-sky-500/10 via-transparent to-indigo-500/10 pointer-events-none"/>
+        <div class="relative p-4 sm:p-6">
+          <DeviceStatusName
+              :status="deviceAvailable"
+              :serialNumber="generalInfo.serialNumber || ''"
+              :device="{name: deviceName, ip: generalInfo.deviceIP, vendor: generalInfo.vendor || '', model: generalInfo.model || '', group: '', console_url: generalInfo.consoleURL}"
+              :console-url="generalInfo.consoleURL"/>
         </div>
       </div>
+
+      <div v-if="generalInfo" class="gap-4 grid" :class="{'xl:grid-cols-2': deviceStats}">
+
+        <div
+            class="
+            rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+            bg-white/70 dark:bg-gray-900/40
+            p-4 sm:p-4
+            backdrop-blur
+            xl:sticky xl:top-4
+            transition hover:-translate-y-0.5
+            delay-0
+            hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+            ">
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <DeviceDetailInfo :general-info="generalInfo"/>
+            <Commands :device-name="deviceName" :interfaces="interfaces"/>
+
+            <ToZabbixLink
+                v-if="generalInfo.zabbixHostID"
+                :monitoringAvailable="Boolean(generalInfo.zabbixInfo.monitoringAvailable)"
+                :zabbix-host-id="generalInfo.zabbixHostID"
+                :zabbix-url="generalInfo.zabbixURL"/>
+
+            <ElasticStackLink v-if="generalInfo.elasticStackLink" :logs-url="generalInfo.elasticStackLink"/>
+            <MapCoordLink v-if="generalInfo.coords.length" :coords="generalInfo.coords"/>
+            <ConfigFilesSwitchButton :config-files="configFiles"/>
+            <DeviceImages :device-name="deviceName"/>
+            <ZabbixMapsDropdown
+                v-if="generalInfo.zabbixInfo?.maps.length > 0"
+                :zabbix-url="generalInfo.zabbixURL"
+                :maps-data="generalInfo.zabbixInfo.maps"/>
+
+            <div class="contents sm:contents">
+              <DeviceVlanInfo :device-name="generalInfo.deviceName"/>
+              <UserActionsButton :device-name="generalInfo.deviceName"/>
+            </div>
+
+            <a v-if="generalInfo.consoleURL.length" :href="generalInfo.consoleURL" target="_blank" class="inline-flex">
+              <Button outlined severity="contrast" v-tooltip.bottom="'Консоль'" class="rounded-2xl shadow-sm border-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                      d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"/>
+                </svg>
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        <div v-if="deviceStats"
+             class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+             bg-white/70 dark:bg-gray-900/40
+             p-4 sm:p-5
+             backdrop-blur
+             xl:sticky xl:top-4
+             transition hover:-translate-y-0.5
+             delay-0
+             hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+            ">
+          <DeviceStats :stats="deviceStats" :uptime="Number(generalInfo.uptime)"/>
+        </div>
+      </div>
+
+      <div v-if="generalInfo && configFiles.display"
+           class="
+           rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+           bg-white/70 dark:bg-gray-900/40
+           p-4 sm:p-5
+           backdrop-blur
+          ">
+        <ConfigFiles :device-name="generalInfo.deviceName"/>
+      </div>
+
+      <div v-if="interfacesWorkload.count"
+          class="
+          rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+          bg-white/70 dark:bg-gray-900/40
+          p-4 sm:p-5
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          ">
+        <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload"/>
+      </div>
+
+      <div
+          class="
+          rounded-3xl border border-gray-200/70 dark:border-gray-700/70
+          bg-white/70 dark:bg-gray-900/40
+          p-4 sm:p-5
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+          ">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div class="flex flex-1 flex-col gap-3">
+            <div v-if="currentStatus"
+                 class="inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
+              <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces"/>
+              <label for="auto-update-interfaces" class="cursor-pointer">Обновлять автоматически</label>
+            </div>
+          </div>
+
+          <div v-if="deviceName.length" class="w-full xl:w-auto">
+            <DeviceViewings :device-name="deviceName"/>
+          </div>
+        </div>
+      </div>
+
+      <div
+          class="
+          rounded-3xl border
+          flex justify-center
+          border-gray-200/70 dark:border-gray-700/70
+          bg-white/70 dark:bg-gray-900/40
+          p-2 sm:p-4
+          overflow-hidden
+        ">
+        <div v-if="interfaces.length && generalInfo" class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+            <tr class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <th class="w-12"></th>
+              <th class="w-68"></th>
+              <th class="w-26"></th>
+              <th></th>
+              <th class="w-24 font-mono">
+                <Button outlined size="small" @click="toggleInterfacesWithVlans"
+                        :label="withVlans?'no VLAN':'+ VLAN'" class="rounded-xl!"/>
+              </th>
+            </tr>
+            </thead>
+            <tbody>
+            <template v-for="_interface in interfaces" :key="_interface.name">
+              <DetailInterfaceInfo
+                  @change-device="dev => init(dev)"
+                  :device-name="generalInfo.deviceName"
+                  :dynamic-opacity="dynamicOpacity"
+                  :interface="_interface"
+                  :show-vlans="withVlans"
+                  :permission-level="generalInfo.permission"/>
+            </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else
+             class="py-10 text-xl flex items-center justify-center flex-col gap-4 text-gray-700 dark:text-gray-200">
+          <span>Собираем интерфейсы</span>
+          <ProgressSpinner/>
+        </div>
+      </div>
     </div>
-
-    <div v-if="deviceName.length" class="w-full sm:w-auto">
-      <DeviceViewings :device-name="deviceName"/>
-    </div>
-  </div>
-
-  <div class="mx-auto py-4 px-2 flex justify-evenly relative">
-
-    <!--    Таблица интерфейсов-->
-    <div v-if="interfaces.length && generalInfo" class="overflow-x-scroll overflow-y-visible">
-      <table class="block">
-        <thead>
-        <tr>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <th class="font-mono">
-            <Button outlined size="small" @click="toggleInterfacesWithVlans"
-                    :label="withVlans?'no VLAN':'+ VLAN'"/>
-          </th>
-        </tr>
-        </thead>
-        <tbody>
-
-        <template v-for="_interface in interfaces">
-          <DetailInterfaceInfo
-              @change-device="dev => init(dev)"
-              :device-name="generalInfo.deviceName"
-              :dynamic-opacity="dynamicOpacity"
-              :interface="_interface"
-              :show-vlans="withVlans"
-              :permission-level="generalInfo.permission"/>
-        </template>
-
-        </tbody>
-      </table>
-    </div>
-
-    <!--Собираем интерфейсы-->
-    <div v-else class="py-5 text-xl flex justify-center flex-col">
-      <span>Собираем интерфейсы</span>
-      <ProgressSpinner/>
-    </div>
-
   </div>
 
   <ModalPortControl/>
-
   <CommentControl/>
-
   <FindMac/>
-
   <BrasSession/>
-
   <ScrollTop/>
-
   <Footer/>
 
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
@@ -222,13 +236,11 @@
       </svg>
     </symbol>
   </svg>
-
 </template>
 
 <script lang="ts">
 import {defineComponent} from "vue";
 import ScrollTop from "primevue/scrolltop";
-import Toast from "primevue/toast";
 import TimeAgo from 'javascript-time-ago';
 import ru from 'javascript-time-ago/locale/ru';
 
@@ -238,7 +250,6 @@ import ElasticStackLink from "./components/ElasticStackLink.vue";
 import MapCoordLink from "./components/MapCoordLink.vue";
 import ToZabbixLink from "./components/ToZabbixLink.vue";
 import DeviceDetailInfo from "./components/DeviceDetailInfo.vue";
-import InterfacesHelpText from "./components/InterfacesHelpText.vue";
 import ModalPortControl from "./components/ModalPortControl.vue";
 import DeviceStats from "./components/DeviceStats.vue";
 import CommentControl from "./components/CommentControl.vue";
@@ -254,7 +265,7 @@ import UserActionsButton from "./components/UserActionsButton.vue";
 import api from "@/services/api";
 import {GeneralInfo} from "./GeneralInfo";
 import {HardwareStats} from "./hardwareStats";
-import {DeviceInterface, InterfacesCount, newInterfacesList} from "@/services/interfaces";
+import {DeviceInterface, InterfacesCount, reconcileInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
@@ -280,7 +291,6 @@ export default defineComponent({
     FindMac,
     DeviceStatusName,
     ElasticStackLink,
-    InterfacesHelpText,
     MapCoordLink,
     ToZabbixLink,
     DeviceDetailInfo,
@@ -289,7 +299,6 @@ export default defineComponent({
     CommentControl,
     BrasSession,
     ScrollTop,
-    Toast,
     ZabbixMapsDropdown,
   },
 
@@ -302,14 +311,13 @@ export default defineComponent({
       generalInfo: null as GeneralInfo | null,
       interfaces: [] as DeviceInterface[],
 
-      timePassedFromLastUpdate: "",
-      collected: new Date(Date.now()) as Date, // Дата и время сбора интерфейсов
-      seconds_pass: 0,
+      collected: new Date(Date.now()) as Date,
+      staleTick: 0,
 
-      deviceAvailable: -1, // Оборудование доступно?
-      withVlans: false, // Собирать VLAN?
-      currentStatus: false, // Собирать интерфейсы в реальном времени?
-      autoUpdateInterfaces: true, // Автоматически обновлять интерфейсы
+      deviceAvailable: -1,
+      withVlans: false,
+      currentStatus: false,
+      autoUpdateInterfaces: true,
 
       deviceName: "",
 
@@ -327,35 +335,48 @@ export default defineComponent({
 
       updateInterfacesTimer: null as null | number,
       updateStatsTimer: null as null | number,
-      secondsTimer: null as null | number,
+      staleStateTimer: null as null | number,
 
     }
   },
 
   computed: {
+    secondsFromLastCollection(): number {
+      this.staleTick;
+      return Math.floor((Date.now() - this.collected.getTime()) / 1000)
+    },
     dynamicOpacity(): { opacity: number } {
-      if (this.deviceAvailable === -1 || this.seconds_pass >= 60) {
+      if (this.deviceAvailable === -1 || this.secondsFromLastCollection >= 60) {
         return {'opacity': 0.6}
       }
       return {'opacity': 1}
     },
   },
 
-  mounted() {
+  watch: {
+    '$route.params.deviceName': {
+      immediate: true,
+      handler(deviceName) {
+        const routeDeviceName = deviceName?.toString();
+        if (!routeDeviceName) return;
+        const generalInfo = this.generalInfo;
+
+        if (generalInfo && generalInfo.deviceIP === routeDeviceName) {
+          this.init(generalInfo.deviceName, false)
+          return;
+        }
+
+        if (this.deviceName !== routeDeviceName) {
+          this.init(routeDeviceName, false)
+        }
+      }
+    }
+  },
+
+  created() {
     try {
       TimeAgo.addDefaultLocale(ru)
     } catch (e) {
-    }
-
-    this.init(this.$route.params.deviceName.toString())
-  },
-
-  updated() {
-    if (this.deviceName !== this.$route.params.deviceName.toString() && this.generalInfo?.deviceIP !== this.$route.params.deviceName.toString()) {
-      this.init(this.$route.params.deviceName.toString())
-    }
-    if (this.generalInfo && this.generalInfo.deviceIP === this.$route.params.deviceName.toString()) {
-      this.init(this.generalInfo.deviceName)
     }
   },
 
@@ -364,51 +385,45 @@ export default defineComponent({
   },
 
   methods: {
-    init(deviceName: string) {
+    init(deviceName: string, syncRoute = true) {
       if (this._init_started) return;
 
       this._init_started = true
       this.clearTimers()
       this.clearData()
 
-      this.$router.push({
-        name: 'device',
-        params: {
-          deviceName: deviceName
-        },
-        query: {...this.$route.query}
-      })
+      if (syncRoute && this.$route.params.deviceName?.toString() !== deviceName) {
+        this.$router.push({
+          name: 'device',
+          params: {
+            deviceName: deviceName
+          },
+          query: {...this.$route.query}
+        })
+      }
 
       this.deviceName = deviceName;
       document.title = this.deviceName
 
-      // Смотрим предыдущую загруженность интерфейсов оборудования
       this.getInterfacesWorkload()
 
-      // Сначала смотрим предыдущие интерфейсы
       this.getInterfaces()?.then(
           () => {
-            // Далее опрашиваем текущий статус интерфейсов
             this.currentStatus = true
             this.getInterfaces()
-
-            // Смотрим информацию оборудования
             this.getStats()
-
-            // Смотрим текущую загруженность интерфейсов оборудования
             this.getInterfacesWorkload()
 
             this.updateInterfacesTimer = window.setInterval(() => {
               this.getInterfaces()
             }, 4000)
 
-            this.secondsTimer = window.setInterval(() => {
-              this.timer()
-            }, 1000)
+            this.staleStateTimer = window.setInterval(() => {
+              this.staleTick += 1
+            }, 15000)
 
             this.updateStatsTimer = window.setInterval(() => {
               this.getStats()
-              console.log("getStats")
             }, 60_000)
             this._init_started = false;
 
@@ -416,7 +431,6 @@ export default defineComponent({
       )
 
       this.getInfo()
-
     },
 
     clearTimers() {
@@ -425,15 +439,13 @@ export default defineComponent({
         this.updateInterfacesTimer = null
         console.log("Интерфейсный таймер остановлен")
       }
-      if (this.secondsTimer) {
-        clearInterval(this.secondsTimer)
-        this.secondsTimer = null
-        console.log("Таймер остановлен")
+      if (this.staleStateTimer) {
+        clearInterval(this.staleStateTimer)
+        this.staleStateTimer = null
       }
       if (this.updateStatsTimer) {
         clearInterval(this.updateStatsTimer)
         this.updateStatsTimer = null
-        console.log("updateStatsTimer остановлен")
       }
     },
 
@@ -444,14 +456,13 @@ export default defineComponent({
       this.generalInfo = null
       this.interfaces = []
 
-      this.timePassedFromLastUpdate = ""
       this.collected = new Date()
-      this.seconds_pass = 0
+      this.staleTick = 0
 
-      this.deviceAvailable = -1 // Оборудование доступно?
-      this.withVlans = false // Собирать VLAN?
-      this.currentStatus = false // Собирать интерфейсы в реальном времени?
-      this.autoUpdateInterfaces = true // Автоматически обновлять интерфейсы
+      this.deviceAvailable = -1
+      this.withVlans = false
+      this.currentStatus = false
+      this.autoUpdateInterfaces = true
 
       this.findMacAddress = ""
       this.findMacDialogVisible = false
@@ -464,7 +475,6 @@ export default defineComponent({
       this.configFiles = {display: false}
     },
 
-    /** Собираем информацию о CPU, RAM, flash, temp */
     async getStats() {
       let url = "/api/v1/devices/" + this.deviceName + "/stats"
       try {
@@ -484,7 +494,6 @@ export default defineComponent({
       )
     },
 
-    /** Смотрим информацию про оборудование */
     async getInfo() {
       let url = "/api/v1/devices/" + this.deviceName + "/info"
       return api.get<GeneralInfo>(url).then(
@@ -499,11 +508,7 @@ export default defineComponent({
       )
     },
 
-    /** Смотрим интерфейсы оборудования */
     async getInterfaces() {
-      this.seconds_pass = Math.floor((new Date().getTime() - this.collected.getTime()) / 1000)
-
-      // Если автообновление интерфейсов отключено, то ожидаем 2сек и запускаем метод снова
       if (this._getting_interfaces || !this.autoUpdateInterfaces) return;
 
       let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
@@ -520,11 +525,11 @@ export default defineComponent({
       this._getting_interfaces = true;
       try {
         const resp = await api.get(url)
-        // Если устройство поменялось, то выходим.
         if (currentDeviceName !== this.deviceName) return
 
-        this.interfaces = newInterfacesList(resp.data.interfaces);
+        this.interfaces = reconcileInterfacesList(this.interfaces, resp.data.interfaces);
         this.collected = new Date(resp.data.collected);
+        this.staleTick = 0
         this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
       } catch (error: any) {
       }
@@ -540,28 +545,6 @@ export default defineComponent({
       }
     },
 
-    /**
-     * Переводит режим обновления интерфейсов в обнаружение в реальном времени
-     * и включает автоматическое обновление
-     */
-    updateCurrentStatus() {
-      this.currentStatus = true
-      this.autoUpdateInterfaces = true
-    },
-
-    /**
-     * Таймер для вычисления времени прошедшего с момента последнего обнаружения интерфейсов.
-     */
-    timer() {
-      if (this.seconds_pass < 60) {
-        this.timePassedFromLastUpdate = `${this.seconds_pass} сек. назад`
-      } else {
-        const timeAgo = new TimeAgo('ru-RU')
-        this.timePassedFromLastUpdate = timeAgo.format(this.collected)
-      }
-      // setTimeout(this.timer, 1000)
-    },
-
     showToastError(reason: any) {
       errorToast(
           `ERROR! status: ${reason.response.status}`,
@@ -569,7 +552,6 @@ export default defineComponent({
           10000
       )
     }
-
   },
 });
 </script>

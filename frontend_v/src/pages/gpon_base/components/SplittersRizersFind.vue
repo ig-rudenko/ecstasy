@@ -6,6 +6,7 @@
   <Select v-if="!error.status && availableList !== null"
           v-model="connection" :options="availableList" filter showClear fluid
           :class="valid?['w-full']:['p-invalid', 'w-full']"
+          class="rounded-2xl"
           :virtualScrollerOptions="{ itemSize: 38 }"
           @change="e => $emit('change', e)"
           :optionLabel="getFullAddress" placeholder="Выберите">

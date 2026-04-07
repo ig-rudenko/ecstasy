@@ -1,98 +1,59 @@
 <template>
+  <div class="flex flex-col gap-4 h-full">
+    <Message v-if="notification.type" :severity="notification.type" class="rounded-2xl">
+      {{ notification.text }}
+    </Message>
 
-  <!--Оповещение-->
-  <div v-if="notification.type" :class="notificationClasses"
-       class="flex flex-wrap justify-center gap-2 items-center p-3">
-    <div>{{ notification.text }}</div>
-    <Button icon="pi pi-times" size="small" rounded outlined severity="danger" @click="notification.type=''"/>
-  </div>
+    <div id="drag-drop-area" class="flex flex-col gap-4 rounded-3xl border border-dashed border-gray-300/80 bg-gray-50/70 p-5 dark:border-gray-700/80 dark:bg-gray-800/40 h-full">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between h-full">
+        <div>
+          <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Загрузка медиа</div>
+          <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Перетащите файлы сюда или выберите их вручную.</div>
+        </div>
 
-  <div id="drag-drop-area" :class="areaClasses">
-    <div class="flex flex-wrap justify-center gap-4">
-
-      <div class="flex flex-wrap items-center gap-4">
-        <Button @click="uploadAllFiles" v-if="files.length" class="flex items-center gap-2" text rounded>
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor"
-               class="bi bi-cloud-arrow-up me-2" viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                  d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2z"></path>
-            <path
-                d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"></path>
-          </svg>
-          Загрузить ({{ files.length }})
-        </Button>
-
-        <label class="py-3 flex h-full rounded-3xl px-3 cursor-pointer"
-               :class="{'hover:bg-gray-200 hover:dark:bg-gray-800': files.length}" for="file-input">
-          <span v-if="files.length" class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" class="dark:fill-gray-200"
-                   viewBox="0 0 16 16">
-                <path
-                    d="M8 6.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 .5-.5z"/>
-                <path
-                    d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-              </svg>
-              <span>Добавить файл</span>
-            </span>
-
-          <span v-else class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" class="dark:fill-gray-200"
-                 viewBox="0 0 16 16">
-              <path
-                  d="M8 6.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 .5-.5z"/>
-              <path
-                  d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-            </svg>
-          </span>
-
-        </label>
-        <input hidden id="file-input" multiple type="file" @change="handleFileChange"/>
-      </div>
-      <div v-if="loadingBar.active" class="py-3 w-full">
-        <div class="w-full flex flex-row">
-          <div v-for="part in loadingBar.progress" :class="part.className"
-               class="py-2 bg-indigo-500 w-full first:rounded-l-xl last:rounded-r-xl"
-               :style="{width: `${loadingBar.partWidth}%`}"></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <Button v-if="files.length" @click="uploadAllFiles" label="Загрузить" icon="pi pi-cloud-upload" class="!rounded-2xl" />
+          <label for="file-input" class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-gray-200/80 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-sky-300 hover:text-sky-600 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-gray-200 dark:hover:border-sky-500 dark:hover:text-sky-300">
+            <i class="pi pi-plus-circle" />
+            <span>{{ files.length ? "Добавить файлы" : "Выбрать файлы" }}</span>
+          </label>
+          <input hidden id="file-input" multiple type="file" @change="handleFileChange" />
         </div>
       </div>
 
-      <div v-if="files.length">
+      <ProgressBar v-if="loadingBar.active" :value="uploadProgress" :show-value="false" class="h-2 overflow-hidden rounded-full" />
 
-        <div class="flex flex-col gap-4">
+      <div v-if="files.length" class="grid gap-4 xl:grid-cols-2">
+        <article
+            v-for="fileObj in files"
+            :key="fileObj.file.name + fileObj.file.size"
+            class="relative rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55"
+        >
+          <Button icon="pi pi-times" rounded severity="danger" size="small" class="!absolute right-3 top-3" @click="deleteFile(fileObj)" />
 
-          <div v-for="file_obj in files"
-               class="shadow relative p-3 border rounded-3xl border-gray-300 dark:border-gray-700">
-            <!--Кнопка удаления-->
-            <div class="p-3 absolute right-[-16px] top-[-16px]">
-              <Button icon="pi pi-times" rounded severity="danger" @click="deleteFile(file_obj)"></Button>
-            </div>
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr),minmax(0,1.1fr)]">
+            <MediaPreview :item="fileObj" />
 
-            <!--Ошибки при загрузке-->
-            <div v-if="file_obj.errors.length" class="px-3">
-              <Message v-for="err in file_obj.errors" severity="error" class="w-fit">{{ err }}</Message>
-            </div>
-
-            <div class="grid grid-cols-2">
-              <div class="p-3">
-                <MediaPreview :item="file_obj"></MediaPreview>
+            <div class="flex flex-col gap-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ fileObj.file.name }}</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Добавьте описание перед загрузкой.</div>
               </div>
 
-              <div class="flex flex-col self-center gap-3">
-                <div class="form-label">Описание</div>
-                <Textarea v-model.trim="file_obj.description" cols="50" rows="8"
-                          class="border rounded p-4 border-gray-300 dark:border-gray-700"></Textarea>
-              </div>
+              <Message v-for="err in fileObj.errors" :key="err" severity="error" class="rounded-2xl">
+                {{ err }}
+              </Message>
+
+              <FloatLabel variant="on">
+                <Textarea v-model.trim="fileObj.description" input-id="media-description" rows="7" fluid class="min-h-[10rem]" />
+                <label for="media-description">Описание</label>
+              </FloatLabel>
             </div>
           </div>
-
-        </div>
-
+        </article>
       </div>
     </div>
-
-
   </div>
-
 </template>
 
 <script lang="ts">
@@ -110,142 +71,103 @@ export default defineComponent({
   props: {
     deviceName: {required: true, type: String}
   },
+  emits: ["loadedmedia"],
   data() {
     return {
       files: [] as Array<MediaFile>,
-
       notification: {
         type: "",
         text: "",
       },
       loadingBar: {
         active: false,
-        partWidth: 0,
         progress: [] as { className: string }[],
       },
+    };
+  },
+  computed: {
+    uploadProgress(): number {
+      if (!this.loadingBar.active || !this.files.length) return 0;
+      return Math.round((this.loadingBar.progress.length / this.files.length) * 100);
     }
   },
-
-  emits: ["loadedmedia"],
-
   mounted() {
-    this.addDragAndDropListeners()
+    this.addDragAndDropListeners();
   },
-
-  computed: {
-    areaClasses(): Array<string> {
-      let classes = ["content-center", "justify-center", "flex-row"]
-      if (!this.files.length) {
-        classes.push("h-full")
-      }
-      return classes
-    },
-    notificationClasses(): Array<string> {
-      let classes = ["alert", "modal-header", "rounded-3"]
-      classes.push(`alert-${this.notification.type}`)
-      return classes
-    },
-  },
-
   methods: {
-
     addDragAndDropListeners(): void {
-      let container: Element | null = document.querySelector("#drag-drop-area");
+      const container = document.querySelector("#drag-drop-area");
       if (!container) return;
-      container.addEventListener("dragover", e => e.preventDefault());
-      container.addEventListener("drop", (e) => this.addByDragAndDrop(<DragEvent>e));
+      container.addEventListener("dragover", (e) => e.preventDefault());
+      container.addEventListener("drop", (e) => this.addByDragAndDrop(e as DragEvent));
     },
-
     addByDragAndDrop(e: DragEvent): void {
       e.preventDefault();
-      this.addFiles(e.dataTransfer?.files)
+      this.addFiles(e.dataTransfer?.files);
     },
-
     handleFileChange(event: Event): void {
-      this.addFiles((<HTMLInputElement>event.target).files)
+      this.addFiles((event.target as HTMLInputElement).files);
     },
-
     addFiles(files?: FileList | null): void {
       if (!files) return;
-      // Если после загрузки добавляются еще файлы, то обнуляем статус загрузки
-      this.loadingBar.active = false
+      this.loadingBar.active = false;
+      this.loadingBar.progress = [];
       for (const file of Array.from(files)) {
-        this.files.unshift(new MediaFile(file))
+        this.files.unshift(new MediaFile(file));
       }
     },
-
-    handleUploadFileError(error: any): string {
-      if (error.description) {
-        return `Ошибка при указании описания: "${error.description}"`
-      } else {
-        return String(error)
-      }
-    },
-
     deleteFile(fileObj: MediaFile): void {
-      const index = this.files.indexOf(fileObj)
+      const index = this.files.indexOf(fileObj);
       if (index !== -1) {
-        this.files.splice(index, 1)
+        this.files.splice(index, 1);
       }
     },
-
     async uploadAllFiles() {
       if (!this.files.length) return;
 
-      // Создаем временные список файлов для загрузки
-      const files: Array<MediaFile> = new Array(...this.files)
+      const files = [...this.files];
+      this.loadingBar.active = true;
+      this.loadingBar.progress = [];
 
-      // Показываем статус загрузки и обнуляем прогресс
-      this.loadingBar.active = true
-      this.loadingBar.progress = []
-      this.loadingBar.partWidth = 100 / files.length
-
-      for (let i = 0; i < files.length; i++) {
-        await this.uploadFile(files[i])
-        // Добавляем статус загрузки файла (смотрим, нет ли ошибок)
+      for (const file of files) {
+        await this.uploadFile(file);
         this.loadingBar.progress.push({
-          className: files[i].errors.length > 0 ? "bg-red-500" : "bg-indigo-500"
-        })
+          className: file.errors.length > 0 ? "bg-red-500" : "bg-indigo-500"
+        });
       }
 
-      // Смотрим кол-во успешно загруженных файлов
-      const uploaded = files.length - this.files.length
+      const uploaded = files.length - this.files.length;
+      this.notification.type = uploaded ? "success" : "error";
+      this.notification.text = `Успешно загружено ${uploaded} из ${files.length}`;
+
       if (uploaded) {
-        this.notification.type = "success"
-        setTimeout(() => this.notification.type = '', 2000)
+        setTimeout(() => {
+          this.notification.type = "";
+        }, 2500);
         this.loadingBar.active = false;
-      } else {
-        this.notification.type = "danger"
       }
-      this.notification.text = `(${uploaded} из ${files.length}) медиафайла(ов) успешно загружены`
     },
-
     uploadFile(mediaFile: MediaFile): Promise<number | void> | undefined {
       if (!mediaFile.file) return;
 
-      // Создать объект FormData для отправки файла
-      let formData = new FormData();
+      const formData = new FormData();
       formData.append("file", mediaFile.file);
-      formData.append("description", mediaFile.description)
+      formData.append("description", mediaFile.description);
+
       return api.post(`/api/v1/devices/${this.deviceName}/media`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          "Content-Type": "multipart/form-data"
         }
-      })
-          .then(
-              (value: AxiosResponse<any>) => {
-                this.deleteFile(mediaFile)
-                this.$emit("loadedmedia", newMediaFileInfo(value.data))
-              },
-              (reason: any) => mediaFile.errors.push(errorFmt(reason))
-          )
-          .catch(
-              (reason: any) => mediaFile.errors.push(errorFmt(reason))
-          )
+      }).then(
+          (value: AxiosResponse<any>) => {
+            this.deleteFile(mediaFile);
+            this.$emit("loadedmedia", newMediaFileInfo(value.data));
+          },
+          (reason: any) => mediaFile.errors.push(errorFmt(reason))
+      ).catch(
+          (reason: any) => mediaFile.errors.push(errorFmt(reason))
+      );
     },
   }
 });
 </script>
-
-<style scoped>
-</style>

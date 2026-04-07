@@ -58,12 +58,15 @@
       <div class="flex flex-wrap gap-2 justify-end">
 
         <Button icon="pi pi-times" label="Отмена" severity="secondary" autofocus
+                class="rounded-2xl"
                 @click="closeDialog"/>
 
         <Button icon="pi pi-check" v-show="interfaceControlService.portAction.action" @click="() => submitPortAction(false)"
+                class="rounded-2xl"
                 label="Без сохранения конфигурации"/>
 
         <Button icon="pi pi-check" severity="success" label="Сохранить конфигурацию после" v-show="interfaceControlService.portAction.action"
+                class="rounded-2xl"
                 @click="() => submitPortAction(true)"/>
       </div>
     </div>

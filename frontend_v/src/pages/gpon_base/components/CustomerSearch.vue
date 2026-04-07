@@ -1,6 +1,6 @@
 <template>
 
-  <Button @click="showDialog=true" severity="success" size="small">
+  <Button @click="showDialog=true" severity="success" size="small" class="rounded-2xl" outlined>
     Найти абонента
   </Button>
 

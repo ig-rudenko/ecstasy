@@ -14,7 +14,7 @@
               :class="valid?[]:['p-invalid']"
               @change="e => $emit('change', e)"
               :virtualScrollerOptions="{ itemSize: 38 }"
-              :optionLabel="getFullAddress" placeholder="Выберите" class="mb-1">
+              :optionLabel="getFullAddress" placeholder="Выберите" class="mb-1 rounded-2xl">
         <template #value="slotProps">
           <div v-if="slotProps.value" class="items-center flex gap-2">
             <BuildingIcon :type="slotProps.value.building_type" width="24" height="24"></BuildingIcon>
@@ -32,7 +32,7 @@
         </template>
       </Select>
 
-      <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small">
+      <Button v-if="allowCreate" @click="show_new_address_form=true" severity="success" size="small" class="rounded-2xl">
         Добавить/Редактировать
       </Button>
 

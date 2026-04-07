@@ -3,15 +3,15 @@
 
     <div class="flex flex-wrap gap-3 items-center">
       <div>
-        Всего <span class="px-2 rounded-full bg-primary text-white dark:text-gray-950">{{ data.total_count }}</span>
+        Всего <span class="px-3 font-mono py-1.25 rounded-2xl bg-primary text-white dark:text-gray-950">{{ data.total_count }}</span>
       </div>
       <div>
-        Online <span class="px-2 rounded-full bg-green-500 text-white dark:text-gray-950">{{ data.online_count }}</span>
+        Online <span class="px-3 font-mono py-1.25 rounded-2xl bg-green-500 text-white dark:text-gray-950">{{ data.online_count }}</span>
       </div>
 
-      <Button v-if="showSubscribersData" @click="showSubscribersData=false"
+      <Button v-if="showSubscribersData" @click="showSubscribersData=false" class="rounded-2xl"
               icon="pi pi-list" size="small" outlined label="Переключить на обычный вид"/>
-      <Button v-else @click="getSubscribersData"
+      <Button v-else @click="getSubscribersData" class="rounded-2xl"
               outlined icon="pi pi-users" size="small" label="Переключить на просмотр абонентов"/>
 
     </div>
@@ -30,14 +30,14 @@
         </thead>
         <tbody>
 
-        <template v-for="line in data.onts_lines">
+        <template v-for="line in data.onts_lines" :key="line[0]">
           <OLT_ONT_Detail_info
               :device-name="deviceName"
               :interface="interface"
               :permission-level="permissionLevel"
               :line="line"
               :show-subscribers-data="showSubscribersData"
-              :subscribers-data="subscribersData"
+              :subscriber-row="subscribersData[Number(line[0])] || null"
           />
         </template>
 
@@ -56,7 +56,7 @@ import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue"
 import api from "@/services/api";
 import {AxiosResponse} from "axios";
 import {DeviceInterface} from "@/services/interfaces";
-import SubscribersData, {newSubscriberData} from "../subscribersData";
+import {buildOltSubscribersByOnt, OltSubscribersByOnt} from "@/pages/deviceInfo/components/oltSubscribers";
 
 type ontData = {
   total_count: number,
@@ -77,20 +77,21 @@ export default defineComponent({
 
   data() {
     return {
-      showDetailInfo: false,
       showSubscribersData: false,
-      subscribersData: {} as { number?: SubscribersData[] } | any,
+      subscribersData: {} as OltSubscribersByOnt,
+      subscribersDataLoaded: false,
     }
   },
 
   methods: {
 
     getSubscribersData() {
-      if (this.isEmpty(this.subscribersData)) {
+      if (!this.subscribersDataLoaded) {
         api.get("/api/v1/gpon/subscribers-on-device/" + this.deviceName + "?port=" + this.interface.name)
             .then(
                 (resp: AxiosResponse<any[]>) => {
-                  this.addSubscribersData(resp.data)
+                  this.subscribersData = buildOltSubscribersByOnt(resp.data)
+                  this.subscribersDataLoaded = true;
                   this.showSubscribersData = true;
                 })
             .catch(reason => {
@@ -100,26 +101,6 @@ export default defineComponent({
         this.showSubscribersData = true;
       }
     },
-
-    addSubscribersData(subscribersData: any[]) {
-      this.subscribersData = {}
-      for (let sub of subscribersData) {
-        if (!this.subscribersData[sub.ont_id]) {
-          this.subscribersData[sub.ont_id] = []
-        }
-        this.subscribersData[sub.ont_id].push(newSubscriberData(sub))
-      }
-    },
-
-    isEmpty(obj: any): boolean {
-      for (let prop in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-          return false;
-        }
-      }
-      return true
-    }
-
   }
 })
 </script>

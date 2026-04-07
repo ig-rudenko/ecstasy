@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Button v-tooltip.right="'Подробная информация'" outlined @click="visible = true">
+    <Button v-tooltip.right="'Подробная информация'" outlined @click="visible = true" class="rounded-2xl shadow-sm border-none">
       <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
         <path
             d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
@@ -8,8 +8,8 @@
     </Button>
   </div>
 
-  <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:!w-80 lg:!w-[30rem]">
-    <div v-if="generalInfo.zabbixInfo">
+  <Drawer v-model:visible="visible" header="Детальная информация" class="w-full md:w-80! lg:w-140!" position="right" :modal="false" :dismissable="false">
+    <div v-if="generalInfo.zabbixInfo" class="flex flex-col gap-3">
 
       <div v-if="!generalInfo.zabbixInfo.monitoringAvailable" class="alert alert-danger text-right text-red-400 mb-2">
         Не мониторится в Zabbix
@@ -22,7 +22,7 @@
         <div v-if="generalInfo.osVersion"> Версия ОС: {{ generalInfo.osVersion }}</div>
       </div>
 
-      <div class="border flex flex-wrap mb-4 p-3 rounded-xl border-gray-200 dark:border-gray-600">
+      <div v-if="images.length" class="border flex flex-wrap p-3 rounded-xl border-gray-200 dark:border-gray-600">
         <div v-for="(imageURL, i) in images" class="p-3">
           <Image :src="imageURL" :alt="'image'+i" width="120" preview/>
         </div>

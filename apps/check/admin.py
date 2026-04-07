@@ -23,12 +23,20 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
-from django.utils.html import escape, format_html
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from import_export.admin import ExportMixin
+from unfold.admin import ModelAdmin, TabularInline
+from unfold.contrib.filters.admin import (
+    ChoicesDropdownFilter,
+    MultipleRelatedDropdownFilter,
+    RangeDateTimeFilter,
+    RelatedDropdownFilter,
+)
 
 from apps.gathering.services.configurations import LocalConfigStorage
 from devicemanager.device import Interfaces
+from ecstasy_project.admin_filters import distinct_dropdown_filter
 
 from .export import DevicesInterfacesWorkloadExcelExport
 from .export_resources import DevicesResource
@@ -36,23 +44,57 @@ from .models import (
     AccessGroup,
     AuthGroup,
     Bras,
+    BulkDeviceCommandExecution,
+    BulkDeviceCommandExecutionResult,
     DeviceCommand,
     DeviceGroup,
     DeviceMedia,
     Devices,
+    InterfacesComments,
     Profile,
     UsersActions,
 )
 
 
-class ProfileInline(admin.TabularInline):
+class BulkDeviceCommandExecutionResultInline(TabularInline):
+    """Inline results for one bulk command execution."""
+
+    model = BulkDeviceCommandExecutionResult
+    extra = 0
+    tab = True
+    can_delete = False
+    readonly_fields = (
+        "device",
+        "device_name",
+        "status",
+        "command_text",
+        "output",
+        "detail",
+        "error",
+        "duration",
+        "created_at",
+        "updated_at",
+    )
+    fields = readonly_fields
+
+
+class ProfileInline(TabularInline):
     model = Profile.devices_groups.through
+    tab = True
+
+
+VendorDropdownFilter = distinct_dropdown_filter("vendor", "vendor")
+ModelDropdownFilter = distinct_dropdown_filter("model", "model")
+ConnectionPoolSizeDropdownFilter = distinct_dropdown_filter("connection_pool_size", "connection pool size")
+DeviceVendorDropdownFilter = distinct_dropdown_filter("device_vendor", "device vendor")
 
 
 @admin.register(DeviceGroup)
-class DeviceGroupAdmin(admin.ModelAdmin):
+class DeviceGroupAdmin(ModelAdmin):
     """Управление группами оборудования"""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["name", "description", "dev_count"]
     inlines = [ProfileInline]
 
@@ -65,10 +107,13 @@ class DeviceGroupAdmin(admin.ModelAdmin):
 
 
 @admin.register(Devices)
-class DevicesAdmin(ExportMixin, admin.ModelAdmin):
+class DevicesAdmin(ExportMixin, ModelAdmin):
     """Управление оборудованием"""
 
     resource_class = DevicesResource
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
 
     list_display = [
         "show_ip_address",
@@ -81,13 +126,13 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
         "show_device",
     ]
     list_filter = [
-        "vendor",
-        "group",
-        "auth_group",
-        "model",
-        "port_scan_protocol",
-        "cmd_protocol",
-        "connection_pool_size",
+        VendorDropdownFilter,
+        ("group", RelatedDropdownFilter),
+        ("auth_group", RelatedDropdownFilter),
+        ModelDropdownFilter,
+        ("port_scan_protocol", ChoicesDropdownFilter),
+        ("cmd_protocol", ChoicesDropdownFilter),
+        ConnectionPoolSizeDropdownFilter,
         "active",
     ]
     radio_fields = {
@@ -102,19 +147,20 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
     fieldsets = (
         (
             "Характеристика",
-            {"fields": ("ip", "name", "active"), "classes": ("wide",)},
+            {"fields": ("ip", "name", "active"), "classes": ("tab", "wide")},
         ),
         (
             "Тип",
-            {"fields": ("vendor", "model", "serial_number", "os_version")},
+            {"fields": ("vendor", "model", "serial_number", "os_version"), "classes": ("tab",)},
         ),
         (
             "Принадлежность",
-            {"fields": ("group", "auth_group")},
+            {"fields": ("group", "auth_group"), "classes": ("tab",)},
         ),
         (
             "Удаленное подключение",
             {
+                "classes": ("tab",),
                 "fields": (
                     "snmp_community",
                     "port_scan_protocol",
@@ -124,12 +170,12 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
                     "collect_vlan_info",
                     "collect_configurations",
                     "connection_pool_size",
-                )
+                ),
             },
         ),
         (
             "Интерфейсы",
-            {"fields": ("interface_pattern", "show_interfaces")},
+            {"fields": ("interface_pattern", "show_interfaces"), "classes": ("tab",)},
         ),
     )
     actions = [
@@ -199,18 +245,21 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
             .replace("\n", "<br>")
             .replace(" ", "&nbsp;")
         )
-        return format_html(f"""
+        return mark_safe(
+            f"""
             <div style"overflow-x: scroll;">
                 <div style="font-family: monospace; white-space: nowrap;">
                     {interfaces}
                 </div>
-            </div>""")
+            </div>"""
+        )
 
     @admin.display(description="Посмотреть")
     def show_device(self, obj: Devices):
         """Ссылка на страницу сканирования интерфейсов оборудования"""
 
-        return mark_safe(f"""<a target="_blank" href="{obj.get_absolute_url()}">
+        return mark_safe(
+            f"""<a target="_blank" href="{obj.get_absolute_url()}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" 
                 class="bi bi-box-arrow-in-right" viewBox="0 0 16 16">
                   <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 
@@ -219,7 +268,8 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
                   <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 
                   7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
                 </svg>
-            </a>""")
+            </a>"""
+        )
 
     @admin.action(description="✅ Активировать")
     def activate_devices(self, request, queryset):
@@ -311,9 +361,11 @@ class DevicesAdmin(ExportMixin, admin.ModelAdmin):
 
 
 @admin.register(AuthGroup)
-class AuthGroupAdmin(admin.ModelAdmin):
+class AuthGroupAdmin(ModelAdmin):
     """Взаимодействие с профилями авторизации к оборудованию"""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["name", "login", "description", "dev_count"]
     search_fields = ["name", "login"]
 
@@ -326,21 +378,32 @@ class AuthGroupAdmin(admin.ModelAdmin):
 
 
 @admin.register(Bras)
-class BrasAdmin(admin.ModelAdmin):
+class BrasAdmin(ModelAdmin):
     """Настройка для маршрутизаторов широкополосного удалённого доступа BRAS"""
 
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["name", "ip"]
     search_fields = ["name", "ip"]
 
 
 @admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
+class ProfileAdmin(ModelAdmin):
     """Управление уровнем привилегий пользователей"""
 
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
     list_display = ["user", "permissions", "user_is_active", "dev_groups", "console_access"]
     list_select_related = ["user"]
     filter_horizontal = ["devices_groups"]
-    list_filter = ["permissions", "devices_groups", "console_access", "user__is_active", "user__is_staff"]
+    list_filter = [
+        ("permissions", ChoicesDropdownFilter),
+        ("devices_groups", MultipleRelatedDropdownFilter),
+        "console_access",
+        "user__is_active",
+        "user__is_staff",
+    ]
     search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
 
     @admin.display(description="Пользователь")
@@ -402,11 +465,16 @@ class UserProfileAdmin(UserAdmin):
 
 
 @admin.register(UsersActions)
-class UsersActionsAdmin(admin.ModelAdmin):
+class UsersActionsAdmin(ModelAdmin):
     """Просмотр логов действий пользователя"""
 
+    list_filter_submit = True
     list_display = ["time", "user", "device", "action"]
-    list_filter = ["user", "device"]
+    list_filter = [
+        ("time", RangeDateTimeFilter),
+        ("user", RelatedDropdownFilter),
+        ("device", RelatedDropdownFilter),
+    ]
     search_fields = ["action"]
     date_hierarchy = "time"
     readonly_fields = ["time", "user", "device", "action"]
@@ -414,8 +482,82 @@ class UsersActionsAdmin(admin.ModelAdmin):
     list_select_related = ["device", "user"]
 
 
+@admin.register(BulkDeviceCommandExecution)
+class BulkDeviceCommandExecutionAdmin(ModelAdmin):
+    """Browse persisted bulk command history."""
+
+    list_filter_submit = True
+    list_display = (
+        "launched_at",
+        "user",
+        "command_name",
+        "status",
+        "progress",
+        "processed",
+        "total",
+    )
+    list_filter = (
+        ("launched_at", RangeDateTimeFilter),
+        ("user", RelatedDropdownFilter),
+        "status",
+    )
+    search_fields = ("task_id", "command_name", "command_body", "user__username")
+    list_select_related = ("user", "command")
+    readonly_fields = (
+        "task_id",
+        "user",
+        "command",
+        "command_name",
+        "command_body",
+        "context",
+        "status",
+        "progress",
+        "processed",
+        "total",
+        "launched_at",
+        "finished_at",
+    )
+    inlines = [BulkDeviceCommandExecutionResultInline]
+
+
+@admin.register(BulkDeviceCommandExecutionResult)
+class BulkDeviceCommandExecutionResultAdmin(ModelAdmin):
+    """Browse persisted per-device bulk command results."""
+
+    list_filter_submit = True
+    list_display = (
+        "created_at",
+        "execution",
+        "device_name",
+        "status",
+        "duration",
+    )
+    list_filter = (
+        ("created_at", RangeDateTimeFilter),
+        ("execution", RelatedDropdownFilter),
+        "status",
+    )
+    search_fields = ("device_name", "command_text", "output", "detail", "error", "execution__task_id")
+    list_select_related = ("execution", "device")
+    readonly_fields = (
+        "execution",
+        "device",
+        "device_name",
+        "status",
+        "command_text",
+        "output",
+        "detail",
+        "error",
+        "duration",
+        "created_at",
+        "updated_at",
+    )
+
+
 @admin.register(DeviceMedia)
-class DeviceMediaAdmin(admin.ModelAdmin):
+class DeviceMediaAdmin(ModelAdmin):
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["file_type", "file_name", "current_file"]
     search_fields = ["device__name"]
     list_select_related = ["device"]
@@ -441,7 +583,7 @@ class DeviceMediaAdmin(admin.ModelAdmin):
 
     @admin.display(description="Имя файла")
     def file_name(self, obj: DeviceMedia) -> str:
-        return obj.file.name
+        return str(obj.file.name)
 
     @staticmethod
     def current_file(obj: DeviceMedia) -> str:
@@ -493,12 +635,13 @@ class DeviceCommandModelForm(forms.ModelForm):
             "command",
             "device_vendor",
             "model_regexp",
+            "valid_regexp",
             "perm_groups",
         ]
         widgets = {
             "command": forms.Textarea(
                 attrs={
-                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%;",
+                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%; border: 1px solid #00000007",
                     "wrap": "off",
                 },
             ),
@@ -506,12 +649,14 @@ class DeviceCommandModelForm(forms.ModelForm):
 
 
 @admin.register(DeviceCommand)
-class DeviceCommandAdmin(admin.ModelAdmin):
+class DeviceCommandAdmin(ModelAdmin):
+    compressed_fields = True
+    warn_unsaved_form = True
     list_display = ["name", "device_vendor", "model_regexp", "command_html", "description"]
     search_fields = ["name", "command"]
     filter_horizontal = ("perm_groups",)
     form = DeviceCommandModelForm
-    list_filter = ["device_vendor"]
+    list_filter = [DeviceVendorDropdownFilter]
 
     @admin.display(description="Команда", ordering="command")
     def command_html(self, obj):
@@ -520,7 +665,10 @@ class DeviceCommandAdmin(admin.ModelAdmin):
 
 
 @admin.register(AccessGroup)
-class AccessGroupAdmin(admin.ModelAdmin):
+class AccessGroupAdmin(ModelAdmin):
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
     list_display = (
         "name",
         "description_short",
@@ -532,7 +680,12 @@ class AccessGroupAdmin(admin.ModelAdmin):
     search_fields = ("name", "description")
     ordering = ("-created_at",)
     filter_horizontal = ("devices", "forbidden_devices", "users", "user_groups")
-    list_filter = ("users", "user_groups", "devices", "forbidden_devices")
+    list_filter = (
+        ("users", MultipleRelatedDropdownFilter),
+        ("user_groups", MultipleRelatedDropdownFilter),
+        ("devices", MultipleRelatedDropdownFilter),
+        ("forbidden_devices", MultipleRelatedDropdownFilter),
+    )
 
     fieldsets = (
         ("Основная информация", {"fields": ("name", "description", "created_at")}),
@@ -566,3 +719,22 @@ class AccessGroupAdmin(admin.ModelAdmin):
         css = {
             "all": ("admin/css/widgets.css",),
         }
+
+
+@admin.register(InterfacesComments)
+class InterfacesCommentsAdmin(ModelAdmin):
+    """Browse interface comments left by operators."""
+
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
+    list_display = ("device", "interface", "user", "datetime")
+    search_fields = ("device__name", "device__ip", "interface", "comment", "user__username")
+    list_select_related = ("device", "user")
+    autocomplete_fields = ("device", "user")
+    readonly_fields = ("datetime",)
+    list_filter = (
+        ("device", RelatedDropdownFilter),
+        ("user", RelatedDropdownFilter),
+        ("datetime", RangeDateTimeFilter),
+    )

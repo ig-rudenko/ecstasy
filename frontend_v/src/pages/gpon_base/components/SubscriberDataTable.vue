@@ -1,9 +1,9 @@
 <template>
-  <div class="table-plate">
+  <div class="table-plate rounded-3xl">
     <div>
-      <div class="flex flex-wrap sm:flex-nowrap items-center gap-4 p-4">
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 p-4">
         <div>
-          <Button @click="show_filter = !show_filter" class="filter-button" outlined>
+          <Button @click="show_filter = !show_filter" class="filter-button rounded-2xl" outlined>
             <svg v-if="filteredData.length !== data.length" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                  fill="#8B83BA" viewBox="0 0 16 16">
               <path
@@ -81,7 +81,7 @@
     <!-- TABLE -->
     <div class="overflow-auto">
       <table :style="{opacity: show_filter?0.4:1}" class="w-full">
-        <thead class="dark:border-gray-600 border-b-1">
+        <thead class="dark:border-gray-600 border-b border-gray-500/10">
         <tr>
           <th scope="col" class="p-2 px-10 text-left">Абонент</th>
           <th scope="col" class="p-2 text-left">Адрес подключения</th>
@@ -92,7 +92,7 @@
 
         <tbody>
         <tr v-for="line in tableData"
-            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b-1">
+            class="dark:hover:bg-gray-800 hover:bg-purple-50 dark:border-gray-600 border-b border-gray-200">
 
           <!-- АБОНЕНТ -->
           <td class="flex flex-col font-bold dark:text-gray-300">
@@ -356,7 +356,6 @@ tr, tr * {
 
 .filter-button {
   padding: 7px 10px;
-  border-radius: 6px;
 }
 
 .secondary-text {

@@ -61,7 +61,7 @@ async function logout() {
 
   <div class="flex justify-start items-center h-screen">
     <div class="flex flex-col gap-3 mx-6 w-full md:mx-20 md:w-[20rem]">
-      <h1 class="mb-4 text-2xl md:w-[20rem] text-center text-gray-200">Пожалуйста, войдите в систему Ecstasy</h1>
+      <h1 class="mb-4 text-2xl md:w-[20rem] text-center text-gray-200">Пожалуйста, войдите в систему <span class="font-mono">Ecstasy</span></h1>
 
       <Message v-if="userError" severity="error" icon="pi pi-exclamation-triangle" class="text-center my-4">
         {{ userError }}
@@ -69,7 +69,7 @@ async function logout() {
 
       <div>
         <IftaLabel>
-          <InputText id="username" class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid
+          <InputText id="username" class="bg-gray-950 border-gray-800 text-gray-200 font-mono rounded-2xl" @keydown.enter="handleLogin" fluid
                      :invalid="!user.valid.username" v-model="user.username"/>
           <label class="text-[0.85rem]" for="username">Логин</label>
         </IftaLabel>
@@ -81,7 +81,7 @@ async function logout() {
 
       <div>
         <IftaLabel>
-          <Password id="password" input-class="bg-gray-950 text-gray-200 font-mono" @keydown.enter="handleLogin" fluid
+          <Password id="password" input-class="bg-gray-950 border-gray-800 text-gray-200 font-mono rounded-2xl" @keydown.enter="handleLogin" fluid
                     :feedback="false" v-model="user.password"/>
           <label class="text-[0.85rem]" for="username">Пароль</label>
         </IftaLabel>
@@ -91,14 +91,14 @@ async function logout() {
       </div>
 
       <Button type="button" @click="handleLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
-              label="Войти" fluid outlined class="w-full mt-4 hover:bg-primary hover:text-primary-contrast"/>
+              label="Войти" fluid outlined class="w-full mt-4 hover:bg-primary hover:text-primary-contrast rounded-2xl border-0 bg-gray-950"/>
       <Button v-if="keycloakConnector.enabled" type="button" @click="handleOIDCLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
-              label="Войти через OIDC" fluid text class="w-full hover:bg-primary hover:text-primary-contrast"/>
+              label="Войти через OIDC" fluid text class="w-full hover:bg-primary hover:text-primary-contrast rounded-2xl border-0 bg-gray-950"/>
       <div>
-        <i v-tooltip="'Перезапросить'" @click="logout" class="pi pi-wrench text-gray-400 hover:text-gray-100 cursor-pointer"/>
+        <i v-tooltip="'Перезапросить'" @click="logout" class="pi pi-wrench text-gray-600 hover:text-gray-100 cursor-pointer"/>
       </div>
 
-      <p class="mt-5 text-muted-color text-center">Ecstasy &copy; 2022-{{ new Date().getFullYear() }}</p>
+      <p class="mt-5 text-muted-color text-center font-mono">Ecstasy &copy; 2022-{{ new Date().getFullYear() }}</p>
     </div>
 
   </div>

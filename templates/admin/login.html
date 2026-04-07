@@ -1,14 +1,20 @@
 {% extends "admin/login.html" %}
-{% load i18n %}
 
 {% block content %}
     {{ block.super }}
-
     {% if keycloak_enabled %}
-        <a href="{% url 'oidc_authentication_init' %}"
-           class="btn btn-success btn-block mt-2">
-            <span class="fas fa-key mr-2"></span>
-            {% trans "Войти через OIDC" %}
-        </a>
+        <div class="flex flex-col gap-3 mt-2">
+            <a href="{% url 'oidc_authentication_init' %}"
+               class="font-medium inline-flex group items-center gap-1 relative
+                rounded-default justify-center whitespace-nowrap cursor-pointer
+                px-3 py-2 border border-base-200 bg-primary-600 border-transparent
+                text-white hover:bg-primary-600/80 submit-row w-full"
+            >
+                Войти через OIDC
+                <span class="material-symbols-outlined relative right-0 transition-all group-hover:-right-1 text-sm">
+                    arrow_forward
+                </span>
+            </a>
+        </div>
     {% endif %}
 {% endblock %}

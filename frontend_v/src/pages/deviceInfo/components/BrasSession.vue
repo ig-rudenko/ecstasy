@@ -2,7 +2,7 @@
 
   <Dialog maximizable modal v-model:visible="brasSessionsService.dialogVisible" class="w-full h-full">
     <template #header>
-      <div class="flex items-center">
+      <div class="flex items-center gap-4">
         <div class="sm:text-2xl">
           Сессия абонента <span class="font-mono">"{{ brasSessionsService.current?.mac }}"</span>
         </div>
@@ -13,9 +13,9 @@
     <div>
       <!--СРЕЗАТЬ СЕССИЮ   -->
       <!--        НОЖ-->
-      <SplitButton v-if="brasSessionsService.current?.device && brasSessionsService.current?.port" outlined
+      <SplitButton v-if="brasSessionsService.current?.device && brasSessionsService.current?.port" outlined rounded
                    :disabled="brasSessionsService.cuttingNow"
-                   @click="() => cutSession(false)" class="btn btn-outline-primary"
+                   @click="() => cutSession(false)"
                    :model="[{label: '🔪🔄 Срезать сессию и перезагрузить порт', command: () => cutSession(true)}]">
         <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
           <use xlink:href="#blade-handmade"></use>
@@ -26,7 +26,7 @@
         Срезать сессию
       </SplitButton>
 
-      <Button v-else @click="() => cutSession(false)" outlined class="btn btn-outline-primary"
+      <Button v-else @click="() => cutSession(false)" outlined class="rounded-2xl!"
               :disabled="brasSessionsService.cuttingNow">
         <svg v-if="brasSessionsService.cuttingNow" class="pi-spin icon-30">
           <use xlink:href="#blade-handmade"></use>
@@ -43,14 +43,14 @@
 
       <!--        SESSIONS-->
       <div v-if="sessions" class="overflow-auto">
-        <Fieldset legend="BRAS1" :toggleable="true" v-if="sessions.BRAS1">
+        <Fieldset legend="BRAS1" :toggleable="true" v-if="sessions.BRAS1" class="rounded-2xl">
           <div class="p-4" v-if="sessions.BRAS1.errors.length">
             {{ sessions.BRAS1.errors }}
           </div>
           <div class="p-4 font-mono whitespace-pre" v-html="formatSession(sessions.BRAS1.session)"></div>
         </Fieldset>
 
-        <Fieldset legend="BRAS2" :toggleable="true" v-if="sessions.BRAS2">
+        <Fieldset legend="BRAS2" :toggleable="true" v-if="sessions.BRAS2" class="rounded-2xl">
           <div class="p-4" v-if="sessions.BRAS2.errors.length">
             {{ sessions.BRAS2.errors }}
           </div>

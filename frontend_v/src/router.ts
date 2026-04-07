@@ -7,6 +7,7 @@ const router = createRouter({
     routes: [
         {path: "/", component: () => import("@/pages/home/Home.vue"), name: "home"},
         {path: "/devices", component: () => import("@/pages/devicesList/DevicesList.vue"), name: "devices-list"},
+        {path: "/devices/commands", component: () => import("@/pages/bulkCommands/BulkCommandsPage.vue"), name: "bulk-device-commands"},
         {path: "/device/:deviceName", component: () => import("@/pages/deviceInfo/DeviceInfo.vue"), name: "device"},
         {
             path: "/by-zabbix/:hostID",

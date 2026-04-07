@@ -1,10 +1,14 @@
 <template>
 
-  <tr :id="'interface-'+interface.name" :style="interfaceStyles" :class="interfaceClasses"
-      class="hover:bg-gray-100 dark:hover:bg-gray-800">
+  <tr
+      :id="'interface-'+interface.name"
+      :style="interfaceStyles"
+      :class="interfaceClasses"
+      class="rounded-2xl border-b border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
+  >
 
-    <td>
-      <div class="flex gap-1 px-2">
+    <td class="rounded-l-2xl px-2">
+      <div class="flex items-center gap-1 px-1">
         <!--       COMMENTS-->
         <Comment :interface="interface" :device-name="deviceName" :allow-edit="true"/>
 
@@ -14,18 +18,18 @@
     </td>
 
     <!--ПОРТ-->
-    <td class="btn-fog" style="text-align: right">
+    <td class="btn-fog px-2 align-center" style="text-align: right">
 
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-2">
 
         <!--Название Интерфейса-->
-        <div @click="toggleDetailInfo" class="flex items-center cursor-pointer">
-          <span class="md:text-lg break-keep w-full font-mono">{{ interface.name }}</span>
+        <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer w-full">
+          <div class="w-full font-mono text-sm font-semibold md:text-base text-nowrap">{{ interface.name }}</div>
         </div>
 
         <div>
           <div class="hidden sm:flex items-center">
-            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+            <span v-if="complexInfo?.portType" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
 
@@ -36,7 +40,7 @@
                 :permission-level="permissionLevel"/>
 
             <!--Посмотреть порт -->
-            <Button @click="toggleDetailInfo" text>
+            <Button @click="toggleDetailInfo" text class="rounded-2xl">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                 <path
                     d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
@@ -64,7 +68,7 @@
               </svg>
             </Button>
 
-            <span v-if="complexInfo" class="mx-2 px-1 rounded text-gray-200 font-mono" :style="portTypeStyles">
+            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-[10px]" :style="portTypeStyles">
               {{ complexInfo.portType }}
             </span>
           </div>
@@ -74,80 +78,83 @@
     </td>
 
     <!--Статус порта-->
-    <td :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
-        :class="interface.status.toLowerCase()==='down'?'dark:!text-white':''"
-        class="text-gray-950 dark:!opacity-70 text-nowrap text-sm text-center sm:min-w-[6rem] px-3 font-mono">
-      <span>{{ formatStatus(interface.status) }}</span>
+    <td>
+      <div :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
+        :class="interface.status.toLowerCase()==='down'?'dark:text-white!':''"
+          class="text-gray-950 dark:opacity-70! text-nowrap text-xs text-center sm:min-w-22 rounded-2xl px-2 py-2.5 font-mono hover:shadow-md">
+        <span>{{ formatStatus(interface.status) }}</span>
+      </div>
     </td>
 
     <!--Описание порта-->
-    <td>
+    <td class="px-2 py-2.5 align-top">
       <ChangeDescription :device-name="deviceName" :interface="interface"
                          @change-device="dev => $emit('changeDevice', dev)"/>
     </td>
 
     <!--VLANS-->
     <td v-if="showVlans && interface.vlans.length" @click="toggleVlansList"
-        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-3 font-mono">
+        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-2 py-2.5 text-xs font-mono align-top">
       {{ compressVlanRange }}
     </td>
-    <td v-else></td>
+    <td v-else class="rounded-r-2xl"></td>
 
   </tr>
 
-  <tr v-if="showDetailInfo">
+  <tr v-if="showDetailInfo" class="rounded-2xl">
 
-    <td v-if="complexInfo" colspan="5"
-        class="border dark:bg-transparent bg-zinc-50 border-gray-200 dark:border-gray-600 shadow p-3">
+    <td v-if="complexInfo" colspan="5">
+      <div class="rounded-t-2xl rounded-b-3xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3">
 
-      <!--      DETAIL PORT INFO  -->
-      <div v-if="complexInfo.portDetailInfo" class="container py-3">
+        <!--      DETAIL PORT INFO  -->
+        <div v-if="complexInfo.portDetailInfo" class="container py-3">
 
-        <div class="flex justify-end">
-          <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
+          <div class="flex justify-end">
+            <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
+          </div>
+
+          <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
+               v-html="complexInfo.portDetailInfo.data"></div>
+
+          <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
+            {{ complexInfo.portDetailInfo.data }}
+          </div>
+
+          <!--      MIKROTIK -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
+            <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
+                                   :interface="interface"/>
+          </div>
+
+          <!--      ADSL -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
+            <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
+          </div>
+
+          <!--      GPON -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
+            <GPONInterfaceInfo
+                :device-name="deviceName"
+                :gpon-data="complexInfo.portDetailInfo.data"
+                :permission-level="permissionLevel"
+                :interface="interface"/>
+          </div>
+
+          <!--      ELTEX OLT -->
+          <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
+            <OLTInterfaceInfo
+                :device-name="deviceName"
+                :data="complexInfo.portDetailInfo.data"
+                :permission-level="permissionLevel"
+                :interface="interface"/>
+          </div>
+
         </div>
 
-        <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
-             v-html="complexInfo.portDetailInfo.data"></div>
-
-        <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
-          {{ complexInfo.portDetailInfo.data }}
-        </div>
-
-        <!--      MIKROTIK -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
-          <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
-                                 :interface="interface"/>
-        </div>
-
-        <!--      ADSL -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
-          <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
-        </div>
-
-        <!--      GPON -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
-          <GPONInterfaceInfo
-              :device-name="deviceName"
-              :gpon-data="complexInfo.portDetailInfo.data"
-              :permission-level="permissionLevel"
-              :interface="interface"/>
-        </div>
-
-        <!--      ELTEX OLT -->
-        <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
-          <OLTInterfaceInfo
-              :device-name="deviceName"
-              :data="complexInfo.portDetailInfo.data"
-              :permission-level="permissionLevel"
-              :interface="interface"/>
-        </div>
+        <!--      ANOTHER INFO  -->
+        <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
 
       </div>
-
-      <!--      ANOTHER INFO  -->
-      <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
-
     </td>
 
     <td v-else colspan="5">
@@ -171,7 +178,6 @@ import {defineComponent, PropType} from "vue";
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
 import Comment from "@/components/Comment.vue";
-import CableDiag from "./CableDiag.vue";
 import ADSLInterfaceInfo from "./xDSLInterfaceInfo.vue";
 import GPONInterfaceInfo from "./GPONInterfaceInfo.vue";
 import OLTInterfaceInfo from "./OLTInterfaceInfo.vue";
@@ -196,7 +202,6 @@ export default defineComponent({
     ChangeDescription,
     PortControlButtons,
     Comment,
-    CableDiag,
     ADSLInterfaceInfo,
     GPONInterfaceInfo,
     OLTInterfaceInfo,
@@ -246,11 +251,11 @@ export default defineComponent({
       return this.dynamicOpacity
     },
     interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow", "border", "sticky", "top-0", "bg-white", "border-gray-200", "dark:border-gray-600", "dark:bg-gray-800"];
+      if (this.showDetailInfo) return ["shadow-sm", "z-[2]", "bg-white/55", "border-sky-200/70", "dark:border-sky-800/70", "dark:bg-gray-800"];
       return []
     },
     portTypeStyles() {
-      let styles: any = {"font-size": "0.8rem"}
+      let styles: any = {"font-size": "0.7rem"}
 
       if (!this.complexInfo?.portType) return styles;
 
@@ -269,7 +274,7 @@ export default defineComponent({
     },
 
     compressVlanRange(): string {
-      const list = this.interface.vlans;
+      const list = [...this.interface.vlans];
 
       if (!list || !list.length) return "";
 
@@ -350,7 +355,9 @@ export default defineComponent({
       this.$router.push({query: newQuery});
 
       if (this.showDetailInfo) {
-        this.getDetailInfo();
+        if (!this.complexInfo) {
+          this.getDetailInfo();
+        }
       }
     },
 

@@ -20,7 +20,7 @@
       <br> Статус: {{ errorStatus }}
     </Message>
 
-    <div v-if="detailData" id="tech-data-block" class="plate">
+    <div v-if="detailData" id="tech-data-block" class="px-2 md:p-6 border border-gray-300 dark:border-gray-800 rounded-4xl">
 
       <!-- ДАННЫЕ ДОМА -->
       <div class="py-3">
@@ -62,17 +62,17 @@
         <div class="ml-40">
 
           <!-- ОПИСАНИЕ 2 -->
-          <div class="py-2 grid grid-cols-2">
-            <div>Описание сплиттера 2го каскада</div>
+          <div class="py-2 grid gap-2" :class="{'grid-cols-2': !editMode}">
+            <div class="pl-6">Описание сплиттера 2го каскада</div>
             <div v-if="!editMode">{{ oltState.description }}</div>
-            <Textarea v-else fluid auto-resize v-model="oltState.description" rows="5"/>
+            <Textarea v-else fluid auto-resize v-model="oltState.description" rows="5" class="rounded-2xl"/>
           </div>
 
           <!-- ОБОРУДОВАНИЕ -->
-          <div class="py-2 grid grid-cols-2 bg-gray-200 dark:bg-gray-800">
-            <div class="p-2">OLT оборудование</div>
+          <div class="py-2 sm:grid grid-cols-2 bg-gray-200 dark:bg-gray-800 rounded-2xl">
+            <div class="pl-6 p-2">OLT оборудование</div>
             <div>
-              <span id="deviceName" class="flex items-center gap-3 text-primary font-mono">
+              <span id="deviceName" class="flex flex-wrap items-center gap-3 text-primary font-mono">
                 <router-link :to="'/device/'+oltState.statement.deviceName" target="_blank">
                   <Button text>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
@@ -91,7 +91,7 @@
 
           <!-- ПОРТ -->
           <div class="py-2 grid grid-cols-2">
-            <div class="p-2">Порт</div>
+            <div class="pl-6 p-2">Порт</div>
             <div>
               <router-link :to="getOLTTechDataURL(oltState.statement)">
                 <Button text class="font-mono">
@@ -109,14 +109,14 @@
           </div>
 
           <!-- ВОЛОКНО -->
-          <div class="py-2 grid grid-cols-2 bg-gray-200 dark:bg-gray-800">
-            <div class="p-2">Волокно</div>
+          <div class="py-2 grid grid-cols-2 bg-gray-200 dark:bg-gray-800 rounded-2xl">
+            <div class="pl-6 p-2">Волокно</div>
             <div class="p-2">{{ oltState.statement.fiber }}</div>
           </div>
 
           <!-- ОПИСАНИЕ -->
           <div class="py-2 grid grid-cols-2">
-            <div class="p-2">Описание сплиттера 1го каскада</div>
+            <div class="pl-6 p-2">Описание сплиттера 1го каскада</div>
             <div class="p-2">{{ oltState.statement.description }}</div>
           </div>
 
@@ -173,6 +173,7 @@ import {formatAddress} from "@/formats";
 import printElementById from "@/helpers/print";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
+import editMedia from "@/pages/deviceInfo/components/EditMedia.vue";
 
 export default {
   name: "ViewBuildingTechData",
@@ -207,6 +208,9 @@ export default {
   },
 
   computed: {
+    editMedia() {
+      return editMedia
+    },
     isMobile() {
       return this.windowWidth <= 768
     },
@@ -344,12 +348,6 @@ export default {
 
 .grey-back {
   background-color: #ebebeb;
-}
-
-.plate {
-  padding: 40px;
-  border-radius: 14px;
-  border: 1px solid #A3A3A3;
 }
 
 .ml-40 {

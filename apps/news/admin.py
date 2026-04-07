@@ -1,16 +1,34 @@
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from unfold.admin import ModelAdmin
+from unfold.contrib.filters.admin import ChoicesDropdownFilter, RangeDateTimeFilter
 
 from .models import GlobalNews
 
 
 @admin.register(GlobalNews)
-class GlobalNewsAdmin(admin.ModelAdmin):
+class GlobalNewsAdmin(ModelAdmin):
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
     list_display = ("severity_title", "created_at", "expired_at")
+    search_fields = ("title", "content")
+    readonly_fields = ("created_at",)
+    list_filter = (
+        ("severity", ChoicesDropdownFilter),
+        ("created_at", RangeDateTimeFilter),
+        ("expired_at", RangeDateTimeFilter),
+    )
+    fieldsets = (
+        ("Сообщение", {"classes": ("tab",), "fields": ("title", "content")}),
+        ("Публикация", {"classes": ("tab",), "fields": ("severity", "expired_at")}),
+        ("Мета", {"classes": ("tab", "collapse"), "fields": ("created_at",)}),
+    )
 
     @admin.display(description="Заголовок")
     def severity_title(self, obj: GlobalNews) -> str:
+        """Render the news title with a severity icon and expiration mark."""
         text = ""
         if obj.severity == "success":
             text = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#198754" style="padding-right: 5px;" viewBox="0 0 16 16">
@@ -30,7 +48,6 @@ class GlobalNewsAdmin(admin.ModelAdmin):
             </svg>"""
 
         is_expired = obj.expired_at is not None and obj.expired_at < timezone.now()
-
         text += f'<span style="color: {"red" if is_expired else "currentColor"}">{obj.title}</span>'
 
         if is_expired:

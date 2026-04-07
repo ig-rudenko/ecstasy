@@ -6,6 +6,7 @@
               v-model="port.status" :options="['empty', 'active', 'pause', 'reserved', 'bad']"
               :input-style="{padding: '0.2rem 1rem'}"
               @change="updateTechCapabilityStatus(port)" fluid
+              class="rounded-2xl"
               placeholder="Выберите статус порта">
         <template #value="slotProps">
           <TechCapabilityBadge :status="slotProps.value"/>

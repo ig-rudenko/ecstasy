@@ -9,6 +9,7 @@ def create_permission(sender, **kwargs):
         ("access_wtf_search", "Can use wtf search"),
         ("access_desc_search", "Can use desc search"),
         ("access_traceroute", "Can use traceroute"),
+        ("access_bulk_device_cmd", "Can execute bulk device commands"),
         ("access_run_interfaces_gather", "Can run interfaces gather"),
         ("access_run_mac_gather", "Can run mac gather"),
     ]

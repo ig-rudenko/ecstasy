@@ -1,45 +1,14 @@
 <script setup lang="ts">
 import {computed, PropType, ref} from "vue";
-import api from "@/services/api";
-import {DeviceInterface} from "@/services/interfaces";
 import errorFmt from "@/errorFmt";
 import {textToHtml} from "@/formats";
-
-const props = defineProps({
-  deviceName: {
-    type: String,
-    required: true
-  },
-  interfaces: {
-    type: Array as PropType<DeviceInterface[]>,
-    required: true
-  }
-})
-
-interface StringValues {
-  [key: string]: string;
-}
-
-interface NullNumberValues {
-  [key: string]: null | number;
-}
-
-interface CommandContext {
-  port?: StringValues;
-  ip?: StringValues;
-  mac?: StringValues;
-  number?: NullNumberValues;
-  word?: StringValues;
-}
-
-interface CommandType {
-  id: number;
-  name: string;
-  description: string;
-  command: string;
-  device_vendor: string;
-  context: CommandContext;
-}
+import CommandTemplateSelector from "@/components/deviceCommands/CommandTemplateSelector.vue";
+import {
+  DeviceCommandTemplate,
+  executeDeviceCommand,
+  validateDeviceCommand,
+} from "@/services/deviceCommands";
+import {DeviceInterface} from "@/services/interfaces";
 
 interface CommandResult {
   command: string;
@@ -48,318 +17,121 @@ interface CommandResult {
   isRunning: boolean;
 }
 
+const props = defineProps({
+  deviceName: {
+    type: String,
+    required: true,
+  },
+  interfaces: {
+    type: Array as PropType<DeviceInterface[]>,
+    required: true,
+  },
+});
+
 const visible = ref(false);
 const results = ref<CommandResult[]>([]);
+const interfaceNames = computed(() => props.interfaces.map((item) => item.name));
 
-const commands = ref<CommandType[]>([]);
-
-async function openCommands() {
-  try {
-    const resp = await api.get<CommandType[]>(`/api/v1/devices/${props.deviceName}/commands`);
-    resp.data.forEach(
-        (c: CommandType) => {
-          c.command = c.command.replaceAll(/\{if.+(?<!\\)}/g, '')
-          c.context = {};
-          markCommandKeys(c);
-        }
-    );
-    console.log(resp.data)
-    commands.value = resp.data
-  } catch (e) {
-    console.error(e);
-  }
+/**
+ * Opens the command dialog.
+ */
+function openCommands(): void {
   visible.value = true;
 }
 
+/**
+ * Executes a command for the current device and stores dialog-local history.
+ */
+async function runCommand(command: DeviceCommandTemplate): Promise<void> {
+  let validatedCommand = command.command;
 
-function getKeyName(key: string): string {
-  const regex = /#(\S+)?}/
-  const match = regex.exec(key);
-  if (match) {
-    return match[1];
-  }
-  return "_";
-}
-
-
-const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/
-const portRegex = /\{port(#(\S+?)?)?}/
-const ipRegex = /\{ip(#(\S+?)?)?}/
-const macRegex = /\{mac(#(\S+?)?)?}/
-const wordRegex = /\{word(#(\S+?)?)?}/
-
-
-function markCommandKeys(command: CommandType) {
-  command.context.number = {};
-  command.context.port = {};
-  command.context.ip = {};
-  command.context.mac = {};
-  command.context.word = {};
-
-  const numberRegex = /\{number:?(-?\d+)?:?(-?\d+)?(#(\S+?)?)?}/g
-  const portRegex = /\{port(#(\S+?)?)?}/g
-  const ipRegex = /\{ip(#(\S+?)?)?}/g
-  const macRegex = /\{mac(#(\S+?)?)?}/g
-  const wordRegex = /\{word(#(\S+?)?)?}/g
-
-  let match;
-
-  while ((match = numberRegex.exec(command.command)) !== null) {
-    command.context.number[getKeyName(match[0])] = null;
-  }
-
-  while ((match = portRegex.exec(command.command)) !== null) {
-    command.context.port[getKeyName(match[0])] = "";
-  }
-
-  while ((match = ipRegex.exec(command.command)) !== null) {
-    command.context.ip[getKeyName(match[0])] = "";
-  }
-
-  while ((match = macRegex.exec(command.command)) !== null) {
-    command.context.mac[getKeyName(match[0])] = "";
-  }
-
-  while ((match = wordRegex.exec(command.command)) !== null) {
-    command.context.word[getKeyName(match[0])] = "";
-  }
-
-}
-
-
-function numberVerboseRange(command: string): string {
-  const numberMatch = numberRegex.exec(command)
-  if (numberMatch && numberMatch.length >= 3) {
-    const start = Number(numberMatch[1]);
-    const end = Number(numberMatch[2]);
-    return "целое число от " + start + " до " + end;
-  }
-  return "любое целое число";
-}
-
-function numberMinValue(command: string): number | undefined {
-  const numberMatch = numberRegex.exec(command)
-  if (numberMatch && numberMatch.length >= 3) {
-    return Number(numberMatch[1]);
-  }
-}
-
-
-function numberMaxValue(command: string): number | undefined {
-  const numberMatch = numberRegex.exec(command)
-  if (numberMatch && numberMatch.length >= 3) {
-    return Number(numberMatch[2]);
-  }
-}
-
-
-const interfacesNames = computed(() => {
-  return props.interfaces.map(i => i.name);
-})
-
-function cleanMacAddress(mac: string): string {
-  // Приводим к верхнему регистру и извлекаем только символы 0-9, A-F
-  const cleaned = mac.toUpperCase().match(/[0-9A-F]/g);
-
-  // Проверяем, что длина полученной строки ровно 12 символов
-  return cleaned && cleaned.length === 12 ? cleaned.join('') : "";
-}
-
-function isValidWord(word: string): boolean {
-  return word.match(/^\S+$/g) != null;
-}
-
-function isValidIPAddress(ip: string): boolean {
-  // Регулярное выражение для проверки IPv4-адреса
-  const ipRegex = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
-  return ipRegex.test(ip);
-}
-
-function commandIsValid(command: CommandType) {
-  if (command.context.port) {
-    for (const key in command.context.port) {
-      if (!command.context.port[key].length) {
-        console.log("PORT INVALID")
-        return false;
-      }
-    }
-  }
-
-  if (command.context.ip) {
-    for (const key in command.context.ip) {
-      if (!isValidIPAddress(command.context.ip[key])) {
-        console.log("IP INVALID")
-        return false;
-      }
-    }
-  }
-
-  if (command.context.mac) {
-    for (const key in command.context.mac) {
-      if (!cleanMacAddress(command.context.mac[key])) {
-        console.log("MAC INVALID")
-        return false;
-      }
-    }
-  }
-
-  if (command.context.word) {
-    for (const key in command.context.word) {
-      if (!isValidWord(command.context.word[key])) {
-        console.log("WORD INVALID")
-        return false;
-      }
-    }
-  }
-
-  if (command.context.number) {
-    for (const key in command.context.number) {
-      if (command.context.number[key] == null || isNaN(command.context.number[key])) {
-        console.log("NUMBER INVALID")
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-interface CommandValidateResult {
-  command: string
-  conditions: { expect: string, command: string }[]
-}
-
-
-async function getValidatedCommand(command: CommandType): Promise<string> {
   try {
-    let url = `/api/v1/devices/${props.deviceName}/commands/${command.id}/validate`
-    const validateRes = await api.post<{ command: CommandValidateResult[] }>(url, command.context);
-
-    let validated_commands = '';
-    for (const commandElement of validateRes.data.command) {
-      validated_commands += commandElement.command + '\n';
-    }
-    return validated_commands
-
-  } catch (e: any) {
-    console.error(e);
-    return command.command;
+    validatedCommand = await validateDeviceCommand(props.deviceName, command);
+  } catch (error: any) {
+    console.error(error);
   }
-}
 
+  const resultRow: CommandResult = {
+    command: validatedCommand,
+    output: "",
+    error: "",
+    isRunning: true,
+  };
+  results.value.unshift(resultRow);
 
-async function executeCommand(command: CommandType) {
-  if (!commandIsValid(command)) return;
-
-  const validCommand = await getValidatedCommand(command)
-
-  const resultRow = ref<CommandResult>({command: validCommand, output: "", error: "", isRunning: true})
-  results.value.unshift(resultRow.value)
   try {
-    let url = `/api/v1/devices/${props.deviceName}/commands/${command.id}/execute`
-    const resp = await api.post<{ output: string }>(url, command.context);
-    resultRow.value.output = resp.data.output
-  } catch (e: any) {
-    console.error(e);
-    resultRow.value.error = errorFmt(e)
+    resultRow.output = await executeDeviceCommand(props.deviceName, command);
+  } catch (error: any) {
+    console.error(error);
+    resultRow.error = errorFmt(error);
+  } finally {
+    resultRow.isRunning = false;
   }
-  resultRow.value.isRunning = false;
 }
-
 </script>
 
 <template>
-  <div>
-    <Button v-tooltip.right="'Команды'" outlined @click="openCommands">
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
-        <path
-            d="M2 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4a.5.5 0 0 1-1 0V4a1 1 0 0 0-1-1z"/>
-        <path
-            d="M3.146 5.146a.5.5 0 0 1 .708 0L5.177 6.47a.75.75 0 0 1 0 1.06L3.854 8.854a.5.5 0 1 1-.708-.708L4.293 7 3.146 5.854a.5.5 0 0 1 0-.708M5.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H6a.5.5 0 0 1-.5-.5M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0m-3.5-2a.5.5 0 0 0-.5.5v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1v-1a.5.5 0 0 0-.5-.5"/>
-      </svg>
-    </Button>
-  </div>
+  <Button v-tooltip.right="'Команды'" outlined @click="openCommands" class="rounded-2xl shadow-sm border-none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+      <path
+          d="M2 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4a.5.5 0 0 1-1 0V4a1 1 0 0 0-1-1z"/>
+      <path
+          d="M3.146 5.146a.5.5 0 0 1 .708 0L5.177 6.47a.75.75 0 0 1 0 1.06L3.854 8.854a.5.5 0 1 1-.708-.708L4.293 7 3.146 5.854a.5.5 0 0 1 0-.708M5.5 9a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H6a.5.5 0 0 1-.5-.5M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0m-3.5-2a.5.5 0 0 0-.5.5v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1v-1a.5.5 0 0 0-.5-.5"/>
+    </svg>
+  </Button>
 
-  <Dialog modal v-model:visible="visible" maximizable header="Выполнение команд">
-    <div>
-      <DataTable :value="commands" paginator :always-show-paginator="false" :rows="10">
-        <Column field="name" header="Название"></Column>
-        <Column header="Команда">
-          <template #body="{ data }">
-            <div class="flex flex-col gap-2 items-start">
-              <div v-for="line in data.command.split('\n')" class="flex flex-row gap-2 items-center">
-                <template v-for="part in line.split(/(?={)|(?<=})/)" :key="part">
-                  <Select v-if="data.context.port && portRegex.test(part)" :options="interfacesNames"
-                          v-tooltip="getKeyName(part)"
-                          v-model="data.context.port[getKeyName(part)]" filter
-                          placeholder="Порт">
-                    <template #value="slotProps">
-                      <div v-if="slotProps.value" class="flex items-center">
-                        <div>{{ slotProps.value }}</div>
-                      </div>
-                      <span v-else>
-                          {{ slotProps.placeholder }}
-                      </span>
-                    </template>
-                  </Select>
+  <Dialog v-model:visible="visible" modal maximizable header="Выполнение команд" class="w-[min(96vw,1500px)]" content-class="p-0!">
+    <div class="flex flex-col gap-6 bg-gray-50/60 p-4 dark:bg-gray-950/30 sm:p-6">
+      <CommandTemplateSelector
+          :device-name="deviceName"
+          :port-options="interfaceNames"
+          mode="execute"
+          title="Список команд"
+          description="Фильтрация по названию и шаблону команды."
+          empty-title="Команды не найдены"
+          empty-description="Для этого оборудования нет доступных команд."
+          @execute="runCommand"
+      />
 
-                  <InputText v-tooltip="getKeyName(part)" v-else-if="data.context.mac && macRegex.test(part)"
-                             v-model="data.context.mac[getKeyName(part)]" placeholder="MAC адрес"/>
-                  <InputText v-tooltip="getKeyName(part)" v-else-if="data.context.ip && ipRegex.test(part)"
-                             v-model="data.context.ip[getKeyName(part)]" placeholder="IP адрес"/>
-                  <InputText v-tooltip="getKeyName(part)" v-else-if="data.context.word && wordRegex.test(part)"
-                             v-model="data.context.word[getKeyName(part)]" placeholder=""/>
+      <section class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Результаты</div>
+            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">История выполнения в рамках текущего диалога.</div>
+          </div>
+        </div>
 
-                  <InputNumber v-tooltip="getKeyName(part)+': '+numberVerboseRange(part)"
-                               v-else-if="data.context.number && numberRegex.test(part)"
-                               :min="numberMinValue(part)" :max="numberMaxValue(part)" input-class="w-[80px]"
-                               size="small"
-                               v-model="data.context.number[getKeyName(part)]" :placeholder="getKeyName(part)"/>
-
-                  <div v-else class="font-mono text-sm">{{ part }}</div>
-                </template>
+        <div v-if="results.length" class="flex flex-col gap-3 font-mono">
+          <Fieldset
+              v-for="(data, index) in results"
+              :key="`${data.command}-${index}`"
+              toggleable
+              class="overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/60"
+          >
+            <template #legend="{ toggleCallback }">
+              <div class="flex w-full items-center gap-3 px-2 py-1">
+                <Button text rounded icon="pi pi-angle-down" @click="toggleCallback"/>
+                <div class="min-w-0 flex-1">
+                  <div class="whitespace-pre-wrap break-all text-xs text-gray-700 dark:text-gray-200">{{ data.command }}</div>
+                </div>
+                <Button severity="danger" icon="pi pi-trash" rounded outlined @click="results.splice(index, 1)"/>
               </div>
+            </template>
+
+            <Message v-if="data.error" severity="error" class="rounded-2xl">
+              <div v-html="textToHtml(data.error)"></div>
+            </Message>
+            <pre v-else-if="data.output" class="overflow-auto whitespace-pre-wrap rounded-2xl bg-gray-950 px-4 py-3 text-xs text-gray-100">{{ data.output }}</pre>
+            <div v-else class="flex justify-center py-6">
+              <ProgressSpinner/>
             </div>
-          </template>
-        </Column>
-        <Column field="description" header="Описание"></Column>
-        <Column header="Выполнить">
-          <template #body="{ data }">
-            <Button severity="success" :disabled="!commandIsValid(data)"
-                    @click="() => executeCommand(data)" icon="pi pi-check"
-                    label="Выполнить"/>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          </Fieldset>
+        </div>
 
-    <div class="pt-10 font-mono">
-      <DataTable v-if="results.length" :value="results" paginator :always-show-paginator="false" :rows="5">
-        <Column field="result" class="font-mono">
-          <template #body="{ data, index }">
-            <Fieldset toggleable>
-              <template #legend="{toggleCallback}">
-                <div class="flex items-center gap-2 p-2">
-                  <i class="pi pi-fw pi-angle-double-down cursor-pointer" @click="toggleCallback"/>
-                  <div class="p-2"><span class="whitespace-pre font-mono">{{ data.command }}</span></div>
-                  <Button severity="danger" icon="pi pi-trash" rounded outlined @click="results.splice(index, 1)"/>
-                </div>
-              </template>
-              <div>
-                <Message v-if="data.error" severity="error">
-                  <div v-html="textToHtml(data.error)"></div>
-                </Message>
-                <div v-else-if="data.output" class="whitespace-pre font-mono">{{ data.output }}</div>
-                <div v-else>
-                  <ProgressSpinner/>
-                </div>
-              </div>
-            </Fieldset>
-          </template>
-        </Column>
-      </DataTable>
+        <div v-else class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+          Пока нет выполненных команд
+        </div>
+      </section>
     </div>
-
   </Dialog>
-
 </template>

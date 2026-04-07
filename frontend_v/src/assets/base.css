@@ -10,11 +10,20 @@
 }
 
 .traceroute-back {
-    background-color: #222222;
     background-image: url('/img/background.png');
     background-repeat: no-repeat;
-    background-position: top;
-    height: 100vh;
+    background-position: center top;
+    background-attachment: fixed;
+    background-size: auto;
+    min-height: 100vh;
+}
+
+html:not(.dark) .traceroute-back {
+    background-color: #e4eaf3;
+}
+
+html.dark .traceroute-back {
+    background-color: #222222;
 }
 
 

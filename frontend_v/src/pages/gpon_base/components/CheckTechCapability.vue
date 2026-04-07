@@ -65,31 +65,35 @@ function getTechCapabilityInfo(id: number) {
 
 <template>
 
-  <Button class="check-tech-button" @click="visible = true" outlined icon="pi pi-search"
+  <Button class="check-tech-button rounded-2xl!" @click="visible = true" outlined icon="pi pi-search" severity="success"
           label="Техническая возможность"/>
 
   <Dialog v-model:visible="visible" modal maximizable header="Техническая возможность">
-    <div class="flex flex-col gap-5 p-4">
+    <div class="flex flex-col gap-3 p-4">
       <div class="flex gap-5 flex-wrap">
         <div class="flex flex-col gap-2 max-md:w-full">
           <label for="street">Улица, пр-кт, шоссе, бульвар и т.д.</label>
-          <InputText fluid class="w-full" id="street" v-model="formValue.street" @keydown.enter="() => findTechCapability()"/>
+          <InputText fluid class="w-full rounded-2xl" id="street" v-model="formValue.street"
+                     @keydown.enter="() => findTechCapability()"/>
           <Message size="small" severity="secondary" variant="simple">Введите название частично или полностью
           </Message>
         </div>
         <div class="flex flex-col gap-2 max-md:w-full">
           <label for="house">Дом</label>
-          <InputText fluid class="w-full" id="house" v-model="formValue.house" @keydown.enter="() => findTechCapability()"/>
+          <InputText fluid class="w-full rounded-2xl" id="house" v-model="formValue.house"
+                     @keydown.enter="() => findTechCapability()"/>
           <Message size="small" severity="secondary" variant="simple">Также укажите букву</Message>
         </div>
         <div class="flex flex-col gap-2 max-md:w-full">
           <label for="block">Корпус</label>
-          <InputText fluid class="w-full" id="block" v-model="formValue.block" @keydown.enter="() => findTechCapability()"/>
+          <InputText fluid class="w-full rounded-2xl" id="block" v-model="formValue.block"
+                     @keydown.enter="() => findTechCapability()"/>
           <Message size="small" severity="secondary" variant="simple">Если есть</Message>
         </div>
         <div class="flex flex-col gap-2 max-md:w-full">
           <label for="block">Статус подключения</label>
-          <Select fluid class="w-full" v-model="formValue.tech_capability_status" :options="Object.values(TechCapabilityStatus)" @change="e => $emit('change', e)">
+          <Select fluid class="w-full rounded-2xl" v-model="formValue.tech_capability_status"
+                  :options="Object.values(TechCapabilityStatus)" @change="e => $emit('change', e)">
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex items-center">
                 <TechCapabilityBadge :status="slotProps.value"/>
@@ -105,7 +109,7 @@ function getTechCapabilityInfo(id: number) {
         </div>
       </div>
       <div>
-        <Button label="Проверить" icon="pi pi-search" :loading="loading" @click="() => findTechCapability()"/>
+        <Button label="Проверить" icon="pi pi-search" class="rounded-2xl" :loading="loading" @click="() => findTechCapability()"/>
       </div>
     </div>
 
@@ -117,7 +121,7 @@ function getTechCapabilityInfo(id: number) {
       </div>
 
       <div v-if="resultData.count">
-        <div class="flex flex-col gap-5 border">
+        <div class="flex flex-col gap-5 border rounded-2xl border-gray-300 dark:border-gray-800">
           <End3CollapsedView @delete-info="deleteTechCapabilityInfo" @get-info="getTechCapabilityInfo"
                              :user-permissions="permissions"
                              :customer-lines="resultData.results" :showAddButton="false"/>

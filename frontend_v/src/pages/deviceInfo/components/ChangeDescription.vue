@@ -19,7 +19,7 @@
 
       <Button outlined :loading="loading" size="small" icon="pi pi-check" severity="success" @click="setDescription"/>
 
-      <InputText type="text" v-model="newDesc" :class="inputClasses" style="min-width: 130px;" class="w-full"/>
+      <InputText type="text" v-model="newDesc" :class="inputClasses" class="w-80!"/>
     </InputGroup>
 
     <Message @click="errors=''" v-if="errors" severity="error" :pt="{content: {class: 'py-0'}}">{{ errors }}</Message>

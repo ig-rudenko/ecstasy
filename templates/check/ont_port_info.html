@@ -1,41 +1,108 @@
-<div class="flex flex-wrap gap-3">
+<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
     {% for service in ont_info %}
-        <div class="p-3 border rounded border-gray-300 dark:border-gray-700">
-            <div class="text-center text-xl font-mono pb-2">{{ service.index }} | {{ service.type }}</div>
+        <section
+                class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/85 shadow-sm backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/50">
+            <div class="border-b border-gray-200/80 bg-linear-to-r from-sky-50 via-white to-indigo-50 px-4 py-3 dark:border-gray-700/70 dark:from-sky-500/10 dark:via-gray-900/40 dark:to-indigo-500/10">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">
+                            Service {{ service.index }}
+                        </div>
+                        <div class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {{ service.type }}
+                        </div>
+                    </div>
 
-            <div id="panel-{{ service.type }}" class="accordion-collapse collapse"
-                 aria-labelledby="panelsStayOpen-headingOne">
-                <div class="flex flex-wrap gap-3 items-start">
+                    <div class="rounded-full border border-indigo-200/80 bg-indigo-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
+                        VLAN {{ service.manage_vlan }}
+                    </div>
+                </div>
+            </div>
 
-                    <div class="font-mono px-2 py-1 border rounded border-green-500 dark:border-green-800">
+            <div class="flex flex-col gap-4 p-4">
+                <div class="rounded-xl border border-gray-200/80 bg-gray-50/80 p-3 dark:border-gray-700/70 dark:bg-gray-800/50">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                        MAC Address
+                    </div>
+                    <div class="mt-2 font-mono text-sm text-gray-800 dark:text-gray-100" style="user-select: text;">
                         {% if service.mac %}
                             {{ service.mac }}
                         {% else %}
-                            no MAC
+                            <span class="text-gray-400 dark:text-gray-500">no MAC</span>
                         {% endif %}
                     </div>
+                </div>
 
-                    <div>
-                        <div>{{ service.ipv4_access_type }}</div>
-                        {% if service.ipv4_status == 'Disconnected' %}
-                            <div>Disconnected</div>
-                        {% elif service.ipv4_status == 'Connecting' %}
-                            <div>Connecting...</div>
-                        {% else %}
-                            <a style="user-select: text"
-                               class="font-mono">{{ service.ipv4_address }}</a>
-                            <div class="font-mono">{{ service.subnet_mask }}</div>
-                        {% endif %}
-
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-gray-200/80 bg-white/70 p-3 dark:border-gray-700/70 dark:bg-gray-900/30">
+                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                            Access Type
+                        </div>
+                        <div class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+                            {% if service.ipv4_access_type %}
+                                {{ service.ipv4_access_type }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div class="flex flex-row gap-2 items-center">
-                        <div>Manage VLAN</div>
-                        <div class="px-2 py-1 font-mono border rounded border-gray-300 dark:border-gray-700">{{ service.manage_vlan }}</div>
+                    <div class="rounded-xl border border-gray-200/80 bg-white/70 p-3 dark:border-gray-700/70 dark:bg-gray-900/30">
+                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                            IPv4 Status
+                        </div>
+                        <div class="mt-2">
+                            {% if service.ipv4_status == 'Disconnected' %}
+                                <span class="inline-flex rounded-full bg-rose-100 px-3 py-1 text-sm font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                                    Disconnected
+                                </span>
+                            {% elif service.ipv4_status == 'Connecting' %}
+                                <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                                    Connecting...
+                                </span>
+                            {% else %}
+                                <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                    {% if service.ipv4_status %}
+                                        {{ service.ipv4_status }}
+                                    {% else %}
+                                        Connected
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-gray-200/80 bg-white/70 p-3 dark:border-gray-700/70 dark:bg-gray-900/30">
+                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                        IPv4 Details
                     </div>
 
+                    {% if service.ipv4_status == 'Disconnected' %}
+                        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">IP address is not assigned.</div>
+                    {% elif service.ipv4_status == 'Connecting' %}
+                        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">Waiting for address assignment.</div>
+                    {% else %}
+                        <div class="mt-2 flex flex-col gap-2">
+                            <div class="rounded-lg bg-gray-50/90 px-3 py-2 font-mono text-sm text-gray-800 dark:bg-gray-800/70 dark:text-gray-100"
+                                 style="user-select: text;">
+                                {% if service.ipv4_address %}
+                                    {{ service.ipv4_address }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                            <div class="rounded-lg bg-gray-50/90 px-3 py-2 font-mono text-sm text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
+                                {% if service.subnet_mask %}
+                                    {{ service.subnet_mask }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-        </div>
+        </section>
     {% endfor %}
 </div>

@@ -1,160 +1,336 @@
 <template>
   <Header/>
 
-  <div class="md:p-6">
-    <div class="container mx-auto row py-3">
-      <div class="flex flex-wrap justify-between pb-5">
-        <div>
-          <div class="text-3xl font-bold">Description search</div>
-          <div class="py-3">Поиск конкретной строки в описании порта и его комментариев на
-            всех собранных заранее интерфейсах у каждого оборудования
+  <div class="mx-auto py-2 sm:py-6 lg:px-8">
+    <div class="flex flex-col gap-4 sm:gap-6">
+      <div class="flex flex-col gap-4 sm:gap-6 justify-center mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8">
+        <section class="
+          relative overflow-hidden
+          rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
+          bg-white/80
+          backdrop-blur
+          transition hover:-translate-y-0.5
+          delay-0
+          hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+        ">
+        <div
+            class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_25%),radial-gradient(circle_at_85%_20%,rgba(14,165,233,0.14),transparent_22%)]"/>
+        <div class="relative p-5 sm:p-8">
+          <div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+            <div class="max-w-4xl">
+
+
+              <h1 class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
+                Поиск по описанию портов
+              </h1>
+
+              <p class="mt-3 max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base">
+                Поиск строки в описаниях интерфейсов и комментариях по ранее собранным данным оборудования.
+              </p>
+            </div>
+
+            <div class="hidden xl:block w-56 shrink-0 opacity-95">
+              <img class="w-full" src="/img/search-description-2.svg" alt="search-description">
+            </div>
           </div>
         </div>
+      </section>
 
-        <img class="h-[100px]" src="/img/search-description-2.svg" alt="search-description-image">
-      </div>
+        <section
+            class="
+              rounded-4xl border border-gray-200/70 dark:border-gray-700/70 dark:bg-gray-900/45
+              bg-white/80
+              p-4 sm:p-6
+              backdrop-blur
+              transition hover:-translate-y-0.5
+              delay-0
+              hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md
+            "
+            :class="{ 'ring-2! ring-indigo-400/60! dark:ring-indigo-500/40!': isRegexPattern }"
+        >
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <label
+                  for="isRegexPattern"
+                  class="cursor-pointer inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
+                  :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': waitResult }"
+              >
+                <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
+                <span>Искать по регулярному выражению</span>
+              </label>
 
-      <div class="flex flex-col justify-between p-2 border-2 border-transparent rounded-xl"
-           :class="{'!border-indigo-400': isRegexPattern}">
+              <div v-if="isRegexPattern" class="text-sm text-gray-500 dark:text-gray-400">
+                Проверка шаблона:
+                <a href="https://regex101.com/" target="_blank" rel="noopener noreferrer"
+                   class="text-indigo-600 hover:underline dark:text-indigo-400">
+                  regex101.com
+                </a>
+              </div>
+            </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3">
-          <label for="isRegexPattern" class="flex items-center gap-2 w-fit cursor-pointer"
-                 :class="{ 'opacity-50 cursor-not-allowed': waitResult }">
-            <ToggleSwitch v-model="isRegexPattern" input-id="isRegexPattern" :disabled="waitResult"/>
-            <span>Искать по регулярному выражению</span>
-          </label>
-          <div v-if="isRegexPattern" class="text-sm text-gray-500 flex items-center gap-2">
-            <div>Вы можете проверить работу регулярного выражения на сайте</div>
-            <a href="https://regex101.com/" target="_blank" class="text-indigo-400">regex101.com</a>
+            <SearchInput
+                @submit_input="searchDescription"
+                @update:modelValue="(v: string) => pattern = v"
+                :init-search="$route.query.pattern?.toString()"
+                :active-mode="true"
+                input-class="font-mono"
+                placeholder="Введите строку для поиска"
+            />
           </div>
+        </section>
+
+        <div
+            v-if="waitResult"
+            class="rounded-4xl border border-gray-200/70 bg-white/80 px-6 py-10 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+        >
+          <p class="text-base text-gray-800 dark:text-gray-100 sm:text-lg">
+            Поиск по паттерну:
+            <code class="mx-1 rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-sm dark:bg-gray-800">{{ pattern }}</code>
+          </p>
+          <img class="mx-auto mt-6 h-50 object-contain" src="/img/load_desc.gif" alt="loading">
         </div>
-        <SearchInput @submit_input="searchDescription" @update:modelValue="(v: string) => pattern = v"
-                     :init-search="$route.query.pattern?.toString()"
-                     :active-mode="true" input-class="font-mono"
-                     placeholder="Введите строку для поиска"/>
       </div>
 
-    </div>
-
-    <div v-show="interfaces.length" class="py-4">
-
-      <!--Нашли по паттерну-->
-      <div v-if="interfaces.length && !waitResult">
-        <div>
-          <h4 class="text-center py-2">Поиск по паттерну: "<span class="font-mono">{{ lastPattern }}</span>"</h4>
-          <h6 class="py-2 ml-5 font-mono">Найдено: {{ interfaces.length }}</h6>
-        </div>
-
-        <DataTable ref="descriptionSearchTable" :value="interfaces"
-                   :rows="rows" :paginator="interfaces.length > rows" paginator-position="both"
-                   filterDisplay="row" v-model:filters="filters" removableSort>
-
-          <template #paginatorend>
-            <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" fluid outlined
-                    v-tooltip.left="'Экспорт текущей таблицы по фильтру, но без сортировки'" label="export csv"/>
-          </template>
-
-          <Column field="device" header="Оборудование" :sortable="true" class="font-mono">
-            <template #body="{data}">
-              <router-link :to="'/device/' + data.device" target="_blank">
-                <Button text icon="pi pi-box" class="text-nowrap" :label="data['device']"/>
-              </router-link>
-            </template>
-            <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()"
-                         placeholder="Поиск по имени"/>
-            </template>
-          </Column>
-
-          <Column field="interface.name" filter-field="interface.name" header="Порт" :sortable="true" class="font-mono">
-            <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск порта"/>
-            </template>
-            <template #body="{data}">
-              <router-link :to="'/device/' + data.device + '?port=' + data.interface.name" target="_blank"
-                           class="p-2 rounded bg-indigo-200 dark:bg-indigo-600">{{ data.interface.name }}
-              </router-link>
-            </template>
-          </Column>
-
-          <Column field="interface.status" header="Статус" :sortable="true" class="font-mono">
-            <template #body="{data}">
-              <div v-tooltip="'Время опроса: ' + data.interface.savedTime.toString()"
-                   class="text-nowrap p-2 flex items-center justify-center rounded"
-                   :style="statusStyle(data.interface.status)">
-                <span class="me-1">{{ data.interface.status }}</span>
-                <i class="pi pi-clock"/>
+      <template v-if="lastPattern">
+        <section
+            v-if="interfaces.length"
+            class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+        >
+          <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  Результаты по паттерну
+                  <code class="ml-2 font-mono text-base text-indigo-700 dark:text-indigo-300">{{ lastPattern }}</code>
+                </h2>
+                <p class="mt-1 text-sm font-mono text-gray-600 dark:text-gray-300">Найдено: {{
+                    filteredInterfaces.length
+                  }}</p>
               </div>
-            </template>
-            <template #filter="{ filterModel, filterCallback }">
-              <Select v-model="filterModel.value" @change="filterCallback()" placeholder="Выберите статус"
-                      :options="['up','down','admin down', 'noPresent']"/>
-            </template>
-          </Column>
 
-          <Column field="interface.description" header="Описание" :sortable="true" class="font-mono">
-            <template #body="{data}">
-              <div v-html="markDescription(data.interface.description)"></div>
-            </template>
-            <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск"/>
-            </template>
-          </Column>
-
-          <Column field="comments.0.text" header="Комментарии" :sortable="true" class="font-mono">
-            <template #body="{data}">
-              <Comment :interface="getInterface(data)" :markedText="lastPattern" :device-name="data.device"/>
-            </template>
-          </Column>
-
-          <Column field="interface.vlans" header="VLAN" :sortable="true" class="font-mono">
-            <template #body="{data}">
-              <div @click="toggleVlansList($event, data.interface)" style="cursor: pointer">
-                {{ truncateVlans(data.interface.vlans) }}
+              <div class="flex flex-wrap items-center gap-2">
+                <Button severity="success" @click="exportCSV" icon="pi pi-file-excel" outlined label="CSV"
+                        class="rounded-2xl!"/>
+                <Button
+                    v-if="hasActiveFilters || sortState.key"
+                    severity="secondary"
+                    outlined
+                    icon="pi pi-filter-slash"
+                    label="Сбросить"
+                    class="rounded-2xl!"
+                    @click="clearTableState"
+                />
               </div>
-            </template>
-            <template #filter="{ filterModel, filterCallback }">
-              <InputText v-model="filterModel.value" type="text" @input="filterCallback()" placeholder="Поиск VLAN"/>
-            </template>
-          </Column>
+            </div>
 
-        </DataTable>
+            <div
+                class="rounded-[1.75rem] sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40 overflow-hidden">
+              <div class="sm:border-b border-gray-200/70 sm:p-4 dark:border-gray-700/70">
+                <div class="flex flex-col gap-4">
+                  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                        class="rounded-2xl sm:border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm font-mono text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300">
+                      {{ filteredInterfaces.length }} строк
+                    </div>
+                    <div class="w-full lg:w-24">
+                      <Select v-model="rows" :options="rowsPerPageOptions" class="w-full rounded-2xl"/>
+                    </div>
+                  </div>
 
-      </div>
+                  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Оборудование
+                      </div>
+                      <InputText v-model="filters.device" class="w-full rounded-2xl" placeholder="Поиск по имени"/>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Порт
+                      </div>
+                      <InputText v-model="filters.port" class="w-full rounded-2xl" placeholder="Поиск порта"/>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Статус
+                      </div>
+                      <Select v-model="filters.status" :options="statusOptions" placeholder="Все" class="w-full rounded-2xl"
+                              :showClear="true"/>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Описание
+                      </div>
+                      <InputText v-model="filters.description" class="w-full rounded-2xl" placeholder="Поиск"/>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Комментарии
+                      </div>
+                      <InputText v-model="filters.comments" class="w-full rounded-2xl" placeholder="Поиск"/>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        VLAN
+                      </div>
+                      <InputText v-model="filters.vlans" class="w-full rounded-2xl" placeholder="Поиск VLAN"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      <!--Не нашли-->
-      <div v-else-if="!interfaces.length" class="py-4">
-        <h4 style="text-align: center">
-          Поиск по паттерну: "<span style="background: #fff6d5">{{ pattern }}</span>" не дал результатов
-        </h4>
-        <br>
-        <div class="container text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" fill="currentColor" class="bi bi-emoji-frown"
-               viewBox="0 0 16 16">
-            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-            <path
-                d="M4.285 12.433a.5.5 0 0 0 .683-.183A3.498 3.498 0 0 1 8 10.5c1.295 0 2.426.703 3.032 1.75a.5.5 0 0 0 .866-.5A4.498 4.498 0 0 0 8 9.5a4.5 4.5 0 0 0-3.898 2.25.5.5 0 0 0 .183.683zM7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5z"/>
-          </svg>
+              <div class="overflow-x-auto mt-2">
+                <table class="min-w-300 w-full text-sm">
+                  <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
+                  <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('device')">
+                        <span>Оборудование</span>
+                        <i :class="sortIcon('device')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('port')">
+                        <span>Порт</span>
+                        <i :class="sortIcon('port')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('status')">
+                        <span>Статус</span>
+                        <i :class="sortIcon('status')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('description')">
+                        <span>Описание</span>
+                        <i :class="sortIcon('description')"/>
+                      </button>
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold">Комментарии</th>
+                    <th class="px-4 py-3 text-left font-semibold">
+                      <button class="inline-flex items-center gap-2 cursor-pointer" @click="toggleSort('vlans')">
+                        <span>VLAN</span>
+                        <i :class="sortIcon('vlans')"/>
+                      </button>
+                    </th>
+                  </tr>
+                  </thead>
+
+                  <tbody>
+                  <tr
+                      v-for="data in pageItems"
+                      :key="`${data.device}-${data.interface.name}-${data.interface.savedTime}`"
+                      class="border-b border-gray-200/60 align-top transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
+                  >
+                    <td class="px-4 py-3">
+                      <router-link :to="'/device/' + data.device" target="_blank" rel="noopener noreferrer">
+                        <Button text icon="pi pi-box" class="rounded-2xl! max-w-full" :label="data.device"/>
+                      </router-link>
+                    </td>
+
+                    <td class="px-4 py-3">
+                      <router-link
+                          :to="'/device/' + data.device + '?port=' + data.interface.name"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="inline-flex items-center rounded-xl bg-indigo-100 px-3 py-1.5 font-mono text-sm text-indigo-900 transition hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-100 dark:hover:bg-indigo-500/30"
+                      >
+                        {{ data.interface.name }}
+                      </router-link>
+                    </td>
+
+                    <td class="px-4 py-3">
+                      <div :class="statusClass(data.interface.status)"
+                           class="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium">
+                        <span>{{ data.interface.status }}</span>
+                        <i class="pi pi-clock text-xs"/>
+                      </div>
+                    </td>
+
+                    <td class="px-4 py-3">
+                      <div class="font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200"
+                           v-html="markDescription(data.interface.description)"/>
+                    </td>
+
+                    <td class="px-4 py-3">
+                      <Comment :interface="getInterface(data)" :markedText="lastPattern" :device-name="data.device"/>
+                    </td>
+
+                    <td class="px-4 py-3">
+                      <button
+                          type="button"
+                          class="font-mono text-indigo-600 transition hover:underline dark:text-indigo-400"
+                          @click="toggleVlansList($event, data.interface)"
+                      >
+                        {{ truncateVlans(data.interface.vlans) }}
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr v-if="!pageItems.length">
+                    <td colspan="6" class="px-4 py-10 text-center">
+                      <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">По фильтрам ничего не
+                        найдено
+                      </div>
+                      <div class="mt-1 text-sm text-gray-600 dark:text-gray-300">Измените фильтры или сбросьте их.</div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div v-if="filteredInterfaces.length > rows" class="p-3">
+                <Paginator
+                    :rows="rows"
+                    :totalRecords="filteredInterfaces.length"
+                    :first="page * rows"
+                    :pageLinkSize="3"
+                    @page="onPage"
+                    :pt="{
+                      root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
+                    }"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div
+            v-else
+            class="rounded-4xl border border-dashed border-gray-200/80 bg-white/70 px-6 py-12 text-center backdrop-blur dark:border-gray-700/60 dark:bg-gray-900/30"
+        >
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            По паттерну
+            <code class="mx-1 rounded-lg bg-amber-100/90 px-2 py-0.5 font-mono dark:bg-amber-900/40">{{
+                lastPattern
+              }}</code>
+            совпадений нет
+          </h2>
         </div>
-      </div>
-
-    </div>
-
-    <!--Выполняется поиск-->
-    <div v-show="waitResult" class="text-center">
-      <div class="text-2xl py-2">Поиск по паттерну: "<span class="font-mono">{{ pattern }}</span>"</div>
-      <img class="mx-auto h-[200px]" src="/img/load_desc.gif" alt="load-desc">
+      </template>
     </div>
   </div>
 
-  <!--  VLANS FULL LIST-->
-  <Popover ref="vlansList">
-    <div class="text-sm text-muted-color pb-4"><i class="pi pi-clock me-2 text-sm"/>{{ selectedVlansTime }}</div>
-    <div>{{ selectedVlans }}</div>
+  <Popover
+      ref="vlansList"
+      :pt="{
+        root: {
+          class: 'before:!hidden overflow-hidden rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/95 dark:bg-gray-900/80 dark:backdrop-blur-xl shadow-lg dark:ring-1! dark:ring-white/5!',
+        },
+        content: { class: 'p-4! max-w-md' },
+      }"
+  >
+    <div class="border-b border-gray-200/70 pb-3 text-xs text-gray-500 dark:border-gray-700/60 dark:text-gray-400">
+      <i class="pi pi-clock me-2 text-sm"/>
+      {{ selectedVlansTime }}
+    </div>
+    <div class="mt-3 whitespace-pre-wrap break-all font-mono text-sm text-gray-800 dark:text-gray-100">
+      {{ selectedVlans }}
+    </div>
   </Popover>
 
   <Footer/>
-
 </template>
 
 <script lang="ts">
@@ -165,12 +341,13 @@ import Footer from "@/components/Footer.vue";
 import Comment from "@/components/Comment.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import {DeviceInterface, findInterfacesByDescription, InterfaceDescriptionMatchResult} from "@/services/interfaces";
-import {FilterMatchMode} from "@primevue/core/api";
 import {markText} from "@/formats.ts";
+
+type SortKey = "device" | "port" | "status" | "description" | "vlans";
+type SortDir = "asc" | "desc";
 
 export default defineComponent({
   components: {Footer, Header, Comment, SearchInput},
-
   data() {
     return {
       interfaces: [] as InterfaceDescriptionMatchResult[],
@@ -178,29 +355,90 @@ export default defineComponent({
       lastPattern: "" as string,
       isRegexPattern: false,
       waitResult: false,
-      rows: 25, // количество строк в таблице
-
+      rows: 25,
+      page: 0,
+      rowsPerPageOptions: [10, 25, 50, 100],
+      statusOptions: ["up", "down", "admin down", "noPresent", "notPresent", "dormant"],
       selectedVlans: "",
       selectedVlansTime: "",
       filters: {
-        device: {value: null, matchMode: FilterMatchMode.CONTAINS},
-        'interface.name': {value: null, matchMode: FilterMatchMode.CONTAINS},
-        'interface.status': {value: null, matchMode: FilterMatchMode.EQUALS},
-        'interface.description': {value: null, matchMode: FilterMatchMode.CONTAINS},
-        'interface.vlans': {value: null, matchMode: FilterMatchMode.CONTAINS},
+        device: "",
+        port: "",
+        status: null as string | null,
+        description: "",
+        comments: "",
+        vlans: "",
       },
-    }
+      sortState: {
+        key: null as SortKey | null,
+        dir: "asc" as SortDir,
+      },
+    };
   },
+  computed: {
+    hasActiveFilters(): boolean {
+      return Boolean(
+          this.filters.device ||
+          this.filters.port ||
+          this.filters.status ||
+          this.filters.description ||
+          this.filters.comments ||
+          this.filters.vlans
+      );
+    },
+    filteredInterfaces(): InterfaceDescriptionMatchResult[] {
+      const device = this.filters.device.trim().toLowerCase();
+      const port = this.filters.port.trim().toLowerCase();
+      const status = (this.filters.status || "").trim().toLowerCase();
+      const description = this.filters.description.trim().toLowerCase();
+      const comments = this.filters.comments.trim().toLowerCase();
+      const vlans = this.filters.vlans.trim().toLowerCase();
 
+      return this.interfaces.filter((item) => {
+        const commentsText = item.comments.map((comment) => comment.text).join(" ").toLowerCase();
+        if (device && !item.device.toLowerCase().includes(device)) return false;
+        if (port && !item.interface.name.toLowerCase().includes(port)) return false;
+        if (status && item.interface.status.toLowerCase() !== status) return false;
+        if (description && !item.interface.description.toLowerCase().includes(description)) return false;
+        if (comments && !commentsText.includes(comments)) return false;
+        if (vlans && !item.interface.vlans.toLowerCase().includes(vlans)) return false;
+        return true;
+      });
+    },
+    sortedInterfaces(): InterfaceDescriptionMatchResult[] {
+      const list = [...this.filteredInterfaces];
+      if (!this.sortState.key) return list;
+
+      const dir = this.sortState.dir === "asc" ? 1 : -1;
+      list.sort((a, b) => {
+        const av = this.getSortValue(a, this.sortState.key!);
+        const bv = this.getSortValue(b, this.sortState.key!);
+        return av.localeCompare(bv, "ru", {numeric: true, sensitivity: "base"}) * dir;
+      });
+      return list;
+    },
+    pageItems(): InterfaceDescriptionMatchResult[] {
+      const start = this.page * this.rows;
+      return this.sortedInterfaces.slice(start, start + this.rows);
+    },
+  },
+  watch: {
+    filteredInterfaces() {
+      if (this.page * this.rows >= this.filteredInterfaces.length) {
+        this.page = 0;
+      }
+    },
+    rows() {
+      this.page = 0;
+    },
+  },
   mounted() {
     if (this.$route.query.pattern) {
       this.pattern = this.$route.query.pattern.toString();
       this.searchDescription();
     }
   },
-
   methods: {
-
     getInterface(data: InterfaceDescriptionMatchResult): DeviceInterface {
       return {
         name: data.interface.name,
@@ -208,75 +446,110 @@ export default defineComponent({
         status: data.interface.status,
         vlans: [],
         comments: data.comments,
-      }
+      };
     },
-
     searchDescription() {
       if (this.pattern.length < 2) return;
-      this.waitResult = true
+      this.waitResult = true;
+      this.page = 0;
 
       this.$router.replace({query: {...this.$route.query, pattern: this.pattern}});
 
       findInterfacesByDescription(this.pattern, this.isRegexPattern)
           .then(
-              data => {
-                this.interfaces = data
-                this.lastPattern = this.pattern
-                this.waitResult = false
+              (data) => {
+                this.interfaces = data;
+                this.lastPattern = this.pattern;
+                this.waitResult = false;
               },
               () => this.waitResult = false
           )
-          .catch(() => this.waitResult = false)
+          .catch(() => this.waitResult = false);
     },
-
     markDescription(desc: string): string {
-      return markText(desc, this.lastPattern)
+      return markText(desc, this.lastPattern);
     },
-
-    statusStyle(status: string): any {
-      status = status.toLowerCase()
-      let style: any = {
-        color: 'black',
-        width: '120px',
-      }
-      if (status === "admin down") {
-        style['background-color'] = "#ffb4bb";
-      } else if (status === "notpresent") {
-        style['background-color'] = "#c1c1c1"
-      } else if (status === "dormant") {
-        style['background-color'] = "#ffe389"
-      } else if (status !== "down") {
-        style['background-color'] = "#22e58b"
-      }
-
-      style.color = style['background-color'] ? "black" : ""
-
-      return style
+    statusClass(status: string): string {
+      const normalized = status.toLowerCase();
+      if (normalized === "admin down") return "bg-red-200 text-red-950 dark:bg-red-500/20 dark:text-red-100";
+      if (normalized === "notpresent" || normalized === "nopresent") return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
+      if (normalized === "dormant") return "bg-amber-100 text-amber-950 dark:bg-amber-500/20 dark:text-amber-100";
+      if (normalized !== "down") return "bg-emerald-300 text-emerald-950 dark:bg-emerald-500/20 dark:text-emerald-100";
+      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200";
     },
-
     truncateVlans(vlans: string): string {
-      if (vlans.length > 17) {
-        return vlans.slice(0, 15) + "..."
-      }
-      return vlans
+      if (vlans.length > 24) return vlans.slice(0, 22) + "...";
+      return vlans;
     },
-
+    getSortValue(data: InterfaceDescriptionMatchResult, key: SortKey): string {
+      if (key === "device") return data.device || "";
+      if (key === "port") return data.interface.name || "";
+      if (key === "status") return data.interface.status || "";
+      if (key === "description") return data.interface.description || "";
+      return data.interface.vlans || "";
+    },
+    toggleSort(key: SortKey) {
+      if (this.sortState.key !== key) {
+        this.sortState.key = key;
+        this.sortState.dir = "asc";
+        return;
+      }
+      if (this.sortState.dir === "asc") {
+        this.sortState.dir = "desc";
+      } else {
+        this.sortState.key = null;
+        this.sortState.dir = "asc";
+      }
+    },
+    sortIcon(key: SortKey): string {
+      if (this.sortState.key !== key) return "pi pi-sort-alt";
+      return this.sortState.dir === "asc" ? "pi pi-sort-amount-up-alt" : "pi pi-sort-amount-down";
+    },
+    clearTableState() {
+      this.filters.device = "";
+      this.filters.port = "";
+      this.filters.status = null;
+      this.filters.description = "";
+      this.filters.comments = "";
+      this.filters.vlans = "";
+      this.sortState.key = null;
+      this.sortState.dir = "asc";
+      this.page = 0;
+    },
+    onPage(event: { page: number; rows: number }) {
+      this.page = event.page;
+      this.rows = event.rows;
+    },
     toggleVlansList(event: Event, intf: { vlans: string, vlansSavedTime: string }) {
       this.selectedVlans = intf.vlans;
       this.selectedVlansTime = intf.vlansSavedTime;
-
-      // @ts-ignore
-      this.$refs.vlansList.toggle(event);
+      (this.$refs.vlansList as { toggle: (e: Event) => void }).toggle(event);
     },
-
     exportCSV() {
-      // @ts-ignore
-      this.$refs.descriptionSearchTable.exportCSV();
+      const header = ["device", "port", "status", "description", "comments", "vlans"];
+      const lines = [header.join(",")];
+
+      for (const item of this.filteredInterfaces) {
+        const comments = item.comments.map((comment) => comment.text).join(" | ");
+        const row = [
+          item.device,
+          item.interface.name,
+          item.interface.status,
+          item.interface.description,
+          comments,
+          item.interface.vlans,
+        ].map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`);
+        lines.push(row.join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], {type: "text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "description-search.csv";
+      link.click();
+      URL.revokeObjectURL(url);
     },
-
   },
-
-
 });
-
 </script>

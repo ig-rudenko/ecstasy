@@ -1,141 +1,140 @@
 <template>
   <div class="py-2">
-    <div class="p-4 border rounded-xl shadow-xl border-gray-200 dark:border-gray-600">
-      <div>
+    <div
+        class="rounded-4xl border border-gray-200/80 bg-white/85 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.45)] dark:border-gray-700/80 dark:bg-gray-900/55 sm:p-5">
+      <div class="flex flex-col gap-5">
+        <div v-if="!collectNew.active" class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Configs
+            </div>
+            <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">Конфигурации оборудования</div>
+            <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Просмотр, скачивание, удаление и сравнение
+              версий.
+            </div>
+          </div>
 
-        <!--  HEADER-->
-        <div v-if="!collectNew.active" class="py-2 flex justify-between items-center">
-          <div class="text-xl px-2">Конфигурации</div>
-
-          <!-- ADD NEW -->
-          <div class="flex flex-wrap justify-end gap-2">
+          <div class="flex flex-wrap gap-2">
             <Button @click="collectConfig" icon="pi pi-plus" label="Собрать новую" severity="success"
-                    class="hover:bg-green-500 hover:text-primary-contrast" size="small" outlined/>
-            <Button @click="showDiffDialog=true" size="small" outlined
-                    class="hover:bg-primary hover:text-primary-contrast">
-              <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="me-2"
-                     viewBox="0 0 16 16">
-                  <path
-                      d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm5 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2v5a2 2 0 0 1-2 2H5zm6-8V2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2V6a2 2 0 0 1 2-2h5z"/>
-                </svg>
-                <span>Сравнение</span>
-              </div>
-            </Button>
+                    class="rounded-2xl!"/>
+            <Button @click="showDiffDialog = true" icon="pi pi-sliders-h" label="Сравнение" severity="secondary"
+                    outlined class="rounded-2xl!"/>
           </div>
         </div>
 
-        <!--  ELSE | COLLECTING-->
-        <div v-else>
-          <div class="flex justify-center gap-4 items-center text-xl">Собираем текущую конфигурацию <i
-              class="pi pi-spin pi-spinner"/></div>
+        <div v-else
+             class="flex items-center justify-center gap-3 rounded-3xl border border-sky-200/80 bg-sky-50/70 px-4 py-5 text-center text-sm font-medium text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-200">
+          <i class="pi pi-spin pi-spinner text-lg"/>
+          <span>Собираем текущую конфигурацию устройства</span>
         </div>
 
-        <!--    ALERT-->
-        <div v-if="collectNew.display" :class="alertClasses" class="py-3">
-          <Message class="flex justify-center" :severity="collectNew.status">
-            {{ collectNew.text }}
-            <Button @click="collectNew.display=false" icon="pi pi-times" rounded text size="small" severity="danger"/>
-          </Message>
+        <Message v-if="collectNew.display" :severity="collectNew.status" class="rounded-3xl">
+          <div class="flex w-full items-center justify-between gap-3">
+            <span>{{ collectNew.text }}</span>
+            <Button @click="collectNew.display = false" icon="pi pi-times" rounded text size="small"
+                    severity="contrast"/>
+          </div>
+        </Message>
+
+        <div v-if="files.length" class="grid gap-3">
+          <article
+              v-for="file in files"
+              :key="file.name"
+              class="group rounded-3xl border border-gray-200/80 bg-gray-50/70 p-4 transition hover:border-sky-300 hover:bg-white dark:border-gray-700/80 dark:bg-gray-950/20 dark:hover:border-sky-500 dark:hover:bg-gray-900/70"
+          >
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-3">
+                  <div
+                      class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-gray-600 shadow-sm dark:bg-gray-900/80 dark:text-gray-300"
+                      v-html="fileIcon(file.name)"></div>
+                  <div class="min-w-0">
+                    <button
+                        class="max-w-full truncate text-left text-base font-semibold text-gray-900 transition group-hover:text-sky-700 dark:text-gray-100 dark:group-hover:text-sky-300"
+                        @click="toggleFileDisplay(file)">
+                      {{ file.name }}
+                    </button>
+                    <div class="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                      <span>{{ formatBytes(file.size) }}</span>
+                      <span class="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                      <span class="inline-flex items-center gap-2">
+                        <i class="pi pi-clock"/>
+                        <span>{{ file.modTime }}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <Button @click="toggleFileDisplay(file)" icon="pi pi-eye" label="Открыть" severity="contrast" outlined
+                        class="rounded-2xl!"/>
+                <Button @click="downloadFile(file)" icon="pi pi-download" label="Скачать" severity="secondary" outlined
+                        class="rounded-2xl!"/>
+                <Button @click="showDeleteDialog(file)" icon="pi pi-trash" label="Удалить" severity="danger" outlined
+                        class="rounded-2xl!"/>
+              </div>
+            </div>
+          </article>
         </div>
-        <!--      -->
 
-        <div class="overflow-auto">
-          <table class="w-full">
-            <tbody>
-
-            <template v-for="file in files">
-              <tr>
-                <td>
-                  <div class="flex justify-center gap-3 py-3">
-
-                    <!--        DOWNLOAD-->
-                    <div @click="downloadFile(file)" class="cursor-pointer">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-                           viewBox="0 0 16 16">
-                        <path
-                            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"></path>
-                        <path
-                            d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"></path>
-                      </svg>
-                    </div>
-
-                    <!--        DELETE-->
-                    <div @click="() => showDeleteDialog(file)" class="cursor-pointer">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="red" viewBox="0 0 16 16">
-                        <path
-                            d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"></path>
-                      </svg>
-                    </div>
-                  </div>
-                </td>
-
-                <td class="px-2 text-nowrap">
-                  <div class="flex gap-2 items-center">
-                    <span v-html="fileIcon(file.name)"></span>
-                    <span @click="toggleFileDisplay(file)" style="cursor: pointer;">{{ file.name }}</span>
-                  </div>
-                </td>
-
-                <td class="px-2 text-nowrap">{{ formatBytes(file.size) }}</td>
-
-                <td class="px-2 text-nowrap">
-                  <div class="flex items-center gap-2">
-                    <i class="pi pi-clock"/>
-                    <span>{{ file.modTime }}</span>
-                  </div>
-                </td>
-
-              </tr>
-
-
-            </template>
-            </tbody>
-          </table>
+        <div v-else
+             class="rounded-3xl border border-dashed border-gray-200/80 bg-gray-50/70 px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:bg-gray-900/30 dark:text-gray-400">
+          Конфигурации пока не найдены
         </div>
       </div>
     </div>
   </div>
 
-  <Dialog v-model:visible="visibleConfigText" modal class="h-full w-full" maximizable>
+  <Dialog v-model:visible="visibleConfigText" modal maximizable class="w-[min(96vw,1400px)]" content-class="!p-0">
     <template #header>
-      <div class="flex-wrap break-all px-2">Конфигурация <br> {{ selectedFile?.name }}</div>
+      <div class="min-w-0 px-1">
+        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Config preview
+        </div>
+        <div class="mt-1 break-all text-base font-semibold text-gray-900 dark:text-gray-100">{{
+            selectedFile?.name
+          }}
+        </div>
+      </div>
     </template>
-    <div v-if="selectedFile?.content">
-      <pre style="white-space: pre-wrap; font-family: monospace; padding: 1rem">{{ selectedFile.content }}</pre>
+
+    <div v-if="selectedFile?.content" class="rounded-b-3xl bg-gray-950 px-4 py-4 text-gray-100">
+      <pre class="overflow-auto whitespace-pre-wrap break-all font-mono text-[12px] leading-6">{{
+          selectedFile.content
+        }}</pre>
     </div>
-    <div v-else class="flex justify-center">
-      <i class="pi pi-spin pi-spinner text-6xl"/>
+    <div v-else class="flex justify-center p-10">
+      <ProgressSpinner/>
     </div>
   </Dialog>
 
-  <!-- Delete Modal -->
-  <Dialog v-model:visible="visibleDeleteDialog" modal header="Внимание!">
-    <div>
-      <div class="flex">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="red" class="me-2" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
-          <path
-              d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"></path>
-        </svg>
-        <div>Вы уверены, что хотите удалить конфигурацию?</div>
+  <Dialog v-model:visible="visibleDeleteDialog" modal header="Удаление конфигурации" class="w-[min(92vw,32rem)]">
+    <div class="flex flex-col gap-5">
+      <div
+          class="flex items-start gap-3 rounded-3xl border border-red-200/80 bg-red-50/70 p-4 dark:border-red-900/70 dark:bg-red-950/20">
+        <i class="pi pi-exclamation-triangle mt-0.5 text-red-500"/>
+        <div class="text-sm text-gray-700 dark:text-gray-200">
+          Вы уверены, что хотите удалить конфигурацию
+          <span v-if="selectedFile" class="font-semibold break-all">{{ selectedFile.name }}</span>?
+        </div>
       </div>
-      <p v-if="selectedFile">{{ selectedFile.name }}</p>
-      <div class="p-4 flex gap-2 justify-center">
-        <Button icon="pi pi-times" label="Отмена" @click="visibleDeleteDialog = false"/>
+
+      <div class="flex justify-end gap-2">
+        <Button icon="pi pi-times" label="Отмена" severity="secondary" outlined class="rounded-2xl!"
+                @click="visibleDeleteDialog = false"/>
         <Button v-if="selectedFile" @click="deleteFile(selectedFile)" icon="pi pi-trash" severity="danger"
-                label="Удалить"/>
+                label="Удалить" class="rounded-2xl!"/>
       </div>
     </div>
   </Dialog>
 
-  <Dialog v-model:visible="showDiffDialog" modal header="Сравнение конфигураций" class="w-full h-full">
+  <Dialog v-model:visible="showDiffDialog" modal header="Сравнение конфигураций" maximizable
+          class="w-[min(96vw,1500px)]">
     <ConfigFileDiff
         :config-files="files"
         :device-name="deviceName"
-        :formatted-config-function="formatConfigFile"/>
+        :formatted-config-function="formatConfigFile"
+    />
   </Dialog>
-
 </template>
 
 <script lang="ts">
@@ -146,17 +145,14 @@ import Dialog from "primevue/dialog";
 import ConfigFileDiff from "./ConfigFileDiff.vue";
 import api from "@/services/api";
 import errorFmt from "@/errorFmt.ts";
-import {textToHtml} from "@/formats.ts";
-
 
 interface ConfigFile {
   name: string
-  size: number,
-  modTime: string,
-  content?: string,
+  size: number
+  modTime: string
+  content?: string
   display?: boolean
 }
-
 
 class CollectNewConfig {
   constructor(
@@ -168,24 +164,20 @@ class CollectNewConfig {
   }
 
   setFree() {
-    this.display = true
-    this.active = false
+    this.display = true;
+    this.active = false;
   }
 }
 
-
 export default defineComponent({
   name: "ConfigFiles",
-
   components: {
     Dialog,
     ConfigFileDiff,
   },
-
   props: {
     deviceName: {required: true, type: String},
   },
-
   data() {
     return {
       files: [] as ConfigFile[],
@@ -194,75 +186,46 @@ export default defineComponent({
       showDiffDialog: false,
       visibleConfigText: false,
       visibleDeleteDialog: false,
-    }
+    };
   },
-
   mounted() {
-    this.getFiles()
+    this.getFiles();
   },
-
-  computed: {
-    alertClasses() {
-      if (this.collectNew.status === "success") {
-        return ["alert", "alert-success"]
-      } else if (this.collectNew.status === "error") {
-        return ["alert", "alert-danger"]
-      }
-    }
-  },
-
   methods: {
-    textToHtml,
     fileIcon(fileName: string): string {
       if (fileName && fileName.endsWith(".txt")) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-text me-1" viewBox="0 0 16 16" style="cursor: pointer;">
-                  <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"></path>
-                  <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"></path>
-                </svg>`
+        return `<i class="pi pi-file text-xl"></i>`;
       }
       if (fileName && fileName.endsWith(".zip")) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-earmark-zip me-1" viewBox="0 0 16 16">
-                  <path d="M5 7.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v.938l.4 1.599a1 1 0 0 1-.416 1.074l-.93.62a1 1 0 0 1-1.11 0l-.929-.62a1 1 0 0 1-.415-1.074L5 8.438V7.5zm2 0H6v.938a1 1 0 0 1-.03.243l-.4 1.598.93.62.929-.62-.4-1.598A1 1 0 0 1 7 8.438V7.5z"/>
-                  <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1h-2v1h-1v1h1v1h-1v1h1v1H6V5H5V4h1V3H5V2h1V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-                </svg>`
+        return `<i class="pi pi-file-export text-xl"></i>`;
       }
-
-      return `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-file-binary me-1" viewBox="0 0 16 16">
-                <path d="M5.526 13.09c.976 0 1.524-.79 1.524-2.205 0-1.412-.548-2.203-1.524-2.203-.978 0-1.526.79-1.526 2.203 0 1.415.548 2.206 1.526 2.206zm-.832-2.205c0-1.05.29-1.612.832-1.612.358 0 .607.247.733.721L4.7 11.137a6.749 6.749 0 0 1-.006-.252zm.832 1.614c-.36 0-.606-.246-.732-.718l1.556-1.145c.003.079.005.164.005.249 0 1.052-.29 1.614-.829 1.614zm5.329.501v-.595H9.73V8.772h-.69l-1.19.786v.688L8.986 9.5h.05v2.906h-1.18V13h3z"/>
-                <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-              </svg>`
+      return `<i class="pi pi-file-o text-xl"></i>`;
     },
-
     formatBytes(bytes: number): string {
-      let marker = 1024; // Измените на 1000 при необходимости
-      let decimal = 1;
-      let kiloBytes = marker; // Один килобайт - это 1024 байта
-      let megaBytes = kiloBytes * marker; // Один мегабайт - это 1024 килобайта
+      const marker = 1024;
+      const decimal = 1;
+      const kiloBytes = marker;
+      const megaBytes = kiloBytes * marker;
 
-      if (bytes < kiloBytes) return bytes + " Б";
-      else if (bytes < megaBytes) return (bytes / kiloBytes).toFixed(decimal) + " КБ";
-      else if (bytes < marker * megaBytes) return (bytes / megaBytes).toFixed(decimal) + " МБ";
-      return "1+ ГБ"
+      if (bytes < kiloBytes) return `${bytes} Б`;
+      if (bytes < megaBytes) return `${(bytes / kiloBytes).toFixed(decimal)} КБ`;
+      if (bytes < marker * megaBytes) return `${(bytes / megaBytes).toFixed(decimal)} МБ`;
+      return "1+ ГБ";
     },
-
     getFiles() {
-      api.get("/api/v1/devices/" + this.deviceName + "/configs")
-          .then(
-              (value: AxiosResponse<ConfigFile[]>) => {
-                this.files = value.data
-              }
-          )
-          .catch(reason => {
-            console.log(reason)
+      api.get(`/api/v1/devices/${this.deviceName}/configs`)
+          .then((value: AxiosResponse<ConfigFile[]>) => {
+            this.files = value.data;
           })
+          .catch((reason) => {
+            console.log(reason);
+          });
     },
-
     collectConfig() {
-      // Это проверка для предотвращения множественных запросов к серверу.
-      if (this.collectNew.active) return
+      if (this.collectNew.active) return;
 
-      this.collectNew.active = true
-      api.post("/api/v1/devices/" + this.deviceName + "/collect-config")
+      this.collectNew.active = true;
+      api.post(`/api/v1/devices/${this.deviceName}/collect-config`)
           .then(
               (value: AxiosResponse) => {
                 this.getFiles();
@@ -276,82 +239,59 @@ export default defineComponent({
                 this.collectNew.setFree();
               }
           )
-          .catch(
-              () => {
-                this.collectNew.status = "error";
-                this.collectNew.text = "Ошибка во время сбора новой конфигурации";
-                this.collectNew.setFree();
-              }
-          )
+          .catch(() => {
+            this.collectNew.status = "error";
+            this.collectNew.text = "Ошибка во время сбора новой конфигурации";
+            this.collectNew.setFree();
+          });
     },
-
     showDeleteDialog(file: ConfigFile) {
       this.selectedFile = file;
       this.visibleDeleteDialog = true;
     },
-
     deleteFile(file: ConfigFile) {
-      api.delete("/api/v1/devices/" + this.deviceName + "/config/" + file.name)
-          .then(
-              (value: AxiosResponse) => {
-                if (value.status === 204) this.getFiles();
-                this.visibleDeleteDialog = false;
-              }
-          )
+      api.delete(`/api/v1/devices/${this.deviceName}/config/${file.name}`)
+          .then((value: AxiosResponse) => {
+            if (value.status === 204) this.getFiles();
+            this.visibleDeleteDialog = false;
+          });
     },
-
     toggleFileDisplay(file: ConfigFile) {
-      if (file.size > 1024 * 1024) return
+      if (file.size > 1024 * 1024) return;
       this.selectedFile = file;
 
       if (!file.content) {
-        api.get("/api/v1/devices/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
-            .then(
-                (value: AxiosResponse<Blob>) => {
-                  return value.data.text()
-                }
-            )
-            .then(value => {
-              if (!value.length) return
-              file.content = value
+        api.get(`/api/v1/devices/${this.deviceName}/config/${file.name}`, {responseType: "blob"})
+            .then((value: AxiosResponse<Blob>) => value.data.text())
+            .then((value) => {
+              if (!value.length) return;
+              file.content = value;
               this.visibleConfigText = true;
-            })
+            });
       }
       this.visibleConfigText = true;
       file.display = !file.display;
     },
-
     formatConfigFile(content: string): string {
-      let formattedContent = ""
-      for (const line of content.split("\n")) {
-        const formattedLine = line.replace(/^\s+|\s+$|(\r\n|\n|\r)/gm, "");
-        if (!formattedLine.length) continue;
-        formattedContent += formattedLine + "\n";
-      }
-      return formattedContent
+      return content.replace(/\r\n?/g, "\n");
     },
-
     downloadFile(file: ConfigFile) {
-      api.get("/api/v1/devices/" + this.deviceName + "/config/" + file.name, {responseType: 'blob'})
+      api.get(`/api/v1/devices/${this.deviceName}/config/${file.name}`, {responseType: "blob"})
           .then((response) => {
-            // create file link in browser's memory
             const href = URL.createObjectURL(response.data);
-            // create "a" HTML element with href to file & click
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = href;
 
             let filename = file.name;
-            if (!filename.endsWith(".txt")) filename = filename + ".txt";
+            if (!filename.endsWith(".txt")) filename = `${filename}.txt`;
 
-            link.setAttribute('download', filename); //or any other extension
+            link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
-            // clean up "a" element & remove ObjectURL
             document.body.removeChild(link);
             URL.revokeObjectURL(href);
           });
     }
   }
-})
-
+});
 </script>

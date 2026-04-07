@@ -100,9 +100,13 @@ class RemoteDevice(
             p = ping(self.ip, timeout=2)
             return isinstance(p, float)
 
-        resp = self._session.post(f"{self._remote_connector_address}/ping/{self.ip}", timeout=2)
+        try:
+            resp = self._session.post(f"{self._remote_connector_address}/ping/{self.ip}", timeout=2)
+        except Exception as exc:
+            print(f"Remote device | ping_device {self.ip} | {exc}")
+            return False
         if resp.status_code == 200:
-            return resp.json()["available"]
+            return bool(resp.json()["available"])
         return False
 
     def _delete_pool(self):

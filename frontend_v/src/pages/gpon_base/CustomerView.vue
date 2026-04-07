@@ -29,10 +29,11 @@
         <img class="header-image" style="max-height: 400px" :src="'/img/gpon/subscriber-'+gender+'.svg'"
              alt="subscriber-image">
 
-        <div class="w-full md:w-2/3 xl:w-1/2 sm:border shadow rounded-xl p-4 sm:p-10 flex flex-col">
+        <div
+            class="w-full md:w-2/3 xl:w-1/2 sm:border border-gray-300 dark:border-gray-800 shadow rounded-xl p-4 sm:p-10 flex flex-col">
 
           <Select v-if="editMode" v-model="customer.type" fluid
-                  :options="['person','company','contract']" style="width: 100%"
+                  :options="['person','company','contract']" style="width: 100%" class="rounded-2xl"
                   placeholder="Выберите тип абонента">
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex align-items-center"
@@ -53,7 +54,7 @@
                     Фамилия
                     <Asterisk/>
                   </div>
-                  <InputText v-model.trim="customer.surname" fluid/>
+                  <InputText v-model.trim="customer.surname" fluid class="rounded-2xl"/>
                 </div>
 
                 <div>
@@ -61,7 +62,7 @@
                     Имя
                     <Asterisk/>
                   </div>
-                  <InputText v-model.trim="customer.firstName" fluid/>
+                  <InputText v-model.trim="customer.firstName" fluid class="rounded-2xl"/>
                 </div>
               </div>
 
@@ -70,7 +71,7 @@
                   Отчество
                   <Asterisk/>
                 </div>
-                <InputText v-model.trim="customer.lastName" fluid/>
+                <InputText v-model.trim="customer.lastName" fluid class="rounded-2xl"/>
               </div>
             </template>
             <div class="text-2xl p-2" v-else>{{ fullName }}</div>
@@ -83,7 +84,7 @@
                 Название кампании
                 <Asterisk/>
               </h6>
-              <InputText v-model.trim="customer.companyName" fluid/>
+              <InputText v-model.trim="customer.companyName" fluid class="rounded-2xl"/>
             </div>
             <h4 class="text-2xl py-2" v-else>{{ customer.companyName }}</h4>
           </template>
@@ -95,7 +96,7 @@
                     d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
             </svg>
             <InputMask v-if="editMode" v-model="customer.phone" date="phone" style="width: 100%"
-                       mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99"/>
+                       mask="+7 (999) 999-99-99" placeholder="+7 (999) 999-99-99" class="rounded-2xl"/>
             <div class="text-xl font-mono" v-else>{{ customer.phone || '-' }}</div>
           </div>
 
@@ -106,7 +107,8 @@
               <path
                   d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2v9.255S12 12 8 12s-5 1.755-5 1.755V2a1 1 0 0 1 1-1h5.5v2z"/>
             </svg>
-            <InputText v-if="editMode" v-model.trim="customer.contract" type="text" style="width: 100%"/>
+            <InputText v-if="editMode" v-model.trim="customer.contract" type="text" style="width: 100%"
+                       class="rounded-2xl"/>
             <div class="text-xl font-mono" v-else>{{ customer.contract || '-' }}</div>
           </div>
 
@@ -128,7 +130,8 @@
         <div v-if="customer">
           <div class="text-xl p-4">Подключения:</div>
 
-          <div v-for="connection in customer.connections" class="sm:border rounded-xl shadow mb-4 relative">
+          <div v-for="connection in customer.connections"
+               class="sm:border border-gray-300 dark:border-gray-800 rounded-xl shadow mb-4 relative">
 
             <!-- УДАЛЕНИЕ ПОДКЛЮЧЕНИЯ -->
             <div v-if="editMode && hasPermissionToDeleteConnection" class="md:absolute p-4 md:p-0 -top-5 -right-5">
@@ -156,7 +159,7 @@
             <div v-if="editMode && hasPermissionToUpdateConnection" class="flex flex-wrap px-2">
               <div class="px-2 pb-2">Описание подключения</div>
               <div class="px-2 w-full">
-                <Textarea v-model.trim="connection.description" fluid auto-resize/>
+                <Textarea v-model.trim="connection.description" fluid auto-resize class="rounded-2xl"/>
               </div>
             </div>
             <div v-else-if="connection.description" class="mx-4 p-3">{{ connection.description }}</div>
@@ -206,7 +209,7 @@
                   </svg>
                   <router-link
                       :to="{name: 'gpon-end3-tech-data', params: {id: connection.end3.id}, query: {backref: $route.href}}">
-                    <Button outlined severity="contrast">
+                    <Button outlined severity="contrast" class="border-gray-300 dark:border-gray-800">
                       <div class="flex flex-col">
                         <div>{{ connection.end3.location }}</div>
                         <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
@@ -261,28 +264,30 @@
                         ONT ID
                         <Asterisk/>
                       </div>
-                      <InputText v-model.number="connection.ont_id" type="number" fluid/>
+                      <InputText v-model.number="connection.ont_id" type="number" fluid class="rounded-2xl"/>
                     </div>
                     <div class="w-full">
                       <div class="p-2">Серийный номер ONT</div>
-                      <InputText v-model.trim="connection.ont_serial" type="text" fluid/>
+                      <InputText v-model.trim="connection.ont_serial" type="text" fluid class="rounded-2xl"/>
                     </div>
                     <div class="w-full">
                       <div class="p-2">MAC адрес ONT</div>
-                      <InputText v-model.trim="connection.ont_mac" type="text" fluid/>
+                      <InputText v-model.trim="connection.ont_mac" type="text" fluid class="rounded-2xl"/>
                     </div>
 
                     <div class="w-full">
                       <div class="p-2">IP Адрес</div>
-                      <InputText v-model.trim="connection.ip" type="text" fluid/>
+                      <InputText v-model.trim="connection.ip" type="text" fluid class="rounded-2xl"/>
                     </div>
                     <div class="w-full">
                       <div class="p-2">Номер наряда</div>
-                      <InputText v-model.number="connection.order" type="number" fluid/>
+                      <InputText v-model.number="connection.order" type="number" fluid class="rounded-2xl"/>
                     </div>
                     <div class="w-full">
                       <div class="p-2">Дата подключения</div>
-                      <DatePicker id="calendar-24h" dateFormat="yy-mm-dd" :model-value="new Date(connection.connected_at)"
+                      <DatePicker id="calendar-24h" dateFormat="yy-mm-dd"
+                                  :model-value="new Date(connection.connected_at)"
+                                  input-class="rounded-l-2xl"
                                   @value-change="value => connection.connected_at = value"
                                   showTime fluid show-icon hourFormat="24"/>
                     </div>
@@ -319,7 +324,7 @@
                       <h6 class="px-2 flex items-center gap-1 pb-2">Транзит
                         <Asterisk/>
                       </h6>
-                      <InputText v-model.number="connection.transit" type="number"/>
+                      <InputText v-model.number="connection.transit" type="number" class="rounded-2xl"/>
                     </div>
                   </div>
                   <div v-else class="grid gap-1">
