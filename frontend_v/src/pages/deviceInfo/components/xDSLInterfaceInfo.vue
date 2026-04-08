@@ -65,14 +65,14 @@
             <td class="px-4 py-1">
               <div
                   :style="streamCellStyle(line.down.color)"
-                  class="rounded-2xl px-3 py-2 text-center font-mono text-sm text-gray-950 shadow-sm dark:opacity-85">
+                  class="dark:text-white rounded-2xl px-3 py-2 text-center font-mono text-sm text-gray-950 shadow-sm dark:opacity-85">
                 {{ line.down.value }}
               </div>
             </td>
             <td class="px-4 py-1">
               <div
                   :style="streamCellStyle(line.up.color)"
-                  class="rounded-2xl px-3 py-2 text-center font-mono text-sm text-gray-950 shadow-sm dark:opacity-85">
+                  class="dark:text-white rounded-2xl px-3 py-2 text-center font-mono text-sm text-gray-950 shadow-sm dark:opacity-85">
                 {{ line.up.value }}
               </div>
             </td>
