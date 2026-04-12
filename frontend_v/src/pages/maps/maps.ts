@@ -950,6 +950,8 @@ function attachLazyInteractions(layer: any, config: { popupContent?: string; too
             if (!layer.getPopup()) {
                 layer.bindPopup(config.popupContent, popupDefaultOptions);
             }
+
+            layer.openPopup();
         });
     }
 }
