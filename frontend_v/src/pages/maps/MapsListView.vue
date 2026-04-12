@@ -136,11 +136,6 @@ onUnmounted(() => {
               <rect width="100%" height="100%" fill="#334155" />
             </svg>
 
-            <div class="absolute inset-0 bg-linear-to-t from-gray-950/75 via-gray-950/25 to-transparent" />
-            <div class="absolute left-4 top-4 flex items-center gap-2">
-              <Tag v-if="map.interactive" severity="success" value="Интерактивная" />
-              <Tag v-else severity="secondary" value="Статическая" />
-            </div>
           </div>
 
           <div class="p-5">

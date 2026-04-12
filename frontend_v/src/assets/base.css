@@ -1,14 +1,3 @@
-@layer tailwind-base, primevue, tailwind-utilities;
-
-@layer tailwind-base {
-    @tailwind base;
-}
-
-@layer tailwind-utilities {
-    @tailwind components;
-    @tailwind utilities;
-}
-
 .traceroute-back {
     background-image: url('/img/background.png');
     background-repeat: no-repeat;
@@ -75,4 +64,114 @@ html.dark .traceroute-back {
 
 :where(.dark, .dark *)::-webkit-scrollbar-thumb:hover {
     background-color: var(--p-surface-500);
+}
+
+.leaflet-control-layers {
+    min-width: 1rem;
+    overflow: hidden;
+    border: 1px solid rgb(51 65 85 / 0.78);
+    border-radius: 1.5rem !important;
+    background:
+        linear-gradient(180deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.94)) !important;
+    color: #cbd5e1;
+    box-shadow: 0 24px 60px rgb(2 6 23 / 0.42);
+    backdrop-filter: blur(14px);
+}
+
+.leaflet-control-layers-toggle {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+    background-color: rgb(15 23 42 / 0.96);
+    background-position: center;
+    background-size: 18px 18px;
+}
+
+.leaflet-touch .leaflet-control-layers-toggle {
+    width: 3rem;
+    height: 3rem;
+}
+
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+    display: none;
+}
+
+.leaflet-control-layers-list {
+    display: grid;
+    gap: 0.175rem;
+    margin: 0;
+    padding: 1rem;
+}
+
+.leaflet-control-layers-base,
+.leaflet-control-layers-overlays {
+    display: grid;
+}
+
+.leaflet-control-layers-base {
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid rgb(51 65 85 / 0.75);
+}
+
+.leaflet-control-layers-separator {
+    display: none;
+}
+
+.leaflet-control-layers label {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin: 0;
+    user-select: none;
+    padding: 0.1rem 0.65rem;
+    border-radius: 0.9rem;
+    color: inherit;
+    font-size: 0.95rem;
+    line-height: 1.2rem;
+    transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.leaflet-control-layers label:hover {
+    background: rgb(30 41 59 / 0.92);
+    color: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.leaflet-control-layers-selector {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: #38bdf8;
+}
+
+.leaflet-control-layers span {
+    flex: 1;
+}
+
+html.dark .leaflet-control-layers label {
+    color: #cbd5e1;
+}
+
+html.dark .leaflet-control-layers-selector {
+    filter: saturate(0.9) brightness(0.95);
+}
+
+html:not(.dark) .leaflet-control-layers {
+    border-color: rgb(148 163 184 / 0.28);
+    background: rgb(255 255 255 / 0.9) !important;
+    color: #0f172a;
+    box-shadow: 0 24px 60px rgb(15 23 42 / 0.12);
+}
+
+html:not(.dark) .leaflet-control-layers-toggle {
+    background-color: rgb(255 255 255 / 0.92);
+}
+
+html:not(.dark) .leaflet-control-layers-base {
+    border-bottom-color: rgb(148 163 184 / 0.22);
+}
+
+html:not(.dark) .leaflet-control-layers label:hover {
+    background: rgb(15 23 42 / 0.06);
+    color: #020617;
 }
