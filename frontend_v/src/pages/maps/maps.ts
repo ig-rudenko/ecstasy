@@ -1,11 +1,13 @@
 import {
     CircleMarker,
     circleMarker,
+    canvas,
     Control,
     divIcon,
     featureGroup,
     GeoJSON,
     LatLng,
+    LatLngBounds,
     LatLngExpression,
     Layer,
     Map as LMap,
@@ -56,26 +58,37 @@ interface OriginPointData {
 }
 
 interface PointData {
-    point: CircleMarker;
-    layer: Layer;
+    id: string;
+    latlng: LatLngExpression;
+    layerName: string;
+    style: Record<string, unknown>;
     popupContent: string;
+    tooltipContent: string;
     searchText: string;
+    point?: CircleMarker;
     currentProblemsContent?: string;
     _origin?: OriginPointData;
     hasProblems: boolean;
 }
 
-interface StaticPointData {
+interface StaticElementData {
+    id: string;
+    layerName: string;
+    feature: any;
+    geometryType: "Point" | "LineString" | "Polygon";
+    bounds: LatLngBounds;
     latlng: LatLngExpression;
     name?: string;
     description?: string;
     searchText: string;
-    element: any;
+    element?: any;
 }
 
 const popupDefaultOptions = {maxWidth: 1200};
 const defaultMapCenter: LatLngExpression = [44.6, 33.5];
 const defaultMapZoom = 12;
+const renderBatchSize = 250;
+const viewportPadding = 0.2;
 
 export type MapsPage = Paginator<MapBrief>;
 
@@ -104,21 +117,27 @@ export class MapService {
     public mapGroups: string[] = [];
     public map: LMap;
     public points: Map<string, PointData> = new Map();
-    public staticElements: StaticPointData[] = [];
+    public staticElements: StaticElementData[] = [];
     public overlays: LayersObject = {};
 
     private updateInFlight = false;
+    private canvasRenderer = canvas({padding: 0.5});
+    private visibilityRefreshQueued = false;
 
     constructor(public mapID: string, public mapHTMLElementID: string) {
-        this.map = new LMap(mapHTMLElementID, {layers: [osm], minZoom: 5});
+        this.map = new LMap(mapHTMLElementID, {layers: [osm], minZoom: 5, preferCanvas: true});
         this.map.setView(defaultMapCenter, defaultMapZoom);
         this.map.attributionControl.getContainer()?.remove();
         this.map.addControl(new Control.Scale());
-        this.map.on("overlayadd overlayremove", () => saveLayers(this.mapID, this.map, this.overlays));
+        this.map.on("overlayadd overlayremove", () => {
+            saveLayers(this.mapID, this.map, this.overlays);
+            this.queueVisibilityRefresh();
+        });
+        this.map.on("moveend zoomend", () => this.queueVisibilityRefresh());
     }
 
     /**
-     * Загружает подробные данные карты для текущего экземпляра сервиса.
+     * Загружает подробные данные карты.
      *
      * @returns Подробные данные карты или null.
      */
@@ -143,7 +162,7 @@ export class MapService {
     }
 
     /**
-     * Создает группы слоев и панель переключения для карты.
+     * Создает группы слоев и панель переключения.
      */
     async renderMapGroups() {
         if (!this.mapGroups.length) {
@@ -164,9 +183,9 @@ export class MapService {
     }
 
     /**
-     * Загружает все объекты карты для рендера.
+     * Загружает объекты карты для рендера.
      *
-     * @returns Массив данных для рендера.
+     * @returns Данные слоев.
      */
     async loadMarkers() {
         try {
@@ -179,43 +198,43 @@ export class MapService {
     }
 
     /**
-     * Рендерит все объекты карты.
+     * Подготавливает данные объектов и рендерит только видимую область.
      */
     async renderMarkers() {
         const renderData = await this.loadMarkers();
 
         for (let i = 0; i < renderData.length; i++) {
             if (renderData[i].type === "zabbix") {
-                this.renderZabbixMarkers(renderData[i]);
+                this.prepareZabbixMarkers(renderData[i]);
             } else if (renderData[i].type === "geojson") {
-                this.renderGeoJSON(renderData[i]);
+                this.prepareGeoJSON(renderData[i]);
             }
         }
+
+        await this.refreshVisibleElements();
     }
 
     /**
-     * Рендерит динамические маркеры Zabbix и подготавливает поисковый индекс.
+     * Подготавливает динамические точки Zabbix без немедленного создания Leaflet-слоев.
      *
      * @param data - Данные слоя.
      */
-    private renderZabbixMarkers(data: any) {
-        const layer = this.overlays[data.name] as any;
+    private prepareZabbixMarkers(data: any) {
+        const features = data.features.features as any[];
 
-        for (const feature of data.features.features) {
+        for (let i = 0; i < features.length; i++) {
+            const feature = features[i];
             const tooltipContent = feature.properties.name || "";
             const popupContent = feature.properties.description || "";
-            const point = circleMarker(
-                [...feature.geometry.coordinates].reverse() as [number, number],
-                feature.properties.style,
-            )
-                .bindTooltip(tooltipContent)
-                .bindPopup(popupContent, popupDefaultOptions)
-                .addTo(layer);
+            const latlng = [...feature.geometry.coordinates].reverse() as [number, number];
 
             this.points.set(feature.id, {
-                point,
-                layer,
+                id: feature.id,
+                latlng,
+                layerName: data.name,
+                style: feature.properties.style || {},
                 popupContent,
+                tooltipContent,
                 searchText: normalizeSearchText([tooltipContent, popupContent]),
                 hasProblems: false,
             });
@@ -223,69 +242,38 @@ export class MapService {
     }
 
     /**
-     * Рендерит статические GeoJSON-объекты и индексирует их для поиска.
+     * Подготавливает статические GeoJSON-объекты без немедленного создания Leaflet-слоев.
      *
      * @param data - Данные слоя.
      */
-    private renderGeoJSON(data: any) {
+    private prepareGeoJSON(data: any) {
         const defaultSettings = data.properties;
-        const features = data.features.features;
-        const layer = this.overlays[data.name] as any;
+        const features = data.features.features as any[];
 
-        for (let j = 0; j < features.length; j++) {
-            if (features[j].geometry.type === "Point") {
-                const point = createMarker(
-                    features[j],
-                    GeoJSON.coordsToLatLng(features[j].geometry.coordinates),
-                    defaultSettings.Marker,
-                ).addTo(layer);
+        for (let i = 0; i < features.length; i++) {
+            const feature = features[i];
+            const geometryType = feature.geometry.type as "Point" | "LineString" | "Polygon";
+            const latlng = getFeatureAnchor(feature);
+            const bounds = getFeatureBounds(feature);
 
-                this.staticElements.push({
-                    element: point,
-                    latlng: point.getLatLng(),
-                    name: features[j].properties.name || features[j].properties.iconCaption,
-                    description: features[j].properties.description,
-                    searchText: normalizeSearchText([
-                        features[j].properties.name,
-                        features[j].properties.iconCaption,
-                        features[j].properties.description,
-                    ]),
-                });
-            } else if (features[j].geometry.type === "LineString") {
-                const line = createPolyline(
-                    features[j],
-                    GeoJSON.coordsToLatLngs(features[j].geometry.coordinates),
-                    defaultSettings.Polygon,
-                ).addTo(layer);
-
-                this.staticElements.push({
-                    element: line,
-                    latlng: line.getLatLngs()[0] as LatLngExpression,
-                    name: features[j].properties.name,
-                    description: features[j].properties.description,
-                    searchText: normalizeSearchText([
-                        features[j].properties.name,
-                        features[j].properties.description,
-                    ]),
-                });
-            } else if (features[j].geometry.type === "Polygon") {
-                const polygonLayer = createPolygon(
-                    features[j],
-                    GeoJSON.coordsToLatLngs(features[j].geometry.coordinates[0]),
-                    defaultSettings.Polygon,
-                ).addTo(layer);
-
-                this.staticElements.push({
-                    element: polygonLayer,
-                    latlng: (polygonLayer.getLatLngs()[0] as LatLng[])[0] as LatLngExpression,
-                    name: features[j].properties.name,
-                    description: features[j].properties.description,
-                    searchText: normalizeSearchText([
-                        features[j].properties.name,
-                        features[j].properties.description,
-                    ]),
-                });
-            }
+            this.staticElements.push({
+                id: feature.id || `${data.name}-${i}`,
+                layerName: data.name,
+                feature: {
+                    ...feature,
+                    __defaults: defaultSettings,
+                },
+                geometryType,
+                bounds,
+                latlng,
+                name: feature.properties?.name || feature.properties?.iconCaption,
+                description: feature.properties?.description,
+                searchText: normalizeSearchText([
+                    feature.properties?.name,
+                    feature.properties?.iconCaption,
+                    feature.properties?.description,
+                ]),
+            });
         }
     }
 
@@ -305,7 +293,7 @@ export class MapService {
     }
 
     /**
-     * Обновляет состояние аварийных маркеров без параллельных запросов.
+     * Обновляет состояние аварийных узлов без влияния на текущий zoom/center.
      */
     async update() {
         if (this.updateInFlight) {
@@ -326,49 +314,46 @@ export class MapService {
 
             for (let i = 0; i < problems.length; i++) {
                 const pointID = problems[i].id;
-                const marker = this.points.get(pointID);
+                const point = this.points.get(pointID);
 
-                if (!marker) {
+                if (!point) {
                     continue;
                 }
 
-                if (!marker._origin) {
-                    marker._origin = {
-                        fillColor: marker.point.options.fillColor,
-                        popupContent: marker.popupContent,
-                        layer: marker.layer,
+                if (!point._origin) {
+                    point._origin = {
+                        fillColor: typeof point.style.fillColor === "string" ? point.style.fillColor : undefined,
+                        popupContent: point.popupContent,
+                        layer: this.overlays[point.layerName] as Layer,
                     };
                 }
 
                 const problemsText = buildProblemsText(problems[i]);
-
-                if (marker.hasProblems && marker.currentProblemsContent === problemsText) {
-                    problemsPointsBeforeUpdate.delete(pointID);
-                    continue;
-                }
-
-                if (marker.hasProblems && marker.currentProblemsContent !== problemsText) {
-                    marker.point.bindPopup(marker._origin.popupContent + problemsText, popupDefaultOptions);
-                } else {
-                    marker.hasProblems = true;
-                    marker.point.setStyle({fillColor: "red"});
-                    marker.point.setPopupContent(marker._origin.popupContent + problemsText);
-                }
-
-                marker.currentProblemsContent = problemsText;
+                point.hasProblems = true;
+                point.currentProblemsContent = problemsText;
                 problemsPointsBeforeUpdate.delete(pointID);
+
+                if (point.point) {
+                    point.point.setStyle({fillColor: "red"});
+                    ensurePointPopupBound(point);
+                    point.point.setPopupContent(point._origin.popupContent + problemsText);
+                }
             }
 
-            problemsPointsBeforeUpdate.forEach((value) => {
-                if (!value._origin) {
+            problemsPointsBeforeUpdate.forEach((point) => {
+                if (!point._origin) {
                     return;
                 }
 
-                value.point.setStyle({fillColor: value._origin.fillColor});
-                value.point.setPopupContent(value._origin.popupContent);
-                value.currentProblemsContent = undefined;
-                value._origin = undefined;
-                value.hasProblems = false;
+                point.hasProblems = false;
+                point.currentProblemsContent = undefined;
+
+                if (point.point) {
+                    point.point.setStyle({fillColor: point._origin.fillColor});
+                    point.point.setPopupContent(point._origin.popupContent);
+                }
+
+                point._origin = undefined;
             });
         } finally {
             this.updateInFlight = false;
@@ -376,7 +361,7 @@ export class MapService {
     }
 
     /**
-     * Ищет элементы на карте по заранее подготовленному текстовому индексу.
+     * Ищет объект на карте и рендерит его при необходимости.
      *
      * @param text - Текст поиска.
      * @returns Первый найденный объект или null.
@@ -392,22 +377,29 @@ export class MapService {
         for (const point of this.points.values()) {
             if (point.searchText.includes(normalizedText)) {
                 if (!marker) {
-                    this.focusMap(point.point.getLatLng(), 17);
+                    this.focusMap(point.latlng, 17);
+                    this.refreshVisibleElementsSync();
                     marker = point;
                 }
 
-                this.highlightMarker(point.point);
+                if (point.point) {
+                    this.highlightMarker(point.point);
+                }
             }
         }
 
-        for (const element of this.staticElements) {
+        for (let i = 0; i < this.staticElements.length; i++) {
+            const element = this.staticElements[i];
             if (element.searchText.includes(normalizedText)) {
                 if (!marker) {
                     this.focusMap(element.latlng, 17);
+                    this.refreshVisibleElementsSync();
                     marker = element;
                 }
 
-                this.highlightMarker(element.element);
+                if (element.element) {
+                    this.highlightMarker(element.element);
+                }
             }
         }
 
@@ -415,7 +407,135 @@ export class MapService {
     }
 
     /**
-     * Временно подсвечивает найденный объект.
+     * Освежает видимые слои батчами после перемещения карты.
+     */
+    async refreshVisibleElements() {
+        const paddedBounds = this.map.getBounds().pad(viewportPadding);
+
+        await renderInBatches(Array.from(this.points.values()), renderBatchSize, (point) => {
+            const isVisible = paddedBounds.contains(toLatLng(point.latlng)) && this.isOverlayVisible(point.layerName);
+            this.syncPointVisibility(point, isVisible);
+        });
+
+        await renderInBatches(this.staticElements, renderBatchSize, (element) => {
+            const isVisible = paddedBounds.intersects(element.bounds) && this.isOverlayVisible(element.layerName);
+            this.syncStaticElementVisibility(element, isVisible);
+        });
+    }
+
+    /**
+     * Синхронно обновляет видимость сразу после поиска/переключения слоя.
+     */
+    private refreshVisibleElementsSync() {
+        const paddedBounds = this.map.getBounds().pad(viewportPadding);
+
+        this.points.forEach((point) => {
+            const isVisible = paddedBounds.contains(toLatLng(point.latlng)) && this.isOverlayVisible(point.layerName);
+            this.syncPointVisibility(point, isVisible);
+        });
+
+        for (let i = 0; i < this.staticElements.length; i++) {
+            const element = this.staticElements[i];
+            const isVisible = paddedBounds.intersects(element.bounds) && this.isOverlayVisible(element.layerName);
+            this.syncStaticElementVisibility(element, isVisible);
+        }
+    }
+
+    /**
+     * Ставит обновление видимости в очередь следующего animation frame.
+     */
+    private queueVisibilityRefresh() {
+        if (this.visibilityRefreshQueued) {
+            return;
+        }
+
+        this.visibilityRefreshQueued = true;
+        requestAnimationFrame(async () => {
+            this.visibilityRefreshQueued = false;
+            await this.refreshVisibleElements();
+        });
+    }
+
+    /**
+     * Проверяет, включен ли слой в панели overlays.
+     *
+     * @param layerName - Имя слоя.
+     * @returns Признак активности слоя.
+     */
+    private isOverlayVisible(layerName: string) {
+        const overlay = this.overlays[layerName];
+        return Boolean(overlay && this.map.hasLayer(overlay));
+    }
+
+    /**
+     * Создает или удаляет динамическую точку в зависимости от видимости.
+     *
+     * @param point - Данные точки.
+     * @param isVisible - Должна ли точка быть видимой.
+     */
+    private syncPointVisibility(point: PointData, isVisible: boolean) {
+        const overlay = this.overlays[point.layerName] as any;
+
+        if (isVisible) {
+            if (!point.point) {
+                const circle = circleMarker(point.latlng, {
+                    radius: Number(point.style.radius || 6),
+                    ...point.style,
+                    renderer: this.canvasRenderer,
+                }).addTo(overlay);
+
+                attachLazyInteractions(circle, {
+                    tooltipContent: point.tooltipContent,
+                    popupContent: point.popupContent,
+                });
+
+                if (point.hasProblems) {
+                    circle.setStyle({fillColor: "red"});
+                    ensurePointPopupBound({...point, point: circle});
+                    circle.setPopupContent(point.popupContent + (point.currentProblemsContent || ""));
+                }
+
+                point.point = circle;
+            } else if (!overlay.hasLayer(point.point)) {
+                point.point.addTo(overlay);
+            }
+
+            return;
+        }
+
+        if (point.point && overlay.hasLayer(point.point)) {
+            overlay.removeLayer(point.point);
+        }
+    }
+
+    /**
+     * Создает или удаляет статический объект в зависимости от видимости.
+     *
+     * @param element - Данные объекта.
+     * @param isVisible - Должен ли объект быть видимым.
+     */
+    private syncStaticElementVisibility(element: StaticElementData, isVisible: boolean) {
+        const overlay = this.overlays[element.layerName] as any;
+
+        if (isVisible) {
+            if (!element.element) {
+                element.element = instantiateStaticElement(element, this.canvasRenderer);
+            }
+
+            if (element.element && !overlay.hasLayer(element.element)) {
+                element.element.addTo(overlay);
+            }
+
+            return;
+        }
+
+        if (element.element && overlay.hasLayer(element.element)) {
+            overlay.removeLayer(element.element);
+        }
+    }
+
+    /**
+     * Подсвечивает найденный объект.
      *
      * @param marker - Leaflet-объект.
      */
@@ -440,10 +560,10 @@ export class MapService {
     }
 
     /**
-     * Центрирует карту на объекте безопасно даже до завершения геолокации.
+     * Центрирует карту на объекте.
      *
      * @param latlng - Координаты точки.
-     * @param zoom - Целевой зум.
+     * @param zoom - Целевой zoom.
      */
     private focusMap(latlng: LatLngExpression, zoom: number) {
         if ((this.map as any)._loaded) {
@@ -456,10 +576,10 @@ export class MapService {
 }
 
 /**
- * Создает нормализованную строку для быстрого поиска.
+ * Нормализует строку для поиска.
  *
- * @param values - Набор значений для индексации.
- * @returns Нормализованная строка.
+ * @param values - Значения для индексации.
+ * @returns Строка поиска.
  */
 function normalizeSearchText(values: unknown[]): string {
     return values
@@ -469,10 +589,10 @@ function normalizeSearchText(values: unknown[]): string {
 }
 
 /**
- * Формирует HTML с проблемами узла.
+ * Формирует HTML проблем узла.
  *
- * @param problem - Описание проблем узла.
- * @returns HTML-строка для popup.
+ * @param problem - Описание проблем.
+ * @returns HTML строки проблем.
  */
 function buildProblemsText(problem: Problems): string {
     let problemsText = "";
@@ -488,78 +608,120 @@ function buildProblemsText(problem: Problems): string {
 }
 
 /**
- * Создает полигон из GeoJSON feature.
+ * Создает статический Leaflet-объект по заранее подготовленным данным.
+ *
+ * @param element - Данные статического объекта.
+ * @param renderer - Canvas renderer.
+ * @returns Leaflet layer.
+ */
+function instantiateStaticElement(element: StaticElementData, renderer: any) {
+    const defaults = element.feature.__defaults;
+
+    if (element.geometryType === "Point") {
+        return createMarker(
+            element.feature,
+            GeoJSON.coordsToLatLng(element.feature.geometry.coordinates),
+            defaults.Marker,
+            renderer,
+        );
+    }
+
+    if (element.geometryType === "LineString") {
+        return createPolyline(
+            element.feature,
+            GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates),
+            defaults.Polygon,
+            renderer,
+        );
+    }
+
+    return createPolygon(
+        element.feature,
+        GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates[0]),
+        defaults.Polygon,
+        renderer,
+    );
+}
+
+/**
+ * Создает полигон.
  *
  * @param feature - GeoJSON feature.
- * @param latlng - Координаты полигона.
+ * @param latlng - Координаты.
  * @param defaults - Настройки по умолчанию.
+ * @param renderer - Canvas renderer.
  * @returns Leaflet polygon.
  */
-function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any) {
-    const options = {
+function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any, renderer?: any) {
+    const polygonLayer = polygon(latlng, {
         fillColor: feature.properties.fill || defaults.FillColor,
         color: feature.properties.stroke || defaults.BorderColor,
         weight: Number(feature.properties["stroke-width"]) || 2,
         opacity: feature.properties["stroke-opacity"] || defaults.Opacity,
         fillOpacity: feature.properties["fill-opacity"] || defaults.Opacity,
-    };
+        renderer,
+    });
 
-    const popupText = feature.properties ? feature.properties.description : null;
-    const polygonLayer = polygon(latlng, options);
-
-    if (popupText) {
-        polygonLayer.bindPopup(wrapLinks(textToHtml(popupText)), popupDefaultOptions);
-    }
-
+    const popupText = feature.properties?.description;
+    attachLazyInteractions(polygonLayer, {popupContent: popupText ? wrapLinks(textToHtml(popupText)) : ""});
     return polygonLayer;
 }
 
 /**
- * Создает полилинию из GeoJSON feature.
+ * Создает полилинию.
  *
  * @param feature - GeoJSON feature.
- * @param latlng - Координаты линии.
+ * @param latlng - Координаты.
  * @param defaults - Настройки по умолчанию.
+ * @param renderer - Canvas renderer.
  * @returns Leaflet polyline.
  */
-function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any) {
-    const options = {
+function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any, renderer?: any) {
+    const line = polyline(latlng, {
         color: feature.properties.stroke || defaults.BorderColor,
         weight: feature.properties["stroke-width"] || 2,
         fillOpacity: feature.properties["stroke-opacity"] || defaults.Opacity,
-    };
+        renderer,
+    });
 
-    const popupText = feature.properties ? feature.properties.description : null;
-    const line = polyline(latlng, options);
-
-    if (popupText) {
-        line.bindPopup(wrapLinks(textToHtml(popupText)), popupDefaultOptions);
-    }
-
+    const popupText = feature.properties?.description;
+    attachLazyInteractions(line, {popupContent: popupText ? wrapLinks(textToHtml(popupText)) : ""});
     return line;
 }
 
 /**
- * Создает маркер из GeoJSON feature.
+ * Создает точечный объект.
  *
  * @param feature - GeoJSON feature.
- * @param latlng - Координаты маркера.
+ * @param latlng - Координаты.
  * @param defaults - Настройки по умолчанию.
+ * @param renderer - Canvas renderer.
  * @returns Leaflet marker.
  */
-function createMarker(feature: any, latlng: LatLngExpression, defaults: any) {
-    let popupText = null;
-    let tooltipText = null;
-    let fillColor = defaults.FillColor;
-    let size = defaults.Size;
-    let iconName = defaults.IconName || "circle-fill";
+function createMarker(feature: any, latlng: LatLngExpression, defaults: any, renderer?: any) {
+    let popupText = feature.properties?.description || null;
+    let tooltipText = feature.properties?.iconCaption || feature.properties?.name || null;
+    let fillColor = feature.properties?.["marker-color"] || feature.properties?.fillColor || feature.properties?.color || defaults.FillColor;
+    let size = feature.properties?.radius || defaults.Size;
+    let iconName = feature.properties?.iconName || defaults.IconName || "circle-fill";
 
-    if (feature.properties) {
-        popupText = feature.properties.description;
-        tooltipText = feature.properties.iconCaption || feature.properties.name;
-        fillColor = feature.properties["marker-color"] || feature.properties.fillColor || feature.properties.color || defaults.FillColor;
-        size = feature.properties.radius || defaults.Size;
-        iconName = feature.properties.iconName || defaults.IconName || "circle-fill";
+    if (size <= 12 || iconName === "circle-fill") {
+        const point = circleMarker(latlng, {
+            radius: size / 2,
+            fillColor,
+            color: defaults.BorderColor,
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 1,
+            renderer,
+        });
+
+        attachLazyInteractions(point, {
+            popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "",
+            tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
+        });
+
+        return point;
     }
 
     const svgIcon = divIcon({
@@ -569,20 +731,132 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any) {
         iconAnchor: [size / 2, size / 2],
     });
 
-    const markerLayer = marker(latlng, {
-        opacity: 1,
-        icon: svgIcon,
+    const markerLayer = marker(latlng, {opacity: 1, icon: svgIcon});
+    attachLazyInteractions(markerLayer, {
+        popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "",
+        tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
     });
-
-    if (popupText) {
-        markerLayer.bindPopup(wrapLinks(textToHtml(popupText)), popupDefaultOptions);
-    }
-
-    if (tooltipText) {
-        markerLayer.bindTooltip(wrapLinks(tooltipText));
-    }
-
     return markerLayer;
+}
+
+/**
+ * Выполняет обработку батчами.
+ *
+ * @param items - Элементы.
+ * @param batchSize - Размер батча.
+ * @param renderItem - Функция обработки.
+ */
+async function renderInBatches<T>(items: T[], batchSize: number, renderItem: (item: T) => void) {
+    for (let index = 0; index < items.length; index += batchSize) {
+        const batch = items.slice(index, index + batchSize);
+
+        for (let itemIndex = 0; itemIndex < batch.length; itemIndex++) {
+            renderItem(batch[itemIndex]);
+        }
+
+        if (index + batchSize < items.length) {
+            await nextAnimationFrame();
+        }
+    }
+}
+
+/**
+ * Возвращает promise следующего animation frame.
+ *
+ * @returns Promise кадра.
+ */
+function nextAnimationFrame(): Promise<void> {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+/**
+ * Ленивая инициализация popup и tooltip.
+ *
+ * @param layer - Leaflet layer.
+ * @param config - Конфигурация взаимодействий.
+ */
+function attachLazyInteractions(layer: any, config: { popupContent?: string; tooltipContent?: string }) {
+    if (config.tooltipContent) {
+        layer.on("mouseover", () => {
+            if (!layer.getTooltip()) {
+                layer.bindTooltip(config.tooltipContent);
+            }
+        });
+    }
+
+    if (config.popupContent) {
+        layer.on("click", () => {
+            if (!layer.getPopup()) {
+                layer.bindPopup(config.popupContent, popupDefaultOptions);
+            }
+        });
+    }
+}
+
+/**
+ * Убеждается, что popup уже создан.
+ *
+ * @param marker - Данные точки.
+ */
+function ensurePointPopupBound(marker: PointData) {
+    if (marker.point && !marker.point.getPopup()) {
+        marker.point.bindPopup(marker.popupContent, popupDefaultOptions);
+    }
+}
+
+/**
+ * Преобразует выражение координат в LatLng.
+ *
+ * @param latlng - Координаты.
+ * @returns LatLng.
+ */
+function toLatLng(latlng: LatLngExpression): LatLng {
+    if (latlng instanceof LatLng) {
+        return latlng;
+    }
+
+    if (Array.isArray(latlng)) {
+        return new LatLng(Number(latlng[0]), Number(latlng[1]));
+    }
+
+    return new LatLng(Number(latlng.lat), Number(latlng.lng));
+}
+
+/**
+ * Возвращает bounds GeoJSON feature.
+ *
+ * @param feature - GeoJSON feature.
+ * @returns Bounds feature.
+ */
+function getFeatureBounds(feature: any): LatLngBounds {
+    if (feature.geometry.type === "Point") {
+        const latlng = GeoJSON.coordsToLatLng(feature.geometry.coordinates);
+        return new LatLngBounds(latlng, latlng);
+    }
+
+    if (feature.geometry.type === "LineString") {
+        return new LatLngBounds(GeoJSON.coordsToLatLngs(feature.geometry.coordinates) as LatLng[]);
+    }
+
+    return new LatLngBounds(GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as LatLng[]);
+}
+
+/**
+ * Возвращает anchor-координату feature для поиска и центрирования.
+ *
+ * @param feature - GeoJSON feature.
+ * @returns Координата привязки.
+ */
+function getFeatureAnchor(feature: any): LatLngExpression {
+    if (feature.geometry.type === "Point") {
+        return GeoJSON.coordsToLatLng(feature.geometry.coordinates);
+    }
+
+    if (feature.geometry.type === "LineString") {
+        return (GeoJSON.coordsToLatLngs(feature.geometry.coordinates) as LatLng[])[0];
+    }
+
+    return (GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as LatLng[])[0];
 }
 
 const mapIcons: Record<string, string> = {
