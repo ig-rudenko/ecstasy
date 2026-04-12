@@ -195,8 +195,4 @@ export default defineComponent({
   padding: 0.15rem 0.45rem;
   font-size: 0.9em;
 }
-
-:global(.dark) .comment-body :deep(code) {
-  background: rgb(255 255 255 / 0.08);
-}
 </style>
