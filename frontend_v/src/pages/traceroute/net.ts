@@ -54,13 +54,24 @@ const baseVisOptions = {
     }
 }
 
+export interface TracerouteNodeData {
+    id: string | number
+    label?: string | number
+    title?: string
+    [key: string]: unknown
+}
+
+type NodeClickHandler = (node: TracerouteNodeData | null) => void
+
 class TracerouteNetwork {
     private readonly elemID: string
     public options: any
+    private onNodeClick: NodeClickHandler | null
 
     constructor(elementId: string) {
         this.elemID = elementId
         this.options = baseVisOptions
+        this.onNodeClick = null
     }
 
     private textToDiv(html: string): HTMLDivElement {
@@ -69,17 +80,46 @@ class TracerouteNetwork {
         return container;
     }
 
+    setNodeClickHandler(handler: NodeClickHandler | null): void {
+        this.onNodeClick = handler;
+    }
 
     async renderVisualData(nodes: Array<any>, edges: Array<any>) {
         const { Network } = await import("vis-network");
-        new Network(
+        const rawNodes = nodes.map(value => ({...value}));
+        const normalizedNodes = rawNodes.map(value => {
+            return {
+                ...value,
+                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title
+            };
+        });
+        const normalizedEdges = edges.map(value => {
+            return {
+                ...value,
+                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title
+            };
+        });
+        const network = new Network(
             (<HTMLDivElement>document.getElementById(this.elemID)),
             {
-                nodes: nodes.map(value => {return {...value, title: this.textToDiv(value.title)}}),
-                edges: edges.map(value => {return {...value, title: this.textToDiv(value.title)}})
+                nodes: normalizedNodes,
+                edges: normalizedEdges
             },
             this.options
         );
+        network.on("click", (params) => {
+            if (!this.onNodeClick) {
+                return;
+            }
+            if (!params.nodes.length) {
+                this.onNodeClick(null);
+                return;
+            }
+
+            const clickedNodeId = params.nodes[0];
+            const clickedNode = rawNodes.find(node => node.id === clickedNodeId) || null;
+            this.onNodeClick(clickedNode);
+        });
     }
 }
 

@@ -319,6 +319,51 @@
     </div>
   </div>
 
+  <Dialog
+      v-model:visible="nodeInfoPopupVisible"
+      modal
+      dismissable-mask
+      @hide="closeTracerouteNodePopup"
+      :draggable="false"
+      :base-z-index="11050"
+      :style="{ width: 'min(92vw, 38rem)' }"
+      header="Информация об узле">
+    <div v-if="selectedTracerouteNode" class="space-y-4">
+      <div class="space-y-1">
+        <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 break-all">
+          {{ selectedTracerouteNodeLabel }}
+        </div>
+        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Идентификатор узла
+        </div>
+        <div class="font-mono text-sm text-gray-700 dark:text-gray-200 break-all">
+          {{ selectedTracerouteNodeId }}
+        </div>
+      </div>
+
+      <div
+          v-if="selectedTracerouteNodeTitleHtml"
+          class="traceroute-node-popup rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/60 p-4 text-sm text-gray-800 dark:text-gray-100"
+          v-html="selectedTracerouteNodeTitleHtml"/>
+
+      <div class="flex flex-wrap gap-3">
+        <a
+            v-if="selectedTracerouteDeviceRoute"
+            :href="selectedTracerouteDeviceHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white no-underline transition hover:bg-indigo-500">
+          Перейти к оборудованию
+        </a>
+        <span
+            v-else
+            class="inline-flex items-center rounded-2xl border border-gray-200 px-4 py-2 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          Для этого узла переход недоступен
+        </span>
+      </div>
+    </div>
+  </Dialog>
+
   <Footer/>
 </template>
 
@@ -326,12 +371,13 @@
 import {defineComponent} from "vue";
 
 import api from "@/services/api";
-import TracerouteNetwork from "./net";
+import TracerouteNetwork, {type TracerouteNodeData} from "./net";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import ScanStatus, {getInputVlanInfo} from "@/services/traceroute";
 import {InputNumberInputEvent} from "primevue";
 import {applyTracerouteForcedDark} from "@/services/themes";
+import router from "@/router";
 
 
 interface VlanCountInfo {
@@ -387,6 +433,9 @@ export default defineComponent({
       vlanNetwork: new TracerouteNetwork("vlan-network"),
       macNetwork: new TracerouteNetwork("mac-network"),
 
+      nodeInfoPopupVisible: false,
+      selectedTracerouteNode: null as TracerouteNodeData | null,
+
       restoreGlobalTheme: null as null | (() => void),
     }
   },
@@ -403,6 +452,70 @@ export default defineComponent({
     graphMaximized(): boolean {
       return this.vlanTracerouteOptions.maximized || this.macTracerouteOptions.maximized;
     },
+    selectedTracerouteNodeId(): string {
+      if (!this.selectedTracerouteNode) {
+        return "";
+      }
+      return String(this.selectedTracerouteNode.id ?? "");
+    },
+    selectedTracerouteNodeLabel(): string {
+      if (!this.selectedTracerouteNode) {
+        return "";
+      }
+      return String(this.selectedTracerouteNode.label ?? this.selectedTracerouteNode.id ?? "");
+    },
+    selectedTracerouteNodeTitleHtml(): string {
+      if (!this.selectedTracerouteNode || typeof this.selectedTracerouteNode.title !== "string") {
+        return "";
+      }
+      return this.selectedTracerouteNode.title;
+    },
+    selectedTracerouteDeviceName(): string | null {
+      if (!this.selectedTracerouteNode) {
+        return null;
+      }
+
+      const rawId = typeof this.selectedTracerouteNode.id === "string"
+          ? this.selectedTracerouteNode.id.trim()
+          : "";
+      const rawLabel = typeof this.selectedTracerouteNode.label === "string"
+          ? this.selectedTracerouteNode.label.trim()
+          : String(this.selectedTracerouteNode.label ?? "").trim();
+
+      if (!rawId || /^\d+$/.test(rawId)) {
+        return null;
+      }
+      if (rawId.includes("-->")) {
+        return null;
+      }
+
+      const loweredId = rawId.toLowerCase();
+      if (loweredId.includes("p:(") || loweredId.includes("d:(")) {
+        return null;
+      }
+      if (rawLabel && rawLabel !== rawId) {
+        return null;
+      }
+
+      return rawId;
+    },
+    selectedTracerouteDeviceRoute(): null | { name: string, params: { deviceName: string } } {
+      if (!this.selectedTracerouteDeviceName) {
+        return null;
+      }
+      return {
+        name: "device",
+        params: {
+          deviceName: this.selectedTracerouteDeviceName,
+        }
+      };
+    },
+    selectedTracerouteDeviceHref(): string {
+      if (!this.selectedTracerouteDeviceRoute) {
+        return "";
+      }
+      return router.resolve(this.selectedTracerouteDeviceRoute).href;
+    },
   },
 
   created() {
@@ -410,6 +523,11 @@ export default defineComponent({
     this.vlanScanStatus.checkScanStatus();
     this.macScanStatus.checkScanStatus();
     document.body.classList.add('traceroute-back')
+  },
+
+  mounted() {
+    this.vlanNetwork.setNodeClickHandler(this.handleTracerouteNodeClick);
+    this.macNetwork.setNodeClickHandler(this.handleTracerouteNodeClick);
   },
 
   unmounted() {
@@ -424,6 +542,7 @@ export default defineComponent({
       if (this.tracerouteMode !== mode) {
         this.vlanTracerouteOptions.maximized = false;
         this.macTracerouteOptions.maximized = false;
+        this.closeTracerouteNodePopup();
       }
       this.tracerouteMode = mode;
     },
@@ -434,12 +553,33 @@ export default defineComponent({
     },
 
     /**
+     * Открывает popup с информацией о выбранном узле графа.
+     */
+    handleTracerouteNodeClick(node: TracerouteNodeData | null) {
+      if (!node) {
+        this.closeTracerouteNodePopup();
+        return;
+      }
+      this.selectedTracerouteNode = node;
+      this.nodeInfoPopupVisible = true;
+    },
+
+    /**
+     * Сбрасывает выбранный узел и скрывает popup.
+     */
+    closeTracerouteNodePopup() {
+      this.nodeInfoPopupVisible = false;
+      this.selectedTracerouteNode = null;
+    },
+
+    /**
      * Отправляем на сервер запрос трассировки указанного в поле для ввода VLAN
      * И создаем в определенном блоке граф для данной трассировки.
      */
     load_vlan_traceroute() {
       if (!this.input.vlan) return;
 
+      this.closeTracerouteNodePopup();
       this.vlanTracerouteStarted = true
 
       let url = '/api/v1/tools/vlan-traceroute?vlan=' + this.input.vlan +
@@ -485,6 +625,7 @@ export default defineComponent({
       let valid_mac = this.validateMac(this.input.mac)
       if (!valid_mac.length) return
 
+      this.closeTracerouteNodePopup();
       this.macTracerouteStarted = true
       const url = '/api/v1/gather/traceroute/mac-address/' + valid_mac + "/"
       const params: any = {}
@@ -546,5 +687,19 @@ export default defineComponent({
 .maximized :deep(.vis-network > canvas) {
   width: 100% !important;
   height: 100% !important;
+}
+
+.traceroute-node-popup:deep(br) {
+  display: block;
+  content: "";
+  margin-top: 0.35rem;
+}
+
+.traceroute-node-popup:deep(div) {
+  word-break: break-word;
+}
+
+.traceroute-node-popup:deep(span) {
+  word-break: break-word;
 }
 </style>
