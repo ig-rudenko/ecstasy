@@ -265,7 +265,7 @@ import UserActionsButton from "./components/UserActionsButton.vue";
 import api from "@/services/api";
 import {GeneralInfo} from "./GeneralInfo";
 import {HardwareStats} from "./hardwareStats";
-import {DeviceInterface, InterfacesCount, reconcileInterfacesList} from "@/services/interfaces";
+import {DeviceInterface, InterfacesCount, newInterfacesList, reconcileInterfacesList} from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
 import {errorToast} from "@/services/my.toast.ts";
@@ -406,31 +406,8 @@ export default defineComponent({
       document.title = this.deviceName
 
       this.getInterfacesWorkload()
-
-      this.getInterfaces()?.then(
-          () => {
-            this.currentStatus = true
-            this.getInterfaces()
-            this.getStats()
-            this.getInterfacesWorkload()
-
-            this.updateInterfacesTimer = window.setInterval(() => {
-              this.getInterfaces()
-            }, 4000)
-
-            this.staleStateTimer = window.setInterval(() => {
-              this.staleTick += 1
-            }, 15000)
-
-            this.updateStatsTimer = window.setInterval(() => {
-              this.getStats()
-            }, 60_000)
-            this._init_started = false;
-
-          }
-      )
-
       this.getInfo()
+      this.initializeInterfaces()
     },
 
     clearTimers() {
@@ -475,6 +452,34 @@ export default defineComponent({
       this.configFiles = {display: false}
     },
 
+    async initializeInterfaces() {
+      try {
+        await this.getInterfaces(false, true)
+      } finally {
+        this.startRealtimeUpdates()
+        this._init_started = false
+      }
+    },
+
+    startRealtimeUpdates() {
+      this.currentStatus = true
+      this.getInterfaces(true, true)
+      this.getStats()
+      this.getInterfacesWorkload()
+
+      this.updateInterfacesTimer = window.setInterval(() => {
+        this.getInterfaces(true)
+      }, 4000)
+
+      this.staleStateTimer = window.setInterval(() => {
+        this.staleTick += 1
+      }, 15000)
+
+      this.updateStatsTimer = window.setInterval(() => {
+        this.getStats()
+      }, 60_000)
+    },
+
     async getStats() {
       let url = "/api/v1/devices/" + this.deviceName + "/stats"
       try {
@@ -508,8 +513,28 @@ export default defineComponent({
       )
     },
 
-    async getInterfaces() {
-      if (this._getting_interfaces || !this.autoUpdateInterfaces) return;
+    mergeHistoricalVlans(nextRaw: any[]) {
+      const nextInterfaces = newInterfacesList(nextRaw);
+      const currentInterfacesByName = new Map(this.interfaces.map((item) => [item.name, item]));
+
+      this.interfaces = nextInterfaces.map((nextInterface) => {
+        const currentInterface = currentInterfacesByName.get(nextInterface.name);
+        if (!currentInterface) {
+          return nextInterface;
+        }
+
+        return {
+          ...currentInterface,
+          vlans: nextInterface.vlans,
+          comments: nextInterface.comments,
+          graphsLink: nextInterface.graphsLink,
+          link: nextInterface.link,
+        };
+      });
+    },
+
+    async getInterfaces(currentStatus = this.currentStatus, ignoreAutoUpdate = false) {
+      if (this._getting_interfaces || (!ignoreAutoUpdate && !this.autoUpdateInterfaces)) return;
 
       let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
       if (this.withVlans) {
@@ -517,7 +542,7 @@ export default defineComponent({
       } else {
         url += "vlans=0"
       }
-      if (this.currentStatus) {
+      if (currentStatus) {
         url += "&current_status=1"
       }
 
@@ -527,7 +552,11 @@ export default defineComponent({
         const resp = await api.get(url)
         if (currentDeviceName !== this.deviceName) return
 
-        this.interfaces = reconcileInterfacesList(this.interfaces, resp.data.interfaces);
+        if (this.withVlans && !currentStatus && this.interfaces.length) {
+          this.mergeHistoricalVlans(resp.data.interfaces);
+        } else {
+          this.interfaces = reconcileInterfacesList(this.interfaces, resp.data.interfaces);
+        }
         this.collected = new Date(resp.data.collected);
         this.staleTick = 0
         this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
@@ -536,12 +565,15 @@ export default defineComponent({
       this._getting_interfaces = false;
     },
 
-    toggleInterfacesWithVlans() {
+    async toggleInterfacesWithVlans() {
       this.withVlans = !this.withVlans;
-      if (this.withVlans) {
-        this.currentStatus = false;
-        this.getInterfaces();
+      this.currentStatus = false;
+
+      try {
+        await this.getInterfaces(false, true);
+      } finally {
         this.currentStatus = true;
+        this.getInterfaces(true, true);
       }
     },
 
