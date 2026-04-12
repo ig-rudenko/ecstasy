@@ -59,6 +59,7 @@ interface OriginPointData {
 
 interface PointData {
     id: string;
+    sourceId: string;
     latlng: LatLngExpression;
     layerName: string;
     style: Record<string, unknown>;
@@ -89,6 +90,7 @@ const defaultMapCenter: LatLngExpression = [44.6, 33.5];
 const defaultMapZoom = 12;
 const renderBatchSize = 250;
 const viewportPadding = 0.2;
+const spatialCellSize = 0.25;
 
 export type MapsPage = Paginator<MapBrief>;
 
@@ -123,6 +125,11 @@ export class MapService {
     private updateInFlight = false;
     private canvasRenderer = canvas({padding: 0.5});
     private visibilityRefreshQueued = false;
+    private pointSpatialIndex: Map<string, PointData[]> = new Map();
+    private staticSpatialIndex: Map<string, StaticElementData[]> = new Map();
+    private visiblePointIds: Set<string> = new Set();
+    private visibleStaticElementIds: Set<string> = new Set();
+    private pointsBySourceId: Map<string, PointData[]> = new Map();
 
     constructor(public mapID: string, public mapHTMLElementID: string) {
         this.map = new LMap(mapHTMLElementID, {layers: [osm], minZoom: 5, preferCanvas: true});
@@ -227,9 +234,11 @@ export class MapService {
             const tooltipContent = feature.properties.name || "";
             const popupContent = feature.properties.description || "";
             const latlng = [...feature.geometry.coordinates].reverse() as [number, number];
+            const sourceId = String(feature.id);
 
-            this.points.set(feature.id, {
-                id: feature.id,
+            const pointData = {
+                id: `${data.name}:${sourceId}`,
+                sourceId,
                 latlng,
                 layerName: data.name,
                 style: feature.properties.style || {},
@@ -237,7 +246,11 @@ export class MapService {
                 tooltipContent,
                 searchText: normalizeSearchText([tooltipContent, popupContent]),
                 hasProblems: false,
-            });
+            };
+
+            this.points.set(pointData.id, pointData);
+            addPointToSpatialIndex(this.pointSpatialIndex, pointData);
+            addPointToSourceIndex(this.pointsBySourceId, pointData);
         }
     }
 
@@ -256,8 +269,8 @@ export class MapService {
             const latlng = getFeatureAnchor(feature);
             const bounds = getFeatureBounds(feature);
 
-            this.staticElements.push({
-                id: feature.id || `${data.name}-${i}`,
+            const staticElement = {
+                id: `${data.name}:${feature.id || i}`,
                 layerName: data.name,
                 feature: {
                     ...feature,
@@ -273,7 +286,10 @@ export class MapService {
                     feature.properties?.iconCaption,
                     feature.properties?.description,
                 ]),
-            });
+            };
+
+            this.staticElements.push(staticElement);
+            addElementToSpatialIndex(this.staticSpatialIndex, staticElement);
         }
     }
 
@@ -313,30 +329,34 @@ export class MapService {
             });
 
             for (let i = 0; i < problems.length; i++) {
-                const pointID = problems[i].id;
-                const point = this.points.get(pointID);
+                const points = this.pointsBySourceId.get(String(problems[i].id));
 
-                if (!point) {
+                if (!points?.length) {
                     continue;
                 }
 
-                if (!point._origin) {
-                    point._origin = {
-                        fillColor: typeof point.style.fillColor === "string" ? point.style.fillColor : undefined,
-                        popupContent: point.popupContent,
-                        layer: this.overlays[point.layerName] as Layer,
-                    };
-                }
-
                 const problemsText = buildProblemsText(problems[i]);
-                point.hasProblems = true;
-                point.currentProblemsContent = problemsText;
-                problemsPointsBeforeUpdate.delete(pointID);
 
-                if (point.point) {
-                    point.point.setStyle({fillColor: "red"});
-                    ensurePointPopupBound(point);
-                    point.point.setPopupContent(point._origin.popupContent + problemsText);
+                for (let pointIndex = 0; pointIndex < points.length; pointIndex++) {
+                    const point = points[pointIndex];
+
+                    if (!point._origin) {
+                        point._origin = {
+                            fillColor: typeof point.style.fillColor === "string" ? point.style.fillColor : undefined,
+                            popupContent: point.popupContent,
+                            layer: this.overlays[point.layerName] as Layer,
+                        };
+                    }
+
+                    point.hasProblems = true;
+                    point.currentProblemsContent = problemsText;
+                    problemsPointsBeforeUpdate.delete(point.id);
+
+                    if (point.point) {
+                        point.point.setStyle({fillColor: "red"});
+                        ensurePointPopupBound(point);
+                        point.point.setPopupContent(point._origin.popupContent + problemsText);
+                    }
                 }
             }
 
@@ -411,16 +431,11 @@ export class MapService {
      */
     async refreshVisibleElements() {
         const paddedBounds = this.map.getBounds().pad(viewportPadding);
+        const nextVisiblePoints = this.collectVisiblePointIds(paddedBounds);
+        const nextVisibleStaticElements = this.collectVisibleStaticElementIds(paddedBounds);
 
-        await renderInBatches(Array.from(this.points.values()), renderBatchSize, (point) => {
-            const isVisible = paddedBounds.contains(toLatLng(point.latlng)) && this.isOverlayVisible(point.layerName);
-            this.syncPointVisibility(point, isVisible);
-        });
-
-        await renderInBatches(this.staticElements, renderBatchSize, (element) => {
-            const isVisible = paddedBounds.intersects(element.bounds) && this.isOverlayVisible(element.layerName);
-            this.syncStaticElementVisibility(element, isVisible);
-        });
+        await this.applyPointVisibilityDiff(nextVisiblePoints);
+        await this.applyStaticVisibilityDiff(nextVisibleStaticElements);
     }
 
     /**
@@ -428,17 +443,11 @@ export class MapService {
      */
     private refreshVisibleElementsSync() {
         const paddedBounds = this.map.getBounds().pad(viewportPadding);
+        const nextVisiblePoints = this.collectVisiblePointIds(paddedBounds);
+        const nextVisibleStaticElements = this.collectVisibleStaticElementIds(paddedBounds);
 
-        this.points.forEach((point) => {
-            const isVisible = paddedBounds.contains(toLatLng(point.latlng)) && this.isOverlayVisible(point.layerName);
-            this.syncPointVisibility(point, isVisible);
-        });
-
-        for (let i = 0; i < this.staticElements.length; i++) {
-            const element = this.staticElements[i];
-            const isVisible = paddedBounds.intersects(element.bounds) && this.isOverlayVisible(element.layerName);
-            this.syncStaticElementVisibility(element, isVisible);
-        }
+        this.applyPointVisibilityDiffSync(nextVisiblePoints);
+        this.applyStaticVisibilityDiffSync(nextVisibleStaticElements);
     }
 
     /**
@@ -465,6 +474,158 @@ export class MapService {
     private isOverlayVisible(layerName: string) {
         const overlay = this.overlays[layerName];
         return Boolean(overlay && this.map.hasLayer(overlay));
+    }
+
+    /**
+     * Возвращает идентификаторы точек, попадающих в текущий viewport.
+     *
+     * @param bounds - Границы viewport.
+     * @returns Набор идентификаторов видимых точек.
+     */
+    private collectVisiblePointIds(bounds: LatLngBounds) {
+        const visibleIds = new Set<string>();
+        const candidates = collectSpatialCandidates(this.pointSpatialIndex, bounds);
+
+        for (let i = 0; i < candidates.length; i++) {
+            const point = candidates[i];
+            if (!this.isOverlayVisible(point.layerName)) {
+                continue;
+            }
+
+            if (bounds.contains(toLatLng(point.latlng))) {
+                visibleIds.add(point.id);
+            }
+        }
+
+        return visibleIds;
+    }
+
+    /**
+     * Возвращает идентификаторы статических объектов, попадающих в viewport.
+     *
+     * @param bounds - Границы viewport.
+     * @returns Набор идентификаторов видимых объектов.
+     */
+    private collectVisibleStaticElementIds(bounds: LatLngBounds) {
+        const visibleIds = new Set<string>();
+        const candidates = collectSpatialCandidates(this.staticSpatialIndex, bounds);
+
+        for (let i = 0; i < candidates.length; i++) {
+            const element = candidates[i];
+            if (!this.isOverlayVisible(element.layerName)) {
+                continue;
+            }
+
+            if (bounds.intersects(element.bounds)) {
+                visibleIds.add(element.id);
+            }
+        }
+
+        return visibleIds;
+    }
+
+    /**
+     * Применяет diff видимости точек батчами.
+     *
+     * @param nextVisiblePoints - Новый набор видимых точек.
+     */
+    private async applyPointVisibilityDiff(nextVisiblePoints: Set<string>) {
+        const idsToHide = difference(this.visiblePointIds, nextVisiblePoints);
+        const idsToShow = difference(nextVisiblePoints, this.visiblePointIds);
+
+        await renderInBatches(idsToHide, renderBatchSize, (pointId) => {
+            const point = this.points.get(pointId);
+            if (point) {
+                this.syncPointVisibility(point, false);
+            }
+        });
+
+        await renderInBatches(idsToShow, renderBatchSize, (pointId) => {
+            const point = this.points.get(pointId);
+            if (point) {
+                this.syncPointVisibility(point, true);
+            }
+        });
+
+        this.visiblePointIds = nextVisiblePoints;
+    }
+
+    /**
+     * Применяет diff видимости статических объектов батчами.
+     *
+     * @param nextVisibleStaticElements - Новый набор видимых статических объектов.
+     */
+    private async applyStaticVisibilityDiff(nextVisibleStaticElements: Set<string>) {
+        const idsToHide = difference(this.visibleStaticElementIds, nextVisibleStaticElements);
+        const idsToShow = difference(nextVisibleStaticElements, this.visibleStaticElementIds);
+
+        await renderInBatches(idsToHide, renderBatchSize, (elementId) => {
+            const element = findStaticElementById(this.staticElements, elementId);
+            if (element) {
+                this.syncStaticElementVisibility(element, false);
+            }
+        });
+
+        await renderInBatches(idsToShow, renderBatchSize, (elementId) => {
+            const element = findStaticElementById(this.staticElements, elementId);
+            if (element) {
+                this.syncStaticElementVisibility(element, true);
+            }
+        });
+
+        this.visibleStaticElementIds = nextVisibleStaticElements;
+    }
+
+    /**
+     * Синхронно применяет diff видимости точек.
+     *
+     * @param nextVisiblePoints - Новый набор видимых точек.
+     */
+    private applyPointVisibilityDiffSync(nextVisiblePoints: Set<string>) {
+        const idsToHide = difference(this.visiblePointIds, nextVisiblePoints);
+        const idsToShow = difference(nextVisiblePoints, this.visiblePointIds);
+
+        for (let i = 0; i < idsToHide.length; i++) {
+            const point = this.points.get(idsToHide[i]);
+            if (point) {
+                this.syncPointVisibility(point, false);
+            }
+        }
+
+        for (let i = 0; i < idsToShow.length; i++) {
+            const point = this.points.get(idsToShow[i]);
+            if (point) {
+                this.syncPointVisibility(point, true);
+            }
+        }
+
+        this.visiblePointIds = nextVisiblePoints;
+    }
+
+    /**
+     * Синхронно применяет diff видимости статических объектов.
+     *
+     * @param nextVisibleStaticElements - Новый набор видимых статических объектов.
+     */
+    private applyStaticVisibilityDiffSync(nextVisibleStaticElements: Set<string>) {
+        const idsToHide = difference(this.visibleStaticElementIds, nextVisibleStaticElements);
+        const idsToShow = difference(nextVisibleStaticElements, this.visibleStaticElementIds);
+
+        for (let i = 0; i < idsToHide.length; i++) {
+            const element = findStaticElementById(this.staticElements, idsToHide[i]);
+            if (element) {
+                this.syncStaticElementVisibility(element, false);
+            }
+        }
+
+        for (let i = 0; i < idsToShow.length; i++) {
+            const element = findStaticElementById(this.staticElements, idsToShow[i]);
+            if (element) {
+                this.syncStaticElementVisibility(element, true);
+            }
+        }
+
+        this.visibleStaticElementIds = nextVisibleStaticElements;
     }
 
     /**
@@ -802,6 +963,161 @@ function ensurePointPopupBound(marker: PointData) {
     if (marker.point && !marker.point.getPopup()) {
         marker.point.bindPopup(marker.popupContent, popupDefaultOptions);
     }
+}
+
+/**
+ * Добавляет точку в spatial index.
+ *
+ * @param index - Пространственный индекс.
+ * @param point - Данные точки.
+ */
+function addPointToSpatialIndex(index: Map<string, PointData[]>, point: PointData) {
+    const key = getCellKey(toLatLng(point.latlng).lat, toLatLng(point.latlng).lng);
+    const bucket = index.get(key);
+
+    if (bucket) {
+        bucket.push(point);
+        return;
+    }
+
+    index.set(key, [point]);
+}
+
+/**
+ * Добавляет точку в индекс по исходному идентификатору backend.
+ *
+ * @param index - Индекс точек.
+ * @param point - Данные точки.
+ */
+function addPointToSourceIndex(index: Map<string, PointData[]>, point: PointData) {
+    const bucket = index.get(point.sourceId);
+
+    if (bucket) {
+        bucket.push(point);
+        return;
+    }
+
+    index.set(point.sourceId, [point]);
+}
+
+/**
+ * Добавляет статический объект в spatial index.
+ *
+ * @param index - Пространственный индекс.
+ * @param element - Данные объекта.
+ */
+function addElementToSpatialIndex(index: Map<string, StaticElementData[]>, element: StaticElementData) {
+    const keys = getBoundsCellKeys(element.bounds);
+
+    for (let i = 0; i < keys.length; i++) {
+        const bucket = index.get(keys[i]);
+        if (bucket) {
+            bucket.push(element);
+        } else {
+            index.set(keys[i], [element]);
+        }
+    }
+}
+
+/**
+ * Собирает кандидатов из spatial index для заданных bounds.
+ *
+ * @param index - Пространственный индекс.
+ * @param bounds - Границы viewport.
+ * @returns Список кандидатов без дубликатов.
+ */
+function collectSpatialCandidates<T extends { id: string }>(index: Map<string, T[]>, bounds: LatLngBounds): T[] {
+    const keys = getBoundsCellKeys(bounds);
+    const ids = new Set<string>();
+    const result: T[] = [];
+
+    for (let i = 0; i < keys.length; i++) {
+        const bucket = index.get(keys[i]);
+        if (!bucket) {
+            continue;
+        }
+
+        for (let j = 0; j < bucket.length; j++) {
+            const item = bucket[j];
+            if (!ids.has(item.id)) {
+                ids.add(item.id);
+                result.push(item);
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Возвращает cell keys для bounds.
+ *
+ * @param bounds - Географические границы.
+ * @returns Набор ключей spatial grid.
+ */
+function getBoundsCellKeys(bounds: LatLngBounds) {
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    const latStart = Math.floor(southWest.lat / spatialCellSize);
+    const latEnd = Math.floor(northEast.lat / spatialCellSize);
+    const lngStart = Math.floor(southWest.lng / spatialCellSize);
+    const lngEnd = Math.floor(northEast.lng / spatialCellSize);
+    const keys: string[] = [];
+
+    for (let latIndex = latStart; latIndex <= latEnd; latIndex++) {
+        for (let lngIndex = lngStart; lngIndex <= lngEnd; lngIndex++) {
+            keys.push(`${latIndex}:${lngIndex}`);
+        }
+    }
+
+    return keys;
+}
+
+/**
+ * Возвращает ключ grid cell по координатам.
+ *
+ * @param lat - Широта.
+ * @param lng - Долгота.
+ * @returns Ключ ячейки.
+ */
+function getCellKey(lat: number, lng: number) {
+    return `${Math.floor(lat / spatialCellSize)}:${Math.floor(lng / spatialCellSize)}`;
+}
+
+/**
+ * Возвращает элементы множества, которых нет в другом множестве.
+ *
+ * @param left - Исходное множество.
+ * @param right - Множество исключения.
+ * @returns Разность множеств в виде массива.
+ */
+function difference(left: Set<string>, right: Set<string>) {
+    const result: string[] = [];
+
+    left.forEach((value) => {
+        if (!right.has(value)) {
+            result.push(value);
+        }
+    });
+
+    return result;
+}
+
+/**
+ * Ищет статический объект по идентификатору.
+ *
+ * @param elements - Список статических объектов.
+ * @param id - Идентификатор объекта.
+ * @returns Найденный объект или undefined.
+ */
+function findStaticElementById(elements: StaticElementData[], id: string) {
+    for (let i = 0; i < elements.length; i++) {
+        if (elements[i].id === id) {
+            return elements[i];
+        }
+    }
+
+    return undefined;
 }
 
 /**
