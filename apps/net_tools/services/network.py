@@ -58,6 +58,8 @@ class VlanNetwork:
         ## Создает элементы и связи между ними для карты VLAN
         """
 
+        existing_nodes = set(self._net.get_nodes())
+
         for e in result:
             # По умолчанию зеленый цвет, форма точки
             src_gr = 3
@@ -132,12 +134,12 @@ class VlanNetwork:
                 line_width = 0.5  # ширина линии связи
             # print(src, admin_status)
 
-            all_nodes = self._net.get_nodes()
             # Создаем узлы, если их не было
-            if e.node not in all_nodes:
+            if e.node not in existing_nodes:
                 self._net.add_node(e.node, src_label, title=src_label, group=src_gr, shape=src_shape)
+                existing_nodes.add(e.node)
 
-            if e.next_node not in all_nodes:
+            if e.next_node not in existing_nodes:
                 self._net.add_node(
                     e.next_node,
                     dst_label,
@@ -145,6 +147,7 @@ class VlanNetwork:
                     group=dst_gr,
                     shape=dst_shape,
                 )
+                existing_nodes.add(e.next_node)
 
             # Добавление ребра между двумя узлами.
             self._net.add_edge(e.node, e.next_node, value=line_width, title=e.line_description)

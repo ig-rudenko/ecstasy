@@ -49,7 +49,6 @@ class MacTraceroute:
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
         macs_objects = (
             MacAddress.objects.filter(address=mac)
-            .select_related("device")
             .values("type", "vlan", "port", "desc", "datetime", "device__name")
         )
         if vlan:
@@ -60,12 +59,13 @@ class MacTraceroute:
         vlans_count: dict[int, int] = {}
 
         # Создание списка всех устройств, которые были найдены в traceroute.
-        found_devices_names = [record["device__name"] for record in macs_objects]
-        exist_nodes_id = []
+        found_devices_names = {record["device__name"] for record in macs_objects}
+        exist_nodes_id: set[str] = set()
+        current_timestamp = timezone.now().timestamp()
 
         for record in macs_objects:  # type: MacQueryValues
-            print(record)
             next_device_id, next_device_label = self.get_next_device(record)
+            edge_title = self.create_edge_title(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
             if next_device_id not in found_devices_names and next_device_id not in exist_nodes_id:
@@ -79,7 +79,7 @@ class MacTraceroute:
                     }
                 )
                 # Добавление следующего устройства в список существующих узлов.
-                exist_nodes_id.append(next_device_id)
+                exist_nodes_id.add(next_device_id)
 
             # Проверка наличия имени устройства в списке созданных узлов.
             if record["device__name"] not in exist_nodes_id:
@@ -87,17 +87,17 @@ class MacTraceroute:
                 nodes.append(
                     {
                         "id": record["device__name"],
-                        "title": self.create_edge_title(record),
+                        "title": edge_title,
                         "label": record["device__name"],
                         "shape": "dot",
                         "color": "blue",
                     }
                 )
                 # Добавление имени устройства в список существующих узлов.
-                exist_nodes_id.append(record["device__name"])
+                exist_nodes_id.add(record["device__name"])
 
             # Он вычисляет разницу во времени между текущим временем и временем создания записи.
-            time_delta = timezone.now().timestamp() - record["datetime"].timestamp()
+            time_delta = current_timestamp - record["datetime"].timestamp()
             # Вычисляем вес. Чем запись новее, тем больше вес.
             #         `172800` - количество секунд в двух днях.
             #         `100` - максимальный вес.
@@ -119,7 +119,7 @@ class MacTraceroute:
                 {
                     "from": record["device__name"],
                     "to": next_device_id,
-                    "title": self.create_edge_title(record),
+                    "title": edge_title,
                     "value": k_value,
                     "color": edge_color,
                 }

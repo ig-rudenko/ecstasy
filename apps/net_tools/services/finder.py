@@ -21,7 +21,7 @@ class InterfaceComment:
     text: str
     created_time: datetime
 
-    def to_dict(self):
+    def to_dict(self) -> "InterfaceCommentDict":
         return {"user": self.user, "text": self.text, "createdTime": self.created_time}
 
 
@@ -44,7 +44,7 @@ class Comments:
 class InterfaceCommentDict(TypedDict):
     user: str
     text: str
-    createdTime: str
+    createdTime: datetime
 
 
 class InterfaceInfoDict(TypedDict):
@@ -98,6 +98,36 @@ class Finder:
                 vlans_date=dev_info["vlans_date"],
             )
 
+    def _build_interface_info(
+        self,
+        info: DeviceInterfacesData,
+        interface_name: str,
+        status: str,
+        description: str,
+    ) -> InterfaceInfoDict:
+        """Создает типизированную структуру данных интерфейса."""
+        return {
+            "name": interface_name,
+            "status": status,
+            "description": description,
+            "vlans": info.get_interface_vlans(interface_name),
+            "savedTime": self.get_natural_time(info.interfaces_date),
+            "vlansSavedTime": self.get_natural_time(info.vlans_date),
+        }
+
+    @staticmethod
+    def _build_description_result(
+        device_name: str,
+        comments: list[InterfaceCommentDict],
+        interface_info: InterfaceInfoDict,
+    ) -> DescriptionFinderResult:
+        """Создает типизированный результат поиска."""
+        return {
+            "device": device_name,
+            "comments": comments,
+            "interface": interface_info,
+        }
+
     def find_description(self, pattern_str: str, is_regex: bool = False) -> list[DescriptionFinderResult]:
         """
         # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
@@ -136,18 +166,16 @@ class Finder:
                 if find_on_desc or interface_comments:
                     with contextlib.suppress(KeyError):  # Игнорируем, если ошибка ключа
                         result.append(
-                            {
-                                "device": device_name,
-                                "comments": [comment.to_dict() for comment in interface_comments],
-                                "interface": {
-                                    "name": interface.name,
-                                    "status": interface.status,
-                                    "description": interface.desc,
-                                    "vlans": info.get_interface_vlans(interface.name),
-                                    "savedTime": self.get_natural_time(info.interfaces_date),
-                                    "vlansSavedTime": self.get_natural_time(info.vlans_date),
-                                },
-                            }
+                            self._build_description_result(
+                                device_name=device_name,
+                                comments=[comment.to_dict() for comment in interface_comments],
+                                interface_info=self._build_interface_info(
+                                    info=info,
+                                    interface_name=interface.name,
+                                    status=interface.status,
+                                    description=interface.desc,
+                                ),
+                            )
                         )
 
                     # Удаляем найденные комментарии
@@ -159,21 +187,20 @@ class Finder:
             if dev_name not in self.devices:
                 continue
 
+            device_info = self.devices[dev_name]
             for interface in dev_intf_comments.interfaces:
                 result.extend(
                     [
-                        {
-                            "device": dev_name,
-                            "comments": [comment.to_dict()],
-                            "interface": {
-                                "name": interface,
-                                "status": interface,
-                                "description": comment.text,
-                                "vlans": self.devices[dev_name].get_interface_vlans(interface),
-                                "savedTime": self.get_natural_time(self.devices[dev_name].interfaces_date),
-                                "vlansSavedTime": self.get_natural_time(self.devices[dev_name].vlans_date),
-                            },
-                        }
+                        self._build_description_result(
+                            device_name=dev_name,
+                            comments=[comment.to_dict()],
+                            interface_info=self._build_interface_info(
+                                info=device_info,
+                                interface_name=interface,
+                                status=interface,
+                                description=comment.text,
+                            ),
+                        )
                         for comment in dev_intf_comments.interfaces[interface]
                     ]
                 )
@@ -234,11 +261,13 @@ class VlanTraceroute:
 
         # Словарь содержащий информацию об VLAN для каждого оборудования
         self._devices_vlans_info: dict[str, str | None] = {}
+        self._device_interfaces_cache: dict[str, Interfaces] = {}
         self._device_ip_names: dict[str, str] = {}  # Словарь соответствия IP-адресов и имен оборудования
         self._cache_timeout = cache_timeout  # Время кеширования
         self._get_devices_vlans()
 
         self._reformatting_cache: dict[str, str] = {}
+        self._pattern_cache: dict[str, re.Pattern[str]] = {}
 
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
@@ -286,6 +315,7 @@ class VlanTraceroute:
         """
         if not self._desc_name_list:
             self._desc_name_list = list(DescNameFormat.objects.all())
+        compiled_find_device_pattern = self._get_compiled_pattern(find_device_pattern)
 
         if device in self.passed_devices:
             return
@@ -302,7 +332,7 @@ class VlanTraceroute:
                 continue
 
             # Ищем в описании порта следующий узел сети
-            next_device = self._get_next_device(find_device_pattern, interface.desc)
+            next_device = self._get_next_device(compiled_find_device_pattern, interface.desc)
 
             # Пропускаем порты admin down, если включена опция only admin up
             if only_admin_up:
@@ -319,12 +349,13 @@ class VlanTraceroute:
             next_dev_interface_name = ""
             if double_check and next_device:  # Если есть следующее оборудование
                 next_dev_interfaces: Interfaces = self._get_device_interfaces(next_device)
+                escaped_device_name = re.escape(device)
 
                 for next_dev_interface in next_dev_interfaces:
                     desc = self.reformatting(next_dev_interface.desc)
                     if vlan_to_find in next_dev_interface.vlan and (
-                        re.search(device, desc, flags=re.IGNORECASE)
-                        or self._get_next_device(find_device_pattern, desc) == device
+                        re.search(escaped_device_name, desc, flags=re.IGNORECASE)
+                        or self._get_next_device(compiled_find_device_pattern, desc) == device
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)
@@ -446,10 +477,23 @@ class VlanTraceroute:
         """Очищает результаты поиска."""
         self.result = []
 
-    def _get_next_device(self, pattern: str, description: str) -> str:
+    def reset_state(self):
+        """Reset traversal state before processing the next root device."""
+        self.result = []
+        self.passed_devices.clear()
+
+    def _get_compiled_pattern(self, pattern: str) -> re.Pattern[str]:
+        """Return a cached compiled regex pattern."""
+        compiled_pattern = self._pattern_cache.get(pattern)
+        if compiled_pattern is None:
+            compiled_pattern = re.compile(pattern, flags=re.IGNORECASE)
+            self._pattern_cache[pattern] = compiled_pattern
+        return compiled_pattern
+
+    def _get_next_device(self, pattern: re.Pattern[str], description: str) -> str:
         next_device = ""
         # Ищем в описании порта следующий узел сети
-        next_device_match = re.search(pattern, self.reformatting(description), flags=re.IGNORECASE)
+        next_device_match = pattern.search(self.reformatting(description))
         # Приводим к единому формату имя узла сети
         if next_device_match:
             next_device = next_device_match.group()
@@ -475,10 +519,19 @@ class VlanTraceroute:
 
     def _get_device_interfaces(self, device_name: str) -> Interfaces:
         """Получаем список VLAN для текущего устройства"""
+        cached_interfaces = self._device_interfaces_cache.get(device_name)
+        if cached_interfaces is not None:
+            return cached_interfaces
+
         device_info = self._devices_vlans_info.get(device_name, None)
         if device_info is not None:
-            return Interfaces(orjson.loads(device_info or "[]"))
-        return Interfaces()
+            parsed_interfaces = Interfaces(orjson.loads(device_info or "[]"))
+            self._device_interfaces_cache[device_name] = parsed_interfaces
+            return parsed_interfaces
+
+        empty_interfaces = Interfaces()
+        self._device_interfaces_cache[device_name] = empty_interfaces
+        return empty_interfaces
 
 
 class MultipleVlanTraceroute:
@@ -498,6 +551,7 @@ class MultipleVlanTraceroute:
         result: list[VlanTracerouteResult] = []
         # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
         for device_name in self._devices_queryset.values_list("name", flat=True):
+            self._finder.reset_state()
             # Трассировка vlan
             self._finder.find_vlan(
                 device=device_name,
@@ -511,6 +565,4 @@ class MultipleVlanTraceroute:
                 result.extend(self._finder.result)
 
             # Очистка результаты поиска для следующего устройства
-            self._finder.clear_results()
-
         return result
