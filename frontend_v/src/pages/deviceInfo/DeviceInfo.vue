@@ -533,8 +533,9 @@ export default defineComponent({
       });
     },
 
-    async getInterfaces(currentStatus = this.currentStatus, ignoreAutoUpdate = false) {
+    async getInterfaces(currentStatus?: boolean, ignoreAutoUpdate = false) {
       if (this._getting_interfaces || (!ignoreAutoUpdate && !this.autoUpdateInterfaces)) return;
+      const resolvedCurrentStatus = currentStatus ?? this.currentStatus;
 
       let url = "/api/v1/devices/" + this.deviceName + "/interfaces?"
       if (this.withVlans) {
@@ -542,7 +543,7 @@ export default defineComponent({
       } else {
         url += "vlans=0"
       }
-      if (currentStatus) {
+      if (resolvedCurrentStatus) {
         url += "&current_status=1"
       }
 
@@ -552,7 +553,7 @@ export default defineComponent({
         const resp = await api.get(url)
         if (currentDeviceName !== this.deviceName) return
 
-        if (this.withVlans && !currentStatus && this.interfaces.length) {
+        if (this.withVlans && !resolvedCurrentStatus && this.interfaces.length) {
           this.mergeHistoricalVlans(resp.data.interfaces);
         } else {
           this.interfaces = reconcileInterfacesList(this.interfaces, resp.data.interfaces);
