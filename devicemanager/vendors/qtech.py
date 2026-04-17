@@ -424,6 +424,10 @@ class Qtech(BaseDevice):
 
 class QtechFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Qtech]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and "QTECH" in str(version_output)
 

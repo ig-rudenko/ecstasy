@@ -5,6 +5,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from ipaddress import IPv4Address
+from typing import Any
 
 import orjson
 from django.contrib.auth.models import User
@@ -13,6 +14,8 @@ from rest_framework.exceptions import ValidationError
 
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.device_connector.types import RemoteCommand, RemoteCommandCondition
+from devicemanager.multifactory import DeviceMultiFactory
+from devicemanager.vendors import BaseDevice
 
 from ...models import (
     BulkDeviceCommandExecution,
@@ -26,7 +29,8 @@ from ...models import (
 class ContextValidator:
     key: str
     pattern: re.Pattern
-    validate: Callable
+    validate: Callable[[re.Match[str], str], None]
+    clean: Callable[[Any, Devices], str]
 
 
 def normalize_device_vendor(value) -> str:
@@ -37,6 +41,38 @@ def normalize_device_vendor(value) -> str:
 def normalize_device_model(value) -> str:
     """Return normalized device model for regex comparisons."""
     return str(value or "").strip()
+
+
+def clean_device_port(port: str, device: Devices) -> str:
+    """
+    Приводит порт в необходимый формат в зависимости от вендора и модели оборудования.
+    """
+    dev_types_by_vendor: list[type[BaseDevice]] = []
+
+    # Проходим по фабрике оборудования и смотрим все доступные типы оборудований.
+    for dev_type in DeviceMultiFactory.support_devices():
+        if device.vendor is not None and dev_type.vendor.lower() == device.vendor.lower():
+            # Оставляем только для нашего вендора.
+            dev_types_by_vendor.append(dev_type)
+
+    dev_types_without_sub_models: list[type[BaseDevice]] = []
+    for dev_type in dev_types_by_vendor:
+        if dev_type.supported_models is not None and dev_type.supported_models.match(str(device.model)):
+            # Если нашли точное соответствие вендора и модели оборудования.
+            return dev_type.normalize_interface_name(port)
+
+        if dev_type.supported_models is None:
+            # Создаём список типов оборудования, у которых нет `supported_models`
+            # т.е. они подходят для всех моделей.
+            dev_types_without_sub_models.append(dev_type)
+
+    # Если не нашли чёткого сопоставления модели ранее,
+    # проверяем есть ли для данного вендора уникальные типы оборудования и берём у самого первого
+    if dev_types_without_sub_models:
+        return dev_types_by_vendor[0].normalize_interface_name(port)
+
+    # Если ничего не найдено, то возвращаем название как есть.
+    return port
 
 
 def get_command_model_pattern(command: DeviceCommand) -> re.Pattern | None:
@@ -91,31 +127,37 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
             key="ip",
             pattern=re.compile(r"\{ip(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, ip: validate_ip(ip),
+            clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="port",
             pattern=re.compile(r"\{port(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, port: validate_device_port(device, port),
+            clean=lambda v, d: clean_device_port(v, d),
         ),
         ContextValidator(
             key="mac",
             pattern=re.compile(r"\{mac(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, mac: validate_mac(mac),
+            clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="number",
             pattern=re.compile(r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, v: validate_number(v, m.group("start"), m.group("end")),
+            clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="word",
             pattern=re.compile(r"\{word(?:#(?P<name>\S+?)?)?}"),
             validate=lambda m, word: validate_word(word),
+            clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="if",
             pattern=re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.*?)?)?(?<!\\)}"),
             validate=lambda m, word: validate_word(word),
+            clean=lambda v, d: str(v),
         ),
     ]
 
@@ -127,7 +169,6 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
     validated_commands: list[RemoteCommand] = []
 
     for cmd_line in command.splitlines():
-
         valid_cmd_line: RemoteCommand = {"command": cmd_line.strip(), "conditions": []}
 
         for validator in context_validators:
@@ -171,11 +212,14 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
                     raise ValidationError(f"Необходимо указать ключ `{key}` для параметра {validator.key}")
 
                 validator.validate(match, value)
+                clean_value = validator.clean(value, device)
 
                 start_pos, end_pos = match.span()
 
                 valid_cmd_line["command"] = (
-                    valid_cmd_line["command"][:start_pos] + str(value) + valid_cmd_line["command"][end_pos:]
+                    valid_cmd_line["command"][:start_pos]
+                    + str(clean_value)
+                    + valid_cmd_line["command"][end_pos:]
                 )
 
         validated_commands.append(valid_cmd_line)

@@ -32,6 +32,7 @@ class IskratelControl(BaseDevice):
     space_prompt = r"--More-- or \(q\)uit"
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Iskratel"
+    supported_models = re.compile("ISKRATEL Switching")
 
     def save_config(self):
         pass
@@ -626,6 +627,10 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
 
 
 class IskratelFactory(AbstractDeviceFactory):
+    @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [IskratelControl, IskratelControl]
+
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return bool(version_output and re.search(r"ISKRATEL|IskraTEL", str(version_output)))

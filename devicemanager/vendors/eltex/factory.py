@@ -16,6 +16,10 @@ from ..base.types import DeviceAuthDict
 
 class EltexFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [EltexESR, EltexLTP, EltexLTP16N, EltexMES]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and bool(
             re.search(r"Eltex LTP|Active-image:|Boot version:", str(version_output))
@@ -30,11 +34,15 @@ class EltexFactory(AbstractDeviceFactory):
         device: BaseDevice
         if "Eltex LTP" in version_output:
             model = BaseDevice.find_or_empty(r"Eltex (\S+[^:\s])", version_output)
-            if re.match(r"LTP-[48]X", model):
+
+            # LTP-4X, LTP-8X
+            if EltexLTP.supported_models is not None and EltexLTP.supported_models.match(model):
                 device = EltexLTP(session, ip, auth, model=model, snmp_community=snmp_community)
                 device.os_version = device.find_or_empty("software version (.+)", version_output).strip()
                 return device
-            if "LTP-16N" in model:
+
+            # LTP-16N
+            if EltexLTP16N.supported_models is not None and EltexLTP16N.supported_models.match(model):
                 device = EltexLTP16N(session, ip, auth, model=model, snmp_community=snmp_community)
                 device.os_version = device.find_or_empty("software version (.+)", version_output).strip()
                 return device

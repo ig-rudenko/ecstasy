@@ -38,6 +38,7 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
     space_prompt = r"---- More ----"
     mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
     vendor = "Huawei"
+    supported_models = re.compile(r"ce6865", flags=re.IGNORECASE)
 
     def __init__(self, session, ip: str, auth, model: str = "", snmp_community: str = ""):
         super().__init__(session, ip, auth, model, snmp_community)

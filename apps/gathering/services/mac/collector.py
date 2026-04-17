@@ -40,12 +40,11 @@ class MacAddressTableGather:
                 auth_obj=self.device.auth_group,
                 snmp_community=self.device.snmp_community or "",
             ) as session:
-                # Если в сеансе есть функция с именем normalize_interface_name,
-                # установите атрибут normalize_interface для этой функции.
                 # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.
                 # Например - `1/1` и `1`, `26(C)` и `26(F)`.
-                if hasattr(session, "normalize_interface_name"):
-                    self.normalize_interface = session.normalize_interface_name
+                self.normalize_interface = lambda i: session.normalize_interface_name(
+                    session.normalize_interface_name_realtime(i)
+                )
 
                 # Получение интерфейсов с устройства.
                 self.interfaces = self.get_interfaces()

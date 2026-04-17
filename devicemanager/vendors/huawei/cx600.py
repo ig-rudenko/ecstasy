@@ -52,6 +52,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
+    supported_models = re.compile(r"CX600")
 
     def __init__(self, session, ip: str, auth: DeviceAuthDict, model, snmp_community):
         super().__init__(session, ip, auth, model, snmp_community)

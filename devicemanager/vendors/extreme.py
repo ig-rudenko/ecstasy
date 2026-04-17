@@ -388,6 +388,10 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
 class ExtremeFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Extreme]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and "ExtremeXOS" in str(version_output)
 

@@ -154,6 +154,7 @@ class BaseDevice(AbstractDevice, ABC):
     SAVED_OK = "Saved OK"  # Конфигурация была сохранена
     SAVED_ERR = "Saved Error"  # Ошибка при сохранении конфигурации
     vendor: str
+    supported_models: re.Pattern[str] | None = None  # Регулярное выражение поддерживаемых моделей, либо все
 
     def __init__(
         self,
@@ -182,6 +183,20 @@ class BaseDevice(AbstractDevice, ABC):
             "serialno": self.serialno,
             "os_version": self.os_version,
         }
+
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        """
+        Возвращает отформатированное название интерфейса без подключения к оборудованию.
+        """
+        return intf
+
+    def normalize_interface_name_realtime(self, intf: str) -> str:
+        """
+        Функция для форматирования интерфейса в реальном времени.
+        Требуется подключение к оборудованию.
+        """
+        return intf
 
     @staticmethod
     def clear_description(desc: str) -> str:

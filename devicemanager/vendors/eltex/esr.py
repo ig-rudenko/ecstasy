@@ -1,4 +1,5 @@
 import io
+import re
 
 from ..base.device import BaseDevice
 from ..base.types import DeviceAuthDict
@@ -15,6 +16,7 @@ class EltexESR(EltexMES):
     """
 
     _template_name = "eltex-esr"
+    supported_models = re.compile(r"ESR\S")
 
     def __init__(
         self,

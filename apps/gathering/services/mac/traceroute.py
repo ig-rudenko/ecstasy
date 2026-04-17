@@ -47,9 +47,8 @@ class MacTraceroute:
         """
 
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
-        macs_objects = (
-            MacAddress.objects.filter(address=mac)
-            .values("type", "vlan", "port", "desc", "datetime", "device__name")
+        macs_objects = MacAddress.objects.filter(address=mac).values(
+            "type", "vlan", "port", "desc", "datetime", "device__name"
         )
         if vlan:
             macs_objects = macs_objects.filter(vlan=vlan)

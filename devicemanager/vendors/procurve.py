@@ -271,6 +271,10 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
 
 class ProCurveFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [ProCurve]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and "Image stamp:" in str(version_output)
 

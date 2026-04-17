@@ -38,6 +38,7 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
     # Регулярное выражение, которое будет соответствовать MAC-адресу.
     mac_format = r"\S\S:" * 5 + r"\S\S"
     vendor = "Eltex"
+    supported_models = re.compile(r"MES\S+")
 
     def __init__(
         self,

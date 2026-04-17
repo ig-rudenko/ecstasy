@@ -110,6 +110,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
     # Регулярное выражение, которое будет соответствовать MAC-адресу.
     mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
     vendor = "Eltex"
+    supported_models = re.compile(r"LTP-[48]X")
 
     def __init__(
         self,

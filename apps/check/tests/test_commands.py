@@ -23,6 +23,7 @@ class BaseCommandsTestCase(TestCase):
             [
                 {"name": "Ethernet1/1", "status": "up", "description": "test"},
                 {"name": "Ethernet1/2", "status": "up", "description": "test"},
+                {"name": "Gi1/2", "status": "up", "description": "gi test"},
             ]
         )
         cls.device_info = DevicesInfo(dev=cls.device)
@@ -91,6 +92,22 @@ class TestCommandsPortValidator(BaseCommandsTestCase):
             }
         ]
         context = {"port": {"1": "Ethernet1/1", "2": "Ethernet1/2"}}
+
+        res = validate_command(self.device, command, context)
+        self.assertEqual(valid_commands, res)
+
+    def test_cmd_port_normalize_name(self):
+        self.device.vendor = "Huawei"
+        self.device.model = "S2403"
+
+        command = "show port {port#1}"
+        valid_commands = [
+            {
+                "command": "show port GigabitEthernet 1/2",
+                "conditions": [],
+            }
+        ]
+        context = {"port": {"1": "Gi1/2"}}
 
         res = validate_command(self.device, command, context)
         self.assertEqual(valid_commands, res)

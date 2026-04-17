@@ -357,6 +357,10 @@ class Zyxel(BaseDevice):
 
 class ZyxelFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Zyxel]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         check_sentences = ["invalid command, valid commands are", "adsl", "switch"]
         output = str(version_output)

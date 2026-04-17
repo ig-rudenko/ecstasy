@@ -513,6 +513,10 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
 
 class ZTEFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [ZTE]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and " ZTE Corporation:" in version_output
 

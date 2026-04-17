@@ -257,6 +257,10 @@ class Juniper(BaseDevice, AbstractConfigDevice):
 
 class JuniperFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Juniper]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return bool(
             version_output

@@ -44,6 +44,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     space_prompt = r"---- More ----"
     mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
     vendor = "Huawei"
+    supported_models = re.compile(r"^S\d+")
 
     def __init__(
         self,

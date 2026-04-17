@@ -415,6 +415,10 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
 
 class MikrotikFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [MikroTik]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and "bad command name show" in str(version_output).lower()
 

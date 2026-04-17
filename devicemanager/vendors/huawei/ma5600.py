@@ -21,7 +21,7 @@ from ..base.types import (
 
 class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
     """
-    # Для DSLAM оборудования MA5600T от производителя Huawei
+    # Для DSLAM оборудования MA560xT от производителя Huawei
     """
 
     prompt = r"config\S+#|\S+#"
@@ -29,6 +29,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
     # Регулярное выражение, которое соответствует MAC-адресу.
     mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
     vendor = "Huawei"
+    supported_models = re.compile(r"MA500\d")
 
     def __init__(
         self,
@@ -752,7 +753,29 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         self.send_command("quit")
         return status
 
-    def normalize_interface_name(self, intf: str) -> str:
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        """
+        Нормализовать имя интерфейса до стандартного формата.
+        Без подключения к оборудованию.
+
+        >>> HuaweiMA5600T.normalize_interface_name("ADSL 0/2/4")
+        'adsl0/2/4'
+
+        >>> HuaweiMA5600T.normalize_interface_name("ethernet 0/2/4")
+        'eth0/2/4'
+
+        :param intf: Имя интерфейса для нормализации
+        """
+        port = intf.strip()
+
+        port_type = BaseDevice.find_or_empty(r"^ethernet|^[av]dsl|^gpon", port)
+        if port_type.startswith("eth"):
+            port_type = "eth"
+
+        return port_type + re.sub(r"^[a-z\s]+", "", port)
+
+    def normalize_interface_name_realtime(self, intf: str) -> str:
         """
         ## Нормализовать имя интерфейса до стандартного формата.
 

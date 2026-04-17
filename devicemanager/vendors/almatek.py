@@ -386,6 +386,10 @@ class Almatek(BaseDevice, AbstractConfigDevice):
 
 class AlmatekFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Almatek]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         if version_output:
             return (

@@ -633,6 +633,10 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
 class CiscoFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Cisco]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return version_output and "cisco" in str(version_output).lower()
 

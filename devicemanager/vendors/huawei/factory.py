@@ -15,9 +15,14 @@ __all__ = ["HuaweiFactory"]
 
 class HuaweiFactory(AbstractDeviceFactory):
     @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        return [Huawei, HuaweiCX600, HuaweiMA5600T, HuaweiCE6865]
+
+    @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return bool(
-            version_output and re.search(r"Unrecognized command|% Unknown command|Huawei", str(version_output))
+            version_output
+            and re.search(r"Unrecognized command|% Unknown command|Huawei", str(version_output))
         )
 
     @classmethod
@@ -49,7 +54,7 @@ class HuaweiFactory(AbstractDeviceFactory):
             if "Unrecognized command" in version:
                 return Huawei(session, ip, auth, snmp_community=snmp_community)
 
-        # HuaweiMA5600T
+        # Huawei MA560xT
         if "% Unknown command" in version_output:
             version_output = ""
             session.sendline("display version")

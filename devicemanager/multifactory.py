@@ -19,6 +19,30 @@ from .vendors.zyxel import ZyxelFactory
 
 
 class DeviceMultiFactory(AbstractDeviceFactory):
+    subfactories = [
+        HuaweiFactory,
+        DlinkFactory,
+        EltexFactory,
+        CiscoFactory,
+        IskratelFactory,
+        ExtremeFactory,
+        MikrotikFactory,
+        QtechFactory,
+        ZTEFactory,
+        EdgeCoreFactory,
+        ZyxelFactory,
+        JuniperFactory,
+        ProCurveFactory,
+        AlmatekFactory,
+    ]
+
+    @staticmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        devs = []
+        for factory in DeviceMultiFactory.subfactories:
+            devs.extend(factory.support_devices())
+        return devs
+
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         return True
@@ -61,24 +85,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
             "version_output": version_output,
         }
 
-        factories = [
-            HuaweiFactory,
-            DlinkFactory,
-            EltexFactory,
-            CiscoFactory,
-            IskratelFactory,
-            ExtremeFactory,
-            MikrotikFactory,
-            QtechFactory,
-            ZTEFactory,
-            EdgeCoreFactory,
-            ZyxelFactory,
-            JuniperFactory,
-            ProCurveFactory,
-            AlmatekFactory,
-        ]
-
-        for factory in factories:
+        for factory in cls.subfactories:
             if factory.is_can_use_this_factory(session=session, version_output=version_output):
                 return factory.get_device(**factory_data)
 

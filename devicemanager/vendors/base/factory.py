@@ -7,6 +7,13 @@ from .types import DeviceAuthDict
 
 
 class AbstractDeviceFactory(ABC):
+    subfactories: list[type["AbstractDeviceFactory"]] | None = None
+
+    @staticmethod
+    @abstractmethod
+    def support_devices() -> list[type[BaseDevice]]:
+        pass
+
     @classmethod
     @abstractmethod
     def get_device(
