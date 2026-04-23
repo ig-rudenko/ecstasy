@@ -438,8 +438,6 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):
-    permission_classes = [BulkDeviceCommandExecutionPermission]
-
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
