@@ -45,6 +45,7 @@ class IskratelControl(BaseDevice):
         Команда на оборудовании:
 
             # show mac-addr-table interface {port}
+            # show mac-addr-table interface {port}
 
         :param port: Номер порта коммутатора
         :return: ```[ ('vid', 'mac'), ... ]```
@@ -547,7 +548,7 @@ class IskratelMBan(BaseDevice, AbstractConfigDevice, AbstractDSLProfileDevice):
                 "max_length": 32,
             }
 
-        self.send_command(f"set dsl port {port_number} name {desc}")
+        self.send_command(f'set dsl port {port_number} name "{desc}"')
 
         return {
             "description": desc,
