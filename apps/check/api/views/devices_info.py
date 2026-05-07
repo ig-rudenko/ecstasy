@@ -311,9 +311,9 @@ class DeviceInfoAPIView(DeviceAPIView):
 
     """
 
-    def get(self, request, device_name_or_ip: str, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         device: models.Devices = self.get_object()
-        zabbix_info = DeviceManager(name=device_name_or_ip).zabbix_info
+        zabbix_info = DeviceManager(name=device.name).zabbix_info
 
         devices_maps, uptime = get_zabbix_host_map_and_uptime(zabbix_info.hostid)
 
