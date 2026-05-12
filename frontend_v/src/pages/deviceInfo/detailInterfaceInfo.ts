@@ -1,6 +1,6 @@
 export interface DetailInterfaceInfo {
-    data: any,
-    type: 'text'|'html'|'mikrotik'|'adsl'|'gpon'|'eltex-gpon'
+    data: any;
+    type: "text" | "html" | "mikrotik" | "adsl" | "gpon" | "eltex-gpon";
 }
 
 export interface ComplexInterfaceInfoType {

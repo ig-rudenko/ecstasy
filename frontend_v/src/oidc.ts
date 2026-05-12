@@ -1,6 +1,6 @@
-import {reactive} from "vue";
+import { reactive } from "vue";
 
-import {tokenService} from "@/services/auth/token.service";
+import { tokenService } from "@/services/auth/token.service";
 
 const OIDC_PENDING_STORAGE_KEY = "oidc-pending-state";
 const OIDC_LOGIN_STORAGE_KEY = "oidc-login";

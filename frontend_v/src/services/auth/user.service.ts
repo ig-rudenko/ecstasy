@@ -1,12 +1,12 @@
 import api from "@/services/api";
-import {createNewUser, User} from "@/services/user";
+import { createNewUser, User } from "@/services/user";
 
 function hasStoredAccessToken(): boolean {
     const data = localStorage.getItem("tokens");
     if (!data) return false;
 
     try {
-        const tokens = JSON.parse(data) as {accessToken?: string};
+        const tokens = JSON.parse(data) as { accessToken?: string };
         return Boolean(tokens.accessToken);
     } catch {
         return false;
@@ -15,8 +15,8 @@ function hasStoredAccessToken(): boolean {
 
 export async function getMyselfData(): Promise<User> {
     // console.log(tokenService.getUserTokens())
-    const resp = await api.get("/api/v1/accounts/myself")
-    return createNewUser(resp.data)
+    const resp = await api.get("/api/v1/accounts/myself");
+    return createNewUser(resp.data);
 }
 
 class UserService {
@@ -26,17 +26,21 @@ class UserService {
         if (!hasStoredAccessToken()) return;
 
         setTimeout(
-            () => getMyselfData().then((user: User) => {
-            this.user = user
-            this.setUser(user)
-        }).catch(() => this.removeUser()), 0
-        )
+            () =>
+                getMyselfData()
+                    .then((user: User) => {
+                        this.user = user;
+                        this.setUser(user);
+                    })
+                    .catch(() => this.removeUser()),
+            0
+        );
     }
 
     getUser(): User | null {
         if (this.user) return this.user;
-        const data = localStorage.getItem("user")
-        if (data) this.user = JSON.parse(data)
+        const data = localStorage.getItem("user");
+        if (data) this.user = JSON.parse(data);
         return this.user;
     }
 
@@ -49,7 +53,6 @@ class UserService {
         this.user = null;
         localStorage.removeItem("user");
     }
-
 }
 
 export default new UserService();

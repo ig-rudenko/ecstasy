@@ -1,6 +1,5 @@
-import {Customer} from "@/types/customer";
-import {Address} from "@/types/address";
-
+import { Customer } from "@/types/customer";
+import { Address } from "@/types/address";
 
 class SubscribersData {
     constructor(
@@ -17,8 +16,7 @@ class SubscribersData {
         public status: string,
         public end3Port: number,
         public customer: Customer
-    ) {
-    }
+    ) {}
 }
 
 function newSubscriberData(data: any): SubscribersData {
@@ -35,9 +33,9 @@ function newSubscriberData(data: any): SubscribersData {
         data.services,
         data.status,
         data.end3Port,
-        data.customer,
-    )
+        data.customer
+    );
 }
 
-export default SubscribersData
-export {newSubscriberData}
+export default SubscribersData;
+export { newSubscriberData };

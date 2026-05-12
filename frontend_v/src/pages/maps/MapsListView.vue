@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {onMounted, onUnmounted, ref} from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 import api from "@/services/api";
-import {MapBrief, MapsPage} from "@/pages/maps/maps";
-import {getProtectedImage} from "@/helpers/images";
+import { MapBrief, MapsPage } from "@/pages/maps/maps";
+import { getProtectedImage } from "@/helpers/images";
 
 interface MapListItem extends MapBrief {
     resolvedPreviewImage: string;
@@ -46,7 +46,7 @@ async function getMaps() {
                 ...map,
                 resolvedPreviewImage,
             };
-        }),
+        })
     );
 
     if (requestId !== activeRequestId) {
@@ -60,9 +60,7 @@ async function getMaps() {
     }
 
     const previousPreviewUrls = previewUrls;
-    previewUrls = resolvedResults
-        .map((map) => map.resolvedPreviewImage)
-        .filter((url) => Boolean(url));
+    previewUrls = resolvedResults.map((map) => map.resolvedPreviewImage).filter((url) => Boolean(url));
 
     maps.value = {
         ...response.data,
@@ -94,82 +92,95 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Header />
+    <Header />
 
-  <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-    <div class="flex flex-col gap-6">
-      <div
-        class="relative overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
-      >
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10" />
-        <div class="relative p-6 sm:p-8">
-          <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div class="max-w-3xl">
-              <h1 class="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
-                Карты
-              </h1>
-              <p class="mt-2 text-sm text-gray-600 sm:text-base dark:text-gray-300">
-                Список интерактивных и статических карт с быстрым переходом к просмотру.
-              </p>
-            </div>
-            <div class="font-mono text-sm text-gray-600 dark:text-gray-300">
-              Всего: {{ maps?.count || 0 }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="maps" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <router-link
-          v-for="map in maps.results"
-          :key="map.id"
-          :to="'/maps/' + map.id"
-          class="group overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700/70 dark:bg-gray-900/40"
-        >
-          <div class="relative h-64 overflow-hidden">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <div class="flex flex-col gap-6">
             <div
-              v-if="map.resolvedPreviewImage"
-              class="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
-              :style="{ backgroundImage: `url(${map.resolvedPreviewImage})` }"
-            />
-            <svg v-else class="h-full w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 255" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#334155" />
-            </svg>
-
-          </div>
-
-          <div class="p-5">
-            <div class="flex items-start justify-between gap-3">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ map.name }}</h2>
-              <i class="pi pi-arrow-right text-sm text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+                class="relative overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
+            >
+                <div
+                    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10"
+                />
+                <div class="relative p-6 sm:p-8">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="max-w-3xl">
+                            <h1
+                                class="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100"
+                            >
+                                Карты
+                            </h1>
+                            <p class="mt-2 text-sm text-gray-600 sm:text-base dark:text-gray-300">
+                                Список интерактивных и статических карт с быстрым переходом к просмотру.
+                            </p>
+                        </div>
+                        <div class="font-mono text-sm text-gray-600 dark:text-gray-300">
+                            Всего: {{ maps?.count || 0 }}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <p class="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-              {{ map.description || "Описание отсутствует." }}
-            </p>
-          </div>
-        </router-link>
-      </div>
 
-      <div
-        v-else
-        class="rounded-3xl border border-gray-200/70 bg-white/70 px-6 py-12 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
-      >
-        <ProgressSpinner />
-      </div>
+            <div v-if="maps" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                <router-link
+                    v-for="map in maps.results"
+                    :key="map.id"
+                    :to="'/maps/' + map.id"
+                    class="group overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700/70 dark:bg-gray-900/40"
+                >
+                    <div class="relative h-64 overflow-hidden">
+                        <div
+                            v-if="map.resolvedPreviewImage"
+                            class="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
+                            :style="{ backgroundImage: `url(${map.resolvedPreviewImage})` }"
+                        />
+                        <svg
+                            v-else
+                            class="h-full w-full"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 600 255"
+                            preserveAspectRatio="none"
+                        >
+                            <rect width="100%" height="100%" fill="#334155" />
+                        </svg>
+                    </div>
 
-      <div class="pt-1">
-        <Paginator
-          :always-show="false"
-          :total-records="maps?.count"
-          :rows="perPage"
-          :pt="{
-            root: { class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2' }
-          }"
-          @page="handlePage"
-        />
-      </div>
+                    <div class="p-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ map.name }}</h2>
+                            <i
+                                class="pi pi-arrow-right text-sm text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500"
+                            />
+                        </div>
+                        <p class="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                            {{ map.description || "Описание отсутствует." }}
+                        </p>
+                    </div>
+                </router-link>
+            </div>
+
+            <div
+                v-else
+                class="rounded-3xl border border-gray-200/70 bg-white/70 px-6 py-12 text-center backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+            >
+                <ProgressSpinner />
+            </div>
+
+            <div class="pt-1">
+                <Paginator
+                    :always-show="false"
+                    :total-records="maps?.count"
+                    :rows="perPage"
+                    :pt="{
+                        root: {
+                            class: 'rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2',
+                        },
+                    }"
+                    @page="handlePage"
+                />
+            </div>
+        </div>
     </div>
-  </div>
 
-  <Footer />
+    <Footer />
 </template>

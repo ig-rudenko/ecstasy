@@ -1,8 +1,8 @@
 class LoginUserIsValid {
-    username: boolean = true
-    usernameError: string = ""
-    password: boolean = true
-    passwordError: string = ""
+    username: boolean = true;
+    usernameError: string = "";
+    password: boolean = true;
+    passwordError: string = "";
 
     validateUsername(value: string): void {
         if (value.length <= 2) {
@@ -32,24 +32,22 @@ class LoginUserIsValid {
     get isValid(): boolean {
         return this.username && this.password;
     }
-
 }
 
 class LoginUser {
-    username: string = ""
-    password: string = ""
-    readonly valid: LoginUserIsValid
+    username: string = "";
+    password: string = "";
+    readonly valid: LoginUserIsValid;
 
     constructor() {
-        this.valid = new LoginUserIsValid()
+        this.valid = new LoginUserIsValid();
     }
 
     public get isValid(): boolean {
-        this.valid.validateUsername(this.username)
-        this.valid.validatePassword(this.password)
-        return this.valid.isValid
+        this.valid.validateUsername(this.username);
+        this.valid.validatePassword(this.password);
+        return this.valid.isValid;
     }
-
 }
 
 class User {
@@ -61,7 +59,7 @@ class User {
         public firstName?: string,
         public lastName?: string,
         public email?: string,
-        public dateJoin?: string,
+        public dateJoin?: string
     ) {}
 }
 
@@ -71,8 +69,16 @@ export interface UserTokens {
 }
 
 function createNewUser(data: any): User {
-    return new User(data.id, data.username, data.is_superuser, data.is_staff,
-        data.first_name, data.last_name, data.email, data.date_join)
+    return new User(
+        data.id,
+        data.username,
+        data.is_superuser,
+        data.is_staff,
+        data.first_name,
+        data.last_name,
+        data.email,
+        data.date_join
+    );
 }
 
-export {User, LoginUser, createNewUser}
+export { User, LoginUser, createNewUser };

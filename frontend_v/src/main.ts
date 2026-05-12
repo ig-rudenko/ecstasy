@@ -35,22 +35,22 @@ import {
     SplitButton,
     Textarea,
     ToggleSwitch,
-    Tooltip
+    Tooltip,
 } from "primevue";
 import ToastService from "primevue/toastservice";
 
 import "@/assets/base.css";
-import 'primeicons/primeicons.css';
+import "primeicons/primeicons.css";
 
-import {app} from '@/appInstance';
+import { app } from "@/appInstance";
 import store from "@/store";
 import router from "@/router";
-import setupInterceptors from '@/services/api/setupInterceptors';
-import {initializeOIDC, isOIDCLogin} from "@/oidc";
+import setupInterceptors from "@/services/api/setupInterceptors";
+import { initializeOIDC, isOIDCLogin } from "@/oidc";
 
 setupInterceptors();
-app.directive('ripple', Ripple);
-app.directive('tooltip', Tooltip);
+app.directive("ripple", Ripple);
+app.directive("tooltip", Tooltip);
 app.use(ToastService);
 app.use(ConfirmationService);
 app.use(store);
@@ -91,10 +91,12 @@ app.component("SplitButton", SplitButton);
 app.component("Textarea", Textarea);
 app.component("ToggleSwitch", ToggleSwitch);
 
-initializeOIDC().then(() => {
-    if (isOIDCLogin()) {
-        store.dispatch("auth/oidcLogin");
-    }
-}).finally(() => {
-    app.mount('#app');
-});
+initializeOIDC()
+    .then(() => {
+        if (isOIDCLogin()) {
+            store.dispatch("auth/oidcLogin");
+        }
+    })
+    .finally(() => {
+        app.mount("#app");
+    });

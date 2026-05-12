@@ -1,5 +1,5 @@
 .traceroute-back {
-    background-image: url('/img/background.png');
+    background-image: url("/img/background.png");
     background-repeat: no-repeat;
     background-position: center top;
     background-attachment: fixed;
@@ -14,7 +14,6 @@ html:not(.dark) .traceroute-back {
 html.dark .traceroute-back {
     background-color: #222222;
 }
-
 
 ::-webkit-scrollbar {
     display: inline;
@@ -71,8 +70,7 @@ html.dark .traceroute-back {
     overflow: hidden;
     border: 1px solid rgb(51 65 85 / 0.78);
     border-radius: 1.5rem !important;
-    background:
-        linear-gradient(180deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.94)) !important;
+    background: linear-gradient(180deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.94)) !important;
     color: #cbd5e1;
     box-shadow: 0 24px 60px rgb(2 6 23 / 0.42);
     backdrop-filter: blur(14px);
@@ -128,7 +126,10 @@ html.dark .traceroute-back {
     color: inherit;
     font-size: 0.95rem;
     line-height: 1.2rem;
-    transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease,
+        transform 120ms ease;
 }
 
 .leaflet-control-layers label:hover {

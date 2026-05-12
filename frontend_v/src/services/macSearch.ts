@@ -1,4 +1,4 @@
-import {Ref, ref} from "vue";
+import { Ref, ref } from "vue";
 
 import api from "@/services/api";
 
@@ -6,7 +6,6 @@ export interface MACDetail {
     vendor: string;
     address: string;
 }
-
 
 export interface IPMACInfoResult {
     info: {
@@ -20,7 +19,7 @@ export interface IPMACInfoResult {
             vlan: string;
             device_name: string;
             port: string;
-        }[]
+        }[];
     }[];
     zabbix: {
         name: string;
@@ -28,7 +27,6 @@ export interface IPMACInfoResult {
     }[];
     zabbix_url: string;
 }
-
 
 class MacSearch {
     public lastSearch: Ref<MACDetail | null> = ref(null);
@@ -42,13 +40,13 @@ class MacSearch {
         this.lastSearch.value = null;
         this.getMacDetail(mac);
         try {
-            const resp = await api.get<MACDetail>("/api/v1/tools/mac-vendor/" + mac)
+            const resp = await api.get<MACDetail>("/api/v1/tools/mac-vendor/" + mac);
             this.lastSearch.value = resp.data;
         } catch (error) {
             this.lastSearch.value = {
                 vendor: "Не удалось определить",
-                address: "Не удалось определить"
-            }
+                address: "Не удалось определить",
+            };
         }
         return this.lastSearch.value;
     }
@@ -64,7 +62,6 @@ class MacSearch {
         }
         return this.lastMacDetail.value;
     }
-
 }
 
 const macSearch = new MacSearch();

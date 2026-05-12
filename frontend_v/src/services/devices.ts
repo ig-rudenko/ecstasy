@@ -1,8 +1,7 @@
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import {errorToast} from "@/services/my.toast";
-import {InterfacesCount} from "@/services/interfaces";
-
+import { errorToast } from "@/services/my.toast";
+import { InterfacesCount } from "@/services/interfaces";
 
 export interface Device {
     id?: number;
@@ -33,17 +32,14 @@ export interface ChangePortStatusResponse {
     save: boolean;
 }
 
-
 export class DevicesService {
-
-
     async getDevicesList(): Promise<Device[]> {
         const url = "/api/v1/devices/_all?return-fields=id,name,ip,vendor,group,model,console_url&active=1";
         try {
             let resp = await api.get<Device[]>(url);
             return resp.data;
         } catch (reason: any) {
-            errorToast("Не удалось получить список устройств", errorFmt(reason))
+            errorToast("Не удалось получить список устройств", errorFmt(reason));
             return [];
         }
     }
@@ -53,21 +49,23 @@ export class DevicesService {
             let resp = await api.get<DevicesWithCount>("/api/v1/devices/workload/interfaces");
             return resp.data.devices;
         } catch (reason: any) {
-            errorToast("Не удалось получить список устройств", errorFmt(reason))
+            errorToast("Не удалось получить список устройств", errorFmt(reason));
             return [];
         }
     }
 
     async changePortStatus(deviceName: string, data: ChangePortStatusRequest) {
         try {
-            const resp = await api.post<ChangePortStatusResponse>("/api/v1/devices/" + deviceName + "/port-status", data)
+            const resp = await api.post<ChangePortStatusResponse>(
+                "/api/v1/devices/" + deviceName + "/port-status",
+                data
+            );
             return resp.data;
         } catch (reason: any) {
-            errorToast("Не удалось изменить статус порта", errorFmt(reason))
+            errorToast("Не удалось изменить статус порта", errorFmt(reason));
             throw reason;
         }
     }
-
 }
 
 const devicesService = new DevicesService();

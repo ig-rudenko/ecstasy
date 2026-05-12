@@ -4,7 +4,7 @@ volumes:
 services:
 
   frontend:
-    image: ecstasy-frontend:19.0.0
+    image: ecstasy-frontend:19.0.3
     build: frontend_v
     restart: always
     ports:
@@ -19,7 +19,7 @@ services:
 
   backend:
     build: .
-    image: ecstasy:19.0.0
+    image: ecstasy:19.0.3
     restart: always
     command: /bin/sh /app/run.sh
     env_file:
@@ -48,7 +48,7 @@ services:
 
   celery: &celery
     build: .
-    image: ecstasy:19.0.0
+    image: ecstasy:19.0.3
     restart: always
     command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
     env_file:

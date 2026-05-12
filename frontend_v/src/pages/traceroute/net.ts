@@ -1,30 +1,29 @@
 import "vis-network/dist/dist/vis-network.min.css";
 
-
 const baseVisOptions = {
-    height: '100%',
-    locale: 'ru',
+    height: "100%",
+    locale: "ru",
     configure: {
-        enabled: false
+        enabled: false,
     },
     layout: {
-        randomSeed: 12345
+        randomSeed: 12345,
     },
     edges: {
         smooth: {
             enabled: true,
-            type: "dynamic"
+            type: "dynamic",
         },
         arrows: {
             middle: {
-                enabled: true
-            }
+                enabled: true,
+            },
         },
     },
     interaction: {
         dragNodes: true,
         hideEdgesOnDrag: false,
-        hideNodesOnDrag: false
+        hideNodesOnDrag: false,
     },
     physics: {
         enabled: true,
@@ -33,45 +32,45 @@ const baseVisOptions = {
             damping: 0.89,
             nodeDistance: 130,
             springConstant: 0.05,
-            springLength: 200
+            springLength: 200,
         },
-        solver: 'repulsion',
+        solver: "repulsion",
         stabilization: {
             enabled: true,
             fit: true,
             iterations: 1000,
             onlyDynamicEdges: false,
-            updateInterval: 50
-        }
+            updateInterval: 50,
+        },
     },
     nodes: {
         size: 14,
-        font:{
+        font: {
             multi: true,
-            color:'#eeeeee',
-            size: 12
-        }
-    }
-}
+            color: "#eeeeee",
+            size: 12,
+        },
+    },
+};
 
 export interface TracerouteNodeData {
-    id: string | number
-    label?: string | number
-    title?: string
-    [key: string]: unknown
+    id: string | number;
+    label?: string | number;
+    title?: string;
+    [key: string]: unknown;
 }
 
-type NodeClickHandler = (node: TracerouteNodeData | null) => void
+type NodeClickHandler = (node: TracerouteNodeData | null) => void;
 
 class TracerouteNetwork {
-    private readonly elemID: string
-    public options: any
-    private onNodeClick: NodeClickHandler | null
+    private readonly elemID: string;
+    public options: any;
+    private onNodeClick: NodeClickHandler | null;
 
     constructor(elementId: string) {
-        this.elemID = elementId
-        this.options = baseVisOptions
-        this.onNodeClick = null
+        this.elemID = elementId;
+        this.options = baseVisOptions;
+        this.onNodeClick = null;
     }
 
     private textToDiv(html: string): HTMLDivElement {
@@ -86,24 +85,24 @@ class TracerouteNetwork {
 
     async renderVisualData(nodes: Array<any>, edges: Array<any>) {
         const { Network } = await import("vis-network");
-        const rawNodes = nodes.map(value => ({...value}));
-        const normalizedNodes = rawNodes.map(value => {
+        const rawNodes = nodes.map((value) => ({ ...value }));
+        const normalizedNodes = rawNodes.map((value) => {
             return {
                 ...value,
-                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title
+                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title,
             };
         });
-        const normalizedEdges = edges.map(value => {
+        const normalizedEdges = edges.map((value) => {
             return {
                 ...value,
-                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title
+                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title,
             };
         });
         const network = new Network(
-            (<HTMLDivElement>document.getElementById(this.elemID)),
+            <HTMLDivElement>document.getElementById(this.elemID),
             {
                 nodes: normalizedNodes,
-                edges: normalizedEdges
+                edges: normalizedEdges,
             },
             this.options
         );
@@ -117,11 +116,10 @@ class TracerouteNetwork {
             }
 
             const clickedNodeId = params.nodes[0];
-            const clickedNode = rawNodes.find(node => node.id === clickedNodeId) || null;
+            const clickedNode = rawNodes.find((node) => node.id === clickedNodeId) || null;
             this.onNodeClick(clickedNode);
         });
     }
 }
 
-
-export default TracerouteNetwork
+export default TracerouteNetwork;

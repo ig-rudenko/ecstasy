@@ -5,7 +5,7 @@ import Welcome from "@/pages/home/Welcome.vue";
 </script>
 
 <template>
-  <Header/>
-  <Welcome/>
-  <Footer/>
+    <Header />
+    <Welcome />
+    <Footer />
 </template>

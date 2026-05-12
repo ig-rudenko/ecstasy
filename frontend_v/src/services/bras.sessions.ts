@@ -1,36 +1,36 @@
-import {Ref, ref} from "vue";
+import { Ref, ref } from "vue";
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import {errorToast} from "@/services/my.toast";
+import { errorToast } from "@/services/my.toast";
 
 interface MacAffiliation {
-    mac: string
-    device: string
-    port: string
+    mac: string;
+    device: string;
+    port: string;
 }
 
 interface BrasData {
     BRAS1: {
-        session: string
-        errors: string[]
-    }
+        session: string;
+        errors: string[];
+    };
     BRAS2: {
-        session: string
-        errors: string[]
-    }
+        session: string;
+        errors: string[];
+    };
 }
 
 interface BrasCutSessionResult {
-    errors: string[]
-    portReloadStatus: string
+    errors: string[];
+    portReloadStatus: string;
 }
 
 class BrasSessionsService {
     public dialogVisible: Ref<boolean> = ref(false);
     private lastSessions: Ref<BrasData | null> = ref(null);
     public current: Ref<MacAffiliation | null> = ref(null);
-    public cuttingNow: Ref<boolean> = ref(false)
+    public cuttingNow: Ref<boolean> = ref(false);
     public cutSessionResult: Ref<BrasCutSessionResult | null> = ref(null);
 
     async getSessions(mac: string, deviceName: string, port: string) {
@@ -38,14 +38,14 @@ class BrasSessionsService {
         this.current.value = {
             mac: mac,
             device: deviceName,
-            port: port
+            port: port,
         };
         this.dialogVisible.value = true;
         try {
-            const resp = await api.get<BrasData>("/api/v1/devices/session?mac=" + mac)
-            this.lastSessions.value = resp.data
+            const resp = await api.get<BrasData>("/api/v1/devices/session?mac=" + mac);
+            this.lastSessions.value = resp.data;
         } catch (error: any) {
-            errorToast("Ошибка", errorFmt(error))
+            errorToast("Ошибка", errorFmt(error));
         }
     }
 
@@ -59,21 +59,20 @@ class BrasSessionsService {
 
     async cutSession(reloadPort: boolean) {
         if (!this.current.value) return;
-        this.cuttingNow.value = true
+        this.cuttingNow.value = true;
         let data = {
-            device: reloadPort?this.current.value.device:'',
-            port: reloadPort?this.current.value.port:'',
-            mac: this.currentMac
-        }
+            device: reloadPort ? this.current.value.device : "",
+            port: reloadPort ? this.current.value.port : "",
+            mac: this.currentMac,
+        };
         try {
-            const resp = await api.post<BrasCutSessionResult>("/api/v1/devices/cut-session", data)
+            const resp = await api.post<BrasCutSessionResult>("/api/v1/devices/cut-session", data);
             this.cutSessionResult.value = resp.data;
         } catch (error: any) {
-            errorToast("Ошибка", errorFmt(error))
+            errorToast("Ошибка", errorFmt(error));
         }
-        this.cuttingNow.value = false
+        this.cuttingNow.value = false;
     }
-
 }
 
 const brasSessionsService = new BrasSessionsService();

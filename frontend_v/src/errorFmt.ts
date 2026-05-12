@@ -1,21 +1,19 @@
-import {AxiosError} from "axios";
+import { AxiosError } from "axios";
 
 function getVerboseAxiosError(error: AxiosError<any>): string {
     if (error.response?.data?.detail || error.response?.data?.error) {
         const detail = error.response.data.detail || error.response.data.error;
         // const request_id = error.response.headers["x-api-request-id"]
-        if (typeof detail[0] === "string") return detail // + "\nRequest ID: " + request_id;
+        if (typeof detail[0] === "string") return detail; // + "\nRequest ID: " + request_id;
         if (typeof detail[0] === "object") {
-            let validationErrors = ""
+            let validationErrors = "";
             for (const detailElement of detail) {
-                validationErrors += detailElement.loc[1].toString() + ": " + detailElement.msg.toString() + "<br>"
+                validationErrors += detailElement.loc[1].toString() + ": " + detailElement.msg.toString() + "<br>";
             }
-            return validationErrors // + "\nRequest ID: " + request_id
+            return validationErrors; // + "\nRequest ID: " + request_id
         }
-
     }
-    return error.message
+    return error.message;
 }
 
-
-export default getVerboseAxiosError
+export default getVerboseAxiosError;
