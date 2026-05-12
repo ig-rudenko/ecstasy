@@ -1,6 +1,18 @@
 import api from "@/services/api";
 import {createNewUser, User} from "@/services/user";
 
+function hasStoredAccessToken(): boolean {
+    const data = localStorage.getItem("tokens");
+    if (!data) return false;
+
+    try {
+        const tokens = JSON.parse(data) as {accessToken?: string};
+        return Boolean(tokens.accessToken);
+    } catch {
+        return false;
+    }
+}
+
 export async function getMyselfData(): Promise<User> {
     // console.log(tokenService.getUserTokens())
     const resp = await api.get("/api/v1/accounts/myself")
@@ -11,11 +23,13 @@ class UserService {
     private user: User | null = null;
 
     constructor() {
+        if (!hasStoredAccessToken()) return;
+
         setTimeout(
             () => getMyselfData().then((user: User) => {
             this.user = user
             this.setUser(user)
-        }), 0
+        }).catch(() => this.removeUser()), 0
         )
     }
 

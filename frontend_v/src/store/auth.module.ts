@@ -31,8 +31,11 @@ export const auth = {
     actions: {
         login({ commit }: any, user: LoginUser) {
             return AuthService.login(user).then(
-                (data) => {
-                    if (data.status == 200) commit('loginSuccess');
+                async (data) => {
+                    if (data.status == 200) {
+                        const currentUser = await getMyselfData();
+                        commit('loginSuccess', currentUser);
+                    }
                     return Promise.resolve(data);
                 },
                 error => {
@@ -43,7 +46,8 @@ export const auth = {
         },
         async oidcLogin({commit}: any) {
             await AuthService.oidcLogin();
-            commit('loginSuccess')
+            const currentUser = await getMyselfData();
+            commit('loginSuccess', currentUser)
             return Promise.resolve()
         },
         async logout({ commit }: any) {
@@ -55,15 +59,11 @@ export const auth = {
         }
     },
     mutations: {
-        loginSuccess(state: UserState) {
+        loginSuccess(state: UserState, user: User) {
             state.status.loggedIn = true;
-            getMyselfData().then(
-                user => {
-                    UserService.setUser(user)
-                    state.user = user
-                    state.userTokens = tokenService.getUserTokens()
-                }
-            )
+            UserService.setUser(user)
+            state.user = user
+            state.userTokens = tokenService.getUserTokens()
         },
         loginFailure(state: UserState) {
             state.status.loggedIn = false;
