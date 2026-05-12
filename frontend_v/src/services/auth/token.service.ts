@@ -3,6 +3,7 @@ import axios from "axios";
 import store from "@/store";
 import router from "@/router";
 import {UserTokens} from "@/services/user";
+import {isOIDCLogin, refreshOIDCTokens} from "@/oidc";
 
 
 export async function refreshAccessToken() {
@@ -14,6 +15,18 @@ export async function refreshAccessToken() {
 
     const refreshToken = tokenService.getLocalRefreshToken()
     if (!refreshToken) return;
+
+    if (isOIDCLogin()) {
+        tokenService.isRefreshing = true;
+        const refreshed = await refreshOIDCTokens(true);
+        tokenService.isRefreshing = false;
+
+        if (refreshed) return true;
+
+        await store.dispatch("auth/logout")
+        await router.push("/account/login");
+        return false;
+    }
 
     tokenService.isRefreshing = true;
 

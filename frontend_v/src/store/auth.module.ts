@@ -41,8 +41,8 @@ export const auth = {
                 }
             );
         },
-        async keycloakLogin({commit}: any) {
-            await AuthService.keycloakLogin();
+        async oidcLogin({commit}: any) {
+            await AuthService.oidcLogin();
             commit('loginSuccess')
             return Promise.resolve()
         },

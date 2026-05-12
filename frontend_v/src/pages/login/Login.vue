@@ -5,7 +5,7 @@ import {LoginUser} from "@/services/user";
 import {useStore} from "vuex";
 import getVerboseAxiosError from "@/errorFmt";
 import router from "@/router.ts";
-import keycloakConnector from "@/keycloak.ts";
+import {beginOIDCLogin, oidcState} from "@/oidc";
 
 const store = useStore();
 
@@ -43,8 +43,12 @@ function handleLogin() {
 }
 
 function handleOIDCLogin() {
-  keycloakConnector.keycloakLoginState.setAutoLogin();
-  keycloakConnector.keycloak.login();
+  processing.value = true;
+  beginOIDCLogin("/")
+      .catch(reason => {
+        userError.value = reason instanceof Error ? reason.message : String(reason);
+        processing.value = false;
+      });
 }
 
 async function logout() {
@@ -92,7 +96,7 @@ async function logout() {
 
       <Button type="button" @click="handleLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
               label="Войти" fluid outlined class="w-full mt-4 hover:bg-primary hover:text-primary-contrast rounded-2xl border-0 bg-gray-950"/>
-      <Button v-if="keycloakConnector.enabled" type="button" @click="handleOIDCLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
+      <Button v-if="oidcState.enabled" type="button" @click="handleOIDCLogin" :disabled="processing" :loading="processing" icon="pi pi-sign-in"
               label="Войти через OIDC" fluid text class="w-full hover:bg-primary hover:text-primary-contrast rounded-2xl border-0 bg-gray-950"/>
       <div>
         <i v-tooltip="'Перезапросить'" @click="logout" class="pi pi-wrench text-gray-600 hover:text-gray-100 cursor-pointer"/>

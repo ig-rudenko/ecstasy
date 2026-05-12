@@ -30,6 +30,7 @@ const router = createRouter({
             name: "tools-wtf"
         },
         {path: "/account/login", component: () => import("@/pages/login/Login.vue"), name: "login"},
+        {path: "/oidc/callback", component: () => import("@/pages/login/OIDCCallback.vue"), name: "oidc-callback"},
 
         {path: "/maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps"},
         {path: "/maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view"},
@@ -89,7 +90,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
     // redirect to login page if not logged in and trying to access a restricted page
-    const publicPages = ['/account/login'];
+    const publicPages = ['/account/login', '/oidc/callback'];
     const authRequired = !publicPages.includes(to.path);
     const store = useStore();
 

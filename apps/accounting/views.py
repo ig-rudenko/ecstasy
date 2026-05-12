@@ -34,5 +34,15 @@ class OIDCAPIView(APIView):
                 "url": settings.KEYCLOAK_URL or "",
                 "clientId": settings.KEYCLOAK_CLIENT_ID or "",
                 "realm": settings.KEYCLOAK_REALM or "",
+                "authorizationEndpoint": (
+                    settings.OIDC_OP_AUTHORIZATION_ENDPOINT if settings.KEYCLOAK_ENABLE else ""
+                ),
+                "tokenEndpoint": settings.OIDC_OP_TOKEN_ENDPOINT if settings.KEYCLOAK_ENABLE else "",
+                "userinfoEndpoint": settings.OIDC_OP_USER_ENDPOINT if settings.KEYCLOAK_ENABLE else "",
+                "logoutEndpoint": (
+                    f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout"
+                    if settings.KEYCLOAK_ENABLE
+                    else ""
+                ),
             }
         )

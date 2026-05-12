@@ -3,7 +3,7 @@ import axios from "axios";
 import {LoginUser} from "@/services/user";
 import UserService from "@/services/auth/user.service";
 import {tokenService} from "@/services/auth/token.service";
-import keycloakConnector from "@/keycloak";
+import {clearOIDCLogin, isOIDCLogin} from "@/oidc";
 import pinnedDevices from "@/services/pinnedDevices.ts";
 
 class AuthService {
@@ -16,19 +16,16 @@ class AuthService {
         return response
     }
 
-    async keycloakLogin() {
-        const {access, refresh} = keycloakConnector.getTokens()
-        if (access && refresh) {
-            keycloakConnector.keycloakLoginState.setLogin()  // OIDC используется для входа.
-            tokenService.setTokens(access, refresh)
+    async oidcLogin() {
+        const {accessToken, refreshToken} = tokenService.getUserTokens()
+        if (isOIDCLogin() && accessToken && refreshToken) {
             return Promise.resolve()
         }
         return Promise.reject()
     }
 
     async logout() {
-        keycloakConnector.keycloakLoginState.deleteAutoLogin()
-        keycloakConnector.keycloakLoginState.setLogout()  // Выход из OIDC
+        clearOIDCLogin()
         tokenService.removeTokens();
         UserService.removeUser();
 
