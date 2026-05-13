@@ -59,6 +59,7 @@ PROXY_URL = os.getenv("PROXY_URL", "")
 INSTALLED_APPS = [
     "unfold",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.import_export",
     "django.contrib.admin",
     "django.contrib.auth",
     "mozilla_django_oidc",

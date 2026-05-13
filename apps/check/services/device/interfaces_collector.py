@@ -25,7 +25,7 @@ class DeviceInterfacesGather:
         # Собирать вместе с VLAN
         self.with_vlans = with_vlans
 
-    def collect_current_interfaces(self, make_session_global: bool) -> None:
+    def collect_current_interfaces(self, make_session_global: bool) -> Interfaces:
         """
         ## Собираем список всех интерфейсов на устройстве в данный момент.
 
@@ -43,6 +43,7 @@ class DeviceInterfacesGather:
             self.device_collector.interfaces = self.device_collector.interfaces.filter_by_name(
                 self.device.interface_pattern
             )
+        return self.device_collector.interfaces
 
     def get_last_interfaces(self) -> tuple[Interfaces, datetime]:
         """

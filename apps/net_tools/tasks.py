@@ -52,8 +52,11 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         )
         PeriodicTask.objects.get_or_create(
             name="Опрос интерфейсов оборудования",
-            task=cls.name,
-            crontab=crontab,
+            defaults={
+                "task": cls.name,
+                "crontab": crontab,
+                "enabled": False,
+            },
         )
 
 

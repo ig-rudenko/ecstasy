@@ -20,6 +20,7 @@ class TransportRingAdmin(ModelAdmin):
     autocomplete_fields = ["head", "tail"]
     search_fields = ["name", "description"]
     list_filter = [("status", ChoicesDropdownFilter)]
+    list_select_related = ["head", "tail"]
     fieldsets = (
         ("Основное", {"classes": ("tab",), "fields": ("name", "description", "users")}),
         ("Топология", {"classes": ("tab",), "fields": ("head", "tail", "vlans")}),
@@ -36,4 +37,29 @@ class RingDevsAdmin(ModelAdmin):
     list_filter = [("device", RelatedDropdownFilter), RingNameDropdownFilter]
     search_fields = ["device__name", "ring_name"]
     autocomplete_fields = ["device", "next_dev", "prev_dev"]
-    list_select_related = ["device", "next_dev", "prev_dev"]
+    list_select_related = ["device", "next_dev", "next_dev__device", "prev_dev", "prev_dev__device"]
+
+    def get_queryset(self, request):
+        """Load only fields required for changelist display."""
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("device", "next_dev", "next_dev__device", "prev_dev", "prev_dev__device")
+            .only(
+                "id",
+                "ring_name",
+                "device__id",
+                "device__name",
+                "device__ip",
+                "next_dev__id",
+                "next_dev__ring_name",
+                "next_dev__device__id",
+                "next_dev__device__name",
+                "next_dev__device__ip",
+                "prev_dev__id",
+                "prev_dev__ring_name",
+                "prev_dev__device__id",
+                "prev_dev__device__name",
+                "prev_dev__device__ip",
+            )
+        )

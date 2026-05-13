@@ -1,146 +1,110 @@
-from datetime import timedelta
+from collections import defaultdict
 
-from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
-from apps.app_settings.models import ZabbixConfig
-from apps.check.models import Devices
-from apps.gathering.models import Vlan, VlanPort  # Updated model for VLANs
-from apps.net_tools.models import DevicesInfo
-from devicemanager.dc import DeviceRemoteConnector
-from devicemanager.device import DeviceManager, Interfaces, zabbix_api
-from devicemanager.exceptions import BaseDeviceException
-from devicemanager.vendors.base.types import VlanTableType  # Updated to handle VLANs
+from apps.gathering.models import Vlan, VlanPort
+from devicemanager.remote.exceptions import InvalidMethod
+from devicemanager.vendors.base.types import VlanTableType
+
+from ..collectors import AbstractRealtimeCollector
 
 
-class VlanTableGather:
+class VlanTableGather(AbstractRealtimeCollector):
     """
     # This class is used for collecting VLAN information from the device
     """
 
-    def __init__(self, from_: Devices):
-        if not zabbix_api.zabbix_url:
-            zabbix_api.set_lazy_attributes(ZabbixConfig.load())
+    def collect(self) -> None:
+        table = self._get_vlan_table()
+        self._save_vlan_info(table)
 
-        self.device: Devices = from_
-        self.table: VlanTableType = []  # To hold the VLAN table
-        self.interfaces: Interfaces = Interfaces()
-        self.interfaces_desc: dict = {}
-
-        try:
-            # Create a session with the device and ensure proper closure after usage
-            with DeviceRemoteConnector(
-                ip=self.device.ip,
-                protocol=self.device.port_scan_protocol,
-                auth_obj=self.device.auth_group,
-                snmp_community=self.device.snmp_community or "",
-            ) as session:
-                # Нормализация имени интерфейса необходима из-за разных вариантов записи одного и того же порта.
-                # Например - `1/1` и `1`, `26(C)` и `26(F)`.
-                self.normalize_interface = lambda i: session.normalize_interface_name(
-                    session.normalize_interface_name_realtime(i)
-                )
-
-                # Fetching interfaces and descriptions from the device
-                self.interfaces = self.get_interfaces()
-                self.interfaces_desc = self.format_interfaces(self.interfaces)
-
-                # Gather VLAN information from the device
-                self.table = self.get_vlan_table(session)
-
-            # Save interfaces to the database
-            self.save_interfaces()
-
-        except BaseDeviceException:
-            pass
-
-    @staticmethod
-    def get_vlan_table(session) -> VlanTableType:
+    def _get_vlan_table(self) -> VlanTableType:
         """
         # Fetch the VLAN table from the device session. If a specific method exists for VLANs, call it.
         """
-        if hasattr(session, "get_vlan_table"):
-            return session.get_vlan_table() or []
+        try:
+            if hasattr(self.session, "get_vlan_table"):
+                return self.session.get_vlan_table() or []
+        except InvalidMethod:
+            pass
         return []
 
-    def get_interfaces(self) -> Interfaces:
-        device_manager = DeviceManager.from_model(self.device)
-        device_manager.collect_interfaces(vlans=False, current_status=True, make_session_global=False)
-        return device_manager.interfaces or Interfaces()
-
-    def format_interfaces(self, old_interfaces: Interfaces) -> dict:
-        """
-        # Converts a list of interfaces into a dictionary with interface names as keys and their descriptions as values.
-        """
-        interfaces = {}
-        for line in old_interfaces:
-            normal_interface = self.normalize_interface(line.name)
-            if normal_interface:
-                interfaces[normal_interface] = line.desc
-        return interfaces
-
-    def save_interfaces(self) -> None:
-        """
-        # Saves the interface information to the database.
-        """
-        if not self.interfaces:
-            return
-        try:
-            device_history = DevicesInfo.objects.get(dev_id=self.device.id)
-        except DevicesInfo.DoesNotExist:
-            device_history = DevicesInfo.objects.create(dev=self.device)
-
-        device_history.update_interfaces_state(self.interfaces)
-        device_history.save(update_fields=["interfaces", "interfaces_date"])
-
-    def save_vlan_info(self) -> int:
-        if not self.table:
+    def _save_vlan_info(self, table: VlanTableType) -> int:
+        """Save collected VLANs and their ports using one row per VLAN port."""
+        if not table:
             return 0
 
-        for vlan, port, vlan_desc in self.table:
-            vlan_obj, created = Vlan.objects.get_or_create(
-                vlan=vlan,
-                device=self.device,
-                defaults={"desc": vlan_desc},
-            )
-            if not created:
-                vlan_obj.desc = vlan_desc
-                vlan_obj.save()
+        now = timezone.now()
+        vlan_descriptions: dict[int, str] = {}
+        vlan_ports: dict[int, set[str]] = defaultdict(set)
 
-            VlanPort.objects.update_or_create(
-                vlan=vlan_obj,
-                port=port,
-                defaults={"desc": ""},
-            )
-        return len(self.table)
+        for vlan, ports, vlan_desc in table:
+            vlan_descriptions[vlan] = vlan_desc or ""
+            for port in ports:
+                normalized_port = self.normalize_interface(port) or port
+                vlan_ports[vlan].add(normalized_port)
 
-    def clear_old_records(self, timedelta_=timedelta(hours=48)) -> None:
-        old_vlans = Vlan.objects.filter(
-            device=self.device,
-            datetime__lt=timezone.now() - timedelta_,
-        )
-        VlanPort.objects.filter(vlan__in=old_vlans).delete()
-        old_vlans.delete()
+        vlan_ids = set(vlan_descriptions)
+        with transaction.atomic():
+            existing_vlans = {
+                obj.vlan: obj
+                for obj in Vlan.objects.select_for_update().filter(device=self.device, vlan__in=vlan_ids)
+            }
+            missing_vlans = [
+                Vlan(vlan=vlan, device=self.device, desc=desc, datetime=now)
+                for vlan, desc in vlan_descriptions.items()
+                if vlan not in existing_vlans
+            ]
+            if missing_vlans:
+                Vlan.objects.bulk_create(missing_vlans, batch_size=999)
 
-    @property
-    def bulk_options(self) -> dict:
-        """
-        # Returns options for bulk_create depending on the database configuration.
-        """
-        options = {
-            "update_conflicts": True,
-            "update_fields": ["vlan", "type", "datetime", "desc"],
-            "batch_size": 999,
-        }
+            vlans_to_update = []
+            for vlan, vlan_obj in existing_vlans.items():
+                vlan_obj.desc = vlan_descriptions[vlan]
+                vlan_obj.datetime = now
+                vlans_to_update.append(vlan_obj)
 
-        database_engine = str(settings.DATABASES["default"]["ENGINE"]).rsplit(".", 1)[1]
-        if database_engine in ["postgresql", "sqlite3"]:
-            options["unique_fields"] = ["vlan", "device"]
+            if vlans_to_update:
+                Vlan.objects.bulk_update(vlans_to_update, ["desc", "datetime"], batch_size=999)
 
-        return options
+            Vlan.objects.filter(device=self.device).exclude(vlan__in=vlan_ids).delete()
+            saved_vlans = {
+                obj.vlan: obj for obj in Vlan.objects.filter(device=self.device, vlan__in=vlan_ids)
+            }
 
-    def bulk_create(self) -> int:
-        """
-        # Creates or updates VLAN entries in the database.
-        """
-        return self.save_vlan_info()
+            desired_ports = {
+                (saved_vlans[vlan].id, port): self.interfaces_desc.get(port, "")
+                for vlan, ports in vlan_ports.items()
+                for port in ports
+                if vlan in saved_vlans
+            }
+            existing_ports = {
+                (obj.vlan_id, obj.port): obj
+                for obj in VlanPort.objects.filter(vlan_id__in=[obj.id for obj in saved_vlans.values()])
+            }
+
+            ports_to_create = [
+                VlanPort(vlan_id=vlan_id, port=port, desc=desc)
+                for (vlan_id, port), desc in desired_ports.items()
+                if (vlan_id, port) not in existing_ports
+            ]
+            ports_to_update = []
+            for key, port_obj in existing_ports.items():
+                if key in desired_ports:
+                    desc = desired_ports[key]
+                    if port_obj.desc != desc:
+                        port_obj.desc = desc
+                        ports_to_update.append(port_obj)
+
+            stale_port_ids = [
+                port_obj.id for key, port_obj in existing_ports.items() if key not in desired_ports
+            ]
+            if stale_port_ids:
+                VlanPort.objects.filter(id__in=stale_port_ids).delete()
+            if ports_to_create:
+                VlanPort.objects.bulk_create(ports_to_create, batch_size=999)
+            if ports_to_update:
+                VlanPort.objects.bulk_update(ports_to_update, ["desc"], batch_size=999)
+
+        return len(desired_ports)

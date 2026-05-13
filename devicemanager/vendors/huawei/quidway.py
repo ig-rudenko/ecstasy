@@ -216,7 +216,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             # display vlan
 
-         :return: ```[ ('vid', 'port,port,port','vlan name',), ... ]```
+         :return: ```[ ('vid', ['port', 'port'], 'vlan name'), ... ]```
         """
         vlan_str = self.send_command("show vlan", expect_command=False)
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
@@ -276,9 +276,8 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 # Remove (U) or (D) at the end
                 port_clean = re.sub(r"\([UD]\)$", "", port_part)
                 cleaned_ports.append(port_clean)
-            ports_str = ", ".join(cleaned_ports)
             description = desc_vlans.get(vid, "")
-            result.append((vid, ports_str, description))
+            result.append((vid, cleaned_ports, description))
 
         return result
 

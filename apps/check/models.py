@@ -556,7 +556,7 @@ class BulkDeviceCommandExecutionResult(models.Model):
 
     class Meta:
         db_table = "bulk_device_command_execution_results"
-        ordering = ("device_name", "id")
+        ordering = ("-created_at",)
         verbose_name = "Bulk command execution result"
         verbose_name_plural = "Bulk command execution results"
         constraints = [

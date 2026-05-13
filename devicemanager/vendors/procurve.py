@@ -56,6 +56,9 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
+        self.send_command("terminal length 1000", expect_command=False)
+        self.send_command("terminal width 1000", expect_command=False)
+
         sys_info = self.send_command("show system-information", before_catch="General System Information")
         self.mac = self.find_or_empty(r"Base MAC Addr\s+: (\S+)", sys_info)
         self.model = ""

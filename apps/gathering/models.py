@@ -26,17 +26,20 @@ class MacAddress(models.Model):
 
 class Vlan(models.Model):
     vlan = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(4096)])
-    desc = models.CharField(max_length=50)
+    desc = models.CharField(max_length=64, blank=True)
     device = models.ForeignKey("check.Devices", on_delete=models.CASCADE)
     datetime = models.DateTimeField(auto_now=True)  # Обновляется при каждом сохранении
 
     class Meta:
         db_table = "vlans"
         unique_together = ("vlan", "device")  # Уникальность по двум полям
-        indexes = [models.Index(fields=("vlan",), name="vlan_index")]
+        indexes = [
+            models.Index(fields=("vlan",), name="vlan_index"),
+            models.Index(fields=("device", "datetime"), name="vlan_device_dt_index"),
+        ]
 
     def __str__(self):
-        return f"{self.device} VLAN {self.vlan} - {self.desc}"
+        return f"{self.device.name} VLAN {self.vlan} - {self.desc}"
 
 
 class VlanPort(models.Model):
@@ -47,6 +50,9 @@ class VlanPort(models.Model):
     class Meta:
         db_table = "vlans_ports"
         unique_together = ("vlan", "port")
+        indexes = [
+            models.Index(fields=("port",), name="vlan_port_index"),
+        ]
 
     def __str__(self):
         return self.port

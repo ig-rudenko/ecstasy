@@ -9,9 +9,16 @@ class FindDescConfig(AppConfig):
     def ready(self):
         def register_task(sender, **kwargs):
             # pylint: disable-next=import-outside-toplevel
-            from .tasks import ConfigurationGatherTask, MacTablesGatherTask
+            from .tasks import (
+                ConfigurationGatherTask,
+                DevicesComplexGatherTask,
+                MacTablesGatherTask,
+                VlanTablesGatherTask,
+            )
 
             ConfigurationGatherTask.register_task()
             MacTablesGatherTask.register_task()
+            VlanTablesGatherTask.register_task()
+            DevicesComplexGatherTask.register_task()
 
         post_migrate.connect(register_task, sender=self)

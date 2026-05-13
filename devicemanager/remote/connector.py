@@ -1,7 +1,7 @@
 import os
 import re
 from collections.abc import Sequence
-from typing import Literal, Never
+from typing import Any, Literal, Never
 
 import requests
 from ping3 import ping
@@ -25,6 +25,7 @@ from devicemanager.vendors.base.types import (
     PortInfoType,
     SetDescriptionResult,
     SystemInfo,
+    VlanTableType,
 )
 
 from ..device_connector.factory import DEFAULT_POOL_SIZE
@@ -112,7 +113,7 @@ class RemoteDevice(
     def _delete_pool(self):
         self._session.delete(f"{self._remote_connector_address}/pool/{self.ip}", timeout=3)
 
-    def _remote_call(self, method: str, **params):
+    def _remote_call(self, method: str, **params) -> Any:
         url = f"{self._remote_connector_address}/connector/{self.ip}/{method}"
         try:
             resp = self._session.post(
@@ -238,3 +239,12 @@ class RemoteDevice(
 
     def execute_commands_list(self, command_list: list[RemoteCommand]) -> list[str]:
         return self._remote_call("execute_commands_list", commands=command_list)
+
+    def normalize_interface_name_realtime(self, intf: str) -> str:
+        return self._remote_call("normalize_interface_name_realtime", intf=intf)
+
+    def normalize_interface_name(self, intf: str) -> str:
+        return self._remote_call("normalize_interface_name", intf=intf)
+
+    def get_vlan_table(self) -> VlanTableType:
+        return self._remote_call("get_vlan_table")

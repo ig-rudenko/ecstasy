@@ -2,7 +2,7 @@ from check.api.serializers import DevicesSerializer
 from check.models import Profile
 from django.core.cache import cache
 from django.db.models import QuerySet
-from gathering.models import Vlan, VlanPort
+from gathering.models import Vlan
 from net_tools.models import DevicesInfo
 from rest_framework.serializers import BaseSerializer
 
@@ -15,20 +15,20 @@ class DevicesVlanWorkloadCollector:
     def get_vlans_load(device) -> dict:
         """
         ## Возвращает список VLAN и нагрузку на порты.
-        :param device: Данные о устройстве.
+        :param device: Данные об устройстве.
         :return: Список VLAN и их загрузки по портам.
         """
-        vlans = Vlan.objects.filter(device_id=device.dev.id)
+        vlans = list(Vlan.objects.filter(device_id=device["dev__id"]).prefetch_related("ports"))
 
         vlan_ports_data = []
         for vlan in vlans:
-            vlan_ports = VlanPort.objects.filter(vlan=vlan)
             vlan_ports_data.append(
                 {
                     "vlan": vlan.vlan,
                     "vlan_desc": vlan.desc,
                     "ports": [
-                        {"port": port.port, "desc_port": port.port or "No description"} for port in vlan_ports
+                        {"port": port.port, "desc_port": port.desc or "No description"}
+                        for port in vlan.ports.all()
                     ],
                 }
             )
@@ -53,24 +53,26 @@ class DevicesVlanWorkloadCollector:
             "devices": [],
         }
 
-        for device_info in data["devices"]:
+        for device_info in data["devices"]:  # noqa
             if device_info["group"] not in groups_names:
                 user_data["devices_count"] -= 1
             else:
-                user_data["devices"].append(device_info)
+                user_data["devices"].append(device_info)  # noqa
         return user_data
 
     def get_all_device_vlans_workload(self, from_cache=True):
+        """Return cached VLAN workload data for all active devices."""
         cache_value = cache.get(self.cache_key)
 
         if not cache_value or not from_cache:
             queryset = self.get_queryset()
-            cache_value = {
-                "devices_count": len(queryset),
-                "devices": [
+            devices = []
+            for dev_info in queryset:
+                vlans_load = self.get_vlans_load(dev_info)
+                devices.append(
                     {
-                        "vlans_count": self.get_vlans_load(dev_info)["vlan_count"],
-                        "vlans": self.get_vlans_load(dev_info)["vlans"],
+                        "vlans_count": vlans_load["vlan_count"],
+                        "vlans": vlans_load["vlans"],
                         "ip": dev_info["dev__ip"],
                         "name": dev_info["dev__name"],
                         "vendor": dev_info["dev__vendor"],
@@ -78,8 +80,10 @@ class DevicesVlanWorkloadCollector:
                         "model": dev_info["dev__model"],
                         "port_scan_protocol": dev_info["dev__port_scan_protocol"],
                     }
-                    for dev_info in queryset
-                ],
+                )
+            cache_value = {
+                "devices_count": len(devices),
+                "devices": devices,
             }
             cache.set(self.cache_key, cache_value, timeout=self.cache_seconds)
 
@@ -87,12 +91,14 @@ class DevicesVlanWorkloadCollector:
 
     @staticmethod
     def get_queryset() -> QuerySet:
+        """Return devices that have collected VLAN interface data."""
         return (
             DevicesInfo.objects.filter(vlans__isnull=False, dev__active=True)
             .select_related("dev", "dev__group")
             .order_by("dev__name")
             .values(
                 "vlans",
+                "dev__id",
                 "dev__ip",
                 "dev__name",
                 "dev__vendor",

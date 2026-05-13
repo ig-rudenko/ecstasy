@@ -4,7 +4,8 @@ from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.contrib.admin.views.main import ChangeList
 from django.core.paginator import InvalidPage
-from django.db.models import Q
+from django.db.models import Q, QuerySet
+from django.http import HttpRequest
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter, RelatedDropdownFilter
 
@@ -69,6 +70,7 @@ class MacAddressesAdmin(ModelAdmin):
     list_filter_submit = True
     paginator = CachedLargeTablePaginator
     list_per_page = 25
+    autocomplete_fields = ["device"]
 
     @admin.display(description="MAC")
     def mac_address(self, obj: MacAddress):
@@ -113,7 +115,32 @@ class VlansAdmin(ModelAdmin):
     list_select_related = ["device"]
     list_filter = (("device", RelatedDropdownFilter), ("datetime", RangeDateTimeFilter))
     list_filter_submit = True
+    list_per_page = 25
+    autocomplete_fields = ["device"]
     paginator = LargeTablePaginator
+
+
+class VlanDeviceDropdownFilter(RelatedDropdownFilter):
+    """Filter by related VLAN with optimized label loading."""
+
+    def field_choices(self, field, request: HttpRequest, model_admin: ModelAdmin):
+        """Return VLAN choices with preloaded device to avoid N+1 in `Vlan.__str__`."""
+        del field
+        vlan_ids = model_admin.get_queryset(request).order_by().values_list("vlan_id", flat=True).distinct()
+        vlans = (
+            Vlan.objects.filter(pk__in=vlan_ids)
+            .select_related("device")
+            .only("id", "vlan", "desc", "device__name")
+            .order_by("device__name", "vlan")
+        )
+        return [(vlan.pk, str(vlan)) for vlan in vlans]
+
+    def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet | None:
+        """Apply selected filter value to the changelist queryset."""
+        qs = super().queryset(request, queryset)
+        if qs is not None:
+            return qs.select_related("vlan__device")
+        return qs
 
 
 @admin.register(VlanPort)
@@ -121,9 +148,10 @@ class VlanPortsAdmin(ModelAdmin):
     compressed_fields = True
     list_display = ["vlan_verbose", "vlan__device", "port", "desc"]
     search_fields = ["vlan__vlan", "port", "vlan__device__name"]
-    list_select_related = ["vlan", "vlan__device__name"]
-    list_filter = (("vlan__device", RelatedDropdownFilter), ("vlan", RelatedDropdownFilter))
+    list_filter = (("vlan__device", RelatedDropdownFilter), ("vlan", VlanDeviceDropdownFilter))
+    list_per_page = 25
     list_filter_submit = True
+    autocomplete_fields = ("vlan",)
     paginator = LargeTablePaginator
 
     def get_queryset(self, request):
