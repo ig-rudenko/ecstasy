@@ -59,6 +59,7 @@
 import { defineComponent } from "vue";
 import { AxiosResponse } from "axios";
 
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 
 interface PortInfo {
@@ -83,8 +84,8 @@ export default defineComponent({
             showDialog: false,
             vlanInfo: null as VlanInfo[] | null,
             error: {
-                status: null,
-                msg: null,
+                status: null as number | null,
+                msg: null as string | null,
             },
         };
     },
@@ -96,8 +97,8 @@ export default defineComponent({
                 this.vlanInfo.sort((a, b) => a.vlan - b.vlan);
             })
             .catch((reason) => {
-                this.error.status = reason.response.status;
-                this.error.msg = reason.response.data;
+                this.error.status = getErrorStatus(reason) || null;
+                this.error.msg = errorFmt(reason);
             });
     },
 

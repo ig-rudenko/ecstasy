@@ -27,6 +27,10 @@ class ConfigFileSwaggerSerializer(SwaggerSerializer):
     modTime = serializers.DateTimeField(format="%H:%M %d.%m.%Y")
 
 
+class CollectConfigResponseSwaggerSerializer(SwaggerSerializer):
+    status = serializers.CharField()
+
+
 class DevicesConfigsSwaggerSerializer(SwaggerSerializer):
     files = ConfigFileSwaggerSerializer(many=True)
     group = serializers.CharField(source="group.name")
@@ -155,16 +159,35 @@ class InterfacesListSwaggerSerializer(SwaggerSerializer):
     collected = serializers.DateTimeField()
 
 
+class ZabbixMapSwaggerSerializer(SwaggerSerializer):
+    sysmapid = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class DeviceZabbixInfoSwaggerSerializer(SwaggerSerializer):
+    description = serializers.CharField()
+    monitoringAvailable = serializers.BooleanField()
+    inventory = serializers.DictField()
+    maps = ZabbixMapSwaggerSerializer(many=True)
+
+
 class DeviceInfoSwaggerSerializer(SwaggerSerializer):
     deviceName = serializers.CharField()
     deviceIP = serializers.CharField()
+    vendor = serializers.CharField(allow_null=True)
+    model = serializers.CharField(allow_null=True)
+    serialNumber = serializers.CharField(allow_null=True)
+    osVersion = serializers.CharField(allow_null=True)
     elasticStackLink = serializers.URLField()
     zabbixHostID = serializers.CharField()
-    zabbixInfo = serializers.DictField()
+    zabbixURL = serializers.URLField()
+    zabbixInfo = DeviceZabbixInfoSwaggerSerializer()
     permission = serializers.IntegerField(min_value=0, max_value=4)
-    coords = serializers.ListField(child=serializers.FloatField(), min_length=2, max_length=2)
-    uptime = serializers.IntegerField(min_value=-1)
-    consoleURL = serializers.CharField()
+    coords = serializers.ListField(
+        child=serializers.FloatField(), min_length=2, max_length=2, allow_null=True
+    )
+    uptime = serializers.IntegerField()
+    consoleURL = serializers.URLField()
 
 
 # MAC List

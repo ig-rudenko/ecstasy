@@ -6,19 +6,24 @@ from rest_framework.views import APIView
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 from .serializers import UserPermissionsSerializer, UserSerializer
+from .swagger.schemas import myself_permissions_api_doc, myself_user_api_doc, oidc_api_doc
 
 
 class MyselfAPIView(UserAuthenticatedAPIView):
+    pagination_class = None
     serializer_class = UserSerializer
 
+    @myself_user_api_doc
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.current_user)
         return Response(serializer.data)
 
 
 class MyselfPermissionsAPIView(UserAuthenticatedAPIView):
+    pagination_class = None
     serializer_class = UserPermissionsSerializer
 
+    @myself_permissions_api_doc
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.current_user)
         return Response(serializer.data)
@@ -27,6 +32,7 @@ class MyselfPermissionsAPIView(UserAuthenticatedAPIView):
 class OIDCAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @oidc_api_doc
     def get(self, request, *args, **kwargs):
         return Response(
             {

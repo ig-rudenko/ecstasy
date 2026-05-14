@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from apps.app_settings.models import LogsElasticStackSettings
 from devicemanager.device import DeviceManager, zabbix_api
+from ecstasy_project.error_handler import DeviceUnavailable
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 from ... import models
@@ -37,16 +38,16 @@ from ..swagger.schemas import (
     device_info_api_doc,
     devices_interfaces_workload_list_api_doc,
     devices_list_api_doc,
+    get_device_by_zabbix_serializer_api_doc,
     interfaces_list_api_doc,
     interfaces_workload_api_doc,
-    get_device_by_zabbix_serializer_api_doc,
 )
 from .base import DeviceAPIView
 
 
 class DevicesListCreateAPIView(UserAuthenticatedAPIView, ListCreateAPIView):
     """
-    ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
+    Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
     """
 
     serializer_class = DevicesSerializer
@@ -57,7 +58,7 @@ class DevicesListCreateAPIView(UserAuthenticatedAPIView, ListCreateAPIView):
 
     def get_queryset(self):
         """
-        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        Возвращает queryset всех устройств, к которым у пользователя есть доступ
         через Profile.devices_groups или AccessGroup (users / user_groups),
         при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
@@ -81,16 +82,17 @@ class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
 @method_decorator(vary_on_cookie, name="dispatch")
 class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
     """
-    ## Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
+    Этот класс представляет собой ListAPIView, который возвращает список всех устройств в базе данных.
     """
 
+    pagination_class = None
     serializer_class = DevicesSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceFilter
 
     def get_queryset(self):
         """
-        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        Возвращает queryset всех устройств, к которым у пользователя есть доступ
         через Profile.devices_groups или AccessGroup (users / user_groups),
         при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
@@ -135,7 +137,7 @@ class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        ## Возвращаем список всех устройств, без пагинации
+        Возвращаем список всех устройств, без пагинации
         """
         data = self.filter_queryset(self.get_queryset())
         return_fields = self.get_return_fields()
@@ -165,12 +167,13 @@ class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
 
 @method_decorator(devices_interfaces_workload_list_api_doc, name="get")
 class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
+    pagination_class = None
     filter_backends = [DjangoFilterBackend]
     filterset_class = DeviceFilter
 
     def get_queryset(self):
         """
-        ## Возвращает queryset всех устройств, к которым у пользователя есть доступ
+        Возвращает queryset всех устройств, к которым у пользователя есть доступ
         через Profile.devices_groups или AccessGroup (users / user_groups),
         при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
@@ -193,10 +196,12 @@ class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
 
 @method_decorator(interfaces_list_api_doc, name="get")
 class DeviceInterfacesAPIView(DeviceAPIView):
+    pagination_class = None
+
     @except_connection_errors
     def get(self, request, *args, **kwargs) -> Response:
         """
-        ## Вывод интерфейсов оборудования
+        Вывод интерфейсов оборудования
 
         Пример вывода:
 
@@ -277,7 +282,7 @@ class DeviceInterfacesAPIView(DeviceAPIView):
 @method_decorator(device_info_api_doc, name="get")
 class DeviceInfoAPIView(DeviceAPIView):
     """
-    ## Возвращаем общую информацию оборудования
+    Возвращаем общую информацию оборудования
 
     Пример вывода:
 
@@ -303,8 +308,8 @@ class DeviceInfoAPIView(DeviceAPIView):
             },
             "permission": 3,
             "coords": [
-                "23.322332",
-                "32.233223"
+                23.322332,
+                32.233223
             ],
             "consoleURL": "",
             "uptime": 23434,
@@ -351,8 +356,10 @@ class DeviceInfoAPIView(DeviceAPIView):
 
 class DeviceVlanInfoAPIView(DeviceAPIView):
     """
-    ## Возвращаем информацию о VLAN-ах
+    Возвращаем информацию о VLAN-ах
     """
+
+    pagination_class = None
 
     serializer_class = DeviceVlanSerializer
 
@@ -365,7 +372,7 @@ class DeviceVlanInfoAPIView(DeviceAPIView):
 
 class DeviceStatsInfoAPIView(DeviceAPIView):
     """
-    ## Возвращаем данные CPU, FLASH, RAM, TEMP
+    Возвращаем данные CPU, FLASH, RAM, TEMP
 
     Пример вывода:
 
@@ -386,13 +393,15 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
         }
     """
 
+    pagination_class = None
+
     @except_connection_errors
     def get(self, request, *args, **kwargs) -> Response:
         device: models.Devices = self.get_object()
 
         # Если оборудование недоступно
         if not device.available:
-            return Response({"detail": "Device unavailable"}, status=500)
+            raise DeviceUnavailable({"detail": "Device unavailable", "device": device.name})
 
         device_stats: dict = get_device_stats(device) or {}
 
@@ -404,7 +413,7 @@ class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
     @get_device_by_zabbix_serializer_api_doc
     def get(self, request, host_id: str):
         """
-        ## Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy.
+        Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy.
 
         :param request: Запрос.
         :param host_id: Идентификатор узла сети в Zabbix.

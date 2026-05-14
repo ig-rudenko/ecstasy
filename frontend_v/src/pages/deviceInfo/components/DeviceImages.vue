@@ -400,8 +400,7 @@ export default defineComponent({
                     this.deleteForm.show = false;
                 })
                 .catch((reason: any) => {
-                    this.deleteForm.notification.error =
-                        reason.response?.data?.detail || reason.response?.data || "Не удалось удалить файл";
+                    this.deleteForm.notification.error = errorFmt(reason) || "Не удалось удалить файл";
                 });
         },
         removeElement(array: Array<MediaFileInfo>, element: MediaFileInfo | null) {

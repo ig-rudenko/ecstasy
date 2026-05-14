@@ -29,6 +29,7 @@ class UserDeviceActionsAPIView(ListModelMixin, DeviceAPIView):
 
 @method_decorator(set_device_viewings_api_doc, name="post")
 class ViewingDeviceAPIView(DeviceAPIView):
+    pagination_class = None
     serializer_class = DeviceViewingsSerializer
 
     def get(self, request, *args, **kwargs):

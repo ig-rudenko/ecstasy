@@ -41,6 +41,7 @@
 <script>
 import Asterisk from "./Asterisk.vue";
 
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 
@@ -125,8 +126,8 @@ export default {
                     this.nextPage += 1;
                 })
                 .catch((reason) => {
-                    this.error.status = reason.response.status;
-                    this.error.message = reason.response.data;
+                    this.error.status = getErrorStatus(reason);
+                    this.error.message = errorFmt(reason);
                 })
                 .finally(() => {
                     this.isLoading = false;

@@ -46,7 +46,7 @@
                             v-if="generalInfo.elasticStackLink"
                             :logs-url="generalInfo.elasticStackLink"
                         />
-                        <MapCoordLink v-if="generalInfo.coords.length" :coords="generalInfo.coords" />
+                        <MapCoordLink v-if="generalInfo.coords" :coords="generalInfo.coords" />
                         <ConfigFilesSwitchButton :config-files="configFiles" />
                         <DeviceImages :device-name="deviceName" />
                         <ZabbixMapsDropdown
@@ -309,6 +309,7 @@ import { HardwareStats } from "./hardwareStats";
 import { DeviceInterface, InterfacesCount, newInterfacesList, reconcileInterfacesList } from "@/services/interfaces";
 import Footer from "@/components/Footer.vue";
 import Header from "@/components/Header.vue";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import { errorToast } from "@/services/my.toast.ts";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
 import Commands from "@/pages/deviceInfo/components/Commands.vue";
@@ -616,11 +617,8 @@ export default defineComponent({
         },
 
         showToastError(reason: any) {
-            errorToast(
-                `ERROR! status: ${reason.response.status}`,
-                "Причина: " + (reason.response.data?.detail || reason.response.data?.error),
-                10000
-            );
+            const status = getErrorStatus(reason);
+            errorToast(status ? `ERROR! status: ${status}` : "ERROR!", "Причина: " + errorFmt(reason), 10000);
         },
     },
 });

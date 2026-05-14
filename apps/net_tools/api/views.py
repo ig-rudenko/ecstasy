@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from pyvis.network import Network
 from requests import RequestException
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -17,6 +18,7 @@ from apps.app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from apps.check.models import Devices
 from apps.check.services.filters import filter_devices_qs_by_user
 from devicemanager.device import zabbix_api
+from ecstasy_project.error_handler import ExternalServiceProblem
 
 from ..models import VlanName
 from ..services.arp_find import find_mac_or_ip
@@ -61,13 +63,15 @@ def get_vendor(request: Request, mac: str) -> Response:
         proxies = {"http": settings.PROXY_URL, "https": settings.PROXY_URL}
     try:
         resp = requests_lib.get("https://api.maclookup.app/v2/macs/" + mac, timeout=2, proxies=proxies)
-    except requests_lib.RequestException:
-        return Response({"detail": "Got exception!"}, status=500)
+    except requests_lib.RequestException as exc:
+        raise ExternalServiceProblem(
+            {"detail": "MAC vendor lookup service is unavailable.", "mac": mac}
+        ) from exc
 
     if resp.status_code == 400:
-        return Response({"detail": resp.json().get("error", "Invalid MAC")}, status=400)
+        raise ValidationError({"mac": resp.json().get("error", "Invalid MAC")})
     if resp.status_code != 200:
-        return Response({"detail": "Invalid MAC"}, status=400)
+        raise ValidationError({"mac": "Invalid MAC"})
 
     data = resp.json()
     return Response(
@@ -96,7 +100,7 @@ def find_by_description(request):
         try:
             re.compile(pattern)
         except re.PatternError as exc:
-            return Response(data={"error": f"Ошибка в регулярном выражении: {exc}"}, status=400)
+            raise ValidationError({"pattern": f"Ошибка в регулярном выражении: {exc}"}) from exc
 
     devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
     finder = Finder(devices_qs)

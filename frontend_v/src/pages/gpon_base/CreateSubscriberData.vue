@@ -782,6 +782,7 @@ import StepMenu from "./components/StepMenu.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 
 import api from "@/services/api";
+import { getErrorFields, getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
 import Header from "@/components/Header.vue";
@@ -789,6 +790,7 @@ import Footer from "@/components/Footer.vue";
 
 export default {
     name: "Gpon_base.vue",
+    emits: ["successfullyCreated", "failedCreated"],
     components: {
         Footer,
         Header,
@@ -931,37 +933,37 @@ export default {
         ontIDError() {
             if (this.errors && this.errors.ont_id) {
                 this.formState.thirdStep.ont_id.valid = false;
-                return this.errors.ont_id.join(" ");
+                return this.errors.ont_id;
             }
         },
         ontMACError() {
             if (this.errors && this.errors.ont_mac) {
-                return this.errors.ont_mac.join(" ");
+                return this.errors.ont_mac;
             }
         },
         ontSerialError() {
             if (this.errors && this.errors.ont_serial) {
-                return this.errors.ont_serial.join(" ");
+                return this.errors.ont_serial;
             }
         },
         transitError() {
             if (this.errors && this.errors.transit) {
-                return this.errors.transit.join(" ");
+                return this.errors.transit;
             }
         },
         orderError() {
             if (this.errors && this.errors.order) {
-                return this.errors.order.join(" ");
+                return this.errors.order;
             }
         },
         ontIPError() {
             if (this.errors && this.errors.ip) {
-                return this.errors.ip.join(" ");
+                return this.errors.ip;
             }
         },
         connectedDatetimeError() {
             if (this.errors && this.errors.connected_at) {
-                return this.errors.connected_at.join(" ");
+                return this.errors.connected_at;
             }
         },
         connectionAddressError() {
@@ -983,37 +985,37 @@ export default {
 
         customerFirstNameError() {
             if (this.errors && this.errors.customer && this.errors.customer.firstName) {
-                return this.errors.customer.firstName.join(" ");
+                return this.errors.customer.firstName;
             }
         },
         customerSurnameError() {
             if (this.errors && this.errors.customer && this.errors.customer.surname) {
-                return this.errors.customer.surname.join(" ");
+                return this.errors.customer.surname;
             }
         },
         customerLastNameError() {
             if (this.errors && this.errors.customer && this.errors.customer.lastName) {
-                return this.errors.customer.lastName.join(" ");
+                return this.errors.customer.lastName;
             }
         },
         customerCompanyNameError() {
             if (this.errors && this.errors.customer && this.errors.customer.companyName) {
-                return this.errors.customer.companyName.join(" ");
+                return this.errors.customer.companyName;
             }
         },
         customerContractError() {
             if (this.errors && this.errors.customer && this.errors.customer.contract) {
-                return this.errors.customer.contract.join(" ");
+                return this.errors.customer.contract;
             }
         },
         customerPhoneError() {
             if (this.errors && this.errors.customer && this.errors.customer.phone) {
-                return this.errors.customer.phone.join(" ");
+                return this.errors.customer.phone;
             }
         },
         customerTypeError() {
             if (this.errors && this.errors.customer && this.errors.customer.type) {
-                return this.errors.customer.type.join(" ");
+                return this.errors.customer.type;
             }
         },
     },
@@ -1136,10 +1138,11 @@ export default {
                     }
                 })
                 .catch((reason) => {
-                    if (reason.response.status === 400) {
-                        this.errors = reason.response.data;
+                    const status = getErrorStatus(reason);
+                    if (status === 400) {
+                        this.errors = getErrorFields(reason);
                     } else {
-                        this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}` };
+                        this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${status}` };
                         this.$emit("failedCreated");
                     }
                 });

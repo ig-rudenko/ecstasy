@@ -25,7 +25,6 @@
             </Message>
 
             <section
-                v-if="filteredActions?.length"
                 class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55"
             >
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -123,6 +122,7 @@
 </template>
 
 <script lang="ts">
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { defineComponent } from "vue";
 import { PaginatedResponse } from "@/types/paginator";
@@ -200,19 +200,18 @@ export default defineComponent({
             this.showDialog = true;
             this.error.status = null;
             this.error.msg = null;
-            this.fetchActions(1)
-                .catch((reason) => {
-                    this.error.status = reason.response.status;
-                    this.error.msg = reason.response.data;
-                    this.isLoading = false;
-                });
+            this.fetchActions(1).catch((reason) => {
+                this.error.status = getErrorStatus(reason) || null;
+                this.error.msg = errorFmt(reason);
+                this.isLoading = false;
+            });
         },
         onPageChange(event: { page: number; rows: number }) {
             this.pagination.rows = event.rows;
             const targetPage = event.page + 1;
             this.fetchActions(targetPage).catch((reason) => {
-                this.error.status = reason.response.status;
-                this.error.msg = reason.response.data;
+                this.error.status = getErrorStatus(reason) || null;
+                this.error.msg = errorFmt(reason);
                 this.isLoading = false;
             });
         },

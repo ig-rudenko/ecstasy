@@ -174,7 +174,7 @@ export default defineComponent({
 <template>
     <div class="flex flex-col gap-4">
         <div
-            class="flex flex-col gap-3 rounded-[1.5rem] border border-sky-200/80 bg-white/75 p-4 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.45)] dark:border-sky-900/70 dark:bg-slate-950/45 sm:flex-row sm:items-center sm:justify-between"
+            class="flex flex-col gap-3 rounded-3xl border border-sky-200/80 bg-white/75 p-4 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.45)] dark:border-sky-900/70 dark:bg-slate-950/45 sm:flex-row sm:items-center sm:justify-between"
         >
             <div class="min-w-0">
                 <div class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
@@ -194,9 +194,9 @@ export default defineComponent({
             />
         </div>
 
-        <Message v-if="error" severity="error" class="rounded-2xl!">
-            {{ error }}
-        </Message>
+        <div class="flex">
+          <Message v-if="error" severity="error" class="rounded-2xl!"><div v-html="error"></div></Message>
+        </div>
 
         <div
             v-if="diagnosticsStarted"
@@ -355,7 +355,7 @@ export default defineComponent({
 
         <div
             v-else
-            class="rounded-[1.5rem] border border-dashed border-slate-200/80 bg-white/60 px-4 py-10 text-center dark:border-slate-700/80 dark:bg-slate-950/20"
+            class="rounded-3xl border border-dashed border-slate-200/80 bg-white/60 px-4 py-10 text-center dark:border-slate-700/80 dark:bg-slate-950/20"
         >
             <div class="mx-auto max-w-md">
                 <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">

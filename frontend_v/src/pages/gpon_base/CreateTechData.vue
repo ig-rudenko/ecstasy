@@ -496,6 +496,7 @@ import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 
 import api from "@/services/api";
+import { getErrorFields, getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
@@ -739,10 +740,11 @@ export default {
                     }
                 })
                 .catch((reason) => {
-                    if (reason.response.status === 400) {
-                        this.errors = reason.response.data;
-                    } else if (reason.response.status >= 500) {
-                        this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${reason.response.status}` };
+                    const status = getErrorStatus(reason);
+                    if (status === 400) {
+                        this.errors = getErrorFields(reason);
+                    } else if (status && status >= 500) {
+                        this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${status}` };
                     }
                 });
         },

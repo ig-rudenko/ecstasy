@@ -599,6 +599,7 @@
 import Asterisk from "./components/Asterisk.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress, verboseDate } from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
@@ -694,8 +695,8 @@ export default {
             api.get("/api/v1/gpon/customers/" + this.subscriberID)
                 .then((resp) => (this.customer = resp.data))
                 .catch((reason) => {
-                    this.error.status = reason.response.status;
-                    this.error.message = reason.response.data;
+                    this.error.status = getErrorStatus(reason);
+                    this.error.message = errorFmt(reason);
                 });
         },
 
@@ -765,8 +766,8 @@ export default {
                         .catch((reason) =>
                             this.$toast.add({
                                 severity: "error",
-                                summary: reason.response.status,
-                                detail: reason.response.data,
+                                summary: getErrorStatus(reason) || "Ошибка",
+                                detail: errorFmt(reason),
                                 life: 3000,
                             })
                         );
@@ -790,11 +791,11 @@ export default {
                     this.$toast.add({ severity: "success", summary: "Обновлено", detail: successInfo, life: 3000 });
                 })
                 .catch((reason) => {
-                    const status = reason.response.status;
+                    const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
                         summary: `Ошибка ${status}`,
-                        detail: reason.response.data,
+                        detail: errorFmt(reason),
                         life: 5000,
                     });
                 });

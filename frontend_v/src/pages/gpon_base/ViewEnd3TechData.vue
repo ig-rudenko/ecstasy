@@ -132,6 +132,7 @@ import AddressGetCreate from "./components/AddressGetCreate.vue";
 import End3PortsViewEdit from "./components/End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
@@ -202,8 +203,8 @@ export default {
         api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
             .then((resp) => (this.detailData = resp.data))
             .catch((reason) => {
-                this.errorStatus = reason.response.status;
-                this.errorMessage = reason.response.data;
+                this.errorStatus = getErrorStatus(reason);
+                this.errorMessage = errorFmt(reason);
             });
 
         this.originalCapacity = this.detailData.capacity;
@@ -274,11 +275,11 @@ export default {
                     });
                 })
                 .catch((reason) => {
-                    const status = reason.response.status;
+                    const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
                         summary: `Ошибка ${status}`,
-                        detail: reason.response.data,
+                        detail: errorFmt(reason),
                         life: 5000,
                     });
                 });

@@ -289,6 +289,7 @@ import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatisti
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
@@ -378,8 +379,8 @@ export default {
             api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
                 .then((resp) => (this.detailData = resp.data))
                 .catch((reason) => {
-                    this.errorStatus = reason.response.status;
-                    this.errorMessage = reason.response.data;
+                    this.errorStatus = getErrorStatus(reason);
+                    this.errorMessage = errorFmt(reason);
                 });
         },
 
@@ -400,8 +401,8 @@ export default {
                         (this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = resp.data.capability)
                 )
                 .catch((reason) => {
-                    this.detailData.structures[BIndex].customerLines[end3Index].errorStatus = reason.response.status;
-                    this.detailData.structures[BIndex].customerLines[end3Index].errorMessage = reason.response.data;
+                    this.detailData.structures[BIndex].customerLines[end3Index].errorStatus = getErrorStatus(reason);
+                    this.detailData.structures[BIndex].customerLines[end3Index].errorMessage = errorFmt(reason);
                 });
         },
 
@@ -461,11 +462,11 @@ export default {
                     this.$toast.add({ severity: "success", summary: "Обновлено", detail: successInfo, life: 3000 });
                 })
                 .catch((reason) => {
-                    const status = reason.response.status;
+                    const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
                         summary: `Ошибка ${status}`,
-                        detail: reason.response.data,
+                        detail: errorFmt(reason),
                         life: 5000,
                     });
                 });

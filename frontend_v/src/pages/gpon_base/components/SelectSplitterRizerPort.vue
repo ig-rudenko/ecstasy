@@ -60,6 +60,7 @@
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 
 import Asterisk from "./Asterisk.vue";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
@@ -69,6 +70,7 @@ export default {
         Asterisk,
         TechCapabilityBadge,
     },
+    emits: ["change"],
     props: {
         type: { required: true, type: String },
         getFrom: { required: true, type: Object },
@@ -83,6 +85,10 @@ export default {
             selectedPort: null,
             _capability: [],
             _initEnd3ID: null,
+            error: {
+                status: null,
+                message: null,
+            },
         };
     },
 
@@ -124,8 +130,8 @@ export default {
             api.get("/api/v1/gpon/tech-data/end3/" + this.end3ID)
                 .then((resp) => (this._capability = Array.from(resp.data.capability)))
                 .catch((reason) => {
-                    this.error.status = reason.response.status;
-                    this.error.message = reason.response.data;
+                    this.error.status = getErrorStatus(reason);
+                    this.error.message = errorFmt(reason);
                 });
         },
     },

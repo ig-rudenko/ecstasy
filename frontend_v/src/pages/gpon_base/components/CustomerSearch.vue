@@ -120,10 +120,12 @@
 </template>
 
 <script>
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 
 export default {
     name: "CustomerSearch",
+    emits: ["select"],
     props: {
         isMobile: { required: true, type: Boolean },
     },
@@ -160,8 +162,8 @@ export default {
                 this.pagination.total = response.data.count;
                 this.pagination.page = page;
             } catch (reason) {
-                this.error.message = reason.response?.data;
-                this.error.status = reason.response?.status;
+                this.error.message = errorFmt(reason);
+                this.error.status = getErrorStatus(reason);
             }
         },
         onPage(event) {

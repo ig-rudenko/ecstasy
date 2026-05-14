@@ -54,6 +54,7 @@ if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
 PROXY_URL = os.getenv("PROXY_URL", "")
+API_PROBLEM_BASE_URL = os.getenv("API_PROBLEM_BASE_URL", "/api/problems")
 
 # Application definition
 INSTALLED_APPS = [
@@ -276,6 +277,7 @@ REST_FRAMEWORK: dict = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+    "EXCEPTION_HANDLER": "ecstasy_project.error_handler.custom_exception_handler",
 }
 if ENV == "dev":
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append("rest_framework.renderers.BrowsableAPIRenderer")

@@ -96,6 +96,7 @@
 <script>
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import CreateSubscriberData from "../CreateSubscriberData.vue";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
@@ -105,7 +106,7 @@ export default {
         TechCapabilityBadge,
         CreateSubscriberData,
     },
-    emits: ["getInfo"],
+    emits: ["changeStatus", "getInfo"],
     props: {
         end3Object: { required: true, type: Object },
         end3PortsArray: { required: true, type: Array },
@@ -167,11 +168,11 @@ export default {
                     this.editMode = false;
                 })
                 .catch((reason) => {
-                    const status = reason.response.status;
+                    const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
                         summary: `Ошибка ${status}`,
-                        detail: reason.response.data,
+                        detail: errorFmt(reason),
                         life: 5000,
                     });
                 });

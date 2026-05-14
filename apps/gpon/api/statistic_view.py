@@ -10,6 +10,7 @@ from .swagger import olt_port_subscribers_count_api_doc
 
 class OLTPortSubscribersCountAPIView(ListAPIView):
     serializer_class = OLTSubscriberSerializer
+    pagination_class = None
 
     def get_queryset(self):
         device_name = self.kwargs["device_name"]

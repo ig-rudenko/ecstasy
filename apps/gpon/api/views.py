@@ -3,7 +3,7 @@ from django.db.models import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
@@ -65,6 +65,8 @@ class GPONListPageNumberPagination(PageNumberPagination):
 
 
 class ListUserPermissions(GenericAPIView):
+    pagination_class = None
+
     @list_user_permissions_api_doc
     def get(self, *args, **kwargs):
         permissions = filter(lambda x: x.startswith("gpon"), self.request.user.get_all_permissions())
@@ -230,6 +232,8 @@ class End3AddressesListAPIView(ListAPIView):
 
 
 class DevicesNamesListAPIView(GenericAPIView):
+    pagination_class = None
+
     def get_queryset(self):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
@@ -243,12 +247,14 @@ class DevicesNamesListAPIView(GenericAPIView):
 
 
 class DevicePortsList(DevicesNamesListAPIView):
+    pagination_class = None
+
     @device_ports_list_api_doc
     def get(self, request, *args, **kwargs) -> Response:
         try:
             device: Devices = self.get_queryset().only("id").get(name=self.kwargs["device_name"])
-        except Devices.DoesNotExist:
-            return Response({"error": "Оборудование не существует"}, status=400)
+        except Devices.DoesNotExist as exc:
+            raise NotFound("Оборудование не существует") from exc
 
         interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
 

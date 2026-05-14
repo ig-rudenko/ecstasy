@@ -56,6 +56,7 @@ import Footer from "@/components/Footer.vue";
 import TechDataTable from "./components/TechDataTable.vue";
 import CheckTechCapability from "@/pages/gpon_base/components/CheckTechCapability.vue";
 
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 
 export default {
@@ -108,12 +109,8 @@ export default {
                     this.gponTechData = resp.data;
                 })
                 .catch((reason) => {
-                    this.errorStatus = reason.response.status;
-                    if (this.errorStatus === 403) {
-                        this.errorMessage = reason.response.data.detail;
-                    } else {
-                        this.errorMessage = reason.response.data;
-                    }
+                    this.errorStatus = getErrorStatus(reason);
+                    this.errorMessage = errorFmt(reason);
                 });
         },
     },

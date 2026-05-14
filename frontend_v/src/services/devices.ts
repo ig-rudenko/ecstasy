@@ -1,7 +1,7 @@
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import { errorToast } from "@/services/my.toast";
-import { InterfacesCount } from "@/services/interfaces";
+import {errorToast} from "@/services/my.toast";
+import {InterfacesCount} from "@/services/interfaces";
 
 export interface Device {
     id?: number;
@@ -46,7 +46,7 @@ export class DevicesService {
 
     async getDevicesListWithInterfacesWorkload(): Promise<Device[]> {
         try {
-            let resp = await api.get<DevicesWithCount>("/api/v1/devices/workload/interfaces");
+            let resp = await api.get<DevicesWithCount>("/api/v1/devices/workload/interfaces/_all");
             return resp.data.devices;
         } catch (reason: any) {
             errorToast("Не удалось получить список устройств", errorFmt(reason));

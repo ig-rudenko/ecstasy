@@ -66,6 +66,7 @@ import { defineComponent, PropType } from "vue";
 import MediaPreview from "./MediaPreview.vue";
 import { MediaFile, MediaFileInfo, newMediaFileInfo } from "../files";
 import api from "@/services/api";
+import errorFmt, { getErrorFields } from "@/errorFmt";
 import { AxiosResponse } from "axios";
 
 export default defineComponent({
@@ -122,11 +123,13 @@ export default defineComponent({
                 this.newItem = new MediaFile(files[0]);
             }
         },
-        handleError(error: { description?: string }): string[] {
-            if (error.description) {
+        handleError(reason: unknown): string[] {
+            const fields = getErrorFields(reason);
+            const error = { description: fields.description };
+            if (fields.description) {
                 return [`Ошибка в описании: "${error.description}"`];
             }
-            return [String(error)];
+            return [errorFmt(reason)];
         },
         updateItem() {
             this.errors = [];
@@ -146,9 +149,9 @@ export default defineComponent({
                         this.$emit("reloadedmedia", newMediaFileInfo(value.data));
                         this.$emit("close");
                     },
-                    (reason: any) => this.errors.push(...this.handleError(reason.response.data))
+                    (reason: any) => this.errors.push(...this.handleError(reason))
                 )
-                .catch((reason: any) => this.errors.push(...this.handleError(reason.response.data)));
+                .catch((reason: any) => this.errors.push(...this.handleError(reason)));
         },
         closeForm() {
             this.$emit("close");

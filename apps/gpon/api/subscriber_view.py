@@ -3,8 +3,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
@@ -173,7 +172,7 @@ class SubscribersOnDevicePort(GenericAPIView):
 
         try:
             data = get_subscribers_on_device_port(device_name, olt_port, ont_id)
-        except OLTState.DoesNotExist:
-            return Response({"error": "Does not exists."}, status=status.HTTP_400_BAD_REQUEST)
+        except OLTState.DoesNotExist as exc:
+            raise NotFound("OLT state does not exist.") from exc
 
         return Response(data)

@@ -53,8 +53,9 @@ def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
             uptime_value = zbx_session.history.get(
                 itemids=item["itemid"], output=["value"], history=3, limit=1
             )
-            if uptime_value:
-                return uptime_value[0]["value"]
+            if uptime_value and uptime_value[0]["value"].isdigit():
+                return int(uptime_value[0]["value"])
+            return -1
     except (MaxRetryError, RequestException):
         pass
     return -1

@@ -40,6 +40,7 @@
 </template>
 
 <script>
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 
 import SubscriberDataTable from "./components/SubscriberDataTable.vue";
@@ -95,12 +96,8 @@ export default {
             })
                 .then((resp) => (this.gponSubscriberData = resp.data))
                 .catch((reason) => {
-                    this.errorStatus = reason.response.status;
-                    if (this.errorStatus === 403) {
-                        this.errorMessage = reason.response.data.detail;
-                    } else {
-                        this.errorMessage = reason.response.data;
-                    }
+                    this.errorStatus = getErrorStatus(reason);
+                    this.errorMessage = errorFmt(reason);
                 });
         },
     },

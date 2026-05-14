@@ -53,6 +53,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
 import api from "@/services/api";
+import errorFmt from "@/errorFmt";
 import { AxiosResponse } from "axios";
 import { DeviceInterface } from "@/services/interfaces.ts";
 
@@ -114,12 +115,12 @@ export default defineComponent({
                         this.loading = false;
                     },
                     (reason) => {
-                        this.errors = reason.response.data ? reason.response.data.detail : reason.response;
+                        this.errors = errorFmt(reason);
                         this.loading = false;
                     }
                 )
                 .catch((reason) => {
-                    this.errors = reason.response.data ? reason.response.data.detail : reason.response;
+                    this.errors = errorFmt(reason);
                     this.loading = false;
                 });
         },

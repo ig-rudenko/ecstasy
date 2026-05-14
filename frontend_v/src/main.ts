@@ -16,6 +16,7 @@ import {
     IconField,
     IftaLabel,
     Image,
+    InlineMessage,
     InputGroup,
     InputIcon,
     InputMask,
@@ -42,11 +43,11 @@ import ToastService from "primevue/toastservice";
 import "@/assets/base.css";
 import "primeicons/primeicons.css";
 
-import { app } from "@/appInstance";
+import {app} from "@/appInstance";
 import store from "@/store";
 import router from "@/router";
 import setupInterceptors from "@/services/api/setupInterceptors";
-import { initializeOIDC, isOIDCLogin } from "@/oidc";
+import {initializeOIDC, isOIDCLogin} from "@/oidc";
 
 setupInterceptors();
 app.directive("ripple", Ripple);
@@ -69,6 +70,7 @@ app.component("Divider", Divider);
 app.component("Drawer", Drawer);
 app.component("IconField", IconField);
 app.component("IftaLabel", IftaLabel);
+app.component("InlineMessage", InlineMessage);
 app.component("InputGroup", InputGroup);
 app.component("InputIcon", InputIcon);
 app.component("InputNumber", InputNumber);

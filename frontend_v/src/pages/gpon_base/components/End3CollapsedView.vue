@@ -183,6 +183,7 @@ import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import CreateSubscriberData from "../CreateSubscriberData.vue";
 
 import api from "@/services/api";
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 
 export default {
@@ -294,8 +295,8 @@ export default {
                         .catch((reason) =>
                             this.$toast.add({
                                 severity: "error",
-                                summary: reason.response.status,
-                                detail: reason.response.data,
+                                summary: getErrorStatus(reason) || "Ошибка",
+                                detail: errorFmt(reason),
                                 life: 3000,
                             })
                         );

@@ -35,7 +35,7 @@ import { defineComponent, PropType } from "vue";
 
 export default defineComponent({
     props: {
-        coords: { required: true, type: Array as PropType<any[]> },
+        coords: { required: true, type: Array as PropType<number[]> },
     },
 });
 </script>

@@ -74,6 +74,7 @@
 import AddressGetCreate from "./AddressGetCreate.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 
+import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 
@@ -130,11 +131,11 @@ export default {
                     this.editMode = false;
                 })
                 .catch((reason) => {
-                    const status = reason.response.status;
+                    const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
                         summary: `Ошибка ${status}`,
-                        detail: reason.response.data,
+                        detail: errorFmt(reason),
                         life: 5000,
                     });
                 });

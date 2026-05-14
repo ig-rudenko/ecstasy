@@ -2,6 +2,7 @@ import re
 
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -36,6 +37,8 @@ class MacTracerouteAPIView(GenericAPIView):
     а затем строит граф связей между этими MAC.
     """
 
+    pagination_class = None
+
     @mac_traceroute_api_doc
     def get(self, request, mac: str):
         try:
@@ -44,7 +47,7 @@ class MacTracerouteAPIView(GenericAPIView):
             vlan = 0
         mac_clean = "".join(re.findall(r"[0-9a-fA-F]+", mac)).lower()
         if len(mac_clean) != 12:
-            return Response({"error": "Invalid MAC address"}, status=400)
+            raise ValidationError({"mac": "Invalid MAC address"})
 
         traceroute = MacTraceroute()
         return Response(traceroute.get_mac_graph(mac=mac_clean, vlan=vlan))
@@ -98,6 +101,7 @@ class VlanPortDetailAPIView(VlanPortQuerysetMixin, UserAuthenticatedAPIView, Ret
 
 class MacGatherStatusAPIView(GenericAPIView):
     serializer_class = MacGatherStatusSerializer
+    pagination_class = None
 
     def get(self, request):
         """Проверяет, выполняется ли сканирование MAC-адресов и возвращает результаты."""
@@ -120,6 +124,7 @@ class MacGatherScanRunAPIView(GenericAPIView):
 
 class VlanGatherStatusAPIView(GenericAPIView):
     serializer_class = VlanGatherStatusSerializer
+    pagination_class = None
 
     def get(self, request):
         """Проверяет, выполняется ли сканирование VLAN-ов и возвращает результаты."""

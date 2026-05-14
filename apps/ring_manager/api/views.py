@@ -5,6 +5,8 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ecstasy_project.error_handler import ResourceConflict
+
 from ..models import TransportRing
 from ..ring_manager import TransportRingManager
 from ..solutions import Solutions, SolutionsPerformer, SolutionsPerformerError
@@ -33,6 +35,7 @@ class ListTransportRingsAPIView(generics.ListAPIView):
 
 class TransportRingStatusAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, RingPermission]
+    pagination_class = None
 
     @ring_valid
     def get(self, request, ring_name: str, *args, **kwargs):
@@ -88,6 +91,7 @@ class TransportRingDetailAPIView(generics.GenericAPIView):
 
 class GetLastSolutionsAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, RingPermission]
+    pagination_class = None
 
     @ring_valid
     def get(self, request, ring_name: str):
@@ -118,6 +122,7 @@ class GetLastSolutionsAPIView(generics.GenericAPIView):
 
 class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, RingPermission]
+    pagination_class = None
 
     @ring_valid
     def get(self, request, ring_name: str):
@@ -166,7 +171,7 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
         self.check_object_permissions(request, ring)
 
         if ring.status == ring.IN_PROCESS:
-            return Response({"error": "Кольцо уже разворачивается в данный момент"}, status=400)
+            raise ResourceConflict("Кольцо уже разворачивается в данный момент")
 
         ring.set_status_in_progress()  # Отмечаем, что кольцо будет далее использоваться
         try:
