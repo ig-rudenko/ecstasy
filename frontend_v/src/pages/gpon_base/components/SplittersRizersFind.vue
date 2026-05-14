@@ -46,6 +46,7 @@ import { formatAddress } from "@/formats";
 
 export default {
     name: "SplittersRizersFind",
+    emits: ["change"],
     components: {
         Asterisk,
     },
