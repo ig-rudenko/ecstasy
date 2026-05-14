@@ -40,7 +40,7 @@ class VlanTableGatherTests(TestCase):
         }
         gather.normalize_interface = lambda port: port
 
-        self.assertEqual(gather._save_vlan_info(), 3)
+        self.assertEqual(gather._save_vlan_info(gather.table), 3)
 
         vlan.refresh_from_db()
         self.assertEqual(vlan.desc, "users")
@@ -131,10 +131,10 @@ class VlanAPITests(APITestCase):
         response = self.client.get(reverse("gathering-api:vlan-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["vlan"], 10)
-        self.assertEqual(response.data[0]["device_name"], "sw-allowed")
-        self.assertEqual([port["port"] for port in response.data[0]["ports"]], ["1", "2"])
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["vlan"], 10)
+        self.assertEqual(response.data["results"][0]["device_name"], "sw-allowed")
+        self.assertEqual([port["port"] for port in response.data["results"][0]["ports"]], ["1", "2"])
 
     def test_vlan_port_list_filters_by_port(self):
         """Filter VLAN port rows by exact port."""
@@ -143,9 +143,9 @@ class VlanAPITests(APITestCase):
         response = self.client.get(reverse("gathering-api:vlan-port-list"), {"port": "2"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["port"], "2")
-        self.assertEqual(response.data[0]["vlan"], 10)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["port"], "2")
+        self.assertEqual(response.data["results"][0]["vlan"], 10)
 
     def test_vlan_detail_denies_forbidden_device(self):
         """Do not expose VLAN rows from unavailable device groups."""

@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
+from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
@@ -23,8 +24,16 @@ from .permissions import CustomerPermission, SubscriberDataPermission
 from .serializers.common import CustomerSerializer
 from .serializers.create_subscriber_data import SubscriberDataSerializer, UpdateSubscriberDataSerializer
 from .serializers.view_subscriber_data import CustomerDetailSerializer
+from .swagger import (
+    customer_detail_api_doc,
+    customers_list_api_doc,
+    subscriber_data_create_api_doc,
+    subscriber_data_list_api_doc,
+    subscribers_on_device_port_api_doc,
+)
 
 
+@method_decorator(name="get", decorator=customers_list_api_doc)
 class CustomersListAPIView(ListAPIView):
     class CustomersPagination(PageNumberPagination):
         page_size = 20
@@ -51,6 +60,7 @@ class CustomersListAPIView(ListAPIView):
         return queryset
 
 
+@method_decorator(name="get", decorator=customer_detail_api_doc)
 class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [CustomerPermission]
     serializer_class = CustomerDetailSerializer
@@ -110,9 +120,15 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     queryset = SubscriberConnection.objects.all()
     serializer_class = SubscriberDataSerializer
 
+    @subscriber_data_list_api_doc
     def get(self, request: Request, *args, **kwargs) -> Response:
         customers_data = get_all_subscriber_connections()
         return Response(customers_data)
+
+    @subscriber_data_create_api_doc
+    @transaction.atomic
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        return super().post(request, *args, **kwargs)
 
     @transaction.atomic
     def perform_create(self, serializer) -> None:
@@ -124,6 +140,7 @@ class SubscribersOnDevicePort(GenericAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects.all()
 
+    @subscribers_on_device_port_api_doc
     def get(self, request: Request, *args, **kwargs) -> Response:
         device_name = self.kwargs["device_name"]
         olt_port: str = self.request.query_params.get("port", "")

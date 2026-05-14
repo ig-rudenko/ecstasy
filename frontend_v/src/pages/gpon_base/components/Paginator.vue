@@ -125,6 +125,15 @@ export default {
             },
         },
     },
+    watch: {
+        dataLength() {
+            this.calculateMaxPages();
+            if (this.paginator.current_page > this.paginator.max_pages) {
+                this.paginator.current_page = this.paginator.max_pages || 1;
+                this.calculateOffset();
+            }
+        },
+    },
 
     methods: {
         calculateMaxPages() {

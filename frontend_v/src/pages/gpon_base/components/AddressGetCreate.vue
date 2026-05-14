@@ -220,7 +220,10 @@ export default {
         addressesList() {
             let allAddresses = this._addresses;
             if (this.formState.isValid() && this.allowCreate && this.data.address) {
-                allAddresses = [this.data.address, ...this._addresses.filter((item) => item.id !== this.data.address.id)];
+                allAddresses = [
+                    this.data.address,
+                    ...this._addresses.filter((item) => item.id !== this.data.address.id),
+                ];
             }
             return allAddresses;
         },

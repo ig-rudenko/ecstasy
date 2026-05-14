@@ -20,7 +20,10 @@
                     {{ slotProps.value.number }}
                     <template v-if="type === 'rizer'">
                         <span class="rizer-fiber-wrap ml-2">
-                            <span class="rizer-fiber-circle" :class="fiberInfo(slotProps.value.number)?.className"></span>
+                            <span
+                                class="rizer-fiber-circle"
+                                :class="fiberInfo(slotProps.value.number)?.className"
+                            ></span>
                             <span v-if="fiberInfo(slotProps.value.number)?.marked" class="rizer-fiber-marked"></span>
                             <span class="rizer-fiber-name">{{ fiberInfo(slotProps.value.number)?.name }}</span>
                         </span>
@@ -38,7 +41,10 @@
                     {{ slotProps.option.number }}
                     <template v-if="type === 'rizer'">
                         <span class="rizer-fiber-wrap ml-2">
-                            <span class="rizer-fiber-circle" :class="fiberInfo(slotProps.option.number)?.className"></span>
+                            <span
+                                class="rizer-fiber-circle"
+                                :class="fiberInfo(slotProps.option.number)?.className"
+                            ></span>
                             <span v-if="fiberInfo(slotProps.option.number)?.marked" class="rizer-fiber-marked"></span>
                             <span class="rizer-fiber-name">{{ fiberInfo(slotProps.option.number)?.name }}</span>
                         </span>

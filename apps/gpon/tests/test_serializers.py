@@ -606,6 +606,7 @@ class TestBuildingAddressSerializer(TestCase):
                 "house",
                 "block",
                 "building_type",
+                "building_id",
                 "floors",
                 "total_entrances",
             ),

@@ -306,8 +306,10 @@
                                         >
                                             <div class="flex flex-col">
                                                 <div class="flex flex-col gap-1">
-                                                <div>{{ connection.end3.location }}</div>
-                                                    <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
+                                                    <div>{{ connection.end3.location }}</div>
+                                                    <div>
+                                                        {{ connection.end3.type }} port: {{ connection.end3Port }}
+                                                    </div>
                                                     <template v-if="connection.end3.type === 'rizer'">
                                                         <span class="rizer-fiber-wrap ml-2">
                                                             <span

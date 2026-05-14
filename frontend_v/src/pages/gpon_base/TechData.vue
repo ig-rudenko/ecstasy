@@ -39,7 +39,7 @@
         </Message>
 
         <div v-if="gponTechData">
-            <TechDataTable :data="gponTechData" />
+            <TechDataTable :data="gponTechData" @fetch="fetchTechData" />
         </div>
 
         <div v-else class="flex justify-center p-4">
@@ -67,6 +67,18 @@ export default {
             errorStatus: null,
             errorMessage: null,
             userPermissions: [],
+            listQuery: {
+                page: 1,
+                page_size: 10,
+                region: "",
+                settlement: "",
+                planStructure: "",
+                street: "",
+                house: "",
+                block: "",
+                deviceName: "",
+                devicePort: "",
+            },
         };
     },
     mounted() {
@@ -74,22 +86,35 @@ export default {
             this.userPermissions = resp.data;
         });
 
-        api.get("/api/v1/gpon/tech-data")
-            .then((resp) => (this.gponTechData = resp.data))
-            .catch((reason) => {
-                this.errorStatus = reason.response.status;
-                if (this.errorStatus === 403) {
-                    this.errorMessage = reason.response.data.detail;
-                } else {
-                    this.errorMessage = reason.response.data;
-                }
-            });
+        this.fetchTechData();
     },
     computed: {
         hasPermissionsToCreate() {
             return ["gpon.add_oltstate", "gpon.add_houseoltstate", "gpon.add_houseb", "gpon.add_end3"].every((elem) => {
                 return this.userPermissions.includes(elem);
             });
+        },
+    },
+    methods: {
+        fetchTechData(payload = {}) {
+            this.listQuery = {
+                ...this.listQuery,
+                ...payload,
+            };
+            api.get("/api/v1/gpon/tech-data", {
+                params: this.listQuery,
+            })
+                .then((resp) => {
+                    this.gponTechData = resp.data;
+                })
+                .catch((reason) => {
+                    this.errorStatus = reason.response.status;
+                    if (this.errorStatus === 403) {
+                        this.errorMessage = reason.response.data.detail;
+                    } else {
+                        this.errorMessage = reason.response.data;
+                    }
+                });
         },
     },
 };

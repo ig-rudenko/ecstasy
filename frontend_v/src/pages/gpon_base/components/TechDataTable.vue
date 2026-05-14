@@ -3,7 +3,7 @@
         <div>
             <Button @click="show_filter = !show_filter" class="filter-button rounded-2xl" outlined>
                 <svg
-                    v-if="filteredData.length !== data.length"
+                    v-if="hasActiveFilters"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
                     height="24"
@@ -205,7 +205,7 @@
         </div>
 
         <!-- TABLE FOOTER -->
-        <Paginator :paginator="paginator" :data-length="filteredData.length" />
+        <Paginator :paginator="paginator" :data-length="totalRecords" />
     </div>
 </template>
 
@@ -224,6 +224,7 @@ export default {
     props: {
         data: { required: true },
     },
+    emits: ["fetch"],
     data() {
         return {
             paginator: {
@@ -236,7 +237,6 @@ export default {
             },
 
             show_filter: false,
-            filteredData: this.data,
             filter: {
                 address: {
                     region: "",
@@ -254,23 +254,56 @@ export default {
 
     mounted() {
         let urlObj = new URL(window.location.href);
-        this.current_page = Number(urlObj.searchParams.get("page")) || 1;
-        this.doFilter();
+        this.paginator.current_page = Number(urlObj.searchParams.get("page")) || 1;
     },
 
     computed: {
-        tableData() {
-            if (this.paginator.limit_offset >= this.filteredData.length) {
-                this.paginator.current_page = 1;
-            }
-            return this.filteredData.slice(
-                this.paginator.limit_offset,
-                this.paginator.limit_offset + this.paginator.pages.rows_per_page
+        hasActiveFilters() {
+            return (
+                this.filter.address.region ||
+                this.filter.address.settlement ||
+                this.filter.address.planStructure ||
+                this.filter.address.street ||
+                this.filter.address.house ||
+                this.filter.address.block ||
+                this.filter.deviceName ||
+                this.filter.devicePort
             );
+        },
+        totalRecords() {
+            return this.data?.count || 0;
+        },
+        tableData() {
+            return this.data?.results || [];
+        },
+    },
+    watch: {
+        "paginator.current_page"(value, oldValue) {
+            if (value === oldValue) return;
+            this.emitFetch();
+        },
+        "paginator.pages.rows_per_page"(value, oldValue) {
+            if (value === oldValue) return;
+            this.paginator.current_page = 1;
+            this.emitFetch();
         },
     },
 
     methods: {
+        emitFetch() {
+            this.$emit("fetch", {
+                page: this.paginator.current_page,
+                page_size: this.paginator.pages.rows_per_page,
+                region: this.filter.address.region,
+                settlement: this.filter.address.settlement,
+                planStructure: this.filter.address.planStructure,
+                street: this.filter.address.street,
+                house: this.filter.address.house,
+                block: this.filter.address.block,
+                deviceName: this.filter.deviceName,
+                devicePort: this.filter.devicePort,
+            });
+        },
         getFullAddress(address) {
             let str = "";
             if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
@@ -281,48 +314,8 @@ export default {
         },
 
         doFilter() {
-            let address_filter = this.filter.address;
-            let devicePort_filter = this.filter.devicePort;
-            let deviceName_filter = this.filter.deviceName;
-
-            this.filteredData = Array.from(this.data).filter(function (elem) {
-                // Поиск по адресу
-                const match_region =
-                    address_filter.region.length === 0 ||
-                    elem.address.region.toLowerCase().indexOf(address_filter.region.toLowerCase()) > -1;
-                const match_settlement =
-                    address_filter.settlement.length === 0 ||
-                    elem.address.settlement.toLowerCase().indexOf(address_filter.settlement.toLowerCase()) > -1;
-                const match_planStructure =
-                    address_filter.planStructure.length === 0 ||
-                    elem.address.planStructure.toLowerCase().indexOf(address_filter.planStructure.toLowerCase()) > -1;
-                const match_street =
-                    address_filter.street.length === 0 ||
-                    elem.address.street.toLowerCase().indexOf(address_filter.street.toLowerCase()) > -1;
-                const match_house =
-                    address_filter.house.length === 0 ||
-                    elem.address.house.toLowerCase().indexOf(address_filter.house.toLowerCase()) > -1;
-                const match_block = !address_filter.block || address_filter.block === elem.address.block;
-
-                // Поиск по OLT порту
-                const match_devicePort =
-                    devicePort_filter.length === 0 ||
-                    elem.devicePort.toLowerCase().indexOf(devicePort_filter.toLowerCase()) > -1;
-                const match_deviceName =
-                    deviceName_filter.length === 0 ||
-                    elem.deviceName.toLowerCase().indexOf(deviceName_filter.toLowerCase()) > -1;
-
-                return (
-                    match_region &&
-                    match_settlement &&
-                    match_planStructure &&
-                    match_street &&
-                    match_house &&
-                    match_block &&
-                    match_devicePort &&
-                    match_deviceName
-                );
-            });
+            this.paginator.current_page = 1;
+            this.emitFetch();
             this.show_filter = false;
         },
 

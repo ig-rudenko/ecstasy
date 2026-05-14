@@ -1,8 +1,11 @@
 from django.db.models import Count, F
 from rest_framework.generics import ListAPIView
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 from ..models import SubscriberConnection
 from .serializers.statistics import OLTSubscriberSerializer
+from .swagger import olt_port_subscribers_count_api_doc
 
 
 class OLTPortSubscribersCountAPIView(ListAPIView):
@@ -19,3 +22,7 @@ class OLTPortSubscribersCountAPIView(ListAPIView):
             .annotate(count=Count("id"))
             .order_by("olt_port")
         )
+
+    @olt_port_subscribers_count_api_doc
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
