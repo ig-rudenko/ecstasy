@@ -61,7 +61,7 @@ class InterfaceWorkloadSwaggerSerializer(SwaggerSerializer):
 
 
 class DevicesInterfaceWorkloadSwaggerSerializer(SwaggerSerializer):
-    interfaces_count = InterfaceWorkloadSwaggerSerializer(many=True)
+    interfaces_count = InterfaceWorkloadSwaggerSerializer()
     ip = serializers.IPAddressField()
     name = serializers.CharField()
     vendor = serializers.CharField(allow_null=True)
@@ -255,3 +255,7 @@ class BulkCommandTaskStatusSwaggerSerializer(SwaggerSerializer):
     resultsCount = serializers.IntegerField(min_value=0)
     resultDeviceIds = serializers.ListField(child=serializers.IntegerField(min_value=1))
     results = BulkCommandTaskResultSwaggerSerializer(many=True)
+
+
+class GetDeviceByZabbixSerializer(SwaggerSerializer):
+    device = serializers.CharField()

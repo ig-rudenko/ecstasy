@@ -39,6 +39,7 @@ from ..swagger.schemas import (
     devices_list_api_doc,
     interfaces_list_api_doc,
     interfaces_workload_api_doc,
+    get_device_by_zabbix_serializer_api_doc,
 )
 from .base import DeviceAPIView
 
@@ -399,6 +400,8 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
 
 
 class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
+
+    @get_device_by_zabbix_serializer_api_doc
     def get(self, request, host_id: str):
         """
         ## Преобразование идентификатора узла сети "host_id" Zabbix в URL ecstasy.

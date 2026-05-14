@@ -105,10 +105,19 @@
                     Действия не найдены
                 </div>
 
-                <div v-else class="flex justify-center p-8">
+                <div v-else-if="isLoading" class="flex justify-center p-8">
                     <ProgressSpinner />
                 </div>
             </section>
+
+            <Paginator
+                v-if="actions"
+                :rows="pagination.rows"
+                :totalRecords="pagination.total"
+                :first="(pagination.page - 1) * pagination.rows"
+                :always-show="false"
+                @page="onPageChange"
+            />
         </div>
     </Dialog>
 </template>
@@ -116,7 +125,7 @@
 <script lang="ts">
 import api from "@/services/api";
 import { defineComponent } from "vue";
-import { AxiosResponse } from "axios";
+import { PaginatedResponse } from "@/types/paginator";
 
 interface UserAction {
     action: string;
@@ -133,6 +142,12 @@ export default defineComponent({
         return {
             showDialog: false,
             actions: null as UserAction[] | null,
+            isLoading: false,
+            pagination: {
+                page: 1,
+                rows: 20,
+                total: 0,
+            },
             filters: {
                 user: "",
                 action: "",
@@ -157,18 +172,49 @@ export default defineComponent({
         },
     },
     methods: {
+        async fetchActions(page = 1): Promise<void> {
+            const url = `/api/v1/devices/${this.deviceName}/actions`;
+            this.isLoading = true;
+            const resp = await api.get<UserAction[] | PaginatedResponse<UserAction>>(url, {
+                params: {
+                    page,
+                    page_size: this.pagination.rows,
+                },
+            });
+            const data = resp.data;
+
+            if (Array.isArray(data)) {
+                this.actions = data;
+                this.pagination.total = data.length;
+                this.pagination.page = 1;
+                this.isLoading = false;
+                return;
+            }
+
+            this.actions = data.results;
+            this.pagination.total = data.count;
+            this.pagination.page = page;
+            this.isLoading = false;
+        },
         openDialog() {
             this.showDialog = true;
             this.error.status = null;
             this.error.msg = null;
-            api.get(`/api/v1/devices/${this.deviceName}/actions`)
-                .then((resp: AxiosResponse<UserAction[]>) => {
-                    this.actions = resp.data;
-                })
+            this.fetchActions(1)
                 .catch((reason) => {
                     this.error.status = reason.response.status;
                     this.error.msg = reason.response.data;
+                    this.isLoading = false;
                 });
+        },
+        onPageChange(event: { page: number; rows: number }) {
+            this.pagination.rows = event.rows;
+            const targetPage = event.page + 1;
+            this.fetchActions(targetPage).catch((reason) => {
+                this.error.status = reason.response.status;
+                this.error.msg = reason.response.data;
+                this.isLoading = false;
+            });
         },
         initials(user: string): string {
             return (

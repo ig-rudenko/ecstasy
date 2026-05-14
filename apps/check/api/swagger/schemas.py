@@ -18,6 +18,7 @@ from .responses import (
     DevicePoolStatusesSwaggerSerializer,
     DevicesConfigListSwaggerSerializer,
     DevicesInterfaceWorkloadResultSwaggerSerializer,
+    GetDeviceByZabbixSerializer,
     InterfaceDetailInfoSwaggerSerializer,
     InterfacesListSwaggerSerializer,
     InterfaceWorkloadSwaggerSerializer,
@@ -180,4 +181,11 @@ bulk_device_command_task_status_api_doc = swagger_auto_schema(
         200: BulkCommandTaskStatusSwaggerSerializer(),
         403: "Permission denied",
     },
+)
+
+
+get_device_by_zabbix_serializer_api_doc = swagger_auto_schema(
+    responses={
+        200: GetDeviceByZabbixSerializer(),
+    }
 )
