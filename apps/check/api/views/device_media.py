@@ -1,5 +1,4 @@
-from django.db.models import QuerySet
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
@@ -31,7 +30,9 @@ class DeviceMediaListCreateAPIView(generics.ListCreateAPIView):
         queryset = device.medias.all().order_by("-mod_time", "-id")
         search_query = str(self.request.query_params.get("search", "")).strip()
         if search_query:
-            queryset = queryset.filter(Q(file__icontains=search_query) | Q(description__icontains=search_query))
+            queryset = queryset.filter(
+                Q(file__icontains=search_query) | Q(description__icontains=search_query)
+            )
         return queryset
 
     def perform_create(self, serializer) -> None:

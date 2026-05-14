@@ -29,7 +29,7 @@
             Статус: {{ errorStatus }}
         </Message>
 
-        <SubscriberDataTable v-if="gponSubscriberData" :data="gponSubscriberData" />
+        <SubscriberDataTable v-if="gponSubscriberData" :data="gponSubscriberData" @fetch="fetchSubscriberData" />
 
         <div v-else class="flex justify-center p-4">
             <ProgressSpinner />
@@ -55,6 +55,19 @@ export default {
             errorStatus: null,
             errorMessage: null,
             userPermissions: [],
+            listQuery: {
+                page: 1,
+                page_size: 10,
+                general: "",
+                region: "",
+                settlement: "",
+                planStructure: "",
+                street: "",
+                house: "",
+                block: "",
+                customerName: "",
+                contract: "",
+            },
         };
     },
     mounted() {
@@ -62,22 +75,33 @@ export default {
             this.userPermissions = resp.data;
         });
 
-        api.get("/api/v1/gpon/subscriber-data")
-            .then((resp) => (this.gponSubscriberData = resp.data))
-            .catch((reason) => {
-                this.errorStatus = reason.response.status;
-                if (this.errorStatus === 403) {
-                    this.errorMessage = reason.response.data.detail;
-                } else {
-                    this.errorMessage = reason.response.data;
-                }
-            });
+        this.fetchSubscriberData();
     },
     computed: {
         hasPermissionsToCreate() {
             return ["gpon.add_customer", "gpon.add_subscriberconnection"].every((elem) => {
                 return this.userPermissions.includes(elem);
             });
+        },
+    },
+    methods: {
+        fetchSubscriberData(payload = {}) {
+            this.listQuery = {
+                ...this.listQuery,
+                ...payload,
+            };
+            api.get("/api/v1/gpon/subscriber-data", {
+                params: this.listQuery,
+            })
+                .then((resp) => (this.gponSubscriberData = resp.data))
+                .catch((reason) => {
+                    this.errorStatus = reason.response.status;
+                    if (this.errorStatus === 403) {
+                        this.errorMessage = reason.response.data.detail;
+                    } else {
+                        this.errorMessage = reason.response.data;
+                    }
+                });
         },
     },
 };

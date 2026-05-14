@@ -72,3 +72,4 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             "end3Port",
             "customer",
         ]
+        ref_name = "CommonSubscriberConnectionSerializer"

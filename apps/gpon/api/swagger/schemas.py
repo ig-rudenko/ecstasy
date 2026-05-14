@@ -1,7 +1,7 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-from ..serializers.common import End3Serializer
+from ..serializers.common import End3Serializer, SubscriberConnectionSerializer
 from ..serializers.create_subscriber_data import SubscriberDataSerializer
 from ..serializers.create_tech_data import CreateTechDataSerializer
 from ..serializers.statistics import OLTSubscriberSerializer
@@ -15,8 +15,8 @@ from .query_params import (
     SubscribersOnDevicePortQueryParamsSwaggerSerializer,
 )
 from .responses import (
-    DictListResponseSwaggerSerializer,
     ErrorDetailResponseSwaggerSerializer,
+    PaginatedSubscriberConnectionListResponseSwaggerSerializer,
     PaginatedTechDataListResponseSwaggerSerializer,
 )
 
@@ -87,7 +87,7 @@ customers_list_api_doc = swagger_auto_schema(
 
 subscriber_data_list_api_doc = swagger_auto_schema(
     responses={
-        200: DictListResponseSwaggerSerializer(),
+        200: PaginatedSubscriberConnectionListResponseSwaggerSerializer(),
     }
 )
 
@@ -108,7 +108,7 @@ customer_detail_api_doc = swagger_auto_schema(
 subscribers_on_device_port_api_doc = swagger_auto_schema(
     query_serializer=SubscribersOnDevicePortQueryParamsSwaggerSerializer(),
     responses={
-        200: DictListResponseSwaggerSerializer(),
+        200: SubscriberConnectionSerializer(many=True),
         400: ErrorDetailResponseSwaggerSerializer(),
     },
 )

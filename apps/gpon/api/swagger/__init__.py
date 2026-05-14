@@ -31,4 +31,3 @@ __all__ = [
     "tech_data_list_api_doc",
     "view_olt_state_tech_data_api_doc",
 ]
-

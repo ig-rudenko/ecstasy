@@ -2,6 +2,7 @@ from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
@@ -15,13 +16,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from ..models import Customer, OLTState, SubscriberConnection
-from ..services.subscriber_data import (
-    all_subscriber_connections_cache_key,
-    get_all_subscriber_connections,
-    get_subscribers_on_device_port,
-)
+from ..services.subscriber_data import all_subscriber_connections_cache_key, get_subscribers_on_device_port
+from .filters import SubscriberConnectionFilter
 from .permissions import CustomerPermission, SubscriberDataPermission
-from .serializers.common import CustomerSerializer
+from .serializers.common import CustomerSerializer, SubscriberConnectionSerializer
 from .serializers.create_subscriber_data import SubscriberDataSerializer, UpdateSubscriberDataSerializer
 from .serializers.view_subscriber_data import CustomerDetailSerializer
 from .swagger import (
@@ -117,13 +115,35 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
-    queryset = SubscriberConnection.objects.all()
-    serializer_class = SubscriberDataSerializer
+    queryset = SubscriberConnection.objects.all().order_by("id")
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = SubscriberConnectionFilter
+
+    class SubscriberConnectionPagination(PageNumberPagination):
+        page_size = 20
+        page_size_query_param = "page_size"
+        max_page_size = 100
+
+    pagination_class = SubscriberConnectionPagination
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            return (
+                SubscriberConnection.objects.all()
+                .select_related("address", "customer", "tech_capability")
+                .prefetch_related("services")
+                .order_by("id")
+            )
+        return SubscriberConnection.objects.all().order_by("id")
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return SubscriberConnectionSerializer
+        return SubscriberDataSerializer
 
     @subscriber_data_list_api_doc
     def get(self, request: Request, *args, **kwargs) -> Response:
-        customers_data = get_all_subscriber_connections()
-        return Response(customers_data)
+        return super().get(request, *args, **kwargs)
 
     @subscriber_data_create_api_doc
     @transaction.atomic

@@ -5,7 +5,7 @@
                 <div>
                     <Button @click="show_filter = !show_filter" class="filter-button rounded-2xl" outlined>
                         <svg
-                            v-if="filteredData.length !== data.length"
+                            v-if="hasActiveFilters"
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
                             height="24"
@@ -129,7 +129,7 @@
                         <InputText
                             style="width: 200px"
                             id="filter-devicePort"
-                            v-model="filter.devicePort"
+                            v-model.trim="filter.contract"
                             type="text"
                             @keydown.enter="doFilter"
                         />
@@ -250,7 +250,7 @@
         </div>
 
         <!-- TABLE FOOTER -->
-        <Paginator :paginator="paginator" :data-length="filteredData.length" />
+        <Paginator :paginator="paginator" :data-length="totalRecords" />
     </div>
 </template>
 
@@ -270,6 +270,7 @@ export default {
     props: {
         data: { required: true },
     },
+    emits: ["fetch"],
     data() {
         return {
             paginator: {
@@ -282,7 +283,6 @@ export default {
             },
 
             show_filter: false,
-            filteredData: this.data,
             filter: {
                 address: {
                     region: "",
@@ -294,30 +294,66 @@ export default {
                 },
                 customerName: "",
                 general: "",
+                contract: "",
             },
         };
     },
 
     mounted() {
         let urlObj = new URL(window.location.href);
-        this.current_page = Number(urlObj.searchParams.get("page")) || 1;
-        this.doFilter();
+        this.paginator.current_page = Number(urlObj.searchParams.get("page")) || 1;
     },
 
     computed: {
-        tableData() {
-            if (this.paginator.limit_offset >= this.filteredData.length) {
-                this.paginator.current_page = 1;
-            }
-            return this.filteredData.slice(
-                this.paginator.limit_offset,
-                this.paginator.limit_offset + this.paginator.pages.rows_per_page
+        hasActiveFilters() {
+            return (
+                this.filter.general ||
+                this.filter.address.region ||
+                this.filter.address.settlement ||
+                this.filter.address.planStructure ||
+                this.filter.address.street ||
+                this.filter.address.house ||
+                this.filter.address.block ||
+                this.filter.customerName ||
+                this.filter.contract
             );
+        },
+        totalRecords() {
+            return this.data?.count || 0;
+        },
+        tableData() {
+            return this.data?.results || [];
+        },
+    },
+    watch: {
+        "paginator.current_page"(value, oldValue) {
+            if (value === oldValue) return;
+            this.emitFetch();
+        },
+        "paginator.pages.rows_per_page"(value, oldValue) {
+            if (value === oldValue) return;
+            this.paginator.current_page = 1;
+            this.emitFetch();
         },
     },
 
     methods: {
         verboseDate,
+        emitFetch() {
+            this.$emit("fetch", {
+                page: this.paginator.current_page,
+                page_size: this.paginator.pages.rows_per_page,
+                general: this.filter.general,
+                region: this.filter.address.region,
+                settlement: this.filter.address.settlement,
+                planStructure: this.filter.address.planStructure,
+                street: this.filter.address.street,
+                house: this.filter.address.house,
+                block: this.filter.address.block,
+                customerName: this.filter.customerName,
+                contract: this.filter.contract,
+            });
+        },
 
         getFullAddress(address) {
             let str = "";
@@ -329,87 +365,8 @@ export default {
         },
 
         doFilter() {
-            let addressFilter = this.filter.address;
-            let customerNameFilter = this.filter.customerName;
-            let generalFilter = this.filter.general;
-
-            this.filteredData = Array.from(this.data).filter(function (elem) {
-                // Поиск по адресу
-                const match_region =
-                    addressFilter.region.length === 0 ||
-                    elem.address.region.toLowerCase().indexOf(addressFilter.region.toLowerCase()) > -1;
-                const match_settlement =
-                    addressFilter.settlement.length === 0 ||
-                    elem.address.settlement.toLowerCase().indexOf(addressFilter.settlement.toLowerCase()) > -1;
-                const match_planStructure =
-                    addressFilter.planStructure.length === 0 ||
-                    elem.address.planStructure.toLowerCase().indexOf(addressFilter.planStructure.toLowerCase()) > -1;
-                const match_street =
-                    addressFilter.street.length === 0 ||
-                    elem.address.street.toLowerCase().indexOf(addressFilter.street.toLowerCase()) > -1;
-                const match_house =
-                    addressFilter.house.length === 0 ||
-                    elem.address.house.toLowerCase().indexOf(addressFilter.house.toLowerCase()) > -1;
-                const match_block = !addressFilter.block || addressFilter.block === elem.address.block;
-
-                // Поиск по ФИО
-                const match_firstName =
-                    customerNameFilter.length === 0 ||
-                    (elem.customer.firstName &&
-                        elem.customer.firstName.toLowerCase().indexOf(customerNameFilter.toLowerCase()) > -1);
-                const match_surname =
-                    customerNameFilter.length === 0 ||
-                    (elem.customer.surname &&
-                        elem.customer.surname.toLowerCase().indexOf(customerNameFilter.toLowerCase()) > -1);
-                const match_lastName =
-                    customerNameFilter.length === 0 ||
-                    (elem.customer.lastName &&
-                        elem.customer.lastName.toLowerCase().indexOf(customerNameFilter.toLowerCase()) > -1);
-
-                // General
-                const generalMatch_firstName =
-                    generalFilter.length === 0 ||
-                    (elem.customer.firstName &&
-                        elem.customer.firstName.toLowerCase().indexOf(generalFilter.toLowerCase()) > -1);
-                const generalMatch_surname =
-                    generalFilter.length === 0 ||
-                    (elem.customer.surname &&
-                        elem.customer.surname.toLowerCase().indexOf(generalFilter.toLowerCase()) > -1);
-                const generalMatch_lastName =
-                    generalFilter.length === 0 ||
-                    (elem.customer.lastName &&
-                        elem.customer.lastName.toLowerCase().indexOf(generalFilter.toLowerCase()) > -1);
-                const generalMatch_companyName =
-                    generalFilter.length === 0 ||
-                    (elem.customer.companyName &&
-                        elem.customer.companyName.toLowerCase().indexOf(generalFilter.toLowerCase()) > -1);
-                const generalMatch_transit =
-                    generalFilter.length === 0 ||
-                    String(elem.transit).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1;
-                const generalMatch_phone =
-                    generalFilter.length === 0 ||
-                    String(elem.customer.phone).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1;
-                const generalMatch_contract =
-                    generalFilter.length === 0 ||
-                    String(elem.customer.contract).toLowerCase().indexOf(generalFilter.toLowerCase()) > -1;
-
-                return (
-                    match_region &&
-                    match_settlement &&
-                    match_planStructure &&
-                    match_street &&
-                    match_house &&
-                    match_block &&
-                    (match_firstName || match_surname || match_lastName) &&
-                    (generalMatch_firstName ||
-                        generalMatch_surname ||
-                        generalMatch_lastName ||
-                        generalMatch_companyName ||
-                        generalMatch_transit ||
-                        generalMatch_phone ||
-                        generalMatch_contract)
-                );
-            });
+            this.paginator.current_page = 1;
+            this.emitFetch();
             this.show_filter = false;
         },
 
