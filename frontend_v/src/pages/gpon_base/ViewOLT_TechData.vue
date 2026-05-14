@@ -220,7 +220,7 @@
                         </svg>
                         <div class="text-xl font-semibold m-0 me-3">
                             <span class="p-2">Адрес:</span>
-                            <router-link :to="'/gpon/tech-data/building/' + building.address.id">
+                            <router-link :to="'/gpon/tech-data/building/' + (building.address.building_id || building.address.id)">
                                 <Button
                                     outlined
                                     rounded

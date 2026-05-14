@@ -235,6 +235,7 @@ export default {
         normalizeAddress(address) {
             return {
                 id: address?.id ?? undefined,
+                building_id: address?.building_id ?? undefined,
                 region: address?.region ?? "",
                 settlement: address?.settlement ?? "",
                 planStructure: address?.planStructure ?? "",

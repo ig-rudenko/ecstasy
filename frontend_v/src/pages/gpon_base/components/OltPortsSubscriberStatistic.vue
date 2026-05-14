@@ -64,6 +64,7 @@ import { defineComponent } from "vue";
 import { AxiosResponse } from "axios";
 
 import api from "@/services/api";
+import { PaginatedResponse } from "@/types/paginator";
 
 interface PortsStatistic {
     oltPort: string;
@@ -101,12 +102,37 @@ export default defineComponent({
             if (this.updatePortStatisticData) return;
 
             this.updatePortStatisticData = true;
-            api.get("/api/v1/gpon/statistic/subscribers-count/" + this.deviceName)
-                .then((value: AxiosResponse<PortsStatistic[]>) => {
-                    this.portStatisticData = value.data;
-                    this.updatePortStatisticData = false;
+            api.get("/api/v1/gpon/statistic/subscribers-count/" + this.deviceName, {
+                params: {
+                    page: 1,
+                },
+            })
+                .then(async (value: AxiosResponse<PortsStatistic[] | PaginatedResponse<PortsStatistic>>) => {
+                    if (Array.isArray(value.data)) {
+                        this.portStatisticData = value.data;
+                        return;
+                    }
+
+                    const allResults = [...value.data.results];
+                    let page = 2;
+                    while (value.data.next && allResults.length < value.data.count) {
+                        const pageResponse = await api.get<PaginatedResponse<PortsStatistic>>(
+                            "/api/v1/gpon/statistic/subscribers-count/" + this.deviceName,
+                            {
+                                params: { page },
+                            }
+                        );
+                        allResults.push(...pageResponse.data.results);
+                        if (!pageResponse.data.next) break;
+                        page += 1;
+                    }
+
+                    this.portStatisticData = allResults;
                 })
                 .catch(() => {
+                    this.portStatisticData = [];
+                })
+                .finally(() => {
                     this.updatePortStatisticData = false;
                 });
         },
