@@ -1,6 +1,8 @@
 export interface Paginator<T> {
     count: number;
-    next: string;
-    previous: string;
+    next: string | null;
+    previous: string | null;
     results: T[];
 }
+
+export type PaginatedResponse<T> = Paginator<T>;

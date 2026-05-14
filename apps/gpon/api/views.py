@@ -1,5 +1,5 @@
 import orjson
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.db.transaction import atomic
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
@@ -11,6 +11,7 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.check.api.views.paginators import End3PageNumberPagination
@@ -44,6 +45,12 @@ from .serializers.view_tech_data import (
     ViewHouseBTechDataSerializer,
     ViewOLTStatesTechDataSerializer,
 )
+
+
+class GPONListPageNumberPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class ListUserPermissions(GenericAPIView):
@@ -127,6 +134,7 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
 class BuildingsAddressesListAPIView(ListAPIView):
     serializer_class = BuildingAddressSerializer
     queryset = HouseB.objects.all().select_related("address")
+    pagination_class = GPONListPageNumberPagination
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
@@ -135,21 +143,31 @@ class BuildingsAddressesListAPIView(ListAPIView):
         """
         port = self.request.GET.get("port")
         device = self.request.GET.get("device")
-        if not port and not device:
-            return queryset
+        if port or device:
+            try:
+                olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
+            except OLTState.DoesNotExist:
+                return queryset.none()
+            addresses_ids = set()
+            house_olt_states_queryset: QuerySet[HouseOLTState] = olt_state.house_olt_states.all()
+            for house_olt_state in house_olt_states_queryset:
+                addresses_ids |= set(
+                    house_olt_state.end3_set.all().select_related("address").values_list("address", flat=True)
+                )
 
-        try:
-            olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
-        except OLTState.DoesNotExist:
-            return queryset.none()
-        addresses_ids = set()
-        house_olt_states_queryset: QuerySet[HouseOLTState] = olt_state.house_olt_states.all()
-        for house_olt_state in house_olt_states_queryset:
-            addresses_ids |= set(
-                house_olt_state.end3_set.all().select_related("address").values_list("address", flat=True)
+            queryset = queryset.filter(address_id__in=addresses_ids)
+
+        search_query = str(self.request.GET.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(address__region__icontains=search_query)
+                | Q(address__settlement__icontains=search_query)
+                | Q(address__plan_structure__icontains=search_query)
+                | Q(address__street__icontains=search_query)
+                | Q(address__house__icontains=search_query)
             )
 
-        return queryset.filter(address_id__in=addresses_ids)
+        return queryset
 
 
 class End3AddressesListAPIView(ListAPIView):
@@ -157,6 +175,25 @@ class End3AddressesListAPIView(ListAPIView):
 
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address")
+    pagination_class = GPONListPageNumberPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        address_id = self.request.GET.get("address_id")
+        if address_id:
+            queryset = queryset.filter(address_id=address_id)
+        search_query = str(self.request.GET.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(type__icontains=search_query)
+                | Q(location__icontains=search_query)
+                | Q(address__region__icontains=search_query)
+                | Q(address__settlement__icontains=search_query)
+                | Q(address__plan_structure__icontains=search_query)
+                | Q(address__street__icontains=search_query)
+                | Q(address__house__icontains=search_query)
+            )
+        return queryset
 
 
 class DevicesNamesListAPIView(GenericAPIView):

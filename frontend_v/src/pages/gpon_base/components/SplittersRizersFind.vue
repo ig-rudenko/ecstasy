@@ -10,10 +10,12 @@
         :options="availableList"
         filter
         showClear
+        :loading="isLoading"
         fluid
         :class="valid ? ['w-full'] : ['p-invalid', 'w-full']"
         class="rounded-2xl"
-        :virtualScrollerOptions="{ itemSize: 38 }"
+        @filter="onFilter"
+        :virtualScrollerOptions="virtualScrollerOptions"
         @change="(e) => $emit('change', e)"
         :optionLabel="getFullAddress"
         placeholder="Выберите"
@@ -33,7 +35,6 @@
         </template>
     </Select>
 
-    <!-- ERROR -->
     <Message v-else severity="error"> Ошибка {{ error.message }}. Код ошибки {{ error.status }} </Message>
 </template>
 
@@ -58,6 +59,12 @@ export default {
         return {
             connection: null,
             availableList: null,
+            searchQuery: "",
+            isLoading: false,
+            hasNextPage: true,
+            nextPage: 1,
+            debounceTimer: null,
+            pageSize: 20,
             error: {
                 status: null,
                 message: null,
@@ -65,16 +72,7 @@ export default {
         };
     },
     mounted() {
-        let url = "/api/v1/gpon/addresses/end3";
-        if (this.fromAddressID) {
-            url += "?address_id=" + this.fromAddressID;
-        }
-        api.get(url)
-            .then((resp) => (this.availableList = Array.from(resp.data)))
-            .catch((reason) => {
-                this.error.status = reason.response.status;
-                this.error.message = reason.response.data;
-            });
+        this.loadConnections({ reset: true });
         this.connection = this.init;
     },
 
@@ -83,9 +81,70 @@ export default {
             if (this.type === "both") return "сплиттер или райзер";
             if (this.type === "splitter") return "сплиттер";
             if (this.type === "rizer") return "райзер";
+            return "объект";
+        },
+        virtualScrollerOptions() {
+            return {
+                itemSize: 38,
+                lazy: true,
+                onLazyLoad: this.onLazyLoad,
+                showLoader: true,
+                loading: this.isLoading,
+            };
         },
     },
     methods: {
+        loadConnections({ reset = false } = {}) {
+            if (this.isLoading) return;
+            if (!reset && !this.hasNextPage) return;
+
+            if (reset) {
+                this.availableList = [];
+                this.nextPage = 1;
+                this.hasNextPage = true;
+            }
+
+            let url = "/api/v1/gpon/addresses/end3";
+            if (this.fromAddressID) {
+                url += "?address_id=" + this.fromAddressID;
+            }
+
+            this.isLoading = true;
+            api.get(url, {
+                params: {
+                    page: this.nextPage,
+                    page_size: this.pageSize,
+                    search: this.searchQuery || undefined,
+                },
+            })
+                .then((resp) => {
+                    const results = Array.from(resp.data.results || []);
+                    this.availableList = [...this.availableList, ...results];
+                    this.hasNextPage = Boolean(resp.data.next);
+                    this.nextPage += 1;
+                })
+                .catch((reason) => {
+                    this.error.status = reason.response.status;
+                    this.error.message = reason.response.data;
+                })
+                .finally(() => {
+                    this.isLoading = false;
+                });
+        },
+        onFilter(event) {
+            this.searchQuery = (event.value || "").trim();
+            if (this.debounceTimer) clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                this.loadConnections({ reset: true });
+            }, 250);
+        },
+        onLazyLoad(event) {
+            if (!event) return;
+            const remaining = this.availableList.length - event.last;
+            if (remaining <= 5) {
+                this.loadConnections();
+            }
+        },
         getFullAddress(sr) {
             if (!sr.address) return "НЕТ АДРЕСА";
             let address = formatAddress(sr.address);

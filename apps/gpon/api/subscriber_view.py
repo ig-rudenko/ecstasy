@@ -1,5 +1,6 @@
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
@@ -8,6 +9,7 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -24,9 +26,29 @@ from .serializers.view_subscriber_data import CustomerDetailSerializer
 
 
 class CustomersListAPIView(ListAPIView):
-    queryset = Customer.objects.all()
+    class CustomersPagination(PageNumberPagination):
+        page_size = 20
+        page_size_query_param = "page_size"
+        max_page_size = 100
+
+    queryset = Customer.objects.all().order_by("id")
     permission_classes = [CustomerPermission]
     serializer_class = CustomerSerializer
+    pagination_class = CustomersPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search_query = str(self.request.query_params.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(surname__icontains=search_query)
+                | Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
+                | Q(company_name__icontains=search_query)
+                | Q(contract__icontains=search_query)
+                | Q(phone__icontains=search_query)
+            )
+        return queryset
 
 
 class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):

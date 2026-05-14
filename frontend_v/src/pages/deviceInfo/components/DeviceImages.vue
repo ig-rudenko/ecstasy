@@ -62,12 +62,14 @@
                             placeholder="Поиск по названию и описанию"
                             fluid
                             class="rounded-2xl"
+                            @keyup.enter="loadMedia(1)"
                         />
                     </IconField>
+                    <Button label="Найти" icon="pi pi-search" size="small" class="rounded-2xl!" @click="loadMedia(1)" />
 
                     <div class="flex max-h-[58vh] flex-col gap-2 overflow-auto pr-1">
                         <button
-                            v-for="(item, index) in filteredItems"
+                            v-for="(item, index) in items"
                             :key="item.id"
                             type="button"
                             @click="setCurrentItem(item)"
@@ -131,12 +133,19 @@
                         </button>
 
                         <div
-                            v-if="!filteredItems.length"
+                            v-if="!items.length"
                             class="rounded-3xl border border-dashed border-gray-200/80 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:text-gray-400"
                         >
                             Ничего не найдено
                         </div>
                     </div>
+                    <Paginator
+                        :always-show="false"
+                        :rows="pagination.rows"
+                        :totalRecords="pagination.total"
+                        :first="(pagination.page - 1) * pagination.rows"
+                        @page="loadMedia($event.page + 1)"
+                    />
                 </div>
             </aside>
 
@@ -269,6 +278,7 @@ import errorFmt from "@/errorFmt";
 import { downloadFile } from "@/services/files";
 import { errorToast } from "@/services/my.toast";
 import { getProtectedImage } from "@/helpers/images";
+import { PaginatedResponse } from "@/types/paginator";
 import { MediaFileInfo, newMediaFileInfoList } from "../files";
 
 export default defineComponent({
@@ -293,6 +303,11 @@ export default defineComponent({
                     error: "",
                 },
             },
+            pagination: {
+                page: 1,
+                rows: 100,
+                total: 0,
+            },
         };
     },
     mounted() {
@@ -304,13 +319,6 @@ export default defineComponent({
                 return "#198754";
             }
             return "currentColor";
-        },
-        filteredItems(): MediaFileInfo[] {
-            const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return this.items;
-            return this.items.filter(
-                (item) => item.name.toLowerCase().includes(query) || item.description.toLowerCase().includes(query)
-            );
         },
         currentItemIndex(): number {
             return this.currentItem ? this.items.findIndex((item) => item.id === this.currentItem?.id) : -1;
@@ -338,12 +346,21 @@ export default defineComponent({
             this.editForm.itemIndex = itemIndex;
             this.currentItem = this.items[itemIndex];
         },
-        async loadMedia() {
+        async loadMedia(page = 1) {
             try {
-                const resp = await api.get(`/api/v1/devices/${this.deviceName}/media`);
-                this.items = await newMediaFileInfoList(resp.data);
+                const response = await api.get<PaginatedResponse<any>>(`/api/v1/devices/${this.deviceName}/media`, {
+                    params: {
+                        page,
+                        search: this.searchQuery || undefined,
+                    },
+                });
+                this.items = await newMediaFileInfoList(response.data.results);
+                this.pagination.total = response.data.count;
+                this.pagination.page = page;
                 if (this.items.length) {
                     this.setCurrentItem(this.items[0]);
+                } else {
+                    this.setCurrentItem();
                 }
             } catch (error: any) {
                 errorToast("Не удалось загрузить список медиафайлов", errorFmt(error));

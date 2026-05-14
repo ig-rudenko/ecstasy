@@ -10,17 +10,22 @@
         </Message>
 
         <DataTable
-            v-model:filters="filters"
-            :value="subscribers"
+            :value="_subscribers"
             paginator
+            :always-show-paginator="false"
             :rows="10"
+            :first="(pagination.page - 1) * pagination.rows"
+            :totalRecords="pagination.total"
+            lazy
+            @page="onPage"
             paginator-position="both"
-            filter-display="menu"
-            :globalFilterFields="['surname', 'firstName', 'lastName', 'companyName']"
             :show-headers="false"
         >
             <template #header>
-                <InputText v-model="filters['global'].value" fluid placeholder="Поиск" />
+                <div class="flex items-center gap-2">
+                    <InputText v-model.trim="search" fluid placeholder="Поиск" @keyup.enter="loadCustomers(1)" />
+                    <Button label="Найти" icon="pi pi-search" size="small" @click="loadCustomers(1)" />
+                </div>
             </template>
             <Column field="type">
                 <template #body="{ data }">
@@ -115,8 +120,6 @@
 </template>
 
 <script>
-import { FilterMatchMode } from "@primevue/core/api";
-
 import api from "@/services/api";
 
 export default {
@@ -129,38 +132,41 @@ export default {
             showDialog: false,
             search: "",
             _subscribers: [],
+            pagination: {
+                page: 1,
+                rows: 10,
+                total: 0,
+            },
             error: {
                 message: null,
                 status: null,
             },
-            filters: {
-                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            },
         };
     },
-    computed: {
-        subscribers() {
-            if (this.search.length < 2) return this._subscribers;
-            const search = this.search.toLowerCase();
-            return this._subscribers.filter((value) => {
-                if (value.firstName && value.firstName.toLowerCase().indexOf(search) >= 0) return true;
-                if (value.surname && value.surname.toLowerCase().indexOf(search) >= 0) return true;
-                if (value.lastName && value.lastName.toLowerCase().indexOf(search) >= 0) return true;
-                if (value.companyName && value.companyName.toLowerCase().indexOf(search) >= 0) return true;
-                if (value.contract && value.contract.toLowerCase().indexOf(search) >= 0) return true;
-                return value.phone && value.phone.toLowerCase().indexOf(search) >= 0;
-            });
-        },
-    },
     mounted() {
-        api.get("/api/v1/gpon/customers")
-            .then((resp) => (this._subscribers = resp.data))
-            .catch((reason) => {
-                this.error.message = reason.response.data;
-                this.error.status = reason.response.status;
-            });
+        this.loadCustomers(1);
     },
     methods: {
+        async loadCustomers(page = 1) {
+            try {
+                const response = await api.get("/api/v1/gpon/customers", {
+                    params: {
+                        page,
+                        page_size: this.pagination.rows,
+                        search: this.search || undefined,
+                    },
+                });
+                this._subscribers = response.data.results;
+                this.pagination.total = response.data.count;
+                this.pagination.page = page;
+            } catch (reason) {
+                this.error.message = reason.response?.data;
+                this.error.status = reason.response?.status;
+            }
+        },
+        onPage(event) {
+            this.loadCustomers(event.page + 1);
+        },
         selected(value) {
             // Отправляем новый объект
             this.$emit("select", {

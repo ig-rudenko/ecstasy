@@ -16,9 +16,11 @@
                 :options="addressesList()"
                 filter
                 showClear
+                :loading="isLoading"
                 :class="valid ? [] : ['p-invalid']"
                 @change="(e) => $emit('change', e)"
-                :virtualScrollerOptions="{ itemSize: 38 }"
+                @filter="onAddressFilter"
+                :virtualScrollerOptions="virtualScrollerOptions"
                 :optionLabel="getFullAddress"
                 placeholder="Выберите"
                 class="mb-1 rounded-2xl"
@@ -62,7 +64,7 @@
             @valid="validNewAddress"
             @dismiss="dismissNewAddress"
             :subscriber-address="isSubscriberAddress"
-            :init-address="data.address || getNewAddress()"
+            :init-address="buildInitAddress()"
         ></AddressForm>
     </Dialog>
 </template>
@@ -92,26 +94,16 @@ export default {
         valid: { required: false, type: Boolean, default: true },
     },
 
-    // beforeMount() {
-    //   if (!this.data.address?.building_type) {
-    //     this.data.address = {
-    //       region: "",
-    //       settlement: "",
-    //       planStructure: "",
-    //       street: "",
-    //       house: "",
-    //       block: null,
-    //       floor: null,
-    //       apartment: null,
-    //       building_type: "building"
-    //     }
-    //   }
-    // },
-
     data() {
         return {
             show_new_address_form: false,
             _addresses: [],
+            searchQuery: "",
+            isLoading: false,
+            hasNextPage: true,
+            nextPage: 1,
+            debounceTimer: null,
+            pageSize: 20,
             formState: {
                 address: { valid: true },
                 isValid() {
@@ -123,20 +115,31 @@ export default {
     },
 
     mounted() {
-        this.getAddresses();
+        this.getAddresses({ reset: true });
         this._initData = this.getFromDevicePort;
     },
 
     updated() {
-        // Если поменялись входные данные фильтра по названию оборудования и порта, то ищем адреса еще раз
         if (
             this.getFromDevicePort &&
             (this._initData.deviceName !== this.getFromDevicePort.deviceName ||
                 this._initData.devicePort !== this.getFromDevicePort.devicePort)
         ) {
-            this.getAddresses();
+            this.getAddresses({ reset: true });
             this._initData = this.getFromDevicePort;
         }
+    },
+
+    computed: {
+        virtualScrollerOptions() {
+            return {
+                itemSize: 38,
+                lazy: true,
+                onLazyLoad: this.onAddressesLazyLoad,
+                showLoader: true,
+                loading: this.isLoading,
+            };
+        },
     },
 
     methods: {
@@ -151,7 +154,11 @@ export default {
         validNewAddress(newAddress) {
             this.show_new_address_form = false;
             this.formState.address.valid = true;
-            this.data.address = newAddress;
+            const copiedAddress = this.normalizeAddress(newAddress);
+            if (Object.prototype.hasOwnProperty.call(copiedAddress, "id")) {
+                delete copiedAddress.id;
+            }
+            this.data.address = copiedAddress;
         },
 
         dismissNewAddress() {
@@ -159,21 +166,86 @@ export default {
             this.data.address = null;
         },
 
-        getAddresses() {
+        getAddresses({ reset = false } = {}) {
+            if (this.isLoading) return;
+            if (!reset && !this.hasNextPage) return;
+
+            if (reset) {
+                this._addresses = [];
+                this.nextPage = 1;
+                this.hasNextPage = true;
+            }
+
             let url = "/api/v1/gpon/addresses/buildings";
             if (this.getFromDevicePort) {
                 url += `?device=${this.getFromDevicePort.deviceName}&port=${this.getFromDevicePort.devicePort}`;
             }
-            api.get(url).then((resp) => (this._addresses = resp.data));
+
+            this.isLoading = true;
+            api.get(url, {
+                params: {
+                    page: this.nextPage,
+                    page_size: this.pageSize,
+                    search: this.searchQuery || undefined,
+                },
+            })
+                .then((resp) => {
+                    const newItems = resp.data.results || [];
+                    this._addresses = [...this._addresses, ...newItems];
+                    this.hasNextPage = Boolean(resp.data.next);
+                    this.nextPage += 1;
+                })
+                .finally(() => {
+                    this.isLoading = false;
+                });
+        },
+
+        onAddressFilter(event) {
+            this.searchQuery = (event.value || "").trim();
+            if (this.debounceTimer) clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                this.getAddresses({ reset: true });
+            }, 250);
+        },
+
+        onAddressesLazyLoad(event) {
+            if (!event) return;
+            const remaining = this._addresses.length - event.last;
+            if (remaining <= 5) {
+                this.getAddresses();
+            }
         },
 
         addressesList() {
             let allAddresses = this._addresses;
-            if (this.formState.isValid() && this.allowCreate) {
-                allAddresses = [this.data.address, ...this._addresses];
+            if (this.formState.isValid() && this.allowCreate && this.data.address) {
+                allAddresses = [this.data.address, ...this._addresses.filter((item) => item.id !== this.data.address.id)];
             }
-
             return allAddresses;
+        },
+
+        buildInitAddress() {
+            if (this.data.address) {
+                return this.normalizeAddress(this.data.address);
+            }
+            return this.getNewAddress();
+        },
+
+        normalizeAddress(address) {
+            return {
+                id: address?.id ?? undefined,
+                region: address?.region ?? "",
+                settlement: address?.settlement ?? "",
+                planStructure: address?.planStructure ?? "",
+                street: address?.street ?? "",
+                house: address?.house ?? "",
+                block: address?.block ?? null,
+                floor: address?.floor ?? null,
+                apartment: address?.apartment ?? null,
+                building_type: address?.building_type ?? "building",
+                floors: address?.floors ?? 1,
+                total_entrances: address?.total_entrances ?? 1,
+            };
         },
 
         getNewAddress() {

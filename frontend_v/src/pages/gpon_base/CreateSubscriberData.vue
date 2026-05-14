@@ -232,14 +232,13 @@
                             <Asterisk />
                         </div>
                         <InputText
-                            v-if="!formState.secondStep.selected"
                             v-model.trim="formData.customer.companyName"
+                            :disabled="formState.secondStep.selected"
                             type="text"
                             style="width: 100%"
                             class="rounded-2xl"
                             :class="!formState.secondStep.companyName.valid ? 'p-invalid' : ''"
                         />
-                        <div v-else class="w-100 p-3 border rounded-2">{{ formData.customer.companyName }}</div>
                         <InlineMessage v-if="customerCompanyNameError" severity="error"
                             >{{ customerCompanyNameError }}
                         </InlineMessage>
