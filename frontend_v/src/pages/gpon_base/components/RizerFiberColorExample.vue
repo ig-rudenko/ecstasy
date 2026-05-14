@@ -2,75 +2,75 @@
     <!--  <h6>Число волокон в модуле</h6>-->
     <div>
         <div class="fiber-group">
-            <div><span class="circle blue me-2"></span>Синий</div>
-            <div><span class="circle orange me-2"></span>Оранжевый</div>
-            <div><span class="circle green me-2"></span>Зеленый</div>
-            <div><span class="circle brown me-2"></span>Коричневый</div>
+            <div><span class="circle rizer-color-blue me-2"></span>Синий</div>
+            <div><span class="circle rizer-color-orange me-2"></span>Оранжевый</div>
+            <div><span class="circle rizer-color-green me-2"></span>Зеленый</div>
+            <div><span class="circle rizer-color-brown me-2"></span>Коричневый</div>
         </div>
 
         <div v-if="count >= 8" class="fiber-group">
-            <div><span class="circle grey me-2"></span>Серый</div>
-            <div><span class="circle white me-2"></span>Белый</div>
-            <div><span class="circle red me-2"></span>Красный</div>
-            <div><span class="circle black me-2"></span>Черный</div>
+            <div><span class="circle rizer-color-grey me-2"></span>Серый</div>
+            <div><span class="circle rizer-color-white me-2"></span>Белый</div>
+            <div><span class="circle rizer-color-red me-2"></span>Красный</div>
+            <div><span class="circle rizer-color-black me-2"></span>Черный</div>
         </div>
 
         <div v-if="count >= 12" class="fiber-group">
-            <div><span class="circle yellow me-2"></span>Желтый</div>
-            <div><span class="circle violet me-2"></span>Фиолетовый</div>
-            <div><span class="circle pink me-2"></span>Розовый</div>
-            <div><span class="circle aqua me-2"></span>Бирюзовый</div>
+            <div><span class="circle rizer-color-yellow me-2"></span>Желтый</div>
+            <div><span class="circle rizer-color-violet me-2"></span>Фиолетовый</div>
+            <div><span class="circle rizer-color-pink me-2"></span>Розовый</div>
+            <div><span class="circle rizer-color-aqua me-2"></span>Бирюзовый</div>
         </div>
 
         <!-- С прочерком -->
 
         <div v-if="count >= 16" class="fiber-group">
             <div>
-                <span class="circle blue me-2"></span>Синий с меткой
+                <span class="circle rizer-color-blue me-2"></span>Синий с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle orange me-2"></span>Оранжевый с меткой
+                <span class="circle rizer-color-orange me-2"></span>Оранжевый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle green me-2"></span>Зеленый с меткой
+                <span class="circle rizer-color-green me-2"></span>Зеленый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle brown me-2"></span>Коричневый с меткой
+                <span class="circle rizer-color-brown me-2"></span>Коричневый с меткой
                 <span class="ring"></span>
             </div>
         </div>
 
         <div v-if="count >= 24" class="fiber-group">
             <div>
-                <span class="circle grey me-2"></span>Серый с меткой
+                <span class="circle rizer-color-grey me-2"></span>Серый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle white me-2"></span>Белый с меткой
+                <span class="circle rizer-color-white me-2"></span>Белый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle red me-2"></span>Красный с меткой
+                <span class="circle rizer-color-red me-2"></span>Красный с меткой
                 <span class="ring"></span>
             </div>
-            <div><span class="circle natural me-2"></span>Натуральный (прозрачный)</div>
+            <div><span class="circle rizer-color-natural me-2"></span>Натуральный (прозрачный)</div>
             <div>
-                <span class="circle yellow me-2"></span>Желтый с меткой
-                <span class="ring"></span>
-            </div>
-            <div>
-                <span class="circle violet me-2"></span>Фиолетовый с меткой
+                <span class="circle rizer-color-yellow me-2"></span>Желтый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle pink me-2"></span>Розовый с меткой
+                <span class="circle rizer-color-violet me-2"></span>Фиолетовый с меткой
                 <span class="ring"></span>
             </div>
             <div>
-                <span class="circle aqua me-2"></span>Бирюзовый с меткой
+                <span class="circle rizer-color-pink me-2"></span>Розовый с меткой
+                <span class="ring"></span>
+            </div>
+            <div>
+                <span class="circle rizer-color-aqua me-2"></span>Бирюзовый с меткой
                 <span class="ring"></span>
             </div>
         </div>
@@ -97,58 +97,6 @@ export default {
 .fiber-group div {
     margin: 10px 0;
     text-wrap: nowrap;
-}
-
-.blue {
-    background-color: #416bb2ff;
-}
-
-.orange {
-    background-color: #e87c1bff;
-}
-
-.green {
-    background-color: #4bb37cff;
-}
-
-.brown {
-    background-color: #6c5840ff;
-}
-
-.grey {
-    background-color: #7b8d9cff;
-}
-
-.white {
-    background-color: #ffffffff;
-}
-
-.red {
-    background-color: #e8491dff;
-}
-
-.black {
-    background-color: #2d2d2dff;
-}
-
-.yellow {
-    background-color: #f9b11eff;
-}
-
-.violet {
-    background-color: #9a43cbff;
-}
-
-.pink {
-    background-color: #ec909dff;
-}
-
-.aqua {
-    background-color: #15c6c6ff;
-}
-
-.natural {
-    background-color: #d3d3d3;
 }
 
 .ring {

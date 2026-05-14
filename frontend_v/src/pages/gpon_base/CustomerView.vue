@@ -305,8 +305,25 @@
                                             class="border-gray-300 dark:border-gray-800"
                                         >
                                             <div class="flex flex-col">
+                                                <div class="flex flex-col gap-1">
                                                 <div>{{ connection.end3.location }}</div>
-                                                <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
+                                                    <div>{{ connection.end3.type }} port: {{ connection.end3Port }}</div>
+                                                    <template v-if="connection.end3.type === 'rizer'">
+                                                        <span class="rizer-fiber-wrap ml-2">
+                                                            <span
+                                                                class="rizer-fiber-circle"
+                                                                :class="rizerFiberInfo(connection.end3Port)?.className"
+                                                            ></span>
+                                                            <span
+                                                                v-if="rizerFiberInfo(connection.end3Port)?.marked"
+                                                                class="rizer-fiber-marked"
+                                                            ></span>
+                                                            <span class="rizer-fiber-name">
+                                                                {{ rizerFiberInfo(connection.end3Port)?.name }}
+                                                            </span>
+                                                        </span>
+                                                    </template>
+                                                </div>
                                             </div>
                                         </Button>
                                     </router-link>
@@ -587,6 +604,7 @@ import printElementById from "@/helpers/print";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import SelectSplitterRizerPort from "./components/SelectSplitterRizerPort.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue";
+import { getRizerFiberInfo } from "./components/rizerFiberColors.ts";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 
@@ -692,6 +710,10 @@ export default {
                 address_string += ` (${address.floor} этаж)`;
             }
             return address_string;
+        },
+
+        rizerFiberInfo(number) {
+            return getRizerFiberInfo(number);
         },
 
         updateCustomerData() {

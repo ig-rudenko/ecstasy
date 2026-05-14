@@ -18,6 +18,13 @@
             <div v-if="slotProps.value" class="flex items-center">
                 <div>
                     {{ slotProps.value.number }}
+                    <template v-if="type === 'rizer'">
+                        <span class="rizer-fiber-wrap ml-2">
+                            <span class="rizer-fiber-circle" :class="fiberInfo(slotProps.value.number)?.className"></span>
+                            <span v-if="fiberInfo(slotProps.value.number)?.marked" class="rizer-fiber-marked"></span>
+                            <span class="rizer-fiber-name">{{ fiberInfo(slotProps.value.number)?.name }}</span>
+                        </span>
+                    </template>
                     <TechCapabilityBadge :status="slotProps.value.status" />
                 </div>
             </div>
@@ -29,6 +36,13 @@
             <div v-if="slotProps.option" class="flex items-center">
                 <div>
                     {{ slotProps.option.number }}
+                    <template v-if="type === 'rizer'">
+                        <span class="rizer-fiber-wrap ml-2">
+                            <span class="rizer-fiber-circle" :class="fiberInfo(slotProps.option.number)?.className"></span>
+                            <span v-if="fiberInfo(slotProps.option.number)?.marked" class="rizer-fiber-marked"></span>
+                            <span class="rizer-fiber-name">{{ fiberInfo(slotProps.option.number)?.name }}</span>
+                        </span>
+                    </template>
                     <TechCapabilityBadge :status="slotProps.option.status" />
                 </div>
             </div>
@@ -41,6 +55,7 @@ import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 
 import Asterisk from "./Asterisk.vue";
 import api from "@/services/api";
+import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
 export default {
     name: "SelectSplittersRizersPort",
@@ -96,6 +111,9 @@ export default {
         },
     },
     methods: {
+        fiberInfo(number) {
+            return getRizerFiberInfo(number);
+        },
         getPorts() {
             api.get("/api/v1/gpon/tech-data/end3/" + this.end3ID)
                 .then((resp) => (this._capability = Array.from(resp.data.capability)))

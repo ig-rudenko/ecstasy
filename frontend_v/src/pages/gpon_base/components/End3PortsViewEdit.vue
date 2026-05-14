@@ -1,6 +1,14 @@
 <template>
     <div v-for="port in end3PortsArray" class="items-center flex flex-row gap-10 py-1">
-        <div class="col-1">{{ port.number }}</div>
+        <div class="flex items-center gap-2">
+            <span class="font-mono">{{ port.number }}</span>
+            <template v-if="end3Object.type === 'rizer'">
+                <span class="rizer-fiber-wrap" v-tooltip.top="rizerFiberInfo(port.number)?.name">
+                    <span class="rizer-fiber-circle" :class="rizerFiberInfo(port.number)?.className"></span>
+                    <span v-if="rizerFiberInfo(port.number)?.marked" class="rizer-fiber-marked"></span>
+                </span>
+            </template>
+        </div>
         <div>
             <Select
                 v-if="editMode && hasPermissionToUpdateTechCapability"
@@ -89,6 +97,7 @@
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import CreateSubscriberData from "../CreateSubscriberData.vue";
 import api from "@/services/api";
+import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
 export default {
     name: "End3PortsViewEdit",
@@ -132,6 +141,9 @@ export default {
     },
 
     methods: {
+        rizerFiberInfo(number) {
+            return getRizerFiberInfo(number);
+        },
         /** @param {Object} capability */
         updateTechCapabilityStatus(capability) {
             const data = { status: capability.status };

@@ -2,3 +2,86 @@
 @import "tailwindcss-primeui";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+.rizer-fiber-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 6px;
+}
+
+.rizer-fiber-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 1px solid #1f2634ff;
+    display: inline-block;
+}
+
+.rizer-fiber-name {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.rizer-fiber-marked {
+    position: absolute;
+    width: 14px;
+    height: 2px;
+    background: #111827;
+    transform: rotate(-45deg);
+    left: 0;
+    top: 6px;
+}
+
+.rizer-color-blue {
+    background-color: #416bb2ff;
+}
+
+.rizer-color-orange {
+    background-color: #e87c1bff;
+}
+
+.rizer-color-green {
+    background-color: #4bb37cff;
+}
+
+.rizer-color-brown {
+    background-color: #6c5840ff;
+}
+
+.rizer-color-grey {
+    background-color: #7b8d9cff;
+}
+
+.rizer-color-white {
+    background-color: #ffffffff;
+}
+
+.rizer-color-red {
+    background-color: #e8491dff;
+}
+
+.rizer-color-black {
+    background-color: #2d2d2dff;
+}
+
+.rizer-color-yellow {
+    background-color: #f9b11eff;
+}
+
+.rizer-color-violet {
+    background-color: #9a43cbff;
+}
+
+.rizer-color-pink {
+    background-color: #ec909dff;
+}
+
+.rizer-color-aqua {
+    background-color: #15c6c6ff;
+}
+
+.rizer-color-natural {
+    background-color: #d3d3d3;
+}

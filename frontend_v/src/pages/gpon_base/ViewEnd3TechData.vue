@@ -137,6 +137,7 @@ import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
+import { getRizerFiberInfo } from "./components/rizerFiberColors.ts";
 
 export default {
     name: "ViewEnd3TechData",
@@ -291,6 +292,10 @@ export default {
                 }
             }
             return false;
+        },
+
+        rizerFiberInfo(number) {
+            return getRizerFiberInfo(number);
         },
 
         printData() {
