@@ -1,12 +1,20 @@
+x-ecstasy-image: &ecstasy-image ecstasy:19.0.3
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:19.0.3
+x-logging: &logging
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 volumes:
   redis-data:
 
 services:
 
   frontend:
-    image: ecstasy-frontend:19.0.3
+    image: *ecstasy-frontend-image
+    logging: *logging
     build: frontend_v
-    restart: always
+    restart: unless-stopped
     ports:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8000}:80"
     volumes:
@@ -19,15 +27,13 @@ services:
 
   backend:
     build: .
-    image: ecstasy:19.0.3
-    restart: always
+    image: *ecstasy-image
+    logging: *logging
+    restart: unless-stopped
     command: /bin/sh /app/run.sh
     env_file:
       - .env
     environment:
-      DJANGO_SUPERUSER_EMAIL: admin@example.com
-      DJANGO_SUPERUSER_USERNAME: admin
-      DJANGO_SUPERUSER_PASSWORD: password1
       DJANGO_ENV: "${DJANGO_ENV:-prod}"
 
     volumes:
@@ -48,8 +54,9 @@ services:
 
   celery: &celery
     build: .
-    image: ecstasy:19.0.3
-    restart: always
+    image: *ecstasy-image
+    logging: *logging
+    restart: unless-stopped
     command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
     env_file:
       - .env
@@ -72,11 +79,12 @@ services:
 
   device-connector:
     build: .
-    image: ecstasy:19.0.0
-    command: "gunicorn -b ${DEVICE_CONNECTOR_BIND_HOST:-0.0.0.0}:${DEVICE_CONNECTOR_BIND_PORT:-8000} device_connector:app -k gthread -w 1 --keep-alive 180 --threads 200"
-    restart: always
+    image: *ecstasy-image
+    logging: *logging
+    command: "gunicorn -b ${DEVICE_CONNECTOR_BIND_HOST:-0.0.0.0}:${DEVICE_CONNECTOR_BIND_PORT:-8000} device_connector:app -k gthread -w 1 --keep-alive 180 --threads 200 --no-control-socket"
+    restart: unless-stopped
     environment:
-      DEVICE_CONNECTOR_TOKEN: "${DEVICE_CONNECTOR_TOKEN:-connector-token}"
+      DEVICE_CONNECTOR_TOKEN: "${DEVICE_CONNECTOR_TOKEN:?set DEVICE_CONNECTOR_TOKEN}"
 
       # Кол-во одновременных подключений к оборудованию по умолчанию.
       DEFAULT_POOL_SIZE: "${DEFAULT_POOL_SIZE:-3}"
@@ -91,7 +99,8 @@ services:
 
   redis:
     image: redis:7.4.2-alpine
-    restart: always
+    restart: unless-stopped
+    logging: *logging
     volumes:
       - "redis-data:/data"
     healthcheck:
@@ -103,12 +112,13 @@ services:
 
   mysql:
     image: mysql:9.3.0-oracle
+    logging: *logging
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-99593284x3iou4txiou3}"
-      MYSQL_USER: "${MYSQL_USER:-ecstasy}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-ecstasy_password}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE:-ecstasy}"
-    restart: always
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"
+      MYSQL_USER: "${MYSQL_USER:?set MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?set MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:?set MYSQL_DATABASE}"
+    restart: unless-stopped
     volumes:
       - "./mysql_data:/var/lib/mysql"
     healthcheck:

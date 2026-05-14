@@ -222,7 +222,6 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
         try:
             if not obj.available:
                 return
-            self._collect(device=obj, **kwargs)
 
             with DeviceRemoteConnector(
                 ip=obj.ip,
