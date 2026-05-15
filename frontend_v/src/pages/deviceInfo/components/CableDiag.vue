@@ -195,7 +195,7 @@ export default defineComponent({
         </div>
 
         <div class="flex">
-          <Message v-if="error" severity="error" class="rounded-2xl!"><div v-html="error"></div></Message>
+            <Message v-if="error" severity="error" class="rounded-2xl!"><div v-html="error"></div></Message>
         </div>
 
         <div

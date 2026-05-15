@@ -43,11 +43,11 @@ import ToastService from "primevue/toastservice";
 import "@/assets/base.css";
 import "primeicons/primeicons.css";
 
-import {app} from "@/appInstance";
+import { app } from "@/appInstance";
 import store from "@/store";
 import router from "@/router";
 import setupInterceptors from "@/services/api/setupInterceptors";
-import {initializeOIDC, isOIDCLogin} from "@/oidc";
+import { initializeOIDC, isOIDCLogin } from "@/oidc";
 
 setupInterceptors();
 app.directive("ripple", Ripple);
