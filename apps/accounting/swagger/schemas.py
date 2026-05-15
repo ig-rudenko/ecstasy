@@ -1,7 +1,7 @@
 from drf_yasg.utils import swagger_auto_schema
 
-from apps.accounting.serializers import UserPermissionsSerializer, UserSerializer
-from apps.accounting.swagger.responses import OIDCSwaggerSchema
+from apps.accounting.serializers import UserSerializer
+from apps.accounting.swagger.responses import OIDCSwaggerSchema, UserPermissionsSwaggerSerializer
 
 myself_user_api_doc = swagger_auto_schema(
     responses={
@@ -11,7 +11,7 @@ myself_user_api_doc = swagger_auto_schema(
 
 myself_permissions_api_doc = swagger_auto_schema(
     responses={
-        200: UserPermissionsSerializer,
+        200: UserPermissionsSwaggerSerializer,
     }
 )
 

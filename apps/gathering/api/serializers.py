@@ -60,7 +60,7 @@ class VlanSerializer(serializers.ModelSerializer):
 
 class MacGatherStatusSerializer(serializers.Serializer):
     status = serializers.CharField(allow_null=True, read_only=True)
-    progress = serializers.CharField(allow_null=True, read_only=True)
+    progress = serializers.FloatField(allow_null=True, read_only=True)
 
 
 class MacGatherScanTaskSerializer(serializers.Serializer):
@@ -69,7 +69,7 @@ class MacGatherScanTaskSerializer(serializers.Serializer):
 
 class VlanGatherStatusSerializer(serializers.Serializer):
     status = serializers.CharField(allow_null=True, read_only=True)
-    progress = serializers.CharField(allow_null=True, read_only=True)
+    progress = serializers.FloatField(allow_null=True, read_only=True)
 
 
 class VlanGatherScanTaskSerializer(serializers.Serializer):

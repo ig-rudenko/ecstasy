@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from rest_framework import serializers
 
 
@@ -22,7 +24,7 @@ class MapLayerRenderSerializer(serializers.Serializer):
 
 class MapProblemSerializer(serializers.Serializer):
     id = serializers.CharField(label="Feature ID")
-    acknowledges = serializers.ListSerializer(
+    acknowledges: ClassVar[serializers.ListSerializer] = serializers.ListSerializer(
         child=serializers.ListSerializer(child=serializers.CharField(), label="Текст и время")
     )
 

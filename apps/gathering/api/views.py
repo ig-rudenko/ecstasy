@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.check.models import Devices
 from apps.check.services.filters import filter_devices_qs_by_user
@@ -21,14 +22,16 @@ from ..tasks import (
 )
 from .filters import VlanFilter, VlanPortFilter
 from .serializers import (
-    MacGatherScanTaskSerializer,
-    MacGatherStatusSerializer,
-    VlanGatherScanTaskSerializer,
-    VlanGatherStatusSerializer,
     VlanPortSerializer,
     VlanSerializer,
 )
-from .swagger.schemas import mac_traceroute_api_doc
+from .swagger.schemas import (
+    mac_scan_run_api_doc,
+    mac_scan_status_api_doc,
+    mac_traceroute_api_doc,
+    vlan_scan_run_api_doc,
+    vlan_scan_status_api_doc,
+)
 
 
 class MacTracerouteAPIView(GenericAPIView):
@@ -99,18 +102,17 @@ class VlanPortDetailAPIView(VlanPortQuerysetMixin, UserAuthenticatedAPIView, Ret
     serializer_class = VlanPortSerializer
 
 
-class MacGatherStatusAPIView(GenericAPIView):
-    serializer_class = MacGatherStatusSerializer
-    pagination_class = None
+class MacGatherStatusAPIView(APIView):
 
+    @mac_scan_status_api_doc
     def get(self, request):
         """Проверяет, выполняется ли сканирование MAC-адресов и возвращает результаты."""
         return Response(get_mac_gather_status())
 
 
-class MacGatherScanRunAPIView(GenericAPIView):
-    serializer_class = MacGatherScanTaskSerializer
+class MacGatherScanRunAPIView(APIView):
 
+    @mac_scan_run_api_doc
     def post(self, request):
         """Запускает сканирование MAC-адресов."""
         task_id = cache.get("mac_table_gather_task_id")
@@ -122,18 +124,17 @@ class MacGatherScanRunAPIView(GenericAPIView):
         return Response({"task_id": task_id}, status=200)
 
 
-class VlanGatherStatusAPIView(GenericAPIView):
-    serializer_class = VlanGatherStatusSerializer
-    pagination_class = None
+class VlanGatherStatusAPIView(APIView):
 
+    @vlan_scan_status_api_doc
     def get(self, request):
         """Проверяет, выполняется ли сканирование VLAN-ов и возвращает результаты."""
         return Response(get_vlan_gather_status())
 
 
-class VlanGatherScanRunAPIView(GenericAPIView):
-    serializer_class = VlanGatherScanTaskSerializer
+class VlanGatherScanRunAPIView(APIView):
 
+    @vlan_scan_run_api_doc
     def post(self, request):
         """Запускает сканирование VLAN-ов."""
         task_id = cache.get("vlan_table_gather_task_id")
