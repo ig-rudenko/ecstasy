@@ -299,7 +299,7 @@ def get_traceroute(request: Request) -> Response:
         {
             "nodes": network.nodes,
             "edges": network.edges,
-            "options": orjson.loads(network.options.to_json()),
+            "options": network.options,
         }
     )
 

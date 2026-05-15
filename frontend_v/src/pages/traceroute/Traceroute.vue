@@ -463,6 +463,24 @@
                         vlanTracerouteOptions.maximized ? 'maximized-shell' : '',
                     ]"
                 >
+                    <div
+                        v-if="vlanTracerouteOptions.rendered"
+                        class="!absolute z-[10001] top-3 right-16 flex items-center gap-2"
+                    >
+                        <InputText
+                            v-model="graphNodeSearch"
+                            placeholder="Node"
+                            class="rounded-xl! w-44! bg-white/95! dark:bg-gray-950/80! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                            @keyup.enter="focusGraphNode"
+                        />
+                        <Button
+                            icon="pi pi-search"
+                            rounded
+                            severity="secondary"
+                            v-tooltip.bottom="'Найти узел'"
+                            @click="focusGraphNode"
+                        />
+                    </div>
                     <Button
                         v-if="vlanTracerouteOptions.rendered"
                         class="!absolute z-[10001] top-3 right-3 !rounded-xl"
@@ -472,6 +490,12 @@
                         v-tooltip.bottom="vlanTracerouteOptions.maximized ? 'Выйти из полного экрана' : 'На весь экран'"
                         @click="toggleMaximizeVlanTraceroute"
                     />
+                    <div
+                        v-if="graphRenderLoading && tracerouteMode !== 'mac'"
+                        class="!absolute z-[10001] left-3 right-3 bottom-3 rounded-2xl border border-gray-700/60 bg-black/70 p-3"
+                    >
+                        <ProgressBar :value="graphRenderProgress" />
+                    </div>
                     <div
                         id="vlan-network"
                         :class="['min-h-[480px] h-full w-full', vlanTracerouteOptions.maximized ? 'maximized' : '']"
@@ -484,6 +508,24 @@
                         macTracerouteOptions.maximized ? 'maximized-shell' : '',
                     ]"
                 >
+                    <div
+                        v-if="macTracerouteOptions.rendered"
+                        class="!absolute z-[10001] top-3 right-16 flex items-center gap-2"
+                    >
+                        <InputText
+                            v-model="graphNodeSearch"
+                            placeholder="Node"
+                            class="rounded-xl! w-44! bg-white/95! dark:bg-gray-950/80! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                            @keyup.enter="focusGraphNode"
+                        />
+                        <Button
+                            icon="pi pi-search"
+                            rounded
+                            severity="secondary"
+                            v-tooltip.bottom="'Найти узел'"
+                            @click="focusGraphNode"
+                        />
+                    </div>
                     <Button
                         v-if="macTracerouteOptions.rendered"
                         class="!absolute z-[10001] top-3 right-3 !rounded-xl"
@@ -493,6 +535,12 @@
                         v-tooltip.bottom="macTracerouteOptions.maximized ? 'Выйти из полного экрана' : 'На весь экран'"
                         @click="toggleMaximizeMACTraceroute"
                     />
+                    <div
+                        v-if="graphRenderLoading && tracerouteMode === 'mac'"
+                        class="!absolute z-[10001] left-3 right-3 bottom-3 rounded-2xl border border-gray-700/60 bg-black/70 p-3"
+                    >
+                        <ProgressBar :value="graphRenderProgress" />
+                    </div>
                     <div
                         id="mac-network"
                         :class="['min-h-[480px] h-full w-full', macTracerouteOptions.maximized ? 'maximized' : '']"
@@ -553,7 +601,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, markRaw } from "vue";
 
 import api from "@/services/api";
 import TracerouteNetwork, { type TracerouteNodeData } from "./net";
@@ -619,8 +667,11 @@ export default defineComponent({
             },
             macTracerouteVLANInfo: [] as VlanCountInfo[],
 
-            vlanNetwork: new TracerouteNetwork("vlan-network"),
-            macNetwork: new TracerouteNetwork("mac-network"),
+            vlanNetwork: markRaw(new TracerouteNetwork("vlan-network")),
+            macNetwork: markRaw(new TracerouteNetwork("mac-network")),
+            graphNodeSearch: "",
+            graphRenderLoading: false,
+            graphRenderProgress: 0,
 
             nodeInfoPopupVisible: false,
             selectedTracerouteNode: null as TracerouteNodeData | null,
@@ -714,8 +765,10 @@ export default defineComponent({
     },
 
     mounted() {
-        this.vlanNetwork.setNodeClickHandler(this.handleTracerouteNodeClick);
-        this.macNetwork.setNodeClickHandler(this.handleTracerouteNodeClick);
+        this.vlanNetwork.setNodeClickHandler((node) => this.handleTracerouteNodeClick(node));
+        this.macNetwork.setNodeClickHandler((node) => this.handleTracerouteNodeClick(node));
+        this.vlanNetwork.setRenderProgressHandler((progress) => this.handleGraphRenderProgress(progress));
+        this.macNetwork.setRenderProgressHandler((progress) => this.handleGraphRenderProgress(progress));
     },
 
     unmounted() {
@@ -759,6 +812,30 @@ export default defineComponent({
             this.selectedTracerouteNode = null;
         },
 
+        handleGraphRenderProgress(progress: number) {
+            this.graphRenderProgress = Math.max(0, Math.min(100, progress));
+            this.graphRenderLoading = this.graphRenderProgress < 100;
+        },
+
+        startGraphRenderProgress() {
+            this.graphRenderProgress = 0;
+            this.graphRenderLoading = true;
+        },
+
+        finishGraphRenderProgress() {
+            this.graphRenderProgress = 100;
+            window.setTimeout(() => {
+                if (this.graphRenderProgress === 100) {
+                    this.graphRenderLoading = false;
+                }
+            }, 350);
+        },
+
+        focusGraphNode() {
+            const network = this.tracerouteMode === "mac" ? this.macNetwork : this.vlanNetwork;
+            network.focusNodeByName(this.graphNodeSearch);
+        },
+
         /**
          * Отправляем на сервер запрос трассировки указанного в поле для ввода VLAN
          * И создаем в определенном блоке граф для данной трассировки.
@@ -793,12 +870,17 @@ export default defineComponent({
             const url = "/api/v1/tools/traceroute?" + params.toString();
 
             api.get(url)
-                .then((resp) => {
-                    this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
+                .then(async (resp) => {
+                    this.startGraphRenderProgress();
+                    await this.vlanNetwork.renderVisualData(resp.data.nodes, resp.data.edges, resp.data.options);
                     this.vlanTracerouteStarted = false;
                     this.vlanTracerouteOptions.rendered = true;
+                    this.finishGraphRenderProgress();
                 })
-                .catch(() => (this.vlanTracerouteStarted = false));
+                .catch(() => {
+                    this.vlanTracerouteStarted = false;
+                    this.finishGraphRenderProgress();
+                });
         },
 
         load_vlan_traceroute() {
@@ -853,13 +935,18 @@ export default defineComponent({
             }
 
             api.get("/api/v1/tools/traceroute", { params: params })
-                .then((resp) => {
-                    this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
+                .then(async (resp) => {
+                    this.startGraphRenderProgress();
+                    await this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges, resp.data.options);
                     this.macTracerouteVLANInfo = resp.data.vlansInfo;
                     this.macTracerouteStarted = false;
                     this.macTracerouteOptions.rendered = true;
+                    this.finishGraphRenderProgress();
                 })
-                .catch(() => (this.macTracerouteStarted = false));
+                .catch(() => {
+                    this.macTracerouteStarted = false;
+                    this.finishGraphRenderProgress();
+                });
         },
 
         tracerouteMACWithVlanFilter(vlan: number) {

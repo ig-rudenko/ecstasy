@@ -53,6 +53,28 @@ const baseVisOptions = {
     },
 };
 
+function mergeOptions(baseOptions: any, overrideOptions: any): any {
+    if (!overrideOptions || typeof overrideOptions !== "object") {
+        return { ...baseOptions };
+    }
+
+    const result = { ...baseOptions };
+    for (const [key, value] of Object.entries(overrideOptions)) {
+        if (
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value) &&
+            typeof result[key] === "object" &&
+            !Array.isArray(result[key])
+        ) {
+            result[key] = mergeOptions(result[key], value);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+}
+
 export interface TracerouteNodeData {
     id: string | number;
     label?: string | number;
@@ -61,52 +83,94 @@ export interface TracerouteNodeData {
 }
 
 type NodeClickHandler = (node: TracerouteNodeData | null) => void;
+type RenderProgressHandler = (progress: number) => void;
 
 class TracerouteNetwork {
     private readonly elemID: string;
     public options: any;
     private onNodeClick: NodeClickHandler | null;
+    private onRenderProgress: RenderProgressHandler | null;
+    private network: any;
+    private rawNodes: Array<TracerouteNodeData>;
 
     constructor(elementId: string) {
         this.elemID = elementId;
         this.options = baseVisOptions;
         this.onNodeClick = null;
-    }
-
-    private textToDiv(html: string): HTMLDivElement {
-        const container = document.createElement("div");
-        container.innerHTML = html;
-        return container;
+        this.onRenderProgress = null;
+        this.network = null;
+        this.rawNodes = [];
     }
 
     setNodeClickHandler(handler: NodeClickHandler | null): void {
         this.onNodeClick = handler;
     }
 
-    async renderVisualData(nodes: Array<any>, edges: Array<any>) {
+    setRenderProgressHandler(handler: RenderProgressHandler | null): void {
+        this.onRenderProgress = handler;
+    }
+
+    focusNodeByName(query: string): boolean {
+        if (!this.network) {
+            return false;
+        }
+
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) {
+            return false;
+        }
+
+        const node = this.rawNodes.find((value) => {
+            const id = String(value.id ?? "").toLowerCase();
+            const label = String(value.label ?? "").toLowerCase();
+            return id.includes(normalizedQuery) || label.includes(normalizedQuery);
+        });
+        if (!node) {
+            return false;
+        }
+
+        this.network.selectNodes([node.id]);
+        this.network.focus(node.id, {
+            animation: {
+                duration: 450,
+                easingFunction: "easeInOutQuad",
+            },
+            locked: false,
+            scale: 1.35,
+        });
+        return true;
+    }
+
+    async renderVisualData(nodes: Array<any>, edges: Array<any>, options: any = null) {
+        this.onRenderProgress?.(5);
         const { Network } = await import("vis-network");
-        const rawNodes = nodes.map((value) => ({ ...value }));
-        const normalizedNodes = rawNodes.map((value) => {
-            return {
-                ...value,
-                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title,
-            };
-        });
-        const normalizedEdges = edges.map((value) => {
-            return {
-                ...value,
-                title: typeof value.title === "string" ? this.textToDiv(value.title) : value.title,
-            };
-        });
-        const network = new Network(
+        this.onRenderProgress?.(15);
+
+        this.rawNodes = nodes.map((value) => ({ ...value }));
+        const normalizedNodes = this.rawNodes;
+        this.onRenderProgress?.(30);
+
+        const normalizedEdges = edges;
+        this.network = new Network(
             <HTMLDivElement>document.getElementById(this.elemID),
             {
-                nodes: normalizedNodes,
-                edges: normalizedEdges,
+                nodes: normalizedNodes as any,
+                edges: normalizedEdges as any,
             },
-            this.options
+            mergeOptions(this.options, options)
         );
-        network.on("click", (params) => {
+        this.network.on("stabilizationProgress", (params: any) => {
+            const total = Math.max(params.total || 1, 1);
+            const progress = 30 + Math.round((Math.min(params.iterations, total) / total) * 69);
+            this.onRenderProgress?.(progress);
+        });
+        this.network.once("stabilized", () => {
+            this.onRenderProgress?.(100);
+        });
+        this.network.once("afterDrawing", () => {
+            this.onRenderProgress?.(100);
+        });
+        this.network.on("click", (params: any) => {
             if (!this.onNodeClick) {
                 return;
             }
@@ -116,7 +180,7 @@ class TracerouteNetwork {
             }
 
             const clickedNodeId = params.nodes[0];
-            const clickedNode = rawNodes.find((node) => node.id === clickedNodeId) || null;
+            const clickedNode = this.rawNodes.find((node) => node.id === clickedNodeId) || null;
             this.onNodeClick(clickedNode);
         });
     }

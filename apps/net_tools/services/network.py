@@ -3,9 +3,71 @@ from pyvis.network import Network
 from ..services.finder import TracerouteResult
 
 
+def build_traceroute_options(nodes_count: int, edges_count: int) -> dict:
+    """Build vis-network options based on visible graph size."""
+    nodes_count = max(nodes_count, 1)
+    edges_count = max(edges_count, 0)
+    density = edges_count / nodes_count
+    is_large_graph = nodes_count > 300 or edges_count > 600
+    is_huge_graph = nodes_count > 1200 or edges_count > 2500
+
+    if is_large_graph:
+        spring_length = max(120, min(420, int(70 + nodes_count * 0.08 + density * 25)))
+        gravitational_constant = -max(500, min(12000, int(nodes_count * 2.4 + edges_count * 0.35)))
+        return {
+            "layout": {"randomSeed": 12345, "improvedLayout": not is_huge_graph},
+            "edges": {"smooth": {"enabled": not is_huge_graph, "type": "continuous"}},
+            "physics": {
+                "enabled": True,
+                "solver": "forceAtlas2Based",
+                "forceAtlas2Based": {
+                    "avoidOverlap": 0.35 if nodes_count < 800 else 0.15,
+                    "centralGravity": 0.012 if density < 2 else 0.02,
+                    "damping": 0.62,
+                    "gravitationalConstant": gravitational_constant,
+                    "springConstant": 0.025 if density < 2 else 0.04,
+                    "springLength": spring_length,
+                },
+                "stabilization": {
+                    "enabled": True,
+                    "fit": True,
+                    "iterations": max(600, min(3500, nodes_count * 3 + edges_count)),
+                    "onlyDynamicEdges": False,
+                    "updateInterval": 50,
+                },
+                "timestep": 0.45,
+            },
+        }
+
+    node_distance = max(130, min(360, int(110 + nodes_count * 0.45 + density * 30)))
+    return {
+        "layout": {"randomSeed": 12345, "improvedLayout": True},
+        "edges": {"smooth": {"enabled": True, "type": "dynamic"}},
+        "physics": {
+            "enabled": True,
+            "solver": "repulsion",
+            "repulsion": {
+                "centralGravity": 0.08 if nodes_count > 80 else 0.18,
+                "damping": 0.82 if density > 2 else 0.88,
+                "nodeDistance": node_distance,
+                "springConstant": 0.04 if density > 2 else 0.055,
+                "springLength": max(120, min(260, int(node_distance * 1.15))),
+            },
+            "stabilization": {
+                "enabled": True,
+                "fit": True,
+                "iterations": max(350, min(1800, nodes_count * 8 + edges_count * 2)),
+                "onlyDynamicEdges": False,
+                "updateInterval": 50,
+            },
+        },
+    }
+
+
 class VlanNetwork:
     def __init__(self, network: Network):
         self._net = network
+        self._options: dict = build_traceroute_options(1, 0)
 
     @property
     def nodes(self):
@@ -17,7 +79,7 @@ class VlanNetwork:
 
     @property
     def options(self):
-        return self._net.options
+        return self._options
 
     def create_network(
         self,
@@ -35,10 +97,11 @@ class VlanNetwork:
         self._create_nodes(data, show_admin_down_ports, nodes_only)
 
         neighbor_map = self._net.get_adj_list()
-        nodes_count = len(self._net.nodes)
+        visible_nodes_count = sum(1 for node in self._net.nodes if not node.get("hidden"))
+        edges_count = len(self._net.edges)
+        self._options = build_traceroute_options(visible_nodes_count, edges_count)
 
         # Настройка физики для карты сети.
-        self._net.repulsion(node_distance=nodes_count if nodes_count > 130 else 130, damping=0.89)
 
         # Итерация по всем узлам в сети.
         for node in self._net.nodes:

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.app_settings.models import VlanTracerouteConfig
 from apps.net_tools.models import DescNameFormat, VlanName
+from apps.net_tools.services.network import build_traceroute_options
 
 from ...models import MacAddress
 
@@ -171,6 +172,7 @@ class MacTraceroute:
         return {
             "nodes": nodes,
             "edges": edges,
+            "options": build_traceroute_options(len(nodes), len(edges)),
             "vlansInfo": vlans_count_list,
         }
 
