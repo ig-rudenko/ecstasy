@@ -26,6 +26,15 @@ from ..models import (
 from ..services.device.commands import get_device_command_task_results_cache_key
 
 
+def assert_problem_response(test_case, resp, *, problem_type: str, title: str, status_code: int):
+    """Проверяет базовую структуру ответа application/problem+json."""
+    test_case.assertEqual(resp.data["type"], f"/api/problems/{problem_type}")
+    test_case.assertEqual(resp.data["title"], title)
+    test_case.assertEqual(resp.data["status"], status_code)
+    test_case.assertIn("detail", resp.data)
+    test_case.assertIn("instance", resp.data)
+
+
 class PortControlAPIViewTestCase(APITestCase):
     user = None  # type: ClassVar[User]
     group = None  # type: ClassVar[DeviceGroup]
@@ -96,7 +105,14 @@ class PortControlAPIViewTestCase(APITestCase):
             data={"port": "Fa1/0/1", "status": "down", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertDictEqual(resp.data, {"error": "Оборудование недоступно!"})
+        assert_problem_response(
+            self,
+            resp,
+            problem_type="error",
+            title="Internal Server Error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(resp.data["errors"]["error"], "Оборудование недоступно!")
 
     def test_port_down_invalid_request_data(self):
         self.user.profile.permissions = self.user.profile.UP_DOWN
@@ -109,8 +125,14 @@ class PortControlAPIViewTestCase(APITestCase):
             data={"port": "Fa1/0/1", "status": "asdasd", "save": True},
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("status", resp.data)
-        self.assertEqual(len(resp.data), 1)
+        assert_problem_response(
+            self,
+            resp,
+            problem_type="validation-error",
+            title="Validation Error",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual({error["field"] for error in resp.data["errors"]}, {"status"})
 
         # Не был передан `save`.
         resp = self.client.post(
@@ -118,16 +140,26 @@ class PortControlAPIViewTestCase(APITestCase):
             data={"port": "Fa1/0/1", "status": "down"},
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("save", resp.data)
-        self.assertEqual(len(resp.data), 1)
+        assert_problem_response(
+            self,
+            resp,
+            problem_type="validation-error",
+            title="Validation Error",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual({error["field"] for error in resp.data["errors"]}, {"save"})
 
         # Нет данных.
         resp = self.client.post(self.url)
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("save", resp.data)
-        self.assertIn("status", resp.data)
-        self.assertIn("port", resp.data)
-        self.assertEqual(len(resp.data), 3)
+        assert_problem_response(
+            self,
+            resp,
+            problem_type="validation-error",
+            title="Validation Error",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual({error["field"] for error in resp.data["errors"]}, {"save", "status", "port"})
 
     @patch("apps.check.models.Devices.connect")
     def test_port_down_invalid_port(self, dev_connect_mock: Mock):
@@ -419,12 +451,25 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             desc=data["description"],
         )
 
-        self.assertDictEqual(
-            resp.data,
-            {
-                "detail": "Слишком длинное описание! "
-                f"Укажите не более {set_description_result.max_length} символов."
-            },
+        assert_problem_response(
+            self,
+            resp,
+            problem_type="validation-error",
+            title="Validation Error",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(resp.data["detail"], "Request validation failed.")
+        self.assertEqual(
+            resp.data["errors"],
+            [
+                {
+                    "detail": (
+                        "Слишком длинное описание! "
+                        f"Укажите не более {set_description_result.max_length} символов."
+                    ),
+                    "field": "detail",
+                }
+            ],
             msg="В ответе API неверные данные",
         )
 

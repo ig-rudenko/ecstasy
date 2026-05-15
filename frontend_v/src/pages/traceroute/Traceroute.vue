@@ -50,6 +50,18 @@
                             >
                                 MAC
                             </button>
+                            <button
+                                type="button"
+                                :class="
+                                    tracerouteMode === 'neighbors'
+                                        ? 'shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                                "
+                                class="cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition"
+                                @click="setTracerouteMode('neighbors')"
+                            >
+                                Neighbors
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -57,11 +69,11 @@
 
             <!-- VLAN -->
             <div
-                v-show="tracerouteMode === 'vlan'"
-                class="w-fit rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur p-5 sm:p-6 space-y-5 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                v-show="tracerouteMode !== 'mac'"
+                class="w-fit rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur p-5 sm:p-6 space-y-3 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <div class="flex flex-wrap items-center gap-3">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">VLAN traceroute</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">Traceroute</h2>
                     <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                         <template
                             v-if="vlanScanStatus.running && vlanScanStatus.progress && vlanScanStatus.progress > 0"
@@ -117,7 +129,7 @@
                 </div>
 
                 <div class="flex flex-wrap items-end gap-3">
-                    <div>
+                    <div v-if="tracerouteMode === 'vlan'">
                         <InputNumber
                             :min="1"
                             :max="4096"
@@ -125,7 +137,7 @@
                             placeholder="vlan"
                             class="mt-1"
                             input-class="!w-28 !rounded-2xl !text-center !font-mono !text-lg !bg-white/95 dark:!bg-gray-950/60 !text-gray-900 dark:!text-gray-100 !border-gray-200/80 dark:!border-gray-700/60"
-                            @keyup.enter="load_vlan_traceroute"
+                            @keyup.enter="load_traceroute"
                             @input="getInputVlanInfo"
                         />
                     </div>
@@ -134,7 +146,7 @@
                         class="rounded-2xl!"
                         :loading="vlanTracerouteStarted"
                         v-tooltip.bottom="'Построить граф'"
-                        @click="load_vlan_traceroute"
+                        @click="load_traceroute"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -150,7 +162,10 @@
                             />
                         </svg>
                     </Button>
-                    <div v-if="inputVlanInfo.name" class="text-sm text-gray-700 dark:text-gray-200 pb-1 font-mono">
+                    <div
+                        v-if="tracerouteMode === 'vlan' && inputVlanInfo.name"
+                        class="text-sm text-gray-700 dark:text-gray-200 pb-1 font-mono"
+                    >
                         {{ inputVlanInfo.name }}
                         <span v-if="inputVlanInfo.description" class="text-gray-500 dark:text-gray-400"
                             >({{ inputVlanInfo.description }})</span
@@ -171,7 +186,7 @@
                             >Показывать пустые порты</label
                         >
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div v-if="tracerouteMode === 'vlan'" class="flex items-center gap-3">
                         <ToggleSwitch input-id="doubleCheckVlan" v-model="vlanTracerouteOptions.doubleCheckVlan" />
                         <label for="doubleCheckVlan" class="text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
                             >Двухстороннее соответствие VLAN на соседних портах</label
@@ -179,8 +194,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 pt-1">
-                    <span class="text-sm text-gray-600 dark:text-gray-300">Мин. число узлов в графе</span>
+                <div class="flex flex-wrap items-center gap-3">
                     <InputGroup
                         unstyled
                         class="inline-flex items-center rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/90 dark:bg-gray-950/40 px-1"
@@ -201,6 +215,32 @@
                         />
                         <Button icon="pi pi-plus" text rounded @click="vlanTracerouteOptions.graphMinLength++" />
                     </InputGroup>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Мин. число узлов в графе</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <InputText
+                        v-model="vlanTracerouteOptions.deviceNameFilter"
+                        placeholder="Имя оборудования"
+                        class="rounded-2xl! min-w-56! bg-white/95! dark:bg-gray-950/60! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                    />
+                    <span class="text-sm text-gray-600 dark:text-gray-300">
+                        Фильтр имени стартового оборудования
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <InputText
+                        v-model="vlanTracerouteOptions.groupFilter"
+                        placeholder="Group"
+                        class="rounded-2xl! min-w-56! bg-white/95! dark:bg-gray-950/60! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                    />
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Group filter</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <ToggleSwitch input-id="nodesOnly" v-model="vlanTracerouteOptions.nodesOnly" />
+                    <label for="nodesOnly" class="text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                        >Only network nodes</label
+                    >
                 </div>
             </div>
 
@@ -210,7 +250,7 @@
                 class="w-fit rounded-3xl border border-gray-200/50 dark:border-gray-700/50 bg-white/75 dark:bg-gray-900/45 backdrop-blur p-5 sm:p-6 space-y-5 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <div class="flex flex-wrap items-center gap-3">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">MAC traceroute</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 m-0">Traceroute</h2>
                     <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                         <template v-if="macScanStatus.running && macScanStatus.progress && macScanStatus.progress > 0">
                             <ProgressSpinner class="w-6! h-6!" stroke-width="4" />
@@ -305,6 +345,61 @@
                         />
                     </div>
                 </div>
+                <div class="grid gap-3 sm:grid-cols-1 md:max-w-3xl">
+                    <div class="flex items-center gap-3">
+                        <ToggleSwitch input-id="macAdminDownPorts" v-model="vlanTracerouteOptions.adminDownPorts" />
+                        <label for="macAdminDownPorts" class="text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                            >Указывать выключенные порты</label
+                        >
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <ToggleSwitch input-id="macShowEmptyPorts" v-model="vlanTracerouteOptions.showEmptyPorts" />
+                        <label for="macShowEmptyPorts" class="text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                            >Показывать пустые порты</label
+                        >
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <ToggleSwitch input-id="macNodesOnly" v-model="vlanTracerouteOptions.nodesOnly" />
+                        <label for="macNodesOnly" class="text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                            >Only network nodes</label
+                        >
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <InputGroup
+                        unstyled
+                        class="inline-flex items-center rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/90 dark:bg-gray-950/40 px-1"
+                    >
+                        <Button
+                            icon="pi pi-minus"
+                            text
+                            rounded
+                            @click="
+                                vlanTracerouteOptions.graphMinLength > 1 ? vlanTracerouteOptions.graphMinLength-- : null
+                            "
+                        />
+                        <InputNumber
+                            v-model="vlanTracerouteOptions.graphMinLength"
+                            :min="1"
+                            :max="100"
+                            input-class="!w-12 !border-0 !bg-transparent !text-center !font-mono !text-lg !text-gray-900 dark:!text-gray-100"
+                        />
+                        <Button icon="pi pi-plus" text rounded @click="vlanTracerouteOptions.graphMinLength++" />
+                    </InputGroup>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Мин. число узлов в графе</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <InputText
+                        v-model="vlanTracerouteOptions.deviceNameFilter"
+                        placeholder="Имя оборудования"
+                        class="rounded-2xl! min-w-56! bg-white/95! dark:bg-gray-950/60! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                    />
+                    <InputText
+                        v-model="vlanTracerouteOptions.groupFilter"
+                        placeholder="Group"
+                        class="rounded-2xl! min-w-56! bg-white/95! dark:bg-gray-950/60! text-gray-900! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                    />
+                </div>
             </div>
 
             <div v-if="vlanTracerouteStarted || macTracerouteStarted" class="flex justify-center py-10">
@@ -362,7 +457,7 @@
                 ]"
             >
                 <div
-                    v-show="tracerouteMode === 'vlan'"
+                    v-show="tracerouteMode !== 'mac'"
                     :class="[
                         'relative min-h-[480px] h-[900px]',
                         vlanTracerouteOptions.maximized ? 'maximized-shell' : '',
@@ -491,7 +586,7 @@ export default defineComponent({
             macTracerouteStarted: false,
 
             // Установка значения по умолчанию для свойства tracerouteMode.
-            tracerouteMode: "vlan" as "vlan" | "mac",
+            tracerouteMode: "vlan" as "vlan" | "mac" | "neighbors",
 
             // Пользовательский ввод
             input: {
@@ -510,6 +605,9 @@ export default defineComponent({
                 showEmptyPorts: false,
                 doubleCheckVlan: true,
                 graphMinLength: 3,
+                deviceNameFilter: "",
+                groupFilter: "",
+                nodesOnly: false,
                 maximized: false,
                 rendered: false,
             },
@@ -533,7 +631,7 @@ export default defineComponent({
 
     computed: {
         graphAreaTransparent(): boolean {
-            const vlanShown = this.tracerouteMode === "vlan";
+            const vlanShown = this.tracerouteMode !== "mac";
             const macShown = this.tracerouteMode === "mac";
             const hasForMode =
                 (vlanShown && this.vlanTracerouteOptions.rendered) || (macShown && this.macTracerouteOptions.rendered);
@@ -627,7 +725,7 @@ export default defineComponent({
     },
 
     methods: {
-        setTracerouteMode(mode: "vlan" | "mac") {
+        setTracerouteMode(mode: "vlan" | "mac" | "neighbors") {
             if (this.tracerouteMode !== mode) {
                 this.vlanTracerouteOptions.maximized = false;
                 this.macTracerouteOptions.maximized = false;
@@ -665,23 +763,34 @@ export default defineComponent({
          * Отправляем на сервер запрос трассировки указанного в поле для ввода VLAN
          * И создаем в определенном блоке граф для данной трассировки.
          */
-        load_vlan_traceroute() {
-            if (!this.input.vlan) return;
+        load_traceroute() {
+            if (this.tracerouteMode === "vlan" && !this.input.vlan) return;
 
             this.closeTracerouteNodePopup();
             this.vlanTracerouteStarted = true;
 
-            let url =
-                "/api/v1/tools/vlan-traceroute?vlan=" +
-                this.input.vlan +
-                "&ep=" +
-                this.vlanTracerouteOptions.showEmptyPorts +
-                "&ad=" +
-                this.vlanTracerouteOptions.adminDownPorts +
-                "&double_check=" +
-                this.vlanTracerouteOptions.doubleCheckVlan +
-                "&graph_min_length=" +
-                this.vlanTracerouteOptions.graphMinLength;
+            const params = new URLSearchParams({
+                mode: this.tracerouteMode,
+                ep: String(this.vlanTracerouteOptions.showEmptyPorts),
+                ad: String(this.vlanTracerouteOptions.adminDownPorts),
+                double_check: String(this.vlanTracerouteOptions.doubleCheckVlan),
+                graph_min_length: String(this.vlanTracerouteOptions.graphMinLength),
+                nodes_only: String(this.vlanTracerouteOptions.nodesOnly),
+            });
+            if (this.tracerouteMode === "vlan" && this.input.vlan) {
+                params.append("vlan", String(this.input.vlan));
+            }
+
+            const deviceNameFilter = this.vlanTracerouteOptions.deviceNameFilter.trim();
+            if (deviceNameFilter) {
+                params.append("device_name", deviceNameFilter);
+            }
+            const groupFilter = this.vlanTracerouteOptions.groupFilter.trim();
+            if (groupFilter) {
+                params.append("group", groupFilter);
+            }
+
+            const url = "/api/v1/tools/traceroute?" + params.toString();
 
             api.get(url)
                 .then((resp) => {
@@ -690,6 +799,10 @@ export default defineComponent({
                     this.vlanTracerouteOptions.rendered = true;
                 })
                 .catch(() => (this.vlanTracerouteStarted = false));
+        },
+
+        load_vlan_traceroute() {
+            this.load_traceroute();
         },
 
         toggleMaximizeVlanTraceroute() {
@@ -719,13 +832,27 @@ export default defineComponent({
 
             this.closeTracerouteNodePopup();
             this.macTracerouteStarted = true;
-            const url = "/api/v1/gather/traceroute/mac-address/" + valid_mac + "/";
-            const params: any = {};
+            const params: any = {
+                mode: "mac",
+                mac: valid_mac,
+                ep: this.vlanTracerouteOptions.showEmptyPorts,
+                ad: this.vlanTracerouteOptions.adminDownPorts,
+                graph_min_length: this.vlanTracerouteOptions.graphMinLength,
+                nodes_only: this.vlanTracerouteOptions.nodesOnly,
+            };
             if (this.macTracerouteOptions.vlanFilter) {
-                params["vlan"] = this.macTracerouteOptions.vlanFilter;
+                params["mac_vlan"] = this.macTracerouteOptions.vlanFilter;
+            }
+            const deviceNameFilter = this.vlanTracerouteOptions.deviceNameFilter.trim();
+            if (deviceNameFilter) {
+                params["device_name"] = deviceNameFilter;
+            }
+            const groupFilter = this.vlanTracerouteOptions.groupFilter.trim();
+            if (groupFilter) {
+                params["group"] = groupFilter;
             }
 
-            api.get(url, { params: params })
+            api.get("/api/v1/tools/traceroute", { params: params })
                 .then((resp) => {
                     this.macNetwork.renderVisualData(resp.data.nodes, resp.data.edges);
                     this.macTracerouteVLANInfo = resp.data.vlansInfo;

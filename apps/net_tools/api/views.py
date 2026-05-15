@@ -17,15 +17,16 @@ from rest_framework.response import Response
 from apps.app_settings.models import VlanTracerouteConfig, ZabbixConfig
 from apps.check.models import Devices
 from apps.check.services.filters import filter_devices_qs_by_user
+from apps.gathering.services.mac.traceroute import MacTraceroute
 from devicemanager.device import zabbix_api
 from ecstasy_project.error_handler import ExternalServiceProblem
 
 from ..models import VlanName
 from ..services.arp_find import find_mac_or_ip
-from ..services.finder import Finder, MultipleVlanTraceroute, VlanTraceroute
-from ..services.network import VlanNetwork
+from ..services.finder import Finder, MultipleTraceroute, Traceroute
+from ..services.network import TracerouteNetwork
 from ..tasks import check_scanning_status, interfaces_scan
-from .serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
+from .serializers import GetVlanDescQuerySerializer, TracerouteQuerySerializer
 from .swagger.schemas import (
     find_by_description_schema,
     get_vendor_schema,
@@ -193,7 +194,7 @@ def get_vlan_desc(request: Request) -> Response:
 @api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_traceroute", raise_exception=True)
-def get_vlan_traceroute(request: Request) -> Response:
+def get_traceroute(request: Request) -> Response:
     """
     ## Трассировка VLAN и отправка карты
 
@@ -214,14 +215,38 @@ def get_vlan_traceroute(request: Request) -> Response:
     соседей и линии связи из результата. Затем функция отправляет карту в виде JSON-объекта как ответ на запрос.
     """
 
-    serializer = VlanTracerouteQuerySerializer(data=request.query_params)
+    serializer = TracerouteQuerySerializer(data=request.query_params)
     serializer.is_valid(raise_exception=True)
 
-    vlan = serializer.validated_data["vlan"]
+    mode = serializer.validated_data["mode"]
+    vlan = serializer.validated_data.get("vlan")
+    mac = serializer.validated_data["mac"]
+    mac_vlan = serializer.validated_data.get("mac_vlan")
     empty_ports = serializer.validated_data["ep"]
     only_admin_up = serializer.validated_data["ad"]
     double_check = serializer.validated_data["double_check"]
     graph_min_length = serializer.validated_data["graph_min_length"]
+    nodes_only = serializer.validated_data["nodes_only"]
+    device_name = serializer.validated_data["device_name"]
+    group = serializer.validated_data["group"]
+
+    if mode == "mac":
+        mac_clean = "".join(re.findall(r"[0-9a-fA-F]+", mac)).lower()
+        if len(mac_clean) != 12:
+            raise ValidationError({"mac": "Invalid MAC address"})
+
+        traceroute = MacTraceroute()
+        return Response(
+            traceroute.get_mac_graph(
+                mac=mac_clean,
+                vlan=mac_vlan,
+                device_name_filter=device_name,
+                group_filter=group,
+                show_empty_ports=empty_ports,
+                graph_min_length=graph_min_length,
+                nodes_only=nodes_only,
+            )
+        )
 
     # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
@@ -235,18 +260,24 @@ def get_vlan_traceroute(request: Request) -> Response:
         devices_qs = devices_qs.filter(name__iregex=vlan_traceroute_settings.vlan_start_regex)
     if vlan_traceroute_settings.ip_pattern:
         devices_qs = devices_qs.filter(ip__iregex=vlan_traceroute_settings.ip_pattern)
+    if device_name:
+        devices_qs = devices_qs.filter(name__icontains=device_name)
+    if group:
+        devices_qs = devices_qs.filter(group__name__icontains=group)
 
-    tracert = MultipleVlanTraceroute(
-        finder=VlanTraceroute(cache_timeout=vlan_traceroute_settings.cache_timeout),
+    tracert = MultipleTraceroute(
+        finder=Traceroute(cache_timeout=vlan_traceroute_settings.cache_timeout),
         devices_queryset=devices_qs,
     )
     result = tracert.execute_traceroute(
-        vlan=vlan,
+        vlan=vlan if mode == "vlan" else None,
         empty_ports=empty_ports,
         double_check=double_check,
         only_admin_up=only_admin_up,
         graph_min_length=graph_min_length,
         find_device_pattern=vlan_traceroute_settings.find_device_pattern,
+        device_name_filter=device_name,
+        nodes_only=nodes_only,
     )
 
     if not result:  # Если поиск не дал результатов
@@ -258,9 +289,11 @@ def get_vlan_traceroute(request: Request) -> Response:
             }
         )
 
-    network = VlanNetwork(network=Network(height="100%", width="100%", bgcolor="#222222", font_color="white"))
+    network = TracerouteNetwork(
+        network=Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
+    )
 
-    network.create_network(result, show_admin_down_ports=only_admin_up)
+    network.create_network(result, show_admin_down_ports=only_admin_up, nodes_only=nodes_only)
 
     return Response(
         {
@@ -269,3 +302,6 @@ def get_vlan_traceroute(request: Request) -> Response:
             "options": orjson.loads(network.options.to_json()),
         }
     )
+
+
+get_vlan_traceroute = get_traceroute

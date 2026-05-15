@@ -1,6 +1,6 @@
 from drf_yasg.utils import swagger_auto_schema
 
-from ..serializers import GetVlanDescQuerySerializer, VlanTracerouteQuerySerializer
+from ..serializers import GetVlanDescQuerySerializer, TracerouteQuerySerializer
 from .serializers import (
     FindByDescQuerySerializer,
     GetVendorSerializer,
@@ -29,6 +29,6 @@ get_vlan_desc_schema = swagger_auto_schema(
 
 vlan_traceroute_schema = swagger_auto_schema(
     methods=["GET"],
-    query_serializer=VlanTracerouteQuerySerializer(),
+    query_serializer=TracerouteQuerySerializer(),
     responses={200: VlanTracerouteSerializer()},
 )

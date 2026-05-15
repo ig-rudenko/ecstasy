@@ -257,6 +257,9 @@ class VlanTraceroute:
     def __init__(self, cache_timeout: int = 60 * 5) -> None:
         self.result: list[VlanTracerouteResult] = []  # Итоговый список
         self._desc_name_list: list[DescNameFormat] = []
+        self._desc_name_formats_loaded = False
+        self._desc_name_standards: set[str] = set()
+        self._desc_name_patterns: list[tuple[re.Pattern[str], str]] = []
         self.passed_devices: set[str] = set()  # Множество уже пройденного оборудования
 
         # Словарь содержащий информацию об VLAN для каждого оборудования
@@ -268,37 +271,81 @@ class VlanTraceroute:
 
         self._reformatting_cache: dict[str, str] = {}
         self._pattern_cache: dict[str, re.Pattern[str]] = {}
+        self._device_name_pattern_cache: dict[str, re.Pattern[str]] = {}
+
+    def _load_desc_name_formats(self) -> None:
+        """Загружает и компилирует правила нормализации имен оборудования."""
+        if self._desc_name_formats_loaded:
+            return
+
+        self._desc_name_list = list(DescNameFormat.objects.all())
+        self._desc_name_standards = {reformat.standard for reformat in self._desc_name_list}
+        self._desc_name_patterns = [
+            (re.compile(pattern, flags=re.IGNORECASE), reformat.standard)
+            for reformat in self._desc_name_list
+            for pattern in reformat.replacement.split(", ")
+            if pattern
+        ]
+        self._desc_name_formats_loaded = True
 
     def reformatting(self, name: str):
         """Форматируем строку с названием оборудования, приводя его в единый стандарт, указанный в DescNameFormat"""
         if (new_name := self._reformatting_cache.get(name)) is not None:
             return new_name
 
-        for reformat in self._desc_name_list:
-            if reformat.standard == name:
-                # Если имя совпадает с правильным, то отправляем его
-                self._reformatting_cache[name] = name
-                return name
+        if name in self._desc_name_standards:
+            # Если имя совпадает с правильным, то отправляем его.
+            self._reformatting_cache[name] = name
+            return name
 
-            for pattern in reformat.replacement.split(", "):
-                if re.search(pattern, name, flags=re.IGNORECASE):  # Если паттерн содержится в исходном имени
-                    # Заменяем совпадение "pattern" в названии "name" на правильное "n"
-                    new_name = re.sub(pattern, reformat.standard, name, flags=re.IGNORECASE)
-                    self._reformatting_cache[name] = new_name
-                    return new_name
+        for pattern, standard in self._desc_name_patterns:
+            if pattern.search(name):  # Если паттерн содержится в исходном имени
+                # Заменяем совпадение "pattern" в названии "name" на правильное имя.
+                new_name = pattern.sub(standard, name)
+                self._reformatting_cache[name] = new_name
+                return new_name
 
         # Если не требуется замены
         self._reformatting_cache[name] = name
         return name
 
+    @staticmethod
+    def _should_process_interface(interface, vlan_to_find: int | None, empty_ports: bool) -> bool:
+        """Проверяет, нужно ли анализировать порт для трассировки указанного VLAN."""
+        if vlan_to_find is None:
+            return bool(interface.desc) or (empty_ports and not interface.vlan)
+        if vlan_to_find in interface.vlan:
+            return True
+        return empty_ports and not interface.vlan and not interface.desc
+
+    @staticmethod
+    def _matches_device_name_filter(
+        device: str,
+        next_device: str,
+        interface_desc: str,
+        device_name_filter: str,
+    ) -> bool:
+        """Check that an edge matches the device-name filter."""
+        if not device_name_filter:
+            return True
+
+        filter_value = device_name_filter.casefold()
+        return (
+            filter_value in device.casefold()
+            or filter_value in next_device.casefold()
+            or filter_value in interface_desc.casefold()
+        )
+
     def find_vlan(
         self,
         device: str,
-        vlan_to_find: int,
+        vlan_to_find: int | None,
         empty_ports: bool,
         only_admin_up: bool,
         find_device_pattern: str,
         double_check: bool = False,
+        device_name_filter: str = "",
+        nodes_only: bool = False,
     ):
         """
         ## Осуществляет поиск VLAN по портам оборудования.
@@ -312,9 +359,10 @@ class VlanTraceroute:
         :param only_admin_up:  Включать порты со статусом admin down в анализ?
         :param find_device_pattern:  Регулярное выражение, которое позволит найти оборудование в описании порта.
         :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
+        :param device_name_filter: Фильтр имени оборудования.
+        :param nodes_only: Указывать только узлы сети в графе.
         """
-        if not self._desc_name_list:
-            self._desc_name_list = list(DescNameFormat.objects.all())
+        self._load_desc_name_formats()
         compiled_find_device_pattern = self._get_compiled_pattern(find_device_pattern)
 
         if device in self.passed_devices:
@@ -327,12 +375,13 @@ class VlanTraceroute:
             return
 
         for interface in interfaces:
-            if vlan_to_find not in interface.vlan:
-                # Пропускаем несоответствующие порты
+            if not self._should_process_interface(interface, vlan_to_find, empty_ports):
                 continue
 
             # Ищем в описании порта следующий узел сети
             next_device = self._get_next_device(compiled_find_device_pattern, interface.desc)
+            if not self._matches_device_name_filter(device, next_device, interface.desc, device_name_filter):
+                continue
 
             # Пропускаем порты admin down, если включена опция only admin up
             if only_admin_up:
@@ -349,12 +398,12 @@ class VlanTraceroute:
             next_dev_interface_name = ""
             if double_check and next_device:  # Если есть следующее оборудование
                 next_dev_interfaces: Interfaces = self._get_device_interfaces(next_device)
-                escaped_device_name = re.escape(device)
+                current_device_pattern = self._get_device_name_pattern(device)
 
                 for next_dev_interface in next_dev_interfaces:
                     desc = self.reformatting(next_dev_interface.desc)
-                    if vlan_to_find in next_dev_interface.vlan and (
-                        re.search(escaped_device_name, desc, flags=re.IGNORECASE)
+                    if (vlan_to_find is None or vlan_to_find in next_dev_interface.vlan) and (
+                        current_device_pattern.search(desc)
                         or self._get_next_device(compiled_find_device_pattern, desc) == device
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
@@ -371,11 +420,11 @@ class VlanTraceroute:
                 )
 
             # Порт с описанием
-            elif interface.desc:
+            elif interface.desc and not nodes_only:
                 self._add_unknown_device_result(device, interface.name, interface.desc, admin_status)
 
             # Пустые порты
-            elif empty_ports:
+            elif empty_ports and not nodes_only:
                 self._add_empty_port_result(device, interface.name, admin_status)
 
             # Проверка наличия следующего устройства в списке пройденных устройств.
@@ -387,6 +436,8 @@ class VlanTraceroute:
                     only_admin_up=only_admin_up,
                     find_device_pattern=find_device_pattern,
                     double_check=double_check,
+                    device_name_filter=device_name_filter,
+                    nodes_only=nodes_only,
                 )
 
     def _add_next_device_result(
@@ -490,6 +541,14 @@ class VlanTraceroute:
             self._pattern_cache[pattern] = compiled_pattern
         return compiled_pattern
 
+    def _get_device_name_pattern(self, device_name: str) -> re.Pattern[str]:
+        """Возвращает кешированный regex для поиска имени текущего оборудования."""
+        compiled_pattern = self._device_name_pattern_cache.get(device_name)
+        if compiled_pattern is None:
+            compiled_pattern = re.compile(re.escape(device_name), flags=re.IGNORECASE)
+            self._device_name_pattern_cache[device_name] = compiled_pattern
+        return compiled_pattern
+
     def _get_next_device(self, pattern: re.Pattern[str], description: str) -> str:
         next_device = ""
         # Ищем в описании порта следующий узел сети
@@ -505,7 +564,7 @@ class VlanTraceroute:
         cache_key = f"net_tools:{self.__class__.__name__}:devices_info"
         data = cache.get(cache_key)
         if data is None:
-            data = DevicesInfo.objects.all().values("dev__name", "dev__ip", "vlans")
+            data = list(DevicesInfo.objects.all().values("dev__name", "dev__ip", "vlans"))
             cache.set(cache_key, data, self._cache_timeout)
         return data
 
@@ -541,16 +600,23 @@ class MultipleVlanTraceroute:
 
     def execute_traceroute(
         self,
-        vlan: int,
+        vlan: int | None,
         empty_ports: bool,
         only_admin_up: bool,
         find_device_pattern: str,
         double_check: bool,
         graph_min_length: int,
+        device_name_filter: str = "",
+        nodes_only: bool = False,
     ) -> list[VlanTracerouteResult]:
         result: list[VlanTracerouteResult] = []
+        processed_devices: set[str] = set()
+
         # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
         for device_name in self._devices_queryset.values_list("name", flat=True):
+            if device_name in processed_devices:
+                continue
+
             self._finder.reset_state()
             # Трассировка vlan
             self._finder.find_vlan(
@@ -560,9 +626,18 @@ class MultipleVlanTraceroute:
                 only_admin_up=only_admin_up,
                 find_device_pattern=find_device_pattern,
                 double_check=double_check,
+                device_name_filter=device_name_filter,
+                nodes_only=nodes_only,
             )
+            processed_devices.update(self._finder.passed_devices)
+
             if not graph_min_length or len(self._finder.result) >= graph_min_length:
                 result.extend(self._finder.result)
 
             # Очистка результаты поиска для следующего устройства
         return result
+
+
+TracerouteResult = VlanTracerouteResult
+Traceroute = VlanTraceroute
+MultipleTraceroute = MultipleVlanTraceroute

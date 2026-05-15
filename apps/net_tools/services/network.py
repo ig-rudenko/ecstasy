@@ -1,6 +1,6 @@
 from pyvis.network import Network
 
-from ..services.finder import VlanTracerouteResult
+from ..services.finder import TracerouteResult
 
 
 class VlanNetwork:
@@ -19,7 +19,12 @@ class VlanNetwork:
     def options(self):
         return self._net.options
 
-    def create_network(self, data: list[VlanTracerouteResult], show_admin_down_ports: bool = False):
+    def create_network(
+        self,
+        data: list[TracerouteResult],
+        show_admin_down_ports: bool = False,
+        nodes_only: bool = False,
+    ):
         # Создаем невидимые элементы, для инициализации групп 0-9
         # 0 - голубой;      1 - желтый;     2 - красный;    3 - зеленый;            4 - розовый;
         # 5 - пурпурный;    6 - оранжевый;  7 - синий;      8 - светло-красный;     9 - светло-зеленый
@@ -27,7 +32,7 @@ class VlanNetwork:
             self._net.add_node(i, i, title="", group=i, hidden=True)
 
         # Создаем элементы и связи между ними
-        self._create_nodes(data, show_admin_down_ports)
+        self._create_nodes(data, show_admin_down_ports, nodes_only)
 
         neighbor_map = self._net.get_adj_list()
         nodes_count = len(self._net.nodes)
@@ -53,7 +58,7 @@ class VlanNetwork:
         # Установка сглаживания краев на динамическое.
         self._net.set_edge_smooth("dynamic")
 
-    def _create_nodes(self, result: list[VlanTracerouteResult], show_admin_down_ports: bool):
+    def _create_nodes(self, result: list[TracerouteResult], show_admin_down_ports: bool, nodes_only: bool):
         """
         ## Создает элементы и связи между ними для карты VLAN
         """
@@ -61,6 +66,10 @@ class VlanNetwork:
         existing_nodes = set(self._net.get_nodes())
 
         for e in result:
+            if nodes_only and ("p:(" in e.node.lower() or "p:(" in e.next_node.lower()):
+                continue
+            if nodes_only and ("d:(" in e.node.lower() or "d:(" in e.next_node.lower()):
+                continue
             # По умолчанию зеленый цвет, форма точки
             src_gr = 3
             dst_gr = 3
@@ -160,3 +169,6 @@ class VlanNetwork:
             title += f"""<br>{i}. <span>{dev}</span>"""
 
         node["title"] = title
+
+
+TracerouteNetwork = VlanNetwork

@@ -18,6 +18,7 @@ class MacQueryValues(TypedDict):
     desc: str
     datetime: datetime
     device__name: str
+    device__group__name: str
 
 
 class MacTraceroute:
@@ -28,7 +29,16 @@ class MacTraceroute:
 
         self._reformatting_cache: dict[str, str] = {}
 
-    def get_mac_graph(self, mac: str, vlan: int | None = None) -> dict:
+    def get_mac_graph(
+        self,
+        mac: str,
+        vlan: int | None = None,
+        device_name_filter: str = "",
+        group_filter: str = "",
+        show_empty_ports: bool = False,
+        graph_min_length: int = 0,
+        nodes_only: bool = False,
+    ) -> dict:
         """
         # Ищем MAC адрес в таблице всех MAC адресов
 
@@ -48,10 +58,14 @@ class MacTraceroute:
 
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
         macs_objects = MacAddress.objects.filter(address=mac).values(
-            "type", "vlan", "port", "desc", "datetime", "device__name"
+            "type", "vlan", "port", "desc", "datetime", "device__name", "device__group__name"
         )
         if vlan:
             macs_objects = macs_objects.filter(vlan=vlan)
+        if device_name_filter:
+            macs_objects = macs_objects.filter(device__name__icontains=device_name_filter)
+        if group_filter:
+            macs_objects = macs_objects.filter(device__group__name__icontains=group_filter)
 
         nodes = []
         edges = []
@@ -64,6 +78,17 @@ class MacTraceroute:
 
         for record in macs_objects:  # type: MacQueryValues
             next_device_id, next_device_label = self.get_next_device(record)
+            if not show_empty_ports and not record["desc"]:
+                continue
+            if nodes_only and next_device_id == f"{record['device__name']}-{record['port']}":
+                continue
+            if not self._matches_device_name_filter(
+                record["device__name"],
+                next_device_id,
+                record["desc"],
+                device_name_filter,
+            ):
+                continue
             edge_title = self.create_edge_title(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
@@ -140,11 +165,69 @@ class MacTraceroute:
                 }
             )
 
+        if graph_min_length:
+            nodes, edges = self._filter_graph_min_length(nodes, edges, graph_min_length)
+
         return {
             "nodes": nodes,
             "edges": edges,
             "vlansInfo": vlans_count_list,
         }
+
+    @staticmethod
+    def _matches_device_name_filter(
+        device: str,
+        next_device: str,
+        description: str,
+        device_name_filter: str,
+    ) -> bool:
+        """Check that a MAC graph edge matches the device-name filter."""
+        if not device_name_filter:
+            return True
+
+        filter_value = device_name_filter.casefold()
+        return (
+            filter_value in device.casefold()
+            or filter_value in next_device.casefold()
+            or filter_value in description.casefold()
+        )
+
+    @staticmethod
+    def _filter_graph_min_length(nodes: list[dict], edges: list[dict], graph_min_length: int) -> tuple[list[dict], list[dict]]:
+        """Drop connected components with fewer nodes than graph_min_length."""
+        if not nodes or not edges:
+            return nodes, edges
+
+        adjacency: dict[str, set[str]] = {}
+        for edge in edges:
+            source = edge["from"]
+            target = edge["to"]
+            adjacency.setdefault(source, set()).add(target)
+            adjacency.setdefault(target, set()).add(source)
+
+        allowed_nodes: set[str] = set()
+        visited: set[str] = set()
+        for node_id in adjacency:
+            if node_id in visited:
+                continue
+
+            stack = [node_id]
+            component: set[str] = set()
+            while stack:
+                current = stack.pop()
+                if current in visited:
+                    continue
+                visited.add(current)
+                component.add(current)
+                stack.extend(adjacency.get(current, set()) - visited)
+
+            if len(component) >= graph_min_length:
+                allowed_nodes.update(component)
+
+        return (
+            [node for node in nodes if node["id"] in allowed_nodes],
+            [edge for edge in edges if edge["from"] in allowed_nodes and edge["to"] in allowed_nodes],
+        )
 
     @staticmethod
     def get_vlan_names(vlans: list[int]) -> dict[int, dict[str, str]]:
