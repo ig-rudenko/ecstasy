@@ -9,6 +9,8 @@ from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template, range_to_numbers
 from .base.types import (
+    COOPER_TYPES,
+    FIBER_TYPES,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -160,7 +162,7 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
         interfaces_vlan: InterfaceVLANListType = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))
+            interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))  # noqa
 
         return interfaces_vlan
 
@@ -280,18 +282,17 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
         Проверяем с помощью команды:
 
-            show ports {port} transceiver information detail | include Media
+            debug hal show optic-info port {port}
 
         :param port: Порт для проверки
         :return: "SFP" или "COPPER"
         """
+        debug_optical_info = self.send_command(f"debug hal show optic-info port {port}")
+        wavelength = self.find_or_empty(debug_optical_info, r"Wavelength:\s+(\d+)")
+        if wavelength == "0":
+            return "COPPER"
 
-        if "Media Type" in self.send_command(
-            f"show ports {port} transceiver information detail | include Media"
-        ):
-            return "SFP"
-
-        return "COPPER"
+        return "SFP"
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return={"error": "Неверный порт", "status": "fail"})
@@ -336,7 +337,9 @@ class Extreme(BaseDevice, AbstractConfigDevice):
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return={"type": "text", "data": "Неверный порт"})
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": self.send_command(f"show port {port} information detail")}
+        debug_optical_info = self.send_command(f"debug hal show optic-info port {port}")
+        information_detail = self.send_command(f"show port {port} information detail")
+        return {"type": "text", "data": f"{debug_optical_info}\n\n{information_detail}"}
 
     def get_port_config(self, port: str) -> str:
         return ""
