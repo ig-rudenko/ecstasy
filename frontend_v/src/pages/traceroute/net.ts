@@ -92,6 +92,14 @@ class TracerouteNetwork {
     private onRenderProgress: RenderProgressHandler | null;
     private network: any;
     private rawNodes: Array<TracerouteNodeData>;
+    private rawEdges: Array<any>;
+    private freezePhysicsTimerId: number | null;
+    private lastSearchQuery: string;
+    private matchedNodeIds: Array<string | number>;
+    private currentMatchIndex: number;
+    private lastProgressEmitAt: number;
+    private lastProgressValue: number;
+    private renderSessionId: number;
 
     constructor(elementId: string) {
         this.elemID = elementId;
@@ -100,6 +108,85 @@ class TracerouteNetwork {
         this.onRenderProgress = null;
         this.network = null;
         this.rawNodes = [];
+        this.rawEdges = [];
+        this.freezePhysicsTimerId = null;
+        this.lastSearchQuery = "";
+        this.matchedNodeIds = [];
+        this.currentMatchIndex = -1;
+        this.lastProgressEmitAt = 0;
+        this.lastProgressValue = -1;
+        this.renderSessionId = 0;
+    }
+
+    private clearFreezePhysicsTimer(): void {
+        if (this.freezePhysicsTimerId !== null) {
+            window.clearTimeout(this.freezePhysicsTimerId);
+            this.freezePhysicsTimerId = null;
+        }
+    }
+
+    private schedulePhysicsFreeze(delayMs: number): void {
+        this.clearFreezePhysicsTimer();
+        this.freezePhysicsTimerId = window.setTimeout(() => {
+            this.network?.setOptions({ physics: { enabled: false } });
+            this.freezePhysicsTimerId = null;
+        }, delayMs);
+    }
+
+    private destroyNetwork(): void {
+        this.clearFreezePhysicsTimer();
+        if (!this.network) {
+            return;
+        }
+        try {
+            this.network.stopSimulation();
+        } catch {
+            // no-op
+        }
+        try {
+            this.network.destroy();
+        } catch {
+            // no-op
+        }
+        this.network = null;
+    }
+
+    cancelRender(): void {
+        this.renderSessionId += 1;
+        this.destroyNetwork();
+    }
+
+    private applySearchOpacity(matchedNodeIds: Array<string | number>): void {
+        if (!this.network?.body?.data?.nodes || !this.network?.body?.data?.edges) {
+            return;
+        }
+
+        const matchedSet = new Set(matchedNodeIds);
+        const nodeUpdates = this.rawNodes.map((node) => {
+            if (!matchedNodeIds.length) {
+                return { id: node.id, opacity: 1 };
+            }
+            return { id: node.id, opacity: matchedSet.has(node.id) ? 1 : 0.3 };
+        });
+        const edgeUpdates = this.network.body.data.edges.get().map((edge: any) => {
+            const edgeOpacity =
+                !matchedNodeIds.length || matchedSet.has(edge.from) || matchedSet.has(edge.to) ? 1 : 0.3;
+            if (!edge.color) {
+                return { id: edge.id, color: { opacity: edgeOpacity } };
+            }
+            if (typeof edge.color === "string") {
+                return { id: edge.id, color: { color: edge.color, opacity: edgeOpacity } };
+            }
+            return {
+                id: edge.id,
+                color: {
+                    ...edge.color,
+                    opacity: edgeOpacity,
+                },
+            };
+        });
+        this.network.body.data.nodes.update(nodeUpdates);
+        this.network.body.data.edges.update(edgeUpdates);
     }
 
     setNodeClickHandler(handler: NodeClickHandler | null): void {
@@ -110,27 +197,43 @@ class TracerouteNetwork {
         this.onRenderProgress = handler;
     }
 
-    focusNodeByName(query: string): boolean {
+    focusNodeByName(query: string): { found: boolean; count: number; current: number } {
         if (!this.network) {
-            return false;
+            return { found: false, count: 0, current: 0 };
         }
 
         const normalizedQuery = query.trim().toLowerCase();
         if (!normalizedQuery) {
-            return false;
+            this.lastSearchQuery = "";
+            this.matchedNodeIds = [];
+            this.currentMatchIndex = -1;
+            this.applySearchOpacity([]);
+            return { found: false, count: 0, current: 0 };
         }
 
-        const node = this.rawNodes.find((value) => {
-            const id = String(value.id ?? "").toLowerCase();
-            const label = String(value.label ?? "").toLowerCase();
-            return id.includes(normalizedQuery) || label.includes(normalizedQuery);
-        });
-        if (!node) {
-            return false;
+        if (normalizedQuery !== this.lastSearchQuery) {
+            this.lastSearchQuery = normalizedQuery;
+            this.matchedNodeIds = this.rawNodes
+                .filter((value) => {
+                    const id = String(value.id ?? "").toLowerCase();
+                    const label = String(value.label ?? "").toLowerCase();
+                    return id.includes(normalizedQuery) || label.includes(normalizedQuery);
+                })
+                .map((value) => value.id);
+            this.currentMatchIndex = this.matchedNodeIds.length ? 0 : -1;
+        } else if (this.matchedNodeIds.length) {
+            this.currentMatchIndex = (this.currentMatchIndex + 1) % this.matchedNodeIds.length;
         }
 
-        this.network.selectNodes([node.id]);
-        this.network.focus(node.id, {
+        if (!this.matchedNodeIds.length || this.currentMatchIndex < 0) {
+            this.applySearchOpacity([]);
+            return { found: false, count: 0, current: 0 };
+        }
+
+        this.applySearchOpacity(this.matchedNodeIds);
+        const nodeId = this.matchedNodeIds[this.currentMatchIndex];
+        this.network.selectNodes([nodeId]);
+        this.network.focus(nodeId, {
             animation: {
                 duration: 450,
                 easingFunction: "easeInOutQuad",
@@ -138,39 +241,103 @@ class TracerouteNetwork {
             locked: false,
             scale: 1.35,
         });
-        return true;
+        return {
+            found: true,
+            count: this.matchedNodeIds.length,
+            current: this.currentMatchIndex + 1,
+        };
     }
 
-    async renderVisualData(nodes: Array<any>, edges: Array<any>, options: any = null) {
+    async renderVisualData(nodes: Array<any>, edges: Array<any>, options: any = null): Promise<boolean> {
+        this.renderSessionId += 1;
+        const sessionId = this.renderSessionId;
+        this.destroyNetwork();
+        this.clearFreezePhysicsTimer();
+        this.lastProgressEmitAt = 0;
+        this.lastProgressValue = -1;
         this.onRenderProgress?.(5);
         const { Network } = await import("vis-network");
+        if (sessionId !== this.renderSessionId) {
+            return false;
+        }
         this.onRenderProgress?.(15);
 
         this.rawNodes = nodes.map((value) => ({ ...value }));
+        this.rawEdges = edges.map((value) => ({ ...value }));
         const normalizedNodes = this.rawNodes;
         this.onRenderProgress?.(30);
 
-        const normalizedEdges = edges;
+        const normalizedEdges = this.rawEdges;
+        const nodesCount = normalizedNodes.length;
+        const edgesCount = normalizedEdges.length;
+        const isLargeGraph = nodesCount > 1200 || edgesCount > 2500;
+        const renderOptions = mergeOptions(this.options, options);
+
+        if (isLargeGraph) {
+            renderOptions.edges = mergeOptions(renderOptions.edges ?? {}, {
+                smooth: { enabled: false },
+            });
+            renderOptions.interaction = mergeOptions(renderOptions.interaction ?? {}, {
+                hideEdgesOnDrag: true,
+            });
+            renderOptions.physics = mergeOptions(renderOptions.physics ?? {}, {
+                stabilization: {
+                    updateInterval: 140,
+                },
+            });
+        }
+
+        // Give UI one frame to paint progress bar before heavy graph init.
+        await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+        });
+        if (sessionId !== this.renderSessionId) {
+            return false;
+        }
+
         this.network = new Network(
             <HTMLDivElement>document.getElementById(this.elemID),
             {
                 nodes: normalizedNodes as any,
                 edges: normalizedEdges as any,
             },
-            mergeOptions(this.options, options)
+            renderOptions
         );
         this.network.on("stabilizationProgress", (params: any) => {
+            if (sessionId !== this.renderSessionId) {
+                return;
+            }
             const total = Math.max(params.total || 1, 1);
             const progress = 30 + Math.round((Math.min(params.iterations, total) / total) * 69);
+            const now = performance.now();
+            if (progress <= this.lastProgressValue) {
+                return;
+            }
+            if (now - this.lastProgressEmitAt < 100 && progress < 99) {
+                return;
+            }
+            this.lastProgressEmitAt = now;
+            this.lastProgressValue = progress;
             this.onRenderProgress?.(progress);
         });
         this.network.once("stabilized", () => {
+            if (sessionId !== this.renderSessionId) {
+                return;
+            }
+            const freezeDelayMs = isLargeGraph ? 9000 : 5000;
+            this.schedulePhysicsFreeze(freezeDelayMs);
             this.onRenderProgress?.(100);
         });
         this.network.once("afterDrawing", () => {
+            if (sessionId !== this.renderSessionId) {
+                return;
+            }
             this.onRenderProgress?.(100);
         });
         this.network.on("click", (params: any) => {
+            if (sessionId !== this.renderSessionId) {
+                return;
+            }
             if (!this.onNodeClick) {
                 return;
             }
@@ -183,6 +350,7 @@ class TracerouteNetwork {
             const clickedNode = this.rawNodes.find((node) => node.id === clickedNodeId) || null;
             this.onNodeClick(clickedNode);
         });
+        return true;
     }
 }
 

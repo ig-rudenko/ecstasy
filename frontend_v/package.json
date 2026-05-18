@@ -11,7 +11,7 @@
         "format": "prettier . --write",
         "format:check": "prettier . --check",
         "check": "npm run lint && npm run format && npm run build",
-        "preview": "vite preview"
+        "preview": "vite preview --host 127.0.0.1 --port 5173"
     },
     "dependencies": {
         "@primeuix/themes": "^2.0.3",

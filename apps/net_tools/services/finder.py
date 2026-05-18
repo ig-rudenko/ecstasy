@@ -456,14 +456,12 @@ class VlanTraceroute:
         :param next_dev_interface_name: Название интерфейса следующего устройства, который смотрит в сторону `device`
         :param admin_down_status: Статус доступности порта `device` в сторону `next_device`.
         """
-        line_description = f"""
-        <strong>
-            {device} port: 
-            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface_name}</span> -->
-            {next_device} port: 
-            <span class="badge bg-primary" style="font-size: 0.8rem;">{next_dev_interface_name}</span>
-        </strong>
-        """
+        line_description = self._format_link_description(
+            src_device=device,
+            src_port=interface_name,
+            dst_device=next_device,
+            dst_port=next_dev_interface_name,
+        )
         self.result.append(
             VlanTracerouteResult(
                 node=device,  # Устройство (название узла)
@@ -485,13 +483,11 @@ class VlanTraceroute:
         :param admin_down_status: Статус доступности порта.
         """
 
-        line_description = f"""
-        <strong>
-            {device} port: 
-            <span class="badge bg-primary" style="font-size: 0.8rem;">{interface_name}</span> -->
-            {interface_desc}
-        </strong>
-        """
+        line_description = self._format_unknown_link_description(
+            src_device=device,
+            src_port=interface_name,
+            destination_description=interface_desc,
+        )
         self.result.append(
             VlanTracerouteResult(
                 node=device,  # Устройство (название узла)
@@ -509,11 +505,10 @@ class VlanTraceroute:
         :param interface: Имя порта
         :param admin_down_status: Статус доступности порта.
         """
-        line_description = f"""
-        <strong>
-            {device} port: <span class="badge bg-primary" style="font-size: 0.8rem;">{interface}</span>
-        </strong>
-        """
+        line_description = self._format_empty_port_description(
+            src_device=device,
+            src_port=interface,
+        )
         self.result.append(
             VlanTracerouteResult(
                 node=device,  # Устройство (название узла)
@@ -523,6 +518,21 @@ class VlanTraceroute:
                 admin_down_status=admin_down_status,
             )
         )
+
+    @staticmethod
+    def _format_link_description(src_device: str, src_port: str, dst_device: str, dst_port: str) -> str:
+        """Собирает компактное текстовое описание связи между двумя устройствами."""
+        return f"{src_device}:{src_port}\n{dst_device}:{dst_port}"
+
+    @staticmethod
+    def _format_unknown_link_description(src_device: str, src_port: str, destination_description: str) -> str:
+        """Собирает текстовое описание связи до нераспознанного назначения."""
+        return f"{src_device}:{src_port}\n{destination_description}"
+
+    @staticmethod
+    def _format_empty_port_description(src_device: str, src_port: str) -> str:
+        """Собирает текстовое описание пустого порта."""
+        return f"{src_device}:{src_port}"
 
     def clear_results(self):
         """Очищает результаты поиска."""

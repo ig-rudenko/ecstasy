@@ -12,30 +12,27 @@ def build_traceroute_options(nodes_count: int, edges_count: int) -> dict:
     is_huge_graph = nodes_count > 1200 or edges_count > 2500
 
     if is_large_graph:
-        spring_length = max(120, min(420, int(70 + nodes_count * 0.08 + density * 25)))
-        gravitational_constant = -max(500, min(12000, int(nodes_count * 2.4 + edges_count * 0.35)))
+        node_distance = max(130, min(220, int(125 + nodes_count * 0.03 + density * 16)))
         return {
             "layout": {"randomSeed": 12345, "improvedLayout": not is_huge_graph},
-            "edges": {"smooth": {"enabled": not is_huge_graph, "type": "continuous"}},
+            "edges": {"smooth": {"enabled": not is_huge_graph, "type": "dynamic"}},
             "physics": {
                 "enabled": True,
-                "solver": "forceAtlas2Based",
-                "forceAtlas2Based": {
-                    "avoidOverlap": 0.35 if nodes_count < 800 else 0.15,
-                    "centralGravity": 0.012 if density < 2 else 0.02,
-                    "damping": 0.62,
-                    "gravitationalConstant": gravitational_constant,
-                    "springConstant": 0.025 if density < 2 else 0.04,
-                    "springLength": spring_length,
+                "solver": "repulsion",
+                "repulsion": {
+                    "centralGravity": 0.06 if density < 2 else 0.08,
+                    "damping": 0.84 if density > 2 else 0.88,
+                    "nodeDistance": node_distance,
+                    "springConstant": 0.04 if density > 2 else 0.05,
+                    "springLength": max(130, min(240, int(node_distance * 1.1))),
                 },
                 "stabilization": {
                     "enabled": True,
                     "fit": True,
-                    "iterations": max(600, min(3500, nodes_count * 3 + edges_count)),
+                    "iterations": max(600, min(2800, nodes_count * 2 + edges_count)),
                     "onlyDynamicEdges": False,
                     "updateInterval": 50,
                 },
-                "timestep": 0.45,
             },
         }
 
@@ -115,8 +112,6 @@ class VlanNetwork:
             # Устанавливаем размер узла равным 1, если узел является портом.
             if "p:(" in node["title"]:
                 node["value"] = 1
-            # Добавление списка соседей в заголовок узла.
-            self._add_node_neighbors(node, neighbor_map[node["id"]])
 
         # Установка сглаживания краев на динамическое.
         self._net.set_edge_smooth("dynamic")
@@ -127,11 +122,15 @@ class VlanNetwork:
         """
 
         existing_nodes = set(self._net.get_nodes())
+        existing_edges: set[tuple[str, str, str]] = set()
 
         for e in result:
-            if nodes_only and ("p:(" in e.node.lower() or "p:(" in e.next_node.lower()):
+            e_node_lower = e.node.lower()
+            e_next_node_lower = e.next_node.lower()
+
+            if nodes_only and ("p:(" in e_node_lower or "p:(" in e_next_node_lower):
                 continue
-            if nodes_only and ("d:(" in e.node.lower() or "d:(" in e.next_node.lower()):
+            if nodes_only and ("d:(" in e_node_lower or "d:(" in e_next_node_lower):
                 continue
             # По умолчанию зеленый цвет, форма точки
             src_gr = 3
@@ -155,11 +154,11 @@ class VlanNetwork:
                 dst_gr = 0
 
             # Порт: зеленый, форма треугольника - △
-            if "-->" in e.node.lower():
+            if "-->" in e_node_lower:
                 src_gr = 3
                 src_shape = "triangle"
                 src_label = e.node.split("-->")[1]
-            if "-->" in e.next_node.lower():
+            if "-->" in e_next_node_lower:
                 dst_gr = 3
                 dst_shape = "triangle"
                 dst_label = e.node.split("-->")[1]
@@ -176,28 +175,28 @@ class VlanNetwork:
             if "SVSL-99-GP15-SSW" in e.node or "SVSL-99-GP15-SSW" in e.next_node:
                 src_gr = 4
                 src_shape = "diamond"
-            if "core" in e.node.lower() or "-cr" in e.next_node.lower():
+            if "core" in e_node_lower or "-cr" in e_next_node_lower:
                 src_gr = 4
                 src_shape = "diamond"
-            if "core" in e.next_node.lower() or "-cr" in e.node.lower():
+            if "core" in e_next_node_lower or "-cr" in e_node_lower:
                 dst_gr = 4
                 dst_shape = "diamond"
 
             # Пустой порт: светло-зеленый, форма треугольника - △
-            if "p:(" in e.node.lower():
+            if "p:(" in e_node_lower:
                 src_gr = 9
                 src_shape = "triangle"
                 src_label = e.node.split("p:(")[1][:-1]
-            if "p:(" in e.next_node.lower():
+            if "p:(" in e_next_node_lower:
                 dst_gr = 9
                 dst_shape = "triangle"
                 dst_label = e.next_node.split("p:(")[1][:-1]
 
             # Только описание: зеленый
-            if "d:(" in e.node.lower():
+            if "d:(" in e_node_lower:
                 src_gr = 3
                 src_label = e.node.split("d:(")[1][:-1]
-            if "d:(" in e.next_node.lower():
+            if "d:(" in e_next_node_lower:
                 dst_gr = 3
                 dst_label = e.next_node.split("d:(")[1][:-1]
 
@@ -222,16 +221,11 @@ class VlanNetwork:
                 existing_nodes.add(e.next_node)
 
             # Добавление ребра между двумя узлами.
+            edge_key = (e.node, e.next_node, e.line_description)
+            if edge_key in existing_edges:
+                continue
+            existing_edges.add(edge_key)
             self._net.add_edge(e.node, e.next_node, value=line_width, title=e.line_description)
-
-    @staticmethod
-    def _add_node_neighbors(node, neighbor_list: list[str]):
-        title = node["title"] + " Соединено:"
-
-        for i, dev in enumerate(neighbor_list, 1):
-            title += f"""<br>{i}. <span>{dev}</span>"""
-
-        node["title"] = title
 
 
 TracerouteNetwork = VlanNetwork
