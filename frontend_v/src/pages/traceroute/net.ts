@@ -93,13 +93,13 @@ class TracerouteNetwork {
     private network: any;
     private rawNodes: Array<TracerouteNodeData>;
     private rawEdges: Array<any>;
-    private freezePhysicsTimerId: number | null;
     private lastSearchQuery: string;
     private matchedNodeIds: Array<string | number>;
     private currentMatchIndex: number;
     private lastProgressEmitAt: number;
     private lastProgressValue: number;
     private renderSessionId: number;
+    private physicsConfiguratorVisible: boolean;
 
     constructor(elementId: string) {
         this.elemID = elementId;
@@ -109,32 +109,16 @@ class TracerouteNetwork {
         this.network = null;
         this.rawNodes = [];
         this.rawEdges = [];
-        this.freezePhysicsTimerId = null;
         this.lastSearchQuery = "";
         this.matchedNodeIds = [];
         this.currentMatchIndex = -1;
         this.lastProgressEmitAt = 0;
         this.lastProgressValue = -1;
         this.renderSessionId = 0;
-    }
-
-    private clearFreezePhysicsTimer(): void {
-        if (this.freezePhysicsTimerId !== null) {
-            window.clearTimeout(this.freezePhysicsTimerId);
-            this.freezePhysicsTimerId = null;
-        }
-    }
-
-    private schedulePhysicsFreeze(delayMs: number): void {
-        this.clearFreezePhysicsTimer();
-        this.freezePhysicsTimerId = window.setTimeout(() => {
-            this.network?.setOptions({ physics: { enabled: false } });
-            this.freezePhysicsTimerId = null;
-        }, delayMs);
+        this.physicsConfiguratorVisible = false;
     }
 
     private destroyNetwork(): void {
-        this.clearFreezePhysicsTimer();
         if (!this.network) {
             return;
         }
@@ -154,6 +138,19 @@ class TracerouteNetwork {
     cancelRender(): void {
         this.renderSessionId += 1;
         this.destroyNetwork();
+    }
+
+    setPhysicsConfiguratorVisible(visible: boolean): void {
+        this.physicsConfiguratorVisible = visible;
+        if (!this.network) {
+            return;
+        }
+        this.network.setOptions({
+            configure: {
+                enabled: visible,
+                filter: (_option: string, path: string[]) => path.includes("physics"),
+            },
+        });
     }
 
     private applySearchOpacity(matchedNodeIds: Array<string | number>): void {
@@ -252,7 +249,6 @@ class TracerouteNetwork {
         this.renderSessionId += 1;
         const sessionId = this.renderSessionId;
         this.destroyNetwork();
-        this.clearFreezePhysicsTimer();
         this.lastProgressEmitAt = 0;
         this.lastProgressValue = -1;
         this.onRenderProgress?.(5);
@@ -272,6 +268,10 @@ class TracerouteNetwork {
         const edgesCount = normalizedEdges.length;
         const isLargeGraph = nodesCount > 1200 || edgesCount > 2500;
         const renderOptions = mergeOptions(this.options, options);
+        renderOptions.configure = {
+            enabled: this.physicsConfiguratorVisible,
+            filter: (_option: string, path: string[]) => path.includes("physics"),
+        };
 
         if (isLargeGraph) {
             renderOptions.edges = mergeOptions(renderOptions.edges ?? {}, {
@@ -324,8 +324,6 @@ class TracerouteNetwork {
             if (sessionId !== this.renderSessionId) {
                 return;
             }
-            const freezeDelayMs = isLargeGraph ? 9000 : 5000;
-            this.schedulePhysicsFreeze(freezeDelayMs);
             this.onRenderProgress?.(100);
         });
         this.network.once("afterDrawing", () => {

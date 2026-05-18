@@ -460,7 +460,7 @@
                 >
                     <div
                         v-if="vlanTracerouteOptions.rendered"
-                        class="absolute! z-10001 top-3 right-16 flex items-center gap-2"
+                        class="absolute! z-10001 top-3 right-28 flex items-center gap-2"
                     >
                         <InputText
                             v-model="graphNodeSearch"
@@ -482,6 +482,15 @@
                             {{ graphSearchMatchIndex }}/{{ graphSearchMatchesCount }}
                         </span>
                     </div>
+                    <Button
+                        v-if="vlanTracerouteOptions.rendered"
+                        class="absolute! z-10001 top-3 right-16 rounded-xl!"
+                        icon="pi pi-sliders-h"
+                        rounded
+                        severity="secondary"
+                        v-tooltip.bottom="physicsMenuVisible ? 'Скрыть настройки физики' : 'Показать настройки физики'"
+                        @click="togglePhysicsMenu"
+                    />
                     <Button
                         v-if="vlanTracerouteOptions.rendered"
                         class="absolute! z-10001 top-3 right-3 rounded-xl!"
@@ -511,7 +520,7 @@
                 >
                     <div
                         v-if="macTracerouteOptions.rendered"
-                        class="absolute! z-10001 top-3 right-16 flex items-center gap-2"
+                        class="absolute! z-10001 top-3 right-28 flex items-center gap-2"
                     >
                         <InputText
                             v-model="graphNodeSearch"
@@ -533,6 +542,15 @@
                             {{ graphSearchMatchIndex }}/{{ graphSearchMatchesCount }}
                         </span>
                     </div>
+                    <Button
+                        v-if="macTracerouteOptions.rendered"
+                        class="absolute! z-10001 top-3 right-16 rounded-xl!"
+                        icon="pi pi-sliders-h"
+                        rounded
+                        severity="secondary"
+                        v-tooltip.bottom="physicsMenuVisible ? 'Скрыть настройки физики' : 'Показать настройки физики'"
+                        @click="togglePhysicsMenu"
+                    />
                     <Button
                         v-if="macTracerouteOptions.rendered"
                         class="absolute! z-10001 top-3 right-3 rounded-xl!"
@@ -684,6 +702,7 @@ export default defineComponent({
             graphSearchMatchIndex: 0,
             graphRenderLoading: false,
             graphRenderProgress: 0,
+            physicsMenuVisible: false,
             vlanAbortController: null as AbortController | null,
             macAbortController: null as AbortController | null,
             activeRenderRequestId: 0,
@@ -692,6 +711,7 @@ export default defineComponent({
             selectedTracerouteNode: null as TracerouteNodeData | null,
 
             restoreGlobalTheme: null as null | (() => void),
+            restoreTailwindDark: null as null | (() => void),
         };
     },
 
@@ -774,6 +794,16 @@ export default defineComponent({
 
     created() {
         this.restoreGlobalTheme = applyTracerouteForcedDark();
+        const htmlElement = document.documentElement;
+        const hadDarkClass = htmlElement.classList.contains("dark");
+        if (!hadDarkClass) {
+            htmlElement.classList.add("dark");
+        }
+        this.restoreTailwindDark = () => {
+            if (!hadDarkClass) {
+                htmlElement.classList.remove("dark");
+            }
+        };
         this.vlanScanStatus.checkScanStatus();
         this.macScanStatus.checkScanStatus();
         document.body.classList.add("traceroute-back");
@@ -792,6 +822,8 @@ export default defineComponent({
         this.macNetwork.cancelRender();
         this.restoreGlobalTheme?.();
         this.restoreGlobalTheme = null;
+        this.restoreTailwindDark?.();
+        this.restoreTailwindDark = null;
         document.body.classList.remove("traceroute-back");
     },
 
@@ -865,6 +897,12 @@ export default defineComponent({
             const result = network.focusNodeByName(this.graphNodeSearch);
             this.graphSearchMatchesCount = result.count;
             this.graphSearchMatchIndex = result.current;
+        },
+
+        togglePhysicsMenu() {
+            this.physicsMenuVisible = !this.physicsMenuVisible;
+            this.vlanNetwork.setPhysicsConfiguratorVisible(this.physicsMenuVisible);
+            this.macNetwork.setPhysicsConfiguratorVisible(this.physicsMenuVisible);
         },
 
         /**
@@ -1038,7 +1076,7 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
+<style >
 .maximized-shell {
     position: fixed !important;
     inset: 0 !important;
@@ -1079,5 +1117,50 @@ export default defineComponent({
 
 .traceroute-node-popup:deep(span) {
     word-break: break-word;
+}
+</style>
+
+<style>
+html body .vis-configuration-wrapper,
+html body .vis-configuration.vis-configuration-wrapper {
+    position: absolute !important;
+    font-family: monospace !important;
+    top: 3.5rem !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 10003 !important;
+    max-height: calc(100% - 4.25rem) !important;
+    width: min(34rem, calc(100% - 1rem)) !important;
+    overflow: auto !important;
+    border: 1px solid rgba(71, 85, 105, 0.7) !important;
+    border-radius: 0.9rem !important;
+    background: rgba(2, 6, 23, 0.9) !important;
+    color: #e2e8f0 !important;
+    backdrop-filter: blur(3px);
+    padding: 0.55rem 0.65rem !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+html body .vis-configuration,
+html body .vis-configuration .vis-configuration-item,
+html body .vis-configuration label,
+html body .vis-configuration select,
+html body .vis-configuration input,
+html body .vis-configuration .vis-configuration-popup {
+    color: #e2e8f0 !important;
+    background-color: transparent !important;
+    border-color: rgba(100, 116, 139, 0.65) !important;
+}
+
+html body .vis-configuration option {
+    color: #e2e8f0 !important;
+    background-color: #000000 !important;
+    border-color: rgba(100, 116, 139, 0.65) !important;
+}
+
+html body .vis-configuration select,
+html body .vis-configuration input {
+    border-radius: 0.45rem !important;
 }
 </style>
