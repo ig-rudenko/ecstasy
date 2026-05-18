@@ -256,6 +256,7 @@ class VlanTraceroute:
 
     def __init__(self, cache_timeout: int = 60 * 5) -> None:
         self.result: list[VlanTracerouteResult] = []  # Итоговый список
+        self._result_keys: set[tuple[str, str, str, str]] = set()
         self._desc_name_list: list[DescNameFormat] = []
         self._desc_name_formats_loaded = False
         self._desc_name_standards: set[str] = set()
@@ -314,9 +315,7 @@ class VlanTraceroute:
         """Проверяет, нужно ли анализировать порт для трассировки указанного VLAN."""
         if vlan_to_find is None:
             return bool(interface.desc) or (empty_ports and not interface.vlan)
-        if vlan_to_find in interface.vlan:
-            return True
-        return empty_ports and not interface.vlan and not interface.desc
+        return vlan_to_find in interface.vlan
 
     @staticmethod
     def _matches_device_name_filter(
@@ -462,12 +461,12 @@ class VlanTraceroute:
             dst_device=next_device,
             dst_port=next_dev_interface_name,
         )
-        self.result.append(
+        self._append_unique_result(
             VlanTracerouteResult(
-                node=device,  # Устройство (название узла)
-                next_node=next_device,  # Сосед (название узла)
-                line_width=10,  # Толщина линии соединения
-                line_description=line_description,  # Описание линии
+                node=device,
+                next_node=next_device,
+                line_width=10,
+                line_description=line_description,
                 admin_down_status=admin_down_status,
             )
         )
@@ -488,10 +487,10 @@ class VlanTraceroute:
             src_port=interface_name,
             destination_description=interface_desc,
         )
-        self.result.append(
+        self._append_unique_result(
             VlanTracerouteResult(
-                node=device,  # Устройство (название узла)
-                next_node=f"{device} d:({interface_desc})",  # Порт (название узла)
+                node=device,
+                next_node=f"{device} d:({interface_desc})",
                 line_width=10,
                 line_description=line_description,
                 admin_down_status=admin_down_status,
@@ -509,15 +508,28 @@ class VlanTraceroute:
             src_device=device,
             src_port=interface,
         )
-        self.result.append(
+        self._append_unique_result(
             VlanTracerouteResult(
-                node=device,  # Устройство (название узла)
-                next_node=f"{device} p:({interface})",  # Порт (название узла)
-                line_width=5,  # Толщина линии соединения
-                line_description=line_description,  # Описание линии соединения
+                node=device,
+                next_node=f"{device} p:({interface})",
+                line_width=5,
+                line_description=line_description,
                 admin_down_status=admin_down_status,
             )
         )
+
+    def _append_unique_result(self, item: VlanTracerouteResult) -> None:
+        """Добавляет ребро в результат только если такого еще нет."""
+        key = (
+            str(item.node).strip(),
+            str(item.next_node).strip(),
+            str(item.line_description).strip(),
+            str(item.admin_down_status).strip(),
+        )
+        if key in self._result_keys:
+            return
+        self._result_keys.add(key)
+        self.result.append(item)
 
     @staticmethod
     def _format_link_description(src_device: str, src_port: str, dst_device: str, dst_port: str) -> str:
@@ -537,10 +549,12 @@ class VlanTraceroute:
     def clear_results(self):
         """Очищает результаты поиска."""
         self.result = []
+        self._result_keys.clear()
 
     def reset_state(self):
         """Reset traversal state before processing the next root device."""
         self.result = []
+        self._result_keys.clear()
         self.passed_devices.clear()
 
     def _get_compiled_pattern(self, pattern: str) -> re.Pattern[str]:

@@ -24,6 +24,7 @@ class StubVlanTraceroute(VlanTraceroute):
 
     def __init__(self) -> None:
         self.result: list[VlanTracerouteResult] = []
+        self._result_keys: set[tuple[str, str, str, str]] = set()
         self._desc_name_list = []
         self._desc_name_formats_loaded = True
         self._desc_name_standards: set[str] = set()
