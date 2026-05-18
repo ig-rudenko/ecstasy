@@ -1,7 +1,6 @@
 import re
 from functools import reduce
 
-import orjson
 import requests as requests_lib
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required

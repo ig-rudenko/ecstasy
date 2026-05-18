@@ -195,7 +195,9 @@ class MacTraceroute:
         )
 
     @staticmethod
-    def _filter_graph_min_length(nodes: list[dict], edges: list[dict], graph_min_length: int) -> tuple[list[dict], list[dict]]:
+    def _filter_graph_min_length(
+        nodes: list[dict], edges: list[dict], graph_min_length: int
+    ) -> tuple[list[dict], list[dict]]:
         """Drop connected components with fewer nodes than graph_min_length."""
         if not nodes or not edges:
             return nodes, edges

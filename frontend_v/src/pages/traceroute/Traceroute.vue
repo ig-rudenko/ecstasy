@@ -1076,7 +1076,7 @@ export default defineComponent({
 });
 </script>
 
-<style >
+<style scoped>
 .maximized-shell {
     position: fixed !important;
     inset: 0 !important;
