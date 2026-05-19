@@ -4,8 +4,9 @@ from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.contrib.admin.views.main import ChangeList
 from django.core.paginator import InvalidPage
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.http import HttpRequest
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter, RelatedDropdownFilter
 
@@ -14,9 +15,9 @@ from ecstasy_project.admin_filters import distinct_dropdown_filter
 from .models import MacAddress, Vlan, VlanPort
 from .paginator import CachedLargeTablePaginator, LargeTablePaginator
 
-VlanDropdownFilter = distinct_dropdown_filter("vlan", "vlan")
-TypeDropdownFilter = distinct_dropdown_filter("type", "type")
-PortDropdownFilter = distinct_dropdown_filter("port", "port")
+VlanDropdownFilter = distinct_dropdown_filter("vlan", "vlan", use_cache=True)
+TypeDropdownFilter = distinct_dropdown_filter("type", "type", use_cache=True)
+PortDropdownFilter = distinct_dropdown_filter("port", "port", use_cache=True)
 
 
 class CustomChangeList(ChangeList):
@@ -75,7 +76,11 @@ class MacAddressesAdmin(ModelAdmin):
     @admin.display(description="MAC")
     def mac_address(self, obj: MacAddress):
         """Render the MAC address in a readable colon-separated format."""
-        return "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*list(obj.address))
+        return mark_safe(
+            "<span style='font-family: monospace;'>{}{}:{}{}:{}{}:{}{}:{}{}:{}{}</span>".format(
+                *list(obj.address.upper())
+            )
+        )
 
     def get_queryset(self, request):
         """Optimize related loading for changelist rendering."""
@@ -91,22 +96,22 @@ class MacAddressesAdmin(ModelAdmin):
         if not search_term:
             return queryset, False
 
-        search_term = "".join(re.findall(r"[0-9a-fA-F]", search_term))
-        q = Q()
+        if search_term.isdigit() and 1 <= int(search_term) <= 4096:
+            return queryset.filter(vlan=int(search_term)), False
 
-        if len(search_term) == 12:
-            q |= Q(address__iexact=search_term)
-        elif 6 <= len(search_term) <= 12:
-            q |= Q(address__icontains=search_term)
-        else:
-            return queryset.none(), False
+        if re.match(r"^[0-9a-fA-F:-]+$", search_term):
+            mac_search = "".join(re.findall(r"[0-9a-fA-F]", search_term))
+            if len(mac_search) == 12:
+                return queryset.filter(address__iexact=mac_search), False
+            if 6 <= len(mac_search) <= 12:
+                return queryset.filter(address__icontains=mac_search), False
 
-        return queryset.filter(q), False
+        return queryset.filter(device__name__icontains=search_term), False
 
-    def get_changelist(self, request, **kwargs):
-        """Use the custom changelist implementation."""
-        del kwargs
-        return CustomChangeList
+    # def get_changelist(self, request, **kwargs):
+    #     """Use the custom changelist implementation."""
+    #     del kwargs
+    #     return CustomChangeList
 
 
 @admin.register(Vlan)

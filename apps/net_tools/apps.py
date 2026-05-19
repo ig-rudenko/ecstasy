@@ -38,7 +38,7 @@ def ensure_default_node_kinds(*args, **kwargs) -> None:
 
     kinds_by_code: dict[str, TracerouteNodeKind] = {}
     for item in kind_defaults:
-        code = item["code"]
+        code = str(item["code"])
         defaults = {key: value for key, value in item.items() if key != "code"}
         kind, _ = TracerouteNodeKind.objects.get_or_create(code=code, defaults=defaults)
         kinds_by_code[code] = kind

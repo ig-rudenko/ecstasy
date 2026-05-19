@@ -309,7 +309,9 @@ class MacTraceroute:
             first_match = next_device_match[0]
             if isinstance(first_match, tuple):
                 # If pattern has capturing groups, re.findall can return tuple groups.
-                extracted_next_device = next((str(part).strip() for part in first_match if str(part).strip()), "")
+                extracted_next_device = next(
+                    (str(part).strip() for part in first_match if str(part).strip()), ""
+                )
             else:
                 extracted_next_device = str(first_match).strip()
 
