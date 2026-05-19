@@ -155,7 +155,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
 
         interfaces = []
 
-        for line in re.split(r"(?=\S)\s*(?=\d+\s+[DRSX]*\s+)", interfaces_output):
+        for line in re.split(r"^\s?(?=\d+\s+[DRSX]*\s+)", interfaces_output, flags=re.MULTILINE):
             line = line.replace("\r\n", "")
             match = re.match(r"^\s*(\d+)\s+([DRSX]*)\s+.+type=(ether|wlan)", line)
 
@@ -171,7 +171,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
 
             description = BaseDevice.find_or_empty(r"comment=(.+)\s+name=", line)
 
-            interface_name = BaseDevice.find_or_empty(r" name=(\S+)", line)
+            interface_name = BaseDevice.find_or_empty(r"\s+name=(\S+)", line)
             interfaces.append((interface_name, status, description))
 
         return interfaces

@@ -9,8 +9,6 @@ from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import parse_by_template, range_to_numbers
 from .base.types import (
-    COOPER_TYPES,
-    FIBER_TYPES,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,

@@ -1,6 +1,5 @@
 import io
 import re
-import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from time import sleep
@@ -309,7 +308,6 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
-        s = time.perf_counter()
         interface_config_output = self.send_command(
             "display current-configuration interface",
             expect_command=False,

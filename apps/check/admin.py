@@ -131,20 +131,24 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
         "show_device",
     ]
     list_filter = [
-        VendorDropdownFilter,
         ("group", RelatedDropdownFilter),
         ("auth_group", RelatedDropdownFilter),
+        VendorDropdownFilter,
         ModelDropdownFilter,
         ("port_scan_protocol", ChoicesDropdownFilter),
         ("cmd_protocol", ChoicesDropdownFilter),
         ConnectionPoolSizeDropdownFilter,
         "active",
+        "collect_interfaces",
+        "collect_mac_addresses",
+        "collect_vlan_info",
+        "collect_configurations",
     ]
     radio_fields = {
         "port_scan_protocol": admin.HORIZONTAL,
         "cmd_protocol": admin.HORIZONTAL,
     }
-    readonly_fields = ["show_interfaces"]
+    readonly_fields = ["show_interfaces", "show_interfaces_vlans"]
     search_fields = ["ip", "name"]
     list_select_related = ["auth_group", "group"]
     list_per_page = 50
@@ -182,6 +186,10 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
             "Интерфейсы",
             {"fields": ("interface_pattern", "show_interfaces"), "classes": ("tab",)},
         ),
+        (
+            "VLANS",
+            {"fields": ("show_interfaces_vlans",), "classes": ("tab",)},
+        ),
     )
     actions = [
         "activate_devices",
@@ -197,6 +205,14 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
         "set_pool_size_2",
         "set_pool_size_3",
         "set_pool_size_4",
+        "disable_interface_collector",
+        "enable_interface_collector",
+        "disable_mac_collector",
+        "enable_mac_collector",
+        "disable_vlan_collector",
+        "enable_vlan_collector",
+        "disable_configuration_collector",
+        "enable_configuration_collector",
     ]
     autocomplete_fields = ("auth_group", "group")
 
@@ -225,37 +241,40 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
     def show_auth_group(self, obj: Devices):
         return mark_safe(f"""<span style="font-family: monospace;">{obj.auth_group.name}</span>""")
 
-    @admin.display(description="")
+    @admin.display(description="Тип подключения")
     def show_auth_type(self, obj: Devices):
         text = ""
         if obj.port_scan_protocol == "telnet":
-            text += """<span title="telnet">🔓</span>"""
+            text += "TELNET ❗️"
         elif obj.port_scan_protocol == "ssh":
-            text += """<span title="ssh" style="font-size: 1.3rem">🔐</span>"""
+            text += "SSH ✅"
         elif obj.port_scan_protocol == "snmp":
-            text += """<span style="color: green;font-family: fantasy;">SNMP</span>"""
+            text += "SNMP"
 
         if obj.cmd_protocol != obj.port_scan_protocol:
             if obj.cmd_protocol == "telnet":
-                text += """<span title="telnet">🔓</span>"""
+                text += " + TELNET ❗️"
             elif obj.cmd_protocol == "ssh":
-                text += """<span title="ssh" style="font-size: 1.3rem">🔐</span>"""
+                text += "+ SSH ✅"
 
         return mark_safe(text)
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
         """Выводит табличку интерфейсов оборудования из истории"""
-        interfaces = (
-            str(Interfaces(orjson.loads(obj.devicesinfo.interfaces or "[]")))
-            .replace("\n", "<br>")
-            .replace(" ", "&nbsp;")
-        )
+        interfaces = str(Interfaces(orjson.loads(obj.devicesinfo.interfaces or "[]")))
         return mark_safe(f"""
             <div style"overflow-x: scroll;">
-                <div style="font-family: monospace; white-space: nowrap;">
-                    {interfaces}
-                </div>
+                <div style="font-family: monospace; white-space: pre;">{interfaces}</div>
+            </div>""")
+
+    @admin.display(description="Интерфейсы & VLANS")
+    def show_interfaces_vlans(self, obj: Devices):
+        """Выводит табличку интерфейсов оборудования из истории"""
+        interfaces = str(Interfaces(orjson.loads(obj.devicesinfo.vlans or "[]")))
+        return mark_safe(f"""
+            <div style"overflow-x: scroll;">
+                <div style="font-family: monospace; white-space: pre;">{interfaces}</div>
             </div>""")
 
     @admin.display(description="Посмотреть")
@@ -323,6 +342,38 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
         export = DevicesInterfacesWorkloadExcelExport(queryset)
         export.make_excel()
         return export.create_response()
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_interface_collector(self, request, queryset):
+        queryset.update(collect_interfaces=False)
+
+    @admin.action(description="❌ Отключить сбор MAC")
+    def disable_mac_collector(self, request, queryset):
+        queryset.update(collect_mac_addresses=False)
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_vlan_collector(self, request, queryset):
+        queryset.update(collect_vlan_info=False)
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_configuration_collector(self, request, queryset):
+        queryset.update(collect_configurations=False)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_interface_collector(self, request, queryset):
+        queryset.update(collect_interfaces=True)
+
+    @admin.action(description="✅ Включить сбор MAC")
+    def enable_mac_collector(self, request, queryset):
+        queryset.update(collect_mac_addresses=True)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_vlan_collector(self, request, queryset):
+        queryset.update(collect_vlan_info=True)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_configuration_collector(self, request, queryset):
+        queryset.update(collect_configurations=True)
 
     @admin.action(description="📦 Скачать последние конфигурации ZIP")
     def load_last_config_files(self, request, queryset: QuerySet[Devices]):

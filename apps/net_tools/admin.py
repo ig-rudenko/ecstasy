@@ -1,7 +1,7 @@
 import json
 
-from django.contrib import admin
 from django import forms
+from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
@@ -164,7 +164,13 @@ class TracerouteNodeStyleRuleAdmin(ModelAdmin):
     ]
     list_editable = ["is_active", "priority", "group_id", "shape", "fixed_value", "stop_processing"]
     search_fields = ["name", "pattern", "description", "node_kind__code", "node_kind__name"]
-    list_filter = ["is_active", "match_type", "shape", "stop_processing", ("node_kind", RelatedDropdownFilter)]
+    list_filter = [
+        "is_active",
+        "match_type",
+        "shape",
+        "stop_processing",
+        ("node_kind", RelatedDropdownFilter),
+    ]
     autocomplete_fields = ["node_kind"]
     ordering = ["priority", "id"]
     fieldsets = (
@@ -180,7 +186,14 @@ class TracerouteNodeStyleRuleAdmin(ModelAdmin):
             "Отображение",
             {
                 "classes": ("tab",),
-                "fields": ("group_id", "color_background", "color_border", "color_font", "shape", "fixed_value"),
+                "fields": (
+                    "group_id",
+                    "color_background",
+                    "color_border",
+                    "color_font",
+                    "shape",
+                    "fixed_value",
+                ),
                 "description": "Поля можно оставлять пустыми, чтобы правило меняло только нужные параметры.",
             },
         ),
