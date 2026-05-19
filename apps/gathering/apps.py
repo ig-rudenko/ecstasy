@@ -21,4 +21,4 @@ class FindDescConfig(AppConfig):
             VlanTablesGatherTask.register_task()
             DevicesComplexGatherTask.register_task()
 
-        post_migrate.connect(register_task, sender=self)
+        post_migrate.connect(register_task, sender=self, weak=False, dispatch_uid="gathering.register_tasks")
