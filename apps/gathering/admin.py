@@ -20,41 +20,6 @@ TypeDropdownFilter = distinct_dropdown_filter("type", "type", use_cache=True)
 PortDropdownFilter = distinct_dropdown_filter("port", "port", use_cache=True)
 
 
-class CustomChangeList(ChangeList):
-    """ChangeList with a cached paginator for large MAC tables."""
-
-    def get_results(self, request):
-        """Override result loading to use the custom paginator."""
-        paginator = self.model_admin.get_paginator(request, self.queryset, self.list_per_page)
-        result_count = paginator.count
-
-        if self.model_admin.show_full_result_count:
-            paginator = CachedLargeTablePaginator(self.root_queryset, per_page=25)
-            full_result_count = paginator.count
-        else:
-            full_result_count = None
-
-        can_show_all = result_count <= self.list_max_show_all
-        multi_page = result_count > self.list_per_page
-
-        if (self.show_all and can_show_all) or not multi_page:
-            result_list = self.queryset._clone()
-        else:
-            try:
-                result_list = paginator.page(self.page_num).object_list
-            except InvalidPage as exc:
-                raise IncorrectLookupParameters from exc
-
-        self.result_count = result_count
-        self.show_full_result_count = self.model_admin.show_full_result_count
-        self.show_admin_actions = not self.show_full_result_count or bool(full_result_count)
-        self.full_result_count = full_result_count
-        self.result_list = result_list
-        self.can_show_all = can_show_all
-        self.multi_page = multi_page
-        self.paginator = paginator
-
-
 @admin.register(MacAddress)
 class MacAddressesAdmin(ModelAdmin):
     compressed_fields = True
@@ -108,11 +73,6 @@ class MacAddressesAdmin(ModelAdmin):
 
         return queryset.filter(device__name__icontains=search_term), False
 
-    # def get_changelist(self, request, **kwargs):
-    #     """Use the custom changelist implementation."""
-    #     del kwargs
-    #     return CustomChangeList
-
 
 @admin.register(Vlan)
 class VlansAdmin(ModelAdmin):
@@ -155,7 +115,7 @@ class VlanPortsAdmin(ModelAdmin):
     compressed_fields = True
     list_display = ["vlan_verbose", "vlan__device", "port", "desc"]
     search_fields = ["vlan__vlan", "port", "vlan__device__name"]
-    list_filter = (("vlan__device", RelatedDropdownFilter), ("vlan", VlanDeviceDropdownFilter))
+    list_filter = (("vlan__device", RelatedDropdownFilter),)
     list_per_page = 25
     list_filter_submit = True
     autocomplete_fields = ("vlan",)

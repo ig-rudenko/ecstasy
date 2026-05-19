@@ -155,7 +155,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         for line in interfaces:
             # Отфильтровываем интерфейсы VLAN.
             if not line[0].startswith("V"):
-                intf_config = interfaces_config.get(interface_normal_view(line[0]), "")
+                intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
                 vlans_group: list[str] = re.findall(
                     r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
                     intf_config,
@@ -191,7 +191,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         interfaces_config: dict[str, str] = {}
         for line in re.findall(r"interface\s+\S+\d.+?!", output, flags=re.DOTALL):
             if interface_name := re.match(r"^interface\s+(\S+)", line):
-                interfaces_config[interface_normal_view(interface_name.group(1))] = line
+                interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
         return interfaces_config
 
     @BaseDevice.lock_session
