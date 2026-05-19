@@ -22,7 +22,7 @@ from ecstasy_project.error_handler import ExternalServiceProblem
 
 from ..models import VlanName
 from ..services.arp_find import find_mac_or_ip
-from ..services.finder import Finder, MultipleTraceroute, Traceroute
+from ..services.finder import DescriptionFinder, MultipleTraceroute, Traceroute
 from ..services.network import TracerouteNetwork
 from ..tasks import check_scanning_status, interfaces_scan
 from .serializers import GetVlanDescQuerySerializer, TracerouteQuerySerializer
@@ -50,6 +50,9 @@ def run_periodically_scan(request):
 @api_view(["GET"])
 @login_required
 def check_periodically_scan(request: Request):
+    """
+    Возвращает текущее состояние фоновой задачи периодического сканирования интерфейсов.
+    """
     return Response(check_scanning_status())
 
 
@@ -57,7 +60,9 @@ def check_periodically_scan(request: Request):
 @api_view(["GET"])
 @login_required
 def get_vendor(request: Request, mac: str) -> Response:
-    """Определяет производителя по MAC адресу"""
+    """
+    Определяет производителя оборудования по MAC-адресу через внешний сервис.
+    """
     proxies = {}
     if settings.PROXY_URL:
         proxies = {"http": settings.PROXY_URL, "https": settings.PROXY_URL}
@@ -88,9 +93,8 @@ def get_vendor(request: Request, mac: str) -> Response:
 @permission_required(perm="auth.access_desc_search", raise_exception=True)
 def find_by_description(request):
     """
-    ## Поиск портов по описанию и комментариям.
+    Выполняет поиск интерфейсов по описанию и комментариям, с поддержкой обычного текста и регулярных выражений.
     """
-
     is_regex = request.GET.get("is_regex", "0").lower() in ("1", "true")
     pattern = request.GET.get("pattern", "")
     if not pattern:
@@ -100,10 +104,10 @@ def find_by_description(request):
         try:
             re.compile(pattern)
         except re.PatternError as exc:
-            raise ValidationError({"pattern": f"Ошибка в регулярном выражении: {exc}"}) from exc
+            raise ValidationError({"pattern": f"Regex error: {exc}"}) from exc
 
     devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
-    finder = Finder(devices_qs)
+    finder = DescriptionFinder(devices_qs)
     result = finder.find_description(pattern_str=pattern, is_regex=is_regex)
 
     return Response({"interfaces": result})
@@ -114,24 +118,18 @@ def find_by_description(request):
 @permission_required(perm="auth.access_wtf_search", raise_exception=True)
 def ip_mac_info(request, ip_or_mac: str):
     """
-    Считывает из БД таблицу с оборудованием, на которых необходимо искать MAC через таблицу arp
-
-    В многопоточном режиме собирает данные ip, mac, vlan, agent-remote-id, agent-circuit-id из оборудования
-     и проверяет, есть ли в Zabbix узел сети с таким IP и добавляет имя и hostid
+    Выполняет распределённый ARP-поиск по IP или MAC и дополняет результат данными из Zabbix.
     """
     arp_info = find_mac_or_ip(ip_or_mac)
 
     zabbix_url = ZabbixConfig.load().url
 
-    names = []  # Список имен оборудования и его hostid из Zabbix
+    names = []
     if len(arp_info) > 0:
-        # Если получили совпадение
-        # Поиск всех IP-адресов в списке совпадений.
         ips = reduce(lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info))
 
         try:
             with zabbix_api.connect() as zbx:
-                # Ищем хост по IP
                 hosts = zbx.host.get(
                     output=["name", "status"],
                     filter={"ip": ips},
@@ -170,7 +168,7 @@ def ip_mac_info(request, ip_or_mac: str):
 @permission_required(perm="auth.access_traceroute", raise_exception=True)
 def get_vlan_desc(request: Request) -> Response:
     """
-    ## Возвращаем имя VLAN, который был передан в HTTP запросе
+    Возвращает название и описание VLAN по его идентификатору.
     """
     serializer = GetVlanDescQuerySerializer(data=request.query_params)
     serializer.is_valid(raise_exception=True)
@@ -178,14 +176,12 @@ def get_vlan_desc(request: Request) -> Response:
     data = {"name": "", "description": ""}
 
     try:
-        # Получение имени vlan из базы данных.
         vlan: VlanName = VlanName.objects.get(vid=serializer.validated_data["vlan"])
     except VlanName.DoesNotExist:
         pass
     else:
         data = {"name": vlan.name or "", "description": vlan.description}
 
-    # Возвращает ответ JSON с именем vlan.
     return Response(data)
 
 
@@ -195,25 +191,8 @@ def get_vlan_desc(request: Request) -> Response:
 @permission_required(perm="auth.access_traceroute", raise_exception=True)
 def get_traceroute(request: Request) -> Response:
     """
-    ## Трассировка VLAN и отправка карты
-
-    Эта функция обрабатывает GET-запрос для трассировки VLAN.
-    Она использует декоратор @login_required для проверки авторизации пользователя.
-    Если в запросе не содержится параметр vlan, функция возвращает пустой JSON объект.
-    Затем, используя метод load() класса VlanTracerouteConfig, загружает настройки трассировки VLAN из базы данных.
-
-    Функция также идентифицирует список устройств, откуда будет начинаться трассировка VLAN,
-    и определяет паттерн для поиска интерфейсов.
-    Далее функция использует цикл for для перебора списка устройств, используемых для запуска трассировки VLAN.
-    Для каждого устройства функция вызывает функцию find_vlan(), которая ищет VLAN с помощью рекурсивного алгоритма
-    и возвращает список узлов сети, соседей и линий связи для визуализации.
-    Если функция find_vlan() вращает результат, то цикл завершается.
-
-    Если же результат не был найден ни для одного устройства из списка, функция возвращает HttpResponse "empty".
-    Если результат был найден, функция создаёт экземпляр класса Network и добавляет к нему узлы сети,
-    соседей и линии связи из результата. Затем функция отправляет карту в виде JSON-объекта как ответ на запрос.
+    Строит граф трассировки сети для поиска по VLAN или по MAC, включая узлы, связи и параметры отображения.
     """
-
     serializer = TracerouteQuerySerializer(data=request.query_params)
     serializer.is_valid(raise_exception=True)
 
@@ -247,10 +226,9 @@ def get_traceroute(request: Request) -> Response:
             )
         )
 
-    # Загрузка объекта VlanTracerouteConfig из базы данных.
     vlan_traceroute_settings = VlanTracerouteConfig.load()
 
-    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)  # noqa
 
     if vlan_traceroute_settings.vlan_start:
         devices_names = tuple(map(str.strip, vlan_traceroute_settings.vlan_start.split("\n")))
@@ -279,7 +257,7 @@ def get_traceroute(request: Request) -> Response:
         nodes_only=nodes_only,
     )
 
-    if not result:  # Если поиск не дал результатов
+    if not result:
         return Response(
             {
                 "nodes": [],
@@ -291,7 +269,6 @@ def get_traceroute(request: Request) -> Response:
     network = TracerouteNetwork(
         network=Network(height="100%", width="100%", bgcolor="#222222", font_color="white")
     )
-
     network.create_network(result, show_admin_down_ports=only_admin_up, nodes_only=nodes_only)
 
     return Response(

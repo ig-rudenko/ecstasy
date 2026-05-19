@@ -1,8 +1,9 @@
 import contextlib
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import NamedTuple, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 import orjson
 from django.contrib.humanize.templatetags.humanize import naturaltime
@@ -76,7 +77,7 @@ class DeviceInterfacesData:
         return ""
 
 
-class Finder:
+class DescriptionFinder:
     def __init__(self, devices: QuerySet[Devices]):
         self._devices_qs = devices
         self.dev_info_queryset = (
@@ -234,7 +235,7 @@ class Finder:
         return comments_result
 
 
-class VlanTracerouteResult(NamedTuple):
+class TracerouteResult(NamedTuple):
     """
     Представляет собой именованный кортеж, который содержит информацию об узле сети, его
     следующем узле, ширине линии, описании линии и статусе административного отключения.
@@ -243,19 +244,18 @@ class VlanTracerouteResult(NamedTuple):
     node: str
     next_node: str
     line_width: int
-    line_description: str
+    line_description: dict[str, Any]
     admin_down_status: str
 
 
-# Класс VlanTraceroute
-class VlanTraceroute:
+class Traceroute:
     """
     Используется для поиска конкретного VLAN на сетевых устройствах для последующего создания
     визуальной карты топологии сети.
     """
 
     def __init__(self, cache_timeout: int = 60 * 5) -> None:
-        self.result: list[VlanTracerouteResult] = []  # Итоговый список
+        self.result: list[TracerouteResult] = []  # Итоговый список
         self._result_keys: set[tuple[str, str, str, str]] = set()
         self._desc_name_list: list[DescNameFormat] = []
         self._desc_name_formats_loaded = False
@@ -462,7 +462,7 @@ class VlanTraceroute:
             dst_port=next_dev_interface_name,
         )
         self._append_unique_result(
-            VlanTracerouteResult(
+            TracerouteResult(
                 node=device,
                 next_node=next_device,
                 line_width=10,
@@ -488,7 +488,7 @@ class VlanTraceroute:
             destination_description=interface_desc,
         )
         self._append_unique_result(
-            VlanTracerouteResult(
+            TracerouteResult(
                 node=device,
                 next_node=f"{device} d:({interface_desc})",
                 line_width=10,
@@ -509,7 +509,7 @@ class VlanTraceroute:
             src_port=interface,
         )
         self._append_unique_result(
-            VlanTracerouteResult(
+            TracerouteResult(
                 node=device,
                 next_node=f"{device} p:({interface})",
                 line_width=5,
@@ -518,12 +518,12 @@ class VlanTraceroute:
             )
         )
 
-    def _append_unique_result(self, item: VlanTracerouteResult) -> None:
+    def _append_unique_result(self, item: TracerouteResult) -> None:
         """Добавляет ребро в результат только если такого еще нет."""
         key = (
             str(item.node).strip(),
             str(item.next_node).strip(),
-            str(item.line_description).strip(),
+            json.dumps(item.line_description, sort_keys=True, ensure_ascii=False),
             str(item.admin_down_status).strip(),
         )
         if key in self._result_keys:
@@ -532,19 +532,34 @@ class VlanTraceroute:
         self.result.append(item)
 
     @staticmethod
-    def _format_link_description(src_device: str, src_port: str, dst_device: str, dst_port: str) -> str:
-        """Собирает компактное текстовое описание связи между двумя устройствами."""
-        return f"{src_device}:{src_port}\n{dst_device}:{dst_port}"
+    def _format_link_description(
+        src_device: str, src_port: str, dst_device: str, dst_port: str
+    ) -> dict[str, Any]:
+        """Собирает структурированное описание связи между двумя устройствами для tooltip."""
+        return {
+            "kind": "link",
+            "src": {"device": src_device, "port": src_port},
+            "dst": {"device": dst_device, "port": dst_port},
+        }
 
     @staticmethod
-    def _format_unknown_link_description(src_device: str, src_port: str, destination_description: str) -> str:
-        """Собирает текстовое описание связи до нераспознанного назначения."""
-        return f"{src_device}:{src_port}\n{destination_description}"
+    def _format_unknown_link_description(
+        src_device: str, src_port: str, destination_description: str
+    ) -> dict[str, Any]:
+        """Собирает структурированное описание связи до нераспознанного назначения."""
+        return {
+            "kind": "unknown_link",
+            "src": {"device": src_device, "port": src_port},
+            "destination_description": destination_description,
+        }
 
     @staticmethod
-    def _format_empty_port_description(src_device: str, src_port: str) -> str:
-        """Собирает текстовое описание пустого порта."""
-        return f"{src_device}:{src_port}"
+    def _format_empty_port_description(src_device: str, src_port: str) -> dict[str, Any]:
+        """Собирает структурированное описание пустого порта."""
+        return {
+            "kind": "empty_port_link",
+            "src": {"device": src_device, "port": src_port},
+        }
 
     def clear_results(self):
         """Очищает результаты поиска."""
@@ -617,9 +632,9 @@ class VlanTraceroute:
         return empty_interfaces
 
 
-class MultipleVlanTraceroute:
-    def __init__(self, finder: VlanTraceroute, devices_queryset: QuerySet[Devices]):
-        self._finder: VlanTraceroute = finder
+class MultipleTraceroute:
+    def __init__(self, finder: Traceroute, devices_queryset: QuerySet[Devices]):
+        self._finder: Traceroute = finder
         self._devices_queryset: QuerySet[Devices] = devices_queryset
 
     def execute_traceroute(
@@ -632,8 +647,8 @@ class MultipleVlanTraceroute:
         graph_min_length: int,
         device_name_filter: str = "",
         nodes_only: bool = False,
-    ) -> list[VlanTracerouteResult]:
-        result: list[VlanTracerouteResult] = []
+    ) -> list[TracerouteResult]:
+        result: list[TracerouteResult] = []
         processed_devices: set[str] = set()
 
         # Цикл for, перебирающий список устройств, используемых для запуска трассировки VLAN.
@@ -660,8 +675,3 @@ class MultipleVlanTraceroute:
 
             # Очистка результаты поиска для следующего устройства
         return result
-
-
-TracerouteResult = VlanTracerouteResult
-Traceroute = VlanTraceroute
-MultipleTraceroute = MultipleVlanTraceroute

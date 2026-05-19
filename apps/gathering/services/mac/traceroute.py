@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.utils import timezone
@@ -112,7 +112,7 @@ class MacTraceroute:
                 nodes.append(
                     {
                         "id": record["device__name"],
-                        "title": edge_title,
+                        "title": record["device__name"],
                         "label": record["device__name"],
                         "shape": "dot",
                         "color": "blue",
@@ -264,36 +264,19 @@ class MacTraceroute:
         return name
 
     @staticmethod
-    def create_edge_title(mac_object: MacQueryValues) -> str:
+    def create_edge_title(mac_object: MacQueryValues) -> dict[str, Any]:
         """
-        ### Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
+        ### Эта функция принимает объект MAC-адреса и возвращает структуру tooltip для ребра.
         """
-        if mac_object["type"] == "D":
-            type_ = '<span class="px-2 rounded text-white bg-primary" style="vertical-align: middle;">dynamic</span>'
-        elif mac_object["type"] == "S":
-            type_ = '<span class="px-2 rounded bg-secondary" style="vertical-align: middle;">static</span>'
-        elif mac_object["type"] == "E":
-            type_ = '<span class="px-2 rounded bg-warning text-dark" style="vertical-align: middle;">security</span>'
-        else:
-            type_ = (
-                '<span class="px-2 rounded bg-light text-dark" style="vertical-align: middle;">none</span>'
-            )
-
-        return f"""
-        <div class="p-3 rounded font-mono" style="font-size: 16px;">
-            <div>From: <b>{mac_object["device__name"]}</b>; Port: <b>{mac_object["port"]}</b></div>
-            <div>To: "{mac_object["desc"]}"</div>
-            <div>
-                VLAN: <span class="px-2 rounded text-white bg-primary">{mac_object["vlan"]}</span>
-            </div>
-            <div>
-                Type: {type_}
-            </div>
-            <div>
-                Обнаружен <b>{naturaltime(mac_object["datetime"])}</b>
-            </div>
-        </div>
-        """
+        type_mapping = {"D": "dynamic", "S": "static", "E": "security"}
+        return {
+            "kind": "mac_edge",
+            "from": {"device": mac_object["device__name"], "port": mac_object["port"]},
+            "to": mac_object["desc"],
+            "vlan": mac_object["vlan"],
+            "mac_type": type_mapping.get(mac_object["type"], "none"),
+            "detected": naturaltime(mac_object["datetime"]),
+        }
 
     @staticmethod
     def create_edge_color(mac_type: str) -> str:
@@ -321,9 +304,18 @@ class MacTraceroute:
         """
         # Ищем в описании на порту следующее устройство по паттерну
         next_device_match = re.findall(self.find_device_pattern, self.reformatting(mac_address["desc"]))
-        # Если нашли в описании следующее оборудование
+        extracted_next_device = ""
         if next_device_match:
-            next_device_id = next_device_label = next_device_match[0]
+            first_match = next_device_match[0]
+            if isinstance(first_match, tuple):
+                # If pattern has capturing groups, re.findall can return tuple groups.
+                extracted_next_device = next((str(part).strip() for part in first_match if str(part).strip()), "")
+            else:
+                extracted_next_device = str(first_match).strip()
+
+        # Если нашли в описании следующее оборудование
+        if extracted_next_device:
+            next_device_id = next_device_label = extracted_next_device
 
         # Если следующее устройство не найдено в описании,
         # то следующему устройству присваивается имя текущего устройства и номер порта.

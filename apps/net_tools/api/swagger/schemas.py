@@ -6,7 +6,7 @@ from .serializers import (
     GetVendorSerializer,
     GetVlanDescSerializer,
     SearchInterfaceByDescResultSerializer,
-    VlanTracerouteSerializer,
+    TracerouteSerializer,
 )
 
 get_vendor_schema = swagger_auto_schema(
@@ -30,5 +30,5 @@ get_vlan_desc_schema = swagger_auto_schema(
 vlan_traceroute_schema = swagger_auto_schema(
     methods=["GET"],
     query_serializer=TracerouteQuerySerializer(),
-    responses={200: VlanTracerouteSerializer()},
+    responses={200: TracerouteSerializer()},
 )

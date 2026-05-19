@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from django.test import SimpleTestCase
 
-from apps.net_tools.services.finder import MultipleVlanTraceroute, VlanTraceroute, VlanTracerouteResult
+from apps.net_tools.services.finder import MultipleTraceroute, Traceroute, TracerouteResult
 from devicemanager.device.interfaces import Interface, Interfaces
 
 
@@ -19,11 +19,11 @@ class FakeDevicesQuerySet:
         return self._names
 
 
-class StubVlanTraceroute(VlanTraceroute):
+class StubTraceroute(Traceroute):
     """Тестовый VlanTraceroute без обращений к базе данных."""
 
     def __init__(self) -> None:
-        self.result: list[VlanTracerouteResult] = []
+        self.result: list[TracerouteResult] = []
         self._result_keys: set[tuple[str, str, str, str]] = set()
         self._desc_name_list = []
         self._desc_name_formats_loaded = True
@@ -48,10 +48,10 @@ class StubVlanTraceroute(VlanTraceroute):
         return self._interfaces_by_device.get(device_name, Interfaces())
 
 
-class VlanTracerouteTraversalTestCase(SimpleTestCase):
-    def _make_finder(self) -> VlanTraceroute:
+class TracerouteTraversalTestCase(SimpleTestCase):
+    def _make_finder(self) -> Traceroute:
         """Создает finder без обращения к базе данных."""
-        return StubVlanTraceroute()
+        return StubTraceroute()
 
     def test_find_vlan_keeps_recursive_traversal(self) -> None:
         """Трассировка рекурсивно обходит связанный подграф."""
@@ -93,11 +93,11 @@ class VlanTracerouteTraversalTestCase(SimpleTestCase):
         )
 
 
-class MultipleVlanTracerouteTestCase(SimpleTestCase):
+class MultipleTracerouteTestCase(SimpleTestCase):
     def test_execute_traceroute_skips_already_processed_roots(self) -> None:
         """Повторные стартовые устройства из уже обработанного подграфа пропускаются."""
         finder = self._make_fake_finder()
-        traceroute = MultipleVlanTraceroute(
+        traceroute = MultipleTraceroute(
             finder=finder, devices_queryset=cast(Any, FakeDevicesQuerySet(["dev-a", "dev-b"]))
         )
 
@@ -119,7 +119,7 @@ class MultipleVlanTracerouteTestCase(SimpleTestCase):
 
         class FakeFinder:
             def __init__(self) -> None:
-                self.result: list[VlanTracerouteResult] = []
+                self.result: list[TracerouteResult] = []
                 self.passed_devices: set[str] = set()
                 self.calls: list[str] = []
 

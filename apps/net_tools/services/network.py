@@ -1,5 +1,7 @@
 import re
+import json
 from dataclasses import dataclass
+from typing import Any
 
 from django.core.cache import cache
 from pyvis.network import Network
@@ -264,7 +266,7 @@ class VlanNetwork:
         for e in result:
             src_node = str(e.node).strip()
             dst_node = str(e.next_node).strip()
-            edge_title = str(e.line_description).strip()
+            edge_title = e.line_description
 
             src_style = self._resolve_node_style(src_node, nodes_only)
             dst_style = self._resolve_node_style(dst_node, nodes_only)
@@ -307,11 +309,21 @@ class VlanNetwork:
                 self._net.add_node(dst_node, dst_style["label"], **node_data)
                 existing_nodes.add(dst_node)
 
-            edge_key = (src_node, dst_node, edge_title)
+            edge_key = (src_node, dst_node, self._edge_title_key(edge_title))
             if edge_key in existing_edges:
                 continue
             existing_edges.add(edge_key)
             self._net.add_edge(src_node, dst_node, value=line_width, title=edge_title)
+
+    @staticmethod
+    def _edge_title_key(title: Any) -> str:
+        """Return stable deduplication key for edge title payload."""
+        if isinstance(title, str):
+            return title.strip()
+        try:
+            return json.dumps(title, sort_keys=True, ensure_ascii=False)
+        except TypeError:
+            return str(title).strip()
 
 
 TracerouteNetwork = VlanNetwork

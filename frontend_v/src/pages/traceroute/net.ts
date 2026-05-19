@@ -75,6 +75,78 @@ function mergeOptions(baseOptions: any, overrideOptions: any): any {
     return result;
 }
 
+function toTooltipHtmlElement(title: unknown): unknown {
+    const tooltipRoot = document.createElement("div");
+    if (typeof title === "string") {
+        if (!title.trim()) {
+            return title;
+        }
+        tooltipRoot.innerHTML = title;
+    } else if (title && typeof title === "object") {
+        const payload = title as Record<string, unknown>;
+        if (payload.kind === "link") {
+            const src = (payload.src ?? {}) as Record<string, unknown>;
+            const dst = (payload.dst ?? {}) as Record<string, unknown>;
+            const srcText = `${String(src.device ?? "")}:${String(src.port ?? "")}`;
+            const dstText = `${String(dst.device ?? "")}:${String(dst.port ?? "")}`;
+            tooltipRoot.innerHTML = `
+                <div class="flex flex-col gap-1 min-w-72">
+                    <div class="text-[11px] tracking-wide opacity-70 uppercase">SRC</div>
+                    <div class="font-mono text-xs leading-5">${srcText}</div>
+                    <div class="text-[11px] tracking-wide opacity-70 uppercase">DST</div>
+                    <div class="font-mono text-xs leading-5">${dstText}</div>
+                </div>
+            `;
+        } else if (payload.kind === "unknown_link") {
+            const src = (payload.src ?? {}) as Record<string, unknown>;
+            const srcText = `${String(src.device ?? "")}:${String(src.port ?? "")}`;
+            const dstText = String(payload.destination_description ?? "");
+            tooltipRoot.innerHTML = `
+                <div class="flex flex-col gap-1 min-w-72">
+                    <div class="text-[11px] tracking-wide opacity-70 uppercase">SRC</div>
+                    <div class="font-mono text-xs leading-5">${srcText}</div>
+                    <div class="text-[11px] tracking-wide opacity-70 uppercase">DESC</div>
+                    <div class="font-mono text-xs leading-5">${dstText}</div>
+                </div>
+            `;
+        } else if (payload.kind === "empty_port_link") {
+            const src = (payload.src ?? {}) as Record<string, unknown>;
+            const srcText = `${String(src.device ?? "")}:${String(src.port ?? "")}`;
+            tooltipRoot.innerHTML = `
+                <div class="flex flex-col gap-1 min-w-72">
+                    <div class="text-[11px] tracking-wide opacity-70 uppercase">EMPTY PORT</div>
+                    <div class="font-mono text-xs leading-5">${srcText}</div>
+                </div>
+            `;
+        } else if (payload.kind === "mac_edge") {
+            const from = (payload.from ?? {}) as Record<string, unknown>;
+            const type = String(payload.mac_type ?? "none");
+            const typeClass =
+                type === "dynamic"
+                    ? "bg-sky-600 text-white"
+                    : type === "static"
+                      ? "bg-zinc-600 text-white"
+                      : type === "security"
+                        ? "bg-amber-400 text-zinc-900"
+                        : "bg-zinc-200 text-zinc-900";
+            tooltipRoot.innerHTML = `
+                <div class="flex flex-col gap-1 min-w-80 text-xs">
+                    <div><span class="opacity-70">From:</span> <span class="font-mono">${String(from.device ?? "")}:${String(from.port ?? "")}</span></div>
+                    <div><span class="opacity-70">To:</span> <span class="font-mono">${String(payload.to ?? "")}</span></div>
+                    <div><span class="opacity-70">VLAN:</span> <span class="font-mono">${String(payload.vlan ?? "")}</span></div>
+                    <div><span class="opacity-70">Type:</span> <span class="inline-block px-1.5 py-0.5 rounded ${typeClass}">${type}</span></div>
+                    <div><span class="opacity-70">Detected:</span> ${String(payload.detected ?? "")}</div>
+                </div>
+            `;
+        } else {
+            return title;
+        }
+    } else {
+        return title;
+    }
+    return tooltipRoot;
+}
+
 export interface TracerouteNodeData {
     id: string | number;
     label?: string | number;
@@ -260,10 +332,16 @@ class TracerouteNetwork {
 
         this.rawNodes = nodes.map((value) => ({ ...value }));
         this.rawEdges = edges.map((value) => ({ ...value }));
-        const normalizedNodes = this.rawNodes;
+        const normalizedNodes = this.rawNodes.map((value) => ({
+            ...value,
+            title: toTooltipHtmlElement(value?.title),
+        }));
         this.onRenderProgress?.(30);
 
-        const normalizedEdges = this.rawEdges;
+        const normalizedEdges = this.rawEdges.map((value) => ({
+            ...value,
+            title: toTooltipHtmlElement(value?.title),
+        }));
         const nodesCount = normalizedNodes.length;
         const edgesCount = normalizedEdges.length;
         const isLargeGraph = nodesCount > 1200 || edgesCount > 2500;
