@@ -17,6 +17,7 @@ from .base.types import (
     MACTableType,
     MACType,
     PortInfoType,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port_only_digit
 
@@ -143,26 +144,46 @@ class Extreme(BaseDevice, AbstractConfigDevice):
         interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
-        output_vlans = self.send_command(
-            'show configuration "vlan"', before_catch=r"Module vlan configuration\."
-        )
-        result_vlans: list[tuple[str, str]] = parse_by_template(
-            "vlans_templates/extreme.template", output_vlans
-        )
-
-        # Создаем словарь, где ключи это порты, а значениями будут вланы на них
-        ports_vlan: dict[int, list[str]] = {num: [] for num in range(1, len(interfaces) + 1)}
-
-        for vlan_id, ports in result_vlans:
-            for port in range_to_numbers(ports):
-                # Добавляем вланы на порты
-                ports_vlan[port].append(vlan_id)
+        vlan_ports_info = self._get_vlan_ports_info()
 
         interfaces_vlan: InterfaceVLANListType = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append((line[0], line[1], line[2], ports_vlan.get(int(line[0]), [])))  # noqa
+            interfaces_vlan.append((line[0], line[1], line[2], vlan_ports_info.get(line[0], [])))  # noqa
 
         return interfaces_vlan
+
+    def _get_vlan_ports_info(self) -> dict[str, list[int]]:
+        output = self.send_command("debug vlan show ports", expect_command=False)
+        parsed = re.findall(
+            r"Port: \d+:(?P<port>\d+), .+?"
+            r"LAG Membership: (?P<lag>\S+).+?"
+            r"(?:VLANs:\s+(?P<vlans>.+?))?(?=Port: \d+:\d+)",
+            output,
+            flags=re.DOTALL,
+        )
+
+        result: dict[str, list[int]] = {}
+
+        for line in parsed:
+            result.setdefault(line[0], []).extend(map(int, re.findall(r"\((\d+)\)", line[2])))
+
+        return result
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        vlan_desc_output = self.send_command("show vlan description", expect_command=False)
+        vlan_desc_parsed = re.findall(r"^\S+\s+(\d+)\s{1,6}(\S*)", vlan_desc_output, flags=re.MULTILINE)
+        vlan_desc_dict: dict[int, str] = {int(line[0]): line[1] for line in vlan_desc_parsed}
+
+        vlan_ports_info: dict[int, list[str]] = {}
+        for port, vlans in self._get_vlan_ports_info().items():
+            for vlan in vlans:
+                vlan_ports_info.setdefault(vlan, []).append(port)
+
+        result: VlanTableType = []
+        for vlan, ports in vlan_ports_info.items():
+            result.append((vlan, ports, vlan_desc_dict.get(vlan, "")))
+        return result
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:
