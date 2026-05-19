@@ -94,7 +94,9 @@ class MacAddressesAdmin(ModelAdmin):
         search_term = "".join(re.findall(r"[0-9a-fA-F]", search_term))
         q = Q()
 
-        if 4 <= len(search_term) <= 10:
+        if len(search_term) == 12:
+            q |= Q(address__iexact=search_term)
+        elif 6 <= len(search_term) <= 12:
             q |= Q(address__icontains=search_term)
         else:
             return queryset.none(), False
