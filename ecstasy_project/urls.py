@@ -72,7 +72,7 @@ urlpatterns += (
 if settings.KEYCLOAK_ENABLE:
     urlpatterns.insert(
         0,
-        path("oidc/", include("mozilla_django_oidc.urls")),
+        path("admin/oidc/", include("mozilla_django_oidc.urls")),
     )
 
 if settings.ENV == "dev":
