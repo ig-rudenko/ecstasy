@@ -75,6 +75,19 @@ function mergeOptions(baseOptions: any, overrideOptions: any): any {
     return result;
 }
 
+/**
+ * Applies graph defaults for the dark graph canvas.
+ */
+function applyGraphCanvasOptions(options: any): any {
+    const themedOptions = mergeOptions({}, options);
+    themedOptions.nodes = mergeOptions(themedOptions.nodes ?? {}, {
+        font: {
+            color: "#e5e7eb",
+        },
+    });
+    return themedOptions;
+}
+
 function toTooltipHtmlElement(title: unknown): unknown {
     const tooltipRoot = document.createElement("div");
     if (typeof title === "string") {
@@ -345,7 +358,7 @@ class TracerouteNetwork {
         const nodesCount = normalizedNodes.length;
         const edgesCount = normalizedEdges.length;
         const isLargeGraph = nodesCount > 1200 || edgesCount > 2500;
-        const renderOptions = mergeOptions(this.options, options);
+        const renderOptions = applyGraphCanvasOptions(mergeOptions(this.options, options));
         renderOptions.configure = {
             enabled: this.physicsConfiguratorVisible,
             filter: (_option: string, path: string[]) => path.includes("physics"),

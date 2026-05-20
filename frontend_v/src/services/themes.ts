@@ -39,14 +39,3 @@ export function setAutoTheme() {
 }
 
 checkTheme();
-
-/** Принудительно включить тёмную тему (класс на <html>) без записи в localStorage. Вернуть функцию сброса. */
-export function applyTracerouteForcedDark(): () => void {
-    const hadDark = document.documentElement.classList.contains("dark");
-    document.documentElement.classList.add("dark");
-    return () => {
-        if (!hadDark) {
-            document.documentElement.classList.remove("dark");
-        }
-    };
-}
