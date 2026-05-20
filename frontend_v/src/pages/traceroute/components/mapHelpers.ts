@@ -1,4 +1,4 @@
-import type {TracerouteMapEdge, TracerouteMapNode} from "./types";
+import type { TracerouteMapEdge, TracerouteMapNode } from "./types";
 
 export interface EdgeEndpoint {
     device?: string;

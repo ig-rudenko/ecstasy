@@ -1,10 +1,7 @@
-import json
 import re
 from dataclasses import dataclass
-from typing import Any
 
 from django.core.cache import cache
-from pyvis.network import Network
 
 from ..models import TracerouteNodeKind, TracerouteNodeStyleRule
 from ..services.finder import TracerouteResult
@@ -85,17 +82,19 @@ class _PreparedRule:
 
 
 class VlanNetwork:
-    def __init__(self, network: Network):
-        self._net = network
+    def __init__(self) -> None:
+        self._nodes: list[dict] = []
+        self._edges: list[dict] = []
+        self._node_ids: set[str | int] = set()
         self._options: dict = build_traceroute_options(1, 0)
 
     @property
     def nodes(self):
-        return self._net.nodes
+        return self._nodes
 
     @property
     def edges(self):
-        return self._net.edges
+        return self._edges
 
     @property
     def options(self):
@@ -108,24 +107,20 @@ class VlanNetwork:
         nodes_only: bool = False,
     ):
         for i in range(10):
-            self._net.add_node(i, i, title="", group=i, hidden=True)
+            self._add_node(i, i, {"title": "", "group": i, "hidden": True, "shape": "dot"})
 
-        self._create_nodes(data, show_admin_down_ports, nodes_only)
-
-        neighbor_map = self._net.get_adj_list()
-        visible_nodes_count = sum(1 for node in self._net.nodes if not node.get("hidden"))
-        edges_count = len(self._net.edges)
+        degree_by_node = self._create_nodes(data, show_admin_down_ports, nodes_only)
+        visible_nodes_count = sum(1 for node in self._nodes if not node.get("hidden"))
+        edges_count = len(self._edges)
         self._options = build_traceroute_options(visible_nodes_count, edges_count)
 
-        for node in self._net.nodes:
+        for node in self._nodes:
             if node.get("hidden"):
                 continue
             if node.get("fixed_value") is not None:
                 node["value"] = node.pop("fixed_value")
                 continue
-            node["value"] = len(neighbor_map[node["id"]]) * 3
-
-        self._net.set_edge_smooth("dynamic")
+            node["value"] = degree_by_node.get(node["id"], 0) * 3
 
     @staticmethod
     def _get_kinds_and_rules() -> tuple[dict[str, dict], list[_PreparedRule]]:
@@ -175,8 +170,8 @@ class VlanNetwork:
     @staticmethod
     def _extract_kind(raw: str, kinds: dict[str, dict]) -> tuple[str | None, str]:
         for code, data in kinds.items():
-            prefix = data["marker_prefix"]
-            suffix = data["marker_suffix"]
+            prefix = str(data["marker_prefix"])
+            suffix = str(data["marker_suffix"])
             if not prefix:
                 continue
             if prefix not in raw:
@@ -258,18 +253,22 @@ class VlanNetwork:
                 break
         return style
 
-    def _create_nodes(self, result: list[TracerouteResult], show_admin_down_ports: bool, nodes_only: bool):
+    def _create_nodes(
+        self, result: list[TracerouteResult], show_admin_down_ports: bool, nodes_only: bool
+    ) -> dict[str, int]:
         """Создает элементы и связи между ними для карты VLAN."""
-        existing_nodes = set(self._net.get_nodes())
-        existing_edges: set[tuple[str, str, str]] = set()
+        existing_nodes = set(self._node_ids)
+        existing_edges: set[tuple[str, str]] = set()
+        style_cache: dict[str, dict] = {}
+        degree_by_node: dict[str, int] = {}
 
         for e in result:
             src_node = str(e.node).strip()
             dst_node = str(e.next_node).strip()
             edge_title = e.line_description
 
-            src_style = self._resolve_node_style(src_node, nodes_only)
-            dst_style = self._resolve_node_style(dst_node, nodes_only)
+            src_style = self._get_cached_node_style(src_node, nodes_only, style_cache)
+            dst_style = self._get_cached_node_style(dst_node, nodes_only, style_cache)
             if src_style.get("hidden") or dst_style.get("hidden"):
                 continue
 
@@ -290,7 +289,7 @@ class VlanNetwork:
                     node_data["font"] = {"color": src_style["font_color"]}
                 if src_style["fixed_value"] is not None:
                     node_data["fixed_value"] = src_style["fixed_value"]
-                self._net.add_node(src_node, src_style["label"], **node_data)
+                self._add_node(src_node, src_style["label"], node_data)
                 existing_nodes.add(src_node)
 
             if dst_node not in existing_nodes:
@@ -306,24 +305,60 @@ class VlanNetwork:
                     node_data["font"] = {"color": dst_style["font_color"]}
                 if dst_style["fixed_value"] is not None:
                     node_data["fixed_value"] = dst_style["fixed_value"]
-                self._net.add_node(dst_node, dst_style["label"], **node_data)
+                self._add_node(dst_node, dst_style["label"], node_data)
                 existing_nodes.add(dst_node)
 
-            edge_key = (src_node, dst_node, self._edge_title_key(edge_title))
+            edge_key = self._edge_pair_key(src_node, dst_node)
             if edge_key in existing_edges:
                 continue
             existing_edges.add(edge_key)
-            self._net.add_edge(src_node, dst_node, value=line_width, title=edge_title)
+            self._add_edge(src_node, dst_node, line_width, edge_title)
+            if src_node == dst_node:
+                degree_by_node[src_node] = degree_by_node.get(src_node, 0) + 1
+            else:
+                degree_by_node[src_node] = degree_by_node.get(src_node, 0) + 1
+                degree_by_node[dst_node] = degree_by_node.get(dst_node, 0) + 1
+
+        return degree_by_node
+
+    def _get_cached_node_style(self, node_id: str, nodes_only: bool, style_cache: dict[str, dict]) -> dict:
+        """Return cached node style for repeated traceroute links."""
+        style = style_cache.get(node_id)
+        if style is None:
+            style = self._resolve_node_style(node_id, nodes_only)
+            style_cache[node_id] = style
+        return style
 
     @staticmethod
-    def _edge_title_key(title: Any) -> str:
-        """Return stable deduplication key for edge title payload."""
-        if isinstance(title, str):
-            return title.strip()
-        try:
-            return json.dumps(title, sort_keys=True, ensure_ascii=False)
-        except TypeError:
-            return str(title).strip()
+    def _edge_pair_key(src_node: str, dst_node: str) -> tuple[str, str]:
+        """Return undirected edge key for graph edge deduplication."""
+        if src_node <= dst_node:
+            return src_node, dst_node
+        return dst_node, src_node
+
+    def _add_node(self, node_id: str | int, label: str | int, node_data: dict) -> None:
+        """Add a node to the traceroute graph payload."""
+        node_options = dict(node_data)
+        node_options["id"] = node_id
+        node_options["label"] = label
+        node_options["shape"] = node_data["shape"]
+        if "group" not in node_options and "color" not in node_options:
+            node_options["color"] = "#97c2fc"
+        node_options["font"] = {"color": "white"}
+
+        self._nodes.append(node_options)
+        self._node_ids.add(node_id)
+
+    def _add_edge(self, src_node: str, dst_node: str, line_width: int | float, edge_title: dict) -> None:
+        """Add an edge to the traceroute graph payload."""
+        self._edges.append(
+            {
+                "from": src_node,
+                "to": dst_node,
+                "value": line_width,
+                "title": edge_title,
+            }
+        )
 
 
 TracerouteNetwork = VlanNetwork

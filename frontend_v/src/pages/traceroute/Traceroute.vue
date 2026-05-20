@@ -137,7 +137,7 @@ export default defineComponent({
             macTracerouteStarted: false,
             mapTracerouteStarted: false,
             tracerouteMode: "vlan" as TracerouteMode,
-            visualizationMode: "graph" as TracerouteVisualizationMode,
+            visualizationMode: "map" as TracerouteVisualizationMode,
             input: {
                 vlan: null as number | null,
                 mac: "",

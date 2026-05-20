@@ -22,7 +22,6 @@
             />
             <Button
                 :icon="maximized ? 'pi pi-times' : 'pi pi-expand'"
-                :label="maximized ? 'Свернуть' : 'На весь экран'"
                 severity="secondary"
                 v-tooltip.bottom="maximized ? 'Выйти из полного экрана' : 'На весь экран'"
                 @click="toggleMaximize"
@@ -86,9 +85,11 @@ let nodesLayer: FeatureGroup<CircleMarker> | null = null;
 let portsLayer: FeatureGroup<CircleMarker> | null = null;
 let edgesLayer: FeatureGroup<Polyline> | null = null;
 let layersControl: Control.Layers | null = null;
-let mapTileLayers: TileLayer[] = [];
 let resizeObserver: ResizeObserver | null = null;
+let refreshAnimationFrame: number | null = null;
+let selectedEdgeLine: Polyline | null = null;
 const markersById = new Map<string, CircleMarker>();
+const edgeDefaultStyles = new WeakMap<Polyline, EdgeStyle>();
 const foundNodeIds = ref(new Set<string>());
 const defaultMarkerStyle = {
     radius: 7,
@@ -115,7 +116,6 @@ function initMap(): void {
     }
 
     const tiles = createMapTiles();
-    mapTileLayers = [tiles.osm, tiles.geoGoogle, tiles.arcgisonline];
     map = new LMap(mapElement.value, {
         layers: [tiles.osm],
         minZoom: 3,
@@ -173,6 +173,7 @@ function renderMap(): void {
     portsLayer.clearLayers();
     edgesLayer.clearLayers();
     markersById.clear();
+    selectedEdgeLine = null;
 
     const nodesById = new Map<string, TracerouteMapNode>();
     for (const node of props.data.nodes) {
@@ -185,21 +186,18 @@ function renderMap(): void {
         if (!source || !target) {
             continue;
         }
-        const line = polyline(
-            [
-                [source.lat, source.lon],
-                [target.lat, target.lon],
-            ] as LatLngExpression[],
-            {
-                color: "#38bdf8",
-                opacity: 0.65,
-                pane: "tracerouteEdges",
-                weight: Math.max(1, Math.min(Number(edge.value || 1), 3)),
-            }
-        );
+        const edgeStyle = getDefaultEdgeStyle(edge);
+        const line = polyline(createCurvedLinePoints(source, target), {
+            pane: "tracerouteEdges",
+            ...edgeStyle,
+        });
+        edgeDefaultStyles.set(line, edgeStyle);
         line.bindTooltip(createEdgeTooltip(edge, source, target), { sticky: true });
         line.bindPopup(createEdgePopup(edge, null, false));
-        line.on("click", () => loadEdgeInterfaceInfo(edge, line));
+        line.on("click", () => {
+            selectEdgeLine(line, edge);
+            loadEdgeInterfaceInfo(edge, line);
+        });
         line.addTo(edgesLayer);
     }
 
@@ -291,7 +289,6 @@ function rebuildMap(): void {
     destroyMap();
     nextTick(() => {
         renderMap();
-        refreshMapLayout();
     });
 }
 
@@ -300,20 +297,74 @@ function rebuildMap(): void {
  */
 function refreshMapLayout(): void {
     nextTick(() => {
-        for (const timeout of [0, 80, 250, 600, 1000]) {
-            window.setTimeout(() => {
-                map?.invalidateSize({ pan: false });
-                for (const layer of mapTileLayers) {
-                    layer.redraw();
-                }
-                map?.eachLayer((layer) => {
-                    if ("redraw" in layer && typeof layer.redraw === "function") {
-                        layer.redraw();
-                    }
-                });
-            }, timeout);
+        if (refreshAnimationFrame !== null) {
+            window.cancelAnimationFrame(refreshAnimationFrame);
         }
+        refreshAnimationFrame = window.requestAnimationFrame(() => {
+            map?.invalidateSize({ pan: false });
+            refreshAnimationFrame = null;
+        });
     });
+}
+
+/**
+ * Selects an edge line and updates its visual style.
+ */
+function selectEdgeLine(line: Polyline, edge: TracerouteMapEdge): void {
+    if (selectedEdgeLine && selectedEdgeLine !== line) {
+        selectedEdgeLine.setStyle(edgeDefaultStyles.get(selectedEdgeLine) || getDefaultEdgeStyle(edge));
+    }
+    selectedEdgeLine = line;
+    line.setStyle({
+        color: "#f97316",
+        opacity: 0.95,
+        weight: Math.max(3, Math.min(Number(edge.value || 2) + 1, 5)),
+    });
+    line.bringToFront();
+}
+
+interface EdgeStyle {
+    color: string;
+    opacity: number;
+    weight: number;
+}
+
+/**
+ * Returns default edge style.
+ */
+function getDefaultEdgeStyle(edge: TracerouteMapEdge): EdgeStyle {
+    return {
+        color: "#38bdf8",
+        opacity: 0.65,
+        weight: Math.max(1, Math.min(Number(edge.value || 1), 3)),
+    };
+}
+
+/**
+ * Builds a slightly curved line using quadratic Bezier interpolation.
+ */
+function createCurvedLinePoints(source: TracerouteMapNode, target: TracerouteMapNode): LatLngExpression[] {
+    const start = { lat: source.lat, lon: source.lon };
+    const end = { lat: target.lat, lon: target.lon };
+    const deltaLat = end.lat - start.lat;
+    const deltaLon = end.lon - start.lon;
+    const distance = Math.sqrt(deltaLat * deltaLat + deltaLon * deltaLon) || 0.0001;
+    const curveOffset = Math.max(distance * 0.14, 0.00005);
+    const control = {
+        lat: (start.lat + end.lat) / 2 - (deltaLon / distance) * curveOffset,
+        lon: (start.lon + end.lon) / 2 + (deltaLat / distance) * curveOffset,
+    };
+
+    const points: LatLngExpression[] = [];
+    for (let index = 0; index <= 16; index += 1) {
+        const t = index / 16;
+        const oneMinusT = 1 - t;
+        points.push([
+            oneMinusT * oneMinusT * start.lat + 2 * oneMinusT * t * control.lat + t * t * end.lat,
+            oneMinusT * oneMinusT * start.lon + 2 * oneMinusT * t * control.lon + t * t * end.lon,
+        ]);
+    }
+    return points;
 }
 
 /**
@@ -412,6 +463,10 @@ onBeforeUnmount(() => {
  * Destroys current Leaflet instance and clears the map container.
  */
 function destroyMap(): void {
+    if (refreshAnimationFrame !== null) {
+        window.cancelAnimationFrame(refreshAnimationFrame);
+        refreshAnimationFrame = null;
+    }
     layersControl?.remove();
     map?.remove();
     if (mapElement.value) {
@@ -422,7 +477,6 @@ function destroyMap(): void {
     portsLayer = null;
     edgesLayer = null;
     layersControl = null;
-    mapTileLayers = [];
     markersById.clear();
 }
 </script>
@@ -560,7 +614,6 @@ function destroyMap(): void {
 }
 
 :deep(.traceroute-map-popup__vlan-list) {
-    //max-height: 7.5rem;
     text-align: justify;
     overflow: auto;
     overflow-wrap: anywhere;

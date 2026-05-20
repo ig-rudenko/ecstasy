@@ -4,8 +4,9 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.check.services.zabbix import DeviceCoords
-from apps.net_tools.services.traceroute import build_traceroute_map_data
 from apps.net_tools.services.finder import MultipleTraceroute, Traceroute, TracerouteResult
+from apps.net_tools.services.network import VlanNetwork
+from apps.net_tools.services.traceroute import build_traceroute_map_data
 from devicemanager.device.interfaces import Interface, Interfaces
 
 
@@ -170,13 +171,13 @@ class TracerouteMapDataTestCase(SimpleTestCase):
 
         with (
             patch(
-                "apps.net_tools.api.views.get_zabbix_hosts_coordinates",
+                "apps.net_tools.services.traceroute.get_zabbix_hosts_coordinates",
                 return_value={
                     "dev-a": DeviceCoords(lat=44.1, lon=33.2),
                     "dev-b": DeviceCoords(lat=44.2, lon=33.3),
                 },
             ),
-            patch("apps.net_tools.api.views._get_traceroute_map_devices", return_value=device_info),
+            patch("apps.net_tools.services.traceroute._get_traceroute_map_devices", return_value=device_info),
         ):
             result = build_traceroute_map_data(graph_data)
 
@@ -188,3 +189,33 @@ class TracerouteMapDataTestCase(SimpleTestCase):
         self.assertEqual(result["edges"], graph_data["edges"])
         self.assertEqual(result["skipped_nodes"], [])
         self.assertEqual(result["vlansInfo"], graph_data["vlansInfo"])
+
+
+class VlanNetworkTestCase(SimpleTestCase):
+    def test_create_network_deduplicates_undirected_edges(self) -> None:
+        """VLAN graph keeps undirected edge deduplication."""
+        data = [
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={"from": "dev-a", "to": "dev-b"},
+                admin_down_status="up",
+            ),
+            TracerouteResult(
+                node="dev-b",
+                next_node="dev-a",
+                line_width=5,
+                line_description={"from": "dev-b", "to": "dev-a"},
+                admin_down_status="up",
+            ),
+        ]
+        network = VlanNetwork()
+
+        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+            network.create_network(data)
+
+        visible_nodes = [node for node in network.nodes if not node.get("hidden")]
+        self.assertEqual(len(visible_nodes), 2)
+        self.assertEqual(len(network.edges), 1)
+        self.assertEqual({node["id"]: node["value"] for node in visible_nodes}, {"dev-a": 3, "dev-b": 3})
