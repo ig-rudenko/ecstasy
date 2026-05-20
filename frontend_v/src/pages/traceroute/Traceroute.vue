@@ -175,6 +175,7 @@ export default defineComponent({
             physicsMenuVisible: false,
             vlanAbortController: null as AbortController | null,
             macAbortController: null as AbortController | null,
+            mapAbortController: null as AbortController | null,
             activeRenderRequestId: 0,
             nodeInfoPopupVisible: false,
             selectedTracerouteNode: null as TracerouteNodeData | null,
@@ -292,6 +293,11 @@ export default defineComponent({
             if (this.visualizationMode === mode) {
                 return;
             }
+            if (this.visualizationMode === "graph") {
+                this.cancelGraphRender();
+            } else {
+                this.cancelMapRender();
+            }
             this.visualizationMode = mode;
             if (!this.hasRequiredTracerouteInput()) {
                 return;
@@ -351,6 +357,11 @@ export default defineComponent({
             }, 350);
         },
         cancelOngoingTraceroute() {
+            this.cancelGraphRender();
+            this.cancelMapRender();
+        },
+        cancelGraphRender() {
+            this.activeRenderRequestId += 1;
             this.vlanAbortController?.abort();
             this.vlanAbortController = null;
             this.macAbortController?.abort();
@@ -359,9 +370,21 @@ export default defineComponent({
             this.macNetwork.cancelRender();
             this.vlanTracerouteStarted = false;
             this.macTracerouteStarted = false;
-            this.mapTracerouteStarted = false;
+            this.graphRenderLoading = false;
+            this.graphRenderProgress = 0;
             this.vlanTracerouteOptions.rendered = false;
             this.macTracerouteOptions.rendered = false;
+            this.graphSearchMatchesCount = 0;
+            this.graphSearchMatchIndex = 0;
+            this.closeTracerouteNodePopup();
+        },
+        cancelMapRender() {
+            this.activeRenderRequestId += 1;
+            this.mapAbortController?.abort();
+            this.mapAbortController = null;
+            this.mapTracerouteStarted = false;
+            this.mapRendered = false;
+            this.tracerouteMapData = null;
         },
         focusGraphNode() {
             const network = this.tracerouteMode === "mac" ? this.macNetwork : this.vlanNetwork;
@@ -429,7 +452,8 @@ export default defineComponent({
         load_traceroute() {
             if (this.tracerouteMode === "vlan" && !this.input.vlan) return;
 
-            this.cancelOngoingTraceroute();
+            this.cancelMapRender();
+            this.cancelGraphRender();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.vlanTracerouteStarted = true;
@@ -492,7 +516,8 @@ export default defineComponent({
             const validMac = this.validateMac(this.input.mac);
             if (!validMac.length) return;
 
-            this.cancelOngoingTraceroute();
+            this.cancelMapRender();
+            this.cancelGraphRender();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.macTracerouteStarted = true;
@@ -553,18 +578,15 @@ export default defineComponent({
         load_traceroute_map() {
             if (!this.hasRequiredTracerouteInput()) return;
 
-            this.cancelOngoingTraceroute();
+            this.cancelGraphRender();
+            this.cancelMapRender();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.mapTracerouteStarted = true;
             this.mapRendered = false;
             this.tracerouteMapData = null;
             const controller = new AbortController();
-            if (this.tracerouteMode === "mac") {
-                this.macAbortController = controller;
-            } else {
-                this.vlanAbortController = controller;
-            }
+            this.mapAbortController = controller;
 
             api.get("/api/v1/tools/traceroute-map?" + this.createTracerouteParams().toString(), {
                 signal: controller.signal,
@@ -585,11 +607,8 @@ export default defineComponent({
                     }
                 })
                 .finally(() => {
-                    if (this.vlanAbortController === controller) {
-                        this.vlanAbortController = null;
-                    }
-                    if (this.macAbortController === controller) {
-                        this.macAbortController = null;
+                    if (this.mapAbortController === controller) {
+                        this.mapAbortController = null;
                     }
                     if (requestId === this.activeRenderRequestId) {
                         this.mapTracerouteStarted = false;

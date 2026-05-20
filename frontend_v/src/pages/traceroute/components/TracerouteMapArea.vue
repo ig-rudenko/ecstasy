@@ -23,8 +23,16 @@
             <Button
                 :icon="maximized ? 'pi pi-times' : 'pi pi-expand'"
                 severity="secondary"
+                rounded
                 v-tooltip.bottom="maximized ? 'Выйти из полного экрана' : 'На весь экран'"
                 @click="toggleMaximize"
+            />
+            <Button
+                icon="pi pi-filter-slash"
+                severity="secondary"
+                rounded
+                v-tooltip.bottom="'Сбросить подсветку'"
+                @click="resetHighlights"
             />
         </div>
 
@@ -38,9 +46,29 @@
             v-if="data.skipped_nodes.length || inheritedNodesCount"
             class="border-t border-gray-200/80 bg-white/90 p-3 text-sm text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/80 dark:text-gray-300"
         >
-            На карте показано {{ data.nodes.length }} узлов, включая {{ inheritedNodesCount }} узлов с координатами,
-            унаследованными от соседнего оборудования. Пропущено {{ data.skipped_nodes.length }} узлов без координат и
-            без подходящего соседнего устройства.
+            <div>
+                На карте показано {{ data.nodes.length }} узлов, включая {{ inheritedNodesCount }} узлов с координатами,
+                унаследованными от соседнего оборудования.
+            </div>
+            <div v-if="data.skipped_nodes.length" class="mt-2">
+                <div class="font-medium text-gray-800 dark:text-gray-100">
+                    Не удалось отобразить {{ data.skipped_nodes.length }} узлов:
+                </div>
+                <ul class="mt-2 grid max-h-40 gap-1 overflow-y-auto rounded-xl bg-gray-50/80 p-2 dark:bg-gray-950/40">
+                    <li
+                        v-for="node in data.skipped_nodes"
+                        :key="node.id"
+                        class="flex min-w-0 flex-col gap-0.5 rounded-lg px-2 py-1 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <span class="min-w-0 truncate font-mono text-gray-900 dark:text-gray-100">
+                            {{ node.label || node.id }}
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ getSkippedReasonLabel(node.reason) }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </section>
 </template>
@@ -87,10 +115,11 @@ let edgesLayer: FeatureGroup<Polyline> | null = null;
 let layersControl: Control.Layers | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let refreshAnimationFrame: number | null = null;
-let selectedEdgeLine: Polyline | null = null;
 const markersById = new Map<string, CircleMarker>();
 const edgeDefaultStyles = new WeakMap<Polyline, EdgeStyle>();
+const edgeLinesByNode = new Map<string, Polyline[]>();
 const foundNodeIds = ref(new Set<string>());
+const highlightedNodeId = ref<string | null>(null);
 const defaultMarkerStyle = {
     radius: 7,
     color: "#e0f2fe",
@@ -173,7 +202,8 @@ function renderMap(): void {
     portsLayer.clearLayers();
     edgesLayer.clearLayers();
     markersById.clear();
-    selectedEdgeLine = null;
+    edgeLinesByNode.clear();
+    highlightedNodeId.value = null;
 
     const nodesById = new Map<string, TracerouteMapNode>();
     for (const node of props.data.nodes) {
@@ -199,6 +229,8 @@ function renderMap(): void {
             loadEdgeInterfaceInfo(edge, line);
         });
         line.addTo(edgesLayer);
+        addEdgeLineForNode(edge.from, line);
+        addEdgeLineForNode(edge.to, line);
     }
 
     for (const node of props.data.nodes) {
@@ -217,6 +249,7 @@ function renderMap(): void {
         });
         marker.bindTooltip(node.label, { direction: "top", sticky: true });
         marker.bindPopup(createNodePopup(node));
+        marker.on("click", () => highlightNodeEdges(node.id));
         marker.addTo(node.inherited_from ? portsLayer : nodesLayer);
         marker.bringToFront();
         markersById.set(node.id, marker);
@@ -228,6 +261,15 @@ function renderMap(): void {
         map.fitBounds(latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
     }
     refreshMapLayout();
+}
+
+/**
+ * Adds a rendered edge line to the node index.
+ */
+function addEdgeLineForNode(nodeId: string, line: Polyline): void {
+    const lines = edgeLinesByNode.get(nodeId) || [];
+    lines.push(line);
+    edgeLinesByNode.set(nodeId, lines);
 }
 
 /**
@@ -273,6 +315,47 @@ function applySearchHighlight(): void {
 }
 
 /**
+ * Highlights all edge lines connected to a node.
+ */
+function highlightNodeEdges(nodeId: string): void {
+    resetEdgeHighlights();
+    highlightedNodeId.value = nodeId;
+    for (const line of edgeLinesByNode.get(nodeId) || []) {
+        line.setStyle({
+            color: "#22c55e",
+            opacity: 0.95,
+            weight: Math.max(3, (edgeDefaultStyles.get(line)?.weight || 1) + 1),
+        });
+        line.bringToFront();
+    }
+}
+
+/**
+ * Clears search results, selected edge and node edge highlights.
+ */
+function resetHighlights(): void {
+    search.value = "";
+    foundNodeIds.value = new Set<string>();
+    applySearchHighlight();
+    resetEdgeHighlights();
+}
+
+/**
+ * Restores default style for all highlighted edge lines.
+ */
+function resetEdgeHighlights(): void {
+    highlightedNodeId.value = null;
+    for (const lines of edgeLinesByNode.values()) {
+        for (const line of lines) {
+            const defaultStyle = edgeDefaultStyles.get(line);
+            if (defaultStyle) {
+                line.setStyle(defaultStyle);
+            }
+        }
+    }
+}
+
+/**
  * Toggles fullscreen-like map layout.
  */
 function toggleMaximize(): void {
@@ -311,16 +394,24 @@ function refreshMapLayout(): void {
  * Selects an edge line and updates its visual style.
  */
 function selectEdgeLine(line: Polyline, edge: TracerouteMapEdge): void {
-    if (selectedEdgeLine && selectedEdgeLine !== line) {
-        selectedEdgeLine.setStyle(edgeDefaultStyles.get(selectedEdgeLine) || getDefaultEdgeStyle(edge));
-    }
-    selectedEdgeLine = line;
+    resetEdgeHighlights();
     line.setStyle({
         color: "#f97316",
         opacity: 0.95,
         weight: Math.max(3, Math.min(Number(edge.value || 2) + 1, 5)),
     });
     line.bringToFront();
+}
+
+/**
+ * Returns user-facing skipped node reason.
+ */
+function getSkippedReasonLabel(reason: string): string {
+    const labels: Record<string, string> = {
+        invalid_zabbix_coordinates: "некорректные координаты",
+        no_zabbix_coordinates: "нет координат и соседнего устройства",
+    };
+    return labels[reason] || reason;
 }
 
 interface EdgeStyle {
