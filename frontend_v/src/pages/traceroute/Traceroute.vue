@@ -151,6 +151,8 @@ export default defineComponent({
                 showEmptyPorts: false,
                 doubleCheckVlan: true,
                 graphMinLength: 3,
+                maxPortVlansEnabled: false,
+                maxPortVlans: 3000,
                 deviceNameFilter: "",
                 groupFilter: "",
                 nodesOnly: false,
@@ -315,8 +317,8 @@ export default defineComponent({
                 this.loadCurrentTraceroute();
             }
         },
-        updateVlanTracerouteOption(key: keyof VlanTracerouteOptions, value: string | number | boolean) {
-            (this.vlanTracerouteOptions[key] as string | number | boolean) = value;
+        updateVlanTracerouteOption(key: keyof VlanTracerouteOptions, value: string | number | boolean | null) {
+            (this.vlanTracerouteOptions[key] as string | number | boolean | null) = value;
         },
         getInputVlanInfo(event: InputNumberInputEvent) {
             const vid = parseInt(event.value?.toString() || "");
@@ -428,6 +430,9 @@ export default defineComponent({
             });
             if (this.tracerouteMode === "vlan" && this.input.vlan) {
                 params.append("vlan", String(this.input.vlan));
+                if (this.vlanTracerouteOptions.maxPortVlansEnabled && this.vlanTracerouteOptions.maxPortVlans) {
+                    params.append("max_port_vlans", String(this.vlanTracerouteOptions.maxPortVlans));
+                }
             }
             if (this.tracerouteMode === "mac") {
                 params.append("mac", this.validateMac(this.input.mac));

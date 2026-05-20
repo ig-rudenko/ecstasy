@@ -43,6 +43,13 @@ class TracerouteQuerySerializer(serializers.Serializer):
         required=False,
         help_text="Minimum node count in a graph component.",
     )
+    max_port_vlans = serializers.IntegerField(
+        min_value=0,
+        default=0,
+        max_value=4096,
+        required=False,
+        help_text="Skip ports with VLAN count greater than this value in VLAN traceroute. 0 disables the filter.",
+    )
     nodes_only = serializers.BooleanField(
         default=False,
         required=False,

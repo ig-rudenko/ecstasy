@@ -312,8 +312,21 @@ class Traceroute:
         return name
 
     @staticmethod
-    def _should_process_interface(interface, vlan_to_find: int | None, empty_ports: bool) -> bool:
+    def _is_port_vlan_count_allowed(interface, max_port_vlans: int) -> bool:
+        """Проверяет, не превышает ли порт допустимое количество VLAN."""
+        return not max_port_vlans or len(interface.vlan or []) <= max_port_vlans
+
+    @classmethod
+    def _should_process_interface(
+        cls,
+        interface,
+        vlan_to_find: int | None,
+        empty_ports: bool,
+        max_port_vlans: int,
+    ) -> bool:
         """Проверяет, нужно ли анализировать порт для трассировки указанного VLAN."""
+        if not cls._is_port_vlan_count_allowed(interface, max_port_vlans):
+            return False
         if vlan_to_find is None:
             return bool(interface.desc) or (empty_ports and not interface.vlan)
         return vlan_to_find in interface.vlan
@@ -346,6 +359,7 @@ class Traceroute:
         double_check: bool = False,
         device_name_filter: str = "",
         nodes_only: bool = False,
+        max_port_vlans: int = 0,
     ):
         """
         ## Осуществляет поиск VLAN по портам оборудования.
@@ -361,6 +375,7 @@ class Traceroute:
         :param double_check: Проверять двухстороннюю связь VLAN на портах или нет.
         :param device_name_filter: Фильтр имени оборудования.
         :param nodes_only: Указывать только узлы сети в графе.
+        :param max_port_vlans: Максимальное количество VLAN на порту, 0 отключает фильтр.
         """
         self._load_desc_name_formats()
         compiled_find_device_pattern = self._get_compiled_pattern(find_device_pattern)
@@ -375,7 +390,7 @@ class Traceroute:
             return
 
         for interface in interfaces:
-            if not self._should_process_interface(interface, vlan_to_find, empty_ports):
+            if not self._should_process_interface(interface, vlan_to_find, empty_ports, max_port_vlans):
                 continue
 
             # Ищем в описании порта следующий узел сети
@@ -401,6 +416,8 @@ class Traceroute:
                 current_device_pattern = self._get_device_name_pattern(device)
 
                 for next_dev_interface in next_dev_interfaces:
+                    if not self._is_port_vlan_count_allowed(next_dev_interface, max_port_vlans):
+                        continue
                     desc = self.reformatting(next_dev_interface.desc)
                     if (vlan_to_find is None or vlan_to_find in next_dev_interface.vlan) and (
                         current_device_pattern.search(desc)
@@ -438,6 +455,7 @@ class Traceroute:
                     double_check=double_check,
                     device_name_filter=device_name_filter,
                     nodes_only=nodes_only,
+                    max_port_vlans=max_port_vlans,
                 )
 
     def _add_next_device_result(
@@ -648,6 +666,7 @@ class MultipleTraceroute:
         graph_min_length: int,
         device_name_filter: str = "",
         nodes_only: bool = False,
+        max_port_vlans: int = 0,
     ) -> list[TracerouteResult]:
         result: list[TracerouteResult] = []
         processed_devices: set[str] = set()
@@ -668,6 +687,7 @@ class MultipleTraceroute:
                 double_check=double_check,
                 device_name_filter=device_name_filter,
                 nodes_only=nodes_only,
+                max_port_vlans=max_port_vlans,
             )
             processed_devices.update(self._finder.passed_devices)
 

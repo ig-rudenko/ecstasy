@@ -96,6 +96,31 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [("dev-a", "dev-b")],
         )
 
+    def test_find_vlan_skips_ports_over_vlan_count_limit(self) -> None:
+        """VLAN трассировка пропускает trunk-порты с количеством VLAN больше лимита."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [
+                Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 3502))),
+                Interface(name="eth2", status="up", desc="dev-c", vlan=[100]),
+            ]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            max_port_vlans=3000,
+        )
+
+        self.assertEqual(
+            [(edge.node, edge.next_node) for edge in finder.result],
+            [("dev-a", "dev-c")],
+        )
+
 
 class MultipleTracerouteTestCase(SimpleTestCase):
     def test_execute_traceroute_skips_already_processed_roots(self) -> None:

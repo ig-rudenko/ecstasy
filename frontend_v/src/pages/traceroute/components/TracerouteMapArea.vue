@@ -137,6 +137,13 @@ const edgeLinesByNode = new Map<string, Polyline[]>();
 const foundNodeIds = ref(new Set<string>());
 const highlightedNodeId = ref<string | null>(null);
 const PORT_CLUSTER_AUTO_THRESHOLD = 25;
+const CLOSE_DEVICE_DISTANCE_METERS = 14;
+const DEVICE_OFFSET_RADIUS_METERS = 14;
+const DEVICE_OFFSET_RING_STEP_METERS = 8;
+const PORT_OFFSET_RADIUS_METERS = 25;
+const PORT_OFFSET_RING_STEP_METERS = 9;
+const RADIAL_POINTS_PER_RING = 8;
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const defaultMarkerStyle = {
     radius: 7,
     color: "#e0f2fe",
@@ -228,8 +235,9 @@ function renderMap(shouldFitBounds = true): void {
     edgeLinesByNode.clear();
     highlightedNodeId.value = null;
 
+    const displayNodes = buildDisplayNodes(props.data.nodes);
     const nodesById = new Map<string, TracerouteMapNode>();
-    for (const node of props.data.nodes) {
+    for (const node of displayNodes) {
         nodesById.set(node.id, node);
     }
 
@@ -258,7 +266,7 @@ function renderMap(shouldFitBounds = true): void {
 
     const deviceNodes: TracerouteMapNode[] = [];
     const portNodes: TracerouteMapNode[] = [];
-    for (const node of props.data.nodes) {
+    for (const node of displayNodes) {
         if (node.inherited_from) {
             portNodes.push(node);
             continue;
@@ -279,11 +287,129 @@ function renderMap(shouldFitBounds = true): void {
     }
     applySearchHighlight();
 
-    const points = props.data.nodes.map((node) => [node.lat, node.lon] as LatLngExpression);
+    const points = displayNodes.map((node) => [node.lat, node.lon] as LatLngExpression);
     if (shouldFitBounds && points.length) {
         map.fitBounds(latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
     }
     refreshMapLayout();
+}
+
+/**
+ * Builds display-only coordinates for overlapping equipment and inherited port nodes.
+ */
+function buildDisplayNodes(nodes: TracerouteMapNode[]): TracerouteMapNode[] {
+    if (!map) {
+        return nodes;
+    }
+
+    const deviceNodes = nodes.filter((node) => !node.inherited_from);
+    const portNodes = nodes.filter((node) => node.inherited_from);
+    const displayNodesById = new Map<string, TracerouteMapNode>();
+
+    for (const group of groupCloseDeviceNodes(deviceNodes)) {
+        const center = getGroupCenter(group.nodes);
+        if (group.nodes.length === 1) {
+            const node = group.nodes[0];
+            displayNodesById.set(node.id, { ...node });
+            continue;
+        }
+        group.nodes.forEach((node, index) => {
+            const [lat, lon] = offsetCoordinate(
+                center.lat,
+                center.lon,
+                getRadialRadius(index, DEVICE_OFFSET_RADIUS_METERS, DEVICE_OFFSET_RING_STEP_METERS),
+                getRadialAngle(index)
+            );
+            displayNodesById.set(node.id, { ...node, lat, lon });
+        });
+    }
+
+    const portsByParent = new Map<string, TracerouteMapNode[]>();
+    for (const port of portNodes) {
+        const parentId = port.inherited_from || "";
+        const ports = portsByParent.get(parentId) || [];
+        ports.push(port);
+        portsByParent.set(parentId, ports);
+    }
+
+    for (const [parentId, ports] of portsByParent) {
+        const parentNode = displayNodesById.get(parentId);
+        ports.forEach((port, index) => {
+            if (!parentNode) {
+                displayNodesById.set(port.id, { ...port });
+                return;
+            }
+            const [lat, lon] = offsetCoordinate(
+                parentNode.lat,
+                parentNode.lon,
+                getRadialRadius(index, PORT_OFFSET_RADIUS_METERS, PORT_OFFSET_RING_STEP_METERS),
+                getRadialAngle(index)
+            );
+            displayNodesById.set(port.id, { ...port, lat, lon });
+        });
+    }
+
+    return nodes.map((node) => displayNodesById.get(node.id) || node);
+}
+
+/**
+ * Groups equipment nodes whose coordinates are too close for readable markers.
+ */
+function groupCloseDeviceNodes(nodes: TracerouteMapNode[]): { nodes: TracerouteMapNode[] }[] {
+    if (!map) {
+        return nodes.map((node) => ({ nodes: [node] }));
+    }
+    const groups: { nodes: TracerouteMapNode[]; center: { lat: number; lon: number } }[] = [];
+    for (const node of nodes) {
+        const group = groups.find((item) => {
+            const distance =
+                map?.distance([node.lat, node.lon], [item.center.lat, item.center.lon]) ?? Number.MAX_VALUE;
+            return distance <= CLOSE_DEVICE_DISTANCE_METERS;
+        });
+        if (!group) {
+            groups.push({ nodes: [node], center: { lat: node.lat, lon: node.lon } });
+            continue;
+        }
+        group.nodes.push(node);
+        group.center = getGroupCenter(group.nodes);
+    }
+    return groups;
+}
+
+/**
+ * Returns geographic center for a node group.
+ */
+function getGroupCenter(nodes: TracerouteMapNode[]): { lat: number; lon: number } {
+    return {
+        lat: nodes.reduce((sum, node) => sum + node.lat, 0) / nodes.length,
+        lon: nodes.reduce((sum, node) => sum + node.lon, 0) / nodes.length,
+    };
+}
+
+/**
+ * Returns radial offset angle for a marker index.
+ */
+function getRadialAngle(index: number): number {
+    return index * GOLDEN_ANGLE;
+}
+
+/**
+ * Returns radial offset radius for a marker index.
+ */
+function getRadialRadius(index: number, baseRadius: number, ringStep: number): number {
+    return baseRadius + Math.floor(index / RADIAL_POINTS_PER_RING) * ringStep;
+}
+
+/**
+ * Offsets latitude and longitude by meters and angle.
+ */
+function offsetCoordinate(lat: number, lon: number, radiusMeters: number, angle: number): [number, number] {
+    const earthRadius = 6378137;
+    const northMeters = Math.sin(angle) * radiusMeters;
+    const eastMeters = Math.cos(angle) * radiusMeters;
+    const nextLat = lat + (northMeters / earthRadius) * (180 / Math.PI);
+    const nextLon = lon + (eastMeters / (earthRadius * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+    return [nextLat, nextLon];
 }
 
 /**

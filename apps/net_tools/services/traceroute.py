@@ -22,6 +22,7 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
     only_admin_up = query["ad"]
     double_check = query["double_check"]
     graph_min_length = query["graph_min_length"]
+    max_port_vlans = query["max_port_vlans"]
     nodes_only = query["nodes_only"]
     device_name = query["device_name"]
     group = query["group"]
@@ -69,6 +70,7 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
         double_check=double_check,
         only_admin_up=only_admin_up,
         graph_min_length=graph_min_length,
+        max_port_vlans=max_port_vlans if mode == "vlan" else 0,
         find_device_pattern=vlan_traceroute_settings.find_device_pattern,
         device_name_filter=device_name,
         nodes_only=nodes_only,

@@ -6,6 +6,8 @@ export interface VlanTracerouteOptions {
     showEmptyPorts: boolean;
     doubleCheckVlan: boolean;
     graphMinLength: number;
+    maxPortVlansEnabled: boolean;
+    maxPortVlans: number | null;
     deviceNameFilter: string;
     groupFilter: string;
     nodesOnly: boolean;
