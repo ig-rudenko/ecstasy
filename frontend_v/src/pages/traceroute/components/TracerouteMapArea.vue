@@ -34,6 +34,13 @@
                 v-tooltip.bottom="'Сбросить подсветку'"
                 @click="resetHighlights"
             />
+            <Button
+                :icon="clusterPorts ? 'pi pi-sitemap' : 'pi pi-circle'"
+                :severity="clusterPorts ? 'primary' : 'secondary'"
+                rounded
+                v-tooltip.bottom="clusterPorts ? 'Отключить кластеры портов' : 'Показать порты кластерами'"
+                @click="togglePortClusters"
+            />
         </div>
 
         <div
@@ -75,10 +82,13 @@
 
 <script setup lang="ts">
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 
 import {
     circleMarker,
     Control,
+    divIcon,
     featureGroup,
     latLngBounds,
     Map as LMap,
@@ -87,9 +97,12 @@ import {
     type CircleMarker,
     type FeatureGroup,
     type LatLngExpression,
+    type MarkerClusterGroup,
+    type Marker,
     type Polyline,
     type TileLayer,
 } from "leaflet";
+import * as Leaflet from "leaflet";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import api from "@/services/api";
 import type { TracerouteMapData, TracerouteMapEdge, TracerouteMapNode } from "./types";
@@ -108,18 +121,22 @@ const props = defineProps<{
 const mapElement = ref<HTMLElement | null>(null);
 const search = ref("");
 const maximized = ref(false);
+const clusterPorts = ref(false);
 let map: LMap | null = null;
 let nodesLayer: FeatureGroup<CircleMarker> | null = null;
-let portsLayer: FeatureGroup<CircleMarker> | null = null;
+let portsLayer: FeatureGroup<CircleMarker | Marker> | null = null;
+let portClusterLayer: MarkerClusterGroup | null = null;
 let edgesLayer: FeatureGroup<Polyline> | null = null;
 let layersControl: Control.Layers | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let refreshAnimationFrame: number | null = null;
+let markerClusterLoading: Promise<void> | null = null;
 const markersById = new Map<string, CircleMarker>();
 const edgeDefaultStyles = new WeakMap<Polyline, EdgeStyle>();
 const edgeLinesByNode = new Map<string, Polyline[]>();
 const foundNodeIds = ref(new Set<string>());
 const highlightedNodeId = ref<string | null>(null);
+const PORT_CLUSTER_AUTO_THRESHOLD = 25;
 const defaultMarkerStyle = {
     radius: 7,
     color: "#e0f2fe",
@@ -135,6 +152,7 @@ const highlightedMarkerStyle = {
     fillOpacity: 1,
 };
 const inheritedNodesCount = computed(() => props.data.nodes.filter((node) => node.inherited_from).length);
+const shouldAutoClusterPorts = computed(() => inheritedNodesCount.value >= PORT_CLUSTER_AUTO_THRESHOLD);
 
 /**
  * Initializes Leaflet map instance.
@@ -160,7 +178,8 @@ function initMap(): void {
     map.addControl(new Control.Scale());
     edgesLayer = featureGroup<Polyline>().addTo(map);
     nodesLayer = featureGroup<CircleMarker>().addTo(map);
-    portsLayer = featureGroup<CircleMarker>().addTo(map);
+    portsLayer = featureGroup<CircleMarker | Marker>().addTo(map);
+    portClusterLayer = clusterPorts.value ? createPortClusterLayer() : null;
     layersControl = new Control.Layers(
         {
             OSM: tiles.osm,
@@ -169,10 +188,13 @@ function initMap(): void {
         },
         {
             Узлы: nodesLayer,
-            Порты: portsLayer,
+            Порты: portClusterLayer || portsLayer,
             Связи: edgesLayer,
         }
     ).addTo(map);
+    if (portClusterLayer) {
+        portClusterLayer.addTo(map);
+    }
 }
 
 /**
@@ -192,7 +214,7 @@ function createMapTiles(): { geoGoogle: TileLayer; arcgisonline: TileLayer; osm:
 /**
  * Renders nodes and edges on the Leaflet map.
  */
-function renderMap(): void {
+function renderMap(shouldFitBounds = true): void {
     initMap();
     if (!map || !nodesLayer || !portsLayer || !edgesLayer) {
         return;
@@ -200,6 +222,7 @@ function renderMap(): void {
 
     nodesLayer.clearLayers();
     portsLayer.clearLayers();
+    portClusterLayer?.clearLayers();
     edgesLayer.clearLayers();
     markersById.clear();
     edgeLinesByNode.clear();
@@ -233,34 +256,109 @@ function renderMap(): void {
         addEdgeLineForNode(edge.to, line);
     }
 
+    const deviceNodes: TracerouteMapNode[] = [];
+    const portNodes: TracerouteMapNode[] = [];
     for (const node of props.data.nodes) {
-        const markerStyle = node.inherited_from
-            ? {
-                  radius: 5,
-                  color: "#fde68a",
-                  weight: 2,
-                  fillColor: "#f59e0b",
-                  fillOpacity: 0.95,
-              }
-            : defaultMarkerStyle;
-        const marker = circleMarker([node.lat, node.lon], {
-            ...markerStyle,
-            pane: node.inherited_from ? "traceroutePorts" : "tracerouteNodes",
-        });
-        marker.bindTooltip(node.label, { direction: "top", sticky: true });
-        marker.bindPopup(createNodePopup(node));
-        marker.on("click", () => highlightNodeEdges(node.id));
-        marker.addTo(node.inherited_from ? portsLayer : nodesLayer);
-        marker.bringToFront();
-        markersById.set(node.id, marker);
+        if (node.inherited_from) {
+            portNodes.push(node);
+            continue;
+        }
+        deviceNodes.push(node);
+    }
+
+    for (const node of deviceNodes) {
+        addNodeMarker(node, nodesLayer, defaultMarkerStyle, "tracerouteNodes");
+    }
+
+    if (clusterPorts.value) {
+        renderClusteredPorts(portNodes);
+    } else {
+        for (const node of portNodes) {
+            addNodeMarker(node, portsLayer, getPortMarkerStyle(), "traceroutePorts");
+        }
     }
     applySearchHighlight();
 
     const points = props.data.nodes.map((node) => [node.lat, node.lon] as LatLngExpression);
-    if (points.length) {
+    if (shouldFitBounds && points.length) {
         map.fitBounds(latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
     }
     refreshMapLayout();
+}
+
+/**
+ * Creates Leaflet.MarkerCluster layer for inherited ports.
+ */
+function createPortClusterLayer(): MarkerClusterGroup {
+    return getMarkerClusterGroupFactory()({
+        chunkedLoading: true,
+        clusterPane: "traceroutePorts",
+        disableClusteringAtZoom: 18,
+        maxClusterRadius: 36,
+        removeOutsideVisibleBounds: true,
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        zoomToBoundsOnClick: true,
+        spiderLegPolylineOptions: {
+            color: "#f59e0b",
+            opacity: 0.75,
+            weight: 1.2,
+        },
+        iconCreateFunction: (cluster) =>
+            divIcon({
+                className: "traceroute-map-port-cluster",
+                html: `<span>${cluster.getChildCount()}</span>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 17],
+            }),
+    });
+}
+
+/**
+ * Adds a node or port marker to a target Leaflet layer.
+ */
+function addNodeMarker(
+    node: TracerouteMapNode,
+    targetLayer: FeatureGroup<CircleMarker | Marker> | FeatureGroup<CircleMarker>,
+    markerStyle: typeof defaultMarkerStyle,
+    pane: string
+): CircleMarker {
+    const mapMarker = circleMarker([node.lat, node.lon], {
+        ...markerStyle,
+        pane,
+    });
+    mapMarker.bindTooltip(node.label, { direction: "top", sticky: true });
+    mapMarker.bindPopup(createNodePopup(node));
+    mapMarker.on("click", () => highlightNodeEdges(node.id));
+    mapMarker.addTo(targetLayer);
+    mapMarker.bringToFront();
+    markersById.set(node.id, mapMarker);
+    return mapMarker;
+}
+
+/**
+ * Renders inherited port nodes through Leaflet.MarkerCluster.
+ */
+function renderClusteredPorts(portNodes: TracerouteMapNode[]): void {
+    if (!portClusterLayer) {
+        return;
+    }
+    for (const node of portNodes) {
+        addNodeMarker(node, portClusterLayer, getPortMarkerStyle(), "traceroutePorts");
+    }
+}
+
+/**
+ * Returns default inherited port marker style.
+ */
+function getPortMarkerStyle(): typeof defaultMarkerStyle {
+    return {
+        radius: 5,
+        color: "#fde68a",
+        weight: 2,
+        fillColor: "#f59e0b",
+        fillOpacity: 0.95,
+    };
 }
 
 /**
@@ -341,6 +439,55 @@ function resetHighlights(): void {
 }
 
 /**
+ * Toggles inherited port clustering.
+ */
+async function togglePortClusters(): Promise<void> {
+    clusterPorts.value = !clusterPorts.value;
+    if (clusterPorts.value) {
+        await ensureMarkerClusterLoaded();
+    }
+    rebuildMap(false);
+}
+
+/**
+ * Loads Leaflet.MarkerCluster after exposing Leaflet as global L for its UMD bundle.
+ */
+async function ensureMarkerClusterLoaded(): Promise<void> {
+    if (getMarkerClusterGroupFactoryOrNull()) {
+        return;
+    }
+    if (!markerClusterLoading) {
+        window.L = Leaflet;
+        markerClusterLoading = import("leaflet.markercluster").then(() => undefined);
+    }
+    await markerClusterLoading;
+}
+
+/**
+ * Returns loaded marker cluster factory.
+ */
+function getMarkerClusterGroupFactory(): typeof Leaflet.markerClusterGroup {
+    const factory = getMarkerClusterGroupFactoryOrNull();
+    if (!factory) {
+        throw new Error("Leaflet.MarkerCluster is not loaded.");
+    }
+    return factory;
+}
+
+/**
+ * Returns marker cluster factory without relying on static type augmentation.
+ */
+function getMarkerClusterGroupFactoryOrNull(): typeof Leaflet.markerClusterGroup | null {
+    return (
+        (
+            Leaflet as unknown as {
+                markerClusterGroup?: typeof Leaflet.markerClusterGroup;
+            }
+        ).markerClusterGroup ?? null
+    );
+}
+
+/**
  * Restores default style for all highlighted edge lines.
  */
 function resetEdgeHighlights(): void {
@@ -368,10 +515,10 @@ function toggleMaximize(): void {
 /**
  * Recreates Leaflet after switching fullscreen layout.
  */
-function rebuildMap(): void {
+function rebuildMap(shouldFitBounds = true): void {
     destroyMap();
     nextTick(() => {
-        renderMap();
+        renderMap(shouldFitBounds);
     });
 }
 
@@ -524,7 +671,13 @@ async function fetchInterfaceInfo(device: string, port: string): Promise<LoadedI
 
 watch(
     () => props.data,
-    () => nextTick(renderMap),
+    async () => {
+        if (shouldAutoClusterPorts.value && !clusterPorts.value) {
+            clusterPorts.value = true;
+            await ensureMarkerClusterLoaded();
+        }
+        nextTick(renderMap);
+    },
     { deep: true, immediate: true }
 );
 
@@ -566,6 +719,7 @@ function destroyMap(): void {
     map = null;
     nodesLayer = null;
     portsLayer = null;
+    portClusterLayer = null;
     edgesLayer = null;
     layersControl = null;
     markersById.clear();
@@ -588,6 +742,13 @@ function destroyMap(): void {
     width: 100vw !important;
     height: 100dvh !important;
     min-height: 100dvh !important;
+}
+
+:deep(.leaflet-interactive:focus),
+:deep(.leaflet-interactive:focus-visible),
+:deep(path.leaflet-interactive:focus),
+:deep(path.leaflet-interactive:focus-visible) {
+    outline: none;
 }
 
 :deep(.traceroute-map-popup) {
@@ -714,5 +875,34 @@ function destroyMap(): void {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.72rem;
     line-height: 1.35;
+}
+
+:deep(.traceroute-map-port-cluster) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fef3c7;
+    border-radius: 999px;
+    background: #f59e0b;
+    color: #111827;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8rem;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.32);
+}
+
+:deep(.traceroute-map-port-cluster span) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+}
+
+:deep(.traceroute-map-port-cluster__list) {
+    max-height: 9rem;
+    margin: 0.45rem 0 0;
+    overflow-y: auto;
+    padding-left: 1rem;
 }
 </style>
