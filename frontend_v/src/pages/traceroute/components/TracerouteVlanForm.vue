@@ -42,7 +42,7 @@
                     </Button>
                     <div
                         v-if="mode === 'vlan' && inputVlanInfo.name"
-                        class="min-h-12 rounded-2xl border border-gray-200/80 bg-white/80 px-3 py-2 font-mono text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-900/45 dark:text-gray-200"
+                        class="flex items-center gap-2 min-h-12 rounded-2xl border border-gray-200/80 bg-white/80 px-3 py-2 font-mono text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-900/45 dark:text-gray-200"
                     >
                         <div class="truncate">{{ inputVlanInfo.name }}</div>
                         <div v-if="inputVlanInfo.description" class="truncate text-xs text-gray-500 dark:text-gray-400">
