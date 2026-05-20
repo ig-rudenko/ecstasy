@@ -74,3 +74,7 @@ class TracerouteQuerySerializer(serializers.Serializer):
 
 
 VlanTracerouteQuerySerializer = TracerouteQuerySerializer
+
+
+class TracerouteMapQuerySerializer(TracerouteQuerySerializer):
+    """Query serializer for geographic traceroute visualization."""

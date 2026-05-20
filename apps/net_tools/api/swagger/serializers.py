@@ -69,3 +69,34 @@ class TracerouteSerializer(serializers.Serializer):
     nodes = TracerouteNodeSerializer(many=True)
     edges = TracerouteEdgeSerializer(many=True)
     options = serializers.DictField(help_text="Параметры для отображения связей и физики")
+
+
+class TracerouteMapNodeSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    label = serializers.CharField()
+    lat = serializers.FloatField()
+    lon = serializers.FloatField()
+    title = serializers.CharField(required=False, allow_blank=True)
+    device = serializers.DictField(required=False, allow_null=True)
+    inherited_from = serializers.CharField(required=False)
+    kind = serializers.CharField(required=False)
+
+
+class TracerouteMapEdgeSerializer(serializers.Serializer):
+    from_ = serializers.CharField(source="from", help_text="По факту вернется поле `from`")
+    to = serializers.CharField()
+    title = serializers.DictField(required=False)
+    value = serializers.IntegerField(required=False)
+
+
+class TracerouteMapSkippedNodeSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    label = serializers.CharField()
+    reason = serializers.CharField()
+
+
+class TracerouteMapSerializer(serializers.Serializer):
+    nodes = TracerouteMapNodeSerializer(many=True)
+    edges = TracerouteMapEdgeSerializer(many=True)
+    skipped_nodes = TracerouteMapSkippedNodeSerializer(many=True)
+    vlansInfo = serializers.ListField(child=serializers.DictField(), required=False)

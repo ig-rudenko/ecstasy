@@ -7,6 +7,7 @@ from ..api import views
 urlpatterns = [
     path("find-by-desc", views.find_by_description),
     path("traceroute", views.get_traceroute),
+    path("traceroute-map", views.get_traceroute_map),
     path("vlan-desc", views.get_vlan_desc),
     path("mac-vendor/<mac>", views.get_vendor),
     path("ip-mac-info/<ip_or_mac>", views.ip_mac_info),

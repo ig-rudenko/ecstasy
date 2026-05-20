@@ -1,7 +1,10 @@
 from typing import Any, cast
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
+from apps.check.services.zabbix import DeviceCoords
+from apps.net_tools.services.traceroute import build_traceroute_map_data
 from apps.net_tools.services.finder import MultipleTraceroute, Traceroute, TracerouteResult
 from devicemanager.device.interfaces import Interface, Interfaces
 
@@ -134,3 +137,54 @@ class MultipleTracerouteTestCase(SimpleTestCase):
                 self.passed_devices.update({"dev-a", "dev-b"})
 
         return FakeFinder()
+
+
+class TracerouteMapDataTestCase(SimpleTestCase):
+    def test_build_map_data_uses_only_nodes_with_coordinates(self) -> None:
+        """Географическая трассировка отбрасывает узлы без координат Zabbix."""
+        graph_data = {
+            "nodes": [
+                {"id": "dev-a", "label": "dev-a"},
+                {"id": "dev-b", "label": "dev-b"},
+                {"id": "dev-a-port", "label": "eth1"},
+            ],
+            "edges": [
+                {"from": "dev-a", "to": "dev-b", "value": 2},
+                {"from": "dev-a", "to": "dev-a-port", "value": 1},
+            ],
+            "vlansInfo": [{"vlan": 100, "count": 2}],
+        }
+
+        device_info = {
+            "dev-a": {
+                "name": "dev-a",
+                "ip": "192.0.2.1",
+                "vendor": "Huawei",
+                "model": "S5320",
+                "group": "Access",
+                "serial_number": "SN1",
+                "os_version": "VRP",
+                "url": "/device/dev-a",
+            }
+        }
+
+        with (
+            patch(
+                "apps.net_tools.api.views.get_zabbix_hosts_coordinates",
+                return_value={
+                    "dev-a": DeviceCoords(lat=44.1, lon=33.2),
+                    "dev-b": DeviceCoords(lat=44.2, lon=33.3),
+                },
+            ),
+            patch("apps.net_tools.api.views._get_traceroute_map_devices", return_value=device_info),
+        ):
+            result = build_traceroute_map_data(graph_data)
+
+        self.assertEqual([node["id"] for node in result["nodes"]], ["dev-a", "dev-b", "dev-a-port"])
+        self.assertEqual(result["nodes"][0]["device"], device_info["dev-a"])
+        self.assertIsNone(result["nodes"][1]["device"])
+        self.assertEqual(result["nodes"][2]["inherited_from"], "dev-a")
+        self.assertEqual(result["nodes"][2]["kind"], "inherited")
+        self.assertEqual(result["edges"], graph_data["edges"])
+        self.assertEqual(result["skipped_nodes"], [])
+        self.assertEqual(result["vlansInfo"], graph_data["vlansInfo"])
