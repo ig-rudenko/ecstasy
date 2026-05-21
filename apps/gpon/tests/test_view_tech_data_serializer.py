@@ -35,5 +35,5 @@ class TestViewOLTStatesTechDataSerializer(TestCase):
         serializer.create(serializer.validated_data)
 
     def test_serializer(self):
-        serializer = ViewOLTStatesTechDataSerializer(instance=OLTState.objects.all(), many=True)
-        print(serializer.data)
+        ViewOLTStatesTechDataSerializer(instance=OLTState.objects.all(), many=True)
+        # print(serializer.data)

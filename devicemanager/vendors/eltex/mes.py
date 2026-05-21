@@ -217,8 +217,8 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
     def _get_interfaces_config(self) -> dict[str, str]:
         output = self.send_command("show running-config", expect_command=False)
         interfaces_config: dict[str, str] = {}
-        for line in re.findall(r"interface\s+\S+\d.+?exit\s+!", output, flags=re.DOTALL):
-            if interface_name := re.match(r"^interface\s+(\S+)", line):
+        for line in re.findall(r"interface\s+.+?exit\s+!?", output, flags=re.DOTALL):
+            if interface_name := re.match(r"^interface\s+(.+?)\n", line):
                 interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
         return interfaces_config
 

@@ -213,7 +213,7 @@ class TestRotateToNormalSolutions(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        print(solutions)
+        # print(solutions)
 
         # Найдено 3 решение
         self.assertEqual(len(solutions), 3)

@@ -230,7 +230,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         # Получаем свежие данные
         device_info = DevicesInfo.objects.get(dev=self.device)
-        print(device_info)
+        # print(device_info)
         device = Devices.objects.get(id=self.device.id)
 
         # В базе должны были обновиться поля

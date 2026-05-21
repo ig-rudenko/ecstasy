@@ -134,7 +134,7 @@ class TestRingChain(TestRingBase):
         self.maxDiff = None
         r = TransportRingManager(ring=TransportRing.objects.get(name=self.ring_name))
 
-        print(r.ring_devs)
+        # print(r.ring_devs)
 
         self.assertEqual(
             r.ring_devs,

@@ -361,7 +361,7 @@ class TestZyxelInterfaces(SimpleTestCase):
     def test_get_interfaces(self):
         # Получение интерфейсов от объекта zyxel.
         interfaces = self.zyxel.get_interfaces()
-        print(interfaces)
+        # print(interfaces)
         self.assertEqual(
             interfaces,
             [
@@ -421,7 +421,7 @@ class TestZyxelInterfaces(SimpleTestCase):
     def test_get_vlans(self):
         # Получение интерфейсов и VLAN от объекта zyxel.
         interfaces_vlans = self.zyxel.get_vlans()
-        print(interfaces_vlans)
+        # print(interfaces_vlans)
         self.assertEqual(
             interfaces_vlans,
             [

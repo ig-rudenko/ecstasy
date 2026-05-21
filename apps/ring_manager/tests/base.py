@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.check.models import AuthGroup, DeviceGroup, Devices
 from apps.net_tools.models import DevicesInfo
 
-from ..models import RingDev, TransportRing
+from ..models import RingDev
 
 
 class TestRingBase(TransactionTestCase):
@@ -63,12 +63,12 @@ class TestRingBase(TransactionTestCase):
                 last_ring_dev = first_ring_dev
 
         # Создаем кольцо
-        print(
-            "Создаем кольцо",
-            TransportRing.objects.create(
-                name=self.ring_name,
-                head=first_ring_dev,
-                tail=last_ring_dev,
-                vlans=self.RING_VLANS,
-            ),
-        )
+        # print(
+        #     "Создаем кольцо",
+        #     TransportRing.objects.create(
+        #         name=self.ring_name,
+        #         head=first_ring_dev,
+        #         tail=last_ring_dev,
+        #         vlans=self.RING_VLANS,
+        #     ),
+        # )

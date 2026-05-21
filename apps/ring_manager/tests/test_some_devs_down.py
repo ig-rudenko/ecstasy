@@ -98,7 +98,7 @@ class TestDownSolutions1(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        print(solutions)
+        # print(solutions)
 
         # Найдено 2 решения
         self.assertEqual(len(solutions), 2)
@@ -159,7 +159,7 @@ class TestDownSolutions2(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        print(solutions)
+        # print(solutions)
 
         # Найдено 2 решения
         self.assertEqual(len(solutions), 2)
