@@ -9,7 +9,7 @@
         >
             <div
                 v-if="vlanRendered"
-                class="absolute! top-3 right-28 left-3 z-10001 flex items-center gap-2 sm:left-auto"
+                class="absolute! top-3 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto"
             >
                 <InputText
                     :model-value="graphNodeSearch"
@@ -34,7 +34,7 @@
             </div>
             <Button
                 v-if="vlanRendered"
-                class="absolute! z-10001 top-3 right-16 rounded-xl!"
+                class="absolute! z-101 top-3 right-18"
                 icon="pi pi-sliders-h"
                 rounded
                 severity="secondary"
@@ -43,8 +43,8 @@
             />
             <Button
                 v-if="vlanRendered"
-                class="absolute! z-10001 top-3 right-3 rounded-xl!"
-                :icon="vlanMaximized ? 'pi pi-times' : 'pi pi-expand'"
+                class="absolute! z-101 top-3 right-6"
+                :icon="vlanMaximized ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center' : 'pi pi-expand'"
                 rounded
                 severity="secondary"
                 v-tooltip.bottom="vlanMaximized ? 'Выйти из полного экрана' : 'На весь экран'"
@@ -52,7 +52,7 @@
             />
             <div
                 v-if="graphRenderLoading && mode !== 'mac'"
-                class="absolute! z-10002 left-3 right-3 top-16 rounded-2xl border border-gray-700/60 bg-black/75 p-4 shadow-lg"
+                class="absolute! z-102 left-3 right-3 top-16 rounded-2xl border border-gray-700/60 bg-black/75 p-4 shadow-lg"
             >
                 <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-100">
                     <span>Создание графа</span>
@@ -68,7 +68,7 @@
         >
             <div
                 v-if="macRendered"
-                class="absolute! top-3 right-28 left-3 z-10001 flex items-center gap-2 sm:left-auto"
+                class="absolute! top-6 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto"
             >
                 <InputText
                     :model-value="graphNodeSearch"
@@ -93,7 +93,7 @@
             </div>
             <Button
                 v-if="macRendered"
-                class="absolute! z-10001 top-3 right-16 rounded-xl!"
+                class="absolute! z-101 top-6 right-18 rounded-xl!"
                 icon="pi pi-sliders-h"
                 rounded
                 severity="secondary"
@@ -102,7 +102,7 @@
             />
             <Button
                 v-if="macRendered"
-                class="absolute! z-10001 top-3 right-3 rounded-xl!"
+                class="absolute! z-101 top-6 right-6 rounded-xl!"
                 :icon="macMaximized ? 'pi pi-times' : 'pi pi-expand'"
                 rounded
                 severity="secondary"
@@ -111,7 +111,7 @@
             />
             <div
                 v-if="graphRenderLoading && mode === 'mac'"
-                class="absolute! z-10002 left-3 right-3 top-16 rounded-2xl border border-gray-700/60 bg-black/75 p-4 shadow-lg"
+                class="absolute! z-102 left-3 right-3 top-16 rounded-2xl border border-gray-700/60 bg-black/75 p-4 shadow-lg"
             >
                 <div class="mb-2 flex items-center justify-between text-sm font-semibold text-gray-100">
                     <span>Создание графа</span>

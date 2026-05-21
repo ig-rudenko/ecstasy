@@ -141,6 +141,74 @@ class TracerouteTraversalTestCase(SimpleTestCase):
         self.assertEqual(finder.result[0].line_description["vlan_match"]["confidence"], "low")
         self.assertTrue(finder.result[0].line_description["vlan_match"]["src"]["broad_trunk"])
 
+    def test_find_vlan_marks_small_vlan_set_as_exact_match(self) -> None:
+        """VLAN трассировка помечает порт с малым набором VLAN как точное совпадение."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=[98, 99, 100, 101, 102])]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            trunk_filter_mode="mark_broad",
+        )
+
+        vlan_match = finder.result[0].line_description["vlan_match"]
+        self.assertEqual(vlan_match["confidence"], "exact")
+        self.assertTrue(vlan_match["exact_match"])
+        self.assertTrue(vlan_match["src"]["exact_match"])
+        self.assertEqual(vlan_match["src"]["reason"], "small_vlan_set_exact_match")
+
+    def test_find_vlan_marks_single_vlan_as_exact_match(self) -> None:
+        """VLAN трассировка помечает одиночный VLAN на порту как точное совпадение."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=[100])]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            trunk_filter_mode="mark_broad",
+        )
+
+        vlan_match = finder.result[0].line_description["vlan_match"]
+        self.assertEqual(vlan_match["confidence"], "exact")
+        self.assertEqual(vlan_match["src"]["reason"], "single_vlan_exact_match")
+
+    def test_find_vlan_requires_both_checked_ports_for_exact_link(self) -> None:
+        """При double-check связь точная только если обе стороны имеют малый набор VLAN."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=[100])]
+        )
+        finder._interfaces_by_device["dev-b"] = Interfaces(
+            [Interface(name="eth2", status="up", desc="dev-a", vlan=list(range(90, 111)))]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=True,
+            trunk_filter_mode="mark_broad",
+        )
+
+        vlan_match = finder.result[0].line_description["vlan_match"]
+        self.assertEqual(vlan_match["confidence"], "high")
+        self.assertFalse(vlan_match["exact_match"])
+
     def test_find_vlan_keeps_specific_range_on_large_vlan_port_confident(self) -> None:
         """Большой список VLAN не считается broad trunk, если искомый VLAN в малом диапазоне."""
         finder = self._make_finder()
@@ -390,6 +458,39 @@ class VlanNetworkTestCase(SimpleTestCase):
         self.assertEqual(len(network.edges), 1)
         self.assertEqual(network.edges[0]["title"]["vlan_match"]["confidence"], "high")
         self.assertNotIn("dashes", network.edges[0])
+
+    def test_create_network_prefers_exact_duplicate_edge(self) -> None:
+        """VLAN graph keeps exact edges over other confident duplicate edges."""
+        data = [
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "high"},
+                },
+                admin_down_status="up",
+            ),
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "exact"},
+                },
+                admin_down_status="up",
+            ),
+        ]
+        network = VlanNetwork()
+
+        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+            network.create_network(data)
+
+        self.assertEqual(len(network.edges), 1)
+        self.assertEqual(network.edges[0]["title"]["vlan_match"]["confidence"], "exact")
+        self.assertEqual(network.edges[0]["color"]["color"], "#22c55e")
 
     def test_create_network_marks_nodes_with_only_suspicious_edges(self) -> None:
         """VLAN graph marks nodes whose every edge is suspicious."""

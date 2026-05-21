@@ -187,7 +187,7 @@ const closeMobileMenu = () => {
 </script>
 
 <template>
-    <div class="sticky top-0 z-30">
+    <div class="sticky top-0 z-9999">
         <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
             <div
                 class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
@@ -199,7 +199,7 @@ const closeMobileMenu = () => {
                         <img class="w-10 h-10 rounded-full" src="/video/logo.webp" alt="logo" />
                         <div>
                             <div
-                                style="font-family: &quot;Century Gothic&quot;, fantasy"
+                                style="font-family: Century Gothic, fantasy"
                                 class="text-gray-900 dark:text-gray-100 text-xl leading-none"
                             >
                                 Ecstasy
@@ -249,7 +249,7 @@ const closeMobileMenu = () => {
                                 <img class="w-10 h-10 sm:w-12 sm:h-12 rounded-full" src="/video/logo.webp" alt="logo" />
                                 <div class="hidden sm:block">
                                     <div
-                                        style="font-family: &quot;Century Gothic&quot;, fantasy"
+                                        style="font-family: Century Gothic, fantasy"
                                         class="text-gray-900 dark:text-gray-100 text-xl sm:text-2xl leading-none"
                                     >
                                         Ecstasy

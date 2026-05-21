@@ -91,7 +91,7 @@ function applyGraphCanvasOptions(options: any): any {
 function getVlanMatchTooltip(payload: Record<string, unknown>): string {
     const match = (payload.vlan_match ?? {}) as Record<string, unknown>;
     const confidence = String(match.confidence ?? "");
-    if (confidence !== "low" && confidence !== "medium") {
+    if (confidence !== "exact" && confidence !== "low" && confidence !== "medium") {
         return "";
     }
     const src = (match.src ?? {}) as Record<string, unknown>;
@@ -99,11 +99,15 @@ function getVlanMatchTooltip(payload: Record<string, unknown>): string {
     const rangeText =
         matchedRange.from && matchedRange.to ? `${String(matchedRange.from)}-${String(matchedRange.to)}` : "-";
     const label =
-        confidence === "low"
-            ? "Низкая уверенность: широкий trunk"
-            : "Средняя уверенность: broad trunk подтвержден соседним портом";
+        confidence === "exact"
+            ? "Точное совпадение VLAN"
+            : confidence === "low"
+              ? "Низкая уверенность: широкий trunk"
+              : "Средняя уверенность: broad trunk подтвержден соседним портом";
+    const toneClass =
+        confidence === "exact" ? "border-emerald-300/40 bg-emerald-300/10" : "border-amber-300/40 bg-amber-300/10";
     return `
-        <div class="mt-2 rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-1">
+        <div class="mt-2 rounded-md border ${toneClass} px-2 py-1">
             <div class="text-[11px] tracking-wide opacity-80 uppercase">${label}</div>
             <div class="font-mono text-xs leading-5">Src VLAN: ${String(src.vlan_count ?? "-")}, range: ${rangeText}</div>
         </div>

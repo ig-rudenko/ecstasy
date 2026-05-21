@@ -63,7 +63,8 @@ export interface TracerouteMapEdge {
 }
 
 export interface VlanMatchInfo {
-    confidence?: "high" | "normal" | "medium" | "low";
+    confidence?: "exact" | "high" | "normal" | "medium" | "low";
+    exact_match?: boolean;
     src?: VlanPortMatchInfo;
     dst?: VlanPortMatchInfo | null;
 }
@@ -71,6 +72,7 @@ export interface VlanMatchInfo {
 export interface VlanPortMatchInfo {
     confidence?: string;
     broad_trunk?: boolean;
+    exact_match?: boolean;
     vlan_count?: number;
     device_vlan_count?: number;
     largest_range_size?: number;

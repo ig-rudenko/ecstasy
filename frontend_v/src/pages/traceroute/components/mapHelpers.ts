@@ -189,6 +189,9 @@ function createVlanMatchRows(match: VlanMatchInfo | undefined): string {
  * Returns readable VLAN match label.
  */
 function getVlanMatchLabel(confidence: string): string {
+    if (confidence === "exact") {
+        return "точное совпадение VLAN";
+    }
     if (confidence === "low") {
         return "низкая уверенность: широкий trunk";
     }

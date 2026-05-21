@@ -21,7 +21,7 @@
                 @click="highlightSearchMatches"
             />
             <Button
-                :icon="maximized ? 'pi pi-times' : 'pi pi-expand'"
+                :icon="maximized ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center' : 'pi pi-expand'"
                 severity="secondary"
                 rounded
                 v-tooltip.bottom="maximized ? 'Выйти из полного экрана' : 'На весь экран'"
@@ -139,7 +139,7 @@ const edgeDefaultStyles = new WeakMap<Polyline, EdgeStyle>();
 const edgeLinesByNode = new Map<string, Polyline[]>();
 const foundNodeIds = ref(new Set<string>());
 const highlightedNodeId = ref<string | null>(null);
-const PORT_CLUSTER_AUTO_THRESHOLD = 25;
+const PORT_CLUSTER_AUTO_THRESHOLD = 300;
 const CLOSE_DEVICE_DISTANCE_METERS = 14;
 const DEVICE_OFFSET_RADIUS_METERS = 14;
 const DEVICE_OFFSET_RING_STEP_METERS = 8;
@@ -195,7 +195,6 @@ function initMap(): void {
     map.getPane("tracerouteNodes")!.style.zIndex = "430";
     map.getPane("tracerouteSuspiciousNodes")!.style.zIndex = "435";
     map.getPane("traceroutePorts")!.style.zIndex = "440";
-    map.setView([44.6, 33.5], 12);
     map.attributionControl.getContainer()?.remove();
     map.addControl(new Control.Scale());
     edgesLayer = featureGroup<Polyline>().addTo(map);
@@ -211,9 +210,9 @@ function initMap(): void {
             ArcGIS: tiles.arcgisonline,
         },
         {
-            "Узлы": nodesLayer,
-            "Порты": portClusterLayer || portsLayer,
-            "Связи": edgesLayer,
+            Узлы: nodesLayer,
+            Порты: portClusterLayer || portsLayer,
+            Связи: edgesLayer,
             "Сомнительные узлы/порты": suspiciousNodesLayer,
             "Сомнительные связи": suspiciousEdgesLayer,
         }
@@ -289,6 +288,7 @@ function renderMap(shouldFitBounds = true): void {
     const deviceNodes: TracerouteMapNode[] = [];
     const portNodes: TracerouteMapNode[] = [];
     const suspiciousNodeIds = getSuspiciousNodeIds(nodesById);
+    const exactPortNodeIds = getExactPortNodeIds(nodesById);
     for (const node of displayNodes) {
         if (node.inherited_from) {
             portNodes.push(node);
@@ -306,13 +306,21 @@ function renderMap(shouldFitBounds = true): void {
     }
 
     if (clusterPorts.value) {
-        renderClusteredPorts(portNodes.filter((node) => !suspiciousNodeIds.has(node.id)));
+        renderClusteredPorts(
+            portNodes.filter((node) => !suspiciousNodeIds.has(node.id)),
+            exactPortNodeIds
+        );
     } else {
         for (const node of portNodes) {
             if (suspiciousNodeIds.has(node.id)) {
                 continue;
             }
-            addNodeMarker(node, portsLayer, getPortMarkerStyle(), "traceroutePorts");
+            addNodeMarker(
+                node,
+                portsLayer,
+                exactPortNodeIds.has(node.id) ? getExactPortMarkerStyle() : getPortMarkerStyle(),
+                "traceroutePorts"
+            );
         }
     }
     for (const node of portNodes) {
@@ -322,11 +330,23 @@ function renderMap(shouldFitBounds = true): void {
     }
     applySearchHighlight();
 
-    const points = displayNodes.map((node) => [node.lat, node.lon] as LatLngExpression);
-    if (shouldFitBounds && points.length) {
-        map.fitBounds(latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
-    }
+    fitMapToNodes(displayNodes, shouldFitBounds);
     refreshMapLayout();
+}
+
+/**
+ * Fits the map viewport to rendered traceroute nodes.
+ */
+function fitMapToNodes(nodes: TracerouteMapNode[], shouldFitBounds: boolean): void {
+    if (!map || !shouldFitBounds || !nodes.length) {
+        return;
+    }
+    if (nodes.length === 1) {
+        map.setView([nodes[0].lat, nodes[0].lon], 17);
+        return;
+    }
+    const points = nodes.map((node) => [node.lat, node.lon] as LatLngExpression);
+    map.fitBounds(latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
 }
 
 /**
@@ -465,13 +485,19 @@ function createPortClusterLayer(): MarkerClusterGroup {
             opacity: 0.75,
             weight: 1.2,
         },
-        iconCreateFunction: (cluster) =>
-            divIcon({
-                className: "traceroute-map-port-cluster",
+        iconCreateFunction: (cluster) => {
+            const hasExactPort = cluster
+                .getAllChildMarkers()
+                .some((marker) => (marker as unknown as TracerouteExactMarker).tracerouteExactPort);
+            return divIcon({
+                className: hasExactPort
+                    ? "traceroute-map-port-cluster traceroute-map-port-cluster--exact"
+                    : "traceroute-map-port-cluster",
                 html: `<span>${cluster.getChildCount()}</span>`,
                 iconSize: [34, 34],
                 iconAnchor: [17, 17],
-            }),
+            });
+        },
     });
 }
 
@@ -482,12 +508,14 @@ function addNodeMarker(
     node: TracerouteMapNode,
     targetLayer: FeatureGroup<CircleMarker | Marker> | FeatureGroup<CircleMarker>,
     markerStyle: MarkerStyle,
-    pane: string
+    pane: string,
+    isExactPort = false
 ): CircleMarker {
     const mapMarker = circleMarker([node.lat, node.lon], {
         ...markerStyle,
         pane,
     });
+    (mapMarker as TracerouteExactMarker).tracerouteExactPort = isExactPort;
     mapMarker.bindTooltip(node.label, { direction: "top", sticky: true });
     mapMarker.bindPopup(createNodePopup(node));
     mapMarker.on("click", () => highlightNodeEdges(node.id));
@@ -501,12 +529,19 @@ function addNodeMarker(
 /**
  * Renders inherited port nodes through Leaflet.MarkerCluster.
  */
-function renderClusteredPorts(portNodes: TracerouteMapNode[]): void {
+function renderClusteredPorts(portNodes: TracerouteMapNode[], exactPortNodeIds: Set<string>): void {
     if (!portClusterLayer) {
         return;
     }
     for (const node of portNodes) {
-        addNodeMarker(node, portClusterLayer, getPortMarkerStyle(), "traceroutePorts");
+        const isExactPort = exactPortNodeIds.has(node.id);
+        addNodeMarker(
+            node,
+            portClusterLayer,
+            isExactPort ? getExactPortMarkerStyle() : getPortMarkerStyle(),
+            "traceroutePorts",
+            isExactPort
+        );
     }
 }
 
@@ -534,6 +569,19 @@ function getSuspiciousPortMarkerStyle(): MarkerStyle {
         opacity: 0.5,
         fillColor: "#f59e0b",
         fillOpacity: 0.5,
+    };
+}
+
+/**
+ * Returns inherited port marker style for exact VLAN matches.
+ */
+function getExactPortMarkerStyle(): MarkerStyle {
+    return {
+        radius: 7,
+        color: "#dcfce7",
+        weight: 1,
+        fillColor: "#ea2eff",
+        fillOpacity: 1,
     };
 }
 
@@ -567,6 +615,29 @@ function getSuspiciousNodeIds(nodesById: Map<string, TracerouteMapNode>): Set<st
             .filter(([nodeId, total]) => total > 0 && (suspiciousEdgesByNode.get(nodeId) || 0) === total)
             .map(([nodeId]) => nodeId)
     );
+}
+
+/**
+ * Returns inherited port node ids that terminate exact VLAN matches.
+ */
+function getExactPortNodeIds(nodesById: Map<string, TracerouteMapNode>): Set<string> {
+    const portNodeIds = new Set<string>();
+    const portNodeIdsByEndpoint = getPortNodeIdsByEndpoint(nodesById);
+
+    for (const edge of props.data.edges) {
+        const target = nodesById.get(edge.to);
+        if (!target?.inherited_from || !isExactEdge(edge)) {
+            continue;
+        }
+        for (const nodeId of getEdgePortNodeIds(edge, portNodeIdsByEndpoint)) {
+            if (nodesById.get(nodeId)?.inherited_from) {
+                portNodeIds.add(nodeId);
+            }
+        }
+        portNodeIds.add(target.id);
+    }
+
+    return portNodeIds;
 }
 
 /**
@@ -628,6 +699,13 @@ function extractPortNameFromNode(node: TracerouteMapNode): string {
 function isSuspiciousEdge(edge: TracerouteMapEdge): boolean {
     const confidence = edge.title?.vlan_match?.confidence;
     return confidence === "low" || confidence === "medium";
+}
+
+/**
+ * Checks whether an edge has exact VLAN confidence.
+ */
+function isExactEdge(edge: TracerouteMapEdge): boolean {
+    return edge.title?.vlan_match?.confidence === "exact" || edge.title?.vlan_match?.exact_match === true;
 }
 
 /**
@@ -707,7 +785,7 @@ async function togglePortClusters(): Promise<void> {
     if (clusterPorts.value) {
         await ensureMarkerClusterLoaded();
     }
-    rebuildMap(false);
+    rebuildMap();
 }
 
 /**
@@ -834,11 +912,22 @@ type MarkerStyle = typeof defaultMarkerStyle & {
     opacity?: number;
 };
 
+type TracerouteExactMarker = {
+    tracerouteExactPort?: boolean;
+};
+
 /**
  * Returns default edge style.
  */
 function getDefaultEdgeStyle(edge: TracerouteMapEdge): EdgeStyle {
     const confidence = edge.title?.vlan_match?.confidence;
+    if (confidence === "exact") {
+        return {
+            color: "#9200c3",
+            opacity: 0.58,
+            weight: Math.max(3, Math.min(Number(edge.value || 1) + 1, 5)),
+        };
+    }
     if (confidence === "low") {
         return {
             color: "#94a3b8",
@@ -1039,8 +1128,9 @@ function destroyMap(): void {
 }
 
 :deep(.traceroute-map-popup) {
-    min-width: 220px;
-    max-width: min(28rem, 78vw);
+    word-break: break-all;
+    min-width: 300px;
+    max-width: min(30rem, 78vw);
     color: #0f172a;
 }
 
@@ -1164,6 +1254,11 @@ function destroyMap(): void {
     color: #92400e;
 }
 
+:deep(.traceroute-map-popup__confidence--exact) {
+    background: #f0dcfc;
+    color: rgb(234 46 255);
+}
+
 :deep(.traceroute-map-popup__vlan-block) {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
@@ -1196,6 +1291,12 @@ function destroyMap(): void {
     font-size: 0.8rem;
     font-weight: 800;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.32);
+}
+
+:deep(.traceroute-map-port-cluster--exact) {
+    border-color: #f3e8ff;
+    background: #9200c3;
+    color: #fdf4ff;
 }
 
 :deep(.traceroute-map-port-cluster span) {

@@ -255,6 +255,7 @@ class VlanPortMatch:
 
     confidence: str
     broad_trunk: bool
+    exact_match: bool
     vlan_count: int
     device_vlan_count: int
     matched_range: tuple[int, int] | None
@@ -266,6 +267,7 @@ class VlanPortMatch:
         data: dict[str, Any] = {
             "confidence": self.confidence,
             "broad_trunk": self.broad_trunk,
+            "exact_match": self.exact_match,
             "vlan_count": self.vlan_count,
             "device_vlan_count": self.device_vlan_count,
             "largest_range_size": self.largest_range_size,
@@ -286,6 +288,7 @@ class Traceroute:
     BROAD_TRUNK_MIN_RANGE = 100
     BROAD_TRUNK_DEVICE_RATIO = 0.6
     SPECIFIC_VLAN_RANGE_SIZE = 20
+    EXACT_VLAN_MAX_COUNT = 5
 
     def __init__(self, cache_timeout: int = 60 * 5) -> None:
         self.result: list[TracerouteResult] = []  # Итоговый список
@@ -419,6 +422,7 @@ class Traceroute:
             return VlanPortMatch(
                 confidence="normal",
                 broad_trunk=False,
+                exact_match=False,
                 vlan_count=vlan_count,
                 device_vlan_count=device_vlan_count,
                 matched_range=matched_range,
@@ -429,10 +433,24 @@ class Traceroute:
         matched_range_size = matched_range[1] - matched_range[0] + 1
         device_ratio = vlan_count / device_vlan_count if device_vlan_count else 0
         covers_full_vlan_space = vlan_count >= 4000 and largest_range_size >= 4000
+        if vlan_count <= cls.EXACT_VLAN_MAX_COUNT:
+            reason = "single_vlan_exact_match" if vlan_count == 1 else "small_vlan_set_exact_match"
+            return VlanPortMatch(
+                confidence="exact",
+                broad_trunk=False,
+                exact_match=True,
+                vlan_count=vlan_count,
+                device_vlan_count=device_vlan_count,
+                matched_range=matched_range,
+                largest_range_size=largest_range_size,
+                reason=reason,
+            )
+
         if matched_range_size <= cls.SPECIFIC_VLAN_RANGE_SIZE:
             return VlanPortMatch(
                 confidence="high",
                 broad_trunk=False,
+                exact_match=False,
                 vlan_count=vlan_count,
                 device_vlan_count=device_vlan_count,
                 matched_range=matched_range,
@@ -451,6 +469,7 @@ class Traceroute:
             return VlanPortMatch(
                 confidence="low",
                 broad_trunk=True,
+                exact_match=False,
                 vlan_count=vlan_count,
                 device_vlan_count=device_vlan_count,
                 matched_range=matched_range,
@@ -461,6 +480,7 @@ class Traceroute:
         return VlanPortMatch(
             confidence="normal",
             broad_trunk=False,
+            exact_match=False,
             vlan_count=vlan_count,
             device_vlan_count=device_vlan_count,
             matched_range=matched_range,
@@ -472,11 +492,17 @@ class Traceroute:
     def _merge_vlan_port_matches(source: VlanPortMatch, target: VlanPortMatch | None) -> dict[str, Any]:
         """Объединяет оценку VLAN на двух сторонах связи."""
         confidence = source.confidence
+        exact_match = source.exact_match and (target is None or target.exact_match)
+        if exact_match:
+            confidence = "exact"
+        elif source.exact_match:
+            confidence = "high"
         if source.broad_trunk and target and not target.broad_trunk:
             confidence = "medium"
 
         return {
             "confidence": confidence,
+            "exact_match": exact_match,
             "src": source.to_dict(),
             "dst": target.to_dict() if target else None,
         }

@@ -360,6 +360,11 @@ class VlanNetwork:
     def _get_edge_options(edge_title: dict) -> dict:
         """Возвращает визуальные настройки ребра по качеству VLAN-совпадения."""
         confidence = str(edge_title.get("vlan_match", {}).get("confidence", ""))
+        if confidence == "exact":
+            return {
+                "color": {"color": "#22c55e", "highlight": "#16a34a", "hover": "#86efac"},
+                "dashes": False,
+            }
         if confidence == "low":
             return {
                 "color": {"color": "#94a3b8", "highlight": "#f97316", "hover": "#cbd5e1"},
@@ -376,7 +381,7 @@ class VlanNetwork:
     def _get_edge_confidence_rank(edge_title: dict) -> int:
         """Возвращает ранг точности VLAN-совпадения для выбора лучшего ребра."""
         confidence = str(edge_title.get("vlan_match", {}).get("confidence", "normal"))
-        return {"low": 0, "medium": 1, "normal": 2, "high": 3}.get(confidence, 2)
+        return {"low": 0, "medium": 1, "normal": 2, "high": 3, "exact": 4}.get(confidence, 2)
 
     @classmethod
     def _is_suspicious_edge(cls, edge: dict) -> bool:
