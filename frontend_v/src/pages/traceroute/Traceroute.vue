@@ -45,6 +45,17 @@
                 </div>
             </div>
 
+            <div v-else-if="tracerouteNotFound" class="flex justify-center py-10">
+                <div
+                    class="w-full max-w-xl rounded-3xl border border-dashed border-gray-300 bg-white/80 px-6 py-8 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900/50"
+                >
+                    <div class="text-base font-semibold text-gray-900 dark:text-gray-100">Трассировка не найдена</div>
+                    <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                        По указанным параметрам не вернулись узлы и связи для отображения.
+                    </div>
+                </div>
+            </div>
+
             <TracerouteVlanBadges
                 v-if="tracerouteMode === 'mac'"
                 :items="macTracerouteVLANInfo"
@@ -166,6 +177,7 @@ export default defineComponent({
             macTracerouteVLANInfo: [] as VlanCountInfo[],
             tracerouteMapData: null as TracerouteMapData | null,
             mapRendered: false,
+            tracerouteNotFound: false,
             vlanNetwork: markRaw(new TracerouteNetwork("vlan-network")),
             macNetwork: markRaw(new TracerouteNetwork("mac-network")),
             graphNodeSearch: "",
@@ -286,6 +298,7 @@ export default defineComponent({
                 this.macTracerouteOptions.maximized = false;
                 this.mapRendered = false;
                 this.tracerouteMapData = null;
+                this.tracerouteNotFound = false;
                 this.closeTracerouteNodePopup();
             }
             this.tracerouteMode = mode;
@@ -387,6 +400,30 @@ export default defineComponent({
             this.mapRendered = false;
             this.tracerouteMapData = null;
         },
+        resetTracerouteNotFound() {
+            this.tracerouteNotFound = false;
+        },
+        markTracerouteNotFound() {
+            this.vlanTracerouteStarted = false;
+            this.macTracerouteStarted = false;
+            this.mapTracerouteStarted = false;
+            this.graphRenderLoading = false;
+            this.graphRenderProgress = 0;
+            this.vlanTracerouteOptions.rendered = false;
+            this.macTracerouteOptions.rendered = false;
+            this.mapRendered = false;
+            this.tracerouteMapData = null;
+            this.tracerouteNotFound = true;
+        },
+        hasRenderableTracerouteData(data: unknown): boolean {
+            const payload = data as { nodes?: unknown; edges?: unknown } | null;
+            return (
+                Array.isArray(payload?.nodes) &&
+                payload.nodes.length > 0 &&
+                Array.isArray(payload?.edges) &&
+                payload.edges.length > 0
+            );
+        },
         focusGraphNode() {
             const network = this.tracerouteMode === "mac" ? this.macNetwork : this.vlanNetwork;
             const result = network.focusNodeByName(this.graphNodeSearch);
@@ -456,6 +493,7 @@ export default defineComponent({
 
             this.cancelMapRender();
             this.cancelGraphRender();
+            this.resetTracerouteNotFound();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.vlanTracerouteStarted = true;
@@ -468,6 +506,10 @@ export default defineComponent({
             api.get("/api/v1/tools/traceroute?" + params.toString(), { signal: controller.signal })
                 .then(async (resp) => {
                     if (requestId !== this.activeRenderRequestId) {
+                        return;
+                    }
+                    if (!this.hasRenderableTracerouteData(resp.data)) {
+                        this.markTracerouteNotFound();
                         return;
                     }
                     const rendered = await this.vlanNetwork.renderVisualData(
@@ -520,6 +562,7 @@ export default defineComponent({
 
             this.cancelMapRender();
             this.cancelGraphRender();
+            this.resetTracerouteNotFound();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.macTracerouteStarted = true;
@@ -549,6 +592,10 @@ export default defineComponent({
             api.get("/api/v1/tools/traceroute", { params: params, signal: controller.signal })
                 .then(async (resp) => {
                     if (requestId !== this.activeRenderRequestId) {
+                        return;
+                    }
+                    if (!this.hasRenderableTracerouteData(resp.data)) {
+                        this.markTracerouteNotFound();
                         return;
                     }
                     const rendered = await this.macNetwork.renderVisualData(
@@ -582,6 +629,7 @@ export default defineComponent({
 
             this.cancelGraphRender();
             this.cancelMapRender();
+            this.resetTracerouteNotFound();
             this.closeTracerouteNodePopup();
             const requestId = ++this.activeRenderRequestId;
             this.mapTracerouteStarted = true;
@@ -595,6 +643,10 @@ export default defineComponent({
             })
                 .then((resp) => {
                     if (requestId !== this.activeRenderRequestId) {
+                        return;
+                    }
+                    if (!this.hasRenderableTracerouteData(resp.data)) {
+                        this.markTracerouteNotFound();
                         return;
                     }
                     this.tracerouteMapData = resp.data;
