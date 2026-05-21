@@ -5,6 +5,10 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+
+permissions:
+  contents: read
+
 env:
   DJANGO_SECRET_KEY: qwerty*!(#*JJSAJ_!@+uiop123sdasd12124567890
   DJANGO_DEBUG: "0"
@@ -17,11 +21,12 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     services:
       database:
-        image: mysql
+        image: mysql:8.4
         ports:
           - 3306:3306
         options: --health-cmd "mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 5
@@ -31,7 +36,7 @@ jobs:
           MYSQL_PASSWORD: "password"
           MYSQL_DATABASE: "ecstasy"
       redis:
-        image: redis
+        image: redis:7-alpine
         ports:
           - 6379:6379
 
@@ -41,14 +46,15 @@ jobs:
         python-version: [ "3.12", "3.13", "3.14" ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+          cache-suffix: py${{ matrix.python-version }}
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
@@ -56,14 +62,18 @@ jobs:
       - name: Check mypy
         run: uv run mypy .
 
-      - name: Merge django migration conflicts
-        run: |
-          uv run python manage.py makemigrations --merge --no-input
+      - name: Check Django project
+        run: uv run python manage.py check
 
-      - name: Run Tests
+      - name: Check migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run tests with coverage
         run: |
-          uv add coverage
-          uv run coverage run manage.py test
+          uv run --with coverage coverage run manage.py test
+          uv run --with coverage coverage xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
