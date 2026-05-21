@@ -14,6 +14,7 @@ APP_GROUPS = {
     "notifications": {"title": "Уведомления", "icon": "notifications"},
     "ring_manager": {"title": "Кольца", "icon": "timeline"},
     "net_tools": {"title": "Сетевые справочники", "icon": "lan"},
+    "discovery": {"title": "Обнаружение", "icon": "travel_explore"},
 }
 
 MODEL_ICONS = {
@@ -57,6 +58,10 @@ MODEL_ICONS = {
     "NotificationCondition": "rule",
     "TransportRing": "timeline",
     "RingDev": "dns",
+    "DiscoveryProfile": "manage_search",
+    "DiscoveryRun": "history",
+    "DiscoveryCandidate": "fact_check",
+    "DiscoveryAttempt": "rule",
 }
 
 

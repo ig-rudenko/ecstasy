@@ -4,6 +4,13 @@ from re import IGNORECASE, findall
 from .vendors.base.types import InterfaceListType, InterfaceType
 
 
+SNMP_IDENTITY_MIBS = {
+    "sys_descr": "SNMPv2-MIB::sysDescr.0",
+    "sys_name": "SNMPv2-MIB::sysName.0",
+    "sys_object_id": "SNMPv2-MIB::sysObjectID.0",
+}
+
+
 def physical_interface(name: str) -> bool:
     """
     Смотрит, относится ли интерфейс к физическим по указанным именам
@@ -21,6 +28,44 @@ def physical_interface(name: str) -> bool:
 
     name = name.lower()
     return not bool(findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE))
+
+
+def get_system_identity(device_ip: str, community: str, snmp_port: int = 161, timeout: int = 2) -> dict[str, str]:
+    """
+    Возвращает базовую SNMP identity устройства.
+
+    Используется auto discovery для быстрого определения `sysDescr`, `sysName` и `sysObjectID`
+    без полного сбора интерфейсов.
+    """
+
+    result: dict[str, str] = {}
+    for key, mib in SNMP_IDENTITY_MIBS.items():
+        value = _snmpwalk_single_value(
+            community=community,
+            ip=device_ip,
+            port=snmp_port,
+            mib=mib,
+            timeout=timeout,
+        )
+        if value:
+            result[key] = value
+    return result
+
+
+def _snmpwalk_single_value(community: str, ip: str, port: int, mib: str, timeout: int) -> str:
+    """Выполняет `snmpwalk` для одного OID и возвращает первое значение."""
+
+    command_timeout = max(timeout + 1, 2)
+    res = subprocess.run(
+        ["snmpwalk", "-Oqv", "-v2c", "-t", str(timeout), "-r", "0", "-c", community, f"{ip}:{port}", mib],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        encoding="utf-8",
+        errors="ignore",
+        check=False,
+        timeout=command_timeout,
+    )
+    return res.stdout.strip().strip('"')
 
 
 def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:

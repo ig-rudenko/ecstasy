@@ -11,6 +11,11 @@ const router = createRouter({
             component: () => import("@/pages/bulkCommands/BulkCommandsPage.vue"),
             name: "bulk-device-commands",
         },
+        {
+            path: "/discovery",
+            component: () => import("@/pages/discovery/DiscoveryPage.vue"),
+            name: "discovery",
+        },
         { path: "/device/:deviceName", component: () => import("@/pages/deviceInfo/DeviceInfo.vue"), name: "device" },
         {
             path: "/by-zabbix/:hostID",

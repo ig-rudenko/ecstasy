@@ -50,6 +50,14 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
+    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+        built.push({
+            label: "Discovery",
+            icon: "discovery",
+            url: "/discovery",
+        });
+    }
+
     if (permissions.has("auth.can_view_maps")) {
         built.push({
             label: "Карты",
@@ -123,6 +131,8 @@ function getMenuIconClass(icon?: string) {
             return "pi pi-desktop";
         case "loop":
             return "pi pi-sync";
+        case "discovery":
+            return "pi pi-compass";
         case "map":
             return "pi pi-map";
         case "search":
@@ -150,6 +160,8 @@ function getMenuIconAccent(icon?: string) {
             return "from-slate-500/15 to-slate-700/5";
         case "loop":
             return "from-emerald-500/15 to-teal-500/5";
+        case "discovery":
+            return "from-sky-500/15 to-emerald-500/5";
         case "map":
             return "from-indigo-500/15 to-violet-500/5";
         case "search":
@@ -187,7 +199,7 @@ const closeMobileMenu = () => {
 </script>
 
 <template>
-    <div class="sticky top-0 z-9999">
+    <div class="sticky top-0 z-30">
         <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
             <div
                 class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
@@ -273,7 +285,8 @@ const closeMobileMenu = () => {
                             <AppLink :to="item.url || ''" :target="item.newPage ? '_blank' : ''">
                                 <div
                                     :class="isCurrent(item.url || '_') ? 'ring-1 ring-indigo-500/20' : ''"
-                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-3 py-1"
+                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                    v-tooltip.bottom="item.label"
                                 >
                                     <div
                                         :class="getMenuIconAccent(item.icon as string)"
@@ -281,10 +294,6 @@ const closeMobileMenu = () => {
                                     >
                                         <i :class="[getMenuIconClass(item.icon as string), 'text-base']" />
                                     </div>
-                                    <span
-                                        class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap"
-                                        >{{ item.label }}</span
-                                    >
                                 </div>
                             </AppLink>
                         </template>
