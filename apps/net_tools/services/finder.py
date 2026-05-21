@@ -249,11 +249,43 @@ class TracerouteResult(NamedTuple):
     admin_down_status: str
 
 
+@dataclass(frozen=True)
+class VlanPortMatch:
+    """Описывает точность совпадения VLAN на порту."""
+
+    confidence: str
+    broad_trunk: bool
+    vlan_count: int
+    device_vlan_count: int
+    matched_range: tuple[int, int] | None
+    largest_range_size: int
+    reason: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Возвращает структуру для передачи во frontend."""
+        data: dict[str, Any] = {
+            "confidence": self.confidence,
+            "broad_trunk": self.broad_trunk,
+            "vlan_count": self.vlan_count,
+            "device_vlan_count": self.device_vlan_count,
+            "largest_range_size": self.largest_range_size,
+            "reason": self.reason,
+        }
+        if self.matched_range:
+            data["matched_range"] = {"from": self.matched_range[0], "to": self.matched_range[1]}
+        return data
+
+
 class Traceroute:
     """
     Используется для поиска конкретного VLAN на сетевых устройствах для последующего создания
     визуальной карты топологии сети.
     """
+
+    BROAD_TRUNK_MIN_VLANS = 100
+    BROAD_TRUNK_MIN_RANGE = 100
+    BROAD_TRUNK_DEVICE_RATIO = 0.6
+    SPECIFIC_VLAN_RANGE_SIZE = 20
 
     def __init__(self, cache_timeout: int = 60 * 5) -> None:
         self.result: list[TracerouteResult] = []  # Итоговый список
@@ -332,6 +364,124 @@ class Traceroute:
         return vlan_to_find in interface.vlan
 
     @staticmethod
+    def _get_unique_vlans(interface) -> list[int]:
+        """Возвращает отсортированный список уникальных VLAN порта."""
+        return sorted({int(vlan) for vlan in (interface.vlan or []) if str(vlan).isdigit()})
+
+    @classmethod
+    def _get_vlan_ranges(cls, vlans: list[int]) -> list[tuple[int, int]]:
+        """Сворачивает список VLAN в непрерывные диапазоны."""
+        if not vlans:
+            return []
+
+        ranges = []
+        start = vlans[0]
+        previous = vlans[0]
+        for vlan in vlans[1:]:
+            if vlan == previous + 1:
+                previous = vlan
+                continue
+            ranges.append((start, previous))
+            start = vlan
+            previous = vlan
+        ranges.append((start, previous))
+        return ranges
+
+    @classmethod
+    def _get_device_vlan_count(cls, interfaces: Interfaces) -> int:
+        """Возвращает количество уникальных VLAN на устройстве."""
+        vlans = set()
+        for interface in interfaces:
+            vlans.update(cls._get_unique_vlans(interface))
+        return len(vlans)
+
+    @classmethod
+    def _get_vlan_port_match(
+        cls,
+        interface,
+        vlan_to_find: int | None,
+        device_vlan_count: int,
+    ) -> VlanPortMatch:
+        """Оценивает, насколько порт специфичен для искомого VLAN."""
+        vlans = cls._get_unique_vlans(interface)
+        ranges = cls._get_vlan_ranges(vlans)
+        vlan_count = len(vlans)
+        largest_range_size = max((end - start + 1 for start, end in ranges), default=0)
+        matched_range = None
+
+        if vlan_to_find is not None:
+            for start, end in ranges:
+                if start <= vlan_to_find <= end:
+                    matched_range = (start, end)
+                    break
+
+        if vlan_to_find is None or not matched_range:
+            return VlanPortMatch(
+                confidence="normal",
+                broad_trunk=False,
+                vlan_count=vlan_count,
+                device_vlan_count=device_vlan_count,
+                matched_range=matched_range,
+                largest_range_size=largest_range_size,
+                reason="no_vlan_filter",
+            )
+
+        matched_range_size = matched_range[1] - matched_range[0] + 1
+        device_ratio = vlan_count / device_vlan_count if device_vlan_count else 0
+        covers_full_vlan_space = vlan_count >= 4000 and largest_range_size >= 4000
+        if matched_range_size <= cls.SPECIFIC_VLAN_RANGE_SIZE:
+            return VlanPortMatch(
+                confidence="high",
+                broad_trunk=False,
+                vlan_count=vlan_count,
+                device_vlan_count=device_vlan_count,
+                matched_range=matched_range,
+                largest_range_size=largest_range_size,
+                reason="specific_vlan_match",
+            )
+
+        broad_trunk = vlan_count >= cls.BROAD_TRUNK_MIN_VLANS and (
+            matched_range_size >= cls.BROAD_TRUNK_MIN_RANGE
+            or (device_ratio >= cls.BROAD_TRUNK_DEVICE_RATIO and largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE)
+            or covers_full_vlan_space
+        )
+
+        if broad_trunk:
+            reason = "broad_vlan_range" if largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE else "device_vlan_ratio"
+            return VlanPortMatch(
+                confidence="low",
+                broad_trunk=True,
+                vlan_count=vlan_count,
+                device_vlan_count=device_vlan_count,
+                matched_range=matched_range,
+                largest_range_size=largest_range_size,
+                reason=reason,
+            )
+
+        return VlanPortMatch(
+            confidence="normal",
+            broad_trunk=False,
+            vlan_count=vlan_count,
+            device_vlan_count=device_vlan_count,
+            matched_range=matched_range,
+            largest_range_size=largest_range_size,
+            reason="normal_vlan_match",
+        )
+
+    @staticmethod
+    def _merge_vlan_port_matches(source: VlanPortMatch, target: VlanPortMatch | None) -> dict[str, Any]:
+        """Объединяет оценку VLAN на двух сторонах связи."""
+        confidence = source.confidence
+        if source.broad_trunk and target and not target.broad_trunk:
+            confidence = "medium"
+
+        return {
+            "confidence": confidence,
+            "src": source.to_dict(),
+            "dst": target.to_dict() if target else None,
+        }
+
+    @staticmethod
     def _matches_device_name_filter(
         device: str,
         next_device: str,
@@ -360,6 +510,7 @@ class Traceroute:
         device_name_filter: str = "",
         nodes_only: bool = False,
         max_port_vlans: int = 0,
+        trunk_filter_mode: str = "off",
     ):
         """
         ## Осуществляет поиск VLAN по портам оборудования.
@@ -376,6 +527,7 @@ class Traceroute:
         :param device_name_filter: Фильтр имени оборудования.
         :param nodes_only: Указывать только узлы сети в графе.
         :param max_port_vlans: Максимальное количество VLAN на порту, 0 отключает фильтр.
+        :param trunk_filter_mode: Режим обработки широких trunk-портов.
         """
         self._load_desc_name_formats()
         compiled_find_device_pattern = self._get_compiled_pattern(find_device_pattern)
@@ -388,9 +540,13 @@ class Traceroute:
         interfaces: Interfaces = self._get_device_interfaces(device)
         if not interfaces:
             return
+        device_vlan_count = self._get_device_vlan_count(interfaces)
 
         for interface in interfaces:
             if not self._should_process_interface(interface, vlan_to_find, empty_ports, max_port_vlans):
+                continue
+            source_vlan_match = self._get_vlan_port_match(interface, vlan_to_find, device_vlan_count)
+            if trunk_filter_mode == "hide_broad" and source_vlan_match.broad_trunk:
                 continue
 
             # Ищем в описании порта следующий узел сети
@@ -411,12 +567,19 @@ class Traceroute:
             # устанавливается в пустую строку, указывающую, что следующего устройства нет или следующее устройство
             # не имеет подходящего порта.
             next_dev_interface_name = ""
+            next_vlan_match = None
             if double_check and next_device:  # Если есть следующее оборудование
                 next_dev_interfaces: Interfaces = self._get_device_interfaces(next_device)
+                next_device_vlan_count = self._get_device_vlan_count(next_dev_interfaces)
                 current_device_pattern = self._get_device_name_pattern(device)
 
                 for next_dev_interface in next_dev_interfaces:
                     if not self._is_port_vlan_count_allowed(next_dev_interface, max_port_vlans):
+                        continue
+                    candidate_vlan_match = self._get_vlan_port_match(
+                        next_dev_interface, vlan_to_find, next_device_vlan_count
+                    )
+                    if trunk_filter_mode == "hide_broad" and candidate_vlan_match.broad_trunk:
                         continue
                     desc = self.reformatting(next_dev_interface.desc)
                     if (vlan_to_find is None or vlan_to_find in next_dev_interface.vlan) and (
@@ -425,20 +588,27 @@ class Traceroute:
                     ):
                         # Если нашли на соседнем оборудование порт с искомым VLAN в сторону текущего оборудования
                         next_dev_interface_name = str(next_dev_interface.name)
+                        next_vlan_match = candidate_vlan_match
                         break
                 else:
                     next_device = ""
+
+            vlan_match = (
+                self._merge_vlan_port_matches(source_vlan_match, next_vlan_match)
+                if trunk_filter_mode != "off"
+                else None
+            )
 
             # Создаем данные для visual map
             if next_device:
                 # Следующий узел сети
                 self._add_next_device_result(
-                    device, interface.name, next_device, next_dev_interface_name, admin_status
+                    device, interface.name, next_device, next_dev_interface_name, admin_status, vlan_match
                 )
 
             # Порт с описанием
             elif interface.desc and not nodes_only:
-                self._add_unknown_device_result(device, interface.name, interface.desc, admin_status)
+                self._add_unknown_device_result(device, interface.name, interface.desc, admin_status, vlan_match)
 
             # Пустые порты
             elif empty_ports and not nodes_only:
@@ -456,6 +626,7 @@ class Traceroute:
                     device_name_filter=device_name_filter,
                     nodes_only=nodes_only,
                     max_port_vlans=max_port_vlans,
+                    trunk_filter_mode=trunk_filter_mode,
                 )
 
     def _add_next_device_result(
@@ -465,6 +636,7 @@ class Traceroute:
         next_device: str,
         next_dev_interface_name: str,
         admin_down_status: str,
+        vlan_match: dict[str, Any] | None = None,
     ):
         """
         Добавляет данные следующего устройства в результаты.
@@ -479,6 +651,7 @@ class Traceroute:
             src_port=interface_name,
             dst_device=next_device,
             dst_port=next_dev_interface_name,
+            vlan_match=vlan_match,
         )
         self._append_unique_result(
             TracerouteResult(
@@ -491,7 +664,12 @@ class Traceroute:
         )
 
     def _add_unknown_device_result(
-        self, device: str, interface_name: str, interface_desc: str, admin_down_status: str
+        self,
+        device: str,
+        interface_name: str,
+        interface_desc: str,
+        admin_down_status: str,
+        vlan_match: dict[str, Any] | None = None,
     ):
         """
         Добавляет неизвестное устройство в результат.
@@ -505,6 +683,7 @@ class Traceroute:
             src_device=device,
             src_port=interface_name,
             destination_description=interface_desc,
+            vlan_match=vlan_match,
         )
         self._append_unique_result(
             TracerouteResult(
@@ -552,25 +731,38 @@ class Traceroute:
 
     @staticmethod
     def _format_link_description(
-        src_device: str, src_port: str, dst_device: str, dst_port: str
+        src_device: str,
+        src_port: str,
+        dst_device: str,
+        dst_port: str,
+        vlan_match: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Собирает структурированное описание связи между двумя устройствами для tooltip."""
-        return {
+        data = {
             "kind": "link",
             "src": {"device": src_device, "port": src_port},
             "dst": {"device": dst_device, "port": dst_port},
         }
+        if vlan_match:
+            data["vlan_match"] = vlan_match
+        return data
 
     @staticmethod
     def _format_unknown_link_description(
-        src_device: str, src_port: str, destination_description: str
+        src_device: str,
+        src_port: str,
+        destination_description: str,
+        vlan_match: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Собирает структурированное описание связи до нераспознанного назначения."""
-        return {
+        data = {
             "kind": "unknown_link",
             "src": {"device": src_device, "port": src_port},
             "destination_description": destination_description,
         }
+        if vlan_match:
+            data["vlan_match"] = vlan_match
+        return data
 
     @staticmethod
     def _format_empty_port_description(src_device: str, src_port: str) -> dict[str, Any]:
@@ -667,6 +859,7 @@ class MultipleTraceroute:
         device_name_filter: str = "",
         nodes_only: bool = False,
         max_port_vlans: int = 0,
+        trunk_filter_mode: str = "off",
     ) -> list[TracerouteResult]:
         result: list[TracerouteResult] = []
         processed_devices: set[str] = set()
@@ -688,6 +881,7 @@ class MultipleTraceroute:
                 device_name_filter=device_name_filter,
                 nodes_only=nodes_only,
                 max_port_vlans=max_port_vlans,
+                trunk_filter_mode=trunk_filter_mode,
             )
             processed_devices.update(self._finder.passed_devices)
 

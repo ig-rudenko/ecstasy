@@ -110,6 +110,7 @@ class VlanNetwork:
             self._add_node(i, i, {"title": "", "group": i, "hidden": True, "shape": "dot"})
 
         degree_by_node = self._create_nodes(data, show_admin_down_ports, nodes_only)
+        suspicious_node_ids = self._get_suspicious_node_ids()
         visible_nodes_count = sum(1 for node in self._nodes if not node.get("hidden"))
         edges_count = len(self._edges)
         self._options = build_traceroute_options(visible_nodes_count, edges_count)
@@ -117,6 +118,8 @@ class VlanNetwork:
         for node in self._nodes:
             if node.get("hidden"):
                 continue
+            if node["id"] in suspicious_node_ids:
+                self._mark_node_as_suspicious(node)
             if node.get("fixed_value") is not None:
                 node["value"] = node.pop("fixed_value")
                 continue
@@ -258,7 +261,7 @@ class VlanNetwork:
     ) -> dict[str, int]:
         """Создает элементы и связи между ними для карты VLAN."""
         existing_nodes = set(self._node_ids)
-        existing_edges: set[tuple[str, str]] = set()
+        existing_edges: dict[tuple[str, str], int] = {}
         style_cache: dict[str, dict] = {}
         degree_by_node: dict[str, int] = {}
 
@@ -275,6 +278,7 @@ class VlanNetwork:
             line_width: int | float = e.line_width
             if show_admin_down_ports and e.admin_down_status == "down":
                 line_width = 0.5
+            edge_options = self._get_edge_options(edge_title)
 
             if src_node not in existing_nodes:
                 node_data = {
@@ -310,9 +314,12 @@ class VlanNetwork:
 
             edge_key = self._edge_pair_key(src_node, dst_node)
             if edge_key in existing_edges:
+                self._replace_edge_with_better_match(
+                    existing_edges[edge_key], src_node, dst_node, line_width, edge_title
+                )
                 continue
-            existing_edges.add(edge_key)
-            self._add_edge(src_node, dst_node, line_width, edge_title)
+            existing_edges[edge_key] = len(self._edges)
+            self._add_edge(src_node, dst_node, line_width, edge_title, edge_options)
             if src_node == dst_node:
                 degree_by_node[src_node] = degree_by_node.get(src_node, 0) + 1
             else:
@@ -349,16 +356,123 @@ class VlanNetwork:
         self._nodes.append(node_options)
         self._node_ids.add(node_id)
 
-    def _add_edge(self, src_node: str, dst_node: str, line_width: int | float, edge_title: dict) -> None:
-        """Add an edge to the traceroute graph payload."""
-        self._edges.append(
-            {
-                "from": src_node,
-                "to": dst_node,
-                "value": line_width,
-                "title": edge_title,
+    @staticmethod
+    def _get_edge_options(edge_title: dict) -> dict:
+        """Возвращает визуальные настройки ребра по качеству VLAN-совпадения."""
+        confidence = str(edge_title.get("vlan_match", {}).get("confidence", ""))
+        if confidence == "low":
+            return {
+                "color": {"color": "#94a3b8", "highlight": "#f97316", "hover": "#cbd5e1"},
+                "dashes": [6, 5],
             }
-        )
+        if confidence == "medium":
+            return {
+                "color": {"color": "#f59e0b", "highlight": "#f97316", "hover": "#fbbf24"},
+                "dashes": [8, 4],
+            }
+        return {}
+
+    @staticmethod
+    def _get_edge_confidence_rank(edge_title: dict) -> int:
+        """Возвращает ранг точности VLAN-совпадения для выбора лучшего ребра."""
+        confidence = str(edge_title.get("vlan_match", {}).get("confidence", "normal"))
+        return {"low": 0, "medium": 1, "normal": 2, "high": 3}.get(confidence, 2)
+
+    @classmethod
+    def _is_suspicious_edge(cls, edge: dict) -> bool:
+        """Проверяет, считается ли ребро сомнительным."""
+        return cls._get_edge_confidence_rank(edge["title"]) <= 1
+
+    @staticmethod
+    def _is_network_device_node(node_id: str) -> bool:
+        """Проверяет, похож ли узел на сетевое устройство, а не на порт или описание."""
+        lowered = str(node_id).casefold()
+        return " p:(" not in lowered and " d:(" not in lowered
+
+    def _get_suspicious_node_ids(self) -> set[str]:
+        """Возвращает узлы, у которых все связи имеют низкую или среднюю уверенность."""
+        total_edges_by_node: dict[str, int] = {}
+        suspicious_edges_by_node: dict[str, int] = {}
+
+        for edge in self._edges:
+            is_suspicious = self._is_suspicious_edge(edge)
+            for node_id in (str(edge["from"]), str(edge["to"])):
+                if not self._is_network_device_node(node_id):
+                    continue
+                total_edges_by_node[node_id] = total_edges_by_node.get(node_id, 0) + 1
+                if is_suspicious:
+                    suspicious_edges_by_node[node_id] = suspicious_edges_by_node.get(node_id, 0) + 1
+
+        return {
+            node_id
+            for node_id, total in total_edges_by_node.items()
+            if total > 0 and suspicious_edges_by_node.get(node_id, 0) == total
+        }
+
+    @staticmethod
+    def _mark_node_as_suspicious(node: dict) -> None:
+        """Добавляет визуальную метку сомнительного узла."""
+        node["suspicious"] = True
+        node["opacity"] = 0.5
+        node["shape"] = "diamond"
+        color = node.get("color")
+        if isinstance(color, dict):
+            color["background"] = "rgba(124, 58, 237, 0.5)"
+            color.setdefault("highlight", {})["background"] = "rgba(124, 58, 237, 0.65)"
+            color.setdefault("hover", {})["background"] = "rgba(124, 58, 237, 0.65)"
+            return
+        node["color"] = {
+            "background": "rgba(124, 58, 237, 0.5)",
+            "highlight": {"background": "rgba(124, 58, 237, 0.65)"},
+            "hover": {"background": "rgba(124, 58, 237, 0.65)"},
+        }
+
+    def _replace_edge_with_better_match(
+        self,
+        edge_index: int,
+        src_node: str,
+        dst_node: str,
+        line_width: int | float,
+        edge_title: dict,
+    ) -> None:
+        """Заменяет дубль ребра, если новое VLAN-совпадение точнее текущего."""
+        existing_edge = self._edges[edge_index]
+        if self._get_edge_confidence_rank(edge_title) <= self._get_edge_confidence_rank(existing_edge["title"]):
+            return
+
+        data = self._build_edge_data(src_node, dst_node, line_width, edge_title, self._get_edge_options(edge_title))
+        existing_edge.clear()
+        existing_edge.update(data)
+
+    @staticmethod
+    def _build_edge_data(
+        src_node: str,
+        dst_node: str,
+        line_width: int | float,
+        edge_title: dict,
+        edge_options: dict | None = None,
+    ) -> dict:
+        """Собирает payload ребра графа."""
+        data = {
+            "from": src_node,
+            "to": dst_node,
+            "value": line_width,
+            "title": edge_title,
+        }
+        if edge_options:
+            data.update(edge_options)
+        return data
+
+    def _add_edge(
+        self,
+        src_node: str,
+        dst_node: str,
+        line_width: int | float,
+        edge_title: dict,
+        edge_options: dict | None = None,
+    ) -> None:
+        """Add an edge to the traceroute graph payload."""
+        self._edges.append(self._build_edge_data(src_node, dst_node, line_width, edge_title, edge_options))
 
 
 TracerouteNetwork = VlanNetwork

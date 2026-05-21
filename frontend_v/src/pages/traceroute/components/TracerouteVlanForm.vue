@@ -89,31 +89,25 @@
                 </label>
                 <div
                     v-if="mode === 'vlan'"
-                    class="flex min-w-[16rem] flex-col gap-1.5 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 dark:border-gray-700/80 dark:bg-gray-800/60"
+                    class="flex min-w-[18rem] flex-col gap-1.5 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 dark:border-gray-700/80 dark:bg-gray-800/60"
                 >
-                    <label for="maxPortVlansEnabled" class="flex cursor-pointer items-center justify-between gap-3">
-                        <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            Лимит VLAN на порту
-                        </span>
-                        <ToggleSwitch
-                            input-id="maxPortVlansEnabled"
-                            :model-value="options.maxPortVlansEnabled"
-                            @update:model-value="$emit('update:option', 'maxPortVlansEnabled', $event)"
-                        />
+                    <label
+                        for="trunkFilterMode"
+                        class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                    >
+                        Широкие trunk-порты
                     </label>
-                    <InputNumber
-                        v-if="options.maxPortVlansEnabled"
-                        input-id="maxPortVlans"
-                        :min="1"
-                        :max="4096"
-                        :model-value="options.maxPortVlans"
-                        placeholder="3000"
-                        class="w-full"
-                        input-class="h-9! !w-full !rounded-xl !bg-white/95 dark:!bg-gray-950/60 !text-gray-900 dark:!text-gray-100 !border-gray-200/80 dark:!border-gray-700/60"
-                        @update:model-value="$emit('update:option', 'maxPortVlans', $event as number | null)"
+                    <Select
+                        input-id="trunkFilterMode"
+                        :model-value="options.trunkFilterMode"
+                        :options="trunkFilterModeOptions"
+                        option-label="label"
+                        option-value="value"
+                        class="w-full rounded-xl!"
+                        @update:model-value="$emit('update:option', 'trunkFilterMode', $event)"
                     />
-                    <span v-if="options.maxPortVlansEnabled" class="text-xs text-gray-500 dark:text-gray-400">
-                        При включении порты выше лимита будут пропущены
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        По умолчанию сомнительные связи помечаются пунктиром
                     </span>
                 </div>
             </div>
@@ -132,7 +126,13 @@
 <script setup lang="ts">
 import { InputNumberInputEvent } from "primevue";
 import TracerouteCommonOptions from "./TracerouteCommonOptions.vue";
-import type { TracerouteInput, TracerouteMode, VlanTracerouteOptions } from "./types";
+import type { TracerouteInput, TracerouteMode, TrunkFilterMode, VlanTracerouteOptions } from "./types";
+
+const trunkFilterModeOptions: { label: string; value: TrunkFilterMode }[] = [
+    { label: "Помечать пунктиром", value: "mark_broad" },
+    { label: "Показывать все", value: "off" },
+    { label: "Скрывать широкие", value: "hide_broad" },
+];
 
 defineProps<{
     mode: TracerouteMode;

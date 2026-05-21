@@ -124,14 +124,17 @@ const maximized = ref(false);
 const clusterPorts = ref(false);
 let map: LMap | null = null;
 let nodesLayer: FeatureGroup<CircleMarker> | null = null;
+let suspiciousNodesLayer: FeatureGroup<CircleMarker> | null = null;
 let portsLayer: FeatureGroup<CircleMarker | Marker> | null = null;
 let portClusterLayer: MarkerClusterGroup | null = null;
 let edgesLayer: FeatureGroup<Polyline> | null = null;
+let suspiciousEdgesLayer: FeatureGroup<Polyline> | null = null;
 let layersControl: Control.Layers | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let refreshAnimationFrame: number | null = null;
 let markerClusterLoading: Promise<void> | null = null;
 const markersById = new Map<string, CircleMarker>();
+const markerDefaultStyles = new Map<string, MarkerStyle>();
 const edgeDefaultStyles = new WeakMap<Polyline, EdgeStyle>();
 const edgeLinesByNode = new Map<string, Polyline[]>();
 const foundNodeIds = ref(new Set<string>());
@@ -158,6 +161,14 @@ const highlightedMarkerStyle = {
     fillColor: "#f97316",
     fillOpacity: 1,
 };
+const suspiciousMarkerStyle = {
+    radius: 7,
+    color: "#e0f2fe",
+    weight: 2,
+    opacity: 0.35,
+    fillColor: "#2563eb",
+    fillOpacity: 0.35,
+};
 const inheritedNodesCount = computed(() => props.data.nodes.filter((node) => node.inherited_from).length);
 const shouldAutoClusterPorts = computed(() => inheritedNodesCount.value >= PORT_CLUSTER_AUTO_THRESHOLD);
 
@@ -175,16 +186,22 @@ function initMap(): void {
         minZoom: 3,
     });
     map.createPane("tracerouteEdges");
+    map.createPane("tracerouteSuspiciousEdges");
     map.createPane("tracerouteNodes");
+    map.createPane("tracerouteSuspiciousNodes");
     map.createPane("traceroutePorts");
     map.getPane("tracerouteEdges")!.style.zIndex = "410";
+    map.getPane("tracerouteSuspiciousEdges")!.style.zIndex = "411";
     map.getPane("tracerouteNodes")!.style.zIndex = "430";
+    map.getPane("tracerouteSuspiciousNodes")!.style.zIndex = "435";
     map.getPane("traceroutePorts")!.style.zIndex = "440";
     map.setView([44.6, 33.5], 12);
     map.attributionControl.getContainer()?.remove();
     map.addControl(new Control.Scale());
     edgesLayer = featureGroup<Polyline>().addTo(map);
+    suspiciousEdgesLayer = featureGroup<Polyline>().addTo(map);
     nodesLayer = featureGroup<CircleMarker>().addTo(map);
+    suspiciousNodesLayer = featureGroup<CircleMarker>().addTo(map);
     portsLayer = featureGroup<CircleMarker | Marker>().addTo(map);
     portClusterLayer = clusterPorts.value ? createPortClusterLayer() : null;
     layersControl = new Control.Layers(
@@ -195,8 +212,10 @@ function initMap(): void {
         },
         {
             Узлы: nodesLayer,
+            "Сомнительные узлы/порты": suspiciousNodesLayer,
             Порты: portClusterLayer || portsLayer,
             Связи: edgesLayer,
+            "Сомнительные связи": suspiciousEdgesLayer,
         }
     ).addTo(map);
     if (portClusterLayer) {
@@ -223,15 +242,18 @@ function createMapTiles(): { geoGoogle: TileLayer; arcgisonline: TileLayer; osm:
  */
 function renderMap(shouldFitBounds = true): void {
     initMap();
-    if (!map || !nodesLayer || !portsLayer || !edgesLayer) {
+    if (!map || !nodesLayer || !suspiciousNodesLayer || !portsLayer || !edgesLayer || !suspiciousEdgesLayer) {
         return;
     }
 
     nodesLayer.clearLayers();
+    suspiciousNodesLayer.clearLayers();
     portsLayer.clearLayers();
     portClusterLayer?.clearLayers();
     edgesLayer.clearLayers();
+    suspiciousEdgesLayer.clearLayers();
     markersById.clear();
+    markerDefaultStyles.clear();
     edgeLinesByNode.clear();
     highlightedNodeId.value = null;
 
@@ -249,7 +271,7 @@ function renderMap(shouldFitBounds = true): void {
         }
         const edgeStyle = getDefaultEdgeStyle(edge);
         const line = polyline(createCurvedLinePoints(source, target), {
-            pane: "tracerouteEdges",
+            pane: isSuspiciousEdge(edge) ? "tracerouteSuspiciousEdges" : "tracerouteEdges",
             ...edgeStyle,
         });
         edgeDefaultStyles.set(line, edgeStyle);
@@ -259,13 +281,14 @@ function renderMap(shouldFitBounds = true): void {
             selectEdgeLine(line, edge);
             loadEdgeInterfaceInfo(edge, line);
         });
-        line.addTo(edgesLayer);
+        line.addTo(isSuspiciousEdge(edge) ? suspiciousEdgesLayer : edgesLayer);
         addEdgeLineForNode(edge.from, line);
         addEdgeLineForNode(edge.to, line);
     }
 
     const deviceNodes: TracerouteMapNode[] = [];
     const portNodes: TracerouteMapNode[] = [];
+    const suspiciousNodeIds = getSuspiciousNodeIds(nodesById);
     for (const node of displayNodes) {
         if (node.inherited_from) {
             portNodes.push(node);
@@ -275,14 +298,26 @@ function renderMap(shouldFitBounds = true): void {
     }
 
     for (const node of deviceNodes) {
+        if (suspiciousNodeIds.has(node.id)) {
+            addNodeMarker(node, suspiciousNodesLayer, suspiciousMarkerStyle, "tracerouteSuspiciousNodes");
+            continue;
+        }
         addNodeMarker(node, nodesLayer, defaultMarkerStyle, "tracerouteNodes");
     }
 
     if (clusterPorts.value) {
-        renderClusteredPorts(portNodes);
+        renderClusteredPorts(portNodes.filter((node) => !suspiciousNodeIds.has(node.id)));
     } else {
         for (const node of portNodes) {
+            if (suspiciousNodeIds.has(node.id)) {
+                continue;
+            }
             addNodeMarker(node, portsLayer, getPortMarkerStyle(), "traceroutePorts");
+        }
+    }
+    for (const node of portNodes) {
+        if (suspiciousNodeIds.has(node.id)) {
+            addNodeMarker(node, suspiciousNodesLayer, getSuspiciousPortMarkerStyle(), "tracerouteSuspiciousNodes");
         }
     }
     applySearchHighlight();
@@ -446,7 +481,7 @@ function createPortClusterLayer(): MarkerClusterGroup {
 function addNodeMarker(
     node: TracerouteMapNode,
     targetLayer: FeatureGroup<CircleMarker | Marker> | FeatureGroup<CircleMarker>,
-    markerStyle: typeof defaultMarkerStyle,
+    markerStyle: MarkerStyle,
     pane: string
 ): CircleMarker {
     const mapMarker = circleMarker([node.lat, node.lon], {
@@ -459,6 +494,7 @@ function addNodeMarker(
     mapMarker.addTo(targetLayer);
     mapMarker.bringToFront();
     markersById.set(node.id, mapMarker);
+    markerDefaultStyles.set(node.id, markerStyle);
     return mapMarker;
 }
 
@@ -485,6 +521,113 @@ function getPortMarkerStyle(): typeof defaultMarkerStyle {
         fillColor: "#f59e0b",
         fillOpacity: 0.95,
     };
+}
+
+/**
+ * Returns inherited port marker style for ports connected only through suspicious edges.
+ */
+function getSuspiciousPortMarkerStyle(): MarkerStyle {
+    return {
+        radius: 5,
+        color: "#fde68a",
+        weight: 2,
+        opacity: 0.5,
+        fillColor: "#f59e0b",
+        fillOpacity: 0.5,
+    };
+}
+
+/**
+ * Returns nodes whose every rendered edge is suspicious.
+ */
+function getSuspiciousNodeIds(nodesById: Map<string, TracerouteMapNode>): Set<string> {
+    const totalEdgesByNode = new Map<string, number>();
+    const suspiciousEdgesByNode = new Map<string, number>();
+    const portNodeIdsByEndpoint = getPortNodeIdsByEndpoint(nodesById);
+
+    for (const edge of props.data.edges) {
+        const source = nodesById.get(edge.from);
+        const target = nodesById.get(edge.to);
+        if (!source || !target) {
+            continue;
+        }
+
+        const isSuspicious = isSuspiciousEdge(edge);
+        const edgeNodeIds = new Set([source.id, target.id, ...getEdgePortNodeIds(edge, portNodeIdsByEndpoint)]);
+        for (const nodeId of edgeNodeIds) {
+            totalEdgesByNode.set(nodeId, (totalEdgesByNode.get(nodeId) || 0) + 1);
+            if (isSuspicious) {
+                suspiciousEdgesByNode.set(nodeId, (suspiciousEdgesByNode.get(nodeId) || 0) + 1);
+            }
+        }
+    }
+
+    return new Set(
+        [...totalEdgesByNode.entries()]
+            .filter(([nodeId, total]) => total > 0 && (suspiciousEdgesByNode.get(nodeId) || 0) === total)
+            .map(([nodeId]) => nodeId)
+    );
+}
+
+/**
+ * Builds an index for inherited port nodes by device and port name.
+ */
+function getPortNodeIdsByEndpoint(nodesById: Map<string, TracerouteMapNode>): Map<string, string[]> {
+    const portNodeIdsByEndpoint = new Map<string, string[]>();
+    for (const node of nodesById.values()) {
+        if (!node.inherited_from) {
+            continue;
+        }
+        const port = extractPortNameFromNode(node);
+        if (!port) {
+            continue;
+        }
+        const key = getEndpointKey(node.inherited_from, port);
+        portNodeIdsByEndpoint.set(key, [...(portNodeIdsByEndpoint.get(key) || []), node.id]);
+    }
+    return portNodeIdsByEndpoint;
+}
+
+/**
+ * Returns inherited port node ids referenced by an edge title payload.
+ */
+function getEdgePortNodeIds(edge: TracerouteMapEdge, portNodeIdsByEndpoint: Map<string, string[]>): string[] {
+    const endpoints = [edge.title?.src, edge.title?.dst];
+    return endpoints.flatMap((endpoint) => {
+        if (!endpoint?.device || !endpoint.port) {
+            return [];
+        }
+        return portNodeIdsByEndpoint.get(getEndpointKey(endpoint.device, endpoint.port)) || [];
+    });
+}
+
+/**
+ * Returns stable endpoint key for device and port lookup.
+ */
+function getEndpointKey(device: string, port: string): string {
+    return `${device.trim().toLowerCase()}\u0000${port.trim().toLowerCase()}`;
+}
+
+/**
+ * Extracts port name from inherited node id or label.
+ */
+function extractPortNameFromNode(node: TracerouteMapNode): string {
+    const sources = [node.id, node.label];
+    for (const value of sources) {
+        const match = String(value).match(/\bp:\((.*)\)$/i);
+        if (match?.[1]) {
+            return match[1].trim();
+        }
+    }
+    return "";
+}
+
+/**
+ * Checks whether an edge has low or medium confidence.
+ */
+function isSuspiciousEdge(edge: TracerouteMapEdge): boolean {
+    const confidence = edge.title?.vlan_match?.confidence;
+    return confidence === "low" || confidence === "medium";
 }
 
 /**
@@ -524,15 +667,7 @@ function applySearchHighlight(): void {
         marker.setStyle(
             foundNodeIds.value.has(nodeId)
                 ? highlightedMarkerStyle
-                : node?.inherited_from
-                  ? {
-                        radius: 5,
-                        color: "#fde68a",
-                        weight: 2,
-                        fillColor: "#f59e0b",
-                        fillOpacity: 0.95,
-                    }
-                  : defaultMarkerStyle
+                : markerDefaultStyles.get(nodeId) || (node?.inherited_from ? getPortMarkerStyle() : defaultMarkerStyle)
         );
         marker.bringToFront();
     }
@@ -691,16 +826,39 @@ interface EdgeStyle {
     color: string;
     opacity: number;
     weight: number;
+    dashArray?: string;
 }
+
+type MarkerStyle = typeof defaultMarkerStyle & {
+    dashArray?: string;
+    opacity?: number;
+};
 
 /**
  * Returns default edge style.
  */
 function getDefaultEdgeStyle(edge: TracerouteMapEdge): EdgeStyle {
+    const confidence = edge.title?.vlan_match?.confidence;
+    if (confidence === "low") {
+        return {
+            color: "#94a3b8",
+            opacity: 0.38,
+            weight: Math.max(2, Math.min(Number(edge.value || 1) + 1, 3)),
+            dashArray: "6 5",
+        };
+    }
+    if (confidence === "medium") {
+        return {
+            color: "#f59e0b",
+            opacity: 0.3,
+            weight: Math.max(2, Math.min(Number(edge.value || 1) + 1, 3.5)),
+            dashArray: "8 4",
+        };
+    }
     return {
         color: "#38bdf8",
         opacity: 0.65,
-        weight: Math.max(1, Math.min(Number(edge.value || 1), 3)),
+        weight: Math.max(2, Math.min(Number(edge.value || 1) + 1, 4)),
     };
 }
 
@@ -844,11 +1002,14 @@ function destroyMap(): void {
     }
     map = null;
     nodesLayer = null;
+    suspiciousNodesLayer = null;
     portsLayer = null;
     portClusterLayer = null;
     edgesLayer = null;
+    suspiciousEdgesLayer = null;
     layersControl = null;
     markersById.clear();
+    markerDefaultStyles.clear();
 }
 </script>
 
@@ -981,6 +1142,26 @@ function destroyMap(): void {
 :deep(.traceroute-map-popup__status--unknown) {
     background: #e2e8f0;
     color: #334155;
+}
+
+:deep(.traceroute-map-popup__confidence) {
+    display: inline-flex;
+    max-width: 100%;
+    border-radius: 999px;
+    padding: 0.12rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+:deep(.traceroute-map-popup__confidence--low) {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+:deep(.traceroute-map-popup__confidence--medium) {
+    background: #fef3c7;
+    color: #92400e;
 }
 
 :deep(.traceroute-map-popup__vlan-block) {

@@ -88,6 +88,28 @@ function applyGraphCanvasOptions(options: any): any {
     return themedOptions;
 }
 
+function getVlanMatchTooltip(payload: Record<string, unknown>): string {
+    const match = (payload.vlan_match ?? {}) as Record<string, unknown>;
+    const confidence = String(match.confidence ?? "");
+    if (confidence !== "low" && confidence !== "medium") {
+        return "";
+    }
+    const src = (match.src ?? {}) as Record<string, unknown>;
+    const matchedRange = (src.matched_range ?? {}) as Record<string, unknown>;
+    const rangeText =
+        matchedRange.from && matchedRange.to ? `${String(matchedRange.from)}-${String(matchedRange.to)}` : "-";
+    const label =
+        confidence === "low"
+            ? "Низкая уверенность: широкий trunk"
+            : "Средняя уверенность: broad trunk подтвержден соседним портом";
+    return `
+        <div class="mt-2 rounded-md border border-amber-300/40 bg-amber-300/10 px-2 py-1">
+            <div class="text-[11px] tracking-wide opacity-80 uppercase">${label}</div>
+            <div class="font-mono text-xs leading-5">Src VLAN: ${String(src.vlan_count ?? "-")}, range: ${rangeText}</div>
+        </div>
+    `;
+}
+
 function toTooltipHtmlElement(title: unknown): unknown {
     const tooltipRoot = document.createElement("div");
     if (typeof title === "string") {
@@ -108,6 +130,7 @@ function toTooltipHtmlElement(title: unknown): unknown {
                     <div class="font-mono text-xs leading-5">${srcText}</div>
                     <div class="text-[11px] tracking-wide opacity-70 uppercase">DST</div>
                     <div class="font-mono text-xs leading-5">${dstText}</div>
+                    ${getVlanMatchTooltip(payload)}
                 </div>
             `;
         } else if (payload.kind === "unknown_link") {
@@ -120,6 +143,7 @@ function toTooltipHtmlElement(title: unknown): unknown {
                     <div class="font-mono text-xs leading-5">${srcText}</div>
                     <div class="text-[11px] tracking-wide opacity-70 uppercase">DESC</div>
                     <div class="font-mono text-xs leading-5">${dstText}</div>
+                    ${getVlanMatchTooltip(payload)}
                 </div>
             `;
         } else if (payload.kind === "empty_port_link") {

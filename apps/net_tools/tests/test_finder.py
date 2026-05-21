@@ -121,6 +121,119 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [("dev-a", "dev-c")],
         )
 
+    def test_find_vlan_marks_broad_trunk_ports(self) -> None:
+        """VLAN трассировка помечает широкие trunk-порты как низкую уверенность."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            trunk_filter_mode="mark_broad",
+        )
+
+        self.assertEqual(finder.result[0].line_description["vlan_match"]["confidence"], "low")
+        self.assertTrue(finder.result[0].line_description["vlan_match"]["src"]["broad_trunk"])
+
+    def test_find_vlan_keeps_specific_range_on_large_vlan_port_confident(self) -> None:
+        """Большой список VLAN не считается broad trunk, если искомый VLAN в малом диапазоне."""
+        finder = self._make_finder()
+        scattered_vlans = [
+            8,
+            23,
+            36,
+            63,
+            101,
+            106,
+            110,
+            119,
+            *range(195, 236),
+            *range(242, 518),
+            *range(1943, 1948),
+            1949,
+            1959,
+            1961,
+            1962,
+            1969,
+            1990,
+            1991,
+            1993,
+            1994,
+            2000,
+            2005,
+            2496,
+            2562,
+            2620,
+            2676,
+            2846,
+            2848,
+            2849,
+            2850,
+            3000,
+            3438,
+            3500,
+            3715,
+            3720,
+            3900,
+            3927,
+            3928,
+            3929,
+            3966,
+            3972,
+            4007,
+            4016,
+            4017,
+            4018,
+            4021,
+            4022,
+            4023,
+            4024,
+            4025,
+        ]
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=scattered_vlans)]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=1944,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            trunk_filter_mode="mark_broad",
+        )
+
+        vlan_match = finder.result[0].line_description["vlan_match"]
+        self.assertEqual(vlan_match["confidence"], "high")
+        self.assertFalse(vlan_match["src"]["broad_trunk"])
+        self.assertEqual(vlan_match["src"]["matched_range"], {"from": 1943, "to": 1947})
+
+    def test_find_vlan_hides_broad_trunk_ports(self) -> None:
+        """VLAN трассировка может скрывать широкие trunk-порты."""
+        finder = self._make_finder()
+        finder._interfaces_by_device["dev-a"] = Interfaces(
+            [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
+        )
+
+        finder.find_vlan(
+            device="dev-a",
+            vlan_to_find=100,
+            empty_ports=False,
+            only_admin_up=False,
+            find_device_pattern=r"dev-[a-z]",
+            double_check=False,
+            trunk_filter_mode="hide_broad",
+        )
+
+        self.assertEqual(finder.result, [])
+
 
 class MultipleTracerouteTestCase(SimpleTestCase):
     def test_execute_traceroute_skips_already_processed_roots(self) -> None:
@@ -244,3 +357,70 @@ class VlanNetworkTestCase(SimpleTestCase):
         self.assertEqual(len(visible_nodes), 2)
         self.assertEqual(len(network.edges), 1)
         self.assertEqual({node["id"]: node["value"] for node in visible_nodes}, {"dev-a": 3, "dev-b": 3})
+
+    def test_create_network_prefers_more_specific_duplicate_edge(self) -> None:
+        """VLAN graph keeps the most specific edge when duplicate device links exist."""
+        data = [
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "low"},
+                },
+                admin_down_status="up",
+            ),
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "high"},
+                },
+                admin_down_status="up",
+            ),
+        ]
+        network = VlanNetwork()
+
+        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+            network.create_network(data)
+
+        self.assertEqual(len(network.edges), 1)
+        self.assertEqual(network.edges[0]["title"]["vlan_match"]["confidence"], "high")
+        self.assertNotIn("dashes", network.edges[0])
+
+    def test_create_network_marks_nodes_with_only_suspicious_edges(self) -> None:
+        """VLAN graph marks nodes whose every edge is suspicious."""
+        data = [
+            TracerouteResult(
+                node="dev-a",
+                next_node="dev-b",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "low"},
+                },
+                admin_down_status="up",
+            ),
+            TracerouteResult(
+                node="dev-b",
+                next_node="dev-c",
+                line_width=10,
+                line_description={
+                    "kind": "link",
+                    "vlan_match": {"confidence": "high"},
+                },
+                admin_down_status="up",
+            ),
+        ]
+        network = VlanNetwork()
+
+        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+            network.create_network(data)
+
+        nodes = {node["id"]: node for node in network.nodes if not node.get("hidden")}
+        self.assertTrue(nodes["dev-a"]["suspicious"])
+        self.assertNotIn("suspicious", nodes["dev-b"])
+        self.assertNotIn("suspicious", nodes["dev-c"])

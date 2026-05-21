@@ -50,6 +50,12 @@ class TracerouteQuerySerializer(serializers.Serializer):
         required=False,
         help_text="Skip ports with VLAN count greater than this value in VLAN traceroute. 0 disables the filter.",
     )
+    trunk_filter_mode = serializers.ChoiceField(
+        choices=("off", "mark_broad", "hide_broad"),
+        default="mark_broad",
+        required=False,
+        help_text="How VLAN traceroute handles broad trunk ports.",
+    )
     nodes_only = serializers.BooleanField(
         default=False,
         required=False,

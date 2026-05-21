@@ -1,13 +1,13 @@
 export type TracerouteMode = "vlan" | "mac" | "neighbors";
 export type TracerouteVisualizationMode = "graph" | "map";
+export type TrunkFilterMode = "off" | "mark_broad" | "hide_broad";
 
 export interface VlanTracerouteOptions {
     adminDownPorts: boolean;
     showEmptyPorts: boolean;
     doubleCheckVlan: boolean;
     graphMinLength: number;
-    maxPortVlansEnabled: boolean;
-    maxPortVlans: number | null;
+    trunkFilterMode: TrunkFilterMode;
     deviceNameFilter: string;
     groupFilter: string;
     nodesOnly: boolean;
@@ -56,8 +56,43 @@ export interface TracerouteMapNode {
 export interface TracerouteMapEdge {
     from: string;
     to: string;
-    title?: Record<string, unknown>;
+    title?: EdgeTitlePayload;
     value?: number;
+    color?: string | Record<string, unknown>;
+    dashes?: boolean | number[];
+}
+
+export interface VlanMatchInfo {
+    confidence?: "high" | "normal" | "medium" | "low";
+    src?: VlanPortMatchInfo;
+    dst?: VlanPortMatchInfo | null;
+}
+
+export interface VlanPortMatchInfo {
+    confidence?: string;
+    broad_trunk?: boolean;
+    vlan_count?: number;
+    device_vlan_count?: number;
+    largest_range_size?: number;
+    reason?: string;
+    matched_range?: {
+        from: number;
+        to: number;
+    };
+}
+
+export interface EdgeTitlePayload {
+    kind?: string;
+    src?: {
+        device?: string;
+        port?: string;
+    };
+    dst?: {
+        device?: string;
+        port?: string;
+    };
+    destination_description?: string;
+    vlan_match?: VlanMatchInfo;
 }
 
 export interface TracerouteMapSkippedNode {

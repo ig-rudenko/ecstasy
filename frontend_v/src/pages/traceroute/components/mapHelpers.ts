@@ -1,15 +1,8 @@
-import type { TracerouteMapEdge, TracerouteMapNode } from "./types";
+import type { EdgeTitlePayload, TracerouteMapEdge, TracerouteMapNode, VlanMatchInfo } from "./types";
 
 export interface EdgeEndpoint {
     device?: string;
     port?: string;
-}
-
-export interface EdgeTitlePayload {
-    kind?: string;
-    src?: EdgeEndpoint;
-    dst?: EdgeEndpoint;
-    destination_description?: string;
 }
 
 export interface LoadedInterfaceInfo {
@@ -98,6 +91,7 @@ export function createEdgeTooltip(
         <div class="traceroute-map-edge-tooltip">
             <div><b>${srcText}</b></div>
             <div>${dstText}</div>
+            ${createVlanMatchSummary(title.vlan_match)}
         </div>
     `;
 }
@@ -129,6 +123,7 @@ export function createEdgePopup(
                         ? `<span class="traceroute-map-popup__label">Desc</span><span class="traceroute-map-popup__value">${escapeHtml(title.destination_description)}</span>`
                         : ""
                 }
+                ${createVlanMatchRows(title.vlan_match)}
             </div>
             ${loading ? '<div class="traceroute-map-popup__hint">Загрузка VLAN...</div>' : ""}
             ${
@@ -155,6 +150,52 @@ export function getEdgeEndpoints(edge: TracerouteMapEdge): EdgeEndpoint[] {
  */
 function getEdgeTitle(edge: TracerouteMapEdge): EdgeTitlePayload {
     return (edge.title || {}) as EdgeTitlePayload;
+}
+
+/**
+ * Creates compact VLAN match summary for edge tooltip.
+ */
+function createVlanMatchSummary(match: VlanMatchInfo | undefined): string {
+    if (!match || !match.confidence || match.confidence === "normal" || match.confidence === "high") {
+        return "";
+    }
+    return `<div class="traceroute-map-popup__muted">${escapeHtml(getVlanMatchLabel(match.confidence))}</div>`;
+}
+
+/**
+ * Creates VLAN match diagnostic rows for edge popup.
+ */
+function createVlanMatchRows(match: VlanMatchInfo | undefined): string {
+    if (!match || !match.confidence || match.confidence === "normal" || match.confidence === "high") {
+        return "";
+    }
+    const source = match.src;
+    const range = source?.matched_range ? `${source.matched_range.from}-${source.matched_range.to}` : "-";
+    return `
+        <span class="traceroute-map-popup__label">VLAN match</span>
+        <span class="traceroute-map-popup__value">
+            <span class="traceroute-map-popup__confidence traceroute-map-popup__confidence--${escapeHtml(match.confidence)}">
+                ${escapeHtml(getVlanMatchLabel(match.confidence))}
+            </span>
+        </span>
+        <span class="traceroute-map-popup__label">Src VLAN</span>
+        <span class="traceroute-map-popup__value">
+            ${escapeHtml(String(source?.vlan_count ?? "-"))} VLAN, диапазон ${escapeHtml(range)}
+        </span>
+    `;
+}
+
+/**
+ * Returns readable VLAN match label.
+ */
+function getVlanMatchLabel(confidence: string): string {
+    if (confidence === "low") {
+        return "низкая уверенность: широкий trunk";
+    }
+    if (confidence === "medium") {
+        return "средняя уверенность: broad trunk подтвержден соседним портом";
+    }
+    return "обычное совпадение VLAN";
 }
 
 /**
