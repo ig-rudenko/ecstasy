@@ -151,7 +151,7 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
         )
         visible_ids.add(node_id)
 
-    inherited_count_by_parent = {}
+    inherited_count_by_parent: dict[str, int] = {}
     for node_id, node in graph_nodes_by_id.items():
         if node_id in visible_ids:
             continue

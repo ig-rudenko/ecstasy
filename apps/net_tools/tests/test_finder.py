@@ -53,7 +53,7 @@ class StubTraceroute(Traceroute):
 
 
 class TracerouteTraversalTestCase(SimpleTestCase):
-    def _make_finder(self) -> Traceroute:
+    def _make_finder(self) -> StubTraceroute:
         """Создает finder без обращения к базе данных."""
         return StubTraceroute()
 

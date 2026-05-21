@@ -61,7 +61,7 @@ class TracerouteNodeSerializer(serializers.Serializer):
 class TracerouteEdgeSerializer(serializers.Serializer):
     value = serializers.IntegerField()
     title = serializers.DictField(help_text="Structured tooltip payload object.")
-    from_ = serializers.CharField(source="from", help_text="По факту вернется поле `from`")
+    from_ = serializers.CharField(source="from", help_text="По факту вернется поле `from`")  # type: ignore[assignment]
     to = serializers.CharField()
 
 
@@ -73,17 +73,17 @@ class TracerouteSerializer(serializers.Serializer):
 
 class TracerouteMapNodeSerializer(serializers.Serializer):
     id = serializers.CharField()
-    label = serializers.CharField()
+    label = serializers.CharField()  # type: ignore[assignment]
     lat = serializers.FloatField()
     lon = serializers.FloatField()
     title = serializers.CharField(required=False, allow_blank=True)
     device = serializers.DictField(required=False, allow_null=True)
-    inherited_from = serializers.CharField(required=False)
+    inherited_from = serializers.CharField(required=False)  # type: ignore[assignment]
     kind = serializers.CharField(required=False)
 
 
 class TracerouteMapEdgeSerializer(serializers.Serializer):
-    from_ = serializers.CharField(source="from", help_text="По факту вернется поле `from`")
+    from_ = serializers.CharField(source="from", help_text="По факту вернется поле `from`")  # type: ignore[assignment]
     to = serializers.CharField()
     title = serializers.DictField(required=False)
     value = serializers.IntegerField(required=False)
@@ -91,7 +91,7 @@ class TracerouteMapEdgeSerializer(serializers.Serializer):
 
 class TracerouteMapSkippedNodeSerializer(serializers.Serializer):
     id = serializers.CharField()
-    label = serializers.CharField()
+    label = serializers.CharField()  # type: ignore[assignment]
     reason = serializers.CharField()
 
 

@@ -1,7 +1,6 @@
 import contextlib
 import json
 import re
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, NamedTuple, TypedDict
@@ -460,12 +459,17 @@ class Traceroute:
 
         broad_trunk = vlan_count >= cls.BROAD_TRUNK_MIN_VLANS and (
             matched_range_size >= cls.BROAD_TRUNK_MIN_RANGE
-            or (device_ratio >= cls.BROAD_TRUNK_DEVICE_RATIO and largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE)
+            or (
+                device_ratio >= cls.BROAD_TRUNK_DEVICE_RATIO
+                and largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE
+            )
             or covers_full_vlan_space
         )
 
         if broad_trunk:
-            reason = "broad_vlan_range" if largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE else "device_vlan_ratio"
+            reason = (
+                "broad_vlan_range" if largest_range_size >= cls.BROAD_TRUNK_MIN_RANGE else "device_vlan_ratio"
+            )
             return VlanPortMatch(
                 confidence="low",
                 broad_trunk=True,
@@ -634,7 +638,9 @@ class Traceroute:
 
             # Порт с описанием
             elif interface.desc and not nodes_only:
-                self._add_unknown_device_result(device, interface.name, interface.desc, admin_status, vlan_match)
+                self._add_unknown_device_result(
+                    device, interface.name, interface.desc, admin_status, vlan_match
+                )
 
             # Пустые порты
             elif empty_ports and not nodes_only:

@@ -7,10 +7,7 @@
             v-show="mode !== 'mac'"
             :class="['relative h-150 min-h-120 sm:h-225', vlanMaximized ? 'maximized-shell' : '']"
         >
-            <div
-                v-if="vlanRendered"
-                class="absolute! top-3 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto"
-            >
+            <div v-if="vlanRendered" class="absolute! top-3 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto">
                 <InputText
                     :model-value="graphNodeSearch"
                     placeholder="Node"
@@ -66,10 +63,7 @@
             v-show="mode === 'mac'"
             :class="['relative h-150 min-h-120 sm:h-225', macMaximized ? 'maximized-shell' : '']"
         >
-            <div
-                v-if="macRendered"
-                class="absolute! top-6 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto"
-            >
+            <div v-if="macRendered" class="absolute! top-6 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto">
                 <InputText
                     :model-value="graphNodeSearch"
                     placeholder="Node"

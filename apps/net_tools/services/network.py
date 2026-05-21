@@ -442,10 +442,14 @@ class VlanNetwork:
     ) -> None:
         """Заменяет дубль ребра, если новое VLAN-совпадение точнее текущего."""
         existing_edge = self._edges[edge_index]
-        if self._get_edge_confidence_rank(edge_title) <= self._get_edge_confidence_rank(existing_edge["title"]):
+        if self._get_edge_confidence_rank(edge_title) <= self._get_edge_confidence_rank(
+            existing_edge["title"]
+        ):
             return
 
-        data = self._build_edge_data(src_node, dst_node, line_width, edge_title, self._get_edge_options(edge_title))
+        data = self._build_edge_data(
+            src_node, dst_node, line_width, edge_title, self._get_edge_options(edge_title)
+        )
         existing_edge.clear()
         existing_edge.update(data)
 

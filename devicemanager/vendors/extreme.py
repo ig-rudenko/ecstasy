@@ -7,7 +7,7 @@ from typing import Literal
 from .. import DeviceException
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template, range_to_numbers
+from .base.helpers import parse_by_template
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,

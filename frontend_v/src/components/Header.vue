@@ -199,7 +199,11 @@ const closeMobileMenu = () => {
                         <img class="w-10 h-10 rounded-full" src="/video/logo.webp" alt="logo" />
                         <div>
                             <div
-                                style="font-family: Century Gothic, fantasy"
+                                style="
+                                    font-family:
+                                        Century Gothic,
+                                        fantasy;
+                                "
                                 class="text-gray-900 dark:text-gray-100 text-xl leading-none"
                             >
                                 Ecstasy
@@ -249,7 +253,11 @@ const closeMobileMenu = () => {
                                 <img class="w-10 h-10 sm:w-12 sm:h-12 rounded-full" src="/video/logo.webp" alt="logo" />
                                 <div class="hidden sm:block">
                                     <div
-                                        style="font-family: Century Gothic, fantasy"
+                                        style="
+                                            font-family:
+                                                Century Gothic,
+                                                fantasy;
+                                        "
                                         class="text-gray-900 dark:text-gray-100 text-xl sm:text-2xl leading-none"
                                     >
                                         Ecstasy

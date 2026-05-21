@@ -1,9 +1,6 @@
 import re
 
 from django.contrib import admin
-from django.contrib.admin.options import IncorrectLookupParameters
-from django.contrib.admin.views.main import ChangeList
-from django.core.paginator import InvalidPage
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils.safestring import mark_safe
