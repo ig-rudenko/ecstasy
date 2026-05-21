@@ -116,6 +116,9 @@ class ChangeDescriptionAPIView(DeviceAPIView):
     ## Изменяем описание на порту у оборудования
     """
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group", "devicesinfo")
+
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request: Request, *args, **kwargs):
@@ -183,6 +186,9 @@ class ChangeDescriptionAPIView(DeviceAPIView):
 class MacListAPIView(DeviceAPIView):
     pagination_class = None
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
+
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
         """
@@ -219,6 +225,9 @@ class MacListAPIView(DeviceAPIView):
 
 class CableDiagAPIView(DeviceAPIView):
     pagination_class = None
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
 
     @except_connection_errors
     @cable_diagnostic_api_doc
@@ -296,35 +305,37 @@ class SetPoEAPIView(DeviceAPIView):
 
         return Response(result)
 
-    @staticmethod
-    def change_poe_status(device, port: str, poe_status: str) -> tuple[dict, int]:
-        error_status = 0
+    def change_poe_status(self, device: models.Devices, port: str, poe_status: str) -> dict:
         result: dict = {"status": poe_status, "port_name": port}
 
         # Если оборудование недоступно
         if not device.available:
-            error_status = 500
-            result["detail"] = "Device unavailable"
+            raise DeviceUnavailable({"detail": "Device unavailable", "device": device.name})
 
-        if not error_status:
-            try:
-                _, got_error = device.connect().set_poe_out(port, poe_status)
-            except InvalidMethod:
-                error_status = 400
-                result["detail"] = "Unsupported for this device"
-            else:
-                if got_error:
-                    error_status = 400
-                    result["detail"] = f"Invalid data ({poe_status})"
+        try:
+            _, got_error = device.connect().set_poe_out(port, poe_status)
+        except InvalidMethod as exc:
+            raise UnsupportedDeviceOperation(
+                {
+                    "detail": "Unsupported for this device",
+                    "device": device.name,
+                    "operation": "virtual_cable_test",
+                    "port": self.request.GET["port"],
+                }
+            ) from exc
 
-        result["has_error"] = bool(error_status)
+        if got_error:
+            raise ValidationError({"detail": f"Invalid data ({poe_status})"})
 
-        return result, error_status
+        return result
 
 
 @method_decorator(interface_info_api_doc, name="get")
 class InterfaceInfoAPIView(DeviceAPIView):
     pagination_class = None
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
 
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
@@ -363,6 +374,9 @@ class InterfaceInfoAPIView(DeviceAPIView):
 @method_decorator(change_dsl_profile_api_doc, name="post")
 class ChangeDSLProfileAPIView(DeviceAPIView):
     serializer_class = ADSLProfileSerializer
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
 
     @except_connection_errors
     @method_decorator(profile_permission(models.Profile.BRAS))

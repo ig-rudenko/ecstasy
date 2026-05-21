@@ -25,7 +25,7 @@ def has_user_access_to_device(user: User | AnonymousUser, device: Devices) -> bo
     """Объединённая проверка доступа: через профиль или AccessGroup"""
     if not user.is_authenticated:
         return False
-    return has_access_by_profile(user.id, device.group_id) or has_access_by_access_group(user, device)
+    return has_access_by_profile(user.id or 0, device.group_id) or has_access_by_access_group(user, device)
 
 
 class DevicePermission(permissions.BasePermission):

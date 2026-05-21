@@ -1,4 +1,5 @@
-from django.http import Http404
+from ipaddress import IPv4Address
+
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 
@@ -24,7 +25,9 @@ class DeviceAPIView(UserAuthenticatedAPIView):
     def get_object(self) -> Devices:
         """Возвращает объект устройства по имени или IP адресу"""
         try:
-            return super().get_object()
-        except Http404:
+            IPv4Address(self.kwargs.get(self.lookup_url_kwarg, ""))
+        except ValueError:
+            self.lookup_field = "name"
+        else:
             self.lookup_field = "ip"
-            return super().get_object()
+        return super().get_object()

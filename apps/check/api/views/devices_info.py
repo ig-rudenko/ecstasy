@@ -62,7 +62,7 @@ class DevicesListCreateAPIView(UserAuthenticatedAPIView, ListCreateAPIView):
         через Profile.devices_groups или AccessGroup (users / user_groups),
         при этом исключаются устройства, явно запрещённые в AccessGroup.
         """
-        return filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
+        return filter_devices_qs_by_user(Devices.objects.select_related("group"), self.current_user)
 
 
 class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
@@ -188,6 +188,10 @@ class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
 
 @method_decorator(interfaces_workload_api_doc, name="get")
 class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("devicesinfo")
+
     def get(self, request, *args, **kwargs):
         device = self.get_object()
         result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device.devicesinfo or {})
@@ -197,6 +201,9 @@ class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
 @method_decorator(interfaces_list_api_doc, name="get")
 class DeviceInterfacesAPIView(DeviceAPIView):
     pagination_class = None
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group", "devicesinfo")
 
     @except_connection_errors
     def get(self, request, *args, **kwargs) -> Response:
@@ -360,7 +367,6 @@ class DeviceVlanInfoAPIView(DeviceAPIView):
     """
 
     pagination_class = None
-
     serializer_class = DeviceVlanSerializer
 
     def get(self, request, *args, **kwargs) -> Response:
@@ -394,6 +400,9 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
     """
 
     pagination_class = None
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
 
     @except_connection_errors
     def get(self, request, *args, **kwargs) -> Response:
