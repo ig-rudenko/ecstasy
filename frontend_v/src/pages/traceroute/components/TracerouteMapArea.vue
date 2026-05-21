@@ -211,10 +211,10 @@ function initMap(): void {
             ArcGIS: tiles.arcgisonline,
         },
         {
-            Узлы: nodesLayer,
+            "Узлы": nodesLayer,
+            "Порты": portClusterLayer || portsLayer,
+            "Связи": edgesLayer,
             "Сомнительные узлы/порты": suspiciousNodesLayer,
-            Порты: portClusterLayer || portsLayer,
-            Связи: edgesLayer,
             "Сомнительные связи": suspiciousEdgesLayer,
         }
     ).addTo(map);
