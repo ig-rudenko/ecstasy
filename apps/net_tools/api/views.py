@@ -103,7 +103,7 @@ def find_by_description(request):
         try:
             re.compile(pattern)
         except re.PatternError as exc:
-            raise ValidationError({"pattern": f"Regex error: {exc}"}) from exc
+            raise ValidationError({"pattern": "Invalid regular expression pattern."}) from exc
 
     devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
     finder = DescriptionFinder(devices_qs)
