@@ -106,7 +106,7 @@ class TestSolutionsPerformer(TestRingBase):
         # Найдено 2 решения
         self.assertEqual(len(solutions), 2)
 
-        print(solutions)
+        # print(solutions)
 
         # 1 решение - STATUS FAIL
         self.assertDictEqual(

@@ -146,6 +146,8 @@ class AddressSerializer(serializers.ModelSerializer):
 
 
 class BuildingAddressSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="address.id", read_only=True)
+    building_id = serializers.IntegerField(source="id", read_only=True)
     region = serializers.CharField(source="address.region")
     settlement = serializers.CharField(source="address.settlement")
     planStructure = serializers.CharField(source="address.plan_structure")
@@ -165,6 +167,7 @@ class BuildingAddressSerializer(serializers.ModelSerializer):
             "house",
             "block",
             "building_type",
+            "building_id",
             "floors",
             "total_entrances",
         ]

@@ -1,27 +1,7 @@
-from django.core.cache import cache
-
 from ..api.serializers.common import SubscriberConnectionSerializer
-from ..api.serializers.create_subscriber_data import SubscriberDataSerializer
 from ..models import SubscriberConnection
 
 all_subscriber_connections_cache_key = "gpon:all_subscriber_connections"
-
-
-def get_all_subscriber_connections(from_cache: bool = True):
-    cache_timeout = 1
-
-    data = None
-    if from_cache:
-        data = cache.get(all_subscriber_connections_cache_key)
-    if data is None:
-        queryset = (
-            SubscriberConnection.objects.all()
-            .select_related("address", "customer")
-            .prefetch_related("services")
-        )
-        data = SubscriberDataSerializer(queryset, many=True).data
-        cache.set(all_subscriber_connections_cache_key, data, cache_timeout)
-    return data
 
 
 def get_subscribers_on_device_port(device_name: str, olt_port: str, ont_id: int):

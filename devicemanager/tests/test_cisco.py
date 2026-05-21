@@ -148,40 +148,106 @@ Internet  10.100.10.100             27   0000.aaaa.0000  ARPA   Vlan25
   input flow-control is off, output flow-control is off
                 """
 
-        elif "show running-config interface" in command and command.endswith("5"):
+        elif "show running-config" in command:
             self.before = b"""
 Current configuration : 837 bytes
 !
 interface TenGigabitEthernet1/1
- switchport trunk allowed vlan 101,103-108
- switchport trunk allowed vlan add 213,214
- switchport trunk allowed vlan add 234-236
+ switchport trunk allowed vlan 101,103-105
  switchport mode trunk
  load-interval 30
  shutdown
-end
-            """
-
-        elif "show running-config interface" in command and command.endswith("9"):
-            self.before = b"""
-Current configuration : 837 bytes
 !
-interface TenGigabitEthernet1/1
+interface TenGigabitEthernet1/2
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
  load-interval 30
- shutdown
-end
-            """
-
-        elif "show running-config interface" in command:
-            self.before = b"""
-Current configuration : 837 bytes
 !
-interface FastEthernet0/2
- description L2VPN|1306|MirandaMedia|1M|YuBK_Genbank|17.03.2017|
- switchport access vlan 1230
- switchport mode access
- no cdp enable
-end
+interface TenGigabitEthernet1/3
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/4
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/5
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/6
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/7
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/8
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/9
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/10
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/11
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/12
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/13
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/14
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/15
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
+interface TenGigabitEthernet1/16
+ switchport trunk allowed vlan 101,103-105
+ switchport trunk allowed vlan add 213,214
+ switchport mode trunk
+ load-interval 30
+!
             """
 
         elif command == "show version":
@@ -332,27 +398,27 @@ Vl106                          up             up
         self.assertEqual(
             interfaces_vlans,
             [
-                ("Te1/1", "admin down", "Desc1", ["1230"]),
-                ("Te1/2", "admin down", "", ["1230"]),
-                ("Te1/3", "up", "Desc3", ["1230"]),
-                ("Te1/4", "up", "Desc4", ["1230"]),
-                ("Te1/5", "admin down", "", ["101,103-108", "213,214", "234-236"]),
-                ("Te1/6", "admin down", "Desc6", ["1230"]),
-                ("Te1/7", "admin down", "", ["1230"]),
-                ("Te1/8", "admin down", "", ["1230"]),
-                ("Te1/9", "admin down", "", []),
-                ("Te1/10", "admin down", "", ["1230"]),
-                ("Te1/11", "admin down", "", ["1230"]),
-                ("Te1/12", "up", "", ["1230"]),
-                ("Te1/13", "admin down", "", ["1230"]),
-                ("Te1/14", "admin down", "Desc14", ["1230"]),
+                ("Te1/1", "admin down", "Desc1", ["101,103-105"]),
+                ("Te1/2", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/3", "up", "Desc3", ["101,103-105", "213,214"]),
+                ("Te1/4", "up", "Desc4", ["101,103-105", "213,214"]),
+                ("Te1/5", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/6", "admin down", "Desc6", ["101,103-105", "213,214"]),
+                ("Te1/7", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/8", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/9", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/10", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/11", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/12", "up", "", ["101,103-105", "213,214"]),
+                ("Te1/13", "admin down", "", ["101,103-105", "213,214"]),
+                ("Te1/14", "admin down", "Desc14", ["101,103-105", "213,214"]),
                 (
                     "Te1/15",
                     "up",
                     "Some description",
-                    ["101,103-108", "213,214", "234-236"],
+                    ["101,103-105", "213,214"],
                 ),
-                ("Te1/16", "admin down", "", ["1230"]),
+                ("Te1/16", "admin down", "", ["101,103-105", "213,214"]),
             ],
         )
 

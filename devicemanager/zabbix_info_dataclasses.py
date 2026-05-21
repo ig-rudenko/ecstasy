@@ -77,14 +77,19 @@ class ZabbixInventory:
     poc_2_screen: str = ""
     poc_2_notes: str = ""
 
-    def coordinates(self, reverse=False) -> tuple:
+    def coordinates(self, reverse=False) -> tuple[float, float] | None:
         if not self.location_lat or not self.location_lon:
-            return ()
+            return None
+        try:
+            lat = float(self.location_lat)
+            lon = float(self.location_lon)
+        except ValueError:
+            return None
 
         if reverse:
-            return self.location_lon, self.location_lat
+            return lon, lat
 
-        return self.location_lat, self.location_lon
+        return lat, lon
 
     def print(self):
         """Выводит в терминал данные инвентаризации, только те, что имеются"""

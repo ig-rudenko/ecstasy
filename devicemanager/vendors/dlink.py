@@ -219,36 +219,39 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             # show vlan
 
-         :return: ```[ ('vid', 'vlan name', 'port,port,port',), ... ]```
+         :return: ```[ ('vid', ['port', 'port'], 'vlan name'), ... ]```
         """
 
         vlan_str = self.send_command("show vlan", expect_command=False)
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
-        vlan_table: list[tuple[int, str, str]] = re.findall(
-            r"VID\s+:\s+(\d+)\s+VLAN Name\s+:\s+([\w\-]+)\s+.*?Member Ports\s+:\s+([^\n]*)",  # Capture VID, VLAN Name, and Member Ports
+        vlan_table: list[tuple[str, str, str]] = re.findall(
+            r"VID\s+:\s+(\d+)\s+VLAN Name\s+:\s+([^\n]+?)\s+VLAN Type\s+:.*?Member Ports\s+?:\s+?([^\n]*)",
             vlan_str,
             flags=re.DOTALL,
         )
 
-        # Format the result as (VLAN ID, Ports, Description)
         result = []
         for vid, name, ports in vlan_table:
-            # Clean the ports, removing extra spaces and handling ranges
             ports = ports.strip()
+            port_ranges: list[str] = []
             if ports:
-                # Replace ranges with comma-separated values (e.g., 1-13 -> 1,2,3,...,13)
-                port_ranges: list[str] = []
                 for part in ports.split(","):
-                    if "-" in part:
-                        start, end = map(int, part.split("-"))
+                    part = part.strip()
+                    range_match = re.match(r"^(\d+)\D*-\D*(\d+)", part)
+                    port_match = re.match(r"^(\d+)", part)
+                    if range_match:
+                        start, end = map(int, range_match.groups())
                         port_ranges.extend(map(str, range(start, end + 1)))
-                    else:
+                    elif port_match:
+                        port_ranges.append(port_match.group(1))
+                    elif part:
                         port_ranges.append(part)
-                ports = ", ".join(port_ranges)
-            else:
-                ports = ""
 
-            result.append((int(vid), ports, name))
+            if vid == "1" and not port_ranges:
+                # Пропускаем default VID, если нет портов для него.
+                continue
+
+            result.append((int(vid), port_ranges, name.strip()))
 
         return result
 

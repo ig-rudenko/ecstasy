@@ -183,11 +183,11 @@ export function cloneCommandTemplate(command: DeviceCommandTemplate): DeviceComm
     return {
         ...command,
         context: {
-            port: {...(command.context.port || {})},
-            ip: {...(command.context.ip || {})},
-            mac: {...(command.context.mac || {})},
-            number: {...(command.context.number || {})},
-            word: {...(command.context.word || {})},
+            port: { ...(command.context.port || {}) },
+            ip: { ...(command.context.ip || {}) },
+            mac: { ...(command.context.mac || {}) },
+            number: { ...(command.context.number || {}) },
+            word: { ...(command.context.word || {}) },
         },
     };
 }
@@ -253,7 +253,8 @@ export function isValidWord(word: string): boolean {
  * Validates IPv4 input.
  */
 export function isValidIPAddress(ip: string): boolean {
-    const ipRegexValue = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
+    const ipRegexValue =
+        /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
     return ipRegexValue.test(ip);
 }
 
@@ -303,7 +304,7 @@ export async function fetchDeviceCommands(deviceName: string): Promise<DeviceCom
 export async function validateDeviceCommand(deviceName: string, command: DeviceCommandTemplate): Promise<string> {
     const response = await api.post<{ command: CommandValidateResult[] }>(
         `/api/v1/devices/${deviceName}/commands/${command.id}/validate`,
-        command.context,
+        command.context
     );
 
     return response.data.command.map((item) => item.command).join("\n");
@@ -315,7 +316,7 @@ export async function validateDeviceCommand(deviceName: string, command: DeviceC
 export async function executeDeviceCommand(deviceName: string, command: DeviceCommandTemplate): Promise<string> {
     const response = await api.post<{ output: string }>(
         `/api/v1/devices/${deviceName}/commands/${command.id}/execute`,
-        command.context,
+        command.context
     );
     return response.data.output;
 }
@@ -326,15 +327,12 @@ export async function executeDeviceCommand(deviceName: string, command: DeviceCo
 export async function executeBulkDeviceCommand(
     commandId: number,
     deviceIds: number[],
-    context: CommandContext,
+    context: CommandContext
 ): Promise<BulkCommandTaskLaunch> {
-    const response = await api.post<BulkCommandTaskLaunch>(
-        `/api/v1/devices/commands/${commandId}/execute-multiple`,
-        {
-            ...context,
-            device_ids: deviceIds,
-        },
-    );
+    const response = await api.post<BulkCommandTaskLaunch>(`/api/v1/devices/commands/${commandId}/execute-multiple`, {
+        ...context,
+        device_ids: deviceIds,
+    });
     return response.data;
 }
 
@@ -351,7 +349,7 @@ export async function getBulkCommandTaskStatus(taskId: string): Promise<BulkComm
  */
 export async function getBulkCommandHistory(page = 1): Promise<PaginatedBulkCommandExecutionHistory> {
     const response = await api.get<PaginatedBulkCommandExecutionHistory>(
-        `/api/v1/devices/commands/history?page=${page}&page_size=1`,
+        `/api/v1/devices/commands/history?page=${page}&page_size=1`
     );
     return response.data;
 }
@@ -362,15 +360,15 @@ export async function getBulkCommandHistory(page = 1): Promise<PaginatedBulkComm
 export async function getBulkCommandHistoryResults(
     executionId: number,
     page = 1,
-    search = "",
+    search = ""
 ): Promise<PaginatedBulkCommandExecutionHistoryResults> {
-    const searchParams = new URLSearchParams({page: String(page)});
+    const searchParams = new URLSearchParams({ page: String(page) });
     if (search.trim()) {
         searchParams.set("search", search.trim());
     }
 
     const response = await api.get<PaginatedBulkCommandExecutionHistoryResults>(
-        `/api/v1/devices/commands/history/${executionId}/results?${searchParams.toString()}`,
+        `/api/v1/devices/commands/history/${executionId}/results?${searchParams.toString()}`
     );
     return response.data;
 }

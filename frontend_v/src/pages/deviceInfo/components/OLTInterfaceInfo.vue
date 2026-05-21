@@ -1,106 +1,119 @@
 <template>
-  <div class="container" id="port-info">
+    <div class="container" id="port-info">
+        <div class="flex flex-wrap gap-3 items-center">
+            <div>
+                Всего
+                <span class="px-3 font-mono py-1.25 rounded-2xl bg-primary text-white dark:text-gray-950">{{
+                    data.total_count
+                }}</span>
+            </div>
+            <div>
+                Online
+                <span class="px-3 font-mono py-1.25 rounded-2xl bg-green-500 text-white dark:text-gray-950">{{
+                    data.online_count
+                }}</span>
+            </div>
 
-    <div class="flex flex-wrap gap-3 items-center">
-      <div>
-        Всего <span class="px-3 font-mono py-1.25 rounded-2xl bg-primary text-white dark:text-gray-950">{{ data.total_count }}</span>
-      </div>
-      <div>
-        Online <span class="px-3 font-mono py-1.25 rounded-2xl bg-green-500 text-white dark:text-gray-950">{{ data.online_count }}</span>
-      </div>
+            <Button
+                v-if="showSubscribersData"
+                @click="showSubscribersData = false"
+                class="rounded-2xl"
+                icon="pi pi-list"
+                size="small"
+                outlined
+                label="Переключить на обычный вид"
+            />
+            <Button
+                v-else
+                @click="getSubscribersData"
+                class="rounded-2xl"
+                outlined
+                icon="pi pi-users"
+                size="small"
+                label="Переключить на просмотр абонентов"
+            />
+        </div>
 
-      <Button v-if="showSubscribersData" @click="showSubscribersData=false" class="rounded-2xl"
-              icon="pi pi-list" size="small" outlined label="Переключить на обычный вид"/>
-      <Button v-else @click="getSubscribersData" class="rounded-2xl"
-              outlined icon="pi pi-users" size="small" label="Переключить на просмотр абонентов"/>
-
+        <div class="flex justify-center">
+            <table class="text-center w-full">
+                <thead>
+                    <tr>
+                        <th scope="col" class="px-4 py-2">ONT ID</th>
+                        <th scope="col" class="px-4 py-2">Статус</th>
+                        <th scope="col" class="px-4 py-2">{{ showSubscribersData ? "Абонент" : "Equipment ID" }}</th>
+                        <th scope="col" class="px-4 py-2">{{ showSubscribersData ? "Адрес" : "RSSI [dBm]" }}</th>
+                        <th scope="col" class="px-4 py-2">{{ showSubscribersData ? "Услуги" : "Serial" }}</th>
+                        <th scope="col" class="px-4 py-2">{{ showSubscribersData ? "Транзит" : "Описание" }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template v-for="line in data.onts_lines" :key="line[0]">
+                        <OLT_ONT_Detail_info
+                            :device-name="deviceName"
+                            :interface="interface"
+                            :permission-level="permissionLevel"
+                            :line="line"
+                            :show-subscribers-data="showSubscribersData"
+                            :subscriber-row="subscribersData[Number(line[0])] || null"
+                        />
+                    </template>
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <div class="flex justify-center">
-      <table class="text-center w-full">
-        <thead>
-        <tr>
-          <th scope="col" class="px-4 py-2">ONT ID</th>
-          <th scope="col" class="px-4 py-2">Статус</th>
-          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Абонент' : 'Equipment ID' }}</th>
-          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Адрес' : 'RSSI [dBm]' }}</th>
-          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Услуги' : 'Serial' }}</th>
-          <th scope="col" class="px-4 py-2">{{ showSubscribersData ? 'Транзит' : 'Описание' }}</th>
-        </tr>
-        </thead>
-        <tbody>
-
-        <template v-for="line in data.onts_lines" :key="line[0]">
-          <OLT_ONT_Detail_info
-              :device-name="deviceName"
-              :interface="interface"
-              :permission-level="permissionLevel"
-              :line="line"
-              :show-subscribers-data="showSubscribersData"
-              :subscriber-row="subscribersData[Number(line[0])] || null"
-          />
-        </template>
-
-        </tbody>
-      </table>
-    </div>
-  </div>
-
 </template>
 
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
+import { defineComponent, PropType } from "vue";
 
-import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue"
+import OLT_ONT_Detail_info from "./OLT-ONT-Detail-Info.vue";
 
 import api from "@/services/api";
-import {AxiosResponse} from "axios";
-import {DeviceInterface} from "@/services/interfaces";
-import {buildOltSubscribersByOnt, OltSubscribersByOnt} from "@/pages/deviceInfo/components/oltSubscribers";
+import { AxiosResponse } from "axios";
+import { DeviceInterface } from "@/services/interfaces";
+import { buildOltSubscribersByOnt, OltSubscribersByOnt } from "@/pages/deviceInfo/components/oltSubscribers";
 
 type ontData = {
-  total_count: number,
-  online_count: number,
-  onts_lines: string[][]
-}
+    total_count: number;
+    online_count: number;
+    onts_lines: string[][];
+};
 
 export default defineComponent({
-  components: {
-    OLT_ONT_Detail_info,
-  },
-  props: {
-    deviceName: {required: true, type: String},
-    permissionLevel: {required: true, type: Number},
-    data: {required: true, type: Object as PropType<ontData>},
-    interface: {required: true, type: Object as PropType<DeviceInterface>},
-  },
-
-  data() {
-    return {
-      showSubscribersData: false,
-      subscribersData: {} as OltSubscribersByOnt,
-      subscribersDataLoaded: false,
-    }
-  },
-
-  methods: {
-
-    getSubscribersData() {
-      if (!this.subscribersDataLoaded) {
-        api.get("/api/v1/gpon/subscribers-on-device/" + this.deviceName + "?port=" + this.interface.name)
-            .then(
-                (resp: AxiosResponse<any[]>) => {
-                  this.subscribersData = buildOltSubscribersByOnt(resp.data)
-                  this.subscribersDataLoaded = true;
-                  this.showSubscribersData = true;
-                })
-            .catch(reason => {
-              console.log(reason.response)
-            })
-      } else {
-        this.showSubscribersData = true;
-      }
+    components: {
+        OLT_ONT_Detail_info,
     },
-  }
-})
+    props: {
+        deviceName: { required: true, type: String },
+        permissionLevel: { required: true, type: Number },
+        data: { required: true, type: Object as PropType<ontData> },
+        interface: { required: true, type: Object as PropType<DeviceInterface> },
+    },
+
+    data() {
+        return {
+            showSubscribersData: false,
+            subscribersData: {} as OltSubscribersByOnt,
+            subscribersDataLoaded: false,
+        };
+    },
+
+    methods: {
+        getSubscribersData() {
+            if (!this.subscribersDataLoaded) {
+                api.get("/api/v1/gpon/subscribers-on-device/" + this.deviceName + "?port=" + this.interface.name)
+                    .then((resp: AxiosResponse<any[]>) => {
+                        this.subscribersData = buildOltSubscribersByOnt(resp.data);
+                        this.subscribersDataLoaded = true;
+                        this.showSubscribersData = true;
+                    })
+                    .catch((reason) => {
+                        console.log(reason.response);
+                    });
+            } else {
+                this.showSubscribersData = true;
+            }
+        },
+    },
+});
 </script>

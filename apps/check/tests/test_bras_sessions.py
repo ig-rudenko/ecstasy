@@ -21,6 +21,6 @@ class CutBrasSessionTest(APITestCase):
         response = self.client.post(
             self.url, {"mac": "10:00:00:00:00:00", "device": "", "port": ""}, format="json"
         )
-        print(response.data)
+        # print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertDictEqual(response.data, {"errors": [], "portReloadStatus": "SKIP"})

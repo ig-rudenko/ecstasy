@@ -142,9 +142,9 @@ te1/0/4  Trunk                    Up    Down
 
             """
 
-        elif "show running-config interface" in command:
-            self.before = b"""
-interface gigabitethernet1/0/3
+        elif "show running-config" in command:
+            pattern = """
+interface {port}
  loopback-detection enable
  description Description3
  mtu 9000
@@ -160,8 +160,14 @@ interface gigabitethernet1/0/3
  switchport forbidden default-vlan
  selective-qinq list ingress permit ingress_vlan 700,711,800-801,811
  selective-qinq list ingress add_vlan 4021
-!
-            """
+exit
+!"""
+            self.before = b""
+            for i in range(1, 25):
+                self.before += pattern.format(port=f"gigabitethernet1/0/{i}").encode("ascii")
+
+            for i in range(1, 5):
+                self.before += pattern.format(port=f"tengigabitethernet1/0/{i}").encode("ascii")
 
         elif command == "show mac address-table interface GigabitEthernet 0/1":
             self.before = b"""
@@ -231,8 +237,57 @@ bridge 1             Up      Up      MGMT
 bridge 2             Up      Up      INET_DHCP
             """
 
-        elif command == "show running-config interface GigabitEthernet 1/0/9":
+        elif command == "show running-config":
             self.before = b"""
+
+interface gigabitethernet 1/0/1
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/2
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/3
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/4
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/5
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/6
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/7
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
+interface gigabitethernet 1/0/8
+  mode switchport
+  security-zone untrusted
+  switchport forbidden default-vlan
+  switchport access vlan 604
+exit
 interface gigabitethernet 1/0/9
   description "Description"
   mode switchport
@@ -240,16 +295,6 @@ interface gigabitethernet 1/0/9
   switchport forbidden default-vlan
   switchport mode trunk
   switchport trunk allowed vlan auto-all
-exit
-            """
-
-        elif "show running-config interface" in command:
-            self.before = b"""
-interface gigabitethernet 1/0/1
-  mode switchport
-  security-zone untrusted
-  switchport forbidden default-vlan
-  switchport access vlan 604
 exit
             """
 

@@ -23,9 +23,9 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
-from django.utils.html import escape
+from django.utils.html import escape, linebreaks
 from django.utils.safestring import mark_safe
-from import_export.admin import ExportMixin
+from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.filters.admin import (
     ChoicesDropdownFilter,
@@ -33,6 +33,7 @@ from unfold.contrib.filters.admin import (
     RangeDateTimeFilter,
     RelatedDropdownFilter,
 )
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 
 from apps.gathering.services.configurations import LocalConfigStorage
 from devicemanager.device import Interfaces
@@ -96,6 +97,7 @@ class DeviceGroupAdmin(ModelAdmin):
     compressed_fields = True
     warn_unsaved_form = True
     list_display = ["name", "description", "dev_count"]
+    search_fields = ["name", "description"]
     inlines = [ProfileInline]
 
     def get_queryset(self, request):
@@ -107,8 +109,11 @@ class DeviceGroupAdmin(ModelAdmin):
 
 
 @admin.register(Devices)
-class DevicesAdmin(ExportMixin, ModelAdmin):
+class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
     """Управление оборудованием"""
+
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
 
     resource_class = DevicesResource
     compressed_fields = True
@@ -126,20 +131,24 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
         "show_device",
     ]
     list_filter = [
-        VendorDropdownFilter,
         ("group", RelatedDropdownFilter),
         ("auth_group", RelatedDropdownFilter),
+        VendorDropdownFilter,
         ModelDropdownFilter,
         ("port_scan_protocol", ChoicesDropdownFilter),
         ("cmd_protocol", ChoicesDropdownFilter),
         ConnectionPoolSizeDropdownFilter,
         "active",
+        "collect_interfaces",
+        "collect_mac_addresses",
+        "collect_vlan_info",
+        "collect_configurations",
     ]
     radio_fields = {
         "port_scan_protocol": admin.HORIZONTAL,
         "cmd_protocol": admin.HORIZONTAL,
     }
-    readonly_fields = ["show_interfaces"]
+    readonly_fields = ["show_interfaces", "show_interfaces_vlans"]
     search_fields = ["ip", "name"]
     list_select_related = ["auth_group", "group"]
     list_per_page = 50
@@ -177,6 +186,10 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
             "Интерфейсы",
             {"fields": ("interface_pattern", "show_interfaces"), "classes": ("tab",)},
         ),
+        (
+            "VLANS",
+            {"fields": ("show_interfaces_vlans",), "classes": ("tab",)},
+        ),
     )
     actions = [
         "activate_devices",
@@ -192,7 +205,16 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
         "set_pool_size_2",
         "set_pool_size_3",
         "set_pool_size_4",
+        "disable_interface_collector",
+        "enable_interface_collector",
+        "disable_mac_collector",
+        "enable_mac_collector",
+        "disable_vlan_collector",
+        "enable_vlan_collector",
+        "disable_configuration_collector",
+        "enable_configuration_collector",
     ]
+    autocomplete_fields = ("auth_group", "group")
 
     @admin.display(description="IP-адрес")
     def show_ip_address(self, obj: Devices):
@@ -219,37 +241,40 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
     def show_auth_group(self, obj: Devices):
         return mark_safe(f"""<span style="font-family: monospace;">{obj.auth_group.name}</span>""")
 
-    @admin.display(description="")
+    @admin.display(description="Тип подключения")
     def show_auth_type(self, obj: Devices):
         text = ""
         if obj.port_scan_protocol == "telnet":
-            text += """<span title="telnet">🔓</span>"""
+            text += "TELNET ❗️"
         elif obj.port_scan_protocol == "ssh":
-            text += """<span title="ssh" style="font-size: 1.3rem">🔐</span>"""
+            text += "SSH ✅"
         elif obj.port_scan_protocol == "snmp":
-            text += """<span style="color: green;font-family: fantasy;">SNMP</span>"""
+            text += "SNMP"
 
         if obj.cmd_protocol != obj.port_scan_protocol:
             if obj.cmd_protocol == "telnet":
-                text += """<span title="telnet">🔓</span>"""
+                text += " + TELNET ❗️"
             elif obj.cmd_protocol == "ssh":
-                text += """<span title="ssh" style="font-size: 1.3rem">🔐</span>"""
+                text += "+ SSH ✅"
 
         return mark_safe(text)
 
     @admin.display(description="Интерфейсы")
     def show_interfaces(self, obj: Devices):
         """Выводит табличку интерфейсов оборудования из истории"""
-        interfaces = (
-            str(Interfaces(orjson.loads(obj.devicesinfo.interfaces or "[]")))
-            .replace("\n", "<br>")
-            .replace(" ", "&nbsp;")
-        )
+        interfaces = str(Interfaces(orjson.loads(obj.devicesinfo.interfaces or "[]")))
         return mark_safe(f"""
             <div style"overflow-x: scroll;">
-                <div style="font-family: monospace; white-space: nowrap;">
-                    {interfaces}
-                </div>
+                <div style="font-family: monospace; white-space: pre;">{interfaces}</div>
+            </div>""")
+
+    @admin.display(description="Интерфейсы & VLANS")
+    def show_interfaces_vlans(self, obj: Devices):
+        """Выводит табличку интерфейсов оборудования из истории"""
+        interfaces = str(Interfaces(orjson.loads(obj.devicesinfo.vlans or "[]")))
+        return mark_safe(f"""
+            <div style"overflow-x: scroll;">
+                <div style="font-family: monospace; white-space: pre;">{interfaces}</div>
             </div>""")
 
     @admin.display(description="Посмотреть")
@@ -317,6 +342,38 @@ class DevicesAdmin(ExportMixin, ModelAdmin):
         export = DevicesInterfacesWorkloadExcelExport(queryset)
         export.make_excel()
         return export.create_response()
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_interface_collector(self, request, queryset):
+        queryset.update(collect_interfaces=False)
+
+    @admin.action(description="❌ Отключить сбор MAC")
+    def disable_mac_collector(self, request, queryset):
+        queryset.update(collect_mac_addresses=False)
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_vlan_collector(self, request, queryset):
+        queryset.update(collect_vlan_info=False)
+
+    @admin.action(description="❌ Отключить сбор интерфейсов")
+    def disable_configuration_collector(self, request, queryset):
+        queryset.update(collect_configurations=False)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_interface_collector(self, request, queryset):
+        queryset.update(collect_interfaces=True)
+
+    @admin.action(description="✅ Включить сбор MAC")
+    def enable_mac_collector(self, request, queryset):
+        queryset.update(collect_mac_addresses=True)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_vlan_collector(self, request, queryset):
+        queryset.update(collect_vlan_info=True)
+
+    @admin.action(description="✅ Включить сбор интерфейсов")
+    def enable_configuration_collector(self, request, queryset):
+        queryset.update(collect_configurations=True)
 
     @admin.action(description="📦 Скачать последние конфигурации ZIP")
     def load_last_config_files(self, request, queryset: QuerySet[Devices]):
@@ -401,6 +458,7 @@ class ProfileAdmin(ModelAdmin):
         "user__is_staff",
     ]
     search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
+    autocomplete_fields = ("user",)
 
     @admin.display(description="Пользователь")
     def user(self, obj: Profile):
@@ -417,7 +475,7 @@ class ProfileAdmin(ModelAdmin):
     def dev_groups(self, obj: Profile):
         """Отображение доступных групп для пользователя"""
         user_groups = obj.devices_groups.all()
-        groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])
+        groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])  # noqa
         return mark_safe(groups_string)
 
 
@@ -487,8 +545,8 @@ class BulkDeviceCommandExecutionAdmin(ModelAdmin):
         "launched_at",
         "user",
         "command_name",
-        "status",
-        "progress",
+        "verbose_status",
+        "progress_percentage",
         "processed",
         "total",
     )
@@ -507,13 +565,61 @@ class BulkDeviceCommandExecutionAdmin(ModelAdmin):
         "command_body",
         "context",
         "status",
+        "verbose_status",
         "progress",
+        "progress_percentage",
         "processed",
         "total",
         "launched_at",
         "finished_at",
+        "verbose_command_name",
+        "verbose_command_body",
     )
     inlines = [BulkDeviceCommandExecutionResultInline]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "task_id",
+                    "verbose_status",
+                    "progress_percentage",
+                    "user",
+                    "verbose_command_name",
+                    "verbose_command_body",
+                    "context",
+                    "processed",
+                    "total",
+                    "launched_at",
+                    "finished_at",
+                )
+            },
+        ),
+    )
+
+    @admin.display(description="command name")
+    def verbose_command_name(self, obj: BulkDeviceCommandExecution) -> str:
+        return mark_safe(f"<div style='font-family: monospace'>{obj.command_name}</div>")
+
+    @admin.display(description="command")
+    def verbose_command_body(self, obj: BulkDeviceCommandExecution) -> str:
+        return mark_safe(f"<div style='font-family: monospace'>{obj.command_body}</div>")
+
+    @admin.display(description="status")
+    def verbose_status(self, obj: BulkDeviceCommandExecution) -> str:
+        if obj.status == obj.STATUS_SUCCESS:
+            return f"✅ {obj.status}"
+        if obj.status == obj.STATUS_FAILURE:
+            return f"❌ {obj.status}"
+        if obj.status == obj.STATUS_PROGRESS:
+            return f"🔄 {obj.status}"
+        if obj.status == obj.STATUS_REVOKED:
+            return f"⏩ {obj.status}"
+        return f"{obj.status}"
+
+    @admin.display(description="progress_percentage")
+    def progress_percentage(self, obj: BulkDeviceCommandExecution) -> str:
+        return f"{obj.progress}%"
 
 
 @admin.register(BulkDeviceCommandExecutionResult)
@@ -525,29 +631,59 @@ class BulkDeviceCommandExecutionResultAdmin(ModelAdmin):
         "created_at",
         "execution",
         "device_name",
-        "status",
         "duration",
+        "verbose_status",
     )
     list_filter = (
         ("created_at", RangeDateTimeFilter),
-        ("execution", RelatedDropdownFilter),
+        ("device", RelatedDropdownFilter),
         "status",
     )
     search_fields = ("device_name", "command_text", "output", "detail", "error", "execution__task_id")
-    list_select_related = ("execution", "device")
+    list_select_related = ("execution", "device", "execution__user")
     readonly_fields = (
         "execution",
+        "duration",
         "device",
         "device_name",
         "status",
-        "command_text",
-        "output",
-        "detail",
-        "error",
-        "duration",
         "created_at",
         "updated_at",
+        "command_text",
+        "verbose_output",
+        "error",
+        "detail",
     )
+    fieldsets = (
+        (
+            None,
+            {"fields": ("execution", "duration", "device", "status", "created_at", "updated_at")},
+        ),
+        (
+            "Command",
+            {"fields": ("command_text", "verbose_output")},
+        ),
+        (
+            "Errors",
+            {"fields": ("error", "detail")},
+        ),
+    )
+
+    @admin.display(description="output")
+    def verbose_output(self, obj: BulkDeviceCommandExecutionResult) -> str:
+        return mark_safe(f'<div style="font-family: monospace">{linebreaks(obj.output)}</div>')
+
+    @admin.display(description="status")
+    def verbose_status(self, obj: BulkDeviceCommandExecutionResult) -> str:
+        if obj.status == obj.STATUS_SUCCESS:
+            return f"✅ {obj.status}"
+        if obj.status == obj.STATUS_ERROR:
+            return f"❌ {obj.status}"
+        if obj.status == obj.STATUS_RUNNING:
+            return f"🔄 {obj.status}"
+        if obj.status == obj.STATUS_SKIPPED:
+            return f"⏩ {obj.status}"
+        return f"{obj.status}"
 
 
 @admin.register(DeviceMedia)
@@ -566,6 +702,7 @@ class DeviceMediaAdmin(ModelAdmin):
     )
 
     readonly_fields = ["current_file"]
+    autocomplete_fields = ["device"]
 
     @admin.display(description="Тип")
     def file_type(self, obj: DeviceMedia) -> str:

@@ -1,5 +1,5 @@
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import no_body, swagger_auto_schema
 
 from ...api.serializers import DevicesSerializer, MacSerializer, PortControlSerializer
 from .query_params import DeviceInterfacesQueryParamsSerializer
@@ -12,12 +12,14 @@ from .responses import (
     BulkCommandLaunchResponseSwaggerSerializer,
     BulkCommandTaskStatusSwaggerSerializer,
     ChangeDescriptionSwaggerSerializer,
+    CollectConfigResponseSwaggerSerializer,
     ConfigFileSwaggerSerializer,
     CutBrasSessionSwaggerSerializer,
     DeviceInfoSwaggerSerializer,
     DevicePoolStatusesSwaggerSerializer,
     DevicesConfigListSwaggerSerializer,
     DevicesInterfaceWorkloadResultSwaggerSerializer,
+    GetDeviceByZabbixSerializer,
     InterfaceDetailInfoSwaggerSerializer,
     InterfacesListSwaggerSerializer,
     InterfaceWorkloadSwaggerSerializer,
@@ -48,6 +50,13 @@ config_files_list_api_doc = swagger_auto_schema(
     responses={
         200: ConfigFileSwaggerSerializer(many=True),
     }
+)
+
+collect_config_file_api_doc = swagger_auto_schema(
+    request_body=no_body,
+    responses={
+        200: CollectConfigResponseSwaggerSerializer(),
+    },
 )
 
 
@@ -158,7 +167,7 @@ cut_bras_session_api_doc = swagger_auto_schema(
 )
 
 
-set_device_viewings_api_doc = swagger_auto_schema(request_body=None, responses={200: ""})
+set_device_viewings_api_doc = swagger_auto_schema(request_body=no_body, responses={200: ""})
 
 
 get_device_pool_status_api_doc = swagger_auto_schema(responses={200: DevicePoolStatusesSwaggerSerializer()})
@@ -180,4 +189,24 @@ bulk_device_command_task_status_api_doc = swagger_auto_schema(
         200: BulkCommandTaskStatusSwaggerSerializer(),
         403: "Permission denied",
     },
+)
+
+
+get_device_by_zabbix_serializer_api_doc = swagger_auto_schema(
+    responses={
+        200: GetDeviceByZabbixSerializer(),
+    }
+)
+
+cable_diagnostic_api_doc = swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter(
+            "port",
+            openapi.IN_QUERY,
+            description="Порт (интерфейс) оборудования",
+            type=openapi.TYPE_STRING,
+            required=True,
+        ),
+    ],
+    responses={},
 )

@@ -21,6 +21,7 @@ from .types import (
     MACListType,
     PortInfoType,
     SystemInfo,
+    VlanTableType,
 )
 
 
@@ -459,3 +460,7 @@ class BaseDevice(AbstractDevice, ABC):
 
         self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.2)
         return cmd_outputs
+
+    @lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        return []

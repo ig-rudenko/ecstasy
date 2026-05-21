@@ -19,10 +19,10 @@ import {
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import {Paginator} from "@/types/paginator";
-import {errorToast} from "@/services/my.toast";
-import {strFormatArgs, textToHtml, wrapLinks} from "@/formats";
-import {loadLayers, saveLayers} from "@/pages/maps/layers";
+import { Paginator } from "@/types/paginator";
+import { errorToast } from "@/services/my.toast";
+import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
+import { loadLayers, saveLayers } from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
 
 enum mapType {
@@ -85,7 +85,7 @@ interface StaticElementData {
     element?: any;
 }
 
-const popupDefaultOptions = {maxWidth: 1200};
+const popupDefaultOptions = { maxWidth: 1200 };
 const defaultMapCenter: LatLngExpression = [44.6, 33.5];
 const defaultMapZoom = 12;
 const renderBatchSize = 250;
@@ -94,8 +94,12 @@ const spatialCellSize = 0.25;
 
 export type MapsPage = Paginator<MapBrief>;
 
-const geoGoogle = tileLayer("https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}", {attribution: "google"});
-const arcgisonline = tileLayer("http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}");
+const geoGoogle = tileLayer("https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}", {
+    attribution: "google",
+});
+const arcgisonline = tileLayer(
+    "http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+);
 const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 
 /**
@@ -123,7 +127,7 @@ export class MapService {
     public overlays: LayersObject = {};
 
     private updateInFlight = false;
-    private canvasRenderer = canvas({padding: 0.5});
+    private canvasRenderer = canvas({ padding: 0.5 });
     private visibilityRefreshQueued = false;
     private pointSpatialIndex: Map<string, PointData[]> = new Map();
     private staticSpatialIndex: Map<string, StaticElementData[]> = new Map();
@@ -131,8 +135,11 @@ export class MapService {
     private visibleStaticElementIds: Set<string> = new Set();
     private pointsBySourceId: Map<string, PointData[]> = new Map();
 
-    constructor(public mapID: string, public mapHTMLElementID: string) {
-        this.map = new LMap(mapHTMLElementID, {layers: [osm], minZoom: 5, preferCanvas: true});
+    constructor(
+        public mapID: string,
+        public mapHTMLElementID: string
+    ) {
+        this.map = new LMap(mapHTMLElementID, { layers: [osm], minZoom: 5, preferCanvas: true });
         this.map.setView(defaultMapCenter, defaultMapZoom);
         this.map.attributionControl.getContainer()?.remove();
         this.map.addControl(new Control.Scale());
@@ -180,11 +187,13 @@ export class MapService {
             this.overlays[this.mapGroups[i]] = featureGroup([]);
         }
 
-        this.map.addControl(new Control.Layers(
-            {"Спутник старый": geoGoogle, "Спутник новый": arcgisonline, "Схема": osm},
-            this.overlays,
-            {autoZIndex: true, collapsed: true, position: "topright", sortLayers: true},
-        ));
+        this.map.addControl(
+            new Control.Layers(
+                { "Спутник старый": geoGoogle, "Спутник новый": arcgisonline, Схема: osm },
+                this.overlays,
+                { autoZIndex: true, collapsed: true, position: "topright", sortLayers: true }
+            )
+        );
 
         loadLayers(this.mapID, this.map, this.overlays);
     }
@@ -353,7 +362,7 @@ export class MapService {
                     problemsPointsBeforeUpdate.delete(point.id);
 
                     if (point.point) {
-                        point.point.setStyle({fillColor: "red"});
+                        point.point.setStyle({ fillColor: "red" });
                         ensurePointPopupBound(point);
                         point.point.setPopupContent(point._origin.popupContent + problemsText);
                     }
@@ -369,7 +378,7 @@ export class MapService {
                 point.currentProblemsContent = undefined;
 
                 if (point.point) {
-                    point.point.setStyle({fillColor: point._origin.fillColor});
+                    point.point.setStyle({ fillColor: point._origin.fillColor });
                     point.point.setPopupContent(point._origin.popupContent);
                 }
 
@@ -651,8 +660,8 @@ export class MapService {
                 });
 
                 if (point.hasProblems) {
-                    circle.setStyle({fillColor: "red"});
-                    ensurePointPopupBound({...point, point: circle});
+                    circle.setStyle({ fillColor: "red" });
+                    ensurePointPopupBound({ ...point, point: circle });
                     circle.setPopupContent(point.popupContent + (point.currentProblemsContent || ""));
                 }
 
@@ -783,7 +792,7 @@ function instantiateStaticElement(element: StaticElementData, renderer: any) {
             element.feature,
             GeoJSON.coordsToLatLng(element.feature.geometry.coordinates),
             defaults.Marker,
-            renderer,
+            renderer
         );
     }
 
@@ -792,7 +801,7 @@ function instantiateStaticElement(element: StaticElementData, renderer: any) {
             element.feature,
             GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates),
             defaults.Polygon,
-            renderer,
+            renderer
         );
     }
 
@@ -800,7 +809,7 @@ function instantiateStaticElement(element: StaticElementData, renderer: any) {
         element.feature,
         GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates[0]),
         defaults.Polygon,
-        renderer,
+        renderer
     );
 }
 
@@ -824,7 +833,7 @@ function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any, 
     });
 
     const popupText = feature.properties?.description;
-    attachLazyInteractions(polygonLayer, {popupContent: popupText ? wrapLinks(textToHtml(popupText)) : ""});
+    attachLazyInteractions(polygonLayer, { popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "" });
     return polygonLayer;
 }
 
@@ -846,7 +855,7 @@ function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any,
     });
 
     const popupText = feature.properties?.description;
-    attachLazyInteractions(line, {popupContent: popupText ? wrapLinks(textToHtml(popupText)) : ""});
+    attachLazyInteractions(line, { popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "" });
     return line;
 }
 
@@ -862,7 +871,11 @@ function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any,
 function createMarker(feature: any, latlng: LatLngExpression, defaults: any, renderer?: any) {
     let popupText = feature.properties?.description || null;
     let tooltipText = feature.properties?.iconCaption || feature.properties?.name || null;
-    let fillColor = feature.properties?.["marker-color"] || feature.properties?.fillColor || feature.properties?.color || defaults.FillColor;
+    let fillColor =
+        feature.properties?.["marker-color"] ||
+        feature.properties?.fillColor ||
+        feature.properties?.color ||
+        defaults.FillColor;
     let size = feature.properties?.radius || defaults.Size;
     let iconName = feature.properties?.iconName || defaults.IconName || "circle-fill";
 
@@ -892,7 +905,7 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any, ren
         iconAnchor: [size / 2, size / 2],
     });
 
-    const markerLayer = marker(latlng, {opacity: 1, icon: svgIcon});
+    const markerLayer = marker(latlng, { opacity: 1, icon: svgIcon });
     attachLazyInteractions(markerLayer, {
         popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "",
         tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
@@ -1184,10 +1197,10 @@ const mapIcons: Record<string, string> = {
     "half-circle": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path d="M8 15A7 7 0 1 0 8 1zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16"/>
         </svg>`,
-    "triangle": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="0 0 16 17">
+    triangle: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="0 0 16 17">
           <path fill-rule="evenodd" d="M7.022 1.566a1.13 1.13 0 0 1 1.96 0l6.857 11.667c.457.778-.092 1.767-.98 1.767H1.144c-.889 0-1.437-.99-.98-1.767L7.022 1.566z" stroke="{2}" />
         </svg>`,
-    "square": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
+    square: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path stroke="{2}" d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z"/>
         </svg>`,
     "record-circle": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="0 0 16 16">
@@ -1198,20 +1211,20 @@ const mapIcons: Record<string, string> = {
           <path d="M12.496 8a4.491 4.491 0 0 1-1.703 3.526L9.497 8.5l2.959-1.11c.027.2.04.403.04.61Z"/>
           <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1 0a7 7 0 1 0-13.202 3.249l1.988-1.657a4.5 4.5 0 0 1 7.537-4.623L7.497 6.5l1 2.5 1.333 3.11c-.56.251-1.18.39-1.833.39a4.49 4.49 0 0 1-1.592-.29L4.747 14.2A7 7 0 0 0 15 8Zm-8.295.139a.25.25 0 0 0-.288-.376l-1.5.5.159.474.808-.27-.595.894a.25.25 0 0 0 .287.376l.808-.27-.595.894a.25.25 0 0 0 .287.376l1.5-.5-.159-.474-.808.27.596-.894a.25.25 0 0 0-.288-.376l-.808.27.596-.894Z"/>
         </svg>`,
-    "diamond": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
+    diamond: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path fill-rule="evenodd" d="M6.95.435c.58-.58 1.52-.58 2.1 0l6.515 6.516c.58.58.58 1.519 0 2.098L9.05 15.565c-.58.58-1.519.58-2.098 0L.435 9.05a1.482 1.482 0 0 1 0-2.098L6.95.435z" stroke="{2}" />
         </svg>`,
-    "pentagon": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
+    pentagon: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path stroke="{2}" d="M7.685.256a.5.5 0 0 1 .63 0l7.421 6.03a.5.5 0 0 1 .162.538l-2.788 8.827a.5.5 0 0 1-.476.349H3.366a.5.5 0 0 1-.476-.35L.102 6.825a.5.5 0 0 1 .162-.538l7.42-6.03Z"/>
         </svg>`,
-    "hexagon": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
+    hexagon: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path stroke="{2}" fill-rule="evenodd" d="M8.5.134a1 1 0 0 0-1 0l-6 3.577a1 1 0 0 0-.5.866v6.846a1 1 0 0 0 .5.866l6 3.577a1 1 0 0 0 1 0l6-3.577a1 1 0 0 0 .5-.866V4.577a1 1 0 0 0-.5-.866z"/>
         </svg>`,
     "circle-in-triangle": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M7.022 1.566a1.13 1.13 0 0 1 1.96 0l6.857 11.667c.457.778-.092 1.767-.98 1.767H1.144c-.889 0-1.437-.99-.98-1.767L7.022 1.566z"/>
           <circle cx="8" cy="10" r="4" stroke="{2}" />
         </svg>`,
-    "warning": `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
+    warning: `<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" fill="{1}" viewBox="-1 -1 18 18">
           <path stroke="{2}" d="M9.05.435c-.58-.58-1.52-.58-2.1 0L.436 6.95c-.58.58-.58 1.519 0 2.098l6.516 6.516c.58.58 1.519.58 2.098 0l6.516-6.516c.58-.58.58-1.519 0-2.098zM8 4c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
         </svg>`,
 };

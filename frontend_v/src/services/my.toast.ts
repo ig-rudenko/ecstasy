@@ -1,11 +1,12 @@
-import {app} from '@/appInstance';
+import { app } from "@/appInstance";
 
 const basicLifeTime = 3000;
 
 export function newToast(
-    title: string, body: string,
-    severity: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast' | undefined,
-    lifeTime: number = basicLifeTime,
+    title: string,
+    body: string,
+    severity: "success" | "info" | "warn" | "error" | "secondary" | "contrast" | undefined,
+    lifeTime: number = basicLifeTime
 ): void {
     app.config.globalProperties.$toast.add({
         severity: severity,
@@ -20,7 +21,7 @@ export function infoToast(title: string, body: string, lifeTime: number = basicL
         severity: "info",
         summary: title,
         detail: body,
-        life: lifeTime
+        life: lifeTime,
     });
 }
 
@@ -29,7 +30,7 @@ export function successToast(title: string, body: string, lifeTime: number = bas
         severity: "success",
         summary: title,
         detail: body,
-        life: lifeTime
+        life: lifeTime,
     });
 }
 
@@ -38,6 +39,6 @@ export function errorToast(title: string, body: string, lifeTime: number = basic
         severity: "error",
         summary: title,
         detail: body,
-        life: lifeTime
+        life: lifeTime,
     });
 }

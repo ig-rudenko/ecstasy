@@ -22,11 +22,18 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.maps.protected_serve import MapMediaServeLimitation
 
+from .error_handler import problem_type_document
 from .protected_serve import LoginRequiredLimitation, protected_serve
 from .swagger import schema_view
 
+handler400 = "ecstasy_project.error_handler.bad_request_handler"
+handler403 = "ecstasy_project.error_handler.permission_denied_handler"
+handler404 = "ecstasy_project.error_handler.not_found_handler"
+handler500 = "ecstasy_project.error_handler.server_error_handler"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/problems/<slug:slug>", problem_type_document, name="problem-type-document"),
     # API Endpoints
     path("api/v1/devices/", include("apps.check.api.urls")),
     path("api/v1/tools/", include("apps.net_tools.api.urls")),
@@ -65,7 +72,7 @@ urlpatterns += (
 if settings.KEYCLOAK_ENABLE:
     urlpatterns.insert(
         0,
-        path("oidc/", include("mozilla_django_oidc.urls")),
+        path("admin/oidc/", include("mozilla_django_oidc.urls")),
     )
 
 if settings.ENV == "dev":

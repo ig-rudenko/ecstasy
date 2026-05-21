@@ -159,7 +159,7 @@ HUAWEI CE6865-48S8CQ-EI uptime is 70 days, 0 hour, 3 minutes"""
 class TestCE6865Template(TestCase):
     def test_interfaces_find_template(self):
         parse_data = parse_by_template("interfaces/huawei-ce6865.template", dis_int_desc_output)
-        print(parse_data)
+        # print(parse_data)
         self.assertListEqual(
             [
                 ["25GE1/0/1", "up", "up", "Desc1"],
@@ -358,7 +358,7 @@ MAC Address    VLAN/VSI/BD   Learned-From        Type                Age
         send_command.return_value = dis_cur_inter_output
 
         result = self.device.get_vlans()
-        print(result)
+        # print(result)
         self.assertListEqual(result, self.valid_vlans_list)
 
     @patch("devicemanager.vendors.huawei.ce6865.HuaweiCE6865.send_command")

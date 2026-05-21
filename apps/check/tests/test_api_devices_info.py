@@ -230,7 +230,7 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
         # Получаем свежие данные
         device_info = DevicesInfo.objects.get(dev=self.device)
-        print(device_info)
+        # print(device_info)
         device = Devices.objects.get(id=self.device.id)
 
         # В базе должны были обновиться поля
@@ -396,7 +396,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
                 "maps": [],
             },
             "permission": self.user.profile.perm_level,
-            "coords": [],
+            "coords": None,
             "consoleURL": "",
             "uptime": -1,
         }
@@ -428,7 +428,7 @@ class DeviceInfoAPIViewTestCase(APITestCase):
                 "maps": [],
             },
             "permission": self.user.profile.perm_level,
-            "coords": [],
+            "coords": None,
             "consoleURL": "http://test_url&command=/usr/share/connections/tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",
             "uptime": -1,
         }

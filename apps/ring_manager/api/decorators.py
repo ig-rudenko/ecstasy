@@ -1,7 +1,6 @@
 from functools import wraps
 
-from rest_framework import status
-from rest_framework.response import Response
+from ecstasy_project.error_handler import RingOperationFailed
 
 from ..ring_manager import InvalidRingStructureError, RingStatusError
 from ..solutions import SolutionsPerformerError
@@ -19,6 +18,6 @@ def ring_valid(handler):
         try:
             return handler(*args, **kwargs)
         except (InvalidRingStructureError, RingStatusError, SolutionsPerformerError) as error:
-            return Response({"error": error.message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise RingOperationFailed({"detail": error.message}) from error
 
     return wrapper

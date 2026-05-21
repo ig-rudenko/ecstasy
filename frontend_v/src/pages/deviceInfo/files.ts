@@ -1,29 +1,26 @@
-import {getProtectedImage} from "@/helpers/images.ts";
+import { getProtectedImage } from "@/helpers/images.ts";
 
 class MediaFile {
-    public file: File
-    public description: string
-    public imageSrc: string | null
-    public errors: Array<string>
+    public file: File;
+    public description: string;
+    public imageSrc: string | null;
+    public errors: Array<string>;
 
-    constructor(
-        file: File,
-    ) {
-        this.file = file
-        this.description = ""
-        this.imageSrc = null
+    constructor(file: File) {
+        this.file = file;
+        this.description = "";
+        this.imageSrc = null;
         if (this.isImage) {
-          // Создать URL-адрес объекта для предварительного просмотра изображения
-          this.imageSrc = URL.createObjectURL(file);
+            // Создать URL-адрес объекта для предварительного просмотра изображения
+            this.imageSrc = URL.createObjectURL(file);
         }
-        this.errors = []
+        this.errors = [];
     }
 
     public get isImage(): boolean {
         return this.file.type.startsWith("image/");
     }
 }
-
 
 class MediaFileInfo {
     constructor(
@@ -33,10 +30,9 @@ class MediaFileInfo {
         public isImage: boolean,
         public modTime: string,
         public name: string,
-        public url: string,
+        public url: string
     ) {}
 }
-
 
 function newMediaFileInfo(data: any): MediaFileInfo {
     return new MediaFileInfo(
@@ -46,26 +42,27 @@ function newMediaFileInfo(data: any): MediaFileInfo {
         data.is_image,
         data.mod_time,
         data.name,
-        data.url,
-    )
+        data.url
+    );
 }
-
 
 async function newMediaFileInfoList(data: Array<any>): Promise<MediaFileInfo[]> {
-    let res: Array<MediaFileInfo> = []
+    let res: Array<MediaFileInfo> = [];
     for (const datum of data) {
-        if (datum.is_image) datum.url = await getProtectedImage(datum.url)
-        res.push(new MediaFileInfo(
-            datum.description,
-            datum.file_type,
-            datum.id,
-            datum.is_image,
-            datum.mod_time,
-            datum.name,
-            datum.url,
-        ))
+        if (datum.is_image) datum.url = await getProtectedImage(datum.url);
+        res.push(
+            new MediaFileInfo(
+                datum.description,
+                datum.file_type,
+                datum.id,
+                datum.is_image,
+                datum.mod_time,
+                datum.name,
+                datum.url
+            )
+        );
     }
-    return res
+    return res;
 }
 
-export {MediaFile, MediaFileInfo, newMediaFileInfoList, newMediaFileInfo}
+export { MediaFile, MediaFileInfo, newMediaFileInfoList, newMediaFileInfo };

@@ -5,7 +5,7 @@ from time import sleep
 import pexpect
 
 from ..base.device import AbstractConfigDevice, BaseDevice
-from ..base.helpers import interface_normal_view, parse_by_template
+from ..base.helpers import interface_normal_view, parse_by_template, range_to_numbers
 from ..base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -13,6 +13,7 @@ from ..base.types import (
     InterfaceVLANListType,
     MACListType,
     MACTableType,
+    VlanTableType,
 )
 from ..base.validators import validate_and_format_port_as_normal
 
@@ -164,12 +165,11 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         interfaces = self.get_interfaces()
         self.lock = True
 
+        interfaces_config = self._get_interfaces_config()
+
         for line in interfaces:
             if not line[0].startswith("V"):
-                output = self.send_command(
-                    f"show running-config interface {interface_normal_view(line[0])}",
-                    expect_command=False,
-                )
+                output = interfaces_config.get(self.normalize_interface_name(line[0]), "")
                 # Ищем все строки вланов в выводе команды
                 vlans_group = re.findall(r" vlan [ad ]*(\S*\d|auto-all)", output)
                 port_vlans = []
@@ -191,6 +191,36 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
         return interface_normal_view(intf)
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        vlan_output = self.send_command("show vlan")
+        parsed = re.findall(r"^\s*(?P<vid>\d+)\s+(?P<desc>\S+)", vlan_output, flags=re.MULTILINE)
+        # Формируем словарь: { 123: "vlan_desc" }
+        vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
+
+        self.lock = False
+        interfaces_vlans = self.get_vlans()
+        self.lock = True
+
+        # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
+        vlan_ports: dict[int, list[str]] = {}
+        for line in interfaces_vlans:
+            for vlan in range_to_numbers(",".join(map(str, line[-1]))):
+                vlan_ports.setdefault(vlan, []).append(line[0])
+
+        result: VlanTableType = []
+        for vlan, ports in vlan_ports.items():
+            result.append((vlan, ports, vlan_desc.get(vlan, "")))
+        return result
+
+    def _get_interfaces_config(self) -> dict[str, str]:
+        output = self.send_command("show running-config", expect_command=False)
+        interfaces_config: dict[str, str] = {}
+        for line in re.findall(r"interface\s+.+?exit\s+!?", output, flags=re.DOTALL):
+            if interface_name := re.match(r"^interface\s+(.+?)\n", line):
+                interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
+        return interfaces_config
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:

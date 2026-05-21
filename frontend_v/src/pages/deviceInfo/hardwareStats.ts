@@ -1,15 +1,15 @@
 export interface HardwareStats {
     cpu?: {
-        util: number[],
-    },
+        util: number[];
+    };
     flash?: {
-        util: number,
-    }
+        util: number;
+    };
     ram?: {
-        util: number,
-    }
+        util: number;
+    };
     temp?: {
-        status: string,
-        value: number
-    }
+        status: string;
+        value: number;
+    };
 }

@@ -2,8 +2,8 @@ import axios from "axios";
 
 import store from "@/store";
 import router from "@/router";
-import {UserTokens} from "@/services/user";
-
+import { UserTokens } from "@/services/user";
+import { isOIDCLogin, refreshOIDCTokens } from "@/oidc";
 
 export async function refreshAccessToken() {
     if (tokenService.isRefreshing) {
@@ -12,37 +12,44 @@ export async function refreshAccessToken() {
         return true;
     }
 
-    const refreshToken = tokenService.getLocalRefreshToken()
+    const refreshToken = tokenService.getLocalRefreshToken();
     if (!refreshToken) return;
+
+    if (isOIDCLogin()) {
+        tokenService.isRefreshing = true;
+        const refreshed = await refreshOIDCTokens(true);
+        tokenService.isRefreshing = false;
+
+        if (refreshed) return true;
+
+        await store.dispatch("auth/logout");
+        await router.push("/account/login");
+        return false;
+    }
 
     tokenService.isRefreshing = true;
 
     const logout = async () => {
         tokenService.isRefreshing = false;
-        await store.dispatch("auth/logout")
+        await store.dispatch("auth/logout");
         await router.push("/account/login");
         return false;
-    }
+    };
 
     try {
-        const rs = await axios.post(
-            "/api/token/refresh",
-            {refresh: refreshToken},
-        )
-        if (rs.status !== 200) return logout()
+        const rs = await axios.post("/api/token/refresh", { refresh: refreshToken });
+        if (rs.status !== 200) return logout();
 
-        const {access, refresh} = rs.data;
+        const { access, refresh } = rs.data;
         // Обновляем access и refresh токены.
-        await store.dispatch('auth/refreshTokens', rs.data);
+        await store.dispatch("auth/refreshTokens", rs.data);
         tokenService.setTokens(access, refresh);
         tokenService.isRefreshing = false;
-        return true
-
+        return true;
     } catch (error) {
         console.error(error);
         return logout();
     }
-
 }
 
 export class TokenService {
@@ -54,8 +61,8 @@ export class TokenService {
     }
 
     private load() {
-        const data = localStorage.getItem("tokens")
-        if (data) this._tokens = JSON.parse(data)
+        const data = localStorage.getItem("tokens");
+        if (data) this._tokens = JSON.parse(data);
     }
 
     private save() {
@@ -75,11 +82,11 @@ export class TokenService {
 
     getUserTokens(): UserTokens {
         this.load();
-        return this._tokens || {accessToken: "", refreshToken: ""}
+        return this._tokens || { accessToken: "", refreshToken: "" };
     }
 
     setTokens(access: string, refresh: string) {
-        this._tokens = {accessToken: access, refreshToken: refresh};
+        this._tokens = { accessToken: access, refreshToken: refresh };
         tokenService.isRefreshing = false;
         this.save();
     }
@@ -91,15 +98,15 @@ export class TokenService {
 
     async waitRefreshingIsFinished() {
         while (this.isRefreshing) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
         }
     }
 }
 
 const tokenService = new TokenService();
 
-export {tokenService}
+export { tokenService };
 
 export function setTokens(access: string, refresh: string) {
-    tokenService.setTokens(access, refresh)
+    tokenService.setTokens(access, refresh);
 }

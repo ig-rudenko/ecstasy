@@ -3,9 +3,9 @@ from functools import wraps
 import pexpect
 from django.conf import settings
 from requests import exceptions
-from rest_framework.response import Response
 
 from devicemanager.exceptions import BaseDeviceException
+from ecstasy_project.error_handler import DeviceConnectionProblem
 
 
 def except_connection_errors(handler):
@@ -19,20 +19,26 @@ def except_connection_errors(handler):
         contact = f"Пишите на почту: {settings.CONTACT_EMAIL}"
         try:
             return handler(*args, **kwargs)
-        except pexpect.EOF:
-            return Response(
-                {"error": f"EOF при считывании данных с оборудования. {contact}"},
-                status=500,
-            )
-        except pexpect.TIMEOUT:
-            return Response(
-                {"error": f"Timeout при выполнении команды на оборудовании. {contact}"},
-                status=500,
-            )
+        except pexpect.EOF as exc:
+            raise DeviceConnectionProblem(
+                {
+                    "detail": f"EOF при считывании данных с оборудования. {contact}",
+                    "reason": "eof",
+                }
+            ) from exc
+        except pexpect.TIMEOUT as exc:
+            raise DeviceConnectionProblem(
+                {
+                    "detail": f"Timeout при выполнении команды на оборудовании. {contact}",
+                    "reason": "timeout",
+                }
+            ) from exc
         except (BaseDeviceException, exceptions.ConnectionError) as exc:
-            return Response(
-                {"error": f"{exc}. {contact}"},
-                status=500,
-            )
+            raise DeviceConnectionProblem(
+                {
+                    "detail": f"{exc}. {contact}",
+                    "reason": exc.__class__.__name__,
+                }
+            ) from exc
 
     return wrapper

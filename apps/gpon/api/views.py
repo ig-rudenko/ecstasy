@@ -1,8 +1,9 @@
 import orjson
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.db.transaction import atomic
+from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import (
     GenericAPIView,
     ListAPIView,
@@ -11,6 +12,7 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.check.api.views.paginators import End3PageNumberPagination
@@ -18,8 +20,7 @@ from apps.check.models import Devices
 from devicemanager.device import Interfaces
 
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
-from ..services.tech_data import get_all_tech_data
-from .filters import End3Filer
+from .filters import End3Filer, TechDataFilter
 from .permissions import (
     End3Permission,
     HouseOLTStatePermission,
@@ -41,31 +42,69 @@ from .serializers.update_tech_data import (
 from .serializers.view_tech_data import (
     StructuresHouseOLTStateSerializer,
     TechCapabilitySerializer,
+    TechDataListSerializer,
     ViewHouseBTechDataSerializer,
     ViewOLTStatesTechDataSerializer,
 )
+from .swagger import (
+    buildings_addresses_list_api_doc,
+    device_ports_list_api_doc,
+    devices_names_list_api_doc,
+    end3_addresses_list_api_doc,
+    list_user_permissions_api_doc,
+    tech_data_create_api_doc,
+    tech_data_list_api_doc,
+    view_olt_state_tech_data_api_doc,
+)
+
+
+class GPONListPageNumberPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class ListUserPermissions(GenericAPIView):
+    pagination_class = None
+
+    @list_user_permissions_api_doc
     def get(self, *args, **kwargs):
         permissions = filter(lambda x: x.startswith("gpon"), self.request.user.get_all_permissions())
         return Response(permissions)
 
 
-class TechDataListCreateAPIView(GenericAPIView):
+class TechDataListCreateAPIView(ListCreateAPIView):
     """
     Предназначен для создания и просмотра технических данных
     """
 
-    serializer_class = CreateTechDataSerializer
-    queryset = OLTState.objects.all()
+    queryset = HouseOLTState.objects.all()
     permission_classes = [TechDataPermission]
+    pagination_class = GPONListPageNumberPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TechDataFilter
 
-    def get(self, request) -> Response:
-        data = get_all_tech_data()
-        return Response(data)
+    def get_queryset(self):
+        if self.request.method == "GET":
+            return (
+                HouseOLTState.objects.all()
+                .select_related("house", "house__address", "statement", "statement__device")
+                .prefetch_related("end3_set")
+                .order_by("id")
+            )
+        return HouseOLTState.objects.all()
 
-    def post(self, request):
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return TechDataListSerializer
+        return CreateTechDataSerializer
+
+    @tech_data_list_api_doc
+    def get(self, request, *args, **kwargs) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @tech_data_create_api_doc
+    def post(self, request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with atomic():
@@ -99,6 +138,7 @@ class ViewOLTStateTechDataAPIView(GenericAPIView):
                 f"Не удалось найти OLT подключение оборудования {device_name} на порту {olt_port}"
             ) from exc
 
+    @view_olt_state_tech_data_api_doc
     def get(self, request, *args, **kwargs):
         olt_state = self.get_object()
         serializer = self.get_serializer(instance=olt_state)
@@ -124,9 +164,11 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
         return HouseB.objects.all()
 
 
+@method_decorator(name="get", decorator=buildings_addresses_list_api_doc)
 class BuildingsAddressesListAPIView(ListAPIView):
     serializer_class = BuildingAddressSerializer
     queryset = HouseB.objects.all().select_related("address")
+    pagination_class = GPONListPageNumberPagination
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
@@ -135,48 +177,84 @@ class BuildingsAddressesListAPIView(ListAPIView):
         """
         port = self.request.GET.get("port")
         device = self.request.GET.get("device")
-        if not port and not device:
-            return queryset
+        if port or device:
+            try:
+                olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
+            except OLTState.DoesNotExist:
+                return queryset.none()
+            addresses_ids = set()
+            house_olt_states_queryset: QuerySet[HouseOLTState] = olt_state.house_olt_states.all()
+            for house_olt_state in house_olt_states_queryset:
+                addresses_ids |= set(
+                    house_olt_state.end3_set.all().select_related("address").values_list("address", flat=True)
+                )
 
-        try:
-            olt_state: OLTState = OLTState.objects.get(olt_port=port, device__name=device)
-        except OLTState.DoesNotExist:
-            return queryset.none()
-        addresses_ids = set()
-        house_olt_states_queryset: QuerySet[HouseOLTState] = olt_state.house_olt_states.all()
-        for house_olt_state in house_olt_states_queryset:
-            addresses_ids |= set(
-                house_olt_state.end3_set.all().select_related("address").values_list("address", flat=True)
+            queryset = queryset.filter(address_id__in=addresses_ids)
+
+        search_query = str(self.request.GET.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(address__region__icontains=search_query)
+                | Q(address__settlement__icontains=search_query)
+                | Q(address__plan_structure__icontains=search_query)
+                | Q(address__street__icontains=search_query)
+                | Q(address__house__icontains=search_query)
             )
 
-        return queryset.filter(address_id__in=addresses_ids)
+        return queryset
 
 
+@method_decorator(name="get", decorator=end3_addresses_list_api_doc)
 class End3AddressesListAPIView(ListAPIView):
     """Возвращает список сплиттеров/райзеров вместе с их адресами"""
 
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address")
+    pagination_class = GPONListPageNumberPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        address_id = self.request.GET.get("address_id")
+        if address_id:
+            queryset = queryset.filter(address_id=address_id)
+        search_query = str(self.request.GET.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(type__icontains=search_query)
+                | Q(location__icontains=search_query)
+                | Q(address__region__icontains=search_query)
+                | Q(address__settlement__icontains=search_query)
+                | Q(address__plan_structure__icontains=search_query)
+                | Q(address__street__icontains=search_query)
+                | Q(address__house__icontains=search_query)
+            )
+        return queryset
 
 
 class DevicesNamesListAPIView(GenericAPIView):
+    pagination_class = None
+
     def get_queryset(self):
         """
         ## Возвращаем queryset всех устройств из доступных для пользователя групп
         """
         return Devices.objects.filter(group__profile__user=self.request.user)
 
+    @devices_names_list_api_doc
     def get(self, request, *args, **kwargs) -> Response:
         device_names = self.get_queryset().values_list("name", flat=True)
         return Response(device_names)
 
 
 class DevicePortsList(DevicesNamesListAPIView):
+    pagination_class = None
+
+    @device_ports_list_api_doc
     def get(self, request, *args, **kwargs) -> Response:
         try:
             device: Devices = self.get_queryset().only("id").get(name=self.kwargs["device_name"])
-        except Devices.DoesNotExist:
-            return Response({"error": "Оборудование не существует"}, status=400)
+        except Devices.DoesNotExist as exc:
+            raise NotFound("Оборудование не существует") from exc
 
         interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
 

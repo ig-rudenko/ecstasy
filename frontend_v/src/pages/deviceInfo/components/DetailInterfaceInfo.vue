@@ -1,179 +1,222 @@
 <template>
+    <tr
+        :id="'interface-' + interface.name"
+        :style="interfaceStyles"
+        :class="interfaceClasses"
+        class="rounded-2xl border-b border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
+    >
+        <td class="rounded-l-2xl px-2">
+            <div class="flex items-center gap-1 px-1">
+                <!--       COMMENTS-->
+                <Comment :interface="interface" :device-name="deviceName" :allow-edit="true" />
 
-  <tr
-      :id="'interface-'+interface.name"
-      :style="interfaceStyles"
-      :class="interfaceClasses"
-      class="rounded-2xl border-b border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
-  >
+                <!-- Ссылка на графики в Zabbix -->
+                <GraphsLink :interface="interface" />
+            </div>
+        </td>
 
-    <td class="rounded-l-2xl px-2">
-      <div class="flex items-center gap-1 px-1">
-        <!--       COMMENTS-->
-        <Comment :interface="interface" :device-name="deviceName" :allow-edit="true"/>
+        <!--ПОРТ-->
+        <td class="btn-fog px-2 align-center" style="text-align: right">
+            <div class="flex items-center justify-between gap-2">
+                <!--Название Интерфейса-->
+                <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer w-full">
+                    <div class="w-full font-mono text-sm font-semibold md:text-base text-nowrap">
+                        {{ interface.name }}
+                    </div>
+                </div>
 
-        <!-- Ссылка на графики в Zabbix -->
-        <GraphsLink :interface="interface"/>
-      </div>
-    </td>
+                <div>
+                    <div class="hidden sm:flex items-center">
+                        <span
+                            v-if="complexInfo?.portType"
+                            class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm"
+                            :style="portTypeStyles"
+                        >
+                            {{ complexInfo.portType }}
+                        </span>
 
-    <!--ПОРТ-->
-    <td class="btn-fog px-2 align-center" style="text-align: right">
+                        <!--Управление состоянием интерфейсов-->
+                        <PortControlButtons
+                            :interface="interface"
+                            :device-name="deviceName"
+                            :permission-level="permissionLevel"
+                        />
 
-      <div class="flex items-center justify-between gap-2">
+                        <!--Посмотреть порт -->
+                        <Button @click="toggleDetailInfo" text class="rounded-2xl">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                fill="currentColor"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"
+                                ></path>
+                            </svg>
+                        </Button>
+                    </div>
 
-        <!--Название Интерфейса-->
-        <div @click="toggleDetailInfo" class="flex min-w-0 items-center cursor-pointer w-full">
-          <div class="w-full font-mono text-sm font-semibold md:text-base text-nowrap">{{ interface.name }}</div>
-        </div>
+                    <Button
+                        icon="pi pi-info-circle"
+                        size="small"
+                        class="sm:hidden mx-1"
+                        outlined
+                        @click="showPortControlsPopover"
+                    />
+                </div>
+                <Popover ref="portControls">
+                    <div class="flex items-center max-sm:scale-90">
+                        <!--Управление состоянием интерфейсов-->
+                        <PortControlButtons
+                            :interface="interface"
+                            :device-name="deviceName"
+                            :permission-level="permissionLevel"
+                        />
 
-        <div>
-          <div class="hidden sm:flex items-center">
-            <span v-if="complexInfo?.portType" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-sm" :style="portTypeStyles">
-              {{ complexInfo.portType }}
-            </span>
+                        <!--Посмотреть порт -->
+                        <Button @click="toggleDetailInfo" text>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                fill="currentColor"
+                                viewBox="0 0 16 16"
+                            >
+                                <path
+                                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"
+                                ></path>
+                            </svg>
+                        </Button>
 
-            <!--Управление состоянием интерфейсов-->
-            <PortControlButtons
+                        <span
+                            v-if="complexInfo"
+                            class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-[10px]"
+                            :style="portTypeStyles"
+                        >
+                            {{ complexInfo.portType }}
+                        </span>
+                    </div>
+                </Popover>
+            </div>
+        </td>
+
+        <!--Статус порта-->
+        <td>
+            <div
+                :style="statusStyle(interface.status)"
+                v-tooltip="intfStatusDesc(interface.status)"
+                :class="interface.status.toLowerCase() === 'down' ? 'dark:text-white!' : ''"
+                class="text-gray-950 dark:opacity-70! text-nowrap text-xs text-center sm:min-w-22 rounded-2xl px-2 py-2.5 font-mono hover:shadow-md"
+            >
+                <span>{{ formatStatus(interface.status) }}</span>
+            </div>
+        </td>
+
+        <!--Описание порта-->
+        <td class="px-2 py-2.5 align-top">
+            <ChangeDescription
+                :device-name="deviceName"
                 :interface="interface"
-                :device-name="deviceName"
-                :permission-level="permissionLevel"/>
+                @change-device="(dev) => $emit('changeDevice', dev)"
+            />
+        </td>
 
-            <!--Посмотреть порт -->
-            <Button @click="toggleDetailInfo" text class="rounded-2xl">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                <path
-                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
-              </svg>
-            </Button>
-          </div>
+        <!--VLANS-->
+        <td
+            v-if="showVlans && interface.vlans.length"
+            @click="toggleVlansList"
+            class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-2 py-2.5 text-xs font-mono align-top"
+        >
+            {{ compressVlanRange }}
+        </td>
+        <td v-else class="rounded-r-2xl"></td>
+    </tr>
 
-          <Button icon="pi pi-info-circle" size="small" class="sm:hidden mx-1" outlined
-                  @click="showPortControlsPopover"/>
+    <tr v-if="showDetailInfo" class="rounded-2xl">
+        <td v-if="complexInfo" colspan="5">
+            <div
+                class="rounded-t-2xl rounded-b-3xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3"
+            >
+                <!--      DETAIL PORT INFO  -->
+                <div v-if="complexInfo.portDetailInfo" class="container py-3">
+                    <div class="flex justify-end">
+                        <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo" />
+                    </div>
 
-        </div>
-        <Popover ref="portControls">
-          <div class="flex items-center max-sm:scale-90">
-            <!--Управление состоянием интерфейсов-->
-            <PortControlButtons
-                :interface="interface"
-                :device-name="deviceName"
-                :permission-level="permissionLevel"/>
+                    <div
+                        v-if="complexInfo.portDetailInfo.type === 'html'"
+                        class="p-3"
+                        v-html="complexInfo.portDetailInfo.data"
+                    ></div>
 
-            <!--Посмотреть порт -->
-            <Button @click="toggleDetailInfo" text>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                <path
-                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"></path>
-              </svg>
-            </Button>
+                    <div
+                        v-else-if="complexInfo.portDetailInfo.type === 'text'"
+                        class="px-3 max-sm:text-xs font-mono whitespace-pre"
+                    >
+                        {{ complexInfo.portDetailInfo.data }}
+                    </div>
 
-            <span v-if="complexInfo" class="mx-2 px-2 py-1 rounded-xl text-gray-200 font-mono text-[10px]" :style="portTypeStyles">
-              {{ complexInfo.portType }}
-            </span>
-          </div>
-        </Popover>
+                    <!--      MIKROTIK -->
+                    <div v-else-if="complexInfo.portDetailInfo.type === 'mikrotik'" class="p-3">
+                        <MikrotikInterfaceInfo
+                            :device-name="deviceName"
+                            :data="complexInfo.portDetailInfo.data"
+                            :interface="interface"
+                        />
+                    </div>
 
-      </div>
-    </td>
+                    <!--      ADSL -->
+                    <div v-else-if="complexInfo.portDetailInfo.type === 'adsl'" class="p-3">
+                        <ADSLInterfaceInfo
+                            :device-name="deviceName"
+                            :data="complexInfo.portDetailInfo.data"
+                            :interface="interface"
+                        />
+                    </div>
 
-    <!--Статус порта-->
-    <td>
-      <div :style="statusStyle(interface.status)" v-tooltip="intfStatusDesc(interface.status)"
-        :class="interface.status.toLowerCase()==='down'?'dark:text-white!':''"
-          class="text-gray-950 dark:opacity-70! text-nowrap text-xs text-center sm:min-w-22 rounded-2xl px-2 py-2.5 font-mono hover:shadow-md">
-        <span>{{ formatStatus(interface.status) }}</span>
-      </div>
-    </td>
+                    <!--      GPON -->
+                    <div v-else-if="complexInfo.portDetailInfo.type === 'gpon'" class="p-3">
+                        <GPONInterfaceInfo
+                            :device-name="deviceName"
+                            :gpon-data="complexInfo.portDetailInfo.data"
+                            :permission-level="permissionLevel"
+                            :interface="interface"
+                        />
+                    </div>
 
-    <!--Описание порта-->
-    <td class="px-2 py-2.5 align-top">
-      <ChangeDescription :device-name="deviceName" :interface="interface"
-                         @change-device="dev => $emit('changeDevice', dev)"/>
-    </td>
+                    <!--      ELTEX OLT -->
+                    <div v-else-if="complexInfo.portDetailInfo.type === 'eltex-gpon'" class="p-3">
+                        <OLTInterfaceInfo
+                            :device-name="deviceName"
+                            :data="complexInfo.portDetailInfo.data"
+                            :permission-level="permissionLevel"
+                            :interface="interface"
+                        />
+                    </div>
+                </div>
 
-    <!--VLANS-->
-    <td v-if="showVlans && interface.vlans.length" @click="toggleVlansList"
-        class="cursor-pointer text-nowrap overflow-x-visible max-w-20 px-2 py-2.5 text-xs font-mono align-top">
-      {{ compressVlanRange }}
-    </td>
-    <td v-else class="rounded-r-2xl"></td>
+                <!--      ANOTHER INFO  -->
+                <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
+            </div>
+        </td>
 
-  </tr>
+        <td v-else colspan="5">
+            <div class="flex justify-center">
+                <ProgressSpinner />
+            </div>
+        </td>
+    </tr>
 
-  <tr v-if="showDetailInfo" class="rounded-2xl">
-
-    <td v-if="complexInfo" colspan="5">
-      <div class="rounded-t-2xl rounded-b-3xl border dark:bg-transparent bg-zinc-50/70 border-gray-200 dark:border-gray-700/80 shadow-sm p-3">
-
-        <!--      DETAIL PORT INFO  -->
-        <div v-if="complexInfo.portDetailInfo" class="container py-3">
-
-          <div class="flex justify-end">
-            <UpdateCommonButton :condition="collectingDetailInfo" @update="getDetailInfo"/>
-          </div>
-
-          <div v-if="complexInfo.portDetailInfo.type==='html'" class="p-3"
-               v-html="complexInfo.portDetailInfo.data"></div>
-
-          <div v-else-if="complexInfo.portDetailInfo.type==='text'" class="px-3 max-sm:text-xs font-mono whitespace-pre">
-            {{ complexInfo.portDetailInfo.data }}
-          </div>
-
-          <!--      MIKROTIK -->
-          <div v-else-if="complexInfo.portDetailInfo.type==='mikrotik'" class="p-3">
-            <MikrotikInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data"
-                                   :interface="interface"/>
-          </div>
-
-          <!--      ADSL -->
-          <div v-else-if="complexInfo.portDetailInfo.type==='adsl'" class="p-3">
-            <ADSLInterfaceInfo :device-name="deviceName" :data="complexInfo.portDetailInfo.data" :interface="interface"/>
-          </div>
-
-          <!--      GPON -->
-          <div v-else-if="complexInfo.portDetailInfo.type==='gpon'" class="p-3">
-            <GPONInterfaceInfo
-                :device-name="deviceName"
-                :gpon-data="complexInfo.portDetailInfo.data"
-                :permission-level="permissionLevel"
-                :interface="interface"/>
-          </div>
-
-          <!--      ELTEX OLT -->
-          <div v-else-if="complexInfo.portDetailInfo.type==='eltex-gpon'" class="p-3">
-            <OLTInterfaceInfo
-                :device-name="deviceName"
-                :data="complexInfo.portDetailInfo.data"
-                :permission-level="permissionLevel"
-                :interface="interface"/>
-          </div>
-
-        </div>
-
-        <!--      ANOTHER INFO  -->
-        <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName"/>
-
-      </div>
-    </td>
-
-    <td v-else colspan="5">
-      <div class="flex justify-center">
-        <ProgressSpinner/>
-      </div>
-    </td>
-  </tr>
-
-  <!--  VLANS FULL LIST-->
-  <Popover ref="vlansList">
-    <div class="font-mono">{{ compressVlanRange }}</div>
-  </Popover>
-
+    <!--  VLANS FULL LIST-->
+    <Popover ref="vlansList">
+        <div class="font-mono">{{ compressVlanRange }}</div>
+    </Popover>
 </template>
 
-
 <script lang="ts">
-import {defineComponent, PropType} from "vue";
+import { defineComponent, PropType } from "vue";
 
 import PortControlButtons from "./PortControlButtons.vue";
 import ChangeDescription from "./ChangeDescription.vue";
@@ -185,248 +228,254 @@ import MikrotikInterfaceInfo from "./MikrotikInterfaceInfo.vue";
 import GraphsLink from "./GraphsLink.vue";
 
 import api from "@/services/api";
-import {DeviceInterface} from "@/services/interfaces";
+import { DeviceInterface } from "@/services/interfaces";
 import MacInfo from "@/pages/deviceInfo/mac";
-import {errorToast} from "@/services/my.toast";
+import { errorToast } from "@/services/my.toast";
 import errorFmt from "@/errorFmt";
 import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterfaceInfo.vue";
-import {textToHtml} from "@/formats";
-import {ComplexInterfaceInfoType} from "@/pages/deviceInfo/detailInterfaceInfo";
+import { textToHtml } from "@/formats";
+import { ComplexInterfaceInfoType } from "@/pages/deviceInfo/detailInterfaceInfo";
 import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
 
 export default defineComponent({
-  components: {
-    UpdateCommonButton,
-    ComplexInterfaceInfo,
-    GraphsLink,
-    ChangeDescription,
-    PortControlButtons,
-    Comment,
-    ADSLInterfaceInfo,
-    GPONInterfaceInfo,
-    OLTInterfaceInfo,
-    MikrotikInterfaceInfo,
-  },
-
-  props: {
-    deviceName: {required: true, type: String},
-    interface: {required: true, type: Object as PropType<DeviceInterface>},
-    permissionLevel: {required: true, type: Number},
-    dynamicOpacity: {required: true, type: Object as PropType<{ opacity: Number }>},
-    showVlans: {required: false, type: Boolean, default: true},
-  },
-
-  emits: ["changeDevice"],
-
-  data() {
-    return {
-      showDetailInfo: false,
-      portDetailMenu: "" as ("" | "portConfig" | "portErrors" | "cableDiag"),
-      MACs: [] as MacInfo[],
-      collectingMACs: false,
-
-      complexInfo: null as ComplexInterfaceInfoType | null,
-      collectingDetailInfo: false,
-
-    }
-  },
-
-  mounted() {
-    let selectedPorts = this.getSelectedPorts();
-
-    if (selectedPorts.includes(this.interface.name)) {
-      this.showDetailInfo = true;
-      this.getDetailInfo();
-      setTimeout(() => {
-        window.scrollTo({
-          top: (document.getElementById("interface-" + this.interface.name)?.offsetTop ?? 0) + (window.innerHeight / 2),
-          behavior: "smooth"
-        })
-      }, 100)
-    }
-  },
-
-  computed: {
-    interfaceStyles(): any {
-      return this.dynamicOpacity
-    },
-    interfaceClasses(): string[] {
-      if (this.showDetailInfo) return ["shadow-sm", "z-[2]", "bg-white/55", "border-sky-200/70", "dark:border-sky-800/70", "dark:bg-gray-800"];
-      return []
-    },
-    portTypeStyles() {
-      let styles: any = {"font-size": "0.7rem"}
-
-      if (!this.complexInfo?.portType) return styles;
-
-      let type_: string = this.complexInfo.portType
-
-      if (type_ === "COPPER") {
-        styles["background-color"] = "#b87333"
-      } else if (type_ === "SFP") {
-        styles["background-color"] = "#3e6cff"
-      } else if (type_.includes("COMBO")) {
-        styles["background-color"] = "#8133b8"
-      } else if (type_ === "WIRELESS") {
-        styles["background-color"] = "#00c191"
-      }
-      return styles
+    components: {
+        UpdateCommonButton,
+        ComplexInterfaceInfo,
+        GraphsLink,
+        ChangeDescription,
+        PortControlButtons,
+        Comment,
+        ADSLInterfaceInfo,
+        GPONInterfaceInfo,
+        OLTInterfaceInfo,
+        MikrotikInterfaceInfo,
     },
 
-    compressVlanRange(): string {
-      const list = [...this.interface.vlans];
+    props: {
+        deviceName: { required: true, type: String },
+        interface: { required: true, type: Object as PropType<DeviceInterface> },
+        permissionLevel: { required: true, type: Number },
+        dynamicOpacity: { required: true, type: Object as PropType<{ opacity: Number }> },
+        showVlans: { required: false, type: Boolean, default: true },
+    },
 
-      if (!list || !list.length) return "";
+    emits: ["changeDevice"],
 
-      // сортируем список по возрастанию
-      list.sort((a: number, b: number) => a - b);
-      // инициализируем пустую строку для результата
-      let result = "";
-      // инициализируем начальное и конечное значение диапазона
-      let start = list[0];
-      let end = list[0];
-      // проходим по списку, начиная со второго элемента
-      for (let i = 1; i < list.length; i++) {
-        // если текущий элемент на единицу больше предыдущего, то продолжаем диапазон
-        if (list[i] === end + 1) {
-          end = list[i];
-        } else {
-          // иначе, добавляем текущий диапазон к результату
-          result += start === end ? start + ", " : start + "-" + end + ", ";
-          // и обновляем начальное и конечное значение диапазона
-          start = list[i];
-          end = list[i];
+    data() {
+        return {
+            showDetailInfo: false,
+            portDetailMenu: "" as "" | "portConfig" | "portErrors" | "cableDiag",
+            MACs: [] as MacInfo[],
+            collectingMACs: false,
+
+            complexInfo: null as ComplexInterfaceInfoType | null,
+            collectingDetailInfo: false,
+        };
+    },
+
+    mounted() {
+        let selectedPorts = this.getSelectedPorts();
+
+        if (selectedPorts.includes(this.interface.name)) {
+            this.showDetailInfo = true;
+            this.getDetailInfo();
+            setTimeout(() => {
+                window.scrollTo({
+                    top:
+                        (document.getElementById("interface-" + this.interface.name)?.offsetTop ?? 0) +
+                        window.innerHeight / 2,
+                    behavior: "smooth",
+                });
+            }, 100);
         }
-      }
-      // добавляем последний диапазон к результату
-      result += start === end ? start : start + "-" + end;
-      // возвращаем результат
-      return result;
     },
 
-  },
+    computed: {
+        interfaceStyles(): any {
+            return this.dynamicOpacity;
+        },
+        interfaceClasses(): string[] {
+            if (this.showDetailInfo)
+                return [
+                    "shadow-sm",
+                    "z-[2]",
+                    "bg-white/55",
+                    "border-sky-200/70",
+                    "dark:border-sky-800/70",
+                    "dark:bg-gray-800",
+                ];
+            return [];
+        },
+        portTypeStyles() {
+            let styles: any = { "font-size": "0.7rem" };
 
-  methods: {
-    textToHtml,
+            if (!this.complexInfo?.portType) return styles;
 
-    formatStatus(status: string): string {
-      if (status === "dormant") return "activating..."
-      return status
+            let type_: string = this.complexInfo.portType;
+
+            if (type_ === "COPPER") {
+                styles["background-color"] = "#b87333";
+            } else if (type_ === "SFP") {
+                styles["background-color"] = "#3e6cff";
+            } else if (type_.includes("COMBO")) {
+                styles["background-color"] = "#8133b8";
+            } else if (type_ === "WIRELESS") {
+                styles["background-color"] = "#00c191";
+            }
+            return styles;
+        },
+
+        compressVlanRange(): string {
+            const list = [...this.interface.vlans];
+
+            if (!list || !list.length) return "";
+
+            // сортируем список по возрастанию
+            list.sort((a: number, b: number) => a - b);
+            // инициализируем пустую строку для результата
+            let result = "";
+            // инициализируем начальное и конечное значение диапазона
+            let start = list[0];
+            let end = list[0];
+            // проходим по списку, начиная со второго элемента
+            for (let i = 1; i < list.length; i++) {
+                // если текущий элемент на единицу больше предыдущего, то продолжаем диапазон
+                if (list[i] === end + 1) {
+                    end = list[i];
+                } else {
+                    // иначе, добавляем текущий диапазон к результату
+                    result += start === end ? start + ", " : start + "-" + end + ", ";
+                    // и обновляем начальное и конечное значение диапазона
+                    start = list[i];
+                    end = list[i];
+                }
+            }
+            // добавляем последний диапазон к результату
+            result += start === end ? start : start + "-" + end;
+            // возвращаем результат
+            return result;
+        },
     },
 
-    getSelectedPorts(): string[] {
-      // Преобразуем currentQuery.port в массив строк
-      let selectedPorts: string[] = [];
+    methods: {
+        textToHtml,
 
-      const currentQuery = {...this.$route.query};
-      const portQuery = currentQuery.port;
+        formatStatus(status: string): string {
+            if (status === "dormant") return "activating...";
+            return status;
+        },
 
-      if (Array.isArray(portQuery)) {
-        selectedPorts = portQuery.filter((p): p is string => typeof p === 'string');
-      } else if (typeof portQuery === 'string') {
-        selectedPorts = [portQuery];
-      }
-      return selectedPorts
+        getSelectedPorts(): string[] {
+            // Преобразуем currentQuery.port в массив строк
+            let selectedPorts: string[] = [];
+
+            const currentQuery = { ...this.$route.query };
+            const portQuery = currentQuery.port;
+
+            if (Array.isArray(portQuery)) {
+                selectedPorts = portQuery.filter((p): p is string => typeof p === "string");
+            } else if (typeof portQuery === "string") {
+                selectedPorts = [portQuery];
+            }
+            return selectedPorts;
+        },
+
+        toggleDetailInfo() {
+            this.showDetailInfo = !this.showDetailInfo;
+
+            let selectedPorts = this.getSelectedPorts();
+
+            const portName = this.interface.name;
+
+            if (this.showDetailInfo) {
+                if (!selectedPorts.includes(portName)) {
+                    selectedPorts.push(portName);
+                }
+            } else {
+                selectedPorts = selectedPorts.filter((p) => p !== portName);
+            }
+
+            // Обновляем query
+            const newQuery = { ...this.$route.query };
+            if (selectedPorts.length > 0) {
+                newQuery.port = selectedPorts;
+            } else {
+                delete newQuery.port;
+            }
+
+            this.$router.push({ query: newQuery });
+
+            if (this.showDetailInfo) {
+                if (!this.complexInfo) {
+                    this.getDetailInfo();
+                }
+            }
+        },
+
+        getDetailInfo() {
+            if (!this.showDetailInfo) return;
+
+            this.collectingDetailInfo = true;
+
+            const error = (e: any) => {
+                this.collectingDetailInfo = false;
+                errorToast("Не удалось получить информацию об интерфейсе", errorFmt(e));
+                this.showDetailInfo = false;
+            };
+
+            api.get<ComplexInterfaceInfoType>(
+                "/api/v1/devices/" + this.deviceName + "/interface-info?port=" + this.interface.name
+            )
+                .then((value) => {
+                    this.complexInfo = value.data;
+                    this.collectingDetailInfo = false;
+                }, error)
+                .catch(error);
+        },
+
+        intfStatusDesc(status: string): string {
+            if (status === "dormant") {
+                return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)";
+            }
+            if (status === "notPresent") {
+                return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)";
+            }
+            return "";
+        },
+
+        toggleVlansList(event: Event) {
+            if (this.compressVlanRange.length < 5) return;
+            // @ts-ignore
+            this.$refs.vlansList.toggle(event, event.target);
+        },
+
+        showPortControlsPopover(event: Event) {
+            // @ts-ignore
+            this.$refs.portControls.toggle(event, event.target);
+        },
+
+        /** Вычисляем цвет статуса порта */
+        statusStyle(status: string): any {
+            status = status.toLowerCase();
+            let baseStyle: any = {};
+
+            if (status === "admin down") baseStyle["background-color"] = "#ffb4bb";
+            if (status === "notpresent") baseStyle["background-color"] = "#c1c1c1";
+            if (status === "dormant") baseStyle["background-color"] = "#ffe389";
+            if (status === "up") baseStyle["background-color"] = "#22e58b";
+
+            return Object.assign({}, this.dynamicOpacity, baseStyle);
+        },
     },
-
-    toggleDetailInfo() {
-      this.showDetailInfo = !this.showDetailInfo;
-
-      let selectedPorts = this.getSelectedPorts();
-
-      const portName = this.interface.name;
-
-      if (this.showDetailInfo) {
-        if (!selectedPorts.includes(portName)) {
-          selectedPorts.push(portName);
-        }
-      } else {
-        selectedPorts = selectedPorts.filter(p => p !== portName);
-      }
-
-      // Обновляем query
-      const newQuery = {...this.$route.query};
-      if (selectedPorts.length > 0) {
-        newQuery.port = selectedPorts;
-      } else {
-        delete newQuery.port;
-      }
-
-      this.$router.push({query: newQuery});
-
-      if (this.showDetailInfo) {
-        if (!this.complexInfo) {
-          this.getDetailInfo();
-        }
-      }
-    },
-
-    getDetailInfo() {
-      if (!this.showDetailInfo) return
-
-      this.collectingDetailInfo = true
-
-      const error = (e: any) => {
-        this.collectingDetailInfo = false;
-        errorToast("Не удалось получить информацию об интерфейсе", errorFmt(e))
-        this.showDetailInfo = false;
-      }
-
-      api.get<ComplexInterfaceInfoType>("/api/v1/devices/" + this.deviceName + "/interface-info?port=" + this.interface.name)
-          .then(
-              value => {
-                this.complexInfo = value.data;
-                this.collectingDetailInfo = false
-              },
-              error
-          ).catch(error)
-    },
-
-    intfStatusDesc(status: string): string {
-      if (status === "dormant") {
-        return "Интерфейс ожидает внешних действий (например, последовательная линия, ожидающая входящего соединения)"
-      }
-      if (status === "notPresent") {
-        return "Интерфейс имеет отсутствующие компоненты (как правило, аппаратные)"
-      }
-      return ""
-    },
-
-    toggleVlansList(event: Event) {
-      if (this.compressVlanRange.length < 5) return;
-      // @ts-ignore
-      this.$refs.vlansList.toggle(event, event.target);
-    },
-
-    showPortControlsPopover(event: Event) {
-      // @ts-ignore
-      this.$refs.portControls.toggle(event, event.target);
-    },
-
-    /** Вычисляем цвет статуса порта */
-    statusStyle(status: string): any {
-      status = status.toLowerCase()
-      let baseStyle: any = {};
-
-      if (status === "admin down") baseStyle["background-color"] = "#ffb4bb";
-      if (status === "notpresent") baseStyle["background-color"] = "#c1c1c1";
-      if (status === "dormant") baseStyle["background-color"] = "#ffe389";
-      if (status === "up") baseStyle["background-color"] = "#22e58b";
-
-      return Object.assign({}, this.dynamicOpacity, baseStyle)
-    },
-
-
-  }
-})
+});
 </script>
 
 <style>
 .text-help {
-  border-bottom: solid #d1d1d1 1px;
-  border-radius: 0;
-  font-size: 0.75rem;
-  margin: 10px;
-  cursor: default;
+    border-bottom: solid #d1d1d1 1px;
+    border-radius: 0;
+    font-size: 0.75rem;
+    margin: 10px;
+    cursor: default;
 }
 </style>

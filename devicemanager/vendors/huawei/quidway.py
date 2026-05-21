@@ -72,6 +72,8 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
 
         super().__init__(session, ip, auth, model, snmp_community)
+        self.send_command("screen-length 0 temporary", expect_command=False)
+
         # Заходим в привилегированный режим
         self.session.sendline("super")
         v = session.expect(
@@ -216,7 +218,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             # display vlan
 
-         :return: ```[ ('vid', 'port,port,port','vlan name',), ... ]```
+         :return: ```[ ('vid', ['port', 'port'], 'vlan name'), ... ]```
         """
         vlan_str = self.send_command("show vlan", expect_command=False)
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
@@ -276,9 +278,8 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 # Remove (U) or (D) at the end
                 port_clean = re.sub(r"\([UD]\)$", "", port_part)
                 cleaned_ports.append(port_clean)
-            ports_str = ", ".join(cleaned_ports)
             description = desc_vlans.get(vid, "")
-            result.append((vid, ports_str, description))
+            result.append((vid, cleaned_ports, description))
 
         return result
 
@@ -307,24 +308,34 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
+        interface_config_output = self.send_command(
+            "display current-configuration interface",
+            expect_command=False,
+        )
+
+        interfaces_lines: list[str] = re.split(r"#\s+interface\s+", interface_config_output)
+        interfaces_config_dict: dict[str, str] = {}
+        for line in interfaces_lines:
+            if re.match("^(V|NU|A)", line):
+                continue
+            if intf_name_match := re.search(r"^(\S+)\r?\n", line):
+                interfaces_config_dict[interface_normal_view(intf_name_match.group(1))] = line
+
         result: InterfaceVLANListType = []
         for intf, status, desc in interfaces:
             if re.match("^(V|NU|A)", intf):
                 continue
 
-            output = self.send_command(
-                f"display current-configuration interface {interface_normal_view(intf)}",
-                expect_command=False,
-            )
+            interface_config_info = interfaces_config_dict.get(interface_normal_view(intf), "")
 
             # Use the extract_vlans method to parse VLANs for the interface is work for S2326 tested
-            vlans = self._extract_vlans(output)
+            vlans = self._extract_vlans(interface_config_info)
 
             # Check if there are any VLANs before appending
             if vlans:  # This ensures you don't append empty VLAN lists
-                result.append((intf, status, desc, vlans))
+                result.append((intf, status, desc, vlans))  # noqa
             else:
-                result.append((intf, status, desc, []))  # Or append an empty list if no VLANs found
+                result.append((intf, status, desc, []))  # noqa # Or append an empty list if no VLANs found
 
         return result
 
@@ -337,6 +348,9 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
         # Remove lines with "undo" to avoid conflicts
         cleaned_output = re.sub(r"^ undo .+", "", interface_output, flags=re.MULTILINE)
+
+        if access_vlan := re.search(r"port default vlan (\d+)", cleaned_output):
+            return [access_vlan.group(1)]
 
         # Extract tagged VLANs if present
         tagged_vlans = re.findall(r"port hybrid tagged vlan ([\d\s,to]+)", cleaned_output)

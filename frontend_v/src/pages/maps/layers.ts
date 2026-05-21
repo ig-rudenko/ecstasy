@@ -1,4 +1,4 @@
-import {Map as LMap} from 'leaflet';
+import { Map as LMap } from "leaflet";
 
 /**
  * Функция saveLayers() используется для сохранения состояния активных слоев в localStorage. Он перебирает все наложения в
@@ -7,7 +7,7 @@ import {Map as LMap} from 'leaflet';
  * включает путь к текущей странице. */
 export function saveLayers(mapID: string, map: LMap, overlays: any) {
     let activeLayers = [];
-    let keyName = "map_" + mapID
+    let keyName = "map_" + mapID;
     for (let name in overlays) {
         if (map.hasLayer(overlays[name])) {
             activeLayers.push(name);
@@ -22,7 +22,7 @@ export function saveLayers(mapID: string, map: LMap, overlays: any) {
  * сохранены активные слои, он перебирает все наложения в объекте `layer_control` и добавляет на карту наложения,
  * находящиеся в массиве activeLayers, и удаляет с карты наложения, которых нет в массиве activeLayers. */
 export function loadLayers(mapID: string, map: LMap, overlays: any) {
-    let keyName = "map_" + mapID
+    let keyName = "map_" + mapID;
     let activeLayers = JSON.parse(localStorage.getItem(keyName) || "[]");
     if (activeLayers?.length) {
         for (let name in overlays) {

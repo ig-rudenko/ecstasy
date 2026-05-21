@@ -1,15 +1,15 @@
-import {Address} from "@/types/address.ts";
+import { Address } from "@/types/address.ts";
 
 export enum End3Type {
     splitter = "splitter",
-    rizer = "rizer"
+    rizer = "rizer",
 }
 
 export interface SubscriberShortInfo {
-    connectionID: number
-    customerID: number
-    customerName: string
-    transit: number
+    connectionID: number;
+    customerID: number;
+    customerName: string;
+    transit: number;
 }
 
 export enum TechCapabilityStatus {
@@ -17,21 +17,21 @@ export enum TechCapabilityStatus {
     reserved = "reserved",
     pause = "pause",
     empty = "empty",
-    bad = "bad"
+    bad = "bad",
 }
 
 export interface TechCapability {
-    id: number
-    status: TechCapabilityStatus,
-    number: number
-    subscriber: SubscriberShortInfo[]
+    id: number;
+    status: TechCapabilityStatus;
+    number: number;
+    subscriber: SubscriberShortInfo[];
 }
 
 export interface End3WithCapability {
-    id: number
-    address: Address
-    capacity: number
-    location: string
-    type: End3Type
-    capability: TechCapability[]
+    id: number;
+    address: Address;
+    capacity: number;
+    location: string;
+    type: End3Type;
+    capability: TechCapability[];
 }

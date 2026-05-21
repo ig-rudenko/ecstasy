@@ -1,16 +1,16 @@
-import {Ref, ref} from "vue";
+import { Ref, ref } from "vue";
 
 export class DecorConfig {
     public _winterDecor: Ref<boolean> = ref(true);
 
     constructor() {
-        this.load()
+        this.load();
     }
 
     private load() {
-        const loadData = localStorage.getItem("decorConfig")
+        const loadData = localStorage.getItem("decorConfig");
         if (loadData) {
-            const parsedData = JSON.parse(loadData)
+            const parsedData = JSON.parse(loadData);
             this._winterDecor.value = Boolean(parsedData.winterDecor);
         }
     }
@@ -18,8 +18,8 @@ export class DecorConfig {
     private save() {
         const data = {
             winterDecor: this._winterDecor.value,
-        }
-        localStorage.setItem("decorConfig", JSON.stringify(data))
+        };
+        localStorage.setItem("decorConfig", JSON.stringify(data));
     }
 
     get winterDecor(): boolean {
@@ -30,7 +30,6 @@ export class DecorConfig {
         this._winterDecor.value = val;
         this.save();
     }
-
 }
 
 const decorConfig = new DecorConfig();

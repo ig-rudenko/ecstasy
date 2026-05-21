@@ -1,3 +1,4 @@
+from attr import dataclass
 from pyzabbix.api import ZabbixAPI, ZabbixAPIException
 from requests.exceptions import RequestException
 from urllib3.exceptions import MaxRetryError
@@ -53,8 +54,9 @@ def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
             uptime_value = zbx_session.history.get(
                 itemids=item["itemid"], output=["value"], history=3, limit=1
             )
-            if uptime_value:
-                return uptime_value[0]["value"]
+            if uptime_value and uptime_value[0]["value"].isdigit():
+                return int(uptime_value[0]["value"])
+            return -1
     except (MaxRetryError, RequestException):
         pass
     return -1
@@ -100,6 +102,36 @@ def get_zabbix_host_info(device_name: str) -> dict:
             )
             if len(info) > 0:
                 return info[0]
+    except (MaxRetryError, RequestException, ZabbixAPIException):
+        pass
+    return {}
+
+
+@dataclass(slots=True, kw_only=True)
+class DeviceCoords:
+    """Coordinates of a Zabbix host inventory location."""
+
+    lat: float
+    lon: float
+
+
+def get_zabbix_hosts_coordinates(devices_names: list[str]) -> dict[str, DeviceCoords]:
+    """Return Zabbix inventory coordinates for known network device hosts."""
+    try:
+        with zabbix_api.connect() as zbx:
+            info = zbx.host.get(
+                filter={"host": devices_names},
+                withInventory=True,
+                output=["host", "hostid"],
+                selectInventory=["location_lat", "location_lon"],
+            )
+            return {
+                item["host"]: DeviceCoords(
+                    lat=item["inventory"]["location_lat"], lon=item["inventory"]["location_lon"]
+                )
+                for item in info
+                if item["inventory"]
+            }
     except (MaxRetryError, RequestException, ZabbixAPIException):
         pass
     return {}

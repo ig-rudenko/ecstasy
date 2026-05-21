@@ -1,7 +1,6 @@
 from django.http import FileResponse
 from django.utils.decorators import method_decorator
 from rest_framework import exceptions
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.gathering.services.configurations import (
@@ -10,17 +9,15 @@ from apps.gathering.services.configurations import (
     ConfigurationGather,
     LocalConfigStorage,
 )
+from ecstasy_project.error_handler import ConfigurationCollectionFailed
 
 from ... import models
 from ...models import Devices
 from ...permissions import profile_permission
 from ..serializers import ConfigFileSerializer
 from ..swagger import schemas
+from ..swagger.schemas import collect_config_file_api_doc
 from .base import DeviceAPIView
-
-
-class ConfigFilesPagination(PageNumberPagination):
-    page_size = 25
 
 
 class BaseConfigStorageAPIView(DeviceAPIView):
@@ -82,6 +79,7 @@ class DownloadDeleteConfigAPIView(BaseConfigStorageAPIView):
 class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
     serializer_class = ConfigFileSerializer
+    pagination_class = None
 
     @schemas.config_files_list_api_doc
     @method_decorator(profile_permission(models.Profile.BRAS))
@@ -111,6 +109,7 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
 class CollectConfigAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
 
+    @collect_config_file_api_doc
     @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request, *args, **kwargs):
         """
@@ -137,4 +136,4 @@ class CollectConfigAPIView(BaseConfigStorageAPIView):
             )
 
         except ConfigFileError as error:
-            return Response({"error": error.message}, status=500)
+            raise ConfigurationCollectionFailed({"detail": error.message, "device": device.name}) from error

@@ -100,7 +100,11 @@ docker compose build;
 docker compose up -d;
 ```
 
-По умолчанию создастся пользователь: `admin/password1`.
+Далее создайте суперпользователя.
+
+```shell
+docker compose exec backend python manage.py createsuperuser;
+```
 
 ---
 

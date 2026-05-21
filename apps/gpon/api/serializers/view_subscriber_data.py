@@ -52,6 +52,7 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             "end3",
             "end3Port",
         ]
+        ref_name = "ViewSubscriberConnectionSerializer"
 
     def validate_ont_mac(self, value: str) -> str:
         if not value:

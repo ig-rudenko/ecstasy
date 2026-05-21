@@ -1,12 +1,13 @@
 import re
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.utils import timezone
 
 from apps.app_settings.models import VlanTracerouteConfig
 from apps.net_tools.models import DescNameFormat, VlanName
+from apps.net_tools.services.network import build_traceroute_options
 
 from ...models import MacAddress
 
@@ -18,6 +19,7 @@ class MacQueryValues(TypedDict):
     desc: str
     datetime: datetime
     device__name: str
+    device__group__name: str
 
 
 class MacTraceroute:
@@ -28,7 +30,16 @@ class MacTraceroute:
 
         self._reformatting_cache: dict[str, str] = {}
 
-    def get_mac_graph(self, mac: str, vlan: int | None = None) -> dict:
+    def get_mac_graph(
+        self,
+        mac: str,
+        vlan: int | None = None,
+        device_name_filter: str = "",
+        group_filter: str = "",
+        show_empty_ports: bool = False,
+        graph_min_length: int = 0,
+        nodes_only: bool = False,
+    ) -> dict:
         """
         # Ищем MAC адрес в таблице всех MAC адресов
 
@@ -48,10 +59,14 @@ class MacTraceroute:
 
         # Запрос, который выбирает все объекты MacAddress, имеющие MAC-адрес, переданный в URL-адресе.
         macs_objects = MacAddress.objects.filter(address=mac).values(
-            "type", "vlan", "port", "desc", "datetime", "device__name"
+            "type", "vlan", "port", "desc", "datetime", "device__name", "device__group__name"
         )
         if vlan:
             macs_objects = macs_objects.filter(vlan=vlan)
+        if device_name_filter:
+            macs_objects = macs_objects.filter(device__name__icontains=device_name_filter)
+        if group_filter:
+            macs_objects = macs_objects.filter(device__group__name__icontains=group_filter)
 
         nodes = []
         edges = []
@@ -64,6 +79,17 @@ class MacTraceroute:
 
         for record in macs_objects:  # type: MacQueryValues
             next_device_id, next_device_label = self.get_next_device(record)
+            if not show_empty_ports and not record["desc"]:
+                continue
+            if nodes_only and next_device_id == f"{record['device__name']}-{record['port']}":
+                continue
+            if not self._matches_device_name_filter(
+                record["device__name"],
+                next_device_id,
+                record["desc"],
+                device_name_filter,
+            ):
+                continue
             edge_title = self.create_edge_title(record)
 
             # Проверка отсутствия следующего устройства в списке найденных устройств и уже добавленных.
@@ -86,7 +112,7 @@ class MacTraceroute:
                 nodes.append(
                     {
                         "id": record["device__name"],
-                        "title": edge_title,
+                        "title": record["device__name"],
                         "label": record["device__name"],
                         "shape": "dot",
                         "color": "blue",
@@ -140,11 +166,72 @@ class MacTraceroute:
                 }
             )
 
+        if graph_min_length:
+            nodes, edges = self._filter_graph_min_length(nodes, edges, graph_min_length)
+
         return {
             "nodes": nodes,
             "edges": edges,
+            "options": build_traceroute_options(len(nodes), len(edges)),
             "vlansInfo": vlans_count_list,
         }
+
+    @staticmethod
+    def _matches_device_name_filter(
+        device: str,
+        next_device: str,
+        description: str,
+        device_name_filter: str,
+    ) -> bool:
+        """Check that a MAC graph edge matches the device-name filter."""
+        if not device_name_filter:
+            return True
+
+        filter_value = device_name_filter.casefold()
+        return (
+            filter_value in device.casefold()
+            or filter_value in next_device.casefold()
+            or filter_value in description.casefold()
+        )
+
+    @staticmethod
+    def _filter_graph_min_length(
+        nodes: list[dict], edges: list[dict], graph_min_length: int
+    ) -> tuple[list[dict], list[dict]]:
+        """Drop connected components with fewer nodes than graph_min_length."""
+        if not nodes or not edges:
+            return nodes, edges
+
+        adjacency: dict[str, set[str]] = {}
+        for edge in edges:
+            source = edge["from"]
+            target = edge["to"]
+            adjacency.setdefault(source, set()).add(target)
+            adjacency.setdefault(target, set()).add(source)
+
+        allowed_nodes: set[str] = set()
+        visited: set[str] = set()
+        for node_id in adjacency:
+            if node_id in visited:
+                continue
+
+            stack = [node_id]
+            component: set[str] = set()
+            while stack:
+                current = stack.pop()
+                if current in visited:
+                    continue
+                visited.add(current)
+                component.add(current)
+                stack.extend(adjacency.get(current, set()) - visited)
+
+            if len(component) >= graph_min_length:
+                allowed_nodes.update(component)
+
+        return (
+            [node for node in nodes if node["id"] in allowed_nodes],
+            [edge for edge in edges if edge["from"] in allowed_nodes and edge["to"] in allowed_nodes],
+        )
 
     @staticmethod
     def get_vlan_names(vlans: list[int]) -> dict[int, dict[str, str]]:
@@ -177,36 +264,19 @@ class MacTraceroute:
         return name
 
     @staticmethod
-    def create_edge_title(mac_object: MacQueryValues) -> str:
+    def create_edge_title(mac_object: MacQueryValues) -> dict[str, Any]:
         """
-        ### Эта функция принимает объект MAC-адреса и возвращает строку, являющуюся заголовком ребра.
+        ### Эта функция принимает объект MAC-адреса и возвращает структуру tooltip для ребра.
         """
-        if mac_object["type"] == "D":
-            type_ = '<span class="px-2 rounded text-white bg-primary" style="vertical-align: middle;">dynamic</span>'
-        elif mac_object["type"] == "S":
-            type_ = '<span class="px-2 rounded bg-secondary" style="vertical-align: middle;">static</span>'
-        elif mac_object["type"] == "E":
-            type_ = '<span class="px-2 rounded bg-warning text-dark" style="vertical-align: middle;">security</span>'
-        else:
-            type_ = (
-                '<span class="px-2 rounded bg-light text-dark" style="vertical-align: middle;">none</span>'
-            )
-
-        return f"""
-        <div class="p-3 rounded font-mono" style="font-size: 16px;">
-            <div>From: <b>{mac_object["device__name"]}</b>; Port: <b>{mac_object["port"]}</b></div>
-            <div>To: "{mac_object["desc"]}"</div>
-            <div>
-                VLAN: <span class="px-2 rounded text-white bg-primary">{mac_object["vlan"]}</span>
-            </div>
-            <div>
-                Type: {type_}
-            </div>
-            <div>
-                Обнаружен <b>{naturaltime(mac_object["datetime"])}</b>
-            </div>
-        </div>
-        """
+        type_mapping = {"D": "dynamic", "S": "static", "E": "security"}
+        return {
+            "kind": "mac_edge",
+            "from": {"device": mac_object["device__name"], "port": mac_object["port"]},
+            "to": mac_object["desc"],
+            "vlan": mac_object["vlan"],
+            "mac_type": type_mapping.get(mac_object["type"], "none"),
+            "detected": naturaltime(mac_object["datetime"]),
+        }
 
     @staticmethod
     def create_edge_color(mac_type: str) -> str:
@@ -234,9 +304,20 @@ class MacTraceroute:
         """
         # Ищем в описании на порту следующее устройство по паттерну
         next_device_match = re.findall(self.find_device_pattern, self.reformatting(mac_address["desc"]))
-        # Если нашли в описании следующее оборудование
+        extracted_next_device = ""
         if next_device_match:
-            next_device_id = next_device_label = next_device_match[0]
+            first_match = next_device_match[0]
+            if isinstance(first_match, tuple):
+                # If pattern has capturing groups, re.findall can return tuple groups.
+                extracted_next_device = next(
+                    (str(part).strip() for part in first_match if str(part).strip()), ""
+                )
+            else:
+                extracted_next_device = str(first_match).strip()
+
+        # Если нашли в описании следующее оборудование
+        if extracted_next_device:
+            next_device_id = next_device_label = extracted_next_device
 
         # Если следующее устройство не найдено в описании,
         # то следующему устройству присваивается имя текущего устройства и номер порта.

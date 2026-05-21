@@ -112,7 +112,7 @@ class TestHeadDownSolutions(TestRingBase):
 
         solutions = r.create_solutions().solutions
 
-        print(solutions)
+        # print(solutions)
 
         # Найдено 1 решение
         self.assertEqual(len(solutions), 1)

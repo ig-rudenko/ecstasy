@@ -7,6 +7,7 @@ from ..models import Maps
 from ..services.maps import get_map_layers_geo_data, get_zabbix_problems_on_map
 from .permissions import MapPermission
 from .serializers import MapDetailSerializer, MapLayerSerializer, MapSerializer
+from .swagger.schemas import map_layers_render_api_doc, map_update_layers_api_doc
 
 
 class MapPageNumberPagination(PageNumberPagination):
@@ -38,7 +39,8 @@ class InteractiveMapAPIView(generics.RetrieveAPIView):
     lookup_field = "id"
     permission_classes = [IsAuthenticated, MapPermission]
 
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    @map_layers_render_api_doc
+    def get(self, request, *args, **kwargs) -> Response:
         """
         Эта функция извлекает данные из слоев объекта карты и возвращает их в формате списка.
         """
@@ -53,7 +55,8 @@ class UpdateInteractiveMapAPIView(generics.RetrieveAPIView):
     lookup_field = "id"
     permission_classes = [IsAuthenticated, MapPermission]
 
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    @map_update_layers_api_doc
+    def get(self, request, *args, **kwargs) -> Response:
         """
         # Проверяем какие из узлов сети недоступны на интерактивной карте с заданным идентификатором
 
@@ -61,8 +64,8 @@ class UpdateInteractiveMapAPIView(generics.RetrieveAPIView):
 
             {
                 "problems": [
-                    {"id": "host_id", "acknowledges": [["datetime", "text"], ... ]},
-                    {"id": "host_id", "acknowledges": [["datetime", "text"], ... ]},
+                    {"id": "host_id", "acknowledges": [["text", "datetime"], ... ]},
+                    {"id": "host_id", "acknowledges": [["text", "datetime"], ... ]},
                     ...
                 ]
 

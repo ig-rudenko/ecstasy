@@ -195,7 +195,7 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
                 # Ищем блок конфигурации текущего порта и его VLAN.
                 if match := re.search(rf"{name}.*vlan allow (\S+)", config, flags=re.DOTALL):
                     vlans = match.group(1).split(",")
-            result.append((name, status, desc, vlans))
+            result.append((name, status, desc, vlans))  # noqa
 
         return result
 

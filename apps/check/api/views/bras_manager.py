@@ -14,6 +14,8 @@ from ..swagger.schemas import bras_get_session_api_doc, cut_bras_session_api_doc
 
 
 class BrassSessionAPIView(UserAuthenticatedAPIView):
+    pagination_class = None
+
     @method_decorator(bras_get_session_api_doc)
     @method_decorator(profile_permission(models.Profile.BRAS))
     def get(self, request):

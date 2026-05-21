@@ -8,6 +8,7 @@ TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"
 MAC = str
 MACType = Literal["static", "dynamic", "security"]
 PORT = str
+PORTS = list[str]
 STATUS = str
 DESCRIPTION = str
 VID = int
@@ -19,7 +20,7 @@ InterfaceType = Literal["up", "down", "admin down", "notPresent", "dormant"]
 InterfaceListType = list[tuple[PORT, InterfaceType, DESCRIPTION]]
 InterfaceVLANListType = list[tuple[PORT, InterfaceType, DESCRIPTION, VLAN_LIST]]
 MACTableType = list[tuple[VID, MAC, MACType, PORT]]
-VlanTableType = list[tuple[VID, DESCRIPTION, PORT]]
+VlanTableType = list[tuple[VID, PORTS, DESCRIPTION]]
 
 SplittedPortType = tuple[str, tuple[str, ...]]
 

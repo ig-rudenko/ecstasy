@@ -5,25 +5,89 @@ class GetVlanDescQuerySerializer(serializers.Serializer):
     vlan = serializers.IntegerField(max_value=4096, min_value=1)
 
 
-class VlanTracerouteQuerySerializer(serializers.Serializer):
-    vlan = serializers.IntegerField(max_value=4096, min_value=1)
+class TracerouteQuerySerializer(serializers.Serializer):
+    mode = serializers.ChoiceField(
+        choices=("vlan", "mac", "neighbors"),
+        default="vlan",
+        required=False,
+        help_text="Traceroute mode.",
+    )
+    vlan = serializers.IntegerField(max_value=4096, min_value=1, required=False)
+    mac = serializers.CharField(
+        allow_blank=True,
+        default="",
+        required=False,
+        trim_whitespace=True,
+        help_text="MAC address filter.",
+    )
+    mac_vlan = serializers.IntegerField(max_value=4096, min_value=1, required=False)
     ep = serializers.BooleanField(
         default=False,
         required=False,
-        help_text="Показывать пустые порты",
+        help_text="Show empty ports.",
     )
     ad = serializers.BooleanField(
         default=False,
         required=False,
-        help_text="Указывать выключенные порты",
+        help_text="Show admin down ports.",
     )
     double_check = serializers.BooleanField(
-        default=False, required=False, help_text="Двухстороннее соответствие VLAN на соседних портах"
+        default=False,
+        required=False,
+        help_text="Check VLAN on both neighbor ports.",
     )
     graph_min_length = serializers.IntegerField(
         min_value=0,
         default=0,
         max_value=1024,
         required=False,
-        help_text="Минимальное количество узлов в одном графе",
+        help_text="Minimum node count in a graph component.",
     )
+    max_port_vlans = serializers.IntegerField(
+        min_value=0,
+        default=0,
+        max_value=4096,
+        required=False,
+        help_text="Skip ports with VLAN count greater than this value in VLAN traceroute. 0 disables the filter.",
+    )
+    trunk_filter_mode = serializers.ChoiceField(
+        choices=("off", "mark_broad", "hide_broad"),
+        default="mark_broad",
+        required=False,
+        help_text="How VLAN traceroute handles broad trunk ports.",
+    )
+    nodes_only = serializers.BooleanField(
+        default=False,
+        required=False,
+        help_text="Show only network device nodes.",
+    )
+    device_name = serializers.CharField(
+        allow_blank=True,
+        default="",
+        required=False,
+        trim_whitespace=True,
+        help_text="Device name filter.",
+    )
+    group = serializers.CharField(
+        allow_blank=True,
+        default="",
+        required=False,
+        trim_whitespace=True,
+        help_text="Device group filter.",
+    )
+
+    def validate(self, attrs):
+        """Validate required filter for selected traceroute mode."""
+        mode = attrs.get("mode", "vlan")
+        if mode == "vlan" and not attrs.get("vlan"):
+            raise serializers.ValidationError({"vlan": "This field is required for VLAN traceroute."})
+        if mode == "mac" and not attrs.get("mac"):
+            raise serializers.ValidationError({"mac": "This field is required for MAC traceroute."})
+        return attrs
+
+
+VlanTracerouteQuerySerializer = TracerouteQuerySerializer
+
+
+class TracerouteMapQuerySerializer(TracerouteQuerySerializer):
+    """Query serializer for geographic traceroute visualization."""

@@ -16,6 +16,7 @@ import {
     IconField,
     IftaLabel,
     Image,
+    InlineMessage,
     InputGroup,
     InputIcon,
     InputMask,
@@ -35,49 +36,26 @@ import {
     SplitButton,
     Textarea,
     ToggleSwitch,
-    Tooltip
+    Tooltip,
 } from "primevue";
 import ToastService from "primevue/toastservice";
 
 import "@/assets/base.css";
-import 'primeicons/primeicons.css';
+import "primeicons/primeicons.css";
 
-import {app} from '@/appInstance';
+import { app } from "@/appInstance";
 import store from "@/store";
 import router from "@/router";
-import keycloakConnector from "@/keycloak";
-import setupInterceptors from '@/services/api/setupInterceptors';
-import {setTokens} from "@/services/auth/token.service.ts";
+import setupInterceptors from "@/services/api/setupInterceptors";
+import { initializeOIDC, isOIDCLogin } from "@/oidc";
 
 setupInterceptors();
-app.directive('ripple', Ripple);
-app.directive('tooltip', Tooltip);
+app.directive("ripple", Ripple);
+app.directive("tooltip", Tooltip);
 app.use(ToastService);
 app.use(ConfirmationService);
 app.use(store);
 app.use(router);
-
-keycloakConnector.initKeycloak().then(() => {
-    if (!keycloakConnector.enabled) return;  // Если OIDC вышлючен на backend.
-
-    if (window.location.hash) {
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-
-    // Если вошли через OIDC.
-    if (keycloakConnector.keycloakLoginState.isLogin) {
-        keycloakConnector.autoRefreshToken(setTokens);  // Автоматическое обновление токена.
-        store.dispatch('auth/keycloakLogin')
-    }
-
-    // Если необходимо авторизоваться.
-    if (keycloakConnector.keycloakLoginState.autoLogin) {
-        store.dispatch('auth/keycloakLogin').then(
-            () => setTimeout(() => location.href = "/", 100)
-        )
-        keycloakConnector.keycloakLoginState.deleteAutoLogin()
-    }
-});
 
 app.component("Avatar", Avatar);
 app.component("Badge", Badge);
@@ -92,6 +70,7 @@ app.component("Divider", Divider);
 app.component("Drawer", Drawer);
 app.component("IconField", IconField);
 app.component("IftaLabel", IftaLabel);
+app.component("InlineMessage", InlineMessage);
 app.component("InputGroup", InputGroup);
 app.component("InputIcon", InputIcon);
 app.component("InputNumber", InputNumber);
@@ -114,4 +93,12 @@ app.component("SplitButton", SplitButton);
 app.component("Textarea", Textarea);
 app.component("ToggleSwitch", ToggleSwitch);
 
-app.mount('#app');
+initializeOIDC()
+    .then(() => {
+        if (isOIDCLogin()) {
+            store.dispatch("auth/oidcLogin");
+        }
+    })
+    .finally(() => {
+        app.mount("#app");
+    });

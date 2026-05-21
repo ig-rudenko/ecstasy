@@ -1,8 +1,8 @@
-import {ref, Ref} from "vue";
+import { ref, Ref } from "vue";
 
 import errorFmt from "@/errorFmt";
-import {errorToast, newToast} from "@/services/my.toast";
-import devicesService, {ChangePortStatusRequest} from "@/services/devices";
+import { errorToast, newToast } from "@/services/my.toast";
+import devicesService, { ChangePortStatusRequest } from "@/services/devices";
 
 interface PortAction {
     device: string;
@@ -18,10 +18,10 @@ class InterfaceControlService {
     public portAction: Ref<PortAction> = ref({
         device: "",
         name: "",
-        action: "" as (string | null),
+        action: "" as string | null,
         port: "",
         desc: "",
-    })
+    });
 
     closeDialog() {
         this.dialogVisible.value = false;
@@ -35,7 +35,6 @@ class InterfaceControlService {
      * @param device Имя устройства
      */
     registerAction(action: "up" | "down" | "reload", port: string, description: string, device: string): void {
-
         if (["up", "down", "reload"].indexOf(action) < 0) {
             // Если неверное действие
             this.portAction.value = {
@@ -44,18 +43,18 @@ class InterfaceControlService {
                 action: null,
                 port: "",
                 desc: "",
-            }
+            };
             this.dialogVisible.value = false;
             return;
         }
 
-        let actionName: string
+        let actionName: string;
         if (action === "up") {
-            actionName = "включить"
+            actionName = "включить";
         } else if (action === "down") {
-            actionName = "выключить"
+            actionName = "выключить";
         } else {
-            actionName = "перезагрузить"
+            actionName = "перезагрузить";
         }
 
         this.dialogVisible.value = true;
@@ -65,9 +64,8 @@ class InterfaceControlService {
             desc: description,
             action: action,
             device: device,
-        }
+        };
     }
-
 
     /**
      * Подтверждаем действие над выбранным портом
@@ -79,35 +77,33 @@ class InterfaceControlService {
         if (!this.portAction.value.action) return;
 
         let data: ChangePortStatusRequest = {
-            port: this.portAction.value.port,       // Сам порт
-            desc: this.portAction.value.desc,       // Описание порта
-            status: this.portAction.value.action,   // Что сделать с портом
-            save: saveConfig,                 // Сохранить конфигурацию после действия?
-        }
+            port: this.portAction.value.port, // Сам порт
+            desc: this.portAction.value.desc, // Описание порта
+            status: this.portAction.value.action, // Что сделать с портом
+            save: saveConfig, // Сохранить конфигурацию после действия?
+        };
 
-        devicesService.changePortStatus(this.portAction.value.device, data)
+        devicesService
+            .changePortStatus(this.portAction.value.device, data)
             .then(
-                value => {
+                (value) => {
                     let status = value.status.toUpperCase();
-                    let className = status === "DOWN" ? "bg-red-500" : (status === "RELOAD" ? "bg-orange-500" : "bg-green-600");
+                    let className =
+                        status === "DOWN" ? "bg-red-500" : status === "RELOAD" ? "bg-orange-500" : "bg-green-600";
                     status = status === "DOWN" ? "ADMIN DOWN" : status;
                     newToast(
                         `Порт: <span class="p-badge bg-gray-700 text-white">${value.port}</span>`,
                         `Состояние: <span class="p-badge ${className}">${status}</span>
-                           Конфигурация ${value.save ? '' : 'НЕ '}была сохранена!`,
+                           Конфигурация ${value.save ? "" : "НЕ "}была сохранена!`,
                         value.save ? "success" : "info",
-                        5000,
-                    )
+                        5000
+                    );
                 },
                 (reason: any) => errorToast("Ошибка при изменении состояния порта", errorFmt(reason))
             )
-            .catch(
-                (reason: any) => errorToast("Ошибка при изменении состояния порта", errorFmt(reason))
-            )
+            .catch((reason: any) => errorToast("Ошибка при изменении состояния порта", errorFmt(reason)));
     }
-
 }
-
 
 const interfaceControlService = new InterfaceControlService();
 export default interfaceControlService;

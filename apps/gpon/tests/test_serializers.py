@@ -355,7 +355,7 @@ class TestCreateTechDataSerializer(TestCase):
         serializer = CreateTechDataSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        print(serializer.errors)
+        # print(serializer.errors)
         self.assertDictEqual(
             serializer.errors,
             {
@@ -592,7 +592,7 @@ class TestBuildingAddressSerializer(TestCase):
     def test_serializer(self):
         serializer = BuildingAddressSerializer(instance=HouseB.objects.all(), many=True)
         data = serializer.data
-        print(data)
+        # print(data)
         self.assertEqual(len(data), 4)
         self.assertEqual(data[0].keys(), data[3].keys())
         self.assertTupleEqual(
@@ -606,6 +606,7 @@ class TestBuildingAddressSerializer(TestCase):
                 "house",
                 "block",
                 "building_type",
+                "building_id",
                 "floors",
                 "total_entrances",
             ),

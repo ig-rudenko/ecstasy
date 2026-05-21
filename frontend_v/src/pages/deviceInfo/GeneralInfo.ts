@@ -1,6 +1,6 @@
 export interface ZabbixMapInfo {
-    sysmapid: number,
-    name: string,
+    sysmapid: number;
+    name: string;
 }
 
 export interface ZabbixInfo {
@@ -11,18 +11,18 @@ export interface ZabbixInfo {
 }
 
 export interface GeneralInfo {
-    coords: string[],
-    deviceIP: string,
-    deviceName: string,
-    elasticStackLink: string,
-    permission: number,
-    zabbixHostID: number,
-    zabbixInfo: ZabbixInfo,
-    zabbixURL: string,
-    consoleURL: string,
-    uptime: number | string,
-    vendor: string | null,
-    model: string | null,
-    serialNumber: string | null,
-    osVersion: string | null,
+    coords: number[] | null;
+    deviceIP: string;
+    deviceName: string;
+    elasticStackLink: string;
+    permission: number;
+    zabbixHostID: number;
+    zabbixInfo: ZabbixInfo;
+    zabbixURL: string;
+    consoleURL: string;
+    uptime: number | string;
+    vendor: string | null;
+    model: string | null;
+    serialNumber: string | null;
+    osVersion: string | null;
 }

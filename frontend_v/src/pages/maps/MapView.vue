@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import "leaflet/dist/leaflet.css";
-import {computed, onMounted, onUnmounted, ref} from "vue";
-import {useRoute} from "vue-router";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRoute } from "vue-router";
 
 import api from "@/services/api";
-import {getMapDetail, MapDetail, MapService} from "@/pages/maps/maps";
+import { getMapDetail, MapDetail, MapService } from "@/pages/maps/maps";
 
 const route = useRoute();
 const search = ref("");
@@ -34,8 +34,8 @@ const mapTypeLabel = computed(() => {
  * @param url - URL файла карты.
  */
 async function loadFileMap(url: string) {
-    const response = await api.get(url, {responseType: "text"});
-    const blob = new Blob([response.data], {type: "text/html"});
+    const response = await api.get(url, { responseType: "text" });
+    const blob = new Blob([response.data], { type: "text/html" });
 
     if (fileMapUrl.value) {
         URL.revokeObjectURL(fileMapUrl.value);
@@ -126,43 +126,43 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative h-screen w-screen overflow-hidden bg-slate-950">
-    <div v-if="fileMapUrl" class="h-full w-full p-4">
-      <iframe :src="fileMapUrl" class="h-full w-full rounded-[2rem]" />
-    </div>
-    <div v-else id="map" class="h-full w-full"></div>
-
-    <div class="pointer-events-none absolute inset-x-0 -top-8 z-9999">
-      <div class="mx-auto flex max-w-7xl flex-col">
-        <div
-          class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/10 p-2 pt-10 text-white shadow-xl backdrop-blur-xl"
-        >
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0 px-4">
-              <div class="flex flex-wrap items-center justify-center gap-2">
-                <router-link :to="'/maps'" class="flex items-center gap-2">
-                  <i class="pi pi-arrow-left text-xs" />
-                  <span>К списку</span>
-                </router-link>
-                <Tag severity="contrast" :value="mapTypeLabel" />
-              </div>
-              <div class="font-semibold">{{ mapData?.name || "Карта" }}</div>
-            </div>
-
-            <div v-if="showSearch" class="w-full lg:min-w-[24rem] lg:w-auto">
-              <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
-                <InputText
-                  v-model="search"
-                  placeholder="Поиск по карте"
-                  class="w-full"
-                  @keydown.enter="searchElement"
-                />
-                <Button @click="searchElement" icon="pi pi-search" />
-              </div>
-            </div>
-          </div>
+    <div class="relative h-screen w-screen overflow-hidden bg-slate-950">
+        <div v-if="fileMapUrl" class="h-full w-full p-4">
+            <iframe :src="fileMapUrl" class="h-full w-full rounded-[2rem]" />
         </div>
-      </div>
+        <div v-else id="map" class="h-full w-full"></div>
+
+        <div class="pointer-events-none absolute inset-x-0 -top-8 z-9999">
+            <div class="mx-auto flex max-w-7xl flex-col">
+                <div
+                    class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/10 p-2 pt-10 text-white shadow-xl backdrop-blur-xl"
+                >
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="min-w-0 px-4">
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <router-link :to="'/maps'" class="flex items-center gap-2">
+                                    <i class="pi pi-arrow-left text-xs" />
+                                    <span>К списку</span>
+                                </router-link>
+                                <Tag severity="contrast" :value="mapTypeLabel" />
+                            </div>
+                            <div class="font-semibold">{{ mapData?.name || "Карта" }}</div>
+                        </div>
+
+                        <div v-if="showSearch" class="w-full lg:min-w-[24rem] lg:w-auto">
+                            <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
+                                <InputText
+                                    v-model="search"
+                                    placeholder="Поиск по карте"
+                                    class="w-full"
+                                    @keydown.enter="searchElement"
+                                />
+                                <Button @click="searchElement" icon="pi pi-search" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </template>

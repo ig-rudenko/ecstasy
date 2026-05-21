@@ -14,7 +14,7 @@ def get_map_layers_geo_data(map_object: Maps) -> list[dict]:
     layers_data = []
     zabbix_layers = []
 
-    for layer in map_object.layers.all():  # Проходимся по введенным именам групп
+    for layer in map_object.layers.all():  # type: Layers # Проходимся по введенным именам групп
         if layer.type == "zabbix":
             zabbix_layers.append(layer)
 

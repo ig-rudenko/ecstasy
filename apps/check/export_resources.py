@@ -1,22 +1,24 @@
 from import_export import fields, resources
+from import_export.widgets import ForeignKeyWidget
 
-from .models import Devices
+from .models import AuthGroup, DeviceGroup, Devices
 
 
 class DevicesResource(resources.ModelResource):
-    auth_group = fields.Field(column_name="auth_group")
-    group = fields.Field(column_name="group")
-
-    @staticmethod
-    def dehydrate_auth_group(obj):
-        return obj.auth_group.name
-
-    @staticmethod
-    def dehydrate_group(obj):
-        return obj.group.name
+    auth_group = fields.Field(
+        column_name="auth_group",
+        attribute="auth_group",
+        widget=ForeignKeyWidget(AuthGroup, "name"),  # noqa
+    )
+    group = fields.Field(
+        column_name="group",
+        attribute="group",
+        widget=ForeignKeyWidget(DeviceGroup, "name"),  # noqa
+    )
 
     class Meta:
         model = Devices
+        import_id_fields = ("ip",)
         fields = (
             "ip",
             "name",

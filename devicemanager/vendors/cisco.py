@@ -6,7 +6,7 @@ import textfsm
 
 from .base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import interface_normal_view, parse_by_template
+from .base.helpers import interface_normal_view, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -20,6 +20,7 @@ from .base.types import (
     MACTableType,
     MACType,
     PortInfoType,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port_as_normal
 
@@ -66,6 +67,8 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         :param model: Модель коммутатора. Это используется для определения подсказки
         """
         super().__init__(session, ip, auth, model, snmp_community)
+        self.send_command("terminal length 0", expect_command=False)
+
         version = self.send_command("show version")
         self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
         self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
@@ -147,18 +150,49 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
+        interfaces_config: dict[str, str] = self._get_interfaces_config()
+
         for line in interfaces:
             # Отфильтровываем интерфейсы VLAN.
             if not line[0].startswith("V"):
-                output = self.send_command(
-                    command=f"show running-config interface {interface_normal_view(line[0])}",
-                    before_catch="Building configuration",
-                    expect_command=False,
+                intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
+                vlans_group: list[str] = re.findall(
+                    r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
+                    intf_config,
                 )
-                vlans_group: list[str] = re.findall(r"(?<=access|llowed) vlan [ad\s]*(\S*\d)", output)
-                result.append((line[0], line[1], line[2], vlans_group))
+                result.append((line[0], line[1], line[2], vlans_group))  # noqa
 
         return result
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        vlan_output = self.send_command("show vlan brief")
+        parsed = re.findall(r"^(?P<vid>\d+)\s+(?P<desc>\S+)", vlan_output, flags=re.MULTILINE)
+        # Формируем словарь: { 123: "vlan_desc" }
+        vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
+
+        self.lock = False
+        interfaces_vlans = self.get_vlans()
+        self.lock = True
+
+        # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
+        vlan_ports: dict[int, list[str]] = {}
+        for line in interfaces_vlans:
+            for vlan in range_to_numbers(",".join(map(str, line[-1]))):
+                vlan_ports.setdefault(vlan, []).append(line[0])
+
+        result: VlanTableType = []
+        for vlan, ports in vlan_ports.items():
+            result.append((vlan, ports, vlan_desc.get(vlan, "")))
+        return result
+
+    def _get_interfaces_config(self) -> dict[str, str]:
+        output = self.send_command("show running-config", expect_command=False)
+        interfaces_config: dict[str, str] = {}
+        for line in re.findall(r"interface\s+\S+\d.+?!", output, flags=re.DOTALL):
+            if interface_name := re.match(r"^interface\s+(\S+)", line):
+                interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
+        return interfaces_config
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal(if_invalid_return=[])

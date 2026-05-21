@@ -1,10 +1,11 @@
 """Shared admin filters for Unfold-based Django admin."""
 
+from django.core.cache import cache
 from django.core.exceptions import EmptyResultSet
 from unfold.contrib.filters.admin import DropdownFilter
 
 
-def distinct_dropdown_filter(field_name: str, title: str | None = None):
+def distinct_dropdown_filter(field_name: str, title: str | None = None, use_cache: bool = False):
     """Create a dropdown filter class backed by distinct model field values."""
 
     resolved_title = title or field_name.replace("__", " ")
@@ -27,7 +28,17 @@ def distinct_dropdown_filter(field_name: str, title: str | None = None):
             except EmptyResultSet:
                 return []
 
-            return [(value, str(value)) for value in values if value not in (None, "")]
+            cache_key = f"DistinctFieldDropdownFilter:{model_admin.model._meta.app_label}.{model_admin.model.__name__}.{field_name}"
+
+            if use_cache and (data := cache.get(cache_key)):
+                return data
+
+            data = [(value, str(value)) for value in values if value not in (None, "")]
+
+            if use_cache:
+                cache.set(cache_key, data, timeout=60)
+
+            return data
 
         def queryset(self, request, queryset):
             """Apply exact filtering using the selected dropdown value."""

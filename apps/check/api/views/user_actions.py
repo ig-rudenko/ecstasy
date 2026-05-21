@@ -1,5 +1,6 @@
 from django.utils.decorators import method_decorator
 from rest_framework import status
+from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 
 from ...models import UsersActions
@@ -9,22 +10,26 @@ from ..swagger.schemas import set_device_viewings_api_doc
 from .base import DeviceAPIView
 
 
-class UserDeviceActionsAPIView(DeviceAPIView):
+class UserDeviceActionsAPIView(ListModelMixin, DeviceAPIView):
     serializer_class = UserDeviceActionSerializer
 
     def get(self, request, *args, **kwargs):
         device = self.get_object()
-        queryset = (
-            UsersActions.objects.filter(device__name=device.name).values(
-                "time", "user", "action", "user__username"
-            )
-        )[:200]
+        queryset = UsersActions.objects.filter(device__name=device.name).values(
+            "time", "user", "action", "user__username"
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
 @method_decorator(set_device_viewings_api_doc, name="post")
 class ViewingDeviceAPIView(DeviceAPIView):
+    pagination_class = None
     serializer_class = DeviceViewingsSerializer
 
     def get(self, request, *args, **kwargs):

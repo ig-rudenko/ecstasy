@@ -1,4 +1,5 @@
 from django.http import Http404
+from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 
 from ecstasy_project.types.api import UserAuthenticatedAPIView
@@ -10,6 +11,7 @@ from ...services.filters import filter_devices_qs_by_user
 
 class DeviceAPIView(UserAuthenticatedAPIView):
     permission_classes = [IsAuthenticated, DevicePermission]
+    serializer_class = serializers.Serializer
     lookup_url_kwarg = "device_name_or_ip"
     lookup_field = "name"
 

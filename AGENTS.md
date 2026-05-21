@@ -22,7 +22,9 @@
 - `devicemanager/` - python модуль для работы с сетевым оборудованием
 - `ecstasy_project/` - модуль django project
 - `ecstasy_project/settings.py` - файл настроек django
+- `manage.py` - файл для управления django
 - `frontend_v/` - папка с фронтендом приложения
+- `frontend_v/node_modules/` - папка зависимостей, нужно игнорировать
 - `device_connector.py` - файл для запуска device connector сервиса для подключений к сетевому оборудованию.
 
 ## Соглашения кодирования

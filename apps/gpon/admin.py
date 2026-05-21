@@ -1,9 +1,20 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
+from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import ChoicesDropdownFilter, RangeDateTimeFilter, RelatedDropdownFilter
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 
 from ecstasy_project.admin_filters import distinct_dropdown_filter
 
+from .export_resources import (
+    AddressResource,
+    CustomerResource,
+    End3Resource,
+    ServiceResource,
+    TechCapabilityResource,
+)
 from .models import (
     Address,
     Customer,
@@ -22,8 +33,49 @@ EntrancesDropdownFilter = distinct_dropdown_filter("total_entrances", "total ent
 NumberDropdownFilter = distinct_dropdown_filter("number", "number")
 
 
+class TechCapabilityRelatedDropdownFilter(RelatedDropdownFilter):
+    """Related dropdown with preloaded `end3 -> address` for labels."""
+
+    def field_choices(self, field, request: HttpRequest, model_admin: ModelAdmin):
+        """Build choices without N+1 from `TechCapability.__str__`."""
+        del field
+        capability_ids = (
+            model_admin.get_queryset(request)
+            .order_by()
+            .values_list("tech_capability_id", flat=True)
+            .distinct()
+        )
+        capabilities = (
+            TechCapability.objects.filter(pk__in=capability_ids)
+            .select_related("end3__address")
+            .only(
+                "id",
+                "end3__location",
+                "end3__address__region",
+                "end3__address__settlement",
+                "end3__address__plan_structure",
+                "end3__address__street",
+                "end3__address__house",
+                "end3__address__block",
+                "end3__address__floor",
+                "end3__address__apartment",
+            )
+        )
+        return [(capability.pk, str(capability)) for capability in capabilities]
+
+    def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet | None:
+        """Apply selected filter value and keep related data joined."""
+        qs = super().queryset(request, queryset)
+        if qs is not None:
+            return qs.select_related("tech_capability__end3__address")
+        return qs
+
+
 @admin.register(Service)
-class ServiceAdmin(ModelAdmin):
+class ServiceAdmin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    resource_class = ServiceResource
     compressed_fields = True
     warn_unsaved_form = True
     list_display = ("name",)
@@ -31,7 +83,10 @@ class ServiceAdmin(ModelAdmin):
 
 
 @admin.register(End3)
-class End3Admin(ModelAdmin):
+class End3Admin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    resource_class = End3Resource
     compressed_fields = True
     warn_unsaved_form = True
     list_filter_submit = True
@@ -73,7 +128,7 @@ class HouseOLTStateAdmin(ModelAdmin):
     warn_unsaved_form = True
     list_filter_submit = True
     list_display = ("house", "statement", "entrances", "end3_set_count")
-    list_select_related = ["house", "statement"]
+    list_select_related = ["house", "statement", "statement__device"]
     autocomplete_fields = ("house", "statement", "end3_set")
     list_filter = (("statement", RelatedDropdownFilter),)
     search_fields = ("house__address__street", "house__address__house", "statement__olt_port")
@@ -94,6 +149,7 @@ class OLTStateAdmin(ModelAdmin):
     warn_unsaved_form = True
     list_filter_submit = True
     list_display = ("device", "olt_port", "fiber")
+    list_select_related = ["device"]
     autocomplete_fields = ("device",)
     search_fields = ("device__name", "olt_port", "fiber", "description")
     list_filter = (("device", RelatedDropdownFilter),)
@@ -104,7 +160,10 @@ class OLTStateAdmin(ModelAdmin):
 
 
 @admin.register(Address)
-class AddressAdmin(ModelAdmin):
+class AddressAdmin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    resource_class = AddressResource
     compressed_fields = True
     warn_unsaved_form = True
     list_display = ("verbose", "settlement", "street", "house")
@@ -117,19 +176,25 @@ class AddressAdmin(ModelAdmin):
 
 
 @admin.register(TechCapability)
-class TechCapabilityAdmin(ModelAdmin):
+class TechCapabilityAdmin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    resource_class = TechCapabilityResource
     compressed_fields = True
     warn_unsaved_form = True
     list_filter_submit = True
     list_display = ("end3", "status", "number")
     list_filter = (("status", ChoicesDropdownFilter), NumberDropdownFilter)
-    list_select_related = ["end3"]
+    list_select_related = ["end3", "end3__address"]
     autocomplete_fields = ("end3",)
     search_fields = ("end3__location", "end3__address__street", "end3__address__house")
 
 
 @admin.register(Customer)
-class CustomerAdmin(ModelAdmin):
+class CustomerAdmin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    resource_class = CustomerResource
     compressed_fields = True
     warn_unsaved_form = True
     list_filter_submit = True
@@ -151,13 +216,12 @@ class SubscriberConnectionAdmin(ModelAdmin):
     list_filter_submit = True
     list_display = ("transit", "order", "address", "customer", "connected_at")
     search_fields = ("transit", "order", "ont_serial", "ont_mac", "ip")
-    list_select_related = ["address", "customer", "tech_capability"]
-    autocomplete_fields = ("customer", "address", "tech_capability")
-    filter_horizontal = ("services",)
+    list_select_related = True
+    autocomplete_fields = ("customer", "address", "tech_capability", "services")
     list_filter = (
         ("customer", RelatedDropdownFilter),
         ("address", RelatedDropdownFilter),
-        ("tech_capability", RelatedDropdownFilter),
+        ("tech_capability", TechCapabilityRelatedDropdownFilter),
         ("connected_at", RangeDateTimeFilter),
     )
     fieldsets = (

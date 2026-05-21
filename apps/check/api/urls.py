@@ -27,7 +27,7 @@ urlpatterns = [
     #               Devices Info
     # ===========================================
     path(
-        "workload/interfaces",
+        "workload/interfaces/_all",
         devices_info.AllDevicesInterfacesWorkLoadAPIView.as_view(),
         name="all-devices-interfaces-workload",
     ),

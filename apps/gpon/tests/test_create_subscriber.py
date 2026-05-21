@@ -63,8 +63,8 @@ class TestSubscriberDataCreation(APITestCase):
         serializer = SubscriberDataSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
         # serializer.is_valid()
-        print(serializer.errors)
-        print(serializer.validated_data)
+        # print(serializer.errors)
+        # print(serializer.validated_data)
         serializer.save()
         self._after_created()
 
@@ -77,7 +77,7 @@ class TestSubscriberDataCreation(APITestCase):
         self._after_created()
 
     def _after_created(self):
-        print("_after_created")
+        # print("_after_created")
         self.assertEqual(Customer.objects.count(), 1)
         self.tech_capability.refresh_from_db()
         self.assertEqual(self.tech_capability.status, TechCapability.Status.active.value)

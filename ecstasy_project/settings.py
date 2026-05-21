@@ -54,11 +54,13 @@ if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
 
 PROXY_URL = os.getenv("PROXY_URL", "")
+API_PROBLEM_BASE_URL = os.getenv("API_PROBLEM_BASE_URL", "/api/problems")
 
 # Application definition
 INSTALLED_APPS = [
     "unfold",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.import_export",
     "django.contrib.admin",
     "django.contrib.auth",
     "mozilla_django_oidc",
@@ -264,7 +266,7 @@ REST_FRAMEWORK: dict = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "ecstasy_project.authentication.CustomJWTAuthentication",
         "apps.accounting.api_tokens.CustomTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -273,7 +275,9 @@ REST_FRAMEWORK: dict = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+    "EXCEPTION_HANDLER": "ecstasy_project.error_handler.custom_exception_handler",
 }
 if ENV == "dev":
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append("rest_framework.renderers.BrowsableAPIRenderer")

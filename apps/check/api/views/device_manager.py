@@ -2,7 +2,7 @@ import re
 
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -11,6 +11,11 @@ from apps.notifications.services.notifications_render import run_device_trigger
 from apps.notifications.services.triggers import TriggerNames
 from devicemanager.remote.connector import pool_controller
 from devicemanager.remote.exceptions import InvalidMethod
+from ecstasy_project.error_handler import (
+    DeviceCommandExecutionFailed,
+    DeviceUnavailable,
+    UnsupportedDeviceOperation,
+)
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
 from ... import models
@@ -46,6 +51,7 @@ from ..serializers import (
 )
 from ..swagger import schemas
 from ..swagger.schemas import (
+    cable_diagnostic_api_doc,
     change_description_api_doc,
     change_dsl_profile_api_doc,
     get_device_pool_status_api_doc,
@@ -53,7 +59,10 @@ from ..swagger.schemas import (
     mac_list_api_doc,
 )
 from .base import DeviceAPIView
-from .paginators import BulkDeviceCommandExecutionPagination, BulkDeviceCommandExecutionResultPagination
+from .paginators import (
+    BulkDeviceCommandExecutionPagination,
+    BulkDeviceCommandExecutionResultPagination,
+)
 
 
 @method_decorator(schemas.port_control_api_doc, name="post")  # API DOC
@@ -172,6 +181,8 @@ class ChangeDescriptionAPIView(DeviceAPIView):
 
 @method_decorator(mac_list_api_doc, name="get")
 class MacListAPIView(DeviceAPIView):
+    pagination_class = None
+
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
         """
@@ -207,7 +218,10 @@ class MacListAPIView(DeviceAPIView):
 
 
 class CableDiagAPIView(DeviceAPIView):
+    pagination_class = None
+
     @except_connection_errors
+    @cable_diagnostic_api_doc
     def get(self, request: Request, *args, **kwargs):
         """
         ## Запускаем диагностику кабеля на порту
@@ -232,20 +246,26 @@ class CableDiagAPIView(DeviceAPIView):
 
         """
 
-        if not request.GET.get("port"):
-            raise ValidationError({"detail": "Неверные данные"})
-
         # Находим оборудование
         device: models.Devices = self.get_object()
 
+        if not request.GET.get("port"):
+            raise ValidationError({"detail": "Неверные данные"})
         # Если оборудование недоступно
         if not device.available:
-            return Response({"detail": "Device unavailable"}, status=500)
+            raise DeviceUnavailable({"detail": "Device unavailable", "device": device.name})
 
         try:
             cable_test = device.connect().virtual_cable_test(request.GET["port"])
-        except InvalidMethod:
-            return Response({"detail": "Unsupported for this device"}, status=400)
+        except InvalidMethod as exc:
+            raise UnsupportedDeviceOperation(
+                {
+                    "detail": "Unsupported for this device",
+                    "device": device.name,
+                    "operation": "virtual_cable_test",
+                    "port": request.GET["port"],
+                }
+            ) from exc
 
         return Response(cable_test)
 
@@ -304,6 +324,8 @@ class SetPoEAPIView(DeviceAPIView):
 
 @method_decorator(interface_info_api_doc, name="get")
 class InterfaceInfoAPIView(DeviceAPIView):
+    pagination_class = None
+
     @except_connection_errors
     def get(self, request: Request, *args, **kwargs):
         """
@@ -358,7 +380,7 @@ class ChangeDSLProfileAPIView(DeviceAPIView):
 
         # Если оборудование недоступно
         if not device.available:
-            return Response({"detail": "Device unavailable"}, status=500)
+            raise DeviceUnavailable({"detail": "Device unavailable", "device": device.name})
 
         # Подключаемся к оборудованию
         session = device.connect()
@@ -366,9 +388,16 @@ class ChangeDSLProfileAPIView(DeviceAPIView):
             change_profile_status = session.change_profile(
                 serializer.validated_data["port"], serializer.validated_data["index"]
             )
-        except InvalidMethod:
+        except InvalidMethod as exc:
             # Нельзя менять профиль для данного устройства
-            return Response({"error": "Device can't change profile"}, status=400)
+            raise UnsupportedDeviceOperation(
+                {
+                    "detail": "Device can't change profile",
+                    "device": device.name,
+                    "operation": "change_profile",
+                    "port": serializer.validated_data["port"],
+                }
+            ) from exc
 
         # Запускаем триггер на изменение ADSL профиля.
         run_device_trigger(
@@ -401,6 +430,7 @@ class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class DeviceCommandsListAPIView(DeviceAPIView):
     serializer_class = DeviceCommandsSerializer
+    pagination_class = None
 
     @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def get(self, request, *args, **kwargs):
@@ -420,21 +450,34 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
         device = self.get_object()
         command = get_available_command_for_device(self.current_user, device, int(self.kwargs["command_id"]))
         if command is None:
-            return Response({"detail": "Command not found"}, status=404)
+            raise NotFound("Command not found")
 
         try:
             output: str = execute_command(device, command, request.data)
-        except InvalidMethod:
-            return Response({"detail": "Unsupported for this device"}, status=400)
+        except InvalidMethod as exc:
+            raise UnsupportedDeviceOperation(
+                {
+                    "detail": "Unsupported for this device",
+                    "device": device.name,
+                    "operation": "execute_command",
+                    "command": command.name,
+                }
+            ) from exc
         except ValidationError as exc:
-            return Response({"detail": exc.detail}, status=400)
+            raise exc
 
         # Если есть проверка выполнения команды.
         if not command.valid_regexp or re.compile(command.valid_regexp).search(output):
             return Response({"output": output})
 
         # Неверное выполнение команды
-        return Response({"detail": output}, status=500)
+        raise DeviceCommandExecutionFailed(
+            {
+                "detail": output,
+                "device": device.name,
+                "command": command.name,
+            }
+        )
 
 
 class ValidateDeviceCommandAPIView(DeviceAPIView):
@@ -445,14 +488,21 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
         device = self.get_object()
         command = get_available_command_for_device(self.current_user, device, int(self.kwargs["command_id"]))
         if command is None:
-            return Response({"detail": "Command not found"}, status=404)
+            raise NotFound("Command not found")
 
         try:
             valid_command = validate_command(device, command.command, request.data)
-        except InvalidMethod:
-            return Response({"detail": "Unsupported for this device"}, status=400)
+        except InvalidMethod as exc:
+            raise UnsupportedDeviceOperation(
+                {
+                    "detail": "Unsupported for this device",
+                    "device": device.name,
+                    "operation": "validate_command",
+                    "command": command.name,
+                }
+            ) from exc
         except ValidationError as exc:
-            return Response({"detail": exc.detail}, status=400)
+            raise exc
 
         return Response({"command": valid_command})
 
@@ -468,7 +518,7 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
         """Validate request and dispatch celery task."""
         command = self.get_command()
         if command is None:
-            return Response({"detail": "Command not found"}, status=404)
+            raise NotFound("Command not found")
 
         device_ids = self.get_device_ids(request.data.get("device_ids"))
         context = dict(request.data)
@@ -499,7 +549,7 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
         try:
             result = dispatch_bulk_execute_command_task(command, devices, context, self.current_user.id)
         except ValidationError as exc:
-            return Response(exc.detail, status=400)
+            raise exc
 
         result["skipped"] = [*result["skipped"], *skipped]
         return Response(result, status=status.HTTP_202_ACCEPTED)
@@ -655,6 +705,8 @@ class BulkDeviceCommandExecutionResultListAPIView(UserAuthenticatedAPIView, gene
 
 # @method_decorator(get_device_pool_status_api_doc, name="get")
 class DevicePoolManager(DeviceAPIView):
+    pagination_class = None
+
     @get_device_pool_status_api_doc
     def get(self, request, *args, **kwargs):
         """

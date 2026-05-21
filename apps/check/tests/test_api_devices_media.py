@@ -54,7 +54,10 @@ class DeviceMediaListCreateAPIViewTestCase(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), DeviceMediaSerializer([self.device_media], many=True).data)
+        self.assertEqual(
+            response.json()["results"],
+            DeviceMediaSerializer([self.device_media], many=True).data,
+        )
 
     def test_create_device_media(self):
         url = reverse(
