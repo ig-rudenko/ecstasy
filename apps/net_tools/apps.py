@@ -1,5 +1,5 @@
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
+from django.db.models.signals import post_migrate, post_save
 
 
 def register_task(*args, **kwargs) -> None:
@@ -95,13 +95,22 @@ def ensure_default_node_kinds(*args, **kwargs) -> None:
         TracerouteNodeStyleRule.objects.get_or_create(name=name, defaults=defaults)
 
 
+def vlans_name_post_save_signal(sender, instance, created, **kwargs):
+    # pylint: disable-next=import-outside-toplevel
+    from .services.vlan_names import VlanNamesCache
+
+    VlanNamesCache.clear_cache()
+
+
 class FindDescConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.net_tools"
 
     def ready(self):
         # pylint: disable-next=import-outside-toplevel
+        from .models import VlanName
         from .new_permissions import create_permission
+        from .services.vlan_names import VlanNamesCache
 
         post_migrate.connect(
             create_permission,
@@ -120,4 +129,10 @@ class FindDescConfig(AppConfig):
             sender=self,
             weak=False,
             dispatch_uid="net_tools.ensure_default_node_kinds",
+        )
+        post_save.connect(
+            vlans_name_post_save_signal,
+            sender=VlanName,
+            weak=False,
+            dispatch_uid=f"net_tools.{VlanNamesCache.cache_key}.clear_cache",
         )

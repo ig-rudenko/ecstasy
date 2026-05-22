@@ -1,6 +1,6 @@
 from typing import Any
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.template import Context, Template
 
 from apps.check.models import Devices
@@ -10,60 +10,89 @@ from ..tasks import send_telegram_notification, send_webhook_notification
 
 
 def run_device_trigger(trigger_name: str, request, request_device: Devices, action_result: Any):
-    """Запускает обработку событий триггера, связанного с действиями над оборудованием."""
+    """Запускает обработку уведомлений по триггеру для действия над оборудованием."""
 
-    conditions = (
+    # Для проверки "пусто или совпадает" по M2M используем EXISTS-подзапросы:
+    # - has_*: есть ли вообще ограничение в условии;
+    # - match_*: есть ли совпадение с текущим контекстом запроса.
+    # Далее фильтруем только те условия, где для каждого блока выполняется:
+    # "ограничения нет" OR "ограничение есть и есть совпадение".
+    users_through = NotificationCondition.users.through
+    users_groups_through = NotificationCondition.users_groups.through
+    devices_through = NotificationCondition.devices.through
+    devices_groups_through = NotificationCondition.devices_groups.through
+
+    condition_ids = (
         NotificationCondition.objects.filter(
             active=True,
             triggers__name=str(trigger_name),
         )
         .filter(Q(telegram_notifications__active=True) | Q(webhook_notifications__active=True))
-        .prefetch_related("users", "users_groups", "devices", "devices_groups")
+        .annotate(
+            has_users=Exists(
+                users_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                )
+            ),
+            match_user=Exists(
+                users_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                    user_id=request.user.id,
+                )
+            ),
+            has_users_groups=Exists(
+                users_groups_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                )
+            ),
+            match_users_groups=Exists(
+                users_groups_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                    group_id__in=request.user.groups.values("id"),
+                )
+            ),
+            has_devices=Exists(
+                devices_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                )
+            ),
+            match_device=Exists(
+                devices_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                    devices_id=request_device.id,
+                )
+            ),
+            has_devices_groups=Exists(
+                devices_groups_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                )
+            ),
+            match_devices_groups=Exists(
+                devices_groups_through.objects.filter(
+                    notificationcondition_id=OuterRef("pk"),
+                    devicegroup_id=request_device.group_id,
+                )
+            ),
+        )
+        .filter(Q(has_users=False) | Q(match_user=True))
+        .filter(Q(has_users_groups=False) | Q(match_users_groups=True))
+        .filter(Q(has_devices=False) | Q(match_device=True))
+        .filter(Q(has_devices_groups=False) | Q(match_devices_groups=True))
+        .values_list("id", flat=True)
         .distinct()
     )
 
-    telegram_notifications = set()
-    webhook_notifications = set()
-
-    for condition in conditions:
-
-        # -------------- USERS --------------
-        condition_users_ids = set(condition.users.all().values_list("id", flat=True))
-        if condition_users_ids and request.user.id not in condition_users_ids:
-            # Если в условии имеется перечень пользователей,
-            # но не нашли пользователя, который сделал запрос среди перечня пользователей с условием,
-            # тогда данное условие не подходит.
-            break
-
-        # -------------- USERS GROUPS --------------
-        request.user_groups_ids = set(request.user.groups.all().values_list("id", flat=True))
-        condition_user_groups_ids = set(condition.users_groups.all().values_list("id", flat=True))
-        if condition_user_groups_ids and not request.user_groups_ids & condition_user_groups_ids:
-            # Если в условии имеется перечень групп пользователей,
-            # но у входного пользователя не нашли хотя бы одну группу, которая пересекается с необходимыми,
-            # тогда данное условие не подходит.
-            break
-
-        # -------------- DEVICES --------------
-        condition_devices_ids = set(condition.devices.all().values_list("id", flat=True))
-        if condition_devices_ids and request_device.id not in condition_devices_ids:
-            # Если в условии имеется перечень оборудования,
-            # но не нашли оборудование, которое выполнило действие среди этого перечня,
-            # тогда данное условие не подходит.
-            break
-
-        # -------------- DEVICES GROUPS --------------
-        condition_devices_groups_ids = set(condition.devices_groups.all().values_list("id", flat=True))
-        if condition_devices_groups_ids and request_device.group_id not in condition_devices_groups_ids:
-            # Если в условии имеется перечень групп оборудования,
-            # но у входного оборудования группа не находится в списке,
-            # тогда данное условие не подходит.
-            break
-
-        # Добавляем оповещения телеграмм, которые прошли проверку условий.
-        telegram_notifications.update(condition.telegram_notifications.filter(active=True))  # type: ignore
-        # Добавляем оповещения webhook, которые прошли проверку условий.
-        webhook_notifications.update(condition.webhook_notifications.filter(active=True))  # type: ignore
+    # После SQL-фильтрации условий выбираем только активные уведомления, связанные
+    # с этими условиями. distinct() устраняет дубли, если одно уведомление связано
+    # сразу с несколькими подходящими условиями.
+    telegram_notifications = TelegramNotification.objects.filter(
+        active=True,
+        notification_conditions__in=condition_ids,
+    ).distinct()
+    webhook_notifications = WebhookNotification.objects.filter(
+        active=True,
+        notification_conditions__in=condition_ids,
+    ).distinct()
 
     for tg_notification in telegram_notifications:
         prepare_telegram_notification(
@@ -92,6 +121,7 @@ def prepare_webhook_notification(
     trigger_name: str,
     action_result: Any,
 ):
+    """Рендерит шаблон Webhook-уведомления и отправляет задачу в Celery."""
     template = Template(wh_notification.body or "")
     context = Context(
         {
@@ -114,6 +144,7 @@ def prepare_telegram_notification(
     trigger_name: str,
     action_result: Any,
 ):
+    """Рендерит шаблон Telegram-уведомления и отправляет задачу в Celery."""
     template = Template(tg_notification.text)
     context = Context(
         {

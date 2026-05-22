@@ -107,9 +107,18 @@ mac_list_api_doc = swagger_auto_schema(
 )
 
 interface_info_api_doc = swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter(
+            "port",
+            openapi.IN_QUERY,
+            description="Порт (интерфейс) оборудования",
+            type=openapi.TYPE_STRING,
+            required=True,
+        ),
+    ],
     responses={
         200: InterfaceDetailInfoSwaggerSerializer(),
-    }
+    },
 )
 
 

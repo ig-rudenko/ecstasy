@@ -79,11 +79,3 @@ if settings.ENV == "dev":
     from debug_toolbar.toolbar import debug_toolbar_urls
 
     urlpatterns += debug_toolbar_urls()
-    # urlpatterns += [
-    #     re_path(
-    #         r"^(?P<path>(?:assets|img|video).*)$",
-    #         serve,
-    #         {"document_root": settings.STATICFILES_DIRS[1]},
-    #     ),
-    #     re_path(".*", TemplateView.as_view(template_name="index.html"), name="index"),
-    # ]

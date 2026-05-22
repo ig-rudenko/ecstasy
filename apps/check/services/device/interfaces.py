@@ -5,7 +5,8 @@ import orjson
 from django.contrib.auth.models import User
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 
-from apps.net_tools.models import DevicesInfo, VlanName
+from apps.net_tools.models import DevicesInfo
+from apps.net_tools.services.vlan_names import VlanNamesCache
 from devicemanager.device import Interfaces
 from devicemanager.device.interfaces import Interface
 from devicemanager.vendors.base.types import SetDescriptionResult
@@ -128,10 +129,11 @@ def set_interface_description(
 
 def get_mac_addresses_on_interface(device: models.Devices, interface_name: str) -> list[dict]:
     """Возвращает MAC адреса, которые находятся на интерфейсе"""
-    vlan_names = {str(v["vid"]): v["name"] for v in VlanName.objects.all().values("vid", "name")}
+    macs_result = device.connect().get_mac(interface_name)
+    vlan_names = VlanNamesCache().get_all_vlan_names()
 
     macs = []  # Итоговый список
-    for vid, mac in device.connect().get_mac(interface_name):  # Смотрим VLAN и MAC
+    for vid, mac in macs_result:  # Смотрим VLAN и MAC
         macs.append(
             {
                 "vlanID": vid,

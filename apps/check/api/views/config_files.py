@@ -109,6 +109,9 @@ class ListDeviceConfigFilesAPIView(BaseConfigStorageAPIView):
 class CollectConfigAPIView(BaseConfigStorageAPIView):
     config_storage = LocalConfigStorage
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("auth_group")
+
     @collect_config_file_api_doc
     @method_decorator(profile_permission(models.Profile.BRAS))
     def post(self, request, *args, **kwargs):

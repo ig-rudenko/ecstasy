@@ -58,7 +58,7 @@ class DeviceInterfacesGather:
         collected_time: datetime = timezone.now()
 
         try:
-            device_info = DevicesInfo.objects.get(dev=self.device)
+            device_info = self.device.devicesinfo
         except DevicesInfo.DoesNotExist:
             return Interfaces(), collected_time
 
@@ -262,7 +262,7 @@ class InterfacesBuilder:
         """
 
         interfaces_comments = self._device.interfacescomments_set.select_related("user").only(
-            "id", "comment", "datetime", "user__username"
+            "id", "comment", "datetime", "user__username", "interface", "device_id"
         )
 
         for intf in interfaces:
