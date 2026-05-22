@@ -106,9 +106,6 @@ class VlanNetwork:
         show_admin_down_ports: bool = False,
         nodes_only: bool = False,
     ):
-        for i in range(10):
-            self._add_node(i, i, {"title": "", "group": i, "hidden": True, "shape": "dot"})
-
         degree_by_node = self._create_nodes(data, show_admin_down_ports, nodes_only)
         suspicious_node_ids = self._get_suspicious_node_ids()
         visible_nodes_count = sum(1 for node in self._nodes if not node.get("hidden"))

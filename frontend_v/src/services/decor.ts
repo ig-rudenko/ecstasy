@@ -2,6 +2,7 @@ import { Ref, ref } from "vue";
 
 export class DecorConfig {
     public _winterDecor: Ref<boolean> = ref(true);
+    public _compactMenu: Ref<boolean> = ref(false);
 
     constructor() {
         this.load();
@@ -12,12 +13,14 @@ export class DecorConfig {
         if (loadData) {
             const parsedData = JSON.parse(loadData);
             this._winterDecor.value = Boolean(parsedData.winterDecor);
+            this._compactMenu.value = Boolean(parsedData.compactMenu);
         }
     }
 
     private save() {
         const data = {
             winterDecor: this._winterDecor.value,
+            compactMenu: this._compactMenu.value,
         };
         localStorage.setItem("decorConfig", JSON.stringify(data));
     }
@@ -28,6 +31,15 @@ export class DecorConfig {
 
     set winterDecor(val: boolean) {
         this._winterDecor.value = val;
+        this.save();
+    }
+
+    get compactMenu(): boolean {
+        return this._compactMenu.value;
+    }
+
+    set compactMenu(val: boolean) {
+        this._compactMenu.value = val;
         this.save();
     }
 }

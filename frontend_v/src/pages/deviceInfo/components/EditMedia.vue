@@ -27,7 +27,7 @@
             {{ err }}
         </Message>
 
-        <div class="grid gap-4 xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.05fr)]">
+        <div class="grid gap-4">
             <div
                 class="flex flex-col gap-4 rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55"
             >

@@ -1158,7 +1158,7 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <div class="grid gap-3 lg:grid-cols-[1.2fr,1fr]">
+                            <div class="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
                                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                                     <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Шаблон команды</div>
                                     <pre

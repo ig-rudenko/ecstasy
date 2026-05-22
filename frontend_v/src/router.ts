@@ -42,6 +42,7 @@ const router = createRouter({
 
         { path: "/maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps" },
         { path: "/maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view" },
+        { path: "/profile", component: () => import("@/pages/profile/ProfilePage.vue"), name: "profile" },
         {
             path: "/ring-manager",
             component: () => import("@/pages/ring-manager/RingManager.vue"),

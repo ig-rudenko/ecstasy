@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.check.models import AuthGroup, DeviceGroup, User
+from apps.check.models import AuthGroup, DeviceGroup, Devices, User
 from apps.discovery.models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 
 
@@ -91,6 +91,34 @@ class DiscoveryAPITests(APITestCase):
         candidate.refresh_from_db()
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.CREATED)
         self.assertFalse(candidate.device.active)
+
+    def test_accept_candidate_uses_selected_auth_group_and_detected_protocols_by_default(self):
+        """Accept endpoint использует auth/protocol кандидата, если override не передан."""
+
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.31",
+            name="sw-31",
+            status=DiscoveryCandidate.Status.READY,
+            selected_auth_group=self.auth_group,
+            detected_protocols={"snmp": False, "ssh": False, "telnet": True},
+            raw_fingerprint={"cliProtocol": "telnet"},
+        )
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-accept", args=[candidate.id]),
+            {
+                "deviceGroup": self.group.id,
+                "collectInterfaces": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        candidate.refresh_from_db()
+        device = Devices.objects.get(id=candidate.device_id)
+        self.assertEqual(device.auth_group_id, self.auth_group.id)
+        self.assertEqual(device.cmd_protocol, "telnet")
+        self.assertEqual(device.port_scan_protocol, "telnet")
 
     def test_staff_without_discovery_permission_is_forbidden(self):
         """Staff без `auth.access_discovery` не может использовать discovery API."""

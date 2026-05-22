@@ -37,8 +37,8 @@ def accept_candidate(
         raise ValidationError({"authGroup": "Необходимо указать группу авторизации"})
 
     device_name = candidate.name or f"discovered-{candidate.ip.replace('.', '-')}"
-    resolved_cmd_protocol = cmd_protocol or (profile.cmd_protocol if profile else "ssh")
-    resolved_port_scan_protocol = port_scan_protocol or (profile.port_scan_protocol if profile else "snmp")
+    resolved_cmd_protocol = cmd_protocol or resolve_candidate_cmd_protocol(candidate, profile)
+    resolved_port_scan_protocol = port_scan_protocol or resolve_candidate_port_scan_protocol(candidate, profile)
     resolved_snmp_community = snmp_community or candidate.selected_snmp_community
 
     try:
@@ -73,6 +73,31 @@ def accept_candidate(
         collect_initial_interfaces(device)
 
     return device
+
+
+def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
+    """Определить cmd_protocol из fingerprint кандидата или профиля."""
+
+    cli_protocol = str(candidate.raw_fingerprint.get("cliProtocol", "")).lower()
+    if cli_protocol in {"ssh", "telnet"}:
+        return cli_protocol
+    if candidate.detected_protocols.get("ssh"):
+        return "ssh"
+    if candidate.detected_protocols.get("telnet"):
+        return "telnet"
+    return profile.cmd_protocol if profile else "ssh"
+
+
+def resolve_candidate_port_scan_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
+    """Определить port_scan_protocol из fingerprint кандидата или профиля."""
+
+    if candidate.detected_protocols.get("snmp"):
+        return "snmp"
+    if candidate.detected_protocols.get("ssh"):
+        return "ssh"
+    if candidate.detected_protocols.get("telnet"):
+        return "telnet"
+    return profile.port_scan_protocol if profile else "snmp"
 
 
 def collect_initial_interfaces(device: Devices) -> None:

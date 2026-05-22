@@ -1,4 +1,4 @@
-from attr import dataclass
+from dataclasses import dataclass
 from pyzabbix.api import ZabbixAPI, ZabbixAPIException
 from requests.exceptions import RequestException
 from urllib3.exceptions import MaxRetryError

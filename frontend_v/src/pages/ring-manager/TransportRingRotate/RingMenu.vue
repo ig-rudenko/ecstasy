@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,26rem),minmax(0,1fr)]">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
             <div
                 class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5 sm:p-6 backdrop-blur"
             >

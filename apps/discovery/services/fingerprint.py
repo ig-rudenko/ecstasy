@@ -179,7 +179,7 @@ class CliFingerprinter:
                     source=DiscoveryCandidate.Source.CLI,
                     detected_protocols={protocol: True},
                     selected_auth_group=auth_group,
-                    raw={"cli": system_info},
+                    raw={"cli": system_info, "cliProtocol": protocol},
                 ), attempts
 
         return DeviceFingerprint(ip=ip), attempts

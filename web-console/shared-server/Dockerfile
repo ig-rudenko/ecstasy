@@ -21,7 +21,7 @@ RUN echo "export VISIBLE=now" >> /etc/profile
 
 RUN echo "default:$USER_PASSWORD" | chpasswd
 
-COPY sc.sh tc.sh /usr/share/connections/
+COPY ssh.sh telnet.sh /usr/share/connections/
 RUN chmod 755 -R /usr/share/connections;
 
 COPY .ssh/config /home/default/.ssh/config

@@ -34,6 +34,7 @@ import {
     ScrollTop,
     Select,
     SplitButton,
+    Tag,
     Textarea,
     ToggleSwitch,
     Tooltip,
@@ -90,6 +91,7 @@ app.component("RadioButton", RadioButton);
 app.component("ScrollTop", ScrollTop);
 app.component("Select", Select);
 app.component("SplitButton", SplitButton);
+app.component("Tag", Tag);
 app.component("Textarea", Textarea);
 app.component("ToggleSwitch", ToggleSwitch);
 

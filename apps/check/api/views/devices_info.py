@@ -152,6 +152,7 @@ class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
             if "console_url" in return_fields:
                 item["console_url"] = get_console_url(
                     self.current_user.profile,
+                    username=self.current_user.username,
                     ip=item["ip"],
                     name=item["name"],
                     cmd_protocol=item["cmd_protocol"],
@@ -352,6 +353,7 @@ class DeviceInfoAPIView(DeviceAPIView):
                 "coords": zabbix_info.inventory.coordinates(),
                 "consoleURL": get_console_url(
                     self.current_user.profile,
+                    username=self.current_user.username,
                     ip=device.ip,
                     name=device.name,
                     cmd_protocol=device.cmd_protocol,

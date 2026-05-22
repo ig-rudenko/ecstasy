@@ -70,6 +70,33 @@ class Permissions {
     hasBulkDeviceCommandExecutePermission(): boolean {
         return this.has("auth.access_bulk_device_cmd");
     }
+
+    getAll(): string[] {
+        return [...this.perms.value.permissions];
+    }
+
+    getServiceAccess(): { key: string; label: string; enabled: boolean }[] {
+        return [
+            { key: "console", label: "Консоль", enabled: this.hasConsoleAccess() },
+            { key: "loop", label: "Loop Detector", enabled: this.hasEcstasyLoopPermission() },
+            { key: "discovery", label: "Discovery", enabled: this.has("auth.access_discovery") },
+            { key: "maps", label: "Карты", enabled: this.has("auth.can_view_maps") },
+            { key: "search", label: "Поиск", enabled: this.has("auth.access_desc_search") },
+            { key: "traceroute", label: "Трассировка", enabled: this.has("auth.access_traceroute") },
+            { key: "wtf", label: "WTF", enabled: this.has("auth.access_wtf_search") },
+            {
+                key: "rings",
+                label: "Кольца",
+                enabled: this.has("auth.access_rings") || this.has("auth.access_transport_rings"),
+            },
+            { key: "gpon", label: "GPON", enabled: this.hasGPONAnyPermission() },
+            {
+                key: "bulk_device_commands",
+                label: "Массовые команды",
+                enabled: this.hasBulkDeviceCommandExecutePermission(),
+            },
+        ];
+    }
 }
 
 const permissions = new Permissions();

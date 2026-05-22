@@ -348,7 +348,13 @@ class Profile(models.Model):
         verbose_name="Доступ к консоли",
         help_text="Доступ к консоли сервера удаленных подключений",
     )
-    console_url = models.CharField(default="", max_length=500, blank=True, verbose_name="URL консоли")
+    console_url = models.CharField(
+        default="{protocol}://{ip}",
+        max_length=500,
+        blank=True,
+        verbose_name="URL консоли",
+        help_text="Вы можете использовать макросы, чтобы подставить значения. Доступны: {ip}, {name} и {protocol}",
+    )
 
     @property
     def perm_level(self) -> int:
