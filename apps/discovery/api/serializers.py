@@ -9,7 +9,9 @@ from ..services.scanner import normalize_networks
 class DiscoveryProfileSerializer(serializers.ModelSerializer):
     """Сериализатор профиля auto discovery."""
 
-    deviceGroup = serializers.PrimaryKeyRelatedField(source="device_group", queryset=DeviceGroup.objects.all())
+    deviceGroup = serializers.PrimaryKeyRelatedField(
+        source="device_group", queryset=DeviceGroup.objects.all()
+    )
     authGroups = serializers.PrimaryKeyRelatedField(
         source="auth_groups",
         queryset=AuthGroup.objects.all(),
@@ -228,4 +230,3 @@ class DiscoveryCandidateAcceptSerializer(serializers.Serializer):
     portScanProtocol = serializers.ChoiceField(choices=["snmp", "telnet", "ssh"], required=False)
     snmpCommunity = serializers.CharField(max_length=64, allow_blank=True, required=False)
     collectInterfaces = serializers.BooleanField(default=False)
-

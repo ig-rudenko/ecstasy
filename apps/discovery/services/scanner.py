@@ -97,7 +97,9 @@ def tcp_is_open(ip: str, port: int, timeout: int) -> bool:
         return False
 
 
-def preflight_address(ip: str, protocols: Iterable[str], timeout: int) -> tuple[dict[str, bool], list[DiscoveryAttemptData]]:
+def preflight_address(
+    ip: str, protocols: Iterable[str], timeout: int
+) -> tuple[dict[str, bool], list[DiscoveryAttemptData]]:
     """Выполнить быстрые проверки IP перед тяжелым fingerprint."""
 
     attempts = []

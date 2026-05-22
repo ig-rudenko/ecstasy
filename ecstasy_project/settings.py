@@ -300,10 +300,13 @@ SWAGGER_SETTINGS = {
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-CELERY_TASK_ALWAYS_EAGER = os.getenv(
-    "CELERY_TASK_ALWAYS_EAGER",
-    "1" if ENV == "dev" else "0",
-).lower() in TRUE_VALUES
+CELERY_TASK_ALWAYS_EAGER = (
+    os.getenv(
+        "CELERY_TASK_ALWAYS_EAGER",
+        "1" if ENV == "dev" else "0",
+    ).lower()
+    in TRUE_VALUES
+)
 
 # ========== CONFIGURATION STORAGE ===========
 

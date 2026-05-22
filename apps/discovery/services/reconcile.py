@@ -86,7 +86,10 @@ def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     }
 
     candidate, created = DiscoveryCandidate.objects.update_or_create(ip=fingerprint.ip, defaults=defaults)
-    if not created and candidate.status in {DiscoveryCandidate.Status.CREATED, DiscoveryCandidate.Status.IGNORED}:
+    if not created and candidate.status in {
+        DiscoveryCandidate.Status.CREATED,
+        DiscoveryCandidate.Status.IGNORED,
+    }:
         return candidate
 
     candidate.status = status

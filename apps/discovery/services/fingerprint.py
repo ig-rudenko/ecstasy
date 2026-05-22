@@ -2,13 +2,12 @@ from collections.abc import Iterable
 from time import monotonic
 
 from apps.check.models import AuthGroup
+from devicemanager import snmp
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.exceptions import BaseDeviceException
-from devicemanager import snmp
 
 from ..models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile
 from .dataclasses import DeviceFingerprint, DiscoveryAttemptData
-
 
 VENDOR_HINTS = {
     "cisco": "Cisco",
@@ -131,7 +130,9 @@ class SnmpFingerprinter:
 class CliFingerprinter:
     """Получает identity оборудования через SSH/Telnet и существующий devicemanager."""
 
-    def __init__(self, protocols: Iterable[str], auth_groups: Iterable[AuthGroup], snmp_community: str = "") -> None:
+    def __init__(
+        self, protocols: Iterable[str], auth_groups: Iterable[AuthGroup], snmp_community: str = ""
+    ) -> None:
         """Сохранить протоколы и группы авторизации для CLI fingerprint."""
 
         self.protocols = [protocol for protocol in protocols if protocol in {"ssh", "telnet"}]
@@ -168,19 +169,22 @@ class CliFingerprinter:
                         duration_ms=int((monotonic() - started) * 1000),
                     )
                 )
-                return DeviceFingerprint(
-                    ip=ip,
-                    name="",
-                    vendor=system_info.get("vendor", ""),
-                    model=system_info.get("model", ""),
-                    serial_number=system_info.get("serialno", ""),
-                    os_version=system_info.get("os_version", ""),
-                    mac_address=system_info.get("mac", ""),
-                    source=DiscoveryCandidate.Source.CLI,
-                    detected_protocols={protocol: True},
-                    selected_auth_group=auth_group,
-                    raw={"cli": system_info, "cliProtocol": protocol},
-                ), attempts
+                return (
+                    DeviceFingerprint(
+                        ip=ip,
+                        name="",
+                        vendor=system_info.get("vendor", ""),
+                        model=system_info.get("model", ""),
+                        serial_number=system_info.get("serialno", ""),
+                        os_version=system_info.get("os_version", ""),
+                        mac_address=system_info.get("mac", ""),
+                        source=DiscoveryCandidate.Source.CLI,
+                        detected_protocols={protocol: True},
+                        selected_auth_group=auth_group,
+                        raw={"cli": system_info, "cliProtocol": protocol},
+                    ),
+                    attempts,
+                )
 
         return DeviceFingerprint(ip=ip), attempts
 
@@ -193,7 +197,11 @@ class CliFingerprinter:
     ) -> DiscoveryAttemptData:
         """Построить безопасную запись неуспешной CLI-попытки."""
 
-        status = DiscoveryAttempt.Status.AUTH_FAILED if "логин" in str(exc).lower() else DiscoveryAttempt.Status.FAILED
+        status = (
+            DiscoveryAttempt.Status.AUTH_FAILED
+            if "логин" in str(exc).lower()
+            else DiscoveryAttempt.Status.FAILED
+        )
         return DiscoveryAttemptData(
             ip=ip,
             method=protocol.upper(),
@@ -212,12 +220,18 @@ class DeviceFingerprinter:
         self.profile = profile
         self.include_cli = include_cli
 
-    def collect(self, ip: str, detected_protocols: dict[str, bool]) -> tuple[DeviceFingerprint, list[DiscoveryAttemptData]]:
+    def collect(
+        self, ip: str, detected_protocols: dict[str, bool]
+    ) -> tuple[DeviceFingerprint, list[DiscoveryAttemptData]]:
         """Собрать максимально полный fingerprint для IP."""
 
         fingerprint = DeviceFingerprint(
             ip=ip,
-            source=DiscoveryCandidate.Source.TCP if any(detected_protocols.values()) else DiscoveryCandidate.Source.PING,
+            source=(
+                DiscoveryCandidate.Source.TCP
+                if any(detected_protocols.values())
+                else DiscoveryCandidate.Source.PING
+            ),
             detected_protocols=dict(detected_protocols),
         )
         attempts = []

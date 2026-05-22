@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import orjson
 from celery import Task
-from django.db.models import QuerySet  # noqa: F401
+from django.db.models import QuerySet
 
 from apps.app_settings.models import ZabbixConfig
 from devicemanager.device import zabbix_api
@@ -13,8 +13,8 @@ class ThreadUpdatedStatusTask(Task):
     # Создает пул потоков, а затем отправляет задачу в пул потоков для каждого объекта в наборе запросов.
     """
 
-    queryset = None  # type: QuerySet
-    max_workers = None  # type: int
+    queryset: QuerySet | None = None
+    max_workers: int | None = None
 
     def __init__(self):
         """
@@ -22,6 +22,8 @@ class ThreadUpdatedStatusTask(Task):
         """
         if self.queryset is None:
             raise NotImplementedError("Укажите queryset для работы данного класса")
+        if self.max_workers is None:
+            raise NotImplementedError("Укажите max_workers для работы данного класса")
         self.objects_count = 1
         self.objects_scanned = 0
         self.task_id = None

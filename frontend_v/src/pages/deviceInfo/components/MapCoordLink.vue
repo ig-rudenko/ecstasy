@@ -2,7 +2,7 @@
     <a
         target="_blank"
         :href="
-            'https://yandex.ru/maps/959/sevastopol/?mode=search&sll=' +
+            'https://yandex.ru/maps/?mode=search&sll=' +
             coords[0] +
             '%2C' +
             coords[1] +

@@ -37,7 +37,9 @@ class DiscoveryLookupAPIView(APIView):
 
         return Response(
             {
-                "deviceGroups": list(DeviceGroup.objects.order_by("name").values("id", "name", "description")),
+                "deviceGroups": list(
+                    DeviceGroup.objects.order_by("name").values("id", "name", "description")
+                ),
                 "authGroups": list(AuthGroup.objects.order_by("name").values("id", "name", "description")),
             }
         )
@@ -97,7 +99,10 @@ class DiscoveryRunDetailAPIView(generics.RetrieveDestroyAPIView):
     def perform_destroy(self, instance: DiscoveryRun) -> None:
         """Удалить запуск discovery и отозвать активную Celery-задачу."""
 
-        if instance.status in {DiscoveryRun.Status.PENDING, DiscoveryRun.Status.PROGRESS} and instance.task_id:
+        if (
+            instance.status in {DiscoveryRun.Status.PENDING, DiscoveryRun.Status.PROGRESS}
+            and instance.task_id
+        ):
             AsyncResult(instance.task_id).revoke(terminate=True)
         instance.delete()
 

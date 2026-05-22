@@ -29,21 +29,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "ip",
-                    models.GenericIPAddressField(
-                        protocol="ipv4", unique=True, verbose_name="IP адрес"
-                    ),
+                    models.GenericIPAddressField(protocol="ipv4", unique=True, verbose_name="IP адрес"),
                 ),
                 (
                     "name",
-                    models.CharField(
-                        blank=True, max_length=100, verbose_name="Предложенное имя"
-                    ),
+                    models.CharField(blank=True, max_length=100, verbose_name="Предложенное имя"),
                 ),
                 (
                     "vendor",
-                    models.CharField(
-                        blank=True, max_length=100, verbose_name="Производитель"
-                    ),
+                    models.CharField(blank=True, max_length=100, verbose_name="Производитель"),
                 ),
                 (
                     "model",
@@ -51,27 +45,19 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "serial_number",
-                    models.CharField(
-                        blank=True, max_length=255, verbose_name="Серийный номер"
-                    ),
+                    models.CharField(blank=True, max_length=255, verbose_name="Серийный номер"),
                 ),
                 (
                     "os_version",
-                    models.CharField(
-                        blank=True, max_length=512, verbose_name="Версия ПО"
-                    ),
+                    models.CharField(blank=True, max_length=512, verbose_name="Версия ПО"),
                 ),
                 (
                     "mac_address",
-                    models.CharField(
-                        blank=True, max_length=64, verbose_name="MAC адрес"
-                    ),
+                    models.CharField(blank=True, max_length=64, verbose_name="MAC адрес"),
                 ),
                 (
                     "sys_name",
-                    models.CharField(
-                        blank=True, max_length=255, verbose_name="SNMP sysName"
-                    ),
+                    models.CharField(blank=True, max_length=255, verbose_name="SNMP sysName"),
                 ),
                 (
                     "sys_descr",
@@ -79,9 +65,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "sys_object_id",
-                    models.CharField(
-                        blank=True, max_length=255, verbose_name="SNMP sysObjectID"
-                    ),
+                    models.CharField(blank=True, max_length=255, verbose_name="SNMP sysObjectID"),
                 ),
                 (
                     "source",
@@ -117,15 +101,11 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "confidence",
-                    models.PositiveSmallIntegerField(
-                        default=0, verbose_name="Confidence"
-                    ),
+                    models.PositiveSmallIntegerField(default=0, verbose_name="Confidence"),
                 ),
                 (
                     "detected_protocols",
-                    models.JSONField(
-                        blank=True, default=dict, verbose_name="Найденные протоколы"
-                    ),
+                    models.JSONField(blank=True, default=dict, verbose_name="Найденные протоколы"),
                 ),
                 (
                     "selected_snmp_community",
@@ -137,9 +117,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "raw_fingerprint",
-                    models.JSONField(
-                        blank=True, default=dict, verbose_name="Сырой fingerprint"
-                    ),
+                    models.JSONField(blank=True, default=dict, verbose_name="Сырой fingerprint"),
                 ),
                 (
                     "last_error",
@@ -147,9 +125,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "first_seen_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Первое обнаружение"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Первое обнаружение"),
                 ),
                 (
                     "last_seen_at",
@@ -203,9 +179,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(
-                        max_length=100, unique=True, verbose_name="Название"
-                    ),
+                    models.CharField(max_length=100, unique=True, verbose_name="Название"),
                 ),
                 (
                     "networks",
@@ -213,21 +187,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "exclude_ips",
-                    models.JSONField(
-                        blank=True, default=list, verbose_name="Исключенные IP/CIDR"
-                    ),
+                    models.JSONField(blank=True, default=list, verbose_name="Исключенные IP/CIDR"),
                 ),
                 (
                     "snmp_communities",
-                    models.JSONField(
-                        blank=True, default=list, verbose_name="SNMP communities"
-                    ),
+                    models.JSONField(blank=True, default=list, verbose_name="SNMP communities"),
                 ),
                 (
                     "try_protocols",
-                    models.JSONField(
-                        blank=True, default=list, verbose_name="CLI протоколы"
-                    ),
+                    models.JSONField(blank=True, default=list, verbose_name="CLI протоколы"),
                 ),
                 (
                     "port_scan_protocol",
@@ -253,9 +221,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "max_workers",
-                    models.PositiveSmallIntegerField(
-                        default=32, verbose_name="Параллельность"
-                    ),
+                    models.PositiveSmallIntegerField(default=32, verbose_name="Параллельность"),
                 ),
                 (
                     "timeout_seconds",
@@ -278,9 +244,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Дата создания"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Дата создания"),
                 ),
                 (
                     "updated_at",
@@ -351,9 +315,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "total",
-                    models.PositiveIntegerField(
-                        default=0, verbose_name="Всего адресов"
-                    ),
+                    models.PositiveIntegerField(default=0, verbose_name="Всего адресов"),
                 ),
                 (
                     "processed",
@@ -365,9 +327,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "created",
-                    models.PositiveIntegerField(
-                        default=0, verbose_name="Создано устройств"
-                    ),
+                    models.PositiveIntegerField(default=0, verbose_name="Создано устройств"),
                 ),
                 (
                     "skipped",
@@ -387,21 +347,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "started_at",
-                    models.DateTimeField(
-                        blank=True, null=True, verbose_name="Дата начала"
-                    ),
+                    models.DateTimeField(blank=True, null=True, verbose_name="Дата начала"),
                 ),
                 (
                     "finished_at",
-                    models.DateTimeField(
-                        blank=True, null=True, verbose_name="Дата завершения"
-                    ),
+                    models.DateTimeField(blank=True, null=True, verbose_name="Дата завершения"),
                 ),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Дата создания"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Дата создания"),
                 ),
                 (
                     "created_by",
@@ -445,9 +399,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "ip",
-                    models.GenericIPAddressField(
-                        protocol="ipv4", verbose_name="IP адрес"
-                    ),
+                    models.GenericIPAddressField(protocol="ipv4", verbose_name="IP адрес"),
                 ),
                 (
                     "method",
@@ -481,16 +433,12 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "duration_ms",
-                    models.PositiveIntegerField(
-                        default=0, verbose_name="Длительность, мс"
-                    ),
+                    models.PositiveIntegerField(default=0, verbose_name="Длительность, мс"),
                 ),
                 ("error", models.TextField(blank=True, verbose_name="Ошибка")),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Дата создания"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Дата создания"),
                 ),
                 (
                     "candidate",
@@ -529,9 +477,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="discoverycandidate",
-            index=models.Index(
-                fields=["serial_number"], name="disc_cand_serial"
-            ),
+            index=models.Index(fields=["serial_number"], name="disc_cand_serial"),
         ),
         migrations.AddIndex(
             model_name="discoveryattempt",
@@ -539,8 +485,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="discoveryattempt",
-            index=models.Index(
-                fields=["method", "status"], name="disc_attempt_method_status"
-            ),
+            index=models.Index(fields=["method", "status"], name="disc_attempt_method_status"),
         ),
     ]

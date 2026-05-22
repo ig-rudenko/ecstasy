@@ -3,7 +3,6 @@ from re import IGNORECASE, findall
 
 from .vendors.base.types import InterfaceListType, InterfaceType
 
-
 SNMP_IDENTITY_MIBS = {
     "sys_descr": "SNMPv2-MIB::sysDescr.0",
     "sys_name": "SNMPv2-MIB::sysName.0",
@@ -30,7 +29,9 @@ def physical_interface(name: str) -> bool:
     return not bool(findall(r"802\.1Q|loop|null|meth|vlan|sys|dsl_channel|pstn|bits", name, IGNORECASE))
 
 
-def get_system_identity(device_ip: str, community: str, snmp_port: int = 161, timeout: int = 2) -> dict[str, str]:
+def get_system_identity(
+    device_ip: str, community: str, snmp_port: int = 161, timeout: int = 2
+) -> dict[str, str]:
     """
     Возвращает базовую SNMP identity устройства.
 

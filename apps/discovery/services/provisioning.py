@@ -38,7 +38,9 @@ def accept_candidate(
 
     device_name = candidate.name or f"discovered-{candidate.ip.replace('.', '-')}"
     resolved_cmd_protocol = cmd_protocol or resolve_candidate_cmd_protocol(candidate, profile)
-    resolved_port_scan_protocol = port_scan_protocol or resolve_candidate_port_scan_protocol(candidate, profile)
+    resolved_port_scan_protocol = port_scan_protocol or resolve_candidate_port_scan_protocol(
+        candidate, profile
+    )
     resolved_snmp_community = snmp_community or candidate.selected_snmp_community
 
     try:
@@ -88,7 +90,9 @@ def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: Disco
     return profile.cmd_protocol if profile else "ssh"
 
 
-def resolve_candidate_port_scan_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
+def resolve_candidate_port_scan_protocol(
+    candidate: DiscoveryCandidate, profile: DiscoveryProfile | None
+) -> str:
     """Определить port_scan_protocol из fingerprint кандидата или профиля."""
 
     if candidate.detected_protocols.get("snmp"):

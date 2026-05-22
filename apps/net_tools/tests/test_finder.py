@@ -377,7 +377,7 @@ class TracerouteMapDataTestCase(SimpleTestCase):
 
         with (
             patch(
-                "apps.net_tools.services.traceroute.get_zabbix_hosts_coordinates",
+                "apps.net_tools.services.traceroute.get_devices_coordinates",
                 return_value={
                     "dev-a": DeviceCoords(lat=44.1, lon=33.2),
                     "dev-b": DeviceCoords(lat=44.2, lon=33.3),

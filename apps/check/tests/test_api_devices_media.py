@@ -1,6 +1,6 @@
 import pathlib
 import shutil
-from typing import ClassVar  # noqa: F401
+from typing import ClassVar
 
 from django.core.files import File
 from django.test import override_settings
@@ -14,11 +14,11 @@ from ..models import AuthGroup, DeviceGroup, DeviceMedia, Devices, User
 
 @override_settings(MEDIA_ROOT="/tmp/media")
 class DeviceMediaListCreateAPIViewTestCase(APITestCase):
-    user = None  # type: ClassVar[User]
-    group = None  # type: ClassVar[DeviceGroup]
-    device = None  # type: ClassVar[Devices]
-    device_media = None  # type: ClassVar[DeviceMedia]
-    auth_group = None  # type: ClassVar[AuthGroup]
+    user: ClassVar[User]
+    group: ClassVar[DeviceGroup]
+    device: ClassVar[Devices]
+    device_media: ClassVar[DeviceMedia]
+    auth_group: ClassVar[AuthGroup]
 
     @classmethod
     def setUpTestData(cls) -> None:

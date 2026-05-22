@@ -16,7 +16,7 @@ class VlanNamesCache:
         if cached_data is not None:
             return cached_data
 
-        vlan_names = {str(v["vid"]): v["name"] for v in VlanName.objects.all().values("vid", "name")}
+        vlan_names = {str(v["vid"]): v["name"] or "" for v in VlanName.objects.all().values("vid", "name")}
         self.cache.set(self.cache_key, vlan_names, timeout=self.cache_timeout)
         return vlan_names
 

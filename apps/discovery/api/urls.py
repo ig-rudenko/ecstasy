@@ -13,6 +13,14 @@ urlpatterns = [
     path("runs/<int:pk>/cancel", views.DiscoveryRunCancelAPIView.as_view(), name="runs-cancel"),
     path("candidates", views.DiscoveryCandidateListAPIView.as_view(), name="candidates-list"),
     path("candidates/<int:pk>", views.DiscoveryCandidateDetailAPIView.as_view(), name="candidates-detail"),
-    path("candidates/<int:pk>/accept", views.DiscoveryCandidateAcceptAPIView.as_view(), name="candidates-accept"),
-    path("candidates/<int:pk>/ignore", views.DiscoveryCandidateIgnoreAPIView.as_view(), name="candidates-ignore"),
+    path(
+        "candidates/<int:pk>/accept",
+        views.DiscoveryCandidateAcceptAPIView.as_view(),
+        name="candidates-accept",
+    ),
+    path(
+        "candidates/<int:pk>/ignore",
+        views.DiscoveryCandidateIgnoreAPIView.as_view(),
+        name="candidates-ignore",
+    ),
 ]

@@ -159,6 +159,10 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
             {"fields": ("ip", "name", "active"), "classes": ("tab", "wide")},
         ),
         (
+            "Координаты",
+            {"fields": ("latitude", "longitude"), "classes": ("tab",)},
+        ),
+        (
             "Тип",
             {"fields": ("vendor", "model", "serial_number", "os_version"), "classes": ("tab",)},
         ),
@@ -174,12 +178,23 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
                     "snmp_community",
                     "port_scan_protocol",
                     "cmd_protocol",
+                    "telnet_port",
+                    "ssh_port",
+                    "snmp_port",
+                    "connection_pool_size",
+                ),
+            },
+        ),
+        (
+            "Периодические опросы",
+            {
+                "fields": (
                     "collect_interfaces",
                     "collect_mac_addresses",
                     "collect_vlan_info",
                     "collect_configurations",
-                    "connection_pool_size",
                 ),
+                "classes": ("tab",),
             },
         ),
         (
@@ -213,6 +228,7 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
         "enable_vlan_collector",
         "disable_configuration_collector",
         "enable_configuration_collector",
+        "sync_coordinates_with_zabbix",
     ]
     autocomplete_fields = ("auth_group", "group")
 
@@ -374,6 +390,15 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
     @admin.action(description="✅ Включить сбор интерфейсов")
     def enable_configuration_collector(self, request, queryset):
         queryset.update(collect_configurations=True)
+
+    @admin.action(description="Синхронизировать координаты с Zabbix")
+    def sync_coordinates_with_zabbix(self, request, queryset: QuerySet[Devices]):
+        """Start coordinate synchronization for selected devices."""
+        from apps.check.tasks import sync_device_coordinates_with_zabbix_task
+
+        device_ids = list(queryset.values_list("id", flat=True))
+        sync_device_coordinates_with_zabbix_task.delay(device_ids=device_ids)
+        self.message_user(request, f"Запущена синхронизация координат для устройств: {len(device_ids)}")
 
     @admin.action(description="📦 Скачать последние конфигурации ZIP")
     def load_last_config_files(self, request, queryset: QuerySet[Devices]):

@@ -1,4 +1,4 @@
-from typing import ClassVar  # noqa: F401
+from typing import ClassVar
 from unittest.mock import MagicMock, Mock, patch
 
 import orjson
@@ -36,11 +36,11 @@ def assert_problem_response(test_case, resp, *, problem_type: str, title: str, s
 
 
 class PortControlAPIViewTestCase(APITestCase):
-    user = None  # type: ClassVar[User]
-    group = None  # type: ClassVar[DeviceGroup]
-    device = None  # type: ClassVar[Devices]
-    url = None  # type: ClassVar[str]
-    auth_group = None  # type: ClassVar[AuthGroup]
+    user: ClassVar[User]
+    group: ClassVar[DeviceGroup]
+    device: ClassVar[Devices]
+    url: ClassVar[str]
+    auth_group: ClassVar[AuthGroup]
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -285,10 +285,10 @@ class PortControlAPIViewTestCase(APITestCase):
 
 
 class ChangeDescriptionAPIViewTestCase(APITestCase):
-    user = None  # type: ClassVar[User]
-    group = None  # type: ClassVar[DeviceGroup]
-    device = None  # type: ClassVar[Devices]
-    auth_group = None  # type: ClassVar[AuthGroup]
+    user: ClassVar[User]
+    group: ClassVar[DeviceGroup]
+    device: ClassVar[Devices]
+    auth_group: ClassVar[AuthGroup]
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -482,10 +482,10 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
 
 
 class MacListAPIViewTestCase(APITestCase):
-    user = None  # type: ClassVar[User]
-    group = None  # type: ClassVar[DeviceGroup]
-    device = None  # type: ClassVar[Devices]
-    auth_group = None  # type: ClassVar[AuthGroup]
+    user: ClassVar[User]
+    group: ClassVar[DeviceGroup]
+    device: ClassVar[Devices]
+    auth_group: ClassVar[AuthGroup]
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -551,12 +551,12 @@ class MacListAPIViewTestCase(APITestCase):
 
 
 class BulkDeviceCommandAPIViewTestCase(APITestCase):
-    user = None  # type: ClassVar[User]
-    group = None  # type: ClassVar[DeviceGroup]
-    auth_group = None  # type: ClassVar[AuthGroup]
-    device = None  # type: ClassVar[Devices]
-    unmatched_device = None  # type: ClassVar[Devices]
-    command = None  # type: ClassVar[DeviceCommand]
+    user: ClassVar[User]
+    group: ClassVar[DeviceGroup]
+    auth_group: ClassVar[AuthGroup]
+    device: ClassVar[Devices]
+    unmatched_device: ClassVar[Devices]
+    command: ClassVar[DeviceCommand]
 
     @classmethod
     def setUpTestData(cls) -> None:

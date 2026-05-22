@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from ..models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
@@ -99,6 +102,29 @@ class DeviceModelTest(TestCase):
     def test_absolute_url(self):
         dev = Devices.objects.all().first()
         self.assertEqual(dev.get_absolute_url(), "/device/" + dev.name)
+
+    def test_coordinates_accept_valid_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("44.123456")
+        dev.longitude = Decimal("33.654321")
+
+        dev.full_clean()
+
+    def test_coordinates_reject_zero_zero_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("0")
+        dev.longitude = Decimal("0")
+
+        with self.assertRaises(ValidationError):
+            dev.full_clean()
+
+    def test_coordinates_reject_partial_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("44.123456")
+        dev.longitude = None
+
+        with self.assertRaises(ValidationError):
+            dev.full_clean()
 
 
 class DeviceGroupTest(TestCase):
