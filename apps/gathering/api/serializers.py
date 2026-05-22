@@ -1,6 +1,29 @@
 from rest_framework import serializers
 
-from apps.gathering.models import Vlan, VlanPort
+from apps.gathering.models import MacAddress, Vlan, VlanPort
+
+
+class MacAddressSerializer(serializers.ModelSerializer):
+    """Serialize one collected MAC address row."""
+
+    device_id = serializers.IntegerField(source="device.id", read_only=True)
+    device_name = serializers.CharField(source="device.name", read_only=True)
+    device_ip = serializers.CharField(source="device.ip", read_only=True)
+
+    class Meta:
+        model = MacAddress
+        fields = [
+            "id",
+            "address",
+            "vlan",
+            "type",
+            "device_id",
+            "device_name",
+            "device_ip",
+            "port",
+            "desc",
+            "datetime",
+        ]
 
 
 class VlanPortSerializer(serializers.ModelSerializer):

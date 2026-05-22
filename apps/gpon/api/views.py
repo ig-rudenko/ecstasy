@@ -58,12 +58,6 @@ from .swagger import (
 )
 
 
-class GPONListPageNumberPagination(PageNumberPagination):
-    page_size = 20
-    page_size_query_param = "page_size"
-    max_page_size = 100
-
-
 class ListUserPermissions(GenericAPIView):
     pagination_class = None
 
@@ -80,7 +74,6 @@ class TechDataListCreateAPIView(ListCreateAPIView):
 
     queryset = HouseOLTState.objects.all()
     permission_classes = [TechDataPermission]
-    pagination_class = GPONListPageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = TechDataFilter
 
@@ -168,7 +161,6 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
 class BuildingsAddressesListAPIView(ListAPIView):
     serializer_class = BuildingAddressSerializer
     queryset = HouseB.objects.all().select_related("address")
-    pagination_class = GPONListPageNumberPagination
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
@@ -204,13 +196,11 @@ class BuildingsAddressesListAPIView(ListAPIView):
         return queryset
 
 
-@method_decorator(name="get", decorator=end3_addresses_list_api_doc)
 class End3AddressesListAPIView(ListAPIView):
     """Возвращает список сплиттеров/райзеров вместе с их адресами"""
 
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address")
-    pagination_class = GPONListPageNumberPagination
 
     def get_queryset(self):
         queryset = super().get_queryset()

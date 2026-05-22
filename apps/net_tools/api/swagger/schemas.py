@@ -28,10 +28,12 @@ get_vlan_desc_schema = swagger_auto_schema(
     responses={200: GetVlanDescSerializer()},
 )
 
-vlan_traceroute_schema = swagger_auto_schema(
+traceroute_schema = swagger_auto_schema(
     methods=["GET"],
     query_serializer=TracerouteQuerySerializer(),
-    responses={200: TracerouteSerializer()},
+    responses={
+        200: TracerouteSerializer(),
+    },
 )
 
 traceroute_map_schema = swagger_auto_schema(

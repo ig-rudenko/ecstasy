@@ -15,6 +15,7 @@ from devicemanager.device_connector.types import RemoteCommand
 from .helpers import remove_ansi_escape_codes
 from .types import (
     ArpInfoResult,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceVLANListType,
@@ -120,7 +121,7 @@ class AbstractPOEDevice(ABC):
 
 class AbstractCableTestDevice(ABC):
     @abstractmethod
-    def virtual_cable_test(self, port: str) -> dict:
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
         pass
 
 

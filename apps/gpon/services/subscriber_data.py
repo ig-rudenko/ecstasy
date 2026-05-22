@@ -1,8 +1,6 @@
 from ..api.serializers.common import SubscriberConnectionSerializer
 from ..models import SubscriberConnection
 
-all_subscriber_connections_cache_key = "gpon:all_subscriber_connections"
-
 
 def get_subscribers_on_device_port(device_name: str, olt_port: str, ont_id: int):
     subscriber_connections = (

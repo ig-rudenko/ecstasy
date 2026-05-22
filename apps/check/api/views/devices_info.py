@@ -36,6 +36,7 @@ from ..serializers import (
 )
 from ..swagger.schemas import (
     device_info_api_doc,
+    device_stats_api_doc,
     devices_interfaces_workload_list_api_doc,
     devices_list_api_doc,
     get_device_by_zabbix_serializer_api_doc,
@@ -370,6 +371,7 @@ class DeviceVlanInfoAPIView(DeviceAPIView):
         return Response(serializer.data)
 
 
+@method_decorator(device_stats_api_doc, name="get")
 class DeviceStatsInfoAPIView(DeviceAPIView):
     """
     Возвращаем данные CPU, FLASH, RAM, TEMP
@@ -403,7 +405,10 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
         if not device.available:
             raise DeviceUnavailable({"detail": "Device unavailable", "device": device.name})
 
-        device_stats: dict = get_device_stats(device) or {}
+        device_stats: dict = get_device_stats(device)
+
+        for key in ["cpu", "ram", "flash", "temp"]:
+            device_stats.setdefault(key, {})
 
         return Response(device_stats)
 

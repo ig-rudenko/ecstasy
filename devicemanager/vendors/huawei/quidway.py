@@ -8,10 +8,11 @@ from typing import Literal
 import pexpect
 
 from ..base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
-from ..base.helpers import interface_normal_view, parse_by_template
+from ..base.helpers import interface_normal_view, normalize_cable_diag_result, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -744,7 +745,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             "saved": self.save_config(),
         }
 
-    def __parse_virtual_cable_test_data(self, data: str) -> dict:
+    def __parse_virtual_cable_test_data(self, data: str) -> CableDiagResult:
         """
         ## Эта функция анализирует данные виртуального теста кабеля и возвращает словарь проанализированных данных.
 
@@ -753,7 +754,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         parse_data: dict[str, str | dict[str, str]] = {"status": "Don't support Cable Diagnostic"}
 
         if "not support" in data:
-            return parse_data
+            return normalize_cable_diag_result(parse_data)
 
         if "2326" in self.model:
             # Для Huawei 2326
@@ -786,11 +787,11 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 "status": "Up" if status == "normal" else status.capitalize(),
             }
 
-        return parse_data
+        return normalize_cable_diag_result(parse_data)
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Неверный порт"})
-    def virtual_cable_test(self, port: str):
+    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Unknown"})
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования
 
@@ -853,9 +854,9 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             sfp_parameter_data = self.send_command(
                 f"display transceiver diagnosis interface {port}", expect_command=True
             )
-            return {"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)}
+            return normalize_cable_diag_result({"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)})
 
-        return {"len": "-", "status": "Unknown"}
+        return normalize_cable_diag_result({"len": "-", "status": "Unknown"})
 
     @staticmethod
     def __parse_sfp_diagnostics(output: str) -> dict:

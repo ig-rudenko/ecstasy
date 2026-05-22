@@ -4,8 +4,6 @@ from functools import reduce
 import requests as requests_lib
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.cache import cache
-from django.http import HttpResponse
 from requests import RequestException
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
@@ -22,37 +20,14 @@ from ..models import VlanName
 from ..services.arp_find import find_mac_or_ip
 from ..services.finder import DescriptionFinder
 from ..services.traceroute import build_traceroute_graph_data, build_traceroute_map_data
-from ..tasks import check_scanning_status, interfaces_scan
 from .serializers import GetVlanDescQuerySerializer, TracerouteMapQuerySerializer, TracerouteQuerySerializer
 from .swagger.schemas import (
     find_by_description_schema,
     get_vendor_schema,
     get_vlan_desc_schema,
     traceroute_map_schema,
-    vlan_traceroute_schema,
+    traceroute_schema,
 )
-
-
-@login_required
-@permission_required(perm="auth.access_run_interfaces_gather", raise_exception=True)
-def run_periodically_scan(request):
-    if request.method == "POST":
-        task_id = cache.get("periodically_scan_id")
-        if not task_id:
-            task_id = interfaces_scan.delay()
-            cache.set("periodically_scan_id", task_id, timeout=None)
-            return HttpResponse(status=200)
-
-    return HttpResponse(status=400)
-
-
-@api_view(["GET"])
-@login_required
-def check_periodically_scan(request: Request):
-    """
-    Возвращает текущее состояние фоновой задачи периодического сканирования интерфейсов.
-    """
-    return Response(check_scanning_status())
 
 
 @get_vendor_schema
@@ -184,7 +159,7 @@ def get_vlan_desc(request: Request) -> Response:
     return Response(data)
 
 
-@vlan_traceroute_schema
+@traceroute_schema
 @api_view(["GET"])
 @login_required
 @permission_required(perm="auth.access_traceroute", raise_exception=True)

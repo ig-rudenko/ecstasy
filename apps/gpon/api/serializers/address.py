@@ -1,5 +1,6 @@
 import re
 
+from drf_yasg.utils import swagger_serializer_method
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -150,11 +151,11 @@ class BuildingAddressSerializer(serializers.ModelSerializer):
     building_id = serializers.IntegerField(source="id", read_only=True)
     region = serializers.CharField(source="address.region")
     settlement = serializers.CharField(source="address.settlement")
-    planStructure = serializers.CharField(source="address.plan_structure")
-    street = serializers.CharField(source="address.street")
+    planStructure = serializers.CharField(source="address.plan_structure", allow_null=True)
+    street = serializers.CharField(source="address.street", allow_null=True)
     house = serializers.CharField(source="address.house")
-    block = serializers.CharField(source="address.block")
-    building_type = serializers.ChoiceField(source="apartment_building", choices=["building", "house"])
+    block = serializers.CharField(source="address.block", allow_null=True)
+    building_type = serializers.SerializerMethodField()
 
     class Meta:
         model = HouseB
@@ -172,8 +173,6 @@ class BuildingAddressSerializer(serializers.ModelSerializer):
             "total_entrances",
         ]
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        format_addresses_data(data)
-        data["building_type"] = "building" if instance.apartment_building else "house"
-        return data
+    @swagger_serializer_method(serializer_or_field=serializers.ChoiceField(choices=["building", "house"]))
+    def get_building_type(self, instance: HouseB) -> str:
+        return "building" if instance.apartment_building else "house"

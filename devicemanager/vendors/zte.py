@@ -6,11 +6,12 @@ import textfsm
 
 from .base.device import AbstractCableTestDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template, range_to_numbers
+from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
     TEMPLATE_FOLDER,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -419,8 +420,8 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         }
 
     @BaseDevice.lock_session
-    @validate_and_format_port_only_digit(if_invalid_return={})
-    def virtual_cable_test(self, port: str):
+    @validate_and_format_port_only_digit(if_invalid_return={"len": "-", "status": "Unknown"})
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:
 
@@ -463,13 +464,13 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         cable_diag = self.send_command(f"show vct port {port}")
         if "doesn't support VCT" in cable_diag:
             # Порт не поддерживает Virtual Cable Test
-            result["status"] = "Doesn't support VCT"
-            return result
+            result["status"] = "Unsupported"
+            return normalize_cable_diag_result(result)
 
         if "No problem" in cable_diag:
             # Нет проблем
             result["status"] = "Up"
-            return result
+            return normalize_cable_diag_result(result)
 
         port_cable_diag = re.findall(
             r"Cable Test Passed[ .]+(with Impedance Mismatch|Cable is \S+)\.\s*\n\s+Approximately (\d+) meters",
@@ -502,7 +503,7 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         ):
             result["status"] = result["pair1"]["status"].capitalize()
 
-        return result
+        return normalize_cable_diag_result(result)
 
     def get_port_info(self, port: str) -> PortInfoType:
         return {"type": "text", "data": ""}

@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices, User
-from apps.gathering.models import Vlan, VlanPort
+from apps.gathering.models import MacAddress, Vlan, VlanPort
 from apps.gathering.services.vlan.collector import VlanTableGather
 from devicemanager.vendors.dlink import Dlink
 
@@ -120,9 +120,98 @@ class VlanAPITests(APITestCase):
         self.vlan = Vlan.objects.create(device=self.device, vlan=10, desc="users")
         VlanPort.objects.create(vlan=self.vlan, port="1", desc="abon 1")
         VlanPort.objects.create(vlan=self.vlan, port="2", desc="")
+        self.mac_address = MacAddress.objects.create(
+            device=self.device,
+            address="001122334455",
+            vlan=10,
+            type="D",
+            port="1",
+            desc="abon 1",
+        )
 
         forbidden_vlan = Vlan.objects.create(device=forbidden_device, vlan=20, desc="hidden")
         VlanPort.objects.create(vlan=forbidden_vlan, port="1", desc="hidden")
+        self.forbidden_mac_address = MacAddress.objects.create(
+            device=forbidden_device,
+            address="aabbccddeeff",
+            vlan=20,
+            type="D",
+            port="1",
+            desc="hidden",
+        )
+
+    def test_mac_address_list_returns_only_allowed_devices(self):
+        """Return MAC address rows only for devices available to the current user."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(reverse("gathering-api:mac-address-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["address"], "001122334455")
+        self.assertEqual(response.data["results"][0]["device_name"], "sw-allowed")
+
+    def test_mac_address_list_filters_by_port(self):
+        """Filter MAC address rows by port."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(reverse("gathering-api:mac-address-list"), {"port": "1"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["port"], "1")
+        self.assertEqual(response.data["results"][0]["vlan"], 10)
+
+    def test_mac_address_list_filters_by_full_normalized_address(self):
+        """Filter MAC address rows by full MAC address with separators."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(
+            reverse("gathering-api:mac-address-list"), {"address": "00:11:22:33:44:55"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["address"], "001122334455")
+
+    def test_mac_address_list_filters_by_partial_normalized_address(self):
+        """Filter MAC address rows by partial normalized MAC address."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(reverse("gathering-api:mac-address-list"), {"address": "11-22-33"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["address"], "001122334455")
+
+    def test_mac_address_detail_denies_forbidden_device(self):
+        """Do not expose MAC address rows from unavailable device groups."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(
+            reverse("gathering-api:mac-address-detail", args=[self.forbidden_mac_address.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_mac_address_api_is_read_only(self):
+        """Do not allow creating MAC address rows through the API."""
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            reverse("gathering-api:mac-address-list"),
+            {
+                "device_id": self.device.id,
+                "address": "ffffffffffff",
+                "vlan": 10,
+                "type": "D",
+                "port": "1",
+                "desc": "",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_vlan_list_returns_only_allowed_devices(self):
         """Return VLANs only for devices available to the current user."""

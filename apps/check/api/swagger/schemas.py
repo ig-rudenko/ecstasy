@@ -11,6 +11,7 @@ from .responses import (
     BrasPairSessionResultSwaggerSerializer,
     BulkCommandLaunchResponseSwaggerSerializer,
     BulkCommandTaskStatusSwaggerSerializer,
+    CableDiagnosticResultSwaggerSerializer,
     ChangeDescriptionSwaggerSerializer,
     CollectConfigResponseSwaggerSerializer,
     ConfigFileSwaggerSerializer,
@@ -19,22 +20,18 @@ from .responses import (
     DevicePoolStatusesSwaggerSerializer,
     DevicesConfigListSwaggerSerializer,
     DevicesInterfaceWorkloadResultSwaggerSerializer,
+    DeviceStatsSwaggerSerializer,
     GetDeviceByZabbixSerializer,
     InterfaceDetailInfoSwaggerSerializer,
     InterfacesListSwaggerSerializer,
     InterfaceWorkloadSwaggerSerializer,
     MacListResultSwaggerSerializer,
-    device_unavailable,
 )
 
 # Изменяем состояние порта оборудования
 port_control_api_doc = swagger_auto_schema(
     responses={
         200: PortControlSerializer(),
-        400: "Bad Request",
-        403: "У вас недостаточно прав, для изменения состояния порта!\n"
-        "Запрещено изменять состояние данного порта!",
-        500: "Неизвестный тип оборудования\nНеверный Логин/Пароль\nTelnet недоступен",
     }
 )
 
@@ -129,19 +126,6 @@ change_dsl_profile_api_doc = swagger_auto_schema(
                 },
             ),
         ),
-        400: openapi.Response(
-            description="Device can't change profile",
-            schema=openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    "detail": openapi.Schema(
-                        type=openapi.TYPE_STRING,
-                        example="Device can't change profile",
-                    )
-                },
-            ),
-        ),
-        500: device_unavailable,
     }
 )
 
@@ -177,9 +161,6 @@ execute_bulk_device_command_api_doc = swagger_auto_schema(
     request_body=ExecuteBulkDeviceCommandRequestSwaggerSerializer(),
     responses={
         202: BulkCommandLaunchResponseSwaggerSerializer(),
-        400: "Bad Request",
-        403: "Permission denied",
-        404: "Command not found",
     },
 )
 
@@ -208,5 +189,13 @@ cable_diagnostic_api_doc = swagger_auto_schema(
             required=True,
         ),
     ],
-    responses={},
+    responses={
+        200: CableDiagnosticResultSwaggerSerializer(),
+    },
+)
+
+device_stats_api_doc = swagger_auto_schema(
+    responses={
+        200: DeviceStatsSwaggerSerializer(),
+    }
 )
