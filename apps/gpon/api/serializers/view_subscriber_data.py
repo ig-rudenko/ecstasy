@@ -70,6 +70,8 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
 
     @swagger_serializer_method(serializer_or_field=SubscriberHouseOLTStateSerializer())
     def get_houseOLTState(self, instance: SubscriberConnection) -> dict | None:
+        if instance.tech_capability is None:
+            return None
         house_olt_state = instance.tech_capability.end3.house_olt_states.first()
         if house_olt_state is None:
             return None

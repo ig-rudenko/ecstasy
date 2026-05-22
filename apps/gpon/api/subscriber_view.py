@@ -1,4 +1,3 @@
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator

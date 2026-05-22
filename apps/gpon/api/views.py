@@ -12,7 +12,6 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.check.api.views.paginators import End3PageNumberPagination
@@ -50,7 +49,6 @@ from .swagger import (
     buildings_addresses_list_api_doc,
     device_ports_list_api_doc,
     devices_names_list_api_doc,
-    end3_addresses_list_api_doc,
     list_user_permissions_api_doc,
     tech_data_create_api_doc,
     tech_data_list_api_doc,
