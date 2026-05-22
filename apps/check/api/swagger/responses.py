@@ -1,4 +1,3 @@
-from drf_yasg import openapi
 from rest_framework import serializers
 
 from ...models import Devices, InterfacesComments
@@ -10,15 +9,6 @@ class SwaggerSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         pass
-
-
-device_unavailable = openapi.Response(
-    description="Device unavailable",
-    schema=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={"detail": openapi.Schema(type=openapi.TYPE_STRING, example="Device unavailable")},
-    ),
-)
 
 
 class ConfigFileSwaggerSerializer(SwaggerSerializer):
@@ -179,7 +169,7 @@ class DeviceInfoSwaggerSerializer(SwaggerSerializer):
     serialNumber = serializers.CharField(allow_null=True)
     osVersion = serializers.CharField(allow_null=True)
     elasticStackLink = serializers.URLField()
-    zabbixHostID = serializers.CharField()
+    zabbixHostID = serializers.IntegerField()
     zabbixURL = serializers.URLField()
     zabbixInfo = DeviceZabbixInfoSwaggerSerializer()
     permission = serializers.IntegerField(min_value=0, max_value=4)
@@ -188,6 +178,13 @@ class DeviceInfoSwaggerSerializer(SwaggerSerializer):
     )
     uptime = serializers.IntegerField()
     consoleURL = serializers.URLField()
+
+
+class DeviceStatsSwaggerSerializer(SwaggerSerializer):
+    cpu = serializers.JSONField()
+    ram = serializers.JSONField()
+    flash = serializers.JSONField()
+    temp = serializers.JSONField()
 
 
 # MAC List
@@ -217,6 +214,21 @@ class InterfaceDetailInfoSwaggerSerializer(SwaggerSerializer):
     portType = serializers.CharField()
     portErrors = serializers.CharField()
     hasCableDiag = serializers.BooleanField()
+
+
+class CableDiagnosticPairSwaggerSerializer(SwaggerSerializer):
+    status = serializers.CharField()
+    len = serializers.CharField()
+
+
+class CableDiagnosticResultSwaggerSerializer(SwaggerSerializer):
+    len = serializers.CharField()
+    status = serializers.CharField()
+    pair1 = CableDiagnosticPairSwaggerSerializer(required=False)
+    pair2 = CableDiagnosticPairSwaggerSerializer(required=False)
+    pair3 = CableDiagnosticPairSwaggerSerializer(required=False)
+    pair4 = CableDiagnosticPairSwaggerSerializer(required=False)
+    sfp = serializers.DictField(required=False)
 
 
 class ChangeDescriptionSwaggerSerializer(SwaggerSerializer):

@@ -8,11 +8,12 @@ import textfsm
 
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template, range_to_numbers
+from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
     TEMPLATE_FOLDER,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -620,8 +621,8 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         }
 
     @BaseDevice.lock_session
-    @dlink_validate_and_format_port(if_invalid_return={})
-    def virtual_cable_test(self, port: str) -> dict:
+    @dlink_validate_and_format_port(if_invalid_return={"len": "-", "status": "Unknown"})
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
         """
         Эта функция запускает диагностику состояния линии на порту оборудования через команду:
 
@@ -657,7 +658,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
             if "Available commands" in diag_output:
-                return {}
+                return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
 
             result: dict[str, Any] = {
                 "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
@@ -665,13 +666,13 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             }
 
             if "can't support" in diag_output or "Unknown" in diag_output:
-                result["status"] = "Don't support Cable Diagnostic"
-                return result
+                result["status"] = "Unsupported"
+                return normalize_cable_diag_result(result)
 
             if "No Cable" in diag_output:
                 # Нет кабеля
                 result["status"] = "Empty"
-                return result
+                return normalize_cable_diag_result(result)
 
             if re.findall(r"Link (Up|Down)\s+OK", diag_output):
                 # Если статус OK
@@ -694,13 +695,13 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                             "len": pair_n[1],  # Длина
                         }
 
-            return result
+            return normalize_cable_diag_result(result)
 
         if port_type in ["SFP"]:
             sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
-            return {"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)}
+            return normalize_cable_diag_result({"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)})
 
-        return {"len": "-", "status": "None"}
+        return normalize_cable_diag_result({"len": "-", "status": "Unknown"})
 
     @staticmethod
     def __parse_sfp_diagnostics(output) -> dict:

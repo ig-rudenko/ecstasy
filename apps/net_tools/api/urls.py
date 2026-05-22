@@ -11,6 +11,4 @@ urlpatterns = [
     path("vlan-desc", views.get_vlan_desc),
     path("mac-vendor/<mac>", views.get_vendor),
     path("ip-mac-info/<ip_or_mac>", views.ip_mac_info),
-    path("vlans-scan/run", views.run_periodically_scan),
-    path("vlans-scan/check", views.check_periodically_scan),
 ]

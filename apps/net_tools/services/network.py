@@ -71,7 +71,6 @@ class _PreparedRule:
     node_kind_code: str | None
     match_type: str
     pattern: str
-    group_id: int | None
     color_background: str
     color_border: str
     color_font: str
@@ -106,9 +105,6 @@ class VlanNetwork:
         show_admin_down_ports: bool = False,
         nodes_only: bool = False,
     ):
-        for i in range(10):
-            self._add_node(i, i, {"title": "", "group": i, "hidden": True, "shape": "dot"})
-
         degree_by_node = self._create_nodes(data, show_admin_down_ports, nodes_only)
         suspicious_node_ids = self._get_suspicious_node_ids()
         visible_nodes_count = sum(1 for node in self._nodes if not node.get("hidden"))
@@ -155,7 +151,6 @@ class VlanNetwork:
                     node_kind_code=rule.node_kind.code if rule.node_kind else None,
                     match_type=rule.match_type,
                     pattern=rule.pattern or "",
-                    group_id=rule.group_id,
                     color_background=rule.color_background,
                     color_border=rule.color_border,
                     color_font=rule.color_font,
@@ -218,7 +213,6 @@ class VlanNetwork:
             return {"hidden": True}
 
         style: dict = {
-            "group": None,
             "shape": "dot",
             "label": label.strip(),
             "fixed_value": None,
@@ -231,8 +225,6 @@ class VlanNetwork:
                 continue
             if not self._matches_rule(raw, raw_lower, rule):
                 continue
-            if rule.group_id is not None:
-                style["group"] = rule.group_id
             if rule.color_background or rule.color_border or rule.color_font:
                 style["color"] = {
                     "background": rule.color_background or "#97C2FC",
@@ -285,8 +277,6 @@ class VlanNetwork:
                     "title": src_style["label"],
                     "shape": src_style["shape"],
                 }
-                if src_style["group"] is not None:
-                    node_data["group"] = src_style["group"]
                 if src_style["color"] is not None:
                     node_data["color"] = src_style["color"]
                 if src_style.get("font_color"):
@@ -301,8 +291,6 @@ class VlanNetwork:
                     "title": dst_style["label"],
                     "shape": dst_style["shape"],
                 }
-                if dst_style["group"] is not None:
-                    node_data["group"] = dst_style["group"]
                 if dst_style["color"] is not None:
                     node_data["color"] = dst_style["color"]
                 if dst_style.get("font_color"):
@@ -349,7 +337,7 @@ class VlanNetwork:
         node_options["id"] = node_id
         node_options["label"] = label
         node_options["shape"] = node_data["shape"]
-        if "group" not in node_options and "color" not in node_options:
+        if "color" not in node_options:
             node_options["color"] = "#97c2fc"
         node_options["font"] = {"color": "white"}
 

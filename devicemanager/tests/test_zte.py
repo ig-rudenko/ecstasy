@@ -253,8 +253,8 @@ class TestZTE2936FI(SimpleTestCase):
             {
                 "len": "-",
                 "status": "Open",
-                "pair1": {"status": "open", "len": "71"},
-                "pair2": {"status": "open", "len": "71"},
+                "pair1": {"status": "Open", "len": "71"},
+                "pair2": {"status": "Open", "len": "71"},
             },
         )
 
@@ -267,7 +267,7 @@ class TestZTE2936FI(SimpleTestCase):
         res = self.device.virtual_cable_test("9")
         self.assertDictEqual(
             res,
-            {"len": "-", "status": "Doesn't support VCT"},
+            {"len": "-", "status": "Unsupported"},
         )
 
 
@@ -375,7 +375,7 @@ class TestZTE2928E(SimpleTestCase):
             {
                 "len": "-",
                 "status": "Open",
-                "pair1": {"status": "open", "len": "43"},
-                "pair2": {"status": "open", "len": "42"},
+                "pair1": {"status": "Open", "len": "43"},
+                "pair2": {"status": "Open", "len": "42"},
             },
         )

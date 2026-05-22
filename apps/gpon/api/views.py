@@ -12,7 +12,6 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.check.api.views.paginators import End3PageNumberPagination
@@ -50,18 +49,11 @@ from .swagger import (
     buildings_addresses_list_api_doc,
     device_ports_list_api_doc,
     devices_names_list_api_doc,
-    end3_addresses_list_api_doc,
     list_user_permissions_api_doc,
     tech_data_create_api_doc,
     tech_data_list_api_doc,
     view_olt_state_tech_data_api_doc,
 )
-
-
-class GPONListPageNumberPagination(PageNumberPagination):
-    page_size = 20
-    page_size_query_param = "page_size"
-    max_page_size = 100
 
 
 class ListUserPermissions(GenericAPIView):
@@ -80,7 +72,6 @@ class TechDataListCreateAPIView(ListCreateAPIView):
 
     queryset = HouseOLTState.objects.all()
     permission_classes = [TechDataPermission]
-    pagination_class = GPONListPageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = TechDataFilter
 
@@ -168,7 +159,6 @@ class ViewBuildingTechDataAPIView(RetrieveAPIView):
 class BuildingsAddressesListAPIView(ListAPIView):
     serializer_class = BuildingAddressSerializer
     queryset = HouseB.objects.all().select_related("address")
-    pagination_class = GPONListPageNumberPagination
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
@@ -204,13 +194,11 @@ class BuildingsAddressesListAPIView(ListAPIView):
         return queryset
 
 
-@method_decorator(name="get", decorator=end3_addresses_list_api_doc)
 class End3AddressesListAPIView(ListAPIView):
     """Возвращает список сплиттеров/райзеров вместе с их адресами"""
 
     serializer_class = End3Serializer
     queryset = End3.objects.select_related("address")
-    pagination_class = GPONListPageNumberPagination
 
     def get_queryset(self):
         queryset = super().get_queryset()

@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, AnyStr, Literal, NamedTuple, Protocol, TypedDict
+from typing import Any, AnyStr, Literal, NamedTuple, NotRequired, Protocol, TypedDict
 
 # Папка с шаблонами регулярных выражений для парсинга вывода оборудования
 TEMPLATE_FOLDER = pathlib.Path(__file__).parent.parent.parent / "templates"
@@ -68,6 +68,21 @@ class DeviceAuthDict(TypedDict):
 class PortInfoType(TypedDict):
     type: str
     data: Any
+
+
+class CableDiagPair(TypedDict):
+    status: str
+    len: str
+
+
+class CableDiagResult(TypedDict):
+    len: str
+    status: str
+    pair1: NotRequired[CableDiagPair]
+    pair2: NotRequired[CableDiagPair]
+    pair3: NotRequired[CableDiagPair]
+    pair4: NotRequired[CableDiagPair]
+    sfp: NotRequired[dict[str, dict[str, Any]]]
 
 
 class SystemInfo(TypedDict):

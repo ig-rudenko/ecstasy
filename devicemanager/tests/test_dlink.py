@@ -748,8 +748,8 @@ class TestDLinkCableDiag(SimpleTestCase):
             {
                 "len": "-",
                 "status": "Down",
-                "pair1": {"status": "open", "len": "36"},
-                "pair2": {"status": "open", "len": "36"},
+                "pair1": {"status": "Open", "len": "36"},
+                "pair2": {"status": "Open", "len": "36"},
             },
             # 2
             {"len": "35", "status": "Up"},
@@ -759,31 +759,31 @@ class TestDLinkCableDiag(SimpleTestCase):
             {
                 "len": "-",
                 "status": "Down",
-                "pair1": {"status": "open", "len": "2"},
-                "pair2": {"status": "open", "len": "2"},
+                "pair1": {"status": "Open", "len": "2"},
+                "pair2": {"status": "Open", "len": "2"},
             },
             # 5
             {
                 "len": "-",
                 "status": "Down",
-                "pair1": {"status": "short", "len": "1"},
+                "pair1": {"status": "Short", "len": "1"},
                 "pair2": {"status": "ok", "len": "3"},
             },
             # 6
-            {"len": "-", "status": "Don't support Cable Diagnostic"},
+            {"len": "-", "status": "Unsupported"},
             # 7
-            {"len": "-", "status": "Don't support Cable Diagnostic"},
+            {"len": "-", "status": "Unsupported"},
             # 8
             {
                 "len": "-",
                 "status": "Up",
-                "pair1": {"status": "short", "len": "1"},
+                "pair1": {"status": "Short", "len": "1"},
                 "pair2": {"status": "ok", "len": "3"},
                 "pair3": {"status": "ok", "len": "1"},
-                "pair4": {"status": "short", "len": "1"},
+                "pair4": {"status": "Short", "len": "1"},
             },
             # 9
-            {"len": "-", "status": "None"},
+            {"len": "-", "status": "Unknown"},
         ]
         for port_num in range(1, 10):
             res = self.dlink.virtual_cable_test(str(port_num))

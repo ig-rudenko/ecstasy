@@ -1,4 +1,3 @@
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -10,12 +9,11 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from ..models import Customer, OLTState, SubscriberConnection
-from ..services.subscriber_data import all_subscriber_connections_cache_key, get_subscribers_on_device_port
+from ..services.subscriber_data import get_subscribers_on_device_port
 from .filters import SubscriberConnectionFilter
 from .permissions import CustomerPermission, SubscriberDataPermission
 from .serializers.common import CustomerSerializer, SubscriberConnectionSerializer
@@ -32,15 +30,9 @@ from .swagger import (
 
 @method_decorator(name="get", decorator=customers_list_api_doc)
 class CustomersListAPIView(ListAPIView):
-    class CustomersPagination(PageNumberPagination):
-        page_size = 20
-        page_size_query_param = "page_size"
-        max_page_size = 100
-
     queryset = Customer.objects.all().order_by("id")
     permission_classes = [CustomerPermission]
     serializer_class = CustomerSerializer
-    pagination_class = CustomersPagination
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -77,18 +69,6 @@ class CustomerDetailAPIView(RetrieveUpdateDestroyAPIView):
             )
         return Customer.objects.all()
 
-    def put(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().put(request, *args, **kwargs)
-
-    def patch(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().patch(request, *args, **kwargs)
-
-    def delete(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().delete(request, *args, **kwargs)
-
 
 class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [SubscriberDataPermission]
@@ -99,31 +79,12 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer) -> None:
         super().perform_update(serializer)
 
-    def put(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().put(request, *args, **kwargs)
-
-    def patch(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().patch(request, *args, **kwargs)
-
-    def delete(self, request: Request, *args, **kwargs) -> Response:
-        cache.delete(all_subscriber_connections_cache_key)
-        return super().delete(request, *args, **kwargs)
-
 
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects.all().order_by("id")
     filter_backends = [DjangoFilterBackend]
     filterset_class = SubscriberConnectionFilter
-
-    class SubscriberConnectionPagination(PageNumberPagination):
-        page_size = 20
-        page_size_query_param = "page_size"
-        max_page_size = 100
-
-    pagination_class = SubscriberConnectionPagination
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -151,7 +112,6 @@ class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
 
     @transaction.atomic
     def perform_create(self, serializer) -> None:
-        cache.delete(all_subscriber_connections_cache_key)
         super().perform_create(serializer)
 
 

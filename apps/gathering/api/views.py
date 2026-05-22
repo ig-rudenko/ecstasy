@@ -1,59 +1,56 @@
-import re
-
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import ValidationError
-from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.check.models import Devices
 from apps.check.services.filters import filter_devices_qs_by_user
-from apps.gathering.models import Vlan, VlanPort
+from apps.gathering.models import MacAddress, Vlan, VlanPort
 from ecstasy_project.types.api import UserAuthenticatedAPIView
 
-from ..services.mac.traceroute import MacTraceroute
 from ..tasks import (
     get_mac_gather_status,
     get_vlan_gather_status,
     mac_table_gather_task,
     vlan_table_gather_task,
 )
-from .filters import VlanFilter, VlanPortFilter
+from .filters import MacAddressFilter, VlanFilter, VlanPortFilter
 from .serializers import (
+    MacAddressSerializer,
     VlanPortSerializer,
     VlanSerializer,
 )
 from .swagger.schemas import (
     mac_scan_run_api_doc,
     mac_scan_status_api_doc,
-    mac_traceroute_api_doc,
     vlan_scan_run_api_doc,
     vlan_scan_status_api_doc,
 )
 
 
-class MacTracerouteAPIView(GenericAPIView):
-    """
-    # Находит все записи в базе данных, которые содержат необходимый MAC-адрес,
-    а затем строит граф связей между этими MAC.
-    """
+class MacAddressQuerysetMixin:
+    def get_queryset(self):
+        """Filter MAC address rows by user device access and optional query params."""
+        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)  # noqa
+        queryset = MacAddress.objects.filter(device__in=devices).select_related("device")
+        return queryset.distinct().order_by("device__name", "address", "vlan", "port")
 
-    pagination_class = None
 
-    @mac_traceroute_api_doc
-    def get(self, request, mac: str):
-        try:
-            vlan = int(request.GET.get("vlan", 0))
-        except ValueError:
-            vlan = 0
-        mac_clean = "".join(re.findall(r"[0-9a-fA-F]+", mac)).lower()
-        if len(mac_clean) != 12:
-            raise ValidationError({"mac": "Invalid MAC address"})
+class MacAddressListAPIView(MacAddressQuerysetMixin, UserAuthenticatedAPIView, ListAPIView):
+    """Return collected MAC address rows for devices available to the user."""
 
-        traceroute = MacTraceroute()
-        return Response(traceroute.get_mac_graph(mac=mac_clean, vlan=vlan))
+    serializer_class = MacAddressSerializer
+    pagination_class = PageNumberPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MacAddressFilter
+
+
+class MacAddressDetailAPIView(MacAddressQuerysetMixin, UserAuthenticatedAPIView, RetrieveAPIView):
+    """Return one collected MAC address row."""
+
+    serializer_class = MacAddressSerializer
 
 
 class VlanQuerysetMixin:

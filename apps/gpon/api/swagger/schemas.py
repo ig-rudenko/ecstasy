@@ -15,7 +15,6 @@ from .query_params import (
     SubscribersOnDevicePortQueryParamsSwaggerSerializer,
 )
 from .responses import (
-    ErrorDetailResponseSwaggerSerializer,
     PaginatedSubscriberConnectionListResponseSwaggerSerializer,
     PaginatedTechDataListResponseSwaggerSerializer,
 )
@@ -39,7 +38,6 @@ tech_data_create_api_doc = swagger_auto_schema(
     request_body=CreateTechDataSerializer(),
     responses={
         201: CreateTechDataSerializer(),
-        400: ErrorDetailResponseSwaggerSerializer(),
     },
 )
 
@@ -47,7 +45,6 @@ view_olt_state_tech_data_api_doc = swagger_auto_schema(
     query_serializer=DevicePortQueryParamsSwaggerSerializer(),
     responses={
         200: ViewOLTStatesTechDataSerializer(),
-        400: ErrorDetailResponseSwaggerSerializer(),
     },
 )
 
@@ -66,7 +63,6 @@ device_ports_list_api_doc = swagger_auto_schema(
             description="List of device ports",
             schema=openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
         ),
-        400: ErrorDetailResponseSwaggerSerializer(),
     }
 )
 
@@ -95,7 +91,6 @@ subscriber_data_create_api_doc = swagger_auto_schema(
     request_body=SubscriberDataSerializer(),
     responses={
         201: SubscriberDataSerializer(),
-        400: ErrorDetailResponseSwaggerSerializer(),
     },
 )
 
@@ -109,7 +104,6 @@ subscribers_on_device_port_api_doc = swagger_auto_schema(
     query_serializer=SubscribersOnDevicePortQueryParamsSwaggerSerializer(),
     responses={
         200: SubscriberConnectionSerializer(many=True),
-        400: ErrorDetailResponseSwaggerSerializer(),
     },
 )
 

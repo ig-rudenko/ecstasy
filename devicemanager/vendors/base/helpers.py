@@ -1,8 +1,9 @@
 import re
+from typing import Any
 
 import textfsm
 
-from devicemanager.vendors.base.types import TEMPLATE_FOLDER
+from devicemanager.vendors.base.types import TEMPLATE_FOLDER, CableDiagResult
 
 
 def remove_ansi_escape_codes(string: bytes | str | None) -> str:
@@ -16,6 +17,54 @@ def remove_ansi_escape_codes(string: bytes | str | None) -> str:
 
         return ansi_escape.sub("", clean_string)
     return ""
+
+
+def normalize_cable_diag_status(status: Any) -> str:
+    """Converts vendor-specific cable diagnostic status to a common representation."""
+    status_text = str(status or "").strip()
+    if not status_text:
+        return "Unknown"
+
+    lowered = status_text.lower()
+    if "support cable diagnostic" in lowered or "support vct" in lowered or "not support" in lowered:
+        return "Unsupported"
+    if "empty" in lowered or "no cable" in lowered:
+        return "Empty"
+    if lowered in {"up", "down", "open", "short", "mismatch", "unknown", "unsupported"}:
+        return lowered.capitalize()
+    if lowered == "none":
+        return "Unknown"
+
+    return status_text
+
+
+def normalize_cable_diag_result(result: dict[str, Any] | None) -> CableDiagResult:
+    """Normalizes cable diagnostics payload from different vendors to a single schema."""
+    if not isinstance(result, dict):
+        return {"len": "-", "status": "Unknown"}
+
+    normalized: CableDiagResult = {
+        "len": str(result.get("len", "-") or "-"),
+        "status": normalize_cable_diag_status(result.get("status")),
+    }
+
+    for pair_num in range(1, 5):
+        pair_key = f"pair{pair_num}"
+        pair_data = result.get(pair_key)
+        if isinstance(pair_data, dict):
+            normalized[pair_key] = {  # type: ignore
+                "status": normalize_cable_diag_status(pair_data.get("status")),
+                "len": str(pair_data.get("len", "-") or "-"),
+            }
+
+    sfp_data = result.get("sfp")
+    if isinstance(sfp_data, dict) and sfp_data:
+        normalized["sfp"] = sfp_data
+        normalized["len"] = "-"
+        if normalized["status"] == "Unknown":
+            normalized["status"] = "SFP"
+
+    return normalized
 
 
 def range_to_numbers(ports_string: str) -> list[int]:

@@ -6,10 +6,6 @@ from ..serializers import (
     VlanGatherScanTaskSerializer,
     VlanGatherStatusSerializer,
 )
-from .responses import MacTracerouteSwaggerSerializer
-
-# Изменяем состояние порта оборудования
-mac_traceroute_api_doc = swagger_auto_schema(responses={200: MacTracerouteSwaggerSerializer()})
 
 mac_scan_status_api_doc = swagger_auto_schema(responses={200: MacGatherStatusSerializer()})
 mac_scan_run_api_doc = swagger_auto_schema(

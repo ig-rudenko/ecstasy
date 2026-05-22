@@ -18,6 +18,7 @@ from devicemanager.vendors.base.device import (
 )
 from devicemanager.vendors.base.types import (
     ArpInfoResult,
+    CableDiagResult,
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
@@ -199,7 +200,7 @@ class RemoteDevice(
     def get_device_info(self) -> dict:
         return self._remote_call("get_device_info")
 
-    def virtual_cable_test(self, port: str) -> dict:
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
         return self._remote_call("virtual_cable_test", port=port)
 
     def get_current_configuration(self) -> tuple[str | bytes, str]:

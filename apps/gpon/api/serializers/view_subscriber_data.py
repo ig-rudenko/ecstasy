@@ -1,5 +1,6 @@
 import re
 
+from drf_yasg.utils import swagger_serializer_method
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -20,9 +21,7 @@ class SubscriberHouseOLTStateSerializer(serializers.ModelSerializer):
 
 
 class SubscriberConnectionSerializer(serializers.ModelSerializer):
-    houseOLTState = SubscriberHouseOLTStateSerializer(
-        source="tech_capability.end3.house_olt_states", read_only=True, many=True
-    )
+    houseOLTState = serializers.SerializerMethodField(allow_null=True)
     address = AddressSerializer()
     services: ServicesType = serializers.ListSerializer(child=serializers.CharField())
     status = serializers.CharField(source="tech_capability.status")
@@ -69,11 +68,14 @@ class SubscriberConnectionSerializer(serializers.ModelSerializer):
             raise ValidationError("Некоторые сервисы не существуют")
         return values
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if data["houseOLTState"]:
-            data["houseOLTState"] = data["houseOLTState"][0]
-        return data
+    @swagger_serializer_method(serializer_or_field=SubscriberHouseOLTStateSerializer())
+    def get_houseOLTState(self, instance: SubscriberConnection) -> dict | None:
+        if instance.tech_capability is None:
+            return None
+        house_olt_state = instance.tech_capability.end3.house_olt_states.first()
+        if house_olt_state is None:
+            return None
+        return SubscriberHouseOLTStateSerializer(house_olt_state).data
 
 
 class CustomerDetailSerializer(CustomerSerializer):

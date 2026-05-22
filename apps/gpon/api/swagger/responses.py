@@ -28,7 +28,3 @@ class PaginatedSubscriberConnectionListResponseSwaggerSerializer(SwaggerSerializ
     next = serializers.CharField(allow_null=True)
     previous = serializers.CharField(allow_null=True)
     results = SubscriberConnectionSerializer(many=True)
-
-
-class ErrorDetailResponseSwaggerSerializer(SwaggerSerializer):
-    detail = serializers.CharField()
