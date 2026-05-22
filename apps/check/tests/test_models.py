@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -125,6 +126,22 @@ class DeviceModelTest(TestCase):
 
         with self.assertRaises(ValidationError):
             dev.full_clean()
+
+    def test_connect_passes_connection_ports(self):
+        """Devices.connect passes configured connection ports to remote connector."""
+
+        dev = Devices.objects.all().first()
+        dev.telnet_port = 2323
+        dev.ssh_port = 2222
+        dev.snmp_port = 1161
+
+        with patch("apps.check.models.remote_connector") as remote_connector:
+            dev.connect()
+
+        kwargs = remote_connector.create.call_args.kwargs
+        self.assertEqual(kwargs["telnet_port"], 2323)
+        self.assertEqual(kwargs["ssh_port"], 2222)
+        self.assertEqual(kwargs["snmp_port"], 1161)
 
 
 class DeviceGroupTest(TestCase):

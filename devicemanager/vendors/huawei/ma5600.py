@@ -1019,7 +1019,11 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
-        return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
+        return snmp.get_interfaces(
+            device_ip=self.ip,
+            community=self.snmp_community,
+            snmp_port=self.snmp_port,
+        )
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:

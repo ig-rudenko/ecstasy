@@ -14,6 +14,7 @@ from .vendors.juniper import JuniperFactory
 from .vendors.mikrotik import MikrotikFactory
 from .vendors.procurve import ProCurveFactory
 from .vendors.qtech import QtechFactory
+from .vendors.snr import SNRFactory
 from .vendors.zte import ZTEFactory
 from .vendors.zyxel import ZyxelFactory
 
@@ -34,6 +35,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
         JuniperFactory,
         ProCurveFactory,
         AlmatekFactory,
+        SNRFactory,
     ]
 
     @staticmethod
@@ -49,7 +51,13 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
     @classmethod
     def get_device(
-        cls, session, ip: str, snmp_community: str, auth: DeviceAuthDict, version_output: str = ""
+        cls,
+        session,
+        ip: str,
+        snmp_community: str,
+        auth: DeviceAuthDict,
+        version_output: str = "",
+        snmp_port: int = 161,
     ) -> BaseDevice:
         """
         # После подключения динамически определяем вендора оборудования и его модель
@@ -72,6 +80,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
         |          Iskratel           |   "ISKRATEL" или "IskraTEL"   |
         |           Juniper           |            "JUNOS"            |
         |          ProCurve           |         "Image stamp:"        |
+        |            SNR              |             "SNR"             |
 
         """
 
@@ -87,6 +96,8 @@ class DeviceMultiFactory(AbstractDeviceFactory):
 
         for factory in cls.subfactories:
             if factory.is_can_use_this_factory(session=session, version_output=version_output):
-                return factory.get_device(**factory_data)
+                device = factory.get_device(**factory_data)
+                device.snmp_port = snmp_port
+                return device
 
         raise UnknownDeviceError("Модель оборудования не была распознана", ip=ip)

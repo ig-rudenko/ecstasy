@@ -164,6 +164,7 @@ class BaseDevice(AbstractDevice, ABC):
         auth: DeviceAuthDict,
         model: str = "",
         snmp_community: str = "",
+        snmp_port: int = 161,
     ):
         self.session: pexpect.spawn = session
         self.ip = ip
@@ -174,6 +175,7 @@ class BaseDevice(AbstractDevice, ABC):
         self.os: str = ""
         self.os_version: str = ""
         self.snmp_community = snmp_community
+        self.snmp_port = snmp_port
         self.lock = False
 
     def get_system_info(self) -> SystemInfo:

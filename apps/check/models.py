@@ -245,6 +245,9 @@ class Devices(models.Model):
             auth_obj=self.auth_group,
             make_session_global=make_session_global,
             pool_size=self.connection_pool_size,
+            telnet_port=self.telnet_port,
+            ssh_port=self.ssh_port,
+            snmp_port=self.snmp_port,
         )
 
     class Meta:

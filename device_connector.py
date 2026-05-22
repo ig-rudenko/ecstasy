@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from ipaddress import IPv4Address
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from flask import Flask, Response, after_this_request, jsonify, request, send_file
 from ping3 import ping
@@ -25,6 +25,9 @@ class ConnectionType(TypedDict):
     snmp_community: str
     pool_size: int
     make_session_global: bool
+    telnet_port: NotRequired[int]
+    ssh_port: NotRequired[int]
+    snmp_port: NotRequired[int]
 
 
 def handle_method_data(data):
@@ -85,6 +88,9 @@ def connector(ip: str, method: str):
             pool_size=connection.get("pool_size", None),
             snmp_community=connection.get("snmp_community", ""),
             port_scan_protocol=connection.get("port_scan_protocol", "ssh"),
+            telnet_port=connection.get("telnet_port"),
+            ssh_port=connection.get("ssh_port"),
+            snmp_port=connection.get("snmp_port"),
         )
         params = data.get("params", {})
 
