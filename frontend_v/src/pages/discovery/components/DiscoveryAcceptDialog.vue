@@ -31,6 +31,9 @@ const modelVisible = computed({
     get: () => props.visible,
     set: (value: boolean) => emit("update:visible", value),
 });
+
+const authCheckFailed = computed(() => props.selectedCandidate?.authCheckStatus === "FAILED");
+const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus === "SUCCESS");
 </script>
 
 <template>
@@ -44,6 +47,12 @@ const modelVisible = computed({
                     {{ [selectedCandidate.vendor, selectedCandidate.model].filter(Boolean).join(" · ") || "Unknown" }}
                 </div>
             </div>
+            <Message v-if="authCheckFailed" severity="error" icon="pi pi-exclamation-triangle">
+                {{
+                    selectedCandidate.authCheckError ||
+                    "Не удалось подключиться с AuthGroup из профиля discovery."
+                }}
+            </Message>
             <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 Имя устройства
                 <InputText v-model.trim="form.name" class="rounded-2xl" />
@@ -57,6 +66,7 @@ const modelVisible = computed({
                         optionLabel="name"
                         optionValue="id"
                         class="rounded-2xl"
+                        :disabled="authCheckSuccess"
                     />
                 </label>
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -111,7 +121,13 @@ const modelVisible = computed({
                 class="rounded-2xl!"
                 @click="modelVisible = false"
             />
-            <Button label="Создать устройство" icon="pi pi-check" class="rounded-2xl!" @click="emit('accept')" />
+            <Button
+                label="Создать устройство"
+                icon="pi pi-check"
+                class="rounded-2xl!"
+                :disabled="authCheckFailed"
+                @click="emit('accept')"
+            />
         </div>
     </Dialog>
 </template>

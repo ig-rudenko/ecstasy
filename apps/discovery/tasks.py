@@ -87,7 +87,7 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
                 add_counter("skipped")
                 return
 
-            fingerprint, fingerprint_attempts = DeviceFingerprinter(profile, include_cli=False).collect(
+            fingerprint, fingerprint_attempts = DeviceFingerprinter(profile, include_cli=True).collect(
                 ip,
                 detected_protocols,
             )
@@ -176,6 +176,7 @@ def should_auto_create(profile, candidate: DiscoveryCandidate, dry_run: bool) ->
         profile.auto_create
         and not dry_run
         and candidate.status == DiscoveryCandidate.Status.READY
+        and candidate.selected_auth_group_id is not None
         and candidate.confidence >= profile.auto_create_min_confidence
     )
 

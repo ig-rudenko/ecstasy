@@ -68,6 +68,16 @@ function statusClass(status: string): string {
     }
     return "bg-slate-100 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200";
 }
+
+function authCheckClass(status: DiscoveryCandidate["authCheckStatus"]): string {
+    if (status === "SUCCESS") {
+        return "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800";
+    }
+    if (status === "FAILED") {
+        return "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-900/20 dark:text-rose-200 dark:ring-rose-800";
+    }
+    return "bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700";
+}
 </script>
 
 <template>
@@ -146,7 +156,7 @@ function statusClass(status: string): string {
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex flex-col gap-1">
+                            <div class="flex items-center flex-col gap-1">
                                 <span
                                     class="inline-flex w-fit rounded-full px-2 py-1 text-xs font-semibold"
                                     :class="statusClass(candidate.status)"
@@ -154,6 +164,18 @@ function statusClass(status: string): string {
                                     {{ candidate.status }}
                                 </span>
                                 <span class="text-xs text-gray-500">confidence {{ candidate.confidence }}</span>
+                                <div
+                                    v-if="candidate.authCheckStatus !== 'UNKNOWN'"
+                                    v-tooltip="candidate.authCheckError || undefined"
+                                    class="inline-flex w-fit rounded-full px-3 text-center py-0.5 text-xs font-semibold ring-1"
+                                    :class="authCheckClass(candidate.authCheckStatus)"
+                                >
+                                    {{
+                                        candidate.authCheckStatus === "SUCCESS"
+                                            ? "AuthGroup проверена"
+                                            : "AuthGroup не подошла"
+                                    }}
+                                </div>
                             </div>
                         </td>
                         <td class="px-4 py-3">
@@ -170,8 +192,11 @@ function statusClass(status: string): string {
                             <div class="text-sm text-gray-700 dark:text-gray-200">
                                 {{ verboseDatetime(candidate.last_seen_at) }}
                             </div>
-                            <div v-if="candidate.lastError" class="mt-1 max-w-80 truncate text-xs text-rose-600">
-                                {{ candidate.lastError }}
+                            <div
+                                v-if="candidate.authCheckError || candidate.lastError"
+                                class="mt-1 max-w-80 truncate text-xs text-rose-600"
+                            >
+                                {{ candidate.authCheckError || candidate.lastError }}
                             </div>
                         </td>
                         <td class="px-4 py-3">

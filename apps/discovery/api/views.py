@@ -12,6 +12,7 @@ from ..tasks import discovery_run_task
 from .permissions import DiscoveryAdminPermission
 from .serializers import (
     DiscoveryCandidateAcceptSerializer,
+    DiscoveryCandidateBulkDeleteSerializer,
     DiscoveryCandidateSerializer,
     DiscoveryProfileSerializer,
     DiscoveryRunCreateSerializer,
@@ -151,6 +152,22 @@ class DiscoveryCandidateDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = DiscoveryCandidate.objects.all().select_related("selected_auth_group", "device")
     serializer_class = DiscoveryCandidateSerializer
     permission_classes = [DiscoveryAdminPermission]
+
+
+class DiscoveryCandidateBulkDeleteAPIView(APIView):
+    """Массовое удаление discovery candidates."""
+
+    permission_classes = [DiscoveryAdminPermission]
+
+    def post(self, request) -> Response:
+        """Удалить выбранных кандидатов одним запросом."""
+
+        serializer = DiscoveryCandidateBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        queryset = DiscoveryCandidate.objects.filter(id__in=serializer.validated_data["ids"])
+        deleted_count = queryset.count()
+        queryset.delete()
+        return Response({"deleted": deleted_count})
 
 
 class DiscoveryCandidateAcceptAPIView(APIView):

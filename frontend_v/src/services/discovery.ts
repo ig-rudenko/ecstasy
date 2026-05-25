@@ -85,6 +85,8 @@ export interface DiscoveryCandidate {
     detectedProtocols: Record<string, boolean>;
     selectedAuthGroup: number | null;
     selectedSnmpCommunitySet: boolean;
+    authCheckStatus: "SUCCESS" | "FAILED" | "UNKNOWN";
+    authCheckError: string;
     deviceId: number | null;
     rawFingerprint: Record<string, unknown>;
     lastError: string;
@@ -184,6 +186,13 @@ export async function patchDiscoveryCandidate(
 
 export async function deleteDiscoveryCandidate(candidateId: number): Promise<void> {
     await api.delete(`/api/v1/discovery/candidates/${candidateId}`);
+}
+
+export async function bulkDeleteDiscoveryCandidates(candidateIds: number[]): Promise<{ deleted: number }> {
+    const response = await api.post<{ deleted: number }>("/api/v1/discovery/candidates/bulk-delete", {
+        ids: candidateIds,
+    });
+    return response.data;
 }
 
 export async function acceptDiscoveryCandidate(

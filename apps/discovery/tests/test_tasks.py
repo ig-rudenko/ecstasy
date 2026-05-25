@@ -5,7 +5,7 @@ from django.test import TestCase
 from apps.check.models import AuthGroup, DeviceGroup
 from apps.discovery.models import DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 from apps.discovery.services.dataclasses import DeviceFingerprint
-from apps.discovery.tasks import discovery_run_task
+from apps.discovery.tasks import discovery_run_task, should_auto_create
 
 
 class DiscoveryTaskTests(TestCase):
@@ -50,10 +50,27 @@ class DiscoveryTaskTests(TestCase):
         result = discovery_run_task(run.id)
 
         run.refresh_from_db()
-        mock_fingerprinter.assert_called_with(self.profile, include_cli=False)
+        mock_fingerprinter.assert_called_with(self.profile, include_cli=True)
         self.assertEqual(run.status, DiscoveryRun.Status.SUCCESS)
         self.assertEqual(run.total, 2)
         self.assertEqual(run.processed, 2)
         self.assertEqual(run.found, 2)
         self.assertEqual(result["found"], 2)
         self.assertEqual(DiscoveryCandidate.objects.count(), 2)
+
+    def test_should_auto_create_requires_verified_auth_group(self):
+        """Auto create не должен создавать Devices без рабочей AuthGroup кандидата."""
+
+        self.profile.auto_create = True
+        self.profile.auto_create_min_confidence = 40
+        self.profile.save(update_fields=["auto_create", "auto_create_min_confidence"])
+
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.50",
+            name="sw-50",
+            status=DiscoveryCandidate.Status.READY,
+            confidence=80,
+            selected_auth_group=None,
+        )
+
+        self.assertFalse(should_auto_create(self.profile, candidate, dry_run=False))

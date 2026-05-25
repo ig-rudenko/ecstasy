@@ -143,8 +143,11 @@ class CliFingerprinter:
         """Попробовать подключиться к IP по CLI и получить system info."""
 
         attempts = []
+        attempted_auth_group_ids = []
+        last_error = ""
         for protocol in self.protocols:
             for auth_group in self.auth_groups:
+                attempted_auth_group_ids.append(auth_group.id)
                 started = monotonic()
                 try:
                     with DeviceRemoteConnector(
@@ -155,9 +158,11 @@ class CliFingerprinter:
                     ) as session:
                         system_info = session.get_system_info()
                 except BaseDeviceException as exc:
+                    last_error = safe_error(exc)
                     attempts.append(self._build_failed_attempt(ip, protocol, started, exc))
                     continue
                 except Exception as exc:
+                    last_error = safe_error(exc)
                     attempts.append(self._build_failed_attempt(ip, protocol, started, exc))
                     continue
 
@@ -181,10 +186,34 @@ class CliFingerprinter:
                         source=DiscoveryCandidate.Source.CLI,
                         detected_protocols={protocol: True},
                         selected_auth_group=auth_group,
-                        raw={"cli": system_info, "cliProtocol": protocol},
+                        raw={
+                            "cli": system_info,
+                            "cliProtocol": protocol,
+                            "authCheck": {
+                                "status": "SUCCESS",
+                                "protocol": protocol,
+                                "authGroupId": auth_group.id,
+                            },
+                        },
                     ),
                     attempts,
                 )
+
+        if self.protocols and self.auth_groups:
+            return (
+                DeviceFingerprint(
+                    ip=ip,
+                    raw={
+                        "authCheck": {
+                            "status": "FAILED",
+                            "protocols": self.protocols,
+                            "attemptedAuthGroupIds": attempted_auth_group_ids,
+                        }
+                    },
+                    last_error=last_error or "Не удалось подключиться с AuthGroup из профиля discovery",
+                ),
+                attempts,
+            )
 
         return DeviceFingerprint(ip=ip), attempts
 

@@ -160,6 +160,8 @@ class DiscoveryCandidateSerializer(serializers.ModelSerializer):
     deviceId = serializers.IntegerField(source="device_id", allow_null=True, read_only=True)
     detectedProtocols = serializers.JSONField(source="detected_protocols")
     rawFingerprint = serializers.JSONField(source="raw_fingerprint", read_only=True)
+    authCheckStatus = serializers.SerializerMethodField()
+    authCheckError = serializers.SerializerMethodField()
     lastError = serializers.CharField(source="last_error", required=False, allow_blank=True)
     serialNumber = serializers.CharField(source="serial_number", required=False, allow_blank=True)
     osVersion = serializers.CharField(source="os_version", required=False, allow_blank=True)
@@ -196,6 +198,8 @@ class DiscoveryCandidateSerializer(serializers.ModelSerializer):
             "selectedAuthGroup",
             "selectedSnmpCommunity",
             "selectedSnmpCommunitySet",
+            "authCheckStatus",
+            "authCheckError",
             "deviceId",
             "rawFingerprint",
             "lastError",
@@ -208,6 +212,8 @@ class DiscoveryCandidateSerializer(serializers.ModelSerializer):
             "source",
             "confidence",
             "selectedSnmpCommunitySet",
+            "authCheckStatus",
+            "authCheckError",
             "deviceId",
             "rawFingerprint",
             "first_seen_at",
@@ -220,6 +226,26 @@ class DiscoveryCandidateSerializer(serializers.ModelSerializer):
 
         return bool(obj.selected_snmp_community)
 
+    @staticmethod
+    def get_authCheckStatus(obj: DiscoveryCandidate) -> str:
+        """Вернуть статус проверки AuthGroup без раскрытия учетных данных."""
+
+        if obj.selected_auth_group_id:
+            return "SUCCESS"
+        auth_check = obj.raw_fingerprint.get("authCheck", {})
+        if auth_check.get("status") == "FAILED":
+            return "FAILED"
+        return "UNKNOWN"
+
+    @staticmethod
+    def get_authCheckError(obj: DiscoveryCandidate) -> str:
+        """Вернуть текст ошибки проверки AuthGroup, если она неуспешна."""
+
+        auth_check = obj.raw_fingerprint.get("authCheck", {})
+        if auth_check.get("status") != "FAILED":
+            return ""
+        return obj.last_error or "Не удалось подключиться с AuthGroup из профиля discovery"
+
 
 class DiscoveryCandidateAcceptSerializer(serializers.Serializer):
     """Сериализатор подтверждения discovery candidate."""
@@ -230,3 +256,18 @@ class DiscoveryCandidateAcceptSerializer(serializers.Serializer):
     portScanProtocol = serializers.ChoiceField(choices=["snmp", "telnet", "ssh"], required=False)
     snmpCommunity = serializers.CharField(max_length=64, allow_blank=True, required=False)
     collectInterfaces = serializers.BooleanField(default=False)
+
+
+class DiscoveryCandidateBulkDeleteSerializer(serializers.Serializer):
+    """Сериализатор массового удаления discovery candidates."""
+
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
+
+    @staticmethod
+    def validate_ids(value: list[int]) -> list[int]:
+        """Убрать дубли ID, сохранив порядок."""
+
+        return list(dict.fromkeys(value))

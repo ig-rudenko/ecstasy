@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices, User
-from apps.discovery.models import DiscoveryCandidate
+from apps.discovery.models import DiscoveryCandidate, DiscoveryProfile
 from apps.discovery.services.provisioning import accept_candidate
 
 
@@ -57,3 +57,27 @@ class DiscoveryProvisioningTests(TestCase):
 
         with self.assertRaises(ValidationError):
             accept_candidate(candidate, device_group=self.group)
+
+    def test_accept_candidate_with_profile_requires_verified_auth_group(self):
+        """Создание через профиль не подставляет первую AuthGroup без проверки."""
+
+        profile = DiscoveryProfile.objects.create(
+            name="access-net",
+            networks=["192.0.2.0/24"],
+            device_group=self.group,
+            try_protocols=["ssh"],
+            port_scan_protocol="snmp",
+            cmd_protocol="ssh",
+            max_workers=4,
+            timeout_seconds=1,
+        )
+        profile.auth_groups.add(self.auth_group)
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.22",
+            name="sw-22",
+            status=DiscoveryCandidate.Status.READY,
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+        )
+
+        with self.assertRaises(ValidationError):
+            accept_candidate(candidate, profile=profile)

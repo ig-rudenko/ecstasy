@@ -29,12 +29,14 @@ def accept_candidate(
 
     resolved_group = device_group or (profile.device_group if profile else None)
     resolved_auth_group = auth_group or candidate.selected_auth_group
-    if resolved_auth_group is None and profile is not None:
-        resolved_auth_group = profile.auth_groups.first()
     if resolved_group is None:
         raise ValidationError({"deviceGroup": "Необходимо указать группу оборудования"})
     if resolved_auth_group is None:
         raise ValidationError({"authGroup": "Необходимо указать группу авторизации"})
+    if candidate.selected_auth_group_id and resolved_auth_group.id != candidate.selected_auth_group_id:
+        raise ValidationError({"authGroup": "AuthGroup не совпадает с проверенной группой кандидата"})
+    if candidate.raw_fingerprint.get("authCheck", {}).get("status") == "FAILED":
+        raise ValidationError({"authGroup": "Нет AuthGroup, с которой удалось подключиться к кандидату"})
 
     device_name = candidate.name or f"discovered-{candidate.ip.replace('.', '-')}"
     resolved_cmd_protocol = cmd_protocol or resolve_candidate_cmd_protocol(candidate, profile)

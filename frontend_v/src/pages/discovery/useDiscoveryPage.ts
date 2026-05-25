@@ -5,6 +5,7 @@ import { errorToast, successToast } from "@/services/my.toast";
 import {
     acceptDiscoveryCandidate,
     AcceptCandidatePayload,
+    bulkDeleteDiscoveryCandidates,
     createDiscoveryProfile,
     deleteDiscoveryCandidate,
     deleteDiscoveryProfile,
@@ -423,7 +424,7 @@ export function useDiscoveryPage() {
         selectedCandidate.value = candidate;
         acceptForm.name = candidate.name;
         acceptForm.deviceGroup = lookups.deviceGroups[0]?.id || null;
-        acceptForm.authGroup = candidate.selectedAuthGroup || lookups.authGroups[0]?.id || null;
+        acceptForm.authGroup = candidate.selectedAuthGroup;
         acceptForm.cmdProtocol = resolveCandidateCmdProtocol(candidate);
         acceptForm.portScanProtocol = resolveCandidatePortScanProtocol(candidate);
         acceptForm.snmpCommunity = "";
@@ -433,7 +434,7 @@ export function useDiscoveryPage() {
 
     function buildAcceptPayload(candidate: DiscoveryCandidate): AcceptCandidatePayload | null {
         const deviceGroup = lookups.deviceGroups[0]?.id || null;
-        const authGroup = candidate.selectedAuthGroup || lookups.authGroups[0]?.id || null;
+        const authGroup = candidate.selectedAuthGroup;
         if (!deviceGroup || !authGroup) {
             return null;
         }
@@ -477,7 +478,10 @@ export function useDiscoveryPage() {
         try {
             const payload = buildAcceptPayload(candidate);
             if (!payload) {
-                errorToast("Не выбраны справочники", "Для быстрого добавления нужны DeviceGroup и AuthGroup.");
+                errorToast(
+                    "Нет проверенной AuthGroup",
+                    "Быстрое добавление доступно только после успешной проверки AuthGroup."
+                );
                 return;
             }
             const result = await acceptDiscoveryCandidate(candidate.id, payload);
@@ -518,8 +522,8 @@ export function useDiscoveryPage() {
         const selected = getSelectedCandidates();
         if (!selected.length) return;
         try {
-            await Promise.all(selected.map((candidate) => deleteDiscoveryCandidate(candidate.id)));
-            successToast("Кандидаты удалены", `Удалено: ${selected.length}`);
+            const result = await bulkDeleteDiscoveryCandidates(selected.map((candidate) => candidate.id));
+            successToast("Кандидаты удалены", `Удалено: ${result.deleted}`);
             const nextPage =
                 selected.length === candidates.value.length && candidatesPage.value > 1
                     ? candidatesPage.value - 1

@@ -197,6 +197,41 @@ class DiscoveryAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(DiscoveryCandidate.objects.filter(id=candidate.id).exists())
 
+    def test_candidate_list_returns_auth_check_status(self):
+        """Candidate list возвращает статус проверки AuthGroup для фронтенда."""
+
+        DiscoveryCandidate.objects.create(
+            ip="192.0.2.45",
+            status=DiscoveryCandidate.Status.READY,
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+            last_error="логин неверный",
+        )
+
+        response = self.client.get(reverse("discovery-api:candidates-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        candidate = response.data["results"][0]
+        self.assertEqual(candidate["authCheckStatus"], "FAILED")
+        self.assertEqual(candidate["authCheckError"], "логин неверный")
+
+    def test_bulk_delete_candidates_endpoint_removes_requested_candidates(self):
+        """Bulk delete удаляет выбранных кандидатов одним запросом."""
+
+        first = DiscoveryCandidate.objects.create(ip="192.0.2.42", status=DiscoveryCandidate.Status.NEW)
+        second = DiscoveryCandidate.objects.create(ip="192.0.2.43", status=DiscoveryCandidate.Status.READY)
+        kept = DiscoveryCandidate.objects.create(ip="192.0.2.44", status=DiscoveryCandidate.Status.NEW)
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-bulk-delete"),
+            {"ids": [first.id, second.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"deleted": 2})
+        self.assertFalse(DiscoveryCandidate.objects.filter(id__in=[first.id, second.id]).exists())
+        self.assertTrue(DiscoveryCandidate.objects.filter(id=kept.id).exists())
+
     def _create_profile(self) -> DiscoveryProfile:
         """Создать минимальный discovery profile для API-тестов."""
 
