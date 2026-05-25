@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto py-2 sm:py-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:gap-6">
             <div class="flex flex-col gap-4 sm:gap-6 justify-center mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8">
@@ -418,15 +416,11 @@
             {{ selectedVlans }}
         </div>
     </Popover>
-
-    <Footer />
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import Comment from "@/components/Comment.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import { DeviceInterface, findInterfacesByDescription, InterfaceDescriptionMatchResult } from "@/services/interfaces";
@@ -436,7 +430,7 @@ type SortKey = "device" | "port" | "status" | "description" | "vlans";
 type SortDir = "asc" | "desc";
 
 export default defineComponent({
-    components: { Footer, Header, Comment, SearchInput },
+    components: { Comment, SearchInput },
     data() {
         return {
             interfaces: [] as InterfaceDescriptionMatchResult[],

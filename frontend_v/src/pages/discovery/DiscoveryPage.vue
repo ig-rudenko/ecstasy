@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import DiscoveryCandidatesFilters from "@/pages/discovery/components/DiscoveryCandidatesFilters.vue";
 import DiscoveryCandidatesTable from "@/pages/discovery/components/DiscoveryCandidatesTable.vue";
 import DiscoveryProfilesTable from "@/pages/discovery/components/DiscoveryProfilesTable.vue";
@@ -69,7 +67,6 @@ const {
 </script>
 
 <template>
-    <Header />
     <ConfirmPopup />
 
     <main class="mx-auto max-w-375 px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
@@ -279,6 +276,4 @@ const {
         :cmdProtocolOptions="cmdProtocolOptions"
         @accept="acceptCandidate"
     />
-
-    <Footer />
 </template>

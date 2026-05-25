@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useStore } from "vuex";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import CommandTemplateSelector from "@/components/deviceCommands/CommandTemplateSelector.vue";
 import BulkDevicesTable from "@/pages/bulkCommands/BulkDevicesTable.vue";
@@ -655,8 +653,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <Header />
-
     <div class="mx-auto px-2 py-2 sm:px-4 sm:py-6 xl:px-8">
         <div class="flex flex-col gap-6">
             <section
@@ -1396,6 +1392,4 @@ onBeforeUnmount(() => {
             >
         </div>
     </Dialog>
-
-    <Footer />
 </template>

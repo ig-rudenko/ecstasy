@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto py-5 xl:w-2/3">
         <Toast />
 
@@ -165,8 +163,6 @@
             <ProgressSpinner />
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
@@ -181,15 +177,11 @@ import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import editMedia from "@/pages/deviceInfo/components/EditMedia.vue";
 
 export default {
     name: "ViewBuildingTechData",
     components: {
-        Footer,
-        Header,
         OltPortsSubscriberStatistic,
         ViewPrintEditButtons,
         End3CollapsedView,

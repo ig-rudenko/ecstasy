@@ -5,14 +5,12 @@ import api from "@/services/api";
 interface PermissionResponse {
     permissions: string[];
     console: string | null;
-    ecstasy_loop_url: string | null;
 }
 
 class Permissions {
     private perms = ref<PermissionResponse>({
         permissions: [],
         console: null,
-        ecstasy_loop_url: null,
     });
 
     constructor() {
@@ -23,11 +21,7 @@ class Permissions {
                 value.data.permissions.length === this.perms.value.permissions.length &&
                 this.perms.value.permissions.every((p, i) => p === value.data.permissions[i]);
 
-            if (
-                !samePermissions ||
-                this.perms.value.console !== value.data.console ||
-                this.perms.value.ecstasy_loop_url !== value.data.ecstasy_loop_url
-            ) {
+            if (!samePermissions || this.perms.value.console !== value.data.console) {
                 this.perms.value = value.data;
                 this.save();
             }
@@ -45,14 +39,6 @@ class Permissions {
 
     has(permission: string): boolean {
         return this.perms.value.permissions.includes(permission);
-    }
-
-    hasEcstasyLoopPermission(): boolean {
-        return this.perms.value.ecstasy_loop_url !== null;
-    }
-
-    getEcstasyLoopUrl(): string | null {
-        return this.perms.value.ecstasy_loop_url;
     }
 
     hasConsoleAccess(): boolean {
@@ -78,7 +64,6 @@ class Permissions {
     getServiceAccess(): { key: string; label: string; enabled: boolean }[] {
         return [
             { key: "console", label: "Консоль", enabled: this.hasConsoleAccess() },
-            { key: "loop", label: "Loop Detector", enabled: this.hasEcstasyLoopPermission() },
             { key: "discovery", label: "Discovery", enabled: this.has("auth.access_discovery") },
             { key: "maps", label: "Карты", enabled: this.has("auth.can_view_maps") },
             { key: "search", label: "Поиск", enabled: this.has("auth.access_desc_search") },

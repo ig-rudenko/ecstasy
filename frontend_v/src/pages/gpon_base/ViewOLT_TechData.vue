@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto py-5 xl:w-2/3">
         <ViewPrintEditButtons
             @print="printData"
@@ -274,8 +272,6 @@
             <ProgressSpinner />
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
@@ -286,8 +282,6 @@ import HouseOltStateViewEdit from "./components/HouseOltStateViewEdit.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 
 import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
@@ -297,8 +291,6 @@ import printElementById from "@/helpers/print";
 export default {
     name: "ViewOLT_TechData",
     components: {
-        Footer,
-        Header,
         OltPortsSubscriberStatistic,
         HouseOltStateViewEdit,
         ViewPrintEditButtons,

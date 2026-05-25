@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="pb-12">
         <div class="header py-5">
             <img class="header-image" src="/img/gpon/tech-data.svg" alt="create-tech-data-image" />
@@ -481,8 +479,6 @@
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
@@ -498,14 +494,10 @@ import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 import api from "@/services/api";
 import { getErrorFields, getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 
 export default {
     name: "CreateTechData",
     components: {
-        Footer,
-        Header,
         AddressGetCreate,
         BuildingIcon,
         AddressForm,

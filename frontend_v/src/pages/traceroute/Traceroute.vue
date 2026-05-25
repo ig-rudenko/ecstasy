@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto max-w-7xl px-4 py-2 sm:px-6 sm:py-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:gap-6">
             <TracerouteHero :model-value="tracerouteMode" @update:model-value="setTracerouteMode" />
@@ -98,16 +96,12 @@
         :device-href="selectedTracerouteDeviceHref"
         @hide="closeTracerouteNodePopup"
     />
-
-    <Footer />
 </template>
 
 <script lang="ts">
 import { defineComponent, markRaw } from "vue";
 
 import api from "@/services/api";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import router from "@/router";
 import { getInputVlanInfo } from "@/services/traceroute";
 import { InputNumberInputEvent } from "primevue";
@@ -131,8 +125,6 @@ import type {
 export default defineComponent({
     name: "Traceroute",
     components: {
-        Footer,
-        Header,
         TracerouteGraphArea,
         TracerouteHero,
         TracerouteMapArea,

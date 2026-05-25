@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto py-5 xl:w-2/3">
         <ViewPrintEditButtons
             @print="printData"
@@ -123,8 +121,6 @@
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
@@ -136,15 +132,11 @@ import errorFmt, { getErrorStatus } from "@/errorFmt";
 import api from "@/services/api";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import { getRizerFiberInfo } from "./components/rizerFiberColors.ts";
 
 export default {
     name: "ViewEnd3TechData",
     components: {
-        Footer,
-        Header,
         ViewPrintEditButtons,
         End3PortsViewEdit,
         TechCapabilityBadge,

@@ -32,23 +32,14 @@ function buildMenuItems(): MenuItem[] {
         },
     ];
 
-    if (permissions.hasConsoleAccess()) {
-        built.push({
-            label: "Консоль",
-            icon: "console",
-            url: permissions.getConsoleUrl() || "#",
-            newPage: true,
-        });
-    }
-
-    if (permissions.hasEcstasyLoopPermission()) {
-        built.push({
-            label: "Loop Detector",
-            icon: "loop",
-            url: permissions.getEcstasyLoopUrl() || "#",
-            newPage: true,
-        });
-    }
+    // if (permissions.hasConsoleAccess()) {
+    //     built.push({
+    //         label: "Консоль",
+    //         icon: "console",
+    //         url: permissions.getConsoleUrl() || "#",
+    //         newPage: true,
+    //     });
+    // }
 
     if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
         built.push({
@@ -235,6 +226,32 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                             v-tooltip.bottom="'Меню'"
                             @click="mobileMenuOpen = true"
                         />
+
+                        <AppLink
+                            v-if="permissions.hasConsoleAccess()"
+                            :to="permissions.getConsoleUrl() || '#'"
+                            target="_blank"
+                        >
+                            <div
+                                :class="
+                                    isCurrent(permissions.getConsoleUrl() || '_') ? 'ring-1 ring-indigo-500/20' : ''
+                                "
+                                class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                v-tooltip.bottom="'Консоль'"
+                            >
+                                <div
+                                    :class="getMenuIconAccent('console')"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200"
+                                >
+                                    <i :class="[getMenuIconClass('console'), 'text-base']" />
+                                </div>
+                                <span
+                                    v-if="!decorConfig.compactMenu"
+                                    class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                    >Консоль</span
+                                >
+                            </div>
+                        </AppLink>
                         <Avatar
                             v-if="user"
                             :image="getAvatar(user.username)"
@@ -306,6 +323,32 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                         </template>
 
                         <template #end>
+                            <AppLink
+                                v-if="permissions.hasConsoleAccess()"
+                                :to="permissions.getConsoleUrl() || '#'"
+                                target="_blank"
+                                class="pr-2"
+                            >
+                                <div
+                                    :class="
+                                        isCurrent(permissions.getConsoleUrl() || '_') ? 'ring-1 ring-indigo-500/20' : ''
+                                    "
+                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                    v-tooltip.bottom="'Консоль'"
+                                >
+                                    <div
+                                        :class="getMenuIconAccent('console')"
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200"
+                                    >
+                                        <i :class="[getMenuIconClass('console'), 'text-base']" />
+                                    </div>
+                                    <span
+                                        v-if="!decorConfig.compactMenu"
+                                        class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                        >Консоль</span
+                                    >
+                                </div>
+                            </AppLink>
                             <div class="flex items-center gap-2">
                                 <Avatar
                                     v-if="user"

@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto max-w-375 px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
@@ -207,14 +205,10 @@
             </section>
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import PinnedDevicesPopover from "@/components/PinnedDevicesPopover.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import BarChart from "./BarChart.vue";
@@ -229,8 +223,6 @@ type DisplayMode = "default" | "waiting" | "interfaces_loading";
 export default defineComponent({
     name: "DevicesList",
     components: {
-        Footer,
-        Header,
         PinnedDevicesPopover,
         BarChart,
         DoughnutChart,

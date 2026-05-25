@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import permissions from "@/services/permissions";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 
 const cards = [
     {
@@ -24,8 +22,6 @@ const cards = [
 </script>
 
 <template>
-    <Header />
-
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div class="flex flex-col gap-6">
             <div
@@ -91,6 +87,4 @@ const cards = [
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>

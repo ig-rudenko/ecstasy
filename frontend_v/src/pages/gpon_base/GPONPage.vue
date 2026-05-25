@@ -1,11 +1,6 @@
-<script setup lang="ts">
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
-</script>
+<script setup lang="ts"></script>
 
 <template>
-    <Header />
-
     <div class="container mx-auto">
         <div class="flex justify-center">
             <div class="xl:max-w-[70%] sm:grid sm:grid-cols-2 gap-10">
@@ -25,6 +20,4 @@ import Footer from "@/components/Footer.vue";
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>

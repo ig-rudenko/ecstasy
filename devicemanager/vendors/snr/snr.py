@@ -47,6 +47,12 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         """
         super().__init__(session, ip, auth, model, snmp_community)
         self.send_command("terminal length 0", expect_command=False)
+
+        terminal_width_output = self.send_command("terminal width ?", expect_command=False)
+        max_terminal_width = self.find_or_empty(r"<\d+-(\d+)>", terminal_width_output)
+        if max_terminal_width:
+            self.send_command(f"terminal width {max_terminal_width}", expect_command=False)
+
         self.__cache_port_info: dict[str, str] = {}
 
     @staticmethod
@@ -450,16 +456,12 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.expect(self.prompt)
 
         if desc == "":  # Если строка описания пустая, то необходимо очистить описание на порту оборудования
-            res = self.send_command("no description\n", expect_command=False)
-            self.session.expect(self.prompt)
+            res = self.send_command("no description", expect_command=False)
 
         else:  # В другом случае, меняем описание на оборудовании
-            res = self.send_command(f"description {desc}\n", expect_command=False)
-            self.session.expect(self.prompt)
+            res = self.send_command(f"description {desc}", expect_command=False)
 
-        self.session.sendline("end")  # Выходим из режима редактирования
-        self.session.expect(self.prompt)
-
+        self.send_command("end")  # Выходим из режима редактирования
         self.lock = False
 
         if "Invalid input detected" in res:

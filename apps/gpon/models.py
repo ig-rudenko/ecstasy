@@ -189,7 +189,9 @@ class End3(models.Model):
         related_name="end3_set",
     )
     location = models.CharField(max_length=255)
-    type = models.CharField(choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования")
+    type = models.CharField(
+        choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования"  # noqa
+    )
     capacity = models.PositiveSmallIntegerField(
         choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)],
         help_text="Кол-во портов/волокон",
@@ -265,7 +267,7 @@ class TechCapability(models.Model):
         bad = "bad"
 
     end3 = models.ForeignKey("gpon.End3", on_delete=models.CASCADE)
-    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)
+    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)  # noqa
     number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(24)],
         verbose_name="Номер порта/волокна",
@@ -286,7 +288,7 @@ class Customer(models.Model):
         company = "company"
         contract = "contract"
 
-    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)
+    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)  # noqa
     company_name = models.CharField(max_length=256, null=True, blank=True)
     first_name = models.CharField(max_length=256, null=True, blank=True)
     surname = models.CharField(max_length=256, null=True, blank=True)

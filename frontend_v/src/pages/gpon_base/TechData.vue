@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="p-2 mx-auto pb-12">
         <div class="flex max-md:flex-col gap-5 justify-around items-center py-5">
             <div class="text-3xl font-semibold px-3">Технические данные</div>
@@ -46,13 +44,9 @@
             <ProgressSpinner />
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import TechDataTable from "./components/TechDataTable.vue";
 import CheckTechCapability from "@/pages/gpon_base/components/CheckTechCapability.vue";
 
@@ -61,7 +55,7 @@ import api from "@/services/api";
 
 export default {
     name: "Gpon_base.vue",
-    components: { CheckTechCapability, Footer, Header, TechDataTable },
+    components: { CheckTechCapability, TechDataTable },
     data() {
         return {
             gponTechData: null,
