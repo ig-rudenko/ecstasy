@@ -74,3 +74,35 @@ class DiscoveryTaskTests(TestCase):
         )
 
         self.assertFalse(should_auto_create(self.profile, candidate, dry_run=False))
+
+    @patch("apps.discovery.tasks.DeviceFingerprinter")
+    @patch("apps.discovery.tasks.preflight_address")
+    def test_discovery_run_task_updates_existing_candidate_by_ip(self, mock_preflight, mock_fingerprinter):
+        """Повторный discovery по IP обновляет существующего кандидата без дубля."""
+
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.60",
+            name="old-name",
+            status=DiscoveryCandidate.Status.NEW,
+        )
+        mock_preflight.return_value = ({"ping": True, "ssh": True}, [])
+        mock_fingerprinter.return_value.collect.return_value = (
+            DeviceFingerprint(
+                ip=candidate.ip,
+                name="new-name",
+                vendor="Eltex",
+                model="MES",
+                detected_protocols={"ping": True, "ssh": True},
+                selected_auth_group=self.auth_group,
+                source=DiscoveryCandidate.Source.CLI,
+            ),
+            [],
+        )
+        run = DiscoveryRun.objects.create(profile=self.profile, dry_run=True)
+
+        discovery_run_task(run.id, [candidate.ip])
+
+        candidate.refresh_from_db()
+        self.assertEqual(DiscoveryCandidate.objects.filter(ip=candidate.ip).count(), 1)
+        self.assertEqual(candidate.name, "new-name")
+        self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)

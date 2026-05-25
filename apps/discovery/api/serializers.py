@@ -271,3 +271,18 @@ class DiscoveryCandidateBulkDeleteSerializer(serializers.Serializer):
         """Убрать дубли ID, сохранив порядок."""
 
         return list(dict.fromkeys(value))
+
+
+class DiscoveryCandidateRescanSerializer(serializers.Serializer):
+    """Сериализатор повторного опроса discovery candidates."""
+
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
+
+    @staticmethod
+    def validate_ids(value: list[int]) -> list[int]:
+        """Убрать дубли ID, сохранив порядок."""
+
+        return list(dict.fromkeys(value))

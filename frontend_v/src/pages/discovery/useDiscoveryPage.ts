@@ -23,6 +23,7 @@ import {
     ignoreDiscoveryCandidate,
     patchDiscoveryCandidate,
     patchDiscoveryProfile,
+    rescanDiscoveryCandidates,
     startDiscoveryRun,
 } from "@/services/discovery";
 
@@ -54,6 +55,8 @@ export function useDiscoveryPage() {
     const deletingProfileId = ref<number | null>(null);
     const deletingRunId = ref<number | null>(null);
     const deletingCandidateId = ref<number | null>(null);
+    const rescanningCandidateId = ref<number | null>(null);
+    const rescanningSelected = ref(false);
     const editingProfile = ref<DiscoveryProfile | null>(null);
     const profileDialogVisible = ref(false);
     const acceptDialogVisible = ref(false);
@@ -398,6 +401,50 @@ export function useDiscoveryPage() {
         });
     }
 
+    async function rescanCandidates(candidateIds: number[]): Promise<void> {
+        const result = await rescanDiscoveryCandidates(candidateIds);
+        if (result.runs.length) {
+            runs.value = [
+                ...result.runs,
+                ...runs.value.filter((run) => !result.runs.some((createdRun) => createdRun.id === run.id)),
+            ];
+            activeTab.value = "runs";
+            successToast("Переопрос запущен", `Запусков: ${result.runs.length}`);
+            updateRunPolling();
+            await loadRuns(1);
+        }
+        if (result.skipped.length) {
+            errorToast(
+                "Часть кандидатов не запущена",
+                result.skipped.map((item) => `${item.ip || `#${item.id}`}: ${item.reason}`).join("\n")
+            );
+        }
+    }
+
+    async function rescanCandidate(candidate: DiscoveryCandidate): Promise<void> {
+        rescanningCandidateId.value = candidate.id;
+        try {
+            await rescanCandidates([candidate.id]);
+        } catch (error: any) {
+            errorToast("Не удалось переопросить кандидата", errorFmt(error));
+        } finally {
+            rescanningCandidateId.value = null;
+        }
+    }
+
+    function confirmRescanCandidate(event: MouseEvent, candidate: DiscoveryCandidate): void {
+        confirm.require({
+            target: event.currentTarget as HTMLElement,
+            message: `Переопросить кандидата ${candidate.name || candidate.ip}?`,
+            icon: "pi pi-info-circle",
+            acceptLabel: "Переопросить",
+            rejectLabel: "Отмена",
+            acceptClass: "p-button-sm",
+            defaultFocus: "reject",
+            accept: () => rescanCandidate(candidate),
+        });
+    }
+
     function resolveCandidateCmdProtocol(candidate: DiscoveryCandidate): "ssh" | "telnet" {
         const protocol = (candidate.rawFingerprint?.cliProtocol as string) || "";
         if (protocol === "ssh" || protocol === "telnet") {
@@ -549,6 +596,34 @@ export function useDiscoveryPage() {
         });
     }
 
+    async function rescanSelectedCandidates(): Promise<void> {
+        const selected = getSelectedCandidates();
+        if (!selected.length) return;
+        rescanningSelected.value = true;
+        try {
+            await rescanCandidates(selected.map((candidate) => candidate.id));
+        } catch (error: any) {
+            errorToast("Не удалось переопросить выбранных кандидатов", errorFmt(error));
+        } finally {
+            rescanningSelected.value = false;
+        }
+    }
+
+    function confirmRescanSelectedCandidates(event: MouseEvent): void {
+        const selected = getSelectedCandidates();
+        if (!selected.length) return;
+        confirm.require({
+            target: event.currentTarget as HTMLElement,
+            message: `Переопросить выбранных кандидатов: ${selected.length} шт.?`,
+            icon: "pi pi-info-circle",
+            acceptLabel: "Переопросить",
+            rejectLabel: "Отмена",
+            acceptClass: "p-button-sm",
+            defaultFocus: "reject",
+            accept: () => rescanSelectedCandidates(),
+        });
+    }
+
     async function quickAcceptSelectedCandidates(): Promise<void> {
         const selected = getSelectedCandidates().filter(
             (candidate) => candidate.status === "READY" || candidate.status === "NEW"
@@ -616,6 +691,9 @@ export function useDiscoveryPage() {
                 }
             })
         );
+        if (!runs.value.some((run) => ["PENDING", "PROGRESS"].includes(run.status))) {
+            await loadCandidates(candidatesPage.value);
+        }
         updateRunPolling();
     }
 
@@ -668,6 +746,8 @@ export function useDiscoveryPage() {
         deletingProfileId,
         deletingRunId,
         deletingCandidateId,
+        rescanningCandidateId,
+        rescanningSelected,
         editingProfile,
         profileDialogVisible,
         acceptDialogVisible,
@@ -691,6 +771,7 @@ export function useDiscoveryPage() {
         confirmDeleteProfile,
         confirmDeleteRun,
         confirmDeleteCandidate,
+        confirmRescanCandidate,
         openAcceptDialog,
         quickAcceptCandidate,
         ignoreCandidate,
@@ -699,6 +780,7 @@ export function useDiscoveryPage() {
         setCandidateStatus,
         setCandidateVendor,
         confirmDeleteSelectedCandidates,
+        confirmRescanSelectedCandidates,
         confirmQuickAcceptSelectedCandidates,
         acceptCandidate,
         switchTab,

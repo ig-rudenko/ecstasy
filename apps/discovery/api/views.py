@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from celery.result import AsyncResult
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -13,6 +15,7 @@ from .permissions import DiscoveryAdminPermission
 from .serializers import (
     DiscoveryCandidateAcceptSerializer,
     DiscoveryCandidateBulkDeleteSerializer,
+    DiscoveryCandidateRescanSerializer,
     DiscoveryCandidateSerializer,
     DiscoveryProfileSerializer,
     DiscoveryRunCreateSerializer,
@@ -168,6 +171,70 @@ class DiscoveryCandidateBulkDeleteAPIView(APIView):
         deleted_count = queryset.count()
         queryset.delete()
         return Response({"deleted": deleted_count})
+
+
+class DiscoveryCandidateRescanAPIView(APIView):
+    """Повторный опрос выбранных discovery candidates."""
+
+    permission_classes = [DiscoveryAdminPermission]
+
+    def post(self, request) -> Response:
+        """Запустить dry-run discovery только по IP выбранных кандидатов."""
+
+        serializer = DiscoveryCandidateRescanSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        candidate_ids = serializer.validated_data["ids"]
+        candidates = {
+            candidate.id: candidate
+            for candidate in DiscoveryCandidate.objects.filter(id__in=candidate_ids)
+        }
+        skipped = []
+        candidates_by_profile = defaultdict(list)
+
+        for candidate_id in candidate_ids:
+            candidate = candidates.get(candidate_id)
+            if candidate is None:
+                skipped.append({"id": candidate_id, "ip": "", "reason": "Кандидат не найден"})
+                continue
+
+            profile = self._get_last_profile(candidate)
+            if profile is None:
+                skipped.append(
+                    {
+                        "id": candidate.id,
+                        "ip": candidate.ip,
+                        "reason": "Нет истории discovery run для выбора профиля",
+                    }
+                )
+                continue
+
+            candidates_by_profile[profile].append(candidate)
+
+        runs = []
+        for profile, profile_candidates in candidates_by_profile.items():
+            run = DiscoveryRun.objects.create(
+                profile=profile,
+                created_by=request.user,
+                dry_run=True,
+                summary={"rescanCandidateIds": [candidate.id for candidate in profile_candidates]},
+            )
+            task_result = discovery_run_task.delay(run.id, [candidate.ip for candidate in profile_candidates])
+            run.refresh_from_db()
+            run_data = DiscoveryRunSerializer(run).data
+            run_data["task_id"] = run.task_id or str(task_result.id)
+            runs.append(run_data)
+
+        return Response({"runs": runs, "skipped": skipped}, status=status.HTTP_202_ACCEPTED)
+
+    @staticmethod
+    def _get_last_profile(candidate: DiscoveryCandidate) -> DiscoveryProfile | None:
+        """Вернуть профиль последней discovery-попытки кандидата."""
+
+        attempt = candidate.attempts.select_related("run__profile").order_by("-created_at").first()
+        if attempt is None:
+            return None
+        return attempt.run.profile
 
 
 class DiscoveryCandidateAcceptAPIView(APIView):

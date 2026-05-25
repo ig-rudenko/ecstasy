@@ -17,6 +17,11 @@ urlpatterns = [
         views.DiscoveryCandidateBulkDeleteAPIView.as_view(),
         name="candidates-bulk-delete",
     ),
+    path(
+        "candidates/rescan",
+        views.DiscoveryCandidateRescanAPIView.as_view(),
+        name="candidates-rescan",
+    ),
     path("candidates/<int:pk>", views.DiscoveryCandidateDetailAPIView.as_view(), name="candidates-detail"),
     path(
         "candidates/<int:pk>/accept",

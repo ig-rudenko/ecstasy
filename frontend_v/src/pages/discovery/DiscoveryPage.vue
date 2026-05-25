@@ -29,6 +29,8 @@ const {
     deletingProfileId,
     deletingRunId,
     deletingCandidateId,
+    rescanningCandidateId,
+    rescanningSelected,
     editingProfile,
     profileDialogVisible,
     acceptDialogVisible,
@@ -52,6 +54,7 @@ const {
     confirmDeleteProfile,
     confirmDeleteRun,
     confirmDeleteCandidate,
+    confirmRescanCandidate,
     openAcceptDialog,
     quickAcceptCandidate,
     ignoreCandidate,
@@ -60,6 +63,7 @@ const {
     setCandidateStatus,
     setCandidateVendor,
     confirmDeleteSelectedCandidates,
+    confirmRescanSelectedCandidates,
     confirmQuickAcceptSelectedCandidates,
     acceptCandidate,
     switchTab,
@@ -231,13 +235,17 @@ const {
                     :candidates="candidates"
                     :loading="loadingCandidates"
                     :deletingCandidateId="deletingCandidateId"
+                    :rescanningCandidateId="rescanningCandidateId"
+                    :rescanningSelected="rescanningSelected"
                     :selectedIds="selectedCandidateIds"
                     @update:selectedIds="setSelectedCandidateIds"
                     @accept="openAcceptDialog"
                     @quick-accept="quickAcceptCandidate"
                     @ignore="ignoreCandidate"
                     @delete="confirmDeleteCandidate"
+                    @rescan="confirmRescanCandidate"
                     @delete-selected="confirmDeleteSelectedCandidates"
+                    @rescan-selected="confirmRescanSelectedCandidates"
                     @quick-accept-selected="confirmQuickAcceptSelectedCandidates"
                 />
 

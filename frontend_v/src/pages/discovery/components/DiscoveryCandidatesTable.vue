@@ -7,6 +7,8 @@ const props = defineProps<{
     candidates: DiscoveryCandidate[];
     loading: boolean;
     deletingCandidateId: number | null;
+    rescanningCandidateId: number | null;
+    rescanningSelected: boolean;
     selectedIds: number[];
 }>();
 
@@ -16,7 +18,9 @@ const emit = defineEmits<{
     (e: "quick-accept", candidate: DiscoveryCandidate): void;
     (e: "ignore", candidate: DiscoveryCandidate): void;
     (e: "delete", event: MouseEvent, candidate: DiscoveryCandidate): void;
+    (e: "rescan", event: MouseEvent, candidate: DiscoveryCandidate): void;
     (e: "delete-selected", event: MouseEvent): void;
+    (e: "rescan-selected", event: MouseEvent): void;
     (e: "quick-accept-selected", event: MouseEvent): void;
 }>();
 
@@ -93,6 +97,17 @@ function authCheckClass(status: DiscoveryCandidate["authCheckStatus"]): string {
                     class="rounded-2xl!"
                     :disabled="!selectedIds.length || loading"
                     @click="(event: MouseEvent) => emit('quick-accept-selected', event)"
+                />
+                <Button
+                    icon="pi pi-refresh"
+                    label="Переопросить выбранные"
+                    size="small"
+                    severity="secondary"
+                    outlined
+                    class="rounded-2xl!"
+                    :disabled="!selectedIds.length || loading || rescanningSelected"
+                    :loading="rescanningSelected"
+                    @click="(event: MouseEvent) => emit('rescan-selected', event)"
                 />
                 <Button
                     icon="pi pi-trash"
@@ -228,6 +243,16 @@ function authCheckClass(status: DiscoveryCandidate["authCheckStatus"]): string {
                                     outlined
                                     class="rounded-2xl!"
                                     @click="emit('ignore', candidate)"
+                                />
+                                <Button
+                                    icon="pi pi-refresh"
+                                    label="Переопрос"
+                                    size="small"
+                                    severity="secondary"
+                                    outlined
+                                    class="rounded-2xl!"
+                                    :loading="rescanningCandidateId === candidate.id"
+                                    @click="(event: MouseEvent) => emit('rescan', event, candidate)"
                                 />
                                 <Button
                                     icon="pi pi-trash"

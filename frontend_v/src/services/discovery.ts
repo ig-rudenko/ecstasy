@@ -110,6 +110,11 @@ export interface AcceptCandidatePayload {
     collectInterfaces: boolean;
 }
 
+export interface RescanCandidatesResult {
+    runs: DiscoveryRun[];
+    skipped: { id: number; ip: string; reason: string }[];
+}
+
 export async function getDiscoveryLookups(): Promise<DiscoveryLookups> {
     const response = await api.get<DiscoveryLookups>("/api/v1/discovery/lookups");
     return response.data;
@@ -190,6 +195,13 @@ export async function deleteDiscoveryCandidate(candidateId: number): Promise<voi
 
 export async function bulkDeleteDiscoveryCandidates(candidateIds: number[]): Promise<{ deleted: number }> {
     const response = await api.post<{ deleted: number }>("/api/v1/discovery/candidates/bulk-delete", {
+        ids: candidateIds,
+    });
+    return response.data;
+}
+
+export async function rescanDiscoveryCandidates(candidateIds: number[]): Promise<RescanCandidatesResult> {
+    const response = await api.post<RescanCandidatesResult>("/api/v1/discovery/candidates/rescan", {
         ids: candidateIds,
     });
     return response.data;

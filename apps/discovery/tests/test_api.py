@@ -232,6 +232,51 @@ class DiscoveryAPITests(APITestCase):
         self.assertFalse(DiscoveryCandidate.objects.filter(id__in=[first.id, second.id]).exists())
         self.assertTrue(DiscoveryCandidate.objects.filter(id=kept.id).exists())
 
+    @patch("apps.discovery.api.views.discovery_run_task")
+    def test_rescan_candidates_endpoint_starts_dry_run_for_candidate_ips(self, mock_discovery_task):
+        """Rescan endpoint запускает dry-run только по IP выбранных кандидатов."""
+
+        mock_discovery_task.delay.return_value.id = "rescan-task-id"
+        profile = self._create_profile()
+        run = DiscoveryRun.objects.create(profile=profile, status=DiscoveryRun.Status.SUCCESS)
+        candidate = DiscoveryCandidate.objects.create(ip="192.0.2.46", status=DiscoveryCandidate.Status.READY)
+        DiscoveryAttempt.objects.create(
+            run=run,
+            candidate=candidate,
+            ip=candidate.ip,
+            method=DiscoveryAttempt.Method.PING,
+            status=DiscoveryAttempt.Status.SUCCESS,
+        )
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-rescan"),
+            {"ids": [candidate.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        rescan_run = DiscoveryRun.objects.get(id=response.data["runs"][0]["id"])
+        self.assertTrue(rescan_run.dry_run)
+        self.assertEqual(response.data["skipped"], [])
+        mock_discovery_task.delay.assert_called_once_with(rescan_run.id, [candidate.ip])
+
+    @patch("apps.discovery.api.views.discovery_run_task")
+    def test_rescan_candidates_endpoint_skips_candidate_without_profile_history(self, mock_discovery_task):
+        """Rescan endpoint не угадывает профиль, если у кандидата нет истории discovery."""
+
+        candidate = DiscoveryCandidate.objects.create(ip="192.0.2.47", status=DiscoveryCandidate.Status.READY)
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-rescan"),
+            {"ids": [candidate.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data["runs"], [])
+        self.assertEqual(response.data["skipped"][0]["id"], candidate.id)
+        mock_discovery_task.delay.assert_not_called()
+
     def _create_profile(self) -> DiscoveryProfile:
         """Создать минимальный discovery profile для API-тестов."""
 
