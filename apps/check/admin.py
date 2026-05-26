@@ -49,6 +49,7 @@ from .models import (
     BulkDeviceCommandExecutionResult,
     DeviceCommand,
     DeviceGroup,
+    DeviceInterfacePatternRule,
     DeviceMedia,
     Devices,
     InterfacesComments,
@@ -88,6 +89,62 @@ VendorDropdownFilter = distinct_dropdown_filter("vendor", "vendor")
 ModelDropdownFilter = distinct_dropdown_filter("model", "model")
 ConnectionPoolSizeDropdownFilter = distinct_dropdown_filter("connection_pool_size", "connection pool size")
 DeviceVendorDropdownFilter = distinct_dropdown_filter("device_vendor", "device vendor")
+InterfacePatternVendorDropdownFilter = distinct_dropdown_filter("vendor", "vendor")
+
+
+@admin.register(DeviceInterfacePatternRule)
+class DeviceInterfacePatternRuleAdmin(ModelAdmin):
+    """Управление общими паттернами интерфейсов по производителю и модели."""
+
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
+    list_display = [
+        "name",
+        "enabled",
+        "vendor",
+        "model_match_type",
+        "model_pattern",
+        "interface_pattern",
+        "priority",
+        "matched_devices_count",
+        "updated_at",
+    ]
+    list_filter = [
+        "enabled",
+        InterfacePatternVendorDropdownFilter,
+        ("model_match_type", ChoicesDropdownFilter),
+    ]
+    search_fields = ["name", "vendor", "model_pattern", "interface_pattern", "description"]
+    readonly_fields = ["matched_devices_count", "created_at", "updated_at"]
+    ordering = ["vendor", "model_pattern", "-priority", "id"]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "enabled",
+                    "name",
+                    "vendor",
+                    "model_match_type",
+                    "model_pattern",
+                    "interface_pattern",
+                    "priority",
+                    "description",
+                )
+            },
+        ),
+        (
+            "Служебная информация",
+            {"fields": ("matched_devices_count", "created_at", "updated_at")},
+        ),
+    )
+
+    @admin.display(description="Подходит устройств")
+    def matched_devices_count(self, obj: DeviceInterfacePatternRule) -> int:
+        """Return number of devices matched by this rule."""
+        devices = Devices.objects.filter(vendor__iexact=obj.vendor.strip()).only("vendor", "model")
+        return sum(1 for device in devices if obj.matches_device(device))
 
 
 @admin.register(DeviceGroup)
