@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from apps.check.models import AuthGroup, DeviceGroup
 from apps.discovery.models import DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
@@ -8,7 +8,7 @@ from apps.discovery.services.dataclasses import DeviceFingerprint
 from apps.discovery.tasks import discovery_run_task, should_auto_create
 
 
-class DiscoveryTaskTests(TestCase):
+class DiscoveryTaskTests(TransactionTestCase):
     """Тесты Celery-задачи discovery без реальной сети."""
 
     def setUp(self) -> None:
