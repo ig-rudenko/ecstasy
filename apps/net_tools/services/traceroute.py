@@ -5,8 +5,8 @@ from rest_framework.request import Request
 
 from apps.app_settings.models import VlanTracerouteConfig
 from apps.check.models import Devices
+from apps.check.services.device_coordinates import get_devices_coordinates
 from apps.check.services.filters import filter_devices_qs_by_user
-from apps.check.services.zabbix import get_zabbix_hosts_coordinates
 from apps.gathering.services.mac.traceroute import MacTraceroute
 from apps.net_tools.services.finder import MultipleTraceroute, Traceroute
 from apps.net_tools.services.network import TracerouteNetwork
@@ -109,7 +109,7 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
         for node in graph_nodes
         if str(node.get("id", "")).strip() and not node.get("hidden")
     ]
-    coordinates = get_zabbix_hosts_coordinates(node_names)
+    coordinates = get_devices_coordinates(node_names)
     devices = _get_traceroute_map_devices(node_names)
     map_nodes = []
     skipped_nodes = []

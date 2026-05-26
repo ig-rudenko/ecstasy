@@ -1,4 +1,4 @@
-from typing import ClassVar  # noqa: F401
+from typing import ClassVar
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
@@ -257,13 +257,13 @@ BarCode=kojaisoid9h9
 
 
 class TestCE6865Methods(TestCase):
-    device = None  # type: ClassVar[HuaweiCE6865]
-    display_mac_address_output = None  # type: ClassVar[str]
-    display_mac_address_port_output = None  # type: ClassVar[str]
-    display_interface_errors_output = None  # type: ClassVar[str]
-    display_interface_output = None  # type: ClassVar[str]
-    valid_interfaces_list = None  # type: ClassVar[list]
-    valid_vlans_list = None  # type: ClassVar[list]
+    device: ClassVar[HuaweiCE6865]
+    display_mac_address_output: ClassVar[str]
+    display_mac_address_port_output: ClassVar[str]
+    display_interface_errors_output: ClassVar[str]
+    display_interface_output: ClassVar[str]
+    valid_interfaces_list: ClassVar[list]
+    valid_vlans_list: ClassVar[list]
 
     @classmethod
     def setUpTestData(cls) -> None:

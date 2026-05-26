@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import pexpect
 
+from .connection_ports import normalize_connection_ports
 from .exceptions import (
     DeviceLoginError,
     SSHConnectionError,
@@ -25,9 +26,10 @@ class SimpleAuthObject:
 
 
 class SSHSpawn:
-    def __init__(self, ip, login):
+    def __init__(self, ip, login, port: int = 22):
         self.ip = ip
         self.login = login
+        self.port = port
         self.kex_algorithms = ""
         self.host_key_algorithms = ""
         self.ciphers = ""
@@ -49,7 +51,7 @@ class SSHSpawn:
         self.ciphers = self._get_algorithm(output)
 
     def get_spawn_string(self) -> str:
-        base = f"ssh -p 22 {self.login}@{self.ip}"
+        base = f"ssh -p {self.port} {self.login}@{self.ip}"
 
         if self.kex_algorithms:
             base += f" -oKexAlgorithms=+{self.kex_algorithms}"
@@ -117,10 +119,21 @@ class DeviceRemoteConnector:
         protocol: str,
         snmp_community: str,
         auth_obj: SimpleAuthObjectProtocol,
+        telnet_port: int | None = None,
+        ssh_port: int | None = None,
+        snmp_port: int | None = None,
     ):
+        ports = normalize_connection_ports(
+            telnet_port=telnet_port,
+            ssh_port=ssh_port,
+            snmp_port=snmp_port,
+        )
         self.ip = ip
         self.session = None
         self.snmp_community = snmp_community
+        self.snmp_port = ports.snmp_port
+        self.telnet_port = ports.telnet_port
+        self.ssh_port = ports.ssh_port
         self.protocol = protocol
 
         self.login = str(auth_obj.login)
@@ -151,6 +164,7 @@ class DeviceRemoteConnector:
                 "privilege_mode_password": self.privilege_mode_password,
             },
             snmp_community=self.snmp_community,
+            snmp_port=self.snmp_port,
         )
 
     def _connect_by_ssh(self):
@@ -158,7 +172,7 @@ class DeviceRemoteConnector:
         session = None
 
         try:
-            ssh_spawn = SSHSpawn(ip=self.ip, login=self.login)
+            ssh_spawn = SSHSpawn(ip=self.ip, login=self.login, port=self.ssh_port)
             session = ssh_spawn.get_session()
 
             while not connected:
@@ -235,7 +249,7 @@ class DeviceRemoteConnector:
         session = None
         timeout = 20
         try:
-            session = pexpect.spawn(f"telnet {self.ip}", timeout=timeout)
+            session = pexpect.spawn(f"telnet {self.ip} {self.telnet_port}", timeout=timeout)
 
             status = self.__login_to_by_telnet(session, self.login, self.password, timeout)
 

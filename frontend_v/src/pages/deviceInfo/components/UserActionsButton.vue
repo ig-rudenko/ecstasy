@@ -65,7 +65,7 @@
                     <article
                         v-for="act in filteredActions"
                         :key="`${act.user}-${act.time}-${act.action}`"
-                        class="grid gap-4 px-4 py-4 md:grid-cols-[minmax(0,14rem),minmax(0,1fr)]"
+                        class="grid gap-4 px-4 py-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
                     >
                         <div class="flex items-center gap-3">
                             <div

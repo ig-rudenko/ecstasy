@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/problems/<slug:slug>", problem_type_document, name="problem-type-document"),
     # API Endpoints
     path("api/v1/devices/", include("apps.check.api.urls")),
+    path("api/v1/discovery/", include("apps.discovery.api.urls")),
     path("api/v1/tools/", include("apps.net_tools.api.urls")),
     path("api/v1/maps/", include("apps.maps.api.urls")),
     path("api/v1/gather/", include("apps.gathering.api.urls")),

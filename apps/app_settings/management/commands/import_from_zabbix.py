@@ -2,10 +2,10 @@ import re
 from functools import lru_cache
 from typing import TypedDict
 
-from app_settings.models import ZabbixConfig
-from check.models import AuthGroup, DeviceGroup, Devices
 from django.core.management.base import BaseCommand
 
+from apps.app_settings.models import ZabbixConfig
+from apps.check.models import AuthGroup, DeviceGroup, Devices
 from devicemanager.device.zabbix_api import ZabbixAPIConnector
 
 

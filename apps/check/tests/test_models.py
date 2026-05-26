@@ -1,4 +1,8 @@
+from decimal import Decimal
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from ..models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
@@ -99,6 +103,45 @@ class DeviceModelTest(TestCase):
     def test_absolute_url(self):
         dev = Devices.objects.all().first()
         self.assertEqual(dev.get_absolute_url(), "/device/" + dev.name)
+
+    def test_coordinates_accept_valid_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("44.123456")
+        dev.longitude = Decimal("33.654321")
+
+        dev.full_clean()
+
+    def test_coordinates_reject_zero_zero_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("0")
+        dev.longitude = Decimal("0")
+
+        with self.assertRaises(ValidationError):
+            dev.full_clean()
+
+    def test_coordinates_reject_partial_pair(self):
+        dev = Devices.objects.all().first()
+        dev.latitude = Decimal("44.123456")
+        dev.longitude = None
+
+        with self.assertRaises(ValidationError):
+            dev.full_clean()
+
+    def test_connect_passes_connection_ports(self):
+        """Devices.connect passes configured connection ports to remote connector."""
+
+        dev = Devices.objects.all().first()
+        dev.telnet_port = 2323
+        dev.ssh_port = 2222
+        dev.snmp_port = 1161
+
+        with patch("apps.check.models.remote_connector") as remote_connector:
+            dev.connect()
+
+        kwargs = remote_connector.create.call_args.kwargs
+        self.assertEqual(kwargs["telnet_port"], 2323)
+        self.assertEqual(kwargs["ssh_port"], 2222)
+        self.assertEqual(kwargs["snmp_port"], 1161)
 
 
 class DeviceGroupTest(TestCase):

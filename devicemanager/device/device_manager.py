@@ -35,6 +35,9 @@ class DeviceManager:
         self.interfaces = Interfaces()
         self.protocol: str = "telnet"
         self.snmp_community = ""
+        self.telnet_port = 23
+        self.ssh_port = 22
+        self.snmp_port = 161
         self.auth_obj: SimpleAuthObjectProtocol | None = None
         self.success_auth: dict = {}
         self.pool_size = DEFAULT_POOL_SIZE
@@ -98,6 +101,9 @@ class DeviceManager:
         dev.ip = model_dev.ip
         dev.protocol = model_dev.port_scan_protocol
         dev.snmp_community = model_dev.snmp_community or ""
+        dev.telnet_port = model_dev.telnet_port
+        dev.ssh_port = model_dev.ssh_port
+        dev.snmp_port = model_dev.snmp_port
         dev.auth_obj = model_dev.auth_group  # type: ignore
         dev.pool_size = model_dev.connection_pool_size
         if zabbix_info:
@@ -165,6 +171,9 @@ class DeviceManager:
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,
             pool_size=self.pool_size,
+            telnet_port=self.telnet_port,
+            ssh_port=self.ssh_port,
+            snmp_port=self.snmp_port,
         )
 
         sys_info = session.get_system_info()
@@ -221,4 +230,7 @@ class DeviceManager:
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,
             pool_size=self.pool_size,
+            telnet_port=self.telnet_port,
+            ssh_port=self.ssh_port,
+            snmp_port=self.snmp_port,
         )

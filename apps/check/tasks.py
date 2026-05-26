@@ -24,6 +24,7 @@ from .services.device.commands import (
     set_device_command_task_results,
 )
 from .services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
+from .services.device_coordinates import sync_device_coordinates_with_zabbix
 
 
 @shared_task(ignore_result=True)
@@ -31,6 +32,15 @@ def cache_all_devices_interfaces_workload_api_view():
     """Warm up cache with interfaces workload for all devices."""
     collector = DevicesInterfacesWorkloadCollector(Devices.objects.all())
     collector.get_all_device_interfaces_workload(from_cache=False)
+
+
+@shared_task(name="sync_device_coordinates_with_zabbix_task")
+def sync_device_coordinates_with_zabbix_task(
+    device_ids: list[int] | None = None,
+    dry_run: bool = False,
+) -> dict[str, int]:
+    """Synchronize selected device coordinates with Zabbix inventory coordinates."""
+    return sync_device_coordinates_with_zabbix(device_ids=device_ids, dry_run=dry_run)
 
 
 def _build_bulk_command_result(device: Devices, status: str, output: str = "", detail: str = "") -> dict:

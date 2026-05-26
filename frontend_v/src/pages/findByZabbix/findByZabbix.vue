@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
-
 import { useRoute } from "vue-router";
 import { ref, onMounted } from "vue";
 
@@ -32,8 +29,6 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Header />
-
     <div class="text-center my-40">
         <div v-if="showNotFound">
             <div class="text-4xl">{{ errorText }}</div>
@@ -42,6 +37,4 @@ onMounted(async () => {
             <ProgressSpinner />
         </div>
     </div>
-
-    <Footer />
 </template>

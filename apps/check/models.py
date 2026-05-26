@@ -4,7 +4,11 @@
 
 """
 
+from decimal import Decimal
+
 from django.contrib.auth.models import Group, User
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
@@ -74,6 +78,22 @@ class Devices(models.Model):
         unique=True,
         verbose_name="Имя оборудования",
         help_text="Уникальное поле",
+    )
+    latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("-90")), MaxValueValidator(Decimal("90"))],
+        verbose_name="Широта",
+    )
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("-180")), MaxValueValidator(Decimal("180"))],
+        verbose_name="Долгота",
     )
     model = models.CharField(
         max_length=100,
@@ -179,9 +199,31 @@ class Devices(models.Model):
         verbose_name="Размер пула подключений",
         help_text="Количество подключений к оборудованию, которые могут быть одновременно открыты",
     )
+    telnet_port = models.PositiveSmallIntegerField(
+        default=23,
+        validators=[MinValueValidator(1), MaxValueValidator(65_535)],
+    )
+    ssh_port = models.PositiveSmallIntegerField(
+        default=22,
+        validators=[MinValueValidator(1), MaxValueValidator(65_535)],
+    )
+    snmp_port = models.PositiveSmallIntegerField(
+        default=161,
+        validators=[MinValueValidator(1), MaxValueValidator(65535)],
+    )
 
     def __str__(self):
         return f"{self.name} ({self.ip})"
+
+    def clean(self):
+        """Validate device coordinate pair consistency."""
+        super().clean()
+        has_latitude = self.latitude is not None
+        has_longitude = self.longitude is not None
+        if has_latitude != has_longitude:
+            raise ValidationError("Широта и долгота должны быть указаны вместе.")
+        if self.latitude == Decimal("0") and self.longitude == Decimal("0"):
+            raise ValidationError("Координаты 0,0 невалидны.")
 
     def get_absolute_url(self):
         """Возвращает ссылку, которая ведет к просмотру оборудования"""
@@ -203,6 +245,9 @@ class Devices(models.Model):
             auth_obj=self.auth_group,
             make_session_global=make_session_global,
             pool_size=self.connection_pool_size,
+            telnet_port=self.telnet_port,
+            ssh_port=self.ssh_port,
+            snmp_port=self.snmp_port,
         )
 
     class Meta:
@@ -348,7 +393,20 @@ class Profile(models.Model):
         verbose_name="Доступ к консоли",
         help_text="Доступ к консоли сервера удаленных подключений",
     )
-    console_url = models.CharField(default="", max_length=500, blank=True, verbose_name="URL консоли")
+    console_url = models.CharField(
+        default="",
+        max_length=500,
+        blank=True,
+        verbose_name="URL консоли",
+    )
+    device_console_url = models.CharField(
+        default="{protocol}://{ip}",
+        max_length=500,
+        blank=True,
+        verbose_name="URL консоли оборудования",
+        help_text="Вы можете использовать макросы, чтобы подставить значения."
+        " Доступны: {ip}, {name}, {username} и {protocol}",
+    )
 
     @property
     def perm_level(self) -> int:

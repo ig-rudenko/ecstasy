@@ -57,7 +57,7 @@
                         @click="deleteFile(fileObj)"
                     />
 
-                    <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr),minmax(0,1.1fr)]">
+                    <div class="grid gap-4">
                         <MediaPreview :item="fileObj" />
 
                         <div class="flex flex-col gap-3">

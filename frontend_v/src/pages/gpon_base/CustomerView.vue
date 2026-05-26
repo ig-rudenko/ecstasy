@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="container mx-auto py-5">
         <ConfirmPopup />
 
@@ -591,8 +589,6 @@
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
@@ -608,14 +604,10 @@ import AddressGetCreate from "./components/AddressGetCreate.vue";
 import SelectSplitterRizerPort from "./components/SelectSplitterRizerPort.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 import { getRizerFiberInfo } from "./components/rizerFiberColors.ts";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 
 export default {
     name: "CustomerView",
     components: {
-        Footer,
-        Header,
         SplittersRizersFind,
         SelectSplitterRizerPort,
         AddressGetCreate,

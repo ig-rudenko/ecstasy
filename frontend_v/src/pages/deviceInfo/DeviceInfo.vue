@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto max-w-425 px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div class="flex flex-col gap-4">
             <div
@@ -183,7 +181,6 @@
     <FindMac />
     <BrasSession />
     <ScrollTop />
-    <Footer />
 
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none">
         <symbol id="search-icon">
@@ -307,8 +304,6 @@ import api from "@/services/api";
 import { GeneralInfo } from "./GeneralInfo";
 import { HardwareStats } from "./hardwareStats";
 import { DeviceInterface, InterfacesCount, newInterfacesList, reconcileInterfacesList } from "@/services/interfaces";
-import Footer from "@/components/Footer.vue";
-import Header from "@/components/Header.vue";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
 import { errorToast } from "@/services/my.toast.ts";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
@@ -322,8 +317,6 @@ export default defineComponent({
         DeviceViewings,
         DeviceVlanInfo,
         Commands,
-        Header,
-        Footer,
         UserActionsButton,
         DeviceImages,
         DeviceWorkloadBar,

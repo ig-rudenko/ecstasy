@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import api from "@/services/api";
 import { MapBrief, MapsPage } from "@/pages/maps/maps";
 import { getProtectedImage } from "@/helpers/images";
@@ -92,8 +90,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Header />
-
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <div class="flex flex-col gap-6">
             <div
@@ -181,6 +177,4 @@ onUnmounted(() => {
             </div>
         </div>
     </div>
-
-    <Footer />
 </template>

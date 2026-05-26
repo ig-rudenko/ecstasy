@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -22,8 +23,9 @@ from ...services.device.interfaces_collector import (
     get_device_interfaces,
 )
 from ...services.device.interfaces_workload import DevicesInterfacesWorkloadCollector
+from ...services.device_coordinates import get_devices_coordinates
 from ...services.filters import filter_devices_qs_by_user
-from ...services.remote_terminal import get_console_url
+from ...services.remote_terminal import get_device_console_url
 from ...services.zabbix import get_zabbix_host_map_and_uptime
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter
@@ -78,7 +80,7 @@ class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
 
 
 @method_decorator(devices_list_api_doc, name="get")
-@method_decorator(cache_page(60 * 2), name="dispatch")
+@method_decorator(cache_page(60), name="dispatch")
 @method_decorator(vary_on_headers("Authorization"), name="dispatch")
 @method_decorator(vary_on_cookie, name="dispatch")
 class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
@@ -151,8 +153,9 @@ class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
 
             # Добавляем поле console_url
             if "console_url" in return_fields:
-                item["console_url"] = get_console_url(
+                item["console_url"] = get_device_console_url(
                     self.current_user.profile,
+                    username=self.current_user.username,
                     ip=item["ip"],
                     name=item["name"],
                     cmd_protocol=item["cmd_protocol"],
@@ -195,7 +198,11 @@ class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
 
     def get(self, request, *args, **kwargs):
         device = self.get_object()
-        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device.devicesinfo or {})
+        try:
+            device_info = device.devicesinfo
+        except ObjectDoesNotExist:
+            device_info = {}
+        result = DevicesInterfacesWorkloadCollector.get_interfaces_load(device=device_info)
         return Response(result)
 
 
@@ -328,6 +335,7 @@ class DeviceInfoAPIView(DeviceAPIView):
     def get(self, request, *args, **kwargs):
         device: models.Devices = self.get_object()
         zabbix_info = DeviceManager(name=device.name).zabbix_info
+        coordinates = get_devices_coordinates([device.name]).get(device.name)
 
         devices_maps, uptime = get_zabbix_host_map_and_uptime(zabbix_info.hostid)
 
@@ -350,9 +358,10 @@ class DeviceInfoAPIView(DeviceAPIView):
                     "maps": devices_maps,
                 },
                 "permission": self.current_user.profile.perm_level,
-                "coords": zabbix_info.inventory.coordinates(),
-                "consoleURL": get_console_url(
+                "coords": (coordinates.lat, coordinates.lon) if coordinates else None,
+                "consoleURL": get_device_console_url(
                     self.current_user.profile,
+                    username=self.current_user.username,
                     ip=device.ip,
                     name=device.name,
                     cmd_protocol=device.cmd_protocol,

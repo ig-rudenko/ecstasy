@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:19.0.3
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:19.0.3
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.2
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.2
 x-logging: &logging
   options:
     max-size: "10m"
@@ -98,7 +98,7 @@ services:
       - backend
 
   redis:
-    image: redis:7.4.2-alpine
+    image: redis:8.6.3-alpine
     restart: unless-stopped
     logging: *logging
     volumes:
@@ -111,7 +111,7 @@ services:
       - backend
 
   mysql:
-    image: mysql:9.3.0-oracle
+    image: mysql:9.7.0-oracle
     logging: *logging
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"

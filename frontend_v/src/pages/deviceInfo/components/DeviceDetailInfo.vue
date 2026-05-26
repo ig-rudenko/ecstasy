@@ -23,13 +23,6 @@
         :dismissable="false"
     >
         <div v-if="generalInfo.zabbixInfo" class="flex flex-col gap-3">
-            <div
-                v-if="!generalInfo.zabbixInfo.monitoringAvailable"
-                class="alert alert-danger text-right text-red-400 mb-2"
-            >
-                Не мониторится в Zabbix
-            </div>
-
             <div v-if="generalInfo" class="font-mono p-2 space-y-1">
                 <div v-if="generalInfo.vendor">Vendor: {{ generalInfo.vendor }}</div>
                 <div v-if="generalInfo.model">Model: {{ generalInfo.model }}</div>

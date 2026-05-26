@@ -7,6 +7,7 @@ import requests
 from ping3 import ping
 
 from devicemanager import exceptions
+from devicemanager.connection_ports import normalize_connection_ports
 from devicemanager.device_connector.types import RemoteCommand
 from devicemanager.vendors.base.device import (
     AbstractCableTestDevice,
@@ -71,7 +72,15 @@ class RemoteDevice(
         snmp_community: str,
         make_session_global: bool,
         pool_size: int = DEFAULT_POOL_SIZE,
+        telnet_port: int | None = None,
+        ssh_port: int | None = None,
+        snmp_port: int | None = None,
     ):
+        ports = normalize_connection_ports(
+            telnet_port=telnet_port,
+            ssh_port=ssh_port,
+            snmp_port=snmp_port,
+        )
         self.ip = ip
         self._remote_auth = {
             "login": auth_obj.login,
@@ -81,6 +90,9 @@ class RemoteDevice(
         self._cmd_protocol = cmd_protocol
         self._port_scan_protocol = port_scan_protocol
         self._snmp_community = snmp_community
+        self._telnet_port = ports.telnet_port
+        self._ssh_port = ports.ssh_port
+        self._snmp_port = ports.snmp_port
         self._make_session_global = make_session_global
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
         self._pool_size = pool_size
@@ -124,6 +136,9 @@ class RemoteDevice(
                         "cmd_protocol": self._cmd_protocol,
                         "port_scan_protocol": self._port_scan_protocol,
                         "snmp_community": self._snmp_community,
+                        "telnet_port": self._telnet_port,
+                        "ssh_port": self._ssh_port,
+                        "snmp_port": self._snmp_port,
                         "make_session_global": self._make_session_global,
                         "pool_size": self._pool_size,
                     },

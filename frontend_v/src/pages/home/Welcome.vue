@@ -124,7 +124,7 @@ const supportedVendors = [
     "Eltex",
     "MikroTik",
     "Huawei",
-    "Huawei DSL / GPON",
+    "Huawei DSL/MSAN",
     "Iskratel DSL",
     "D-Link",
     "Extreme",
@@ -145,7 +145,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
             />
 
             <div class="relative px-5 py-6 sm:px-8 sm:py-8 xl:px-10 xl:py-10">
-                <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr),22rem] xl:items-start">
+                <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem] xl:items-start">
                     <div>
                         <div
                             class="mt-5 max-w-5xl text-3xl font-semibold tracking-wide text-slate-950 dark:text-white sm:text-5xl"
@@ -248,7 +248,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                     </div>
                 </section>
 
-                <section class="mt-8 grid gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(22rem,0.95fr)]">
+                <section class="mt-8 grid gap-4 xl:grid-cols-2">
                     <div
                         class="rounded-[1.9rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
                     >
@@ -284,7 +284,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                             С какими устройствами работает Ecstasy
                         </div>
 
-                        <div class="mt-5 flex flex-wrap gap-2.5">
+                        <div class="mt-5 flex flex-wrap gap-2.5 font-mono">
                             <span
                                 v-for="vendor in supportedVendors"
                                 :key="vendor"

@@ -1,6 +1,4 @@
 <template>
-    <Header />
-
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div v-if="rings.selectedRing === null" class="flex flex-col gap-6">
             <div
@@ -119,20 +117,16 @@
             <AccessRingMenu :rings="rings" />
         </div>
     </div>
-
-    <Footer />
 </template>
 
 <script>
 import AccessRingMenu from "./AccessRings/AccessRingMenu.vue";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import permissions from "@/services/permissions.ts";
 import api from "@/services/api";
 
 export default {
     name: "AccessRing",
-    components: { Footer, Header, AccessRingMenu },
+    components: { AccessRingMenu },
     data() {
         return {
             rings: {

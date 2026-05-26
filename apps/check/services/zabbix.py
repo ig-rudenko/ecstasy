@@ -116,6 +116,17 @@ class DeviceCoords:
     lon: float
 
 
+@dataclass(slots=True, kw_only=True)
+class ZabbixHostCoordinates:
+    """Zabbix host identity and raw inventory coordinates."""
+
+    hostid: str
+    host: str
+    name: str
+    lat: str = ""
+    lon: str = ""
+
+
 def get_zabbix_hosts_coordinates(devices_names: list[str]) -> dict[str, DeviceCoords]:
     """Return Zabbix inventory coordinates for known network device hosts."""
     try:
@@ -136,3 +147,68 @@ def get_zabbix_hosts_coordinates(devices_names: list[str]) -> dict[str, DeviceCo
     except (MaxRetryError, RequestException, ZabbixAPIException):
         pass
     return {}
+
+
+def get_zabbix_hosts_coordinates_inventory(devices_names: list[str]) -> dict[str, ZabbixHostCoordinates]:
+    """Return Zabbix hosts with raw inventory coordinates indexed by requested device name."""
+    if not devices_names:
+        return {}
+
+    try:
+        with zabbix_api.connect() as zbx:
+            hosts_by_name: dict[str, ZabbixHostCoordinates] = {}
+            _add_zabbix_hosts_coordinates(zbx, devices_names, hosts_by_name, lookup_field="host")
+            missing_names = [name for name in devices_names if name not in hosts_by_name]
+            _add_zabbix_hosts_coordinates(zbx, missing_names, hosts_by_name, lookup_field="name")
+            return hosts_by_name
+    except (MaxRetryError, RequestException, ZabbixAPIException):
+        pass
+    return {}
+
+
+def update_zabbix_host_coordinates(host_id: str, latitude, longitude) -> bool:
+    """Update only inventory coordinate fields for one Zabbix host."""
+    try:
+        with zabbix_api.connect() as zbx:
+            zbx.host.update(
+                hostid=host_id,
+                inventory={
+                    "location_lat": str(latitude),
+                    "location_lon": str(longitude),
+                },
+            )
+        return True
+    except (MaxRetryError, RequestException, ZabbixAPIException):
+        return False
+
+
+def _add_zabbix_hosts_coordinates(
+    zbx_session: ZabbixAPI,
+    devices_names: list[str],
+    hosts_by_name: dict[str, ZabbixHostCoordinates],
+    *,
+    lookup_field: str,
+) -> None:
+    """Fetch Zabbix hosts by one exact field and add non-duplicate matches to the result."""
+    if not devices_names:
+        return
+
+    hosts = zbx_session.host.get(
+        filter={lookup_field: devices_names},
+        withInventory=True,
+        output=["host", "hostid", "name"],
+        selectInventory=["location_lat", "location_lon"],
+    )
+    for host in hosts:
+        requested_name = host.get(lookup_field, "")
+        if not requested_name or requested_name in hosts_by_name:
+            continue
+
+        inventory = host.get("inventory") or {}
+        hosts_by_name[requested_name] = ZabbixHostCoordinates(
+            hostid=str(host.get("hostid", "")),
+            host=str(host.get("host", "")),
+            name=str(host.get("name", "")),
+            lat=str(inventory.get("location_lat") or ""),
+            lon=str(inventory.get("location_lon") or ""),
+        )

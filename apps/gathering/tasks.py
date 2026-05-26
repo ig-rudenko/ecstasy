@@ -53,6 +53,9 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
                 protocol=obj.port_scan_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
+                telnet_port=obj.telnet_port,
+                ssh_port=obj.ssh_port,
+                snmp_port=obj.snmp_port,
             ) as session:
                 interfaces = Interfaces(session.get_interfaces())
 
@@ -124,6 +127,9 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
                 protocol=obj.port_scan_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
+                telnet_port=obj.telnet_port,
+                ssh_port=obj.ssh_port,
+                snmp_port=obj.snmp_port,
             ) as session:
                 interfaces = Interfaces(session.get_interfaces())
 
@@ -228,6 +234,9 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
                 protocol=obj.port_scan_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
+                telnet_port=obj.telnet_port,
+                ssh_port=obj.ssh_port,
+                snmp_port=obj.snmp_port,
             ) as session:
                 self._collect(device=obj, session=session)
 

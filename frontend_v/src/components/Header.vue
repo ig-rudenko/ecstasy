@@ -32,21 +32,20 @@ function buildMenuItems(): MenuItem[] {
         },
     ];
 
-    if (permissions.hasConsoleAccess()) {
-        built.push({
-            label: "Консоль",
-            icon: "console",
-            url: permissions.getConsoleUrl() || "#",
-            newPage: true,
-        });
-    }
+    // if (permissions.hasConsoleAccess()) {
+    //     built.push({
+    //         label: "Консоль",
+    //         icon: "console",
+    //         url: permissions.getConsoleUrl() || "#",
+    //         newPage: true,
+    //     });
+    // }
 
-    if (permissions.hasEcstasyLoopPermission()) {
+    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
         built.push({
-            label: "Loop Detector",
-            icon: "loop",
-            url: permissions.getEcstasyLoopUrl() || "#",
-            newPage: true,
+            label: "Discovery",
+            icon: "discovery",
+            url: "/discovery",
         });
     }
 
@@ -123,6 +122,8 @@ function getMenuIconClass(icon?: string) {
             return "pi pi-desktop";
         case "loop":
             return "pi pi-sync";
+        case "discovery":
+            return "pi pi-compass";
         case "map":
             return "pi pi-map";
         case "search":
@@ -150,6 +151,8 @@ function getMenuIconAccent(icon?: string) {
             return "from-slate-500/15 to-slate-700/5";
         case "loop":
             return "from-emerald-500/15 to-teal-500/5";
+        case "discovery":
+            return "from-sky-500/15 to-emerald-500/5";
         case "map":
             return "from-indigo-500/15 to-violet-500/5";
         case "search":
@@ -184,10 +187,12 @@ const mobileMenuOpen = ref(false);
 const closeMobileMenu = () => {
     mobileMenuOpen.value = false;
 };
+
+const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
 </script>
 
 <template>
-    <div class="sticky top-0 z-9999">
+    <div class="sticky top-0 z-30">
         <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
             <div
                 class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
@@ -221,6 +226,32 @@ const closeMobileMenu = () => {
                             v-tooltip.bottom="'Меню'"
                             @click="mobileMenuOpen = true"
                         />
+
+                        <AppLink
+                            v-if="permissions.hasConsoleAccess()"
+                            :to="permissions.getConsoleUrl() || '#'"
+                            target="_blank"
+                        >
+                            <div
+                                :class="
+                                    isCurrent(permissions.getConsoleUrl() || '_') ? 'ring-1 ring-indigo-500/20' : ''
+                                "
+                                class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                v-tooltip.bottom="'Консоль'"
+                            >
+                                <div
+                                    :class="getMenuIconAccent('console')"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200"
+                                >
+                                    <i :class="[getMenuIconClass('console'), 'text-base']" />
+                                </div>
+                                <span
+                                    v-if="!decorConfig.compactMenu"
+                                    class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                    >Консоль</span
+                                >
+                            </div>
+                        </AppLink>
                         <Avatar
                             v-if="user"
                             :image="getAvatar(user.username)"
@@ -273,7 +304,8 @@ const closeMobileMenu = () => {
                             <AppLink :to="item.url || ''" :target="item.newPage ? '_blank' : ''">
                                 <div
                                     :class="isCurrent(item.url || '_') ? 'ring-1 ring-indigo-500/20' : ''"
-                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-3 py-1"
+                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                    v-tooltip.bottom="item.label"
                                 >
                                     <div
                                         :class="getMenuIconAccent(item.icon as string)"
@@ -282,7 +314,8 @@ const closeMobileMenu = () => {
                                         <i :class="[getMenuIconClass(item.icon as string), 'text-base']" />
                                     </div>
                                     <span
-                                        class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap"
+                                        v-if="!decorConfig.compactMenu"
+                                        class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
                                         >{{ item.label }}</span
                                     >
                                 </div>
@@ -290,6 +323,32 @@ const closeMobileMenu = () => {
                         </template>
 
                         <template #end>
+                            <AppLink
+                                v-if="permissions.hasConsoleAccess()"
+                                :to="permissions.getConsoleUrl() || '#'"
+                                target="_blank"
+                                class="pr-2"
+                            >
+                                <div
+                                    :class="
+                                        isCurrent(permissions.getConsoleUrl() || '_') ? 'ring-1 ring-indigo-500/20' : ''
+                                    "
+                                    class="flex items-center gap-2 rounded-2xl pl-1 pr-1 py-1"
+                                    v-tooltip.bottom="'Консоль'"
+                                >
+                                    <div
+                                        :class="getMenuIconAccent('console')"
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br text-slate-700 shadow-sm dark:text-slate-200"
+                                    >
+                                        <i :class="[getMenuIconClass('console'), 'text-base']" />
+                                    </div>
+                                    <span
+                                        v-if="!decorConfig.compactMenu"
+                                        class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                        >Консоль</span
+                                    >
+                                </div>
+                            </AppLink>
                             <div class="flex items-center gap-2">
                                 <Avatar
                                     v-if="user"
@@ -417,24 +476,13 @@ const closeMobileMenu = () => {
                 <LogoutButton />
             </div>
 
-            <div class="mt-4" v-if="[0, 1, 11].indexOf(new Date().getMonth()) !== -1">
-                <label
-                    class="flex gap-2 items-center border border-gray-300 dark:border-gray-600 rounded p-3 w-full cursor-pointer"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        :class="decorConfig.winterDecor ? 'fill-primary' : 'fill-gray-500'"
-                        viewBox="0 0 16 16"
-                    >
-                        <path
-                            d="M8 16a.5.5 0 0 1-.5-.5v-1.293l-.646.647a.5.5 0 0 1-.707-.708L7.5 12.793V8.866l-3.4 1.963-.496 1.85a.5.5 0 1 1-.966-.26l.237-.882-1.12.646a.5.5 0 0 1-.5-.866l1.12-.646-.884-.237a.5.5 0 1 1 .26-.966l1.848.495L7 8 3.6 6.037l-1.85.495a.5.5 0 0 1-.258-.966l.883-.237-1.12-.646a.5.5 0 1 1 .5-.866l1.12.646-.237-.883a.5.5 0 1 1 .966-.258l.495 1.849L7.5 7.134V3.207L6.147 1.854a.5.5 0 1 1 .707-.708l.646.647V.5a.5.5 0 1 1 1 0v1.293l.647-.647a.5.5 0 1 1 .707.708L8.5 3.207v3.927l3.4-1.963.496-1.85a.5.5 0 1 1 .966.26l-.236.882 1.12-.646a.5.5 0 0 1 .5.866l-1.12.646.883.237a.5.5 0 1 1-.26.966l-1.848-.495L9 8l3.4 1.963 1.849-.495a.5.5 0 0 1 .259.966l-.883.237 1.12.646a.5.5 0 0 1-.5.866l-1.12-.646.236.883a.5.5 0 1 1-.966.258l-.495-1.849-3.4-1.963v3.927l1.353 1.353a.5.5 0 0 1-.707.708l-.647-.647V15.5a.5.5 0 0 1-.5.5z"
-                        />
-                    </svg>
-                    <span class="">Зимний декор</span>
-                    <ToggleSwitch v-model="decorConfig.winterDecor" />
-                </label>
+            <div class="mt-3 flex flex-col gap-2">
+                <router-link to="/profile" class="w-full">
+                    <Button label="Профиль" icon="pi pi-user" fluid severity="secondary" outlined />
+                </router-link>
+                <div v-if="isWinterMonth" class="text-xs text-gray-500 dark:text-gray-400">
+                    Переключатель зимнего декора перенесен в профиль.
+                </div>
             </div>
         </div>
     </Popover>

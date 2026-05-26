@@ -21,4 +21,3 @@ class UserPermissionsSwaggerSerializer(serializers.Serializer):
     console = serializers.URLField(
         allow_null=True, label="URL консоли для подключения к сетевому оборудованию"
     )
-    ecstasy_loop_url = serializers.URLField(allow_null=True, label="Ссылка на внешний сервис Ecstasy Loop")

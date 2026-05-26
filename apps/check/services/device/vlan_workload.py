@@ -1,10 +1,11 @@
-from check.api.serializers import DevicesSerializer
-from check.models import Profile
 from django.core.cache import cache
 from django.db.models import QuerySet
-from gathering.models import Vlan
-from net_tools.models import DevicesInfo
 from rest_framework.serializers import BaseSerializer
+
+from apps.check.api.serializers import DevicesSerializer
+from apps.check.models import Profile
+from apps.gathering.models import Vlan
+from apps.net_tools.models import DevicesInfo
 
 
 class DevicesVlanWorkloadCollector:

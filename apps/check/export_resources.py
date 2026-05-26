@@ -33,6 +33,11 @@ class DevicesResource(resources.ModelResource):
             "connection_pool_size",
             "port_scan_protocol",
             "cmd_protocol",
+            "latitude",
+            "longitude",
+            "telnet_port",
+            "ssh_port",
+            "snmp_port",
         )
         export_order = (
             "ip",
@@ -48,4 +53,9 @@ class DevicesResource(resources.ModelResource):
             "connection_pool_size",
             "port_scan_protocol",
             "cmd_protocol",
+            "latitude",
+            "longitude",
+            "telnet_port",
+            "ssh_port",
+            "snmp_port",
         )

@@ -6,6 +6,7 @@ from threading import Thread
 from typing import Any
 
 from devicemanager import DeviceException, snmp
+from devicemanager.connection_ports import normalize_connection_ports
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS
@@ -28,9 +29,20 @@ class DeviceSessionFactory:
         pool_size: int | None,
         snmp_community: str,
         port_scan_protocol: str,
+        telnet_port: int | None = None,
+        ssh_port: int | None = None,
+        snmp_port: int | None = None,
     ):
+        ports = normalize_connection_ports(
+            telnet_port=telnet_port,
+            ssh_port=ssh_port,
+            snmp_port=snmp_port,
+        )
         self.port_scan_protocol = port_scan_protocol
         self.snmp_community = snmp_community
+        self.telnet_port = ports.telnet_port
+        self.ssh_port = ports.ssh_port
+        self.snmp_port = ports.snmp_port
         self.pool_size = self._validate_pool_size(pool_size)
 
         self.make_session_global = make_session_global
@@ -70,7 +82,11 @@ class DeviceSessionFactory:
     def _perform(self, method: str, **params) -> Any:
         if method == "get_interfaces" and self.port_scan_protocol == "snmp":
             # Получаем данные по SNMP
-            return snmp.get_interfaces(device_ip=self.ip, community=self.snmp_community)
+            return snmp.get_interfaces(
+                device_ip=self.ip,
+                community=self.snmp_community,
+                snmp_port=self.snmp_port,
+            )
 
         device_connection = self._get_connection_to_perform()
 
@@ -106,6 +122,9 @@ class DeviceSessionFactory:
             protocol=self.protocol,
             auth_obj=self.auth_obj,
             snmp_community=self.snmp_community,
+            telnet_port=self.telnet_port,
+            ssh_port=self.ssh_port,
+            snmp_port=self.snmp_port,
         ).get_session()
 
     def _make_and_get_connection(self) -> BaseDevice:
@@ -165,6 +184,9 @@ class DeviceSessionFactory:
                 protocol=self.protocol,
                 auth_obj=self.auth_obj,
                 snmp_community=self.snmp_community,
+                telnet_port=self.telnet_port,
+                ssh_port=self.ssh_port,
+                snmp_port=self.snmp_port,
             ).get_session()
 
         except Exception as exc:

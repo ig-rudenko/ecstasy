@@ -1,3 +1,4 @@
+from decimal import Decimal
 from re import findall
 from typing import Any
 
@@ -19,7 +20,25 @@ from ..models import (
 )
 
 
-class DevicesSerializer(serializers.ModelSerializer):
+class DeviceCoordinatesValidationMixin:
+    """Validate nullable device coordinates as a complete non-zero pair."""
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)  # type: ignore
+        instance = getattr(self, "instance", None)
+        latitude = attrs.get("latitude", getattr(instance, "latitude", None))
+        longitude = attrs.get("longitude", getattr(instance, "longitude", None))
+        has_latitude = latitude is not None
+        has_longitude = longitude is not None
+
+        if has_latitude != has_longitude:
+            raise ValidationError("Latitude and longitude must be provided together.")
+        if latitude == Decimal("0") and longitude == Decimal("0"):
+            raise ValidationError("Coordinates 0,0 are invalid.")
+        return attrs
+
+
+class DevicesSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSerializer):
     """
     ## Класс сериализатора модели Devices
     """
@@ -34,6 +53,8 @@ class DevicesSerializer(serializers.ModelSerializer):
             "id",
             "ip",
             "name",
+            "latitude",
+            "longitude",
             "vendor",
             "group",
             "auth_group",
@@ -49,6 +70,9 @@ class DevicesSerializer(serializers.ModelSerializer):
             "collect_configurations",
             "connection_pool_size",
             "console_url",
+            "telnet_port",
+            "ssh_port",
+            "snmp_port",
         ]
 
     def create(self, validated_data: Any):
@@ -76,7 +100,7 @@ class DeviceAuthGroupSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "description"]
 
 
-class DevicesDetailUpdateSerializer(serializers.ModelSerializer):
+class DevicesDetailUpdateSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Devices
@@ -84,6 +108,8 @@ class DevicesDetailUpdateSerializer(serializers.ModelSerializer):
             "id",
             "ip",
             "name",
+            "latitude",
+            "longitude",
             "model",
             "vendor",
             "serial_number",

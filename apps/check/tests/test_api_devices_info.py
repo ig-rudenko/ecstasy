@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import MagicMock, Mock, patch
 
 import orjson
@@ -7,6 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.app_settings.models import LogsElasticStackSettings
+from apps.check.services.remote_terminal import get_device_console_url
 from apps.net_tools.models import DevicesInfo
 from devicemanager.device import Interfaces, zabbix_api
 
@@ -191,6 +193,25 @@ class DeviceInterfacesAPIViewTestCase(APITestCase):
 
     def tearDown(self):
         cache.clear()
+
+    def test_get_workload_without_devicesinfo_returns_empty_counts(self):
+        """Device workload endpoint handles devices without collected interface history."""
+        response = self.client.get(f"/api/v1/devices/workload/interfaces/{self.device.name}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                "count": 0,
+                "abons": 0,
+                "abons_up": 0,
+                "abons_up_with_desc": 0,
+                "abons_up_no_desc": 0,
+                "abons_down": 0,
+                "abons_down_with_desc": 0,
+                "abons_down_no_desc": 0,
+            },
+        )
 
     @patch("apps.check.models.Devices.available")
     @patch("devicemanager.device.DeviceManager.from_model")
@@ -404,7 +425,6 @@ class DeviceInfoAPIViewTestCase(APITestCase):
 
     def test_view_returns_valid_response_with_console_url(self):
         self.user.profile.console_access = True
-        self.user.profile.console_url = "http://test_url"
         self.user.profile.save()
 
         self.client.force_authenticate(user=self.user)
@@ -429,7 +449,13 @@ class DeviceInfoAPIViewTestCase(APITestCase):
             },
             "permission": self.user.profile.perm_level,
             "coords": None,
-            "consoleURL": "http://test_url&command=/usr/share/connections/tc.sh 10.100.0.10&title=10.100.0.10 (dev1) telnet",
+            "consoleURL": get_device_console_url(
+                self.user.profile,
+                username=self.user.username,
+                ip=self.device.ip,
+                name=self.device.name,
+                cmd_protocol=self.device.cmd_protocol,
+            ),
             "uptime": -1,
         }
         self.assertDictEqual(response.json(), expected_data)
@@ -443,6 +469,17 @@ class DeviceInfoAPIViewTestCase(APITestCase):
         self.client.force_authenticate(user=user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 404)
+
+    def test_view_returns_device_database_coordinates(self):
+        self.device.latitude = Decimal("44.123456")
+        self.device.longitude = Decimal("33.654321")
+        self.device.save(update_fields=["latitude", "longitude"])
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["coords"], [44.123456, 33.654321])
 
 
 class TestDeviceStatsInfoAPIView(APITestCase):

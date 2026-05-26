@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useStore } from "vuex";
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import SearchInput from "@/components/SearchInput.vue";
 import CommandTemplateSelector from "@/components/deviceCommands/CommandTemplateSelector.vue";
 import BulkDevicesTable from "@/pages/bulkCommands/BulkDevicesTable.vue";
@@ -655,8 +653,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <Header />
-
     <div class="mx-auto px-2 py-2 sm:px-4 sm:py-6 xl:px-8">
         <div class="flex flex-col gap-6">
             <section
@@ -1158,7 +1154,7 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <div class="grid gap-3 lg:grid-cols-[1.2fr,1fr]">
+                            <div class="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
                                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
                                     <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Шаблон команды</div>
                                     <pre
@@ -1396,6 +1392,4 @@ onBeforeUnmount(() => {
             >
         </div>
     </Dialog>
-
-    <Footer />
 </template>

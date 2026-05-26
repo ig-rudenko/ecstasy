@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 
-import Header from "@/components/Header.vue";
-import Footer from "@/components/Footer.vue";
 import macSearch, { IPMACInfoResult } from "@/services/macSearch";
 import errorFmt from "@/errorFmt.ts";
 import BrasSession from "@/pages/deviceInfo/components/BrasSession.vue";
@@ -60,8 +58,6 @@ async function find() {
 </script>
 
 <template>
-    <Header />
-
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full">
         <div class="flex flex-col gap-6">
             <div
@@ -281,5 +277,4 @@ async function find() {
     </div>
 
     <BrasSession />
-    <Footer />
 </template>

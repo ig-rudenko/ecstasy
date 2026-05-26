@@ -92,9 +92,9 @@ class InterfaceControlService {
                         status === "DOWN" ? "bg-red-500" : status === "RELOAD" ? "bg-orange-500" : "bg-green-600";
                     status = status === "DOWN" ? "ADMIN DOWN" : status;
                     newToast(
-                        `Порт: <span class="p-badge bg-gray-700 text-white">${value.port}</span>`,
-                        `Состояние: <span class="p-badge ${className}">${status}</span>
-                           Конфигурация ${value.save ? "" : "НЕ "}была сохранена!`,
+                        `Порт: <span class="p-badge rounded px-2 py-1 bg-gray-700 text-white">${value.port}</span>`,
+                        `Состояние: <span class="p-badge rounded px-2 py-1 ${className} text-white">${status}</span>
+                           <div class="pt-2">Конфигурация ${value.save ? "" : '<span class="p-badge rounded px-2 bg-red-500 text-white">НЕ</span>'}была сохранена!</div>`,
                         value.save ? "success" : "info",
                         5000
                     );

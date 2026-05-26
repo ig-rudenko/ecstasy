@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "dbbackup",
     "drf_yasg",
     "apps.check",
+    "apps.discovery",
     "apps.net_tools",
     "apps.maps",
     "apps.app_settings",
@@ -299,8 +300,13 @@ SWAGGER_SETTINGS = {
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-if ENV == "dev":
-    CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_ALWAYS_EAGER = (
+    os.getenv(
+        "CELERY_TASK_ALWAYS_EAGER",
+        "1" if ENV == "dev" else "0",
+    ).lower()
+    in TRUE_VALUES
+)
 
 # ========== CONFIGURATION STORAGE ===========
 
@@ -502,7 +508,5 @@ CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 CONTACT_NAME = os.getenv("CONTACT_NAME")
 
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
-
-ECSTASY_LOOP_URL = os.getenv("ECSTASY_LOOP_URL")
 
 VERIFY_ZABBIX_CONNECTION = os.getenv("VERIFY_ZABBIX_CONNECTION", "1").lower() in ("1", "yes", "true")
