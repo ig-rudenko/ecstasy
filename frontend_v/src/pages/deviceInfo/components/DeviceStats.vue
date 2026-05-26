@@ -1,8 +1,8 @@
 <template>
-    <div class="flex flex-wrap justify-between gap-3">
+    <div v-if="hasVisibleStats" class="flex flex-wrap justify-between gap-3">
         <div class="flex items-center justify-between gap-3">
             <div
-                v-if="uptime > 0"
+                v-if="uptimeAvailable"
                 class="inline-flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-gray-50/80 px-3 py-2 text-xs text-gray-600 dark:border-gray-700/70 dark:bg-gray-800/60 dark:text-gray-300"
             >
                 <i class="pi pi-clock text-[0.8rem] text-indigo-500 dark:text-indigo-300" />
@@ -41,6 +41,13 @@
 import { defineComponent, h, PropType } from "vue";
 import { HardwareStats } from "../hardwareStats";
 
+interface StatItem {
+    label: string;
+    value: string;
+    color: string;
+    icon: any;
+}
+
 function iconWrapper(paths: string[]) {
     return () =>
         h(
@@ -78,45 +85,66 @@ export default defineComponent({
         uptime: { required: false, type: Number, default: -1 },
     },
     computed: {
+        uptimeAvailable(): boolean {
+            return Number.isFinite(this.uptime) && this.uptime >= 0;
+        },
+        hasVisibleStats(): boolean {
+            return this.uptimeAvailable || this.statItems.length > 0;
+        },
         tempColor(): string {
-            if (!this.stats.temp) return "#94a3b8";
+            if (!this.stats.temp || !this.hasNumber(this.stats.temp.value)) return "#94a3b8";
             if (this.stats.temp.status === "low") return "#2563eb";
             if (this.stats.temp.status === "normal") return "#16a34a";
             if (this.stats.temp.status === "medium") return "#f59e0b";
             return "#dc2626";
         },
-        statItems(): { label: string; value: string; color: string; icon: any }[] {
-            return [
-                {
+        statItems(): StatItem[] {
+            const items: StatItem[] = [];
+
+            if (Array.isArray(this.stats.cpu?.util) && this.stats.cpu.util.length > 0) {
+                items.push({
                     label: "CPU",
-                    value: this.stats.cpu ? `${this.stats.cpu.util.join(", ")}%` : "-",
-                    color: this.stats.cpu ? this.valueColor(Math.max(...this.stats.cpu.util)) : "#94a3b8",
+                    value: `${this.stats.cpu.util.join(", ")}%`,
+                    color: this.valueColor(Math.max(...this.stats.cpu.util)),
                     icon: CpuIcon,
-                },
-                {
+                });
+            }
+
+            if (this.hasNumber(this.stats.ram?.util)) {
+                items.push({
                     label: "RAM",
-                    value: this.stats.ram ? `${this.stats.ram.util}%` : "-",
-                    color: this.stats.ram ? this.valueColor(this.stats.ram.util) : "#94a3b8",
+                    value: `${this.stats.ram?.util}%`,
+                    color: this.valueColor(this.stats.ram?.util as number),
                     icon: RamIcon,
-                },
-                {
+                });
+            }
+
+            if (this.hasNumber(this.stats.flash?.util)) {
+                items.push({
                     label: "Flash",
-                    value: this.stats.flash ? ` ${this.stats.flash.util}%` : "-",
-                    color: this.stats.flash ? this.valueColor(this.stats.flash.util) : "#94a3b8",
+                    value: `${this.stats.flash?.util}%`,
+                    color: this.valueColor(this.stats.flash?.util as number),
                     icon: FlashIcon,
-                },
-                {
+                });
+            }
+
+            if (this.hasNumber(this.stats.temp?.value)) {
+                items.push({
                     label: "Temp",
-                    value: this.stats.temp?.value ? `${this.stats.temp.value}℃` : "-",
+                    value: `${this.stats.temp?.value}℃`,
                     color: this.tempColor,
                     icon: TempIcon,
-                },
-            ];
+                });
+            }
+
+            return items;
         },
     },
     methods: {
+        hasNumber(value: unknown): value is number {
+            return typeof value === "number" && Number.isFinite(value);
+        },
         valueColor(value: number): string {
-            if (!value) return "#94a3b8";
             if (value < 30) return "#198754";
             if (value < 80) return "#ff9836";
             return "#dc3545";
@@ -133,6 +161,8 @@ export default defineComponent({
             ];
 
             const result: string[] = [];
+
+            if (seconds === 0) return "0 секунд";
 
             for (const unit of units) {
                 const quotient = Math.floor(seconds / unit.seconds);

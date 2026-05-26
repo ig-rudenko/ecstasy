@@ -1,5 +1,4 @@
 import re
-from functools import reduce
 
 import requests as requests_lib
 from django.conf import settings
@@ -17,7 +16,7 @@ from devicemanager.device import zabbix_api
 from ecstasy_project.error_handler import ExternalServiceProblem
 
 from ..models import VlanName
-from ..services.arp_find import find_mac_or_ip
+from ..services.arp_find import collect_ip_mac_info_ips, find_mac_or_ip, get_ecstasy_devices_by_ip
 from ..services.finder import DescriptionFinder
 from ..services.traceroute import build_traceroute_graph_data, build_traceroute_map_data
 from .serializers import GetVlanDescQuerySerializer, TracerouteMapQuerySerializer, TracerouteQuerySerializer
@@ -95,12 +94,13 @@ def ip_mac_info(request, ip_or_mac: str):
     Выполняет распределённый ARP-поиск по IP или MAC и дополняет результат данными из Zabbix.
     """
     arp_info = find_mac_or_ip(ip_or_mac)
+    found_ips = collect_ip_mac_info_ips(ip_or_mac, arp_info)
 
     zabbix_url = ZabbixConfig.load().url
 
     names = []
     if len(arp_info) > 0:
-        ips = reduce(lambda x, y: x + y, map(lambda r: [line.ip for line in r.results], arp_info))
+        ips = [line.ip for info in arp_info for line in info.results]
 
         try:
             with zabbix_api.connect() as zbx:
@@ -113,6 +113,7 @@ def ip_mac_info(request, ip_or_mac: str):
         except RequestException:
             pass
 
+    ecstasy_devices = get_ecstasy_devices_by_ip(found_ips, request.user)
     arp_info_json = [
         {
             "device": {
@@ -133,7 +134,14 @@ def ip_mac_info(request, ip_or_mac: str):
         for info in arp_info
     ]
 
-    return Response({"info": arp_info_json, "zabbix": names, "zabbix_url": zabbix_url})
+    return Response(
+        {
+            "info": arp_info_json,
+            "zabbix": names,
+            "zabbix_url": zabbix_url,
+            "ecstasy_devices": ecstasy_devices,
+        }
+    )
 
 
 @get_vlan_desc_schema

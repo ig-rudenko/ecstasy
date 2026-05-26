@@ -84,7 +84,7 @@ const detailActions = computed(() =>
         },
         {
             key: "cableDiag" as const,
-            label: "Диагностика кабеля",
+            label: "Диагностика",
             iconClass: "pi pi-bolt",
             visible: Boolean(props.complexInfo.hasCableDiag),
             activeClass:
@@ -176,7 +176,7 @@ onMounted(async () => {
                     v-if="portDetailMenu === 'cableDiag'"
                     class="overflow-hidden rounded-3xl border border-sky-200/80 bg-sky-50/60 px-4 py-4 dark:border-sky-900/70 dark:bg-sky-950/20"
                 >
-                    <div class="mb-4 text-sm font-semibold text-sky-900 dark:text-sky-100">Диагностика кабеля</div>
+                    <div class="mb-4 text-sm font-semibold text-sky-900 dark:text-sky-100">Диагностика</div>
                     <CableDiag v-if="complexInfo.hasCableDiag" :device-name="deviceName" :port="interface.name" />
                 </div>
             </div>

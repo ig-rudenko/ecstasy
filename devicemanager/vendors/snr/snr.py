@@ -2,12 +2,19 @@ import io
 import re
 from time import sleep
 
-from devicemanager.vendors.base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
+from devicemanager.vendors.base.device import (
+    AbstractCableTestDevice,
+    AbstractConfigDevice,
+    AbstractSearchDevice,
+    BaseDevice,
+)
 from devicemanager.vendors.base.factory import AbstractDeviceFactory
+from devicemanager.vendors.base.helpers import normalize_cable_diag_status
 from devicemanager.vendors.base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
     ArpInfoResult,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -21,7 +28,7 @@ from devicemanager.vendors.base.types import (
 from devicemanager.vendors.snr.vlan_parser import parse_vlan_output
 
 
-class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
+class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя SNR
     """
@@ -484,6 +491,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             "cpu": {"util": self.get_cpu_utilization()},
             "ram": {},
             "flash": {"util": self.get_flash_utilization()},
+            "temp": self.get_temp(),
         }
 
     def get_cpu_utilization(self) -> tuple:
@@ -511,6 +519,103 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         )
 
         return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
+
+    def get_temp(self) -> dict:
+        output = self.send_command("show temperature", expect_command=False)
+        raw_value = self.find_or_empty(r"Temperature:\s+(\d+)\s+C", output)
+        if not raw_value.isdigit():
+            return {}
+
+        current_temp = int(raw_value)
+        high_temp = 60
+        medium_temp = 50
+        low_temp = 0
+
+        if current_temp >= high_temp:
+            status = "high"
+        elif current_temp >= medium_temp:
+            status = "medium"
+        elif current_temp <= low_temp:
+            status = "low"
+        else:
+            status = "normal"
+
+        return {"value": current_temp, "status": status}
+
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
+        result: CableDiagResult = {
+            "len": "-",
+            "status": "Skip",
+        }
+        output = self.send_command(f"show cable-test {port}", expect_command=False)
+        if "not found" in output:
+            result["status"] = normalize_cable_diag_status("Mismatch")
+            return result
+
+        if "not support cable" in output:
+            result["status"] = normalize_cable_diag_status("Unsupported")
+
+            # Пробуем SFP вариант.
+            transceiver_info = self._get_transceiver_diag(port)
+            if transceiver_info:
+                result["status"] = "SFP"
+                result["sfp"] = transceiver_info
+                return result
+
+        parsed = re.findall(r"\S+\s+Pair(\d+)\s+(?P<status>\S+)\s+(?P<length>\S+)", output)
+
+        for pair_number, status, length in parsed:
+            result[f"pair{int(pair_number) + 1}"] = {"status": status, "length": length}  # noqa
+
+            if status.lower() != "skip":
+                result["status"] = status
+            if length != "-":
+                result["len"] = length
+
+        return result
+
+    def _get_transceiver_diag(self, port: str):
+        output = self.send_command(f"show transceiver interface {port} detail", expect_command=False)
+        print(output)
+        parsed = re.search(
+            r"Temperature\S+\s+(?P<temp_value>\S+)\s+\S+\s+\S+\s+(?P<temp_high>\S+)\s+(?P<temp_low>\S+).+"
+            r"Voltage\S+\s+(?P<volgate_value>\S+)\s+\S+\s+\S+\s+(?P<volgate_high>\S+)\s+(?P<volgate_low>\S+).+"
+            r"Bias Current\S+\s+(?P<current_value>\S+)\s+\S+\s+\S+\s+(?P<current_high>\S+)\s+(?P<current_low>\S+).+"
+            r"RX Power\S+\s+(?P<rx_value>\S+)\s+\S+\s+\S+\s+(?P<rx_high>\S+)\s+(?P<rx_low>\S+).+"
+            r"TX Power\S+\s+(?P<tx_value>\S+)\s+\S+\s+\S+\s+(?P<tx_high>\S+)\s+(?P<tx_low>\S+)",
+            output,
+            flags=re.DOTALL,
+        )
+        if not parsed:
+            return {}
+
+        return {
+            "Temperature": {
+                "Current": parsed.group("temp_value"),
+                "High Warning": parsed.group("temp_high"),
+                "Low Warning": parsed.group("temp_low"),
+            },
+            "Voltage": {
+                "Current": parsed.group("volgate_value"),
+                "High Warning": parsed.group("volgate_high"),
+                "Low Warning": parsed.group("volgate_low"),
+            },
+            "Current": {
+                "Current": parsed.group("current_value"),
+                "High Warning": parsed.group("current_high"),
+                "Low Warning": parsed.group("current_low"),
+            },
+            "RxPower": {
+                "Current": parsed.group("rx_value"),
+                "High Warning": parsed.group("rx_high"),
+                "Low Warning": parsed.group("rx_low"),
+            },
+            "TxPower": {
+                "Current": parsed.group("tx_value"),
+                "High Warning": parsed.group("tx_high"),
+                "Low Warning": parsed.group("tx_low"),
+            },
+        }
 
     @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
