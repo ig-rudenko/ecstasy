@@ -31,7 +31,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TRUE_VALUES = ["1", "true", "yes"]
-LINE_WIDTH = 100
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
@@ -41,11 +40,6 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "1238710892y3u1h0iud0q0dhb0912bd1-2"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in TRUE_VALUES
 ENV = os.getenv("DJANGO_ENV", "dev")
-
-print("=" * LINE_WIDTH)
-if DEBUG:
-    print(f"❗️ DEBUG: {DEBUG} ❗️".center(LINE_WIDTH))
-print(f"ENV: {ENV}".center(LINE_WIDTH))
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
 
@@ -58,7 +52,6 @@ if ENV == "dev":
 trusted_origins = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
 if trusted_origins:
     CSRF_TRUSTED_ORIGINS = trusted_origins.split(",")
-    print(f"CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}".center(LINE_WIDTH))
 
 PROXY_URL = os.getenv("PROXY_URL", "")
 API_PROBLEM_BASE_URL = os.getenv("API_PROBLEM_BASE_URL", "/api/problems")
@@ -169,7 +162,6 @@ if not os.getenv("MYSQL_DATABASE"):
             },
         }
     }
-    print("DATABASE: SQLite".center(LINE_WIDTH))
 else:
     DATABASES = {
         "default": {
@@ -181,7 +173,6 @@ else:
             "PORT": os.getenv("MYSQL_PORT", "3306"),
         }
     }
-    print(f"MYSQL_DATABASE: {os.getenv('MYSQL_DATABASE')}".center(LINE_WIDTH))
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -316,7 +307,6 @@ CELERY_TASK_ALWAYS_EAGER = (
     ).lower()
     in TRUE_VALUES
 )
-print(f"CELERY_TASK_ALWAYS_EAGER: {CELERY_TASK_ALWAYS_EAGER}".center(LINE_WIDTH))
 
 # ========== CONFIGURATION STORAGE ===========
 
@@ -388,7 +378,6 @@ KEYCLOAK_USER_ID_FIELD = os.getenv("KEYCLOAK_USER_ID_FIELD", "username")
 KEYCLOAK_USER_ID_CLAIM = os.getenv("KEYCLOAK_USER_ID_CLAIM", "preferred_username")
 
 if KEYCLOAK_ENABLE:
-    print(f"KEYCLOAK_ENABLE: {KEYCLOAK_ENABLE}".center(LINE_WIDTH))
     AUTHENTICATION_BACKENDS = (
         "ecstasy_project.authentication.KeycloakBackend",
         "django.contrib.auth.backends.ModelBackend",
@@ -521,5 +510,3 @@ CONTACT_NAME = os.getenv("CONTACT_NAME")
 IMPORT_EXPORT_FORMATS = [CSV, XLSX, JSON]
 
 VERIFY_ZABBIX_CONNECTION = os.getenv("VERIFY_ZABBIX_CONNECTION", "1").lower() in ("1", "yes", "true")
-
-print("=" * LINE_WIDTH)

@@ -79,7 +79,7 @@ class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
 
 
 @method_decorator(devices_list_api_doc, name="get")
-@method_decorator(cache_page(60 * 2), name="dispatch")
+@method_decorator(cache_page(60), name="dispatch")
 @method_decorator(vary_on_headers("Authorization"), name="dispatch")
 @method_decorator(vary_on_cookie, name="dispatch")
 class AllDevicesListCreateAPIView(UserAuthenticatedAPIView):
