@@ -273,7 +273,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                                     >
                                         <template v-for="part in line.split(/(?={)|(?<=})/)" :key="part">
                                             <Select
-                                                v-if="data.context.port && portRegex.test(part) && portOptions.length"
+                                                v-if="data.context.port && portRegex.test(part) && portOptions?.length"
                                                 v-model="data.context.port[getCommandKeyName(part)]"
                                                 :options="portOptions"
                                                 filter

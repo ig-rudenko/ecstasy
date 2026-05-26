@@ -408,10 +408,8 @@ export function useDiscoveryPage() {
                 ...result.runs,
                 ...runs.value.filter((run) => !result.runs.some((createdRun) => createdRun.id === run.id)),
             ];
-            activeTab.value = "runs";
             successToast("Переопрос запущен", `Запусков: ${result.runs.length}`);
             updateRunPolling();
-            await loadRuns(1);
         }
         if (result.skipped.length) {
             errorToast(

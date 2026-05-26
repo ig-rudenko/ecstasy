@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DiscoveryLookupItem, DiscoveryProfile } from "@/services/discovery";
 
-const props = defineProps<{
+defineProps<{
     profiles: DiscoveryProfile[];
     loading: boolean;
     deviceGroups: DiscoveryLookupItem[];

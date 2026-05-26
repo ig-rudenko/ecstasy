@@ -48,10 +48,7 @@ const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus
                 </div>
             </div>
             <Message v-if="authCheckFailed" severity="error" icon="pi pi-exclamation-triangle">
-                {{
-                    selectedCandidate.authCheckError ||
-                    "Не удалось подключиться с AuthGroup из профиля discovery."
-                }}
+                {{ selectedCandidate.authCheckError || "Не удалось подключиться с AuthGroup из профиля discovery." }}
             </Message>
             <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 Имя устройства

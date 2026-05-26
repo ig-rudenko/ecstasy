@@ -186,8 +186,7 @@ class DiscoveryCandidateRescanAPIView(APIView):
 
         candidate_ids = serializer.validated_data["ids"]
         candidates = {
-            candidate.id: candidate
-            for candidate in DiscoveryCandidate.objects.filter(id__in=candidate_ids)
+            candidate.id: candidate for candidate in DiscoveryCandidate.objects.filter(id__in=candidate_ids)
         }
         skipped = []
         candidates_by_profile = defaultdict(list)
