@@ -565,7 +565,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
         parsed = re.findall(r"\S+\s+Pair(\d+)\s+(?P<status>\S+)\s+(?P<length>\S+)", output)
 
         for pair_number, status, length in parsed:
-            result[f"pair{int(pair_number) + 1}"] = {"status": status, "length": length}  # noqa
+            result[f"pair{int(pair_number) + 1}"] = {"status": status, "length": length}  # type: ignore
 
             if status.lower() != "skip":
                 result["status"] = status
