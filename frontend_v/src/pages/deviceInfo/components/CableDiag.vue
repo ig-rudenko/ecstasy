@@ -15,15 +15,6 @@ interface SFPDiagInfo {
     [key: string]: SFPDiagValue;
 }
 
-interface SFPDiagRow {
-    parameter: string;
-    current: number | string;
-    currentColor: string;
-    lowWarning: number | string;
-    highWarning: number | string;
-    status: string;
-}
-
 interface PairInfo {
     status: string;
     len: string | number;
@@ -70,7 +61,7 @@ export default defineComponent({
                 return [];
             }
 
-            return Object.entries(this.diagInfo.sfp).map(([parameter, value]): SFPDiagRow => {
+            return Object.entries(this.diagInfo.sfp).map(([parameter, value]) => {
                 const current = value.Current ?? "-";
                 const lowWarning = value["Low Warning"] ?? "-";
                 const highWarning = value["High Warning"] ?? "-";
@@ -78,7 +69,6 @@ export default defineComponent({
                 return {
                     parameter,
                     current,
-                    currentColor: this.sfpCurrentColor(current, lowWarning, highWarning),
                     lowWarning,
                     highWarning,
                     status: value.Status ?? "-",
@@ -144,16 +134,6 @@ export default defineComponent({
                 this.diagnosticsStarted = false;
             }
         },
-        statusColor(status: string) {
-            const colors: Record<string, string> = {
-                Up: "#39d286",
-                Down: "#ff4b4d",
-                Empty: "#19b7f3",
-                Open: "#ff9100",
-                Short: "#d80000",
-            };
-            return colors[status] || "#64748b";
-        },
         statusDotClass(status: string) {
             const colors: Record<string, string> = {
                 Up: "bg-emerald-500 dark:bg-emerald-400",
@@ -183,46 +163,6 @@ export default defineComponent({
         },
         pairStatusLabel(status: string) {
             return status || "Unknown";
-        },
-        sfpCurrentColor(
-            currentValue: number | string,
-            lowWarningValue: number | string,
-            highWarningValue: number | string
-        ): string {
-            const current = this.parseDiagNumber(currentValue);
-            const lowWarning = this.parseDiagNumber(lowWarningValue);
-            const highWarning = this.parseDiagNumber(highWarningValue);
-
-            if (current === null || lowWarning === null || highWarning === null || highWarning <= lowWarning) {
-                return "#64748b";
-            }
-
-            const ratio = Math.min(Math.max((current - lowWarning) / (highWarning - lowWarning), 0), 1);
-            if (ratio <= 0.5) {
-                return this.mixColor("#dc2626", "#16a34a", ratio * 2);
-            }
-            return this.mixColor("#16a34a", "#dc2626", (ratio - 0.5) * 2);
-        },
-        parseDiagNumber(value: number | string): number | null {
-            if (typeof value === "number") {
-                return Number.isFinite(value) ? value : null;
-            }
-
-            const match = value.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
-            if (!match) return null;
-
-            const parsed = Number(match[0]);
-            return Number.isFinite(parsed) ? parsed : null;
-        },
-        mixColor(fromColor: string, toColor: string, ratio: number): string {
-            const from = this.hexToRgb(fromColor);
-            const to = this.hexToRgb(toColor);
-
-            const rgb = from.map((channel, index) => Math.round(channel + (to[index] - channel) * ratio));
-            return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-        },
-        hexToRgb(color: string): [number, number, number] {
-            return [parseInt(color.slice(1, 3), 16), parseInt(color.slice(3, 5), 16), parseInt(color.slice(5, 7), 16)];
         },
     },
 });
@@ -345,6 +285,7 @@ export default defineComponent({
                     :value="sfpData"
                     :rows="10"
                     paginator
+                    :always-show-paginator="false"
                     class="text-sm"
                     :pt="{
                         table: { class: 'min-w-full' },
@@ -372,9 +313,7 @@ export default defineComponent({
 
                     <Column field="current" header="Текущее значение">
                         <template #body="{ data }">
-                            <span class="font-mono font-semibold" :style="{ color: data.currentColor }">
-                                {{ data.current }}
-                            </span>
+                            <span class="font-mono">{{ data.current }}</span>
                         </template>
                     </Column>
 

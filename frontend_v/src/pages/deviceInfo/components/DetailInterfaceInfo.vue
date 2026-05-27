@@ -151,11 +151,30 @@
                         v-html="complexInfo.portDetailInfo.data"
                     ></div>
 
-                    <div
-                        v-else-if="complexInfo.portDetailInfo.type === 'text'"
-                        class="px-3 max-sm:text-xs font-mono whitespace-pre"
-                    >
-                        {{ complexInfo.portDetailInfo.data }}
+                    <div v-else-if="complexInfo.portDetailInfo.type === 'text'" class="relative">
+                        <div
+                            :class="[
+                                'px-3 max-sm:text-xs font-mono whitespace-pre leading-6 transition-[max-height] duration-200',
+                                portDetailTextCollapsed ? 'max-h-90 overflow-hidden' : '',
+                            ]"
+                        >
+                            {{ complexInfo.portDetailInfo.data }}
+                        </div>
+
+                        <div
+                            v-if="portDetailTextCollapsed"
+                            class="absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-zinc-50/95 via-zinc-50/80 via-55% to-zinc-50/5 pb-3 pt-4 backdrop-blur-[1px] backdrop-mask-linear-to-t backdrop-mask-from-black backdrop-mask-via-black/90 backdrop-mask-via-55% backdrop-mask-to-transparent dark:from-gray-800/95 dark:via-gray-800/80 dark:to-gray-800/5"
+                        >
+                            <Button
+                                icon="pi pi-chevron-down"
+                                text
+                                rounded
+                                aria-label="Развернуть информацию порта полностью"
+                                v-tooltip.top="'Развернуть полностью'"
+                                class="bg-white/85! text-slate-700! shadow-sm! ring-1! ring-slate-200/80! backdrop-blur dark:bg-gray-900/85! dark:text-slate-100! dark:ring-slate-700/80!"
+                                @click="portDetailInfoExpanded = true"
+                            />
+                        </div>
                     </div>
 
                     <!--      MIKROTIK -->
@@ -236,6 +255,7 @@ import ComplexInterfaceInfo from "@/pages/deviceInfo/components/ComplexInterface
 import { textToHtml } from "@/formats";
 import { ComplexInterfaceInfoType } from "@/pages/deviceInfo/detailInterfaceInfo";
 import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
+import decorConfig from "@/services/decor";
 
 export default defineComponent({
     components: {
@@ -270,6 +290,7 @@ export default defineComponent({
 
             complexInfo: null as ComplexInterfaceInfoType | null,
             collectingDetailInfo: false,
+            portDetailInfoExpanded: false,
         };
     },
 
@@ -355,6 +376,17 @@ export default defineComponent({
             // возвращаем результат
             return result;
         },
+        portDetailTextLines(): number {
+            const data = this.complexInfo?.portDetailInfo?.data;
+            return typeof data === "string" ? data.split(/\r\n|\r|\n/).length : 0;
+        },
+        portDetailTextCollapsed(): boolean {
+            return (
+                this.portDetailTextLines > 15 &&
+                !decorConfig.autoExpandLargeInterfaceInfo &&
+                !this.portDetailInfoExpanded
+            );
+        },
     },
 
     methods: {
@@ -428,6 +460,7 @@ export default defineComponent({
             )
                 .then((value) => {
                     this.complexInfo = value.data;
+                    this.portDetailInfoExpanded = decorConfig.autoExpandLargeInterfaceInfo;
                     this.collectingDetailInfo = false;
                 }, error)
                 .catch(error);

@@ -1,18 +1,5 @@
-.traceroute-back {
-    background-image: url("/img/background.png");
-    background-repeat: no-repeat;
-    background-position: center top;
-    background-attachment: fixed;
-    background-size: auto;
-    min-height: 100vh;
-}
-
-html:not(.dark) .traceroute-back {
-    background-color: #e4eaf3;
-}
-
-html.dark .traceroute-back {
-    background-color: #222222;
+.p-datatable-tbody > tr {
+    background-color: transparent!important;
 }
 
 ::-webkit-scrollbar {

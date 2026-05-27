@@ -142,6 +142,14 @@ const filteredPermissions = computed<string[]>(() => {
                         >
                         <ToggleSwitch v-model="decorConfig.compactMenu" />
                     </label>
+                    <label
+                        class="flex items-center justify-between gap-3 rounded-2xl border border-gray-200/80 bg-white/70 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50"
+                    >
+                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100"
+                            >Автораскрытие большой информации порта</span
+                        >
+                        <ToggleSwitch v-model="decorConfig.autoExpandLargeInterfaceInfo" />
+                    </label>
                 </div>
             </div>
 

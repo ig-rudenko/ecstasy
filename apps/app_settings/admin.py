@@ -27,7 +27,7 @@ from apps.app_settings.models import (
     VlanTracerouteConfig,
     ZabbixConfig,
 )
-from devicemanager.device.zabbix_api import zabbix_api
+from devicemanager.device.zabbix_api import ZabbixAPIConnector
 
 
 @admin.register(LogsElasticStackSettings)
@@ -55,7 +55,7 @@ class ZabbixConfigAdmin(ModelAdmin):
     @admin.display(description="Connectable")
     def connectable(self, obj: ZabbixConfig) -> str:
         """Return the current connectivity status for Zabbix API."""
-        zabbix_api.set_lazy_attributes(obj)
+        zabbix_api = ZabbixAPIConnector(config=obj)
         try:
             with zabbix_api.connect() as conn:
                 return "✅ Подключено" if conn.is_authenticated else "❌ Не подключено"
