@@ -488,13 +488,13 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
         return {
-            "cpu": {"util": self.get_cpu_utilization()},
+            "cpu": {"util": self._get_cpu_utilization()},
             "ram": {},
-            "flash": {"util": self.get_flash_utilization()},
-            "temp": self.get_temp(),
+            "flash": {"util": self._get_flash_utilization()},
+            "temp": self._get_temp(),
         }
 
-    def get_cpu_utilization(self) -> tuple:
+    def _get_cpu_utilization(self) -> tuple:
         """
         ## Возвращает загрузку ЦП хоста
         """
@@ -507,7 +507,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
         return tuple(map(int, cpu_percent))
 
-    def get_flash_utilization(self) -> int:
+    def _get_flash_utilization(self) -> int:
         """
         ## Возвращает использование флэш-памяти устройства
         """
@@ -520,7 +520,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
         return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
 
-    def get_temp(self) -> dict:
+    def _get_temp(self) -> dict:
         output = self.send_command("show temperature", expect_command=False)
         raw_value = self.find_or_empty(r"Temperature:\s+(\d+)\s+C", output)
         if not raw_value.isdigit():
@@ -542,6 +542,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
         return {"value": current_temp, "status": status}
 
+    @BaseDevice.lock_session
     def virtual_cable_test(self, port: str) -> CableDiagResult:
         result: CableDiagResult = {
             "len": "-",
@@ -574,12 +575,12 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
         return result
 
-    def _get_transceiver_diag(self, port: str):
+    def _get_transceiver_diag(self, port: str) -> dict:
         output = self.send_command(f"show transceiver interface {port} detail", expect_command=False)
         print(output)
         parsed = re.search(
             r"Temperature\S+\s+(?P<temp_value>\S+)\s+\S+\s+\S+\s+(?P<temp_high>\S+)\s+(?P<temp_low>\S+).+"
-            r"Voltage\S+\s+(?P<volgate_value>\S+)\s+\S+\s+\S+\s+(?P<volgate_high>\S+)\s+(?P<volgate_low>\S+).+"
+            r"Voltage\S+\s+(?P<voltage_value>\S+)\s+\S+\s+\S+\s+(?P<voltage_high>\S+)\s+(?P<voltage_low>\S+).+"
             r"Bias Current\S+\s+(?P<current_value>\S+)\s+\S+\s+\S+\s+(?P<current_high>\S+)\s+(?P<current_low>\S+).+"
             r"RX Power\S+\s+(?P<rx_value>\S+)\s+\S+\s+\S+\s+(?P<rx_high>\S+)\s+(?P<rx_low>\S+).+"
             r"TX Power\S+\s+(?P<tx_value>\S+)\s+\S+\s+\S+\s+(?P<tx_high>\S+)\s+(?P<tx_low>\S+)",
@@ -596,9 +597,9 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
                 "Low Warning": parsed.group("temp_low"),
             },
             "Voltage": {
-                "Current": parsed.group("volgate_value"),
-                "High Warning": parsed.group("volgate_high"),
-                "Low Warning": parsed.group("volgate_low"),
+                "Current": parsed.group("voltage_value"),
+                "High Warning": parsed.group("voltage_high"),
+                "Low Warning": parsed.group("voltage_low"),
             },
             "Current": {
                 "Current": parsed.group("current_value"),

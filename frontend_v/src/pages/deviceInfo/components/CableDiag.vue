@@ -159,6 +159,8 @@ export default defineComponent({
         },
         pairImage(status: string, align: "left" | "right") {
             if (status.toLowerCase() == "skip") status = "Mismatch";
+            if (status.toLowerCase() == "fail") status = "Error";
+            if (status.toLowerCase() == "normal") status = "Open";
             return `/img/rj45-status-${String(status).toLowerCase()}-${align}.png`;
         },
         pairStatusLabel(status: string) {

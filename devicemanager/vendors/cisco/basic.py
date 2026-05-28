@@ -1,13 +1,24 @@
 import io
 import re
+import time
 from time import sleep
 
 import textfsm
 
-from .base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
-from .base.factory import AbstractDeviceFactory
-from .base.helpers import interface_normal_view, parse_by_template, range_to_numbers
-from .base.types import (
+from ..base.device import (
+    AbstractCableTestDevice,
+    AbstractConfigDevice,
+    AbstractSearchDevice,
+    BaseDevice,
+    CableDiagResult,
+)
+from ..base.helpers import (
+    interface_normal_view,
+    normalize_cable_diag_result,
+    parse_by_template,
+    range_to_numbers,
+)
+from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
     TEMPLATE_FOLDER,
@@ -22,10 +33,10 @@ from .base.types import (
     PortInfoType,
     VlanTableType,
 )
-from .base.validators import validate_and_format_port_as_normal
+from ..base.validators import validate_and_format_port_as_normal
 
 
-class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
+class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя Cisco
 
@@ -44,6 +55,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     space_prompt = r" --More-- "
     mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"  # 0018.e7d3.1d43
     vendor = "Cisco"
+    EXTRA_FIBER_TYPES = ["XBIT"]
 
     def __init__(
         self,
@@ -69,10 +81,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         super().__init__(session, ip, auth, model, snmp_community)
         self.send_command("terminal length 0", expect_command=False)
 
-        version = self.send_command("show version")
-        self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
-        self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
-        self.os_version = self.find_or_empty(r"(Version \S+),.+Copyright", version, flags=re.DOTALL)
         self.__cache_port_info: dict[str, str] = {}
 
     @staticmethod
@@ -110,7 +118,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show interfaces description", expect_command=False)
+        output = self.send_command("show interface description", expect_command=False)
         output = re.sub(".+\nInterface", "Interface", output)
 
         result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
@@ -346,7 +354,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         """
 
-        port_info = self.send_command(f"show interfaces {port}", expect_command=False)
+        port_info = self.send_command(f"show interface {port}", expect_command=False)
 
         # Сохраняем в кэш
         self.__cache_port_info[port] = port_info
@@ -416,7 +424,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         # Получаем информацию о порте.
         port_info = self.get_port_info(port).get("data", "")
 
-        media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
+        media_type = [line.strip() for line in port_info.split("\n") if "error" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
@@ -556,11 +564,11 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     def get_device_info(self) -> dict:
         data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         for key, value in data.items():
-            value["util"] = getattr(self, f"get_{key}_utilization")()
-        data["temp"] = self.get_temp()
+            value["util"] = getattr(self, f"__get_{key}_utilization")()
+        data["temp"] = self._get_temp()
         return data
 
-    def get_cpu_utilization(self) -> tuple:
+    def __get_cpu_utilization(self) -> tuple:
         """
         ## Возвращает загрузку ЦП хоста
         """
@@ -573,7 +581,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         return tuple(map(int, cpu_percent))
 
-    def get_flash_utilization(self) -> int:
+    def __get_flash_utilization(self) -> int:
         """
         ## Возвращает использование флэш-памяти устройства
         """
@@ -586,7 +594,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
 
-    def get_ram_utilization(self) -> int:
+    def __get_ram_utilization(self) -> int:
         """
         ## Возвращает использование DRAM в процентах
         """
@@ -601,7 +609,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         ram = self.find_or_empty(pattern, output, flags=re.IGNORECASE)
         return int(int(ram[1]) / int(ram[0]) * 100) if ram else -1
 
-    def get_temp(self) -> dict:
+    def _get_temp(self) -> dict:
         output = self.send_command("show env temp status", expect_command=False)
 
         if "Invalid input" in output:
@@ -656,6 +664,108 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         return {"value": current_temp, "status": status}
 
     @BaseDevice.lock_session
+    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Unknown"})
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
+        output = self.send_command(f"test cable-diagnostics tdr interface {port}", expect_command=False)
+        if "test started" not in output:
+            return normalize_cable_diag_result(self._get_transceiver_diag(port))
+
+        parsed: list[tuple[str, str, str]] = []
+        time.sleep(2)  # По умолчанию ждем 2 сек.
+
+        for _ in range(10):  # Ждём дополнительно максимум 10 сек.
+            output = self.send_command(f"show cable-diagnostics tdr interface {port}", expect_command=False)
+
+            parsed = re.findall(
+                r"Pair\s+(?P<pair>[ABCD])\s+(?P<lenght>\d+)\s+\S+\s+\S+\s+\S+\s+\S+\s+[ABCD]\s+(?P<status>\S+)",
+                output,
+            )
+            if parsed:
+                # Если тестирование закончилось и удалось распарсить данные, то выходим из цикла.
+                break
+
+            if "N/A" in output:
+                # Если не удалось распарсить, то ожидаем завершения.
+                time.sleep(1)  # Ждём 1 сек, пока выполнится тестирование.
+                continue
+
+            # Если нет "N/A", то значит другая ошибка, не будем крутить в цикле команды и сразу выйдем.
+            break
+
+        if not parsed:
+            return normalize_cable_diag_result({"len": "-", "status": "Fail"})
+
+        result: dict = {"len": "-", "status": "Unknown"}
+
+        for pair, length, status in parsed:
+            result["status"] = status
+            result["len"] = length
+
+            if pair == "A":
+                result["pair1"] = {"status": status, "len": length}
+            if pair == "B":
+                result["pair2"] = {"status": status, "len": length}
+            if pair == "C":
+                result["pair3"] = {"status": status, "len": length}
+            else:
+                result["pair4"] = {"status": status, "len": length}
+
+        return normalize_cable_diag_result(result)
+
+    def _get_transceiver_diag(self, port: str) -> dict:
+        output = self.send_command(f"show interface {port} transceiver detail", expect_command=False)
+        parsed = re.search(
+            r"Temperature\s+.+?\S+\d+\s+(?P<temp_value>-?\d+\.?\d+)\s+(?P<temp_h_alarm>-?\d+\.?\d+)\s+(?P<temp_h_warn>-?\d+\.?\d+)\s+(?P<temp_l_warn>-?\d+\.?\d+)\s+(?P<temp_l_alarm>-?\d+\.?\d+).+?"
+            r"Voltage\s+.+?\S+\d+\s+(?P<voltage_value>-?\d+\.?\d+)\s+(?P<voltage_h_alarm>-?\d+\.?\d+)\s+(?P<voltage_h_warn>-?\d+\.?\d+)\s+(?P<voltage_l_warn>-?\d+\.?\d+)\s+(?P<voltage_l_alarm>-?\d+\.?\d+).+?"
+            r"Optical\s+.+?\S+\d+\s+(?P<tx_value>-?\d+\.?\d+)\s+(?P<tx_h_alarm>-?\d+\.?\d+)\s+(?P<tx_h_warn>-?\d+\.?\d+)\s+(?P<tx_l_warn>-?\d+\.?\d+)\s+(?P<tx_l_alarm>-?\d+\.?\d+).+?"
+            r"Optical\s+.+?\S+\d+\s+(?P<rx_value>-?\d+\.?\d+)\s+(?P<rx_h_alarm>-?\d+\.?\d+)\s+(?P<rx_h_warn>-?\d+\.?\d+)\s+(?P<rx_l_warn>-?\d+\.?\d+)\s+(?P<rx_l_alarm>-?\d+\.?\d+).+?",
+            output,
+            flags=re.DOTALL,
+        )
+        if not parsed:
+            return {"len": "-", "status": "not supported"}
+
+        current = re.search(
+            r"Current\s+.+?\S+\d+\s+(?P<current_value>-?\d+\.?\d+)\s+(?P<current_h_alarm>-?\d+\.?\d+)\s+(?P<current_h_warn>-?\d+\.?\d+)\s+(?P<current_l_warn>-?\d+\.?\d+)\s+(?P<current_l_alarm>-?\d+\.?\d+).+?",
+            output,
+            flags=re.DOTALL,
+        )
+
+        result = {
+            "sfp": {
+                "Temperature": {
+                    "Current": parsed.group("temp_value"),
+                    "High Warning": parsed.group("temp_h_warn"),
+                    "Low Warning": parsed.group("temp_l_warn"),
+                },
+                "Voltage": {
+                    "Current": parsed.group("voltage_value"),
+                    "High Warning": parsed.group("voltage_h_warn"),
+                    "Low Warning": parsed.group("voltage_l_warn"),
+                },
+                "RxPower": {
+                    "Current": parsed.group("rx_value"),
+                    "High Warning": parsed.group("rx_h_warn"),
+                    "Low Warning": parsed.group("rx_l_warn"),
+                },
+                "TxPower": {
+                    "Current": parsed.group("tx_value"),
+                    "High Warning": parsed.group("tx_h_warn"),
+                    "Low Warning": parsed.group("tx_l_warn"),
+                },
+            }
+        }
+
+        if current:
+            result["sfp"]["Current"] = {
+                "Current": current.group("current_value"),
+                "High Warning": current.group("current_h_warn"),
+                "Low Warning": current.group("current_l_warn"),
+            }
+
+        return result
+
+    @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
         data = self.send_command(
             "show running-config",
@@ -663,25 +773,3 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             before_catch=r"Building configuration\.\.\.",
         )
         return io.BytesIO(data.encode())
-
-
-class CiscoFactory(AbstractDeviceFactory):
-    @staticmethod
-    def support_devices() -> list[type[BaseDevice]]:
-        return [Cisco]
-
-    @staticmethod
-    def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and "cisco" in str(version_output).lower()
-
-    @classmethod
-    def get_device(
-        cls,
-        session,
-        ip: str,
-        snmp_community: str,
-        auth: DeviceAuthDict,
-        version_output: str = "",
-    ) -> BaseDevice:
-        model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
-        return Cisco(session, ip, auth, model=model, snmp_community=snmp_community)

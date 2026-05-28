@@ -63,7 +63,7 @@ ENV PATH=/app/venv/bin:$PATH \
     PYTHONUNBUFFERED=1
 
 COPY --chown=$user_id:$group_id . /app
-COPY --link --from=builder /app/venv/ /app/venv
+COPY --link --chown=$user_id:$group_id --from=builder /app/venv/ /app/venv
 
 RUN chmod +x run.sh
 
