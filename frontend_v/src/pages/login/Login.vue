@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 
 import { LoginUser } from "@/services/user";
 import { useStore } from "vuex";
 import getVerboseAxiosError from "@/errorFmt";
 import router from "@/router.ts";
 import { beginOIDCLogin, oidcState } from "@/oidc";
+import { normalizeAuthRedirectPath } from "@/services/auth/redirect";
 
 const store = useStore();
+const route = useRoute();
+const redirectPath = () => normalizeAuthRedirectPath(route.query.next);
 
 onMounted(() => {
-    if (store.state.auth.status.loggedIn) router.push({ name: "home" });
+    if (store.state.auth.status.loggedIn) router.push(redirectPath());
 });
 
 const user = ref(new LoginUser());
@@ -29,7 +33,7 @@ function handleLogin() {
                 userError.value = value.message;
             } else {
                 console.log("login success");
-                setTimeout(() => router.push({ name: "home" }));
+                setTimeout(() => router.push(redirectPath()));
             }
             processing.value = false;
         })
@@ -41,7 +45,7 @@ function handleLogin() {
 
 function handleOIDCLogin() {
     processing.value = true;
-    beginOIDCLogin("/").catch((reason) => {
+    beginOIDCLogin(redirectPath()).catch((reason) => {
         userError.value = reason instanceof Error ? reason.message : String(reason);
         processing.value = false;
     });

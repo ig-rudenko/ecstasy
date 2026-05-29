@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useStore } from "vuex";
 
+import { normalizeAuthRedirectPath } from "@/services/auth/redirect";
+
 const router = createRouter({
     history: createWebHistory(),
     routes: [
@@ -124,7 +126,12 @@ router.beforeEach((to) => {
     const store = useStore();
 
     if (authRequired && store.state && !store.state.auth.status.loggedIn) {
-        return "/account/login";
+        return {
+            path: "/account/login",
+            query: {
+                next: normalizeAuthRedirectPath(to.fullPath),
+            },
+        };
     }
 });
 
