@@ -14,6 +14,7 @@ from .exceptions import (
     TelnetConnectionError,
 )
 from .multifactory import DeviceMultiFactory
+from .session_spawner import SessionSpawner
 from .vendors.base.device import BaseDevice
 from .vendors.base.types import SimpleAuthObjectProtocol
 
@@ -65,7 +66,7 @@ class SSHSpawn:
         return base
 
     def get_session(self):
-        return pexpect.spawn(self.get_spawn_string(), timeout=15)
+        return SessionSpawner(self.get_spawn_string(), ip=self.ip, timeout=15)
 
 
 class DeviceRemoteConnector:
@@ -249,7 +250,7 @@ class DeviceRemoteConnector:
         session = None
         timeout = 20
         try:
-            session = pexpect.spawn(f"telnet {self.ip} {self.telnet_port}", timeout=timeout)
+            session = SessionSpawner(f"telnet {self.ip} {self.telnet_port}", ip=self.ip, timeout=timeout)
 
             status = self.__login_to_by_telnet(session, self.login, self.password, timeout)
 

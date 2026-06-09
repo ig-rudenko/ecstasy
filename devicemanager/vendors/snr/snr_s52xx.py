@@ -8,7 +8,6 @@ from devicemanager.vendors.base.device import (
     AbstractSearchDevice,
     BaseDevice,
 )
-from devicemanager.vendors.base.factory import AbstractDeviceFactory
 from devicemanager.vendors.base.helpers import normalize_cable_diag_status
 from devicemanager.vendors.base.types import (
     COOPER_TYPES,
@@ -28,9 +27,11 @@ from devicemanager.vendors.base.types import (
 from devicemanager.vendors.snr.vlan_parser import parse_vlan_output
 
 
-class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
+class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя SNR
+
+    - snr s52xx
     """
 
     prompt = r"\S+#$"
@@ -142,11 +143,14 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
         for line in interfaces:
             # Отфильтровываем интерфейсы VLAN.
             intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
+            print(line, intf_config)
             vlans_group: list[str] = re.findall(
                 r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
                 intf_config,
             )
-            result.append((line[0], line[1], line[2], vlans_group))  # noqa
+            result.append(
+                (line[0], line[1], line[2], [part.replace(";", ",") for part in vlans_group])  # noqa
+            )
 
         return result
 
@@ -159,7 +163,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
     def _get_interfaces_config(self) -> dict[str, str]:
         output = self.send_command("show running-config", expect_command=False)
         interfaces_config: dict[str, str] = {}
-        for line in re.findall(r"interface\s+\S+\d.+?!", output, flags=re.DOTALL):
+        for line in re.findall(r"interface\s+\S+\d.+?!(?=\r?\n)", output, flags=re.DOTALL):
             if interface_name := re.match(r"^interface\s+(\S+)", line):
                 interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
         return interfaces_config
@@ -500,7 +504,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
         """
 
         cpu_percent = re.findall(
-            r"Last 1 minute CPU usage\s+:\s+(\d+)%",
+            r"Last\s+1\s+minute\s+CPU\s+usage\s+:\s+(\d+)%",
             self.send_command("show system resources", expect_command=False),
             flags=re.IGNORECASE,
         )
@@ -522,7 +526,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
     def _get_temp(self) -> dict:
         output = self.send_command("show temperature", expect_command=False)
-        raw_value = self.find_or_empty(r"Temperature:\s+(\d+)\s+C", output)
+        raw_value = self.find_or_empty(r"Temperature:\s+(\d+)\s*C", output)
         if not raw_value.isdigit():
             return {}
 
@@ -553,7 +557,7 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
             result["status"] = normalize_cable_diag_status("Mismatch")
             return result
 
-        if "not support cable" in output:
+        if "not support cable" in output or "Invalid" in output:
             result["status"] = normalize_cable_diag_status("Unsupported")
 
             # Пробуем SFP вариант.
@@ -577,7 +581,6 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
 
     def _get_transceiver_diag(self, port: str) -> dict:
         output = self.send_command(f"show transceiver interface {port} detail", expect_command=False)
-        print(output)
         parsed = re.search(
             r"Temperature\S+\s+(?P<temp_value>\S+)\s+\S+\s+\S+\s+(?P<temp_high>\S+)\s+(?P<temp_low>\S+).+"
             r"Voltage\S+\s+(?P<voltage_value>\S+)\s+\S+\s+\S+\s+(?P<voltage_high>\S+)\s+(?P<voltage_low>\S+).+"
@@ -622,28 +625,3 @@ class SNRDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, Abstract
     def get_current_configuration(self) -> io.BytesIO:
         data = self.send_command("show running-config")
         return io.BytesIO(data.encode())
-
-
-class SNRFactory(AbstractDeviceFactory):
-    @staticmethod
-    def support_devices() -> list[type[BaseDevice]]:
-        return [SNRDevice]
-
-    @staticmethod
-    def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and "SNR" in version_output or "eNOS software" in version_output
-
-    @classmethod
-    def get_device(
-        cls,
-        session,
-        ip: str,
-        snmp_community: str,
-        auth: DeviceAuthDict,
-        version_output: str = "",
-    ) -> BaseDevice:
-        model = BaseDevice.find_or_empty(r"SNR-\S+", version_output)
-        dev = SNRDevice(session, ip, auth, model=model, snmp_community=snmp_community)
-        dev.serialno = dev.find_or_empty(r"Serial No.:\s+(\S+)", version_output)
-        dev.mac = dev.find_or_empty(r"Vlan MAC (\S+)", version_output)
-        return dev

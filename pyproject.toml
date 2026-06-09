@@ -1,6 +1,6 @@
 [project]
 name = "ecstasy"
-version = "20.0.2"
+version = "20.0.4"
 description = "Ecstasy - Equipment Control System To Assist You - программа для управления сетевым оборудованием."
 readme = "README.md"
 requires-python = ">=3.12"
