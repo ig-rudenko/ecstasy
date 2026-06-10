@@ -32,10 +32,12 @@ class CiscoFactory(AbstractDeviceFactory):
         model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
         mac = Cisco.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version_output)
         os_version = Cisco.find_or_empty(r"(Version \S+),.+Copyright", version_output, flags=re.DOTALL)
+        serial_no = Cisco.find_or_empty(r"System serial number\s*:\s*(\S+)", version_output)
 
         device = Cisco(session, ip, auth, model=model, snmp_community=snmp_community)
 
         device.mac = mac
         device.os_version = os_version
+        device.serialno = serial_no
 
         return device

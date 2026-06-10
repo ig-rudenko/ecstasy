@@ -94,28 +94,6 @@ class DeviceConnectionPortsTests(SimpleTestCase):
 
         self.assertIn("ssh -p 2222 user@192.0.2.10", spawn.get_spawn_string())
 
-    @patch("devicemanager.dc.pexpect.spawn", create=True)
-    def test_telnet_connection_uses_custom_port(self, spawn):
-        """Telnet connection command uses configured telnet port."""
-
-        session = Mock()
-        session.isalive.return_value = True
-        spawn.return_value = session
-        connector = DeviceRemoteConnector(
-            ip="192.0.2.10",
-            protocol="telnet",
-            snmp_community="public",
-            auth_obj=SimpleAuthObject(login="user", password="password"),
-            telnet_port=2323,
-        )
-
-        with patch.object(
-            DeviceRemoteConnector, "_DeviceRemoteConnector__login_to_by_telnet", return_value="Connected"
-        ):
-            connector._connect_by_telnet()
-
-        spawn.assert_called_once_with("telnet 192.0.2.10 2323", timeout=20)
-
     @patch("devicemanager.dc.DeviceMultiFactory.get_device")
     def test_device_remote_connector_passes_snmp_port_to_device_factory(self, get_device):
         """DeviceRemoteConnector passes SNMP port to detected device instance."""

@@ -67,7 +67,6 @@ class InterfacePatternResolver:
         """Create resolver from cached enabled rules or load rules from the database."""
         rules = cache.get(DeviceInterfacePatternRule.CACHE_KEY)
         if rules is None:
-            print("InterfacePatternResolver NO CACHE")
             rules = cls._load_rules()
             cache.set(DeviceInterfacePatternRule.CACHE_KEY, rules, timeout=None)
         return cls(rules)

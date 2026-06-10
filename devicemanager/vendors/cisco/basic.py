@@ -66,13 +66,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         snmp_community: str = "",
     ):
         """
-        ## При инициализации смотрим характеристики устройства:
-
-            # show version
-
-          - MAC
-          - серийный номер
-
         :param session: Это объект сеанса pexpect c установленной сессией оборудования
         :param ip: IP-адрес устройства, к которому вы подключаетесь
         :param auth: словарь, содержащий имя пользователя и пароль для устройства

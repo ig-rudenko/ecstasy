@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 
 from devicemanager.vendors.cisco import Cisco
 
+from ..multifactory import DeviceMultiFactory
 from ..vendors.base.types import ArpInfoResult
 from .base_factory_test import AbstractTestFactory
 
@@ -44,7 +45,7 @@ class CiscoPexpectFaker:
             # Для случая 'OK'
             self.expect_cmd = 1
 
-        if command == "show interfaces description":
+        if command == "show interface description":
             self.before = b"""
 Interface                      Status         Protocol Description
 Fa1                            down           down
@@ -74,7 +75,7 @@ Vl106                          up             up
 Internet  10.100.10.100             27   0000.aaaa.0000  ARPA   Vlan25
             """
 
-        elif "show interfaces GigabitEthernet " in command:
+        elif "show interface GigabitEthernet " in command:
             if command.endswith("/1"):
                 self.before = b"""
   Keepalive set (10 sec)
@@ -252,6 +253,11 @@ interface TenGigabitEthernet1/16
 
         elif command == "show version":
             self.before = b"""
+Cisco IOS Software, C3560 Software (C3560-ADVIPSERVICESK9-M), Version 12.2(46)SE, RELEASE SOFTWARE (fc2)
+Copyright (c) 1986-2008 by Cisco Systems, Inc.
+Compiled Thu 21-Aug-08 15:26 by nachen
+Image text-base: 0x00003000, data-base: 0x01A00000
+
 1536K bytes of flash-simulated non-volatile configuration memory.
 Base ethernet MAC Address       : F4:1F:C2:71:49:10
 Motherboard assembly number     : 21-15693-07
@@ -296,7 +302,13 @@ Total Mac Addresses for this criterion: 4
 
 class TestCiscoInit(SimpleTestCase):
     def test_initial_data(self):
-        cisco = Cisco(session=CiscoPexpectFaker(), ip="10.10.10.10", auth=fake_auth)
+        cisco = DeviceMultiFactory.get_device(
+            session=CiscoPexpectFaker(),
+            ip="10.10.10.10",
+            auth=fake_auth,
+            version_output="",
+            snmp_community="public",
+        )
 
         self.assertEqual(cisco.mac, "F4:1F:C2:71:49:10")
         self.assertEqual(cisco.serialno, "FOC6734Z6AH")
@@ -583,7 +595,7 @@ class TestCiscoInfo(SimpleTestCase):
 
         self.assertEqual(
             self.fake_session.sent_commands,
-            ["show interfaces GigabitEthernet 0/1"],
+            ["show interface GigabitEthernet 0/1"],
         )
 
     def test_invalid_get_port_info(self):
@@ -609,7 +621,7 @@ class TestCiscoInfo(SimpleTestCase):
             "SFP",  # 12
         ]
         for i in range(1, len(valid_result) + 1):
-            self.assertEqual(valid_result[i - 1], self.cisco.get_port_type(f"Gi0/{i}"))
+            self.assertEqual(valid_result[i - 1], self.cisco.get_port_type(f"Gi0/{i}"), f"Gi0/{i}")
 
 
 class TestCiscoFindAddress(SimpleTestCase):
