@@ -1,4 +1,4 @@
-import { app } from "@/appInstance";
+import {app} from "@/appInstance";
 
 const basicLifeTime = 3000;
 
@@ -34,7 +34,7 @@ export function successToast(title: string, body: string, lifeTime: number = bas
     });
 }
 
-export function errorToast(title: string, body: string, lifeTime: number = basicLifeTime): void {
+export function errorToast(title: string, body: string, lifeTime: number = basicLifeTime * 3): void {
     app.config.globalProperties.$toast.add({
         severity: "error",
         summary: title,

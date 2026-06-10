@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.check.models import Devices
 from apps.check.services.filters import filter_devices_qs_by_user
 from apps.gathering.models import MacAddress, Vlan, VlanPort
-from ecstasy_project.types.api import UserAuthenticatedAPIView
+from ecstasy_project.types.api import PageSizePageNumberPagination, UserAuthenticatedAPIView
 
 from ..tasks import (
     get_mac_gather_status,
@@ -42,7 +42,7 @@ class MacAddressListAPIView(MacAddressQuerysetMixin, UserAuthenticatedAPIView, L
     """Return collected MAC address rows for devices available to the user."""
 
     serializer_class = MacAddressSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = PageSizePageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = MacAddressFilter
 

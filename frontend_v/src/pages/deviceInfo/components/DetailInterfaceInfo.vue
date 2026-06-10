@@ -3,7 +3,7 @@
         :id="'interface-' + interface.name"
         :style="interfaceStyles"
         :class="interfaceClasses"
-        class="rounded-2xl border-b border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
+        class="rounded-2xl border-transparent transition-colors duration-100 hover:bg-sky-50/50 dark:hover:bg-sky-900/10"
     >
         <td class="rounded-l-2xl px-2">
             <div class="flex items-center gap-1 px-1">

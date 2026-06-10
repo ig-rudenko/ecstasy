@@ -37,9 +37,11 @@ class SSHSpawn:
 
     @staticmethod
     def _get_algorithm(output: str) -> str:
+        """Вернуть первый алгоритм из списка, предложенного SSH-сервером."""
+
         algorithms = re.findall(r"Their offer: (\S+)", output)
         if algorithms:
-            return algorithms[0]
+            return algorithms[0].split(",", maxsplit=1)[0]
         return ""
 
     def get_kex_algorithms(self, output: str):
@@ -171,6 +173,8 @@ class DeviceRemoteConnector:
     def _connect_by_ssh(self):
         connected = False
         session = None
+        negotiation_restarts = 0
+        max_negotiation_restarts = 3
 
         try:
             ssh_spawn = SSHSpawn(ip=self.ip, login=self.login, port=self.ssh_port)
@@ -190,6 +194,7 @@ class DeviceRemoteConnector:
                         r"Incorrect login",  # 8
                         pexpect.EOF,  # 9,
                         self.login_input_expect,  # 10
+                        r"HOST IDENTIFICATION HAS CHANGED",  # 11
                     ],
                     timeout=30,
                 )
@@ -198,18 +203,39 @@ class DeviceRemoteConnector:
                     # KexAlgorithms
                     session.expect(pexpect.EOF)
                     ssh_spawn.get_kex_algorithms(session.before.decode("utf-8", errors="ignore"))
+                    negotiation_restarts += 1
+                    self._validate_ssh_negotiation(
+                        ssh_spawn.kex_algorithms,
+                        "KexAlgorithms",
+                        negotiation_restarts,
+                        max_negotiation_restarts,
+                    )
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 1:
                     # HostKeyAlgorithms
                     session.expect(pexpect.EOF)
                     ssh_spawn.get_host_key_algorithms(session.before.decode("utf-8", errors="ignore"))
+                    negotiation_restarts += 1
+                    self._validate_ssh_negotiation(
+                        ssh_spawn.host_key_algorithms,
+                        "HostKeyAlgorithms",
+                        negotiation_restarts,
+                        max_negotiation_restarts,
+                    )
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 2:
                     # Cipher
                     session.expect(pexpect.EOF)
                     ssh_spawn.get_ciphers(session.before.decode("utf-8", errors="ignore"))
+                    negotiation_restarts += 1
+                    self._validate_ssh_negotiation(
+                        ssh_spawn.ciphers,
+                        "cipher",
+                        negotiation_restarts,
+                        max_negotiation_restarts,
+                    )
                     session = ssh_spawn.get_session()
 
                 elif expect_index == 3:
@@ -238,6 +264,9 @@ class DeviceRemoteConnector:
                     )
                 elif expect_index == 10:
                     session.send(self.login + "\r")  # Login
+                elif expect_index == 11:
+                    session.close()
+                    raise SSHConnectionError("SSH HOST IDENTIFICATION HAS CHANGED", ip=self.ip)
 
         except Exception as exc:
             if session is not None and session.isalive():
@@ -245,6 +274,26 @@ class DeviceRemoteConnector:
             raise exc
 
         return session
+
+    def _validate_ssh_negotiation(
+        self,
+        algorithm: str,
+        algorithm_type: str,
+        restart_count: int,
+        max_restarts: int,
+    ) -> None:
+        """Остановить SSH negotiation при нераспознанном ответе или цикле."""
+
+        if not algorithm:
+            raise SSHConnectionError(
+                f"Не удалось определить предложенный SSH {algorithm_type}",
+                ip=self.ip,
+            )
+        if restart_count > max_restarts:
+            raise SSHConnectionError(
+                "Превышено число попыток согласования SSH-алгоритмов",
+                ip=self.ip,
+            )
 
     def _connect_by_telnet(self):
         session = None

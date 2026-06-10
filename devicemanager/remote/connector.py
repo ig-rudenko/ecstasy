@@ -97,7 +97,7 @@ class RemoteDevice(
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
         self._pool_size = pool_size
 
-        self._timeout = 60 * 3
+        self._timeout = 60
         self._session = requests.Session()
         self._session.headers.update({"Token": os.getenv("DEVICE_CONNECTOR_TOKEN", "")})
 

@@ -4,6 +4,7 @@ from django.test import SimpleTestCase
 
 from devicemanager.dc import DeviceRemoteConnector, SimpleAuthObject, SSHSpawn
 from devicemanager.device_connector.factory import DeviceSessionFactory
+from devicemanager.exceptions import SSHConnectionError
 from devicemanager.remote.connector import RemoteDevice
 
 
@@ -93,6 +94,37 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         spawn = SSHSpawn(ip="192.0.2.10", login="user", port=2222)
 
         self.assertIn("ssh -p 2222 user@192.0.2.10", spawn.get_spawn_string())
+
+    def test_ssh_spawn_uses_first_offered_cipher(self):
+        """SSH spawn передает один шифр, а не несовместимый список."""
+
+        spawn = SSHSpawn(ip="192.0.2.10", login="user")
+
+        spawn.get_ciphers("Their offer: aes128-cbc,3des-cbc,des-cbc")
+
+        self.assertEqual(spawn.ciphers, "aes128-cbc")
+        self.assertIn("-c aes128-cbc", spawn.get_spawn_string())
+
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_stops_when_negotiation_offer_cannot_be_parsed(self, get_session):
+        """Нераспознанный ответ OpenSSH не запускает бесконечный цикл подключения."""
+
+        session = Mock()
+        session.expect.side_effect = [2, 0]
+        session.before = b" type 'aes128-cbc,3des-cbc,des-cbc'\r\n"
+        session.isalive.return_value = False
+        get_session.return_value = session
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+        )
+
+        with self.assertRaises(SSHConnectionError):
+            connector.get_session()
+
+        get_session.assert_called_once()
 
     @patch("devicemanager.dc.DeviceMultiFactory.get_device")
     def test_device_remote_connector_passes_snmp_port_to_device_factory(self, get_device):

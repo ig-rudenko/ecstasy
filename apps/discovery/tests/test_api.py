@@ -141,6 +141,29 @@ class DiscoveryAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    @patch("apps.discovery.api.views.discovery_run_task")
+    def test_create_run_rejects_overlapping_discovery(self, mock_discovery_task):
+        """Новый discovery run не запускается, пока предыдущий активен."""
+
+        profile = self._create_profile()
+        DiscoveryRun.objects.create(
+            profile=profile,
+            status=DiscoveryRun.Status.PROGRESS,
+        )
+
+        response = self.client.post(
+            reverse("discovery-api:runs-list"),
+            {
+                "profileId": profile.id,
+                "dryRun": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(DiscoveryRun.objects.count(), 1)
+        mock_discovery_task.delay.assert_not_called()
+
     @patch("apps.discovery.api.views.AsyncResult")
     def test_delete_run_removes_run_and_attempts(self, mock_async_result):
         """DELETE run удаляет запуск, попытки и отзывает активную Celery-задачу."""
@@ -232,11 +255,17 @@ class DiscoveryAPITests(APITestCase):
         self.assertFalse(DiscoveryCandidate.objects.filter(id__in=[first.id, second.id]).exists())
         self.assertTrue(DiscoveryCandidate.objects.filter(id=kept.id).exists())
 
+    @patch("apps.discovery.api.views.chain")
     @patch("apps.discovery.api.views.discovery_run_task")
-    def test_rescan_candidates_endpoint_starts_dry_run_for_candidate_ips(self, mock_discovery_task):
+    def test_rescan_candidates_endpoint_starts_dry_run_for_candidate_ips(
+        self,
+        mock_discovery_task,
+        mock_chain,
+    ):
         """Rescan endpoint запускает dry-run только по IP выбранных кандидатов."""
 
-        mock_discovery_task.delay.return_value.id = "rescan-task-id"
+        scan_task = mock_discovery_task.si.return_value
+        scan_task.freeze.return_value.id = "rescan-task-id"
         profile = self._create_profile()
         run = DiscoveryRun.objects.create(profile=profile, status=DiscoveryRun.Status.SUCCESS)
         candidate = DiscoveryCandidate.objects.create(ip="192.0.2.46", status=DiscoveryCandidate.Status.READY)
@@ -257,8 +286,11 @@ class DiscoveryAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         rescan_run = DiscoveryRun.objects.get(id=response.data["runs"][0]["id"])
         self.assertTrue(rescan_run.dry_run)
+        self.assertEqual(rescan_run.task_id, "rescan-task-id")
         self.assertEqual(response.data["skipped"], [])
-        mock_discovery_task.delay.assert_called_once_with(rescan_run.id, [candidate.ip])
+        mock_discovery_task.si.assert_called_once_with(rescan_run.id, [candidate.ip])
+        mock_chain.assert_called_once_with(scan_task)
+        mock_chain.return_value.apply_async.assert_called_once_with()
 
     @patch("apps.discovery.api.views.discovery_run_task")
     def test_rescan_candidates_endpoint_skips_candidate_without_profile_history(self, mock_discovery_task):

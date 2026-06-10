@@ -393,7 +393,7 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
         if len(mac_address) < 12:
             return []
 
-        formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
+        formatted_mac = "{}{}-{}{}-{}{}-{}{}-{}{}-{}{}".format(*mac_address.lower())
         return self._search_in_arp(address=formatted_mac)
 
     @BaseDevice.lock_session

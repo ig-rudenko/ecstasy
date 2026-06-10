@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from celery import chain
 from celery.result import AsyncResult
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -7,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.check.models import AuthGroup, DeviceGroup
+from ecstasy_project.error_handler import ResourceConflict
 
 from ..models import DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 from ..services.provisioning import accept_candidate
@@ -21,6 +23,18 @@ from .serializers import (
     DiscoveryRunCreateSerializer,
     DiscoveryRunSerializer,
 )
+
+ACTIVE_DISCOVERY_STATUSES = [
+    DiscoveryRun.Status.PENDING,
+    DiscoveryRun.Status.PROGRESS,
+]
+
+
+def ensure_discovery_is_not_running() -> None:
+    """Запретить новый запуск, пока выполняется другой discovery run."""
+
+    if DiscoveryRun.objects.filter(status__in=ACTIVE_DISCOVERY_STATUSES).exists():
+        raise ResourceConflict("Обнаружение оборудования уже выполняется")
 
 
 class DiscoveryProfileListCreateAPIView(generics.ListCreateAPIView):
@@ -79,6 +93,7 @@ class DiscoveryRunListCreateAPIView(generics.ListAPIView):
 
         serializer = DiscoveryRunCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        ensure_discovery_is_not_running()
         profile = serializer.validated_data["profile"]
         networks = serializer.validated_data.get("networks")
         run = DiscoveryRun.objects.create(
@@ -210,7 +225,11 @@ class DiscoveryCandidateRescanAPIView(APIView):
 
             candidates_by_profile[profile].append(candidate)
 
+        if candidates_by_profile:
+            ensure_discovery_is_not_running()
+
         runs = []
+        scan_tasks = []
         for profile, profile_candidates in candidates_by_profile.items():
             run = DiscoveryRun.objects.create(
                 profile=profile,
@@ -218,11 +237,19 @@ class DiscoveryCandidateRescanAPIView(APIView):
                 dry_run=True,
                 summary={"rescanCandidateIds": [candidate.id for candidate in profile_candidates]},
             )
-            task_result = discovery_run_task.delay(run.id, [candidate.ip for candidate in profile_candidates])
-            run.refresh_from_db()
+            scan_task = discovery_run_task.si(
+                run.id,
+                [candidate.ip for candidate in profile_candidates],
+            )
+            task_result = scan_task.freeze()
+            run.task_id = str(task_result.id)
+            run.save(update_fields=["task_id"])
+            scan_tasks.append(scan_task)
             run_data = DiscoveryRunSerializer(run).data
-            run_data["task_id"] = run.task_id or str(task_result.id)
             runs.append(run_data)
+
+        if scan_tasks:
+            chain(*scan_tasks).apply_async()
 
         return Response({"runs": runs, "skipped": skipped}, status=status.HTTP_202_ACCEPTED)
 

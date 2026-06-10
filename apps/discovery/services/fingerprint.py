@@ -243,10 +243,16 @@ class CliFingerprinter:
 class DeviceFingerprinter:
     """Комбинирует SNMP и CLI fingerprint для одного IP."""
 
-    def __init__(self, profile: DiscoveryProfile, include_cli: bool = True) -> None:
+    def __init__(
+        self,
+        profile: DiscoveryProfile,
+        auth_groups: Iterable[AuthGroup],
+        include_cli: bool = True,
+    ) -> None:
         """Сохранить профиль discovery."""
 
         self.profile = profile
+        self.auth_groups = list(auth_groups)
         self.include_cli = include_cli
 
     def collect(
@@ -280,7 +286,7 @@ class DeviceFingerprinter:
             ]
             cli_fingerprint, cli_attempts = CliFingerprinter(
                 protocols=open_protocols,
-                auth_groups=self.profile.auth_groups.all(),
+                auth_groups=self.auth_groups,
                 snmp_community=fingerprint.selected_snmp_community,
             ).collect(ip)
             attempts.extend(cli_attempts)

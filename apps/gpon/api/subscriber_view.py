@@ -12,6 +12,8 @@ from rest_framework.generics import (
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from ecstasy_project.types.api import PageSizePageNumberPagination
+
 from ..models import Customer, OLTState, SubscriberConnection
 from ..services.subscriber_data import get_subscribers_on_device_port
 from .filters import SubscriberConnectionFilter
@@ -83,6 +85,7 @@ class SubscriberConnectionDetailAPIView(RetrieveUpdateDestroyAPIView):
 class SubscriberConnectionListCreateAPIView(ListCreateAPIView):
     permission_classes = [SubscriberDataPermission]
     queryset = SubscriberConnection.objects.all().order_by("id")
+    pagination_class = PageSizePageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = SubscriberConnectionFilter
 

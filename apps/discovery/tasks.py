@@ -1,8 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Lock
+from dataclasses import dataclass
 
 from celery import shared_task
-from django.db import close_old_connections
 from django.utils import timezone
 
 from .models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryRun
@@ -12,15 +11,32 @@ from .services.provisioning import accept_candidate
 from .services.reconcile import upsert_candidate
 from .services.scanner import build_scan_hosts, preflight_address
 
+DISCOVERY_PROGRESS_UPDATE_INTERVAL = 10
+
+
+@dataclass(slots=True)
+class DiscoveryScanResult:
+    """Результат сетевого опроса одного IP без операций с БД."""
+
+    ip: str
+    attempts: list[DiscoveryAttemptData]
+    fingerprint: DeviceFingerprint | None = None
+    skipped: bool = False
+    error: str = ""
+
 
 @shared_task(bind=True, name="discovery_run_task")
 def discovery_run_task(self, run_id: int, networks_override: list[str] | None = None) -> dict:
     """Выполнить auto discovery run в фоне."""
 
-    run = DiscoveryRun.objects.select_related("profile").get(id=run_id)
+    run = (
+        DiscoveryRun.objects.select_related("profile", "profile__device_group")
+        .prefetch_related("profile__auth_groups")
+        .get(id=run_id)
+    )
     profile = run.profile
+    auth_groups = list(profile.auth_groups.all())
     counters = {"processed": 0, "found": 0, "created": 0, "skipped": 0, "errors": 0}
-    counters_lock = Lock()
 
     try:
         hosts = build_scan_hosts(networks_override or profile.networks, profile.exclude_ips)
@@ -44,50 +60,48 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
         return build_task_result(run)
 
     def register_progress() -> None:
-        """Обновить прогресс Celery и DiscoveryRun."""
+        """Периодически сохранить прогресс discovery одним DB-потоком."""
 
-        with counters_lock:
-            counters["processed"] += 1
-            DiscoveryRun.objects.filter(id=run.id).update(
-                processed=counters["processed"],
-                found=counters["found"],
-                created=counters["created"],
-                skipped=counters["skipped"],
-                errors=counters["errors"],
+        counters["processed"] += 1
+        if counters["processed"] < len(hosts) and counters["processed"] % DISCOVERY_PROGRESS_UPDATE_INTERVAL:
+            return
+
+        DiscoveryRun.objects.filter(id=run.id).update(
+            processed=counters["processed"],
+            found=counters["found"],
+            created=counters["created"],
+            skipped=counters["skipped"],
+            errors=counters["errors"],
+        )
+        if self.request.id:
+            self.update_state(
+                state=DiscoveryRun.Status.PROGRESS,
+                meta={
+                    "progress": int(counters["processed"] / max(len(hosts), 1) * 100),
+                    "processed": counters["processed"],
+                    "total": len(hosts),
+                },
             )
-            if self.request.id:
-                self.update_state(
-                    state=DiscoveryRun.Status.PROGRESS,
-                    meta={
-                        "progress": int(counters["processed"] / max(len(hosts), 1) * 100),
-                        "processed": counters["processed"],
-                        "total": len(hosts),
-                    },
-                )
 
-    def add_counter(name: str) -> None:
-        """Увеличить счетчик запуска discovery."""
+    def scan_ip(ip: str) -> DiscoveryScanResult:
+        """Выполнить только сетевой опрос IP без обращения к Django ORM."""
 
-        with counters_lock:
-            counters[name] += 1
-
-    def process_ip(ip: str) -> None:
-        """Обработать один IP адрес."""
-
-        close_old_connections()
-        candidate = None
+        attempts: list[DiscoveryAttemptData] = []
         try:
-            detected_protocols, attempts = preflight_address(
+            detected_protocols, preflight_attempts = preflight_address(
                 ip,
                 protocols=profile.try_protocols or ["ssh", "telnet"],
                 timeout=profile.timeout_seconds,
             )
+            attempts.extend(preflight_attempts)
             if not any(detected_protocols.values()):
-                save_attempts(run, None, attempts)
-                add_counter("skipped")
-                return
+                return DiscoveryScanResult(ip=ip, attempts=attempts, skipped=True)
 
-            fingerprint, fingerprint_attempts = DeviceFingerprinter(profile, include_cli=True).collect(
+            fingerprint, fingerprint_attempts = DeviceFingerprinter(
+                profile,
+                auth_groups=auth_groups,
+                include_cli=True,
+            ).collect(
                 ip,
                 detected_protocols,
             )
@@ -100,16 +114,47 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
                     raw={"preflight": detected_protocols},
                 )
 
-            candidate = upsert_candidate(fingerprint)
-            save_attempts(run, candidate, attempts)
-            add_counter("found")
+            return DiscoveryScanResult(ip=ip, attempts=attempts, fingerprint=fingerprint)
+        except Exception as exc:
+            attempts.append(
+                DiscoveryAttemptData(
+                    ip=ip,
+                    method=DiscoveryAttempt.Method.PING,
+                    status=DiscoveryAttempt.Status.FAILED,
+                    error=str(exc)[:500],
+                )
+            )
+            return DiscoveryScanResult(
+                ip=ip,
+                attempts=attempts,
+                error=str(exc)[:500],
+            )
+
+    def persist_result(result: DiscoveryScanResult) -> None:
+        """Последовательно сохранить результат сетевого опроса в БД."""
+
+        candidate = None
+        try:
+            if result.error:
+                counters["errors"] += 1
+                save_attempts(run, None, result.attempts)
+                return
+            if result.skipped:
+                counters["skipped"] += 1
+                save_attempts(run, None, result.attempts)
+                return
+            if result.fingerprint is None:
+                raise ValueError(f"Отсутствует fingerprint для {result.ip}")
+
+            candidate = upsert_candidate(result.fingerprint)
+            save_attempts(run, candidate, result.attempts)
+            counters["found"] += 1
 
             if should_auto_create(profile, candidate, run.dry_run):
                 accept_candidate(candidate, profile=profile, collect_interfaces=False)
-                add_counter("created")
-
+                counters["created"] += 1
         except Exception as exc:
-            add_counter("errors")
+            counters["errors"] += 1
             if candidate is not None:
                 candidate.last_error = str(exc)[:500]
                 candidate.save(update_fields=["last_error"])
@@ -118,7 +163,7 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
                 candidate,
                 [
                     DiscoveryAttemptData(
-                        ip=ip,
+                        ip=result.ip,
                         method=DiscoveryAttempt.Method.PING,
                         status=DiscoveryAttempt.Status.FAILED,
                         error=str(exc)[:500],
@@ -131,12 +176,12 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
     workers_count = max(1, min(profile.max_workers, len(hosts)))
     if workers_count == 1:
         for ip in hosts:
-            process_ip(ip)
+            persist_result(scan_ip(ip))
     else:
         with ThreadPoolExecutor(max_workers=workers_count) as executor:
-            futures = [executor.submit(process_ip, ip) for ip in hosts]
+            futures = [executor.submit(scan_ip, ip) for ip in hosts]
             for future in as_completed(futures):
-                future.result()
+                persist_result(future.result())
 
     run.refresh_from_db()
     run.status = DiscoveryRun.Status.SUCCESS

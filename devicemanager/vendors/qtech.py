@@ -1,9 +1,10 @@
+import io
 import re
 from functools import partial
 from time import sleep
 from typing import Literal
 
-from .base.device import BaseDevice
+from .base.device import AbstractCableTestDevice, AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import normalize_cable_diag_result, parse_by_template
 from .base.types import (
@@ -45,7 +46,7 @@ def validate_port(port: str) -> str | None:
 qtech_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
 
-class Qtech(BaseDevice):
+class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
     """
     # Для оборудования от производителя Q-Tech
 
@@ -68,6 +69,7 @@ class Qtech(BaseDevice):
         snmp_community: str = "",
     ):
         super().__init__(session, ip, auth, model, snmp_community)
+        self.send_command("terminal length 100")
         self.__cache_port_info: dict[str, str] = {}
 
     @BaseDevice.lock_session
@@ -254,7 +256,7 @@ class Qtech(BaseDevice):
         if len(mac_address) < 12:
             return []
 
-        formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
+        formatted_mac = "{}{}-{}{}-{}{}-{}{}-{}{}-{}{}".format(*mac_address.lower())
         return self._search_in_arp(address=formatted_mac)
 
     @BaseDevice.lock_session
@@ -633,6 +635,11 @@ class Qtech(BaseDevice):
                 },
             }
         }
+
+    @BaseDevice.lock_session
+    def get_current_configuration(self) -> io.BytesIO:
+        data = self.send_command("show running-config", timeout=30)
+        return io.BytesIO(data.encode("utf-8"))
 
 
 class QtechFactory(AbstractDeviceFactory):

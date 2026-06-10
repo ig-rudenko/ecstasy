@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from apps.check.api.views.paginators import End3PageNumberPagination
 from apps.check.models import Devices
 from devicemanager.device import Interfaces
+from ecstasy_project.types.api import PageSizePageNumberPagination
 
 from ..models import End3, HouseB, HouseOLTState, OLTState, TechCapability
 from .filters import End3Filer, TechDataFilter
@@ -72,6 +73,7 @@ class TechDataListCreateAPIView(ListCreateAPIView):
 
     queryset = HouseOLTState.objects.all()
     permission_classes = [TechDataPermission]
+    pagination_class = PageSizePageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = TechDataFilter
 

@@ -184,6 +184,27 @@ class VlanAPITests(APITestCase):
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(response.data["results"][0]["address"], "001122334455")
 
+    def test_mac_address_list_accepts_page_size(self):
+        """Paginate MAC address rows using the requested page size."""
+        self.client.force_authenticate(user=self.user)
+        MacAddress.objects.create(
+            device=self.device,
+            address="001122334466",
+            vlan=10,
+            type="D",
+            port="2",
+            desc="abon 2",
+        )
+
+        response = self.client.get(
+            reverse("gathering-api:mac-address-list"),
+            {"page_size": 1},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 1)
+
     def test_mac_address_detail_denies_forbidden_device(self):
         """Do not expose MAC address rows from unavailable device groups."""
         self.client.force_authenticate(user=self.user)
