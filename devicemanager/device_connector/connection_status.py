@@ -1,0 +1,269 @@
+import logging
+import os
+import subprocess
+import tempfile
+import threading
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from ipaddress import IPv4Address
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+HOST_KEY_CHANGED_MESSAGE = "HOST IDENTIFICATION HAS CHANGED"
+MAX_ERROR_MESSAGE_LENGTH = 2_000
+
+
+@dataclass(frozen=True)
+class SSHKeyInfo:
+    """Public information about one SSH host key."""
+
+    type: str
+    fingerprint: str
+
+    def as_dict(self) -> dict[str, str]:
+        """Return the frontend API representation."""
+
+        return {"type": self.type, "fingerprint": self.fingerprint}
+
+
+@dataclass(frozen=True)
+class PendingSSHHostKeyChange:
+    """A scanned SSH host key change waiting for staff confirmation."""
+
+    ip: str
+    port: int
+    detected_at: datetime
+    previous_keys: tuple[SSHKeyInfo, ...]
+    new_keys: tuple[SSHKeyInfo, ...]
+    new_key_lines: tuple[str, ...]
+
+    def as_dict(self) -> dict[str, object]:
+        """Return the safe public part of the pending change."""
+
+        return {
+            "detectedAt": self.detected_at.isoformat(),
+            "port": self.port,
+            "previousKeys": [key.as_dict() for key in self.previous_keys],
+            "newKeys": [key.as_dict() for key in self.new_keys],
+        }
+
+
+class SSHKnownHostsStore:
+    """Inspect and update the OpenSSH known_hosts file."""
+
+    def __init__(self, known_hosts_path: Path | None = None) -> None:
+        """Use the current service user's known_hosts file by default."""
+
+        self.known_hosts_path = known_hosts_path or Path.home() / ".ssh" / "known_hosts"
+
+    @staticmethod
+    def _host(ip: str, port: int) -> str:
+        """Return the OpenSSH known_hosts host identifier."""
+
+        valid_ip = IPv4Address(ip).compressed
+        if not 1 <= port <= 65_535:
+            raise ValueError("SSH port must be between 1 and 65535")
+        return valid_ip if port == 22 else f"[{valid_ip}]:{port}"
+
+    @staticmethod
+    def _key_lines(output: str) -> tuple[str, ...]:
+        """Extract unique host key lines from OpenSSH command output."""
+
+        lines = []
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            fields = line.split()
+            if len(fields) < 3 or not fields[1].startswith(("ssh-", "ecdsa-", "sk-")):
+                continue
+            if line not in lines:
+                lines.append(line)
+        return tuple(lines)
+
+    @staticmethod
+    def _fingerprint(key_line: str) -> SSHKeyInfo:
+        """Calculate an SHA256 fingerprint for one public host key line."""
+
+        result = subprocess.run(
+            ["ssh-keygen", "-lf", "-"],
+            input=key_line + "\n",
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+        fields = result.stdout.strip().split()
+        if len(fields) < 2:
+            raise ValueError("ssh-keygen returned an invalid fingerprint")
+        key_type = key_line.split()[1]
+        return SSHKeyInfo(type=key_type, fingerprint=fields[1])
+
+    def _find_previous_key_lines(self, host: str) -> tuple[str, ...]:
+        """Read current keys for a host, including hashed known_hosts entries."""
+
+        if not self.known_hosts_path.exists():
+            return ()
+
+        result = subprocess.run(
+            ["ssh-keygen", "-F", host, "-f", os.fspath(self.known_hosts_path)],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode not in (0, 1):
+            raise RuntimeError(result.stderr.strip() or "ssh-keygen failed to read known_hosts")
+        return self._key_lines(result.stdout)
+
+    @staticmethod
+    def _scan_new_key_lines(ip: str, port: int) -> tuple[str, ...]:
+        """Scan the currently presented SSH host keys without trusting them."""
+
+        result = subprocess.run(
+            ["ssh-keyscan", "-T", "5", "-p", str(port), ip],
+            capture_output=True,
+            text=True,
+            timeout=7,
+            check=False,
+        )
+        key_lines = SSHKnownHostsStore._key_lines(result.stdout)
+        if not key_lines:
+            raise RuntimeError(result.stderr.strip() or "ssh-keyscan did not return host keys")
+        return key_lines
+
+    def inspect(self, ip: str, port: int, detected_at: datetime) -> PendingSSHHostKeyChange:
+        """Read old keys and scan the replacement keys presented by the device."""
+
+        host = self._host(ip, port)
+        previous_key_lines = self._find_previous_key_lines(host)
+        new_key_lines = self._scan_new_key_lines(ip, port)
+        return PendingSSHHostKeyChange(
+            ip=IPv4Address(ip).compressed,
+            port=port,
+            detected_at=detected_at,
+            previous_keys=tuple(self._fingerprint(line) for line in previous_key_lines),
+            new_keys=tuple(self._fingerprint(line) for line in new_key_lines),
+            new_key_lines=new_key_lines,
+        )
+
+    def confirm(self, change: PendingSSHHostKeyChange) -> None:
+        """Replace known_hosts entries with the exact keys shown for confirmation."""
+
+        host = self._host(change.ip, change.port)
+        self.known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=".known_hosts.",
+            dir=self.known_hosts_path.parent,
+            text=True,
+        )
+        os.close(descriptor)
+        temporary_path = Path(temporary_name)
+        backup_path = Path(f"{temporary_name}.old")
+
+        try:
+            if self.known_hosts_path.exists():
+                temporary_path.write_bytes(self.known_hosts_path.read_bytes())
+            temporary_path.chmod(0o600)
+
+            remove_result = subprocess.run(
+                ["ssh-keygen", "-R", host, "-f", os.fspath(temporary_path)],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            if remove_result.returncode not in (0, 1):
+                raise RuntimeError(remove_result.stderr.strip() or "ssh-keygen failed to update known_hosts")
+
+            with temporary_path.open("a", encoding="utf-8", newline="\n") as known_hosts_file:
+                known_hosts_file.write("\n".join(change.new_key_lines) + "\n")
+                known_hosts_file.flush()
+                os.fsync(known_hosts_file.fileno())
+
+            os.replace(temporary_path, self.known_hosts_path)
+            self.known_hosts_path.chmod(0o600)
+        finally:
+            temporary_path.unlink(missing_ok=True)
+            backup_path.unlink(missing_ok=True)
+
+
+class ConnectionStatusStore:
+    """Thread-safe in-memory diagnostics for device connections."""
+
+    def __init__(
+        self,
+        host_key_store: SSHKnownHostsStore | None = None,
+        now: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Initialize the store and injectable system dependencies."""
+
+        self._host_key_store = host_key_store or SSHKnownHostsStore()
+        self._now = now or (lambda: datetime.now(UTC))
+        self._errors: dict[str, dict[str, str]] = {}
+        self._ssh_host_key_changes: dict[str, PendingSSHHostKeyChange] = {}
+        self._lock = threading.RLock()
+
+    def record_error(self, ip: str, error: Exception, ssh_port: int) -> None:
+        """Store the latest error and inspect a changed SSH host key."""
+
+        valid_ip = IPv4Address(ip).compressed
+        occurred_at = self._now()
+        error_status = {
+            "type": error.__class__.__name__,
+            "message": str(error)[:MAX_ERROR_MESSAGE_LENGTH],
+            "occurredAt": occurred_at.isoformat(),
+        }
+        pending_change = None
+        if HOST_KEY_CHANGED_MESSAGE in str(error):
+            try:
+                pending_change = self._host_key_store.inspect(valid_ip, ssh_port, occurred_at)
+            except Exception as inspect_error:  # noqa: BLE001 - diagnostics must not hide the original error.
+                logger.error(
+                    "Device: %s | Не удалось получить изменившийся SSH host key",
+                    valid_ip,
+                    exc_info=inspect_error,
+                )
+
+        with self._lock:
+            self._errors[valid_ip] = error_status
+            if pending_change is not None:
+                self._ssh_host_key_changes[valid_ip] = pending_change
+
+    def record_success(self, ip: str) -> None:
+        """Clear stale diagnostics after a successful device request."""
+
+        valid_ip = IPv4Address(ip).compressed
+        with self._lock:
+            self._errors.pop(valid_ip, None)
+            self._ssh_host_key_changes.pop(valid_ip, None)
+
+    def get_status(self, ip: str) -> dict[str, object]:
+        """Return the latest safe diagnostics for one device."""
+
+        valid_ip = IPv4Address(ip).compressed
+        with self._lock:
+            error = self._errors.get(valid_ip)
+            pending_change = self._ssh_host_key_changes.get(valid_ip)
+            return {
+                "error": dict(error) if error is not None else None,
+                "sshHostKeyChange": pending_change.as_dict() if pending_change is not None else None,
+            }
+
+    def confirm_ssh_host_key(self, ip: str) -> bool:
+        """Apply a pending key and clear diagnostics after successful confirmation."""
+
+        valid_ip = IPv4Address(ip).compressed
+        with self._lock:
+            pending_change = self._ssh_host_key_changes.get(valid_ip)
+            if pending_change is None:
+                return False
+            self._host_key_store.confirm(pending_change)
+            self._errors.pop(valid_ip, None)
+            self._ssh_host_key_changes.pop(valid_ip, None)
+            return True
+
+
+CONNECTION_STATUSES = ConnectionStatusStore()

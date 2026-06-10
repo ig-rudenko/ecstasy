@@ -2,7 +2,7 @@ import re
 
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -730,10 +730,11 @@ class DevicePoolManager(DeviceAPIView):
         Возвращает максимальное кол-во сессий в пуле подключений и список статусов работоспособности текущих пулов.
         """
         device = self.get_object()
+        connection_status = pool_controller.get_connection_status(device.ip)
         return Response(
             {
                 "connectionPoolSize": device.connection_pool_size,
-                "statuses": pool_controller.get_pool_status(device.ip),
+                **connection_status,
             }
         )
 
@@ -745,3 +746,29 @@ class DevicePoolManager(DeviceAPIView):
         if pool_controller.clear_pool(device.ip):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DeviceSSHHostKeyManager(DeviceAPIView):
+    """Confirm changed SSH host keys for devices available to a staff user."""
+
+    pagination_class = None
+
+    def post(self, request, *args, **kwargs):
+        """Confirm the pending SSH host key in device-connector."""
+
+        if not request.user.is_staff:
+            raise PermissionDenied("Подтверждение SSH ключа доступно только сотрудникам")
+
+        device = self.get_object()
+        confirmation_status = pool_controller.confirm_ssh_host_key(device.ip)
+        if confirmation_status == status.HTTP_204_NO_CONTENT:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if confirmation_status != status.HTTP_409_CONFLICT:
+            return Response(
+                {"detail": "DeviceConnector не смог обновить SSH ключ"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(
+            {"detail": "Нет ожидающего подтверждения SSH ключа"},
+            status=status.HTTP_409_CONFLICT,
+        )

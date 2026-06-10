@@ -55,6 +55,7 @@ RUN apk add --update --no-cache \
 
 RUN addgroup -g $group_id appgroup \
     && adduser -D -h /app -u $user_id app $group_id \
+    && mkdir /app/.ssh \
     && chown -R $user_id:$group_id /app;
 
 ENV PATH=/app/venv/bin:$PATH \

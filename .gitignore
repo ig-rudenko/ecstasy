@@ -30,6 +30,7 @@ mysql_data
 tmp
 map_layer_files
 db-backup
+ssh_data
 
 venv
 .env
