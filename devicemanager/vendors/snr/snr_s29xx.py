@@ -76,6 +76,9 @@ class SNRS29XX(SNRS52XX):
     def get_vlan_table(self) -> VlanTableType:
         vlan_output = self.send_command("show vlan")
 
+        def parse_ports(text: str) -> list[str]:
+            return re.findall(r"(\S+\d)", text)
+
         vlans: list[VlanInfo] = []
         current_vlan: None | VlanInfo = None
         for line in vlan_output.splitlines():
@@ -88,14 +91,14 @@ class SNRS29XX(SNRS52XX):
                 vlan: VlanInfo = {
                     "vlan_id": int(line_match.group("vid")),
                     "name": line_match.group("name").strip(),
-                    "ports": line_match.group("ports").split(),
+                    "ports": parse_ports(line_match.group("ports")),
                 }
                 current_vlan = vlan
                 vlans.append(vlan)
                 continue
 
             if current_vlan:
-                current_vlan["ports"].extend(re.findall(r"(\S+\d)", line))
+                current_vlan["ports"].extend(parse_ports(line))
                 continue
 
         return [(line["vlan_id"], line["ports"], line["name"]) for line in vlans]

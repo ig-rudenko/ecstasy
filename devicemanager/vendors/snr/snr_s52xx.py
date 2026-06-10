@@ -143,7 +143,6 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
         for line in interfaces:
             # Отфильтровываем интерфейсы VLAN.
             intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
-            print(line, intf_config)
             vlans_group: list[str] = re.findall(
                 r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
                 intf_config,

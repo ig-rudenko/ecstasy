@@ -5,8 +5,10 @@ from typing import Literal
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template
+from .base.helpers import normalize_cable_diag_result, parse_by_template
 from .base.types import (
+    ArpInfoResult,
+    CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
@@ -15,6 +17,7 @@ from .base.types import (
     MACTableType,
     MACType,
     PortInfoType,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port
 
@@ -48,10 +51,11 @@ class Qtech(BaseDevice):
 
     Проверено для:
      - QSW-8200
+     - QSW-6500
     """
 
     prompt = r"\S+#$"
-    space_prompt = "--More--"
+    space_prompt = r"\s*--More--\s*"
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "Q-Tech"
 
@@ -102,33 +106,75 @@ class Qtech(BaseDevice):
 
         Для начала получаем список всех интерфейсов через метод **get_interfaces()**
 
-        Затем для каждого интерфейса смотрим конфигурацию
+        Затем для каждого интерфейса смотрим конфигурацию и выбираем строчки,
+        в которых указаны VLAN:
 
-            # show running-config interface ethernet {port}
-
-        И выбираем строчки, в которых указаны VLAN:
-
-         - ```vlan {vid},{vid},...{vid}```
-         - ```vlan add {vid},{vid},...{vid}```
+         - ```access vlan {vid}```
+         - ```allowed vlan {vid},{vid},...{vid}```
+         - ```allowed vlan add {vid},{vid},...{vid}```
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
 
-        result = []
+        result: InterfaceVLANListType = []
+
         self.lock = False
-        interfaces = self.get_interfaces()
+        interfaces: InterfaceListType = self.get_interfaces()
         self.lock = True
 
+        interfaces_config: dict[str, str] = self._get_interfaces_config()
+
         for line in interfaces:
-            if not line[0].startswith("V"):
-                output = self.send_command(command=f"show running-config interface ethernet {line[0]}")
-                vlans_group = re.findall(r"vlan [ad ]*(\S*\d)", output)  # Строчки вланов
-                vlans = []
-                for v in vlans_group:
-                    vlans += v.split(";")
-                result.append((line[0], line[1], line[2], vlans))
+            # Отфильтровываем интерфейсы VLAN.
+            intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
+            vlans_group: list[str] = re.findall(
+                r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
+                intf_config,
+            )
+            result.append(
+                (line[0], line[1], line[2], [part.replace(";", ",") for part in vlans_group])  # noqa
+            )
 
         return result
+
+    def _get_interfaces_config(self) -> dict[str, str]:
+        output = self.send_command("show running-config", expect_command=False)
+        interfaces_config: dict[str, str] = {}
+        for line in re.findall(r"interface\s+\S+\d.+?!(?=\r?\n)", output, flags=re.DOTALL | re.IGNORECASE):
+            if interface_name := re.match(r"^interface\s+(\S+)", line, flags=re.IGNORECASE):
+                interfaces_config[self.normalize_interface_name(interface_name.group(1))] = line
+        return interfaces_config
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+
+        vlan_output = self.send_command("show vlan")
+
+        def parse_ports(text: str) -> list[str]:
+            return list(map(self.normalize_interface_name, re.findall(r"(\S+\d)", text)))
+
+        vlans: list[dict] = []
+        current_vlan: None | dict = None
+        for line in vlan_output.splitlines():
+            line_match = re.search(r"(?P<vid>\d+)\s+(?P<name>\S+)\s+\S+\s+\S+\s+(?P<ports>.+)", line)
+            if not line_match and not current_vlan:
+                continue
+
+            if line_match:
+                vlan = {
+                    "vlan_id": int(line_match.group("vid")),
+                    "name": line_match.group("name").strip(),
+                    "ports": parse_ports(line_match.group("ports")),
+                }
+                current_vlan = vlan
+                vlans.append(vlan)
+                continue
+
+            if current_vlan:
+                current_vlan["ports"].extend(parse_ports(line))
+                continue
+
+        return [(line["vlan_id"], line["ports"], line["name"]) for line in vlans]
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
@@ -153,11 +199,22 @@ class Qtech(BaseDevice):
         """
 
         output = self.send_command("show mac-address-table")
-        parsed: list[tuple[str, str, str]] = re.findall(
-            rf"(\d+)\s+({self.mac_format})\s+DYNAMIC\s+\S+\s+(\S+).*\n", output
+        parsed: list[tuple[str, str, str, str]] = re.findall(
+            rf"(?P<vid>\d+)\s+({self.mac_format})\s+(?P<type>DYNAMIC|SECUR\S+|STATIC)\s+\S+\s+(?P<port>\S+).*\n",
+            output,
         )
-        mac_type: MACType = "dynamic"
-        return [(int(vid), mac, mac_type, port) for vid, mac, port in parsed]
+
+        result: MACTableType = []
+        for vid, mac, type_, port in parsed:
+            mac_type: MACType = "dynamic"
+            if type_.startswith("SECUR"):
+                mac_type = "security"
+            elif type_ == "STATIC":
+                mac_type = "static"
+
+            result.append((int(vid), mac, mac_type, port))
+
+        return result
 
     @BaseDevice.lock_session
     @qtech_validate_and_format_port(if_invalid_return=[])
@@ -173,9 +230,58 @@ class Qtech(BaseDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        output = self.send_command(f"show mac-address-table interface ethernet {port}")
+        output = self.send_command(f"show mac-address-table interface ethernet {port}", expect_command=False)
         macs: list[tuple[str, str]] = re.findall(rf"(\d+)\s+({self.mac_format})", output)
         return [(int(vid), mac) for vid, mac in macs]
+
+    @BaseDevice.lock_session
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
+        """
+        ## Ищем MAC адрес в таблице ARP оборудования
+
+        **MAC необходимо передавать без разделительных символов**
+        он сам преобразуется к виду, требуемому для Cisco
+
+        Отправляем на оборудование команду:
+
+            # show arp | include {mac_address}
+
+        Возвращаем список всех IP-адресов, VLAN, связанных с этим MAC-адресом.
+
+        :param mac_address: MAC-адрес, который вы хотите найти
+        :return: ```[['IP', 'MAC', 'VLAN'], ...]```
+        """
+        if len(mac_address) < 12:
+            return []
+
+        formatted_mac = "{}{}{}{}.{}{}{}{}.{}{}{}{}".format(*mac_address.lower())
+        return self._search_in_arp(address=formatted_mac)
+
+    @BaseDevice.lock_session
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
+        """
+        ## Ищем IP адрес в таблице ARP оборудования
+
+        Отправляем на оборудование команду:
+
+            # show arp | include {ip_address}
+
+        Возвращаем список всех MAC-адресов, VLAN, связанных с этим IP-адресом.
+
+        :param ip_address: IP-адрес, который вы хотите найти
+        :return: ```['IP', 'MAC', 'VLAN']```
+        """
+        return self._search_in_arp(address=ip_address)
+
+    def _search_in_arp(self, address: str) -> list[ArpInfoResult]:
+        arp_output = self.send_command(f"show arp | include {address}", expect_command=False)
+        parsed: list[tuple[str, str, str, str]] = re.findall(
+            rf"(?P<ip>\d\S+\d)\s+({self.mac_format})\s+vlan(?P<vid>\d+)\s+(?P<port>\S+)",
+            arp_output,
+            flags=re.IGNORECASE,
+        )
+
+        return [ArpInfoResult(ip=ip, mac=mac, vlan=vlan, port=port) for ip, mac, vlan, port in parsed]
 
     @BaseDevice.lock_session
     @qtech_validate_and_format_port()
@@ -418,8 +524,115 @@ class Qtech(BaseDevice):
             "saved": self.save_config(),
         }
 
+    @BaseDevice.lock_session
     def get_device_info(self) -> dict:
-        return {}
+        return {
+            "temp": self._get_temp(),
+            "cpu": {
+                "util": self.__get_cpu_utilization(),
+            },
+            "flash": {
+                "util": self.__get_flash_utilization(),
+            },
+            "ram": {
+                "util": self.__get_ram_utilization(),
+            },
+        }
+
+    def __get_flash_utilization(self):
+        output = self.send_command("show flash | include %", expect_command=False)
+        if value_match := re.search(r"(\d+)\s*%", output):
+            return value_match.group(1)
+        return -1
+
+    def __get_ram_utilization(self):
+        output = self.send_command("show memory usage", expect_command=False)
+        if value_match := re.search(r"(\d+\.?\d*?)\s*%", output):
+            return float(value_match.group(1))
+        return -1
+
+    def __get_cpu_utilization(self) -> tuple:
+        """
+        ## Возвращает загрузку ЦП хоста
+        """
+
+        cpu_percent = re.findall(
+            r"(\d+)\s*%",
+            self.send_command("show cpu utilization | include minute", expect_command=False),
+            flags=re.IGNORECASE,
+        )
+
+        return tuple(map(int, cpu_percent))
+
+    def _get_temp(self) -> dict:
+        output = self.send_command("show temperature", expect_command=False)
+        parsed = re.search(r"Temperature:\s+(?P<value>\d+)C", output)
+        if not parsed:
+            return {}
+
+        current_temp = int(parsed.group("value"))
+        high_temp = 80
+        medium_temp = 60
+        low_temp = 0
+
+        status = "normal"
+        if current_temp >= high_temp:
+            status = "high"
+        elif current_temp >= medium_temp:
+            status = "medium"
+        elif current_temp <= low_temp:
+            status = "low"
+
+        return {"value": current_temp, "status": status}
+
+    @BaseDevice.lock_session
+    @qtech_validate_and_format_port(if_invalid_return={"len": "-", "status": "Unknown"})
+    def virtual_cable_test(self, port: str) -> CableDiagResult:
+        return normalize_cable_diag_result(self._get_transceiver_diag(port))
+
+    def _get_transceiver_diag(self, port: str) -> dict:
+        output = self.send_command(f"show transceiver interface ethernet {port} detail", expect_command=False)
+        parsed = re.search(
+            r"Temperature\S+\s+(?P<temp_value>-?\d+\.?\d+)\S*\s+\S+\s+\S+\s+?(?P<temp_high>\S+)\s+(?P<temp_low>\S+).+?"
+            r"Voltage\S+\s+(?P<volt_value>-?\d+\.?\d+)\S*\s+\S+\s+\S+\s+?(?P<volt_high>\S+)\s+(?P<volt_low>\S+).+?"
+            r"Current\S+\s+(?P<cur_value>-?\d+\.?\d+)\S*\s+\S+\s+\S+\s+?(?P<cur_high>\S+)\s+(?P<cur_low>\S+).+?"
+            r"RX Power\S+\s+(?P<rx_value>-?\d+\.?\d+)\S*\s+\S+\s+\S+\s+?(?P<rx_high>\S+)\s+(?P<rx_low>\S+).+?"
+            r"TX Power\S+\s+(?P<tx_value>-?\d+\.?\d+)\S*\s+\S+\s+\S+\s+?(?P<tx_high>\S+)\s+(?P<tx_low>\S+).+?",
+            output,
+            flags=re.DOTALL,
+        )
+        if not parsed:
+            return {"len": "-", "status": "not supported"}
+
+        return {
+            "sfp": {
+                "Temperature": {
+                    "Current": parsed.group("temp_value"),
+                    "High Warning": parsed.group("temp_high"),
+                    "Low Warning": parsed.group("temp_low"),
+                },
+                "Voltage": {
+                    "Current": parsed.group("volt_value"),
+                    "High Warning": parsed.group("volt_high"),
+                    "Low Warning": parsed.group("volt_low"),
+                },
+                "Current": {
+                    "Current": parsed.group("cur_value"),
+                    "High Warning": parsed.group("cur_high"),
+                    "Low Warning": parsed.group("cur_low"),
+                },
+                "RxPower": {
+                    "Current": parsed.group("rx_value"),
+                    "High Warning": parsed.group("rx_high"),
+                    "Low Warning": parsed.group("rx_low"),
+                },
+                "TxPower": {
+                    "Current": parsed.group("tx_value"),
+                    "High Warning": parsed.group("tx_high"),
+                    "Low Warning": parsed.group("tx_low"),
+                },
+            }
+        }
 
 
 class QtechFactory(AbstractDeviceFactory):
@@ -446,4 +659,5 @@ class QtechFactory(AbstractDeviceFactory):
             r"SoftWare (?:Package )?(Version \S+)", version_output, flags=re.IGNORECASE
         )
         device.serialno = device.find_or_empty(r"Serial No\.:\s*(\S+)", version_output)
+        device.mac = device.find_or_empty(r"(?i)VLAN\s+MAC\s+(\S+)", version_output)
         return device
