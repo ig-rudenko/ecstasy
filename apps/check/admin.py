@@ -518,8 +518,14 @@ class BrasAdmin(ModelAdmin):
 
     compressed_fields = True
     warn_unsaved_form = True
-    list_display = ["name", "ip"]
-    search_fields = ["name", "ip"]
+    list_display = ["device", "device_ip"]
+    list_select_related = ["device"]
+    search_fields = ["device__name", "device__ip"]
+
+    @admin.display(description="IP адрес", ordering="device__ip")
+    def device_ip(self, obj: Bras) -> str:
+        """Вернуть IP-адрес связанного оборудования."""
+        return obj.device.ip
 
 
 @admin.register(Profile)

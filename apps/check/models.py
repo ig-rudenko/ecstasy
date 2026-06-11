@@ -16,7 +16,6 @@ from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.text import slugify
 
-from devicemanager.dc import SimpleAuthObject
 from devicemanager.remote import remote_connector
 from devicemanager.remote.connector import RemoteDevice
 
@@ -446,45 +445,29 @@ class Bras(models.Model):
     Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
     """
 
-    name = models.CharField(max_length=10, null=False, verbose_name="Название")
-    ip = models.GenericIPAddressField(protocol="ipv4", null=False, unique=True, verbose_name="IP адрес")
-    login = models.CharField(max_length=64, null=False, verbose_name="Логин")
-    password = models.CharField(max_length=64, null=False, verbose_name="Пароль")
-    secret = models.CharField(
-        max_length=64,
-        null=True,
-        blank=True,
-        verbose_name="Пароль от привилегированного режима",
-    )
-    connection_pool_size = models.PositiveSmallIntegerField(
-        default=2,
-        verbose_name="Размер пула подключений",
-        help_text="Количество подключений к оборудованию, которые могут быть одновременно открыты",
+    device = models.ForeignKey(
+        Devices,
+        on_delete=models.PROTECT,
+        related_name="bras",
+        verbose_name="Оборудование",
     )
 
     def __str__(self):
-        return self.name
+        """Вернуть имя связанного оборудования."""
+        return self.device.name
 
     class Meta:
         db_table = "brases"
-        ordering = ("name",)
+        ordering = ("device__name",)
+        constraints = [
+            models.UniqueConstraint(fields=["device"], name="unique_bras_device"),
+        ]
         verbose_name = "BRAS"
         verbose_name_plural = "BRASes"
 
     def connect(self) -> RemoteDevice:
-        return remote_connector.create(
-            ip=self.ip,
-            cmd_protocol="telnet",
-            port_scan_protocol="telnet",
-            snmp_community="",
-            auth_obj=SimpleAuthObject(self.login, self.password, self.secret or ""),
-            make_session_global=True,
-            pool_size=self.connection_pool_size,
-        )
-
-    @staticmethod
-    def format_mac(mac_str: str) -> str:
-        return "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_str)
+        """Подключиться к BRAS через связанную запись оборудования."""
+        return self.device.connect()
 
 
 class Profile(models.Model):
