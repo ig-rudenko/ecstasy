@@ -504,7 +504,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     @BaseDevice.lock_session
     @validate_and_format_port_as_normal()
-    def __get_port_info(self, port: str):
+    def _get_port_info(self, port: str):
         """
         ## Возвращаем полную информацию о порте.
 
@@ -534,7 +534,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :return: "SFP", "COPPER", "COMBO-FIBER", "COMBO-COPPER" или "?"
         """
 
-        res = self.__get_port_info(port)
+        res = self._get_port_info(port)
 
         # Определение аппаратного типа порта.
         type_ = self.find_or_empty(r"Port hardware type is (\S+)|Port Mode: (.*)", res)
@@ -568,7 +568,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        errors = self.__get_port_info(port).split("\n")
+        errors = self._get_port_info(port).split("\n")
         return "\n".join([line.strip() for line in errors if "error" in line.lower() or "CRC" in line])
 
     @BaseDevice.lock_session
@@ -921,7 +921,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         return results
 
     def get_port_info(self, port: str) -> PortInfoType:
-        return {"type": "text", "data": self.__get_port_info(port)}
+        return {"type": "text", "data": self._get_port_info(port)}
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:

@@ -112,7 +112,7 @@ class EdgeCore(BaseDevice):
 
         # Распаковка кортежа `line` и добавление кортежа `vlans` в конец нового кортежа.
         # Создание списка кортежей.
-        return [
+        return [  # noqa
             (
                 line[0],  # Интерфейс
                 line[1],  # Статус
@@ -266,7 +266,7 @@ class EdgeCore(BaseDevice):
 
     @validate_and_format_port_as_normal()
     @BaseDevice.lock_session
-    def __get_port_info(self, port: str) -> str:
+    def _get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте.
 
@@ -295,7 +295,7 @@ class EdgeCore(BaseDevice):
 
         return {
             "type": "text",
-            "data": self.__get_port_info(port).strip(),
+            "data": self._get_port_info(port).strip(),
         }
 
     @validate_and_format_port_as_normal()
@@ -308,14 +308,14 @@ class EdgeCore(BaseDevice):
         """
         port_type_result = ""
         # Нахождение режима комбо.
-        combo_mode = self.find_or_empty("Combo forced mode: (.+)", self.__get_port_info(port))
+        combo_mode = self.find_or_empty("Combo forced mode: (.+)", self._get_port_info(port))
 
         if combo_mode != "None":
             # Код проверяет, является ли тип порта комбинированным портом.
             port_type_result += "COMBO-"
 
         # Получение типа порта.
-        port_type = self.find_or_empty(r"Port type: (\S+)", self.__get_port_info(port))
+        port_type = self.find_or_empty(r"Port type: (\S+)", self._get_port_info(port))
 
         if "SFP" in port_type:
             port_type_result += "SFP"

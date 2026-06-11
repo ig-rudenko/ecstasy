@@ -384,7 +384,7 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return self.SAVED_ERR
 
     @BaseDevice.lock_session
-    def __get_port_info(self, port: str) -> str:
+    def _get_port_info(self, port: str) -> str:
         """Общая информация о порте"""
 
         port_type = self.send_command(f"show interface ethernet{port}")
@@ -403,11 +403,11 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         :return: Информация о порте или ```"Неверный порт {port}"```
         """
 
-        self.__cache_port_info[port] = self.__get_port_info(port)
+        self.__cache_port_info[port] = self._get_port_info(port)
 
         return {
             "type": "html",
-            "data": "<br>".join(self.__get_port_info(port).split("\n")[:10]),
+            "data": "<br>".join(self._get_port_info(port).split("\n")[:10]),
         }
 
     @qtech_validate_and_format_port(if_invalid_return="?")
@@ -418,7 +418,7 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         :param port: Порт для проверки
         :return: "SFP", "COPPER" или "Неверный порт {port}"
         """
-        port_info = self.__cache_port_info.get(port) or self.__get_port_info(port)
+        port_info = self.__cache_port_info.get(port) or self._get_port_info(port)
 
         port_type = self.find_or_empty(r"Hardware is (\S+)", port_info)
         if "SFP" in port_type:
@@ -435,7 +435,7 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         """
 
         result = []
-        port_info = self.__cache_port_info.get(port) or self.__get_port_info(port)
+        port_info = self.__cache_port_info.get(port) or self._get_port_info(port)
 
         for line in port_info.split("\n"):
             if "error" in line:
@@ -531,29 +531,29 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return {
             "temp": self._get_temp(),
             "cpu": {
-                "util": self.__get_cpu_utilization(),
+                "util": self._get_cpu_utilization(),
             },
             "flash": {
-                "util": self.__get_flash_utilization(),
+                "util": self._get_flash_utilization(),
             },
             "ram": {
-                "util": self.__get_ram_utilization(),
+                "util": self._get_ram_utilization(),
             },
         }
 
-    def __get_flash_utilization(self):
+    def _get_flash_utilization(self):
         output = self.send_command("show flash | include %", expect_command=False)
         if value_match := re.search(r"(\d+)\s*%", output):
             return value_match.group(1)
         return -1
 
-    def __get_ram_utilization(self):
+    def _get_ram_utilization(self):
         output = self.send_command("show memory usage", expect_command=False)
         if value_match := re.search(r"(\d+\.?\d*?)\s*%", output):
             return float(value_match.group(1))
         return -1
 
-    def __get_cpu_utilization(self) -> tuple:
+    def _get_cpu_utilization(self) -> tuple:
         """
         ## Возвращает загрузку ЦП хоста
         """

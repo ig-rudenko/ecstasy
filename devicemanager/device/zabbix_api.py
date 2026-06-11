@@ -57,17 +57,17 @@ class ZabbixAPIConnector:
     @property
     def zabbix_url(self) -> str:
         """Возвращает URL текущего Zabbix."""
-        return self.__get_settings().url
+        return self._get_settings().url
 
     @property
     def zabbix_user(self) -> str:
         """Возвращает пользователя текущего Zabbix."""
-        return self.__get_settings().login
+        return self._get_settings().login
 
     @property
     def zabbix_password(self) -> str:
         """Возвращает пароль текущего Zabbix."""
-        return self.__get_settings().password
+        return self._get_settings().password
 
     @staticmethod
     def get_session() -> Session:
@@ -79,7 +79,7 @@ class ZabbixAPIConnector:
 
     def connect(self):
         """Возвращает контекстный менеджер с подключением к Zabbix API."""
-        current_settings = self.__get_settings()
+        current_settings = self._get_settings()
         if self.__connection_expired():
             self.close()
 
@@ -119,7 +119,7 @@ class ZabbixAPIConnector:
         if self.__connection_expired():
             self.close(exc_type, exc_val, exc_tb)
 
-    def __get_settings(self) -> ZabbixConnectionSettings:
+    def _get_settings(self) -> ZabbixConnectionSettings:
         """Возвращает текущие настройки, при необходимости загружая их из источника."""
         if not self.__use_db_settings:
             return self.__settings

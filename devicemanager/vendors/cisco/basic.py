@@ -557,11 +557,11 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
     def get_device_info(self) -> dict:
         data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
         for key, value in data.items():
-            value["util"] = getattr(self, f"__get_{key}_utilization")()
+            value["util"] = getattr(self, f"_get_{key}_utilization")()
         data["temp"] = self._get_temp()
         return data
 
-    def __get_cpu_utilization(self) -> tuple:
+    def _get_cpu_utilization(self) -> tuple:
         """
         ## Возвращает загрузку ЦП хоста
         """
@@ -574,7 +574,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         return tuple(map(int, cpu_percent))
 
-    def __get_flash_utilization(self) -> int:
+    def _get_flash_utilization(self) -> int:
         """
         ## Возвращает использование флэш-памяти устройства
         """
@@ -587,7 +587,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
 
-    def __get_ram_utilization(self) -> int:
+    def _get_ram_utilization(self) -> int:
         """
         ## Возвращает использование DRAM в процентах
         """
