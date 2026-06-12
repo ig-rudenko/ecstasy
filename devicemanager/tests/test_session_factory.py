@@ -58,6 +58,22 @@ class DeviceSessionFactoryTests(SimpleTestCase):
 
         self.assertIs(result, connection)
 
+    def test_pool_connections_include_activity_and_protocol(self):
+        """Pool diagnostics expose actual protocol stored on every connection."""
+
+        connection = Mock(connection_protocol="ssh", lock=False)
+        connection.session.isalive.return_value = True
+        self.sessions.add_connections_to_pool(
+            "192.0.2.10",
+            pool_size=1,
+            connections=[connection],
+        )
+
+        self.assertEqual(
+            self.sessions.get_pool_connections("192.0.2.10"),
+            [{"active": True, "protocol": "ssh"}],
+        )
+
     @patch("devicemanager.device_connector.factory.DeviceRemoteConnector.get_session")
     def test_failed_creation_removes_pending_pool(self, get_session):
         """A failed creation does not leave a permanently pending pool."""

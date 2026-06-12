@@ -4,13 +4,10 @@ Admin configuration for platform settings models.
 
 from django import forms
 from django.contrib import admin
-from django_celery_beat.admin import (
-    ClockedScheduleAdmin,
-    CrontabScheduleAdmin,
-    IntervalScheduleAdmin,
-    PeriodicTaskAdmin,
-    SolarScheduleAdmin,
-)
+from django_celery_beat.admin import ClockedScheduleAdmin as BaseClockedScheduleAdmin
+from django_celery_beat.admin import CrontabScheduleAdmin as BaseCrontabScheduleAdmin
+from django_celery_beat.admin import PeriodicTaskAdmin as BasePeriodicTaskAdmin
+from django_celery_beat.admin import PeriodicTaskForm, TaskSelectWidget
 from django_celery_beat.models import (
     ClockedSchedule,
     CrontabSchedule,
@@ -20,11 +17,12 @@ from django_celery_beat.models import (
 )
 from requests import RequestException
 from unfold.admin import ModelAdmin
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 
 from apps.app_settings.models import (
     AccessRingSettings,
     LogsElasticStackSettings,
-    VlanTracerouteConfig,
+    TracerouteConfig,
     ZabbixConfig,
 )
 from devicemanager.device.zabbix_api import ZabbixAPIConnector
@@ -63,16 +61,25 @@ class ZabbixConfigAdmin(ModelAdmin):
             return str(exc)
 
 
-@admin.register(VlanTracerouteConfig)
+@admin.register(TracerouteConfig)
 class VlanTracerouteConfigAdmin(ModelAdmin):
     """Admin for VLAN traceroute settings."""
 
     compressed_fields = True
     warn_unsaved_form = True
-    list_display = ["find_device_pattern", "vlan_start", "vlan_start_regex", "ip_pattern", "cache_timeout"]
+    list_display = [
+        "find_device_pattern",
+        "start_device",
+        "start_device_regex",
+        "device_ip_pattern",
+        "cache_timeout",
+    ]
     fieldsets = (
-        ("Старт", {"classes": ("tab",), "fields": ("vlan_start", "vlan_start_regex")}),
-        ("Поиск", {"classes": ("tab",), "fields": ("find_device_pattern", "ip_pattern")}),
+        (
+            "Старт",
+            {"classes": ("tab",), "fields": ("start_device", "start_device_regex", "device_ip_pattern")},
+        ),
+        ("Поиск", {"classes": ("tab",), "fields": ("find_device_pattern",)}),
         ("Кеш", {"classes": ("tab",), "fields": ("cache_timeout",)}),
     )
 
@@ -108,32 +115,43 @@ class AccessRingSettingsAdmin(ModelAdmin):
 
 
 admin.site.unregister(PeriodicTask)
-admin.site.unregister(ClockedSchedule)
+admin.site.unregister(IntervalSchedule)
 admin.site.unregister(CrontabSchedule)
 admin.site.unregister(SolarSchedule)
-admin.site.unregister(IntervalSchedule)
+admin.site.unregister(ClockedSchedule)
 
 
-@admin.register(PeriodicTask)
-class UnfoldPeriodicTaskAdmin(PeriodicTaskAdmin, ModelAdmin):
+class UnfoldTaskSelectWidget(UnfoldAdminSelectWidget, TaskSelectWidget):
     pass
 
 
-@admin.register(ClockedSchedule)
-class UnfoldClockedScheduleAdmin(ClockedScheduleAdmin, ModelAdmin):
+class UnfoldPeriodicTaskForm(PeriodicTaskForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["task"].widget = UnfoldAdminTextInputWidget()
+        self.fields["regtask"].widget = UnfoldTaskSelectWidget()
+
+
+@admin.register(PeriodicTask)
+class PeriodicTaskAdmin(BasePeriodicTaskAdmin, ModelAdmin):
+    form = UnfoldPeriodicTaskForm
+
+
+@admin.register(IntervalSchedule)
+class IntervalScheduleAdmin(ModelAdmin):
     pass
 
 
 @admin.register(CrontabSchedule)
-class UnfoldCrontabScheduleAdmin(CrontabScheduleAdmin, ModelAdmin):
+class CrontabScheduleAdmin(BaseCrontabScheduleAdmin, ModelAdmin):
     pass
 
 
 @admin.register(SolarSchedule)
-class UnfoldSolarScheduleAdmin(SolarScheduleAdmin, ModelAdmin):
+class SolarScheduleAdmin(ModelAdmin):
     pass
 
 
-@admin.register(IntervalSchedule)
-class UnfoldIntervalScheduleAdmin(IntervalScheduleAdmin, ModelAdmin):
+@admin.register(ClockedSchedule)
+class ClockedScheduleAdmin(BaseClockedScheduleAdmin, ModelAdmin):
     pass

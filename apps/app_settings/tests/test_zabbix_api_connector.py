@@ -155,6 +155,41 @@ class ZabbixAPIConnectorTestCase(SimpleTestCase):
 
         connection.__exit__.assert_called_once_with(None, None, None)
 
+    def test_settings_reload_ignores_connection_close_error(self):
+        """Ошибка logout старой сессии не мешает применить новые настройки."""
+        configs = [
+            SimpleNamespace(url="https://zabbix-1.example", login="admin", password="secret"),
+            SimpleNamespace(url="https://zabbix-2.example", login="admin", password="secret"),
+        ]
+        versions = [build_zabbix_config_version(config) for config in configs]
+        version_cache = DictCache()
+        connector = ZabbixAPIConnector(version_cache=version_cache)
+
+        with (
+            patch.object(
+                connector,
+                "_ZabbixAPIConnector__load_settings_from_db",
+                side_effect=[
+                    (ZabbixConnectionSettings.from_config(configs[0]), versions[0]),
+                    (ZabbixConnectionSettings.from_config(configs[1]), versions[1]),
+                ],
+            ),
+            patch("devicemanager.device.zabbix_api.ZabbixAPI") as zabbix_api_class,
+        ):
+            first_connection = MagicMock()
+            first_connection.__exit__.side_effect = RequestException("Zabbix unavailable")
+            second_connection = MagicMock()
+            zabbix_api_class.side_effect = [first_connection, second_connection]
+
+            connector.connect()
+            version_cache.set(ZABBIX_CONFIG_VERSION_CACHE_KEY, versions[1])
+
+            self.assertEqual(connector.zabbix_url, "https://zabbix-2.example")
+            connector.connect()
+
+        first_connection.__exit__.assert_called_once_with(None, None, None)
+        second_connection.login.assert_called_once_with(user="admin", password="secret")
+
 
 class ZabbixConfigCacheVersionTestCase(TestCase):
     """Проверяет обновление cache-версии при изменении модели ZabbixConfig."""

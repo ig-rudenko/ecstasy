@@ -143,8 +143,14 @@ def delete_connection_pool(ip: str):
         resp.status_code = 204
         return resp
 
-    statuses = DEVICE_SESSIONS.get_pool_status(valid_ip)
-    return jsonify({"statuses": statuses, **CONNECTION_STATUSES.get_status(valid_ip)})
+    connections = DEVICE_SESSIONS.get_pool_connections(valid_ip)
+    return jsonify(
+        {
+            "statuses": [connection["active"] for connection in connections],
+            "connections": connections,
+            **CONNECTION_STATUSES.get_status(valid_ip),
+        }
+    )
 
 
 @app.post("/ssh-host-key/<ip>")

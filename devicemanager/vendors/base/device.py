@@ -177,6 +177,7 @@ class BaseDevice(AbstractDevice, ABC):
         self.os_version: str = ""
         self.snmp_community = snmp_community
         self.snmp_port = snmp_port
+        self.connection_protocol = ""
         self.lock = False
 
     def get_system_info(self) -> SystemInfo:

@@ -44,11 +44,14 @@ class DeviceConnectorAPITests(SimpleTestCase):
         record_error.assert_called_once_with("192.0.2.10", error, ssh_port=2222)
 
     @patch("device_connector.CONNECTION_STATUSES.get_status")
-    @patch("device_connector.DEVICE_SESSIONS.get_pool_status")
-    def test_pool_endpoint_returns_connection_diagnostics(self, get_pool_status, get_status):
-        """Pool status includes the latest error and SSH key change."""
+    @patch("device_connector.DEVICE_SESSIONS.get_pool_connections")
+    def test_pool_endpoint_returns_connection_diagnostics(self, get_pool_connections, get_status):
+        """Pool status includes connection protocols and the latest diagnostics."""
 
-        get_pool_status.return_value = [True]
+        get_pool_connections.return_value = [
+            {"active": True, "protocol": "ssh"},
+            {"active": False, "protocol": "telnet"},
+        ]
         get_status.return_value = {
             "error": {"type": "SSHConnectionError", "message": "error", "occurredAt": "now"},
             "sshHostKeyChange": {"port": 22},
@@ -57,7 +60,14 @@ class DeviceConnectorAPITests(SimpleTestCase):
         response = self.client.get("/pool/192.0.2.10", headers=self.headers)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["statuses"], [True])
+        self.assertEqual(response.json["statuses"], [True, False])
+        self.assertEqual(
+            response.json["connections"],
+            [
+                {"active": True, "protocol": "ssh"},
+                {"active": False, "protocol": "telnet"},
+            ],
+        )
         self.assertEqual(response.json["error"]["type"], "SSHConnectionError")
         self.assertEqual(response.json["sshHostKeyChange"]["port"], 22)
 

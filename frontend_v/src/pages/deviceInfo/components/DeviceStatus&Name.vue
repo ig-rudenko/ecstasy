@@ -124,6 +124,16 @@
                 <div>Лимит одновременных подключений</div>
                 <Badge class="font-mono" :value="poolStatus.connectionPoolSize" />
             </div>
+            <div class="mb-3 grid gap-2 rounded-xl bg-gray-50 p-3 dark:bg-white/5">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Поиск интерфейсов</span>
+                    <Badge class="font-mono uppercase" severity="secondary" :value="poolStatus.portScanProtocol" />
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Command</span>
+                    <Badge class="font-mono uppercase" severity="secondary" :value="poolStatus.commandProtocol" />
+                </div>
+            </div>
             <div
                 v-if="poolStatus.error"
                 class="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
@@ -193,7 +203,7 @@
                     Подтверждение нового ключа доступно только сотрудникам.
                 </div>
             </div>
-            <template v-if="poolStatus.statuses.length">
+            <template v-if="poolStatus.connections.length">
                 <div class="pb-3">
                     Переподключиться
                     <Button
@@ -208,15 +218,26 @@
                     />
                 </div>
                 <div class="flex gap-2 flex-col">
-                    <div v-for="(isActive, index) in poolStatus.statuses" :key="index" class="flex gap-2 items-center">
-                        <span v-if="isActive" class="relative flex size-3">
+                    <div
+                        v-for="(connection, index) in poolStatus.connections"
+                        :key="index"
+                        class="flex items-center gap-2"
+                    >
+                        <span v-if="connection.active" class="relative flex size-3">
                             <span
                                 class="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75"
                             ></span>
                             <span class="relative inline-flex size-3 rounded-full bg-teal-500"></span>
                         </span>
                         <span v-else class="relative inline-flex size-3 rounded-full bg-red-500"></span>
-                        Подключение {{ index + 1 }} {{ isActive ? "активно" : "неактивно" }}
+                        <span class="flex-1">
+                            Подключение {{ index + 1 }} {{ connection.active ? "активно" : "неактивно" }}
+                        </span>
+                        <Badge
+                            class="font-mono uppercase"
+                            severity="secondary"
+                            :value="connection.protocol || 'неизвестен'"
+                        />
                     </div>
                 </div>
             </template>
@@ -259,6 +280,12 @@ interface SSHHostKeyChange {
 interface PoolStatus {
     connectionPoolSize: number;
     statuses: boolean[];
+    connections: {
+        active: boolean;
+        protocol: string | null;
+    }[];
+    portScanProtocol: string;
+    commandProtocol: string;
     error: ConnectionError | null;
     sshHostKeyChange: SSHHostKeyChange | null;
 }

@@ -131,7 +131,7 @@
             <div
                 class="rounded-3xl border flex justify-center border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-2 sm:p-4 overflow-hidden"
             >
-                <div v-if="interfaces.length && generalInfo" class="overflow-x-auto">
+                <div v-if="interfaces.length" class="overflow-x-auto">
                     <table class="min-w-full">
                         <thead>
                             <tr class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -154,11 +154,11 @@
                             <template v-for="_interface in interfaces" :key="_interface.name">
                                 <DetailInterfaceInfo
                                     @change-device="(dev) => init(dev)"
-                                    :device-name="generalInfo.deviceName"
+                                    :device-name="generalInfo ? generalInfo.deviceName : deviceName"
                                     :dynamic-opacity="dynamicOpacity"
                                     :interface="_interface"
                                     :show-vlans="withVlans"
-                                    :permission-level="generalInfo.permission"
+                                    :permission-level="generalInfo ? generalInfo.permission : 100"
                                 />
                             </template>
                         </tbody>
@@ -438,9 +438,9 @@ export default defineComponent({
             this.deviceName = deviceName;
             document.title = this.deviceName;
 
+            this.initializeInterfaces();
             this.getInterfacesWorkload();
             this.getInfo();
-            this.initializeInterfaces();
         },
 
         clearTimers() {
@@ -576,7 +576,9 @@ export default defineComponent({
                 url += "vlans=0";
             }
             if (resolvedCurrentStatus) {
-                url += "&current_status=1";
+                url += "&current_status=1&check_status=1";
+            } else {
+                url += "&check_status=0";
             }
 
             const currentDeviceName = this.deviceName;
@@ -593,8 +595,9 @@ export default defineComponent({
                 this.collected = new Date(resp.data.collected);
                 this.staleTick = 0;
                 this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
-            } catch (error: any) {}
-            this._getting_interfaces = false;
+            } finally {
+                this._getting_interfaces = false;
+            }
         },
 
         async toggleInterfacesWithVlans() {

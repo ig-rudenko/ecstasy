@@ -58,12 +58,16 @@ class PoolController:
         if resp.status_code != 200:
             return {
                 "statuses": [],
+                "connections": [],
                 "error": None,
                 "sshHostKeyChange": None,
             }
         data = resp.json()
+        statuses = data.get("statuses", [])
         return {
-            "statuses": data.get("statuses", []),
+            "statuses": statuses,
+            "connections": data.get("connections")
+            or [{"active": active, "protocol": None} for active in statuses],
             "error": data.get("error"),
             "sshHostKeyChange": data.get("sshHostKeyChange"),
         }

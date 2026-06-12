@@ -3,11 +3,19 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import TypedDict
 
 from devicemanager import DeviceException
 from devicemanager.vendors import BaseDevice
 
 logger = logging.Logger(__file__)
+
+
+class PoolConnectionStatus(TypedDict):
+    """Status and protocol of one device connection."""
+
+    active: bool
+    protocol: str
 
 
 @dataclass
@@ -305,15 +313,27 @@ class SessionController:
         ).start()
 
     def get_pool_status(self, ip: str) -> list[bool]:
+        """Return compatibility list containing only connection activity."""
+
+        return [connection["active"] for connection in self.get_pool_connections(ip)]
+
+    def get_pool_connections(self, ip: str) -> list[PoolConnectionStatus]:
+        """Return activity and actual protocol for every pooled connection."""
+
         with self._lock:
             pool = self._sessions.get(ip)
         if pool is None:
             return []
 
-        statuses = []
+        connections: list[PoolConnectionStatus] = []
         for conn in pool:  # type: GlobalSession
-            statuses.append(conn.alive)
-        return statuses
+            connections.append(
+                {
+                    "active": conn.alive,
+                    "protocol": getattr(conn.connection, "connection_protocol", ""),
+                }
+            )
+        return connections
 
 
 DEVICE_SESSIONS = SessionController()

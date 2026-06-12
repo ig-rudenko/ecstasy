@@ -5,7 +5,7 @@ from typing import Any, TypedDict
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.utils import timezone
 
-from apps.app_settings.models import VlanTracerouteConfig
+from apps.app_settings.models import TracerouteConfig
 from apps.net_tools.models import DescNameFormat, VlanName
 from apps.net_tools.services.network import build_traceroute_options
 
@@ -26,7 +26,7 @@ class MacTraceroute:
     def __init__(self) -> None:
         self.desc_name_list: list[DescNameFormat] = list(DescNameFormat.objects.all())
         # Регулярное выражение, используемое для поиска следующего устройства в описании порта.
-        self.find_device_pattern = VlanTracerouteConfig.load().find_device_pattern
+        self.find_device_pattern = TracerouteConfig.load().find_device_pattern
 
         self._reformatting_cache: dict[str, str] = {}
 

@@ -734,6 +734,8 @@ class DevicePoolManager(DeviceAPIView):
         return Response(
             {
                 "connectionPoolSize": device.connection_pool_size,
+                "portScanProtocol": device.port_scan_protocol,
+                "commandProtocol": device.cmd_protocol,
                 **connection_status,
             }
         )

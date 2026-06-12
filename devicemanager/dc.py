@@ -158,7 +158,7 @@ class DeviceRemoteConnector:
         else:
             self.session = self._connect_by_telnet()
 
-        return DeviceMultiFactory.get_device(
+        device = DeviceMultiFactory.get_device(
             self.session,
             ip=self.ip,
             auth={
@@ -169,6 +169,8 @@ class DeviceRemoteConnector:
             snmp_community=self.snmp_community,
             snmp_port=self.snmp_port,
         )
+        device.connection_protocol = self.protocol
+        return device
 
     def _connect_by_ssh(self):
         connected = False

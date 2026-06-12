@@ -82,7 +82,7 @@ class ZabbixAPIConnector:
         current_settings = self._get_settings()
         if self.__connection_expired():
             self.close()
-
+        print(f"Zabbix current_settings.url: {current_settings.url!r}")
         if self._zabbix_connection is None:
             self._zabbix_connection = ZabbixAPI(
                 server=current_settings.url,
@@ -101,12 +101,16 @@ class ZabbixAPIConnector:
 
     def close(self, exc_type=None, exc_val=None, exc_tb=None):
         """Закрывает текущее подключение к Zabbix API."""
-        if self._zabbix_connection is not None:
-            exit_method = getattr(self._zabbix_connection, "__exit__", None)
-            if exit_method:
-                exit_method(exc_type, exc_val, exc_tb)
-        self._zabbix_connection = None
-        self.__session_created = None
+        try:
+            if self._zabbix_connection is not None:
+                exit_method = getattr(self._zabbix_connection, "__exit__", None)
+                if exit_method:
+                    exit_method(exc_type, exc_val, exc_tb)
+        except (RequestException, ZabbixAPIException):
+            pass
+        finally:
+            self._zabbix_connection = None
+            self.__session_created = None
 
     def __enter__(self) -> ZabbixAPI:
         if self._zabbix_connection is None:

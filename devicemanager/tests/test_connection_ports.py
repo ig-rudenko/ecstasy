@@ -131,7 +131,8 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         """DeviceRemoteConnector passes SNMP port to detected device instance."""
 
         session = Mock()
-        get_device.return_value = Mock()
+        detected_device = Mock()
+        get_device.return_value = detected_device
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",
             protocol="telnet",
@@ -144,3 +145,4 @@ class DeviceConnectionPortsTests(SimpleTestCase):
             connector.get_session()
 
         self.assertEqual(get_device.call_args.kwargs["snmp_port"], 1161)
+        self.assertEqual(detected_device.connection_protocol, "telnet")

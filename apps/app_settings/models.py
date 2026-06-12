@@ -167,26 +167,26 @@ def update_deleted_zabbix_config_version_cache(sender, **kwargs):
     cache.set(ZABBIX_CONFIG_VERSION_CACHE_KEY, ZABBIX_CONFIG_MISSING_VERSION, timeout=None)
 
 
-class VlanTracerouteConfig(SingletonModel):
+class TracerouteConfig(SingletonModel):
     """
-    ## Настройки для работы VLAN traceroute
+    ## Настройки для работы Traceroute
     """
 
-    vlan_start = models.TextField(
+    start_device = models.TextField(
         verbose_name="Имя оборудования для начала трассировки",
         help_text="Разделять необходимо переносом строки, если требуется указать несколько",
         default="",
         null=True,
         blank=True,
     )
-    vlan_start_regex = models.TextField(
+    start_device_regex = models.TextField(
         verbose_name="Регулярное выражение",
         help_text="Используется для того, чтобы найти оборудования, с которых начинается трассировка",
         default="",
         null=True,
         blank=True,
     )
-    ip_pattern = models.TextField(
+    device_ip_pattern = models.TextField(
         verbose_name="Регулярное выражение для указания IP",
         help_text="Используется для того, чтобы найти оборудования, с которых начинается трассировка",
         default="",
@@ -204,11 +204,11 @@ class VlanTracerouteConfig(SingletonModel):
     )
 
     def __str__(self):
-        return "VLAN traceroute settings"
+        return "Traceroute settings"
 
     class Meta:
-        db_table = "vlan_traceroute_settings"
-        verbose_name = verbose_name_plural = "VLAN traceroute settings"
+        db_table = "traceroute_settings"
+        verbose_name = verbose_name_plural = "Traceroute settings"
 
 
 class AccessRingSettings(SingletonModel):

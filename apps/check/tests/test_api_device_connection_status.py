@@ -20,6 +20,7 @@ class DeviceConnectionStatusAPIViewTests(APITestCase):
             group=self.group,
             auth_group=self.auth_group,
             cmd_protocol="ssh",
+            port_scan_protocol="snmp",
         )
         self.user = User.objects.create_user(username="user", password="password")
         self.staff_user = User.objects.create_user(
@@ -38,6 +39,10 @@ class DeviceConnectionStatusAPIViewTests(APITestCase):
 
         get_connection_status.return_value = {
             "statuses": [True, False],
+            "connections": [
+                {"active": True, "protocol": "ssh"},
+                {"active": False, "protocol": "telnet"},
+            ],
             "error": {
                 "type": "SSHConnectionError",
                 "message": "SSH HOST IDENTIFICATION HAS CHANGED",
@@ -57,6 +62,9 @@ class DeviceConnectionStatusAPIViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["connectionPoolSize"], self.device.connection_pool_size)
         self.assertEqual(response.data["statuses"], [True, False])
+        self.assertEqual(response.data["connections"][0]["protocol"], "ssh")
+        self.assertEqual(response.data["portScanProtocol"], "snmp")
+        self.assertEqual(response.data["commandProtocol"], "ssh")
         self.assertEqual(response.data["error"]["type"], "SSHConnectionError")
         self.assertEqual(
             response.data["sshHostKeyChange"]["newKeys"][0]["fingerprint"],
