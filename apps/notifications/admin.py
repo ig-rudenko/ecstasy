@@ -281,16 +281,3 @@ class NotificationConditionAdmin(ModelAdmin):
             text += f"<span>и ещё {total_count - max_rows}</span>"
         text += "</ul>"
         return mark_safe(text)
-
-
-@admin.register(NotificationTrigger)
-class NotificationTriggerAdmin(ModelAdmin):
-    compressed_fields = True
-    warn_unsaved_form = True
-    list_display = ("name", "description", "conditions_count")
-    search_fields = ("name", "description")
-
-    @admin.display(description="Кол-во условий")
-    def conditions_count(self, obj: NotificationTrigger) -> int:
-        """Return the number of conditions linked to the trigger."""
-        return obj.notification_conditions.count()

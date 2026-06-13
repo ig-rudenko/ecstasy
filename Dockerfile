@@ -70,6 +70,6 @@ RUN chmod +x run.sh
 
 USER $user_id:$group_id
 EXPOSE 8000/tcp
-STOPSIGNAL SIGINT
 
-CMD ["/bin/bash", "/app/run.sh"]
+STOPSIGNAL SIGTERM
+CMD ["/bin/sh", "/app/run.sh"]

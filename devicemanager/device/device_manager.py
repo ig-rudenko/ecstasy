@@ -34,6 +34,7 @@ class DeviceManager:
 
         self.interfaces = Interfaces()
         self.protocol: str = "telnet"
+        self.port_scan_protocol: str = "telnet"
         self.snmp_community = ""
         self.telnet_port = 23
         self.ssh_port = 22
@@ -99,7 +100,8 @@ class DeviceManager:
     def from_model(cls, model_dev: Devices, zabbix_info=True) -> "DeviceManager":
         dev = cls(model_dev.name, zabbix_info=False)
         dev.ip = model_dev.ip
-        dev.protocol = model_dev.port_scan_protocol
+        dev.protocol = model_dev.cmd_protocol
+        dev.port_scan_protocol = model_dev.port_scan_protocol
         dev.snmp_community = model_dev.snmp_community or ""
         dev.telnet_port = model_dev.telnet_port
         dev.ssh_port = model_dev.ssh_port
@@ -111,13 +113,13 @@ class DeviceManager:
         return dev
 
     @classmethod
-    def from_hostid(cls, hostid: str) -> Optional["DeviceManager"]:
+    def from_hostid(cls, hostid: str, *, zabbix_info: bool) -> Optional["DeviceManager"]:
         """Создаем объект через переданный hostid Zabbix"""
         try:
             with zabbix_api.connect() as zbx:
                 host = zbx.host.get(hostids=hostid, output=["name"])
             if host:
-                return DeviceManager(host[0]["name"])
+                return cls(host[0]["name"], zabbix_info=zabbix_info)
         except (RequestException, ZabbixAPIException):
             pass
         return None
@@ -135,7 +137,7 @@ class DeviceManager:
         if not current_status:  # Смотрим из истории
             self._get_interfaces_from_history(with_vlans=vlans)
 
-        elif self.protocol in {"snmp", "telnet", "ssh"}:
+        elif self.port_scan_protocol in {"snmp", "telnet", "ssh"}:
             # CMD
             try:
                 self._get_interfaces_from_connection(
@@ -165,8 +167,8 @@ class DeviceManager:
 
         session = remote_connector.create(
             ip=self.ip,
-            port_scan_protocol=self.protocol,
-            cmd_protocol=self.protocol if self.protocol != "snmp" else "telnet",
+            port_scan_protocol=self.port_scan_protocol,
+            cmd_protocol=self.protocol,
             snmp_community=self.snmp_community,
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,
@@ -217,7 +219,13 @@ class DeviceManager:
 
         return 0
 
-    def connect(self, protocol: str = "", auth_obj: Any = None, make_session_global=True) -> RemoteDevice:
+    def connect(
+        self,
+        protocol: str = "",
+        auth_obj: Any = None,
+        make_session_global=True,
+        port_scan_protocol: str = "",
+    ) -> RemoteDevice:
         """
         Устанавливаем подключение к оборудованию
         """
@@ -225,7 +233,7 @@ class DeviceManager:
         return remote_connector.create(
             self.ip,
             cmd_protocol=protocol or self.protocol,
-            port_scan_protocol=protocol or self.protocol,
+            port_scan_protocol=port_scan_protocol or self.port_scan_protocol,
             snmp_community="",
             auth_obj=auth_obj or self.auth_obj,
             make_session_global=make_session_global,

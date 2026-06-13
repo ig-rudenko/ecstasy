@@ -188,7 +188,6 @@ def sidebar_navigation(request):
             "collapsible": True,
             "items": [
                 model_link("Conditions", "rule", "notifications", "notificationcondition", perms),
-                model_link("Triggers", "bolt", "notifications", "notificationtrigger", perms),
                 model_link("Telegram notifications", "send", "notifications", "telegramnotification", perms),
                 model_link("Webhook notifications", "webhook", "notifications", "webhooknotification", perms),
             ],

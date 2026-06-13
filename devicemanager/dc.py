@@ -12,6 +12,7 @@ from .exceptions import (
     DeviceLoginError,
     SSHConnectionError,
     TelnetConnectionError,
+    DeviceException,
 )
 from .multifactory import DeviceMultiFactory
 from .session_spawner import SessionSpawner
@@ -153,10 +154,12 @@ class DeviceRemoteConnector:
         return self._get_device_session()
 
     def _get_device_session(self) -> BaseDevice:
-        if self.protocol == "ssh":
+        if self.protocol == "telnet":
+            self.session = self._connect_by_telnet()
+        elif self.protocol == "ssh":
             self.session = self._connect_by_ssh()
         else:
-            self.session = self._connect_by_telnet()
+            raise DeviceException(f"Unknown protocol: {self.protocol!r}")
 
         device = DeviceMultiFactory.get_device(
             self.session,

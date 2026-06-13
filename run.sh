@@ -1,8 +1,14 @@
 #!/bin/sh
-python manage.py migrate --no-input;
+set -eu
 
-export DJANGO_COLLECT_STATIC=1;
-python manage.py collectstatic --no-input;
-export DJANGO_COLLECT_STATIC=0;
+python manage.py migrate --no-input
 
-exec gunicorn --workers "${GUNICORN_WORKERS:-5}" --bind 0.0.0.0:8000 ecstasy_project.wsgi:application --no-control-socket;
+DJANGO_COLLECT_STATIC=1 python manage.py collectstatic --no-input
+
+exec gunicorn \
+    --workers "${GUNICORN_WORKERS:-5}" \
+    --bind 0.0.0.0:8000 \
+    --access-logfile - \
+    --error-logfile - \
+    --no-control-socket \
+    ecstasy_project.wsgi:application

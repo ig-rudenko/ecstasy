@@ -63,7 +63,7 @@ def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
     return -1
 
 
-@cached(60, key=lambda name: f"zabbix_graphs:{name}")
+@cached(60, key=lambda name: f"zabbix_graphs:{name.encode().hex()}")
 def get_zabbix_graphs(device_name: str) -> tuple[int, list]:
     graphs = []
     host_id = 0
@@ -93,7 +93,7 @@ def get_zabbix_host_map_and_uptime(host_id: int | str) -> tuple[list[dict[str, s
     return devices_maps, uptime
 
 
-@cached(20, key=lambda device_name: f"zabbix_info:{device_name}")
+@cached(20, key=lambda device_name: f"zabbix_info:{device_name.encode().hex()}")
 def get_zabbix_host_info(device_name: str) -> dict:
     try:
         with zabbix_api.connect() as zbx:

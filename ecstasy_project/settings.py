@@ -89,7 +89,7 @@ INSTALLED_APPS = [
     "apps.news",
     "apps.notifications",
 ]
-if ENV == "dev":
+if DEBUG:
     INSTALLED_APPS += ["debug_toolbar"]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -117,7 +117,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-if ENV == "dev":
+if DEBUG:
     MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
 
 ROOT_URLCONF = "ecstasy_project.urls"
@@ -244,7 +244,7 @@ if REDIS_CACHE_URL:
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_CACHE_URL,
-            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev" if DEBUG else ""),
+            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev" if ENV == "dev" else ""),
         }
     }
 

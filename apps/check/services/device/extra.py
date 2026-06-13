@@ -7,6 +7,6 @@ def get_all_device_names_list() -> list[str]:
     return list(Devices.objects.all().values_list("name", flat=True))
 
 
-@cached(60, key=lambda device: f"device_stats:{device.name}")
+@cached(60, key=lambda device: f"device_stats:{device.name.encode().hex()}")
 def get_device_stats(device: Devices) -> dict:
     return device.connect().get_device_info()

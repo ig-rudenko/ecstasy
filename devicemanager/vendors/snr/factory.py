@@ -27,7 +27,7 @@ class SNRFactory(AbstractDeviceFactory):
         auth: DeviceAuthDict,
         version_output: str = "",
     ) -> BaseDevice:
-        model = BaseDevice.find_or_empty(r"SNR-\S+", version_output)
+        model = BaseDevice.find_or_empty(r"SNR-S(?:52|29)\S+", version_output)
         serialno = BaseDevice.find_or_empty(r"Serial No.:\s*(\S+)", version_output)
         mac = BaseDevice.find_or_empty(r"Vlan MAC (\S+)", version_output)
 
