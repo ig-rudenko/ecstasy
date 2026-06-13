@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Sequence
+from threading import local
 from typing import Any, Literal, Never
 
 import requests
@@ -38,15 +39,24 @@ class PoolController:
 
     def __init__(self):
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
-        self._session = requests.Session()
-        self._session.headers.update({"Token": os.getenv("DEVICE_CONNECTOR_TOKEN", "")})
+        self._local = local()
+
+    def _get_session(self) -> requests.Session:
+        """Вернуть отдельную HTTP-сессию для текущего потока."""
+
+        session = getattr(self._local, "session", None)
+        if session is None:
+            session = requests.Session()
+            session.headers.update({"Token": os.getenv("DEVICE_CONNECTOR_TOKEN", "")})
+            self._local.session = session
+        return session
 
     def clear_pool(self, ip: str) -> bool:
-        resp = self._session.delete(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
+        resp = self._get_session().delete(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
         return resp.status_code == 204
 
     def get_pool_status(self, ip: str) -> list[bool]:
-        resp = self._session.get(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
+        resp = self._get_session().get(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
         if resp.status_code != 200:
             return []
         return resp.json().get("statuses", [])
@@ -54,7 +64,7 @@ class PoolController:
     def get_connection_status(self, ip: str) -> dict:
         """Return pool state and the latest device connection diagnostics."""
 
-        resp = self._session.get(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
+        resp = self._get_session().get(f"{self._remote_connector_address}/pool/{ip}", timeout=3)
         if resp.status_code != 200:
             return {
                 "statuses": [],
@@ -75,7 +85,7 @@ class PoolController:
     def confirm_ssh_host_key(self, ip: str) -> int:
         """Confirm a pending SSH host key and return the connector status code."""
 
-        resp = self._session.post(f"{self._remote_connector_address}/ssh-host-key/{ip}", timeout=10)
+        resp = self._get_session().post(f"{self._remote_connector_address}/ssh-host-key/{ip}", timeout=10)
         return resp.status_code
 
 

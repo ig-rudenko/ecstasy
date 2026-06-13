@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from threading import local
 from typing import Any
 
 from django.conf import settings
@@ -167,4 +169,52 @@ class ZabbixAPIConnector:
         return self.__session_created < datetime.now() - timedelta(seconds=self.__session_exists_timeout)
 
 
-zabbix_api = ZabbixAPIConnector()
+class ThreadLocalZabbixAPIConnector:
+    """Предоставляет отдельный Zabbix API connector каждому потоку."""
+
+    def __init__(
+        self,
+        connector_factory: Callable[[], ZabbixAPIConnector] = ZabbixAPIConnector,
+    ) -> None:
+        self._connector_factory = connector_factory
+        self._local = local()
+
+    def _get_connector(self) -> ZabbixAPIConnector:
+        """Вернуть connector текущего потока, создавая его при необходимости."""
+
+        connector = getattr(self._local, "connector", None)
+        if connector is None:
+            connector = self._connector_factory()
+            self._local.connector = connector
+        return connector
+
+    @property
+    def zabbix_url(self) -> str:
+        """Вернуть URL Zabbix для текущего потока."""
+
+        return self._get_connector().zabbix_url
+
+    @property
+    def zabbix_user(self) -> str:
+        """Вернуть пользователя Zabbix для текущего потока."""
+
+        return self._get_connector().zabbix_user
+
+    @property
+    def zabbix_password(self) -> str:
+        """Вернуть пароль Zabbix для текущего потока."""
+
+        return self._get_connector().zabbix_password
+
+    def connect(self):
+        """Подключить к Zabbix connector текущего потока."""
+
+        return self._get_connector().connect()
+
+    def close(self, exc_type=None, exc_val=None, exc_tb=None) -> None:
+        """Закрыть Zabbix connector текущего потока."""
+
+        self._get_connector().close(exc_type, exc_val, exc_tb)
+
+
+zabbix_api = ThreadLocalZabbixAPIConnector()
