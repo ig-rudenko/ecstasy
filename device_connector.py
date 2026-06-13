@@ -191,8 +191,12 @@ def ping_pong_device(ip: str):
     if token_error:
         return token_error
 
-    p = ping(ip, timeout=2)
-    return jsonify({"available": isinstance(p, float)})
+    has_connection = DEVICE_SESSIONS.has_connection(ip)
+    if not has_connection:
+        p = ping(ip, timeout=2)
+        has_connection = isinstance(p, float)
+
+    return jsonify({"available": has_connection})
 
 
 if __name__ == "__main__":

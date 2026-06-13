@@ -81,7 +81,7 @@ class KeycloakToken(Token):
         verifying_key="",
         audience=settings.KEYCLOAK_AUDIENCE,
         issuer=settings.KEYCLOAK_ISSUER,
-        jwk_url=settings.KEYCLOAK_JWKS_URL,
+        jwk_url=settings.KEYCLOAK_JWKS_URL if settings.KEYCLOAK_ENABLE else None,
         leeway=settings.KEYCLOAK_JWT_LEEWAY,
         json_encoder=None,
     )
