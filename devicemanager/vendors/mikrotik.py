@@ -180,9 +180,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     def get_vlans(self) -> InterfaceVLANListType:
         interfaces_with_vlans = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
         for line in interfaces:
             bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge", "")
             bridge = self._bridges.get(bridge_name, {"vlans": []})

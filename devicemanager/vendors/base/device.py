@@ -2,10 +2,10 @@ import contextlib
 import io
 import re
 import string
-import time
 from abc import ABC, abstractmethod
 from functools import wraps
 from pathlib import Path
+from threading import RLock
 from typing import Literal
 
 import pexpect
@@ -178,7 +178,38 @@ class BaseDevice(AbstractDevice, ABC):
         self.snmp_community = snmp_community
         self.snmp_port = snmp_port
         self.connection_protocol = ""
-        self.lock = False
+        self._session_lock = RLock()
+
+    def acquire_session(self, blocking: bool = True) -> bool:
+        """Зарезервировать терминальную сессию для текущего потока."""
+
+        return self._get_session_lock().acquire(blocking=blocking)
+
+    def release_session(self) -> None:
+        """Освободить терминальную сессию, зарезервированную текущим потоком."""
+
+        self._get_session_lock().release()
+
+    def _get_session_lock(self) -> RLock:
+        """Вернуть блокировку, создавая её для объектов без вызова конструктора."""
+
+        session_lock = getattr(self, "_session_lock", None)
+        if session_lock is None:
+            session_lock = self._session_lock = RLock()
+        return session_lock
+
+    def __getstate__(self) -> dict:
+        """Вернуть состояние без некопируемого объекта блокировки."""
+
+        state = self.__dict__.copy()
+        state.pop("_session_lock", None)
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        """Восстановить состояние и создать отдельную блокировку сессии."""
+
+        self.__dict__.update(state)
+        self._session_lock = RLock()
 
     def get_system_info(self) -> SystemInfo:
         return {
@@ -338,13 +369,8 @@ class BaseDevice(AbstractDevice, ABC):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            while True:
-                if not self.lock:
-                    self.lock = True
-                    res = func(self, *args, **kwargs)
-                    self.lock = False
-                    return res
-                time.sleep(0.02)
+            with BaseDevice._get_session_lock(self):
+                return func(self, *args, **kwargs)
 
         return wrapper
 
@@ -384,7 +410,7 @@ class BaseDevice(AbstractDevice, ABC):
             prompt = self.prompt
 
         # Убираем предыдущий вывод до промпта, если он был.
-        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)  # noqa
 
         output = ""
         self.session.send(command + command_linesep)  # Отправляем команду
@@ -400,7 +426,7 @@ class BaseDevice(AbstractDevice, ABC):
         if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
             while pages_limit is None or pages_limit > 0:
                 match = self.session.expect(
-                    [
+                    [  # noqa
                         prompt,  # 0 - конец
                         space_prompt,  # 1 - далее
                         pexpect.TIMEOUT,  # 2
@@ -426,7 +452,7 @@ class BaseDevice(AbstractDevice, ABC):
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             with contextlib.suppress(pexpect.TIMEOUT):
-                self.session.expect(prompt, timeout=timeout)
+                self.session.expect(prompt, timeout=timeout)  # noqa
             # Убираем управляющие последовательности ANSI
             output += remove_ansi_escape_codes(self.session.before)
         return output

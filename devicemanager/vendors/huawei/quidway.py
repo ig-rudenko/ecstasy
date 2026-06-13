@@ -305,9 +305,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interface_config_output = self.send_command(
             "display current-configuration interface",
@@ -610,7 +608,6 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.session.expect(self.prompt)
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -655,7 +652,6 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.session.expect(self.prompt)
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -737,7 +733,6 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         self.session.expect(self.prompt)
         self.session.sendline("quit")
         self.session.expect(self.prompt)
-        self.lock = False
         return {
             "description": desc,
             "port": port,
@@ -828,9 +823,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-        self.lock = False
         port_type = self.get_port_type(port)
-        self.lock = True
         if port_type in ["COPPER", "COMBO-COPPER"]:
             self.session.sendline("system-view")
             self.session.expect(self.prompt)

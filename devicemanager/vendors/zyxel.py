@@ -99,9 +99,7 @@ class Zyxel(BaseDevice):
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
 
         result: InterfaceVLANListType = []
         vlans: dict[int, list[str]] = {}
@@ -165,7 +163,6 @@ class Zyxel(BaseDevice):
 
         result = f"reloaded port {port}"
         if save_config:
-            self.lock = False
             saved = self.save_config()
             result += f" {saved}"
         return result
@@ -180,10 +177,8 @@ class Zyxel(BaseDevice):
         else:
             self.send_command(f"adsl {new_status} {port}", expect_command=False)
 
-        self.lock = False
         result = f"port {port} set {status}"
         if save_config:
-            self.lock = False
             saved = self.save_config()
             result += f" {saved}"
         return result
@@ -213,7 +208,6 @@ class Zyxel(BaseDevice):
         else:
             self.send_command(f'switch enet name {port} "{desc}"', expect_command=False)
 
-        self.lock = False
         return {
             "description": desc,
             "port": port,

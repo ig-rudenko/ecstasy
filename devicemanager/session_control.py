@@ -31,9 +31,10 @@ class GlobalSession:
             logger.error('Ошибка во время проверки статуса сессии "isalive"', exc_info=exc)
             return False
 
-    @property
-    def non_locked(self) -> bool:
-        return not self.connection.lock
+    def reserve(self, blocking: bool = True) -> bool:
+        """Зарезервировать соединение для текущего потока."""
+
+        return self.connection.acquire_session(blocking=blocking)
 
     def close(self) -> None:
         try:
@@ -135,9 +136,12 @@ class ConnectionPool:
             for conn in self._pool:
                 if conn.alive:
                     last_available = conn
-                    if conn.non_locked:
+                    if conn.reserve(blocking=False):
                         return conn
-            return last_available
+
+        if last_available is not None:
+            last_available.reserve()
+        return last_available
 
     def renew(self) -> None:
         """Продлить срок жизни пула после использования."""

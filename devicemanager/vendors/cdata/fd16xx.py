@@ -122,9 +122,7 @@ class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interfaces_config: dict[str, str] = self._get_interfaces_config()
 
@@ -238,7 +236,6 @@ class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -278,7 +275,6 @@ class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.expect(self.prompt)
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -461,8 +457,6 @@ class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         self.session.sendline("end")  # Выходим из режима редактирования
         self.session.expect(self.prompt)
-
-        self.lock = False
 
         if "Invalid input detected" in res:
             return {

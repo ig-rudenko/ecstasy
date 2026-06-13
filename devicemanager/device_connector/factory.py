@@ -95,21 +95,23 @@ class DeviceSessionFactory:
             "Device: %s | Method=%s DeviceVendor=%s", self.ip, method, device_connection.__class__.__name__
         )
 
-        if not hasattr(device_connection, method):
-            if not self.make_session_global:
-                device_connection.session.close()
-            raise MethodError
-
-        session_method = getattr(device_connection, method)
-
         try:
-            data = session_method(**params)
-        except Exception:
-            device_connection.session.close()
-            raise
+            if not hasattr(device_connection, method):
+                raise MethodError
 
-        if not self.make_session_global:
-            device_connection.session.close()
+            session_method = getattr(device_connection, method)
+            data = session_method(**params)
+        except MethodError:
+            raise
+        except Exception:
+            if self.make_session_global:
+                device_connection.session.close()
+            raise
+        finally:
+            if self.make_session_global:
+                device_connection.release_session()
+            else:
+                device_connection.session.close()
 
         logger.debug(
             "Device: %s | Method=%s DeviceVendor=%s",
@@ -208,7 +210,7 @@ class DeviceSessionFactory:
                 daemon=True,
             ).start()
 
-        return first_connection
+        return DEVICE_SESSIONS.get_connection(self.ip)
 
     def _add_device_session(self, queue: Queue, cancelled: Event, results_lock: Lock) -> None:
         """Создать одну сессию и безопасно передать результат ожидающему потоку."""

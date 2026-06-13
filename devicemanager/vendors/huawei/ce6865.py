@@ -124,9 +124,7 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
 
         output = self.send_command("display current-configuration interface")
         result = parse_by_template("vlans_templates/huawei-ce6865.template", output)
@@ -284,7 +282,6 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
 
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -328,7 +325,6 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
 
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -407,7 +403,6 @@ class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
 
         self._quit_from_interface_with_commit()
 
-        self.lock = False
         return {
             "description": desc,
             "port": port,

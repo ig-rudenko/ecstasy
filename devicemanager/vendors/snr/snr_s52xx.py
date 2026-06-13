@@ -134,9 +134,7 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
 
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interfaces_config: dict[str, str] = self._get_interfaces_config()
 
@@ -252,7 +250,6 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -292,7 +289,6 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
         self.session.expect(self.prompt)
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -472,7 +468,6 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.send_command("end")  # Выходим из режима редактирования
-        self.lock = False
 
         if "Invalid input detected" in res:
             return {

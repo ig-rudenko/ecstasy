@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from devicemanager.dc import SimpleAuthObject
+from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import DeviceException, SSHConnectionError
 from devicemanager.session_control import ConnectionPool, SessionController
@@ -218,3 +219,62 @@ class DeviceSessionFactoryTests(SimpleTestCase):
 
         self.assertEqual(result, {"vendor": "test"})
         connection.session.close.assert_called_once_with()
+
+    def test_global_connection_is_released_after_successful_method(self):
+        """A pooled connection is released after its method completes."""
+
+        factory = self.make_factory()
+        connection = Mock()
+        connection.get_system_info.return_value = {"vendor": "test"}
+
+        with patch.object(factory, "_get_connection_to_perform", return_value=connection):
+            result = factory._perform("get_system_info")
+
+        self.assertEqual(result, {"vendor": "test"})
+        connection.release_session.assert_called_once_with()
+
+    def test_global_connection_is_released_after_failed_method(self):
+        """A pooled connection is released when its method raises an error."""
+
+        factory = self.make_factory()
+        connection = Mock()
+        connection.get_system_info.side_effect = RuntimeError("failure")
+
+        with (
+            patch.object(factory, "_get_connection_to_perform", return_value=connection),
+            self.assertRaises(RuntimeError),
+        ):
+            factory._perform("get_system_info")
+
+        connection.release_session.assert_called_once_with()
+
+    def test_non_global_connection_is_closed_once_after_failed_method(self):
+        """A one-shot connection is closed once when its method raises an error."""
+
+        factory = self.make_factory()
+        factory.make_session_global = False
+        connection = Mock()
+        connection.get_system_info.side_effect = RuntimeError("failure")
+
+        with (
+            patch.object(factory, "_get_connection_to_perform", return_value=connection),
+            self.assertRaises(RuntimeError),
+        ):
+            factory._perform("get_system_info")
+
+        connection.session.close.assert_called_once_with()
+
+    def test_unknown_method_releases_global_connection_without_closing_it(self):
+        """An unsupported method does not discard a healthy pooled connection."""
+
+        factory = self.make_factory()
+        connection = Mock(spec=["session", "release_session"])
+
+        with (
+            patch.object(factory, "_get_connection_to_perform", return_value=connection),
+            self.assertRaises(MethodError),
+        ):
+            factory._perform("unknown_method")
+
+        connection.release_session.assert_called_once_with()
+        connection.session.close.assert_not_called()

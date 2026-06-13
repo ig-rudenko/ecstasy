@@ -82,7 +82,6 @@ class ZabbixAPIConnector:
         current_settings = self._get_settings()
         if self.__connection_expired():
             self.close()
-        print(f"Zabbix current_settings.url: {current_settings.url!r}")
         if self._zabbix_connection is None:
             self._zabbix_connection = ZabbixAPI(
                 server=current_settings.url,

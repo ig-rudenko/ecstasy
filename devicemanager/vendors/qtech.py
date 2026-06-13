@@ -120,9 +120,7 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interfaces_config: dict[str, str] = self._get_interfaces_config()
 
@@ -323,7 +321,6 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -362,7 +359,6 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         self.session.expect(self.prompt)
 
         (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         return self.save_config() if save_config else "Without saving"
 
     @BaseDevice.lock_session
@@ -517,7 +513,6 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
                 "max_length": max_length,
             }
 
-        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return {
             "description": desc,

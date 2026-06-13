@@ -161,9 +161,7 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         """
 
         result = []
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
 
         interfaces_config = self._get_interfaces_config()
 
@@ -199,9 +197,7 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         # Формируем словарь: { 123: "vlan_desc" }
         vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
 
-        self.lock = False
         interfaces_vlans = self.get_vlans()
-        self.lock = True
 
         # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
         vlan_ports: dict[int, list[str]] = {}
@@ -296,7 +292,6 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         self.session.expect(r"#")
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -341,7 +336,6 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         if self.session.before is not None:
             r = self.session.before.decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -501,7 +495,6 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return {
             "description": desc,

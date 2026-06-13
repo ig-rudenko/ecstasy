@@ -264,8 +264,6 @@ class CiscoNexus(Cisco):
                 "status": "fail",
             }
 
-        self.lock = False
-
         if "error" in status:
             return {
                 "status": "fail",

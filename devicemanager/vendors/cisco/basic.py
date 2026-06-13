@@ -147,9 +147,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interfaces_config: dict[str, str] = self._get_interfaces_config()
 
@@ -172,9 +170,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         # Формируем словарь: { 123: "vlan_desc" }
         vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
 
-        self.lock = False
         interfaces_vlans = self.get_vlans()
-        self.lock = True
 
         # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
         vlan_ports: dict[int, list[str]] = {}
@@ -282,7 +278,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -323,7 +318,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         self.session.expect(self.prompt)
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -536,8 +530,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         self.session.sendline("end")  # Выходим из режима редактирования
         self.session.expect(self.prompt)
-
-        self.lock = False
 
         if "Invalid input detected" in res:
             return {

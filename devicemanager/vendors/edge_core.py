@@ -89,7 +89,6 @@ class EdgeCore(BaseDevice):
 
         # Получение текущей конфигурации устройства.
         running_config = self.send_command("show running-config")
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
 
         # Разделение текущей конфигурации на список строк. Каждая строка является частью конфигурации порта.
@@ -218,7 +217,6 @@ class EdgeCore(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        self.lock = False
         return self.save_config() if save_config else "Without saving"
 
     @BaseDevice.lock_session
@@ -260,7 +258,6 @@ class EdgeCore(BaseDevice):
 
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -419,7 +416,6 @@ class EdgeCore(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
-        self.lock = False
         if "Invalid parameter value/range" in res:
             # Длина описания больше допустимого у Edge-Core 64
             return {

@@ -206,7 +206,6 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
                 "status": "fail",
             }
 
-        self.lock = False
         return {
             "description": desc,
             "port": port,
