@@ -31,6 +31,49 @@ class BaseCommandsTestCase(TestCase):
         cls.device_info.save()
 
 
+class TestCommandLiteralBraces(BaseCommandsTestCase):
+    def test_escaped_opening_brace_is_sent_without_escape_character(self):
+        """Convert an escaped opening brace to literal command text."""
+        commands = (
+            (r"show switch \{", "show switch {"),
+            (r"show version \{}", "show version {}"),
+            (r"show version \{x}", "show version {x}"),
+            (r"show version \{port}", "show version {port}"),
+            (r"show version \\\{port}", r"show version \{port}"),
+        )
+
+        for command, expected_command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    validate_command(self.device, command, {}),
+                    [{"command": expected_command, "conditions": []}],
+                )
+
+    def test_even_escape_count_leaves_macro_active(self):
+        """Treat an opening brace after an even slash count as a macro."""
+        command = r"show version \\{word}"
+
+        self.assertEqual(
+            validate_command(self.device, command, {"word": {"_": "details"}}),
+            [{"command": r"show version \details", "conditions": []}],
+        )
+
+    def test_unescaped_unknown_or_unclosed_macro_raises_validation_error(self):
+        """Reject an opening brace that does not start a supported macro."""
+        commands = (
+            "show switch {",
+            r"show switch \\{",
+            r"show version {s\}",
+            "show version {}",
+            "show version {x}",
+            r"show version \\{x}",
+        )
+
+        for command in commands:
+            with self.subTest(command=command), self.assertRaises(ValidationError):
+                validate_command(self.device, command, {})
+
+
 class TestCommandsPortValidator(BaseCommandsTestCase):
 
     def test_empty_command(self):

@@ -5,32 +5,41 @@ import macSearch, { IPMACInfoResult } from "@/services/macSearch";
 import errorFmt from "@/errorFmt.ts";
 import BrasSession from "@/pages/deviceInfo/components/BrasSession.vue";
 import brasSessionsService from "@/services/bras.sessions.ts";
+import MacAddressTable from "@/pages/wtf/MacAddressTable.vue";
 
 const text = ref("");
 const error = ref("");
 
 interface WTFSearchResults {
+    id: number;
     search: string;
     result: IPMACInfoResult;
+    macAddress?: string;
 }
 
 const results = ref<WTFSearchResults[]>([]);
 const running = ref(false);
+let nextResultId = 1;
 
 function clearResults() {
     results.value = [];
 }
 
+function removeResult(id: number) {
+    results.value = results.value.filter((result) => result.id !== id);
+}
+
 async function find() {
     if (!text.value.length || running.value) return;
     running.value = true;
+    const search = text.value.trim();
 
-    if (text.value.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+    if (search.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
         try {
             error.value = "";
-            const value: IPMACInfoResult | null = await macSearch.getMacDetail(text.value);
+            const value: IPMACInfoResult | null = await macSearch.getMacDetail(search);
             if (value) {
-                results.value.unshift({ search: text.value, result: value });
+                results.value.unshift({ id: nextResultId++, search, result: value });
             }
         } catch (e: any) {
             error.value = errorFmt(e);
@@ -39,12 +48,19 @@ async function find() {
         return;
     }
 
-    const macAddress = text.value.replace(/[^A-Fa-f\d]/g, "");
+    const macAddress = search.replace(/[^A-Fa-f\d]/g, "");
     if (macAddress.length === 12) {
         try {
             error.value = "";
             const value = await macSearch.getMacDetail(macAddress);
-            if (value) results.value.unshift({ search: text.value, result: value });
+            if (value) {
+                results.value.unshift({
+                    id: nextResultId++,
+                    search,
+                    result: value,
+                    macAddress,
+                });
+            }
         } catch (e: any) {
             error.value = errorFmt(e);
         }
@@ -143,7 +159,7 @@ async function find() {
 
             <div
                 v-for="(block, idx) in results"
-                :key="block.search + '-' + idx"
+                :key="block.id"
                 class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur overflow-hidden"
             >
                 <Fieldset
@@ -157,23 +173,72 @@ async function find() {
                     }"
                 >
                     <template #legend="{ toggleCallback }">
-                        <button
-                            type="button"
-                            class="flex flex-wrap items-center gap-2 text-left px-2 py-1 rounded-2xl text-gray-900 dark:text-gray-100"
-                            @click="toggleCallback"
-                        >
-                            <span class="text-sm font-semibold">Запрос</span>
-                            <code
-                                class="text-sm font-mono px-2 py-0.5 rounded-lg bg-indigo-500/10 dark:bg-indigo-400/15 text-indigo-700 dark:text-indigo-300"
-                                >{{ block.search }}</code
+                        <div class="flex w-full min-w-0 items-center gap-2">
+                            <button
+                                type="button"
+                                class="flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded-2xl px-2 py-1 text-left text-gray-900 dark:text-gray-100"
+                                @click="toggleCallback"
                             >
-                            <span class="text-xs text-gray-500 dark:text-gray-400"
-                                >{{ block.result.info?.length || 0 }} источник(ов)</span
-                            >
-                        </button>
+                                <span class="text-sm font-semibold">Запрос</span>
+                                <code
+                                    class="text-sm font-mono px-2 py-0.5 rounded-lg bg-indigo-500/10 dark:bg-indigo-400/15 text-indigo-700 dark:text-indigo-300"
+                                    >{{ block.search }}</code
+                                >
+                                <span class="text-xs text-gray-500 dark:text-gray-400"
+                                    >{{ block.result.info?.length || 0 }} источник(ов)</span
+                                >
+                            </button>
+                            <Button
+                                type="button"
+                                text
+                                rounded
+                                severity="secondary"
+                                icon="pi pi-times"
+                                :aria-label="'Убрать запрос ' + block.search"
+                                v-tooltip.top="'Убрать результат'"
+                                @click.stop="removeResult(block.id)"
+                            />
+                        </div>
                     </template>
 
-                    <div class="flex flex-col gap-4 px-1 pb-2">
+                    <div class="flex flex-col gap-4 px-1 py-2">
+                        <MacAddressTable v-if="block.macAddress" :mac-address="block.macAddress" />
+
+                        <div
+                            v-if="block.result.ecstasy_devices?.length"
+                            class="rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-4 dark:border-emerald-900/70 dark:bg-emerald-500/10"
+                        >
+                            <div
+                                class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200"
+                            >
+                                Оборудование Ecstasy
+                            </div>
+                            <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                <router-link
+                                    v-for="device in block.result.ecstasy_devices"
+                                    :key="device.id"
+                                    :to="device.url"
+                                    class="flex min-w-0 items-center gap-3 rounded-xl border border-emerald-200/80 bg-white/80 p-3 text-gray-900 transition hover:border-emerald-400 dark:border-emerald-900/70 dark:bg-gray-950/30 dark:text-gray-100"
+                                >
+                                    <i class="pi pi-server shrink-0 text-emerald-600 dark:text-emerald-300" />
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-sm font-semibold">{{ device.name }}</span>
+                                        <span
+                                            class="mt-1 block truncate font-mono text-xs text-gray-500 dark:text-gray-400"
+                                        >
+                                            {{ device.ip }} · {{ device.group }}
+                                        </span>
+                                        <span
+                                            v-if="device.vendor || device.model"
+                                            class="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400"
+                                        >
+                                            {{ [device.vendor, device.model].filter(Boolean).join(" ") }}
+                                        </span>
+                                    </span>
+                                </router-link>
+                            </div>
+                        </div>
+
                         <div
                             v-for="(info, infoIdx) in block.result.info"
                             :key="infoIdx"

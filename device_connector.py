@@ -3,12 +3,13 @@ import logging
 import os
 import pathlib
 from ipaddress import IPv4Address
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, cast
 
 from flask import Flask, Response, after_this_request, jsonify, request, send_file
 from ping3 import ping
 
 from devicemanager.dc import SimpleAuthObject
+from devicemanager.device_connector.connection_status import CONNECTION_STATUSES
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import BaseDeviceException
@@ -77,7 +78,7 @@ def connector(ip: str, method: str):
         return resp
 
     data = request.get_json(force=True)
-    connection: ConnectionType = data.get("connection")
+    connection = cast(ConnectionType, data.get("connection") or {})
 
     try:
         factory = DeviceSessionFactory(
@@ -96,6 +97,8 @@ def connector(ip: str, method: str):
 
         try:
             data = factory.perform_method(method, **params)
+            if not (method == "get_interfaces" and factory.port_scan_protocol == "snmp"):
+                CONNECTION_STATUSES.record_success(valid_ip)
             return handle_method_data(data)
 
         except MethodError:
@@ -104,6 +107,11 @@ def connector(ip: str, method: str):
             return resp
 
     except (BaseDeviceException, Exception) as err:
+        CONNECTION_STATUSES.record_error(
+            valid_ip,
+            err,
+            ssh_port=factory.ssh_port if "factory" in locals() else 22,
+        )
         app.logger.error(err.__class__.__name__, exc_info=err)
         resp = jsonify(
             {
@@ -135,8 +143,46 @@ def delete_connection_pool(ip: str):
         resp.status_code = 204
         return resp
 
-    statuses = DEVICE_SESSIONS.get_pool_status(valid_ip)
-    return jsonify({"statuses": statuses})
+    connections = DEVICE_SESSIONS.get_pool_connections(valid_ip)
+    return jsonify(
+        {
+            "statuses": [connection["active"] for connection in connections],
+            "connections": connections,
+            **CONNECTION_STATUSES.get_status(valid_ip),
+        }
+    )
+
+
+@app.post("/ssh-host-key/<ip>")
+def confirm_ssh_host_key(ip: str):
+    """Confirm a previously scanned SSH host key change."""
+
+    token_error = check_token()
+    if token_error:
+        return token_error
+
+    try:
+        valid_ip = IPv4Address(ip).compressed
+    except ValueError:
+        resp = jsonify({"error": "invalid ip"})
+        resp.status_code = 400
+        return resp
+
+    try:
+        confirmed = CONNECTION_STATUSES.confirm_ssh_host_key(valid_ip)
+    except Exception as err:
+        app.logger.error("SSH host key confirmation failed", exc_info=err)
+        resp = jsonify({"error": "ssh host key confirmation failed"})
+        resp.status_code = 500
+        return resp
+
+    if not confirmed:
+        resp = jsonify({"error": "no pending ssh host key change"})
+        resp.status_code = 409
+        return resp
+
+    DEVICE_SESSIONS.delete_pool(valid_ip)
+    return Response(status=204)
 
 
 @app.route("/ping/<ip>", methods=["POST"])
@@ -145,8 +191,12 @@ def ping_pong_device(ip: str):
     if token_error:
         return token_error
 
-    p = ping(ip, timeout=2)
-    return jsonify({"available": isinstance(p, float)})
+    has_connection = DEVICE_SESSIONS.has_connection(ip)
+    if not has_connection:
+        p = ping(ip, timeout=2)
+        has_connection = isinstance(p, float)
+
+    return jsonify({"available": has_connection})
 
 
 if __name__ == "__main__":

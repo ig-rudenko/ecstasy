@@ -3,7 +3,7 @@ import re
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 
-from apps.app_settings.models import VlanTracerouteConfig
+from apps.app_settings.models import TracerouteConfig
 from apps.check.models import Devices
 from apps.check.services.device_coordinates import get_devices_coordinates
 from apps.check.services.filters import filter_devices_qs_by_user
@@ -44,17 +44,16 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
             nodes_only=nodes_only,
         )
 
-    vlan_traceroute_settings = VlanTracerouteConfig.load()
+    vlan_traceroute_settings = TracerouteConfig.load()
     devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)  # noqa
 
-    if mode == "vlan":
-        if vlan_traceroute_settings.vlan_start:
-            devices_names = tuple(map(str.strip, vlan_traceroute_settings.vlan_start.split("\n")))
-            devices_qs = devices_qs.filter(name__in=devices_names)
-        if vlan_traceroute_settings.vlan_start_regex:
-            devices_qs = devices_qs.filter(name__iregex=vlan_traceroute_settings.vlan_start_regex)
-        if vlan_traceroute_settings.ip_pattern:
-            devices_qs = devices_qs.filter(ip__iregex=vlan_traceroute_settings.ip_pattern)
+    if vlan_traceroute_settings.start_device:
+        devices_names = tuple(map(str.strip, vlan_traceroute_settings.start_device.split("\n")))
+        devices_qs = devices_qs.filter(name__in=devices_names)
+    if vlan_traceroute_settings.start_device_regex:
+        devices_qs = devices_qs.filter(name__iregex=vlan_traceroute_settings.start_device_regex)
+    if vlan_traceroute_settings.device_ip_pattern:
+        devices_qs = devices_qs.filter(ip__iregex=vlan_traceroute_settings.device_ip_pattern)
 
     if device_name:
         devices_qs = devices_qs.filter(name__icontains=device_name)

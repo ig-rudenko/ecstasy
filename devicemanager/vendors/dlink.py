@@ -277,9 +277,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
         :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...]), ... ]```
         """
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
 
         output = self.send_command("show vlan")
         with open(f"{TEMPLATE_FOLDER}/vlans_templates/d-link.template", encoding="utf-8") as template_file:
@@ -463,7 +461,6 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         if not media_type and int(port) > 23:
             r2 += self.send_command(f"config ports {port} medium_type fiber state enable")
 
-        self.lock = False
         # Сохранение конфигурации, если для параметра `save_config` установлено значение `True`.
         s = self.save_config() if save_config else "Without saving"
         return r1 + r2 + s
@@ -519,7 +516,6 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             # он установит порт в состояние, которое было передано.
             r += self.send_command(f"config ports {port} medium_type fiber state {state}")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
 
         # Возврат результата команды и результата функции save_config().
@@ -602,7 +598,6 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 "status": "fail",
             }
 
-        self.lock = False
         if "Success" in status:  # Успешно поменяли описание
             # Возвращаем строку с результатом работы и сохраняем конфигурацию
             return {
@@ -650,9 +645,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-        self.lock = False
         port_type = self.get_port_type(port)
-        self.lock = True
 
         if port_type in ["COPPER", "?"]:
             diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)

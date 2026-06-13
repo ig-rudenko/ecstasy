@@ -46,7 +46,9 @@ class DeviceCommentPermission(permissions.BasePermission):
     """Разрешение на изменение комментария к порту на оборудовании"""
 
     def has_object_permission(self, request: Request, view, obj: InterfacesComments) -> bool:
-        return request.user.is_superuser or has_user_access_to_device(request.user, obj.device)
+        return request.user.is_superuser or (
+            request.user == obj.user and has_user_access_to_device(request.user, obj.device)
+        )
 
 
 class DevicesAdminPermission(permissions.BasePermission):

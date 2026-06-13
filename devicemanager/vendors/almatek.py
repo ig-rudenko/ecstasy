@@ -94,11 +94,17 @@ class Almatek(BaseDevice, AbstractConfigDevice):
                     else:
                         interfaces_vlans.setdefault(port, []).append(int(vid))
 
-        self.lock = False
         interfaces = self.get_interfaces()
         result: InterfaceVLANListType = []
         for interface in interfaces:
-            result.append((interface[0], interface[1], interface[2], interfaces_vlans.get(interface[0], [])))
+            result.append(
+                (  # noqa
+                    interface[0],
+                    interface[1],
+                    interface[2],
+                    interfaces_vlans.get(interface[0], []),
+                )
+            )
 
         return result
 
@@ -186,7 +192,6 @@ class Almatek(BaseDevice, AbstractConfigDevice):
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -225,7 +230,6 @@ class Almatek(BaseDevice, AbstractConfigDevice):
         self.session.expect(self.prompt)
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -305,7 +309,6 @@ class Almatek(BaseDevice, AbstractConfigDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        self.lock = False
         # Возвращаем строку с результатом работы и сохраняем конфигурацию
         return {
             "description": desc,

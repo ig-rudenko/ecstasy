@@ -1,4 +1,4 @@
-FROM node:22.9.0-alpine AS builder
+FROM node:24.16-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build
 
 
-FROM nginx:1.29.8-alpine
+FROM nginx:1.30.2-alpine
 LABEL authors="irudenko"
 
 COPY --from=builder /app/dist /usr/share/nginx/html

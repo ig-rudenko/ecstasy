@@ -23,7 +23,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
-from django.utils.html import escape, linebreaks
+from django.utils.html import format_html, format_html_join, linebreaks
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin, TabularInline
@@ -34,6 +34,7 @@ from unfold.contrib.filters.admin import (
     RelatedDropdownFilter,
 )
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget
 
 from apps.gathering.services.configurations import LocalConfigStorage
 from devicemanager.device import Interfaces
@@ -49,12 +50,14 @@ from .models import (
     BulkDeviceCommandExecutionResult,
     DeviceCommand,
     DeviceGroup,
+    DeviceInterfacePatternRule,
     DeviceMedia,
     Devices,
     InterfacesComments,
     Profile,
     UsersActions,
 )
+from .services.device.commands import CommandMacro, iter_command_macros, validate_command_template
 
 
 class BulkDeviceCommandExecutionResultInline(TabularInline):
@@ -88,6 +91,62 @@ VendorDropdownFilter = distinct_dropdown_filter("vendor", "vendor")
 ModelDropdownFilter = distinct_dropdown_filter("model", "model")
 ConnectionPoolSizeDropdownFilter = distinct_dropdown_filter("connection_pool_size", "connection pool size")
 DeviceVendorDropdownFilter = distinct_dropdown_filter("device_vendor", "device vendor")
+InterfacePatternVendorDropdownFilter = distinct_dropdown_filter("vendor", "vendor")
+
+
+@admin.register(DeviceInterfacePatternRule)
+class DeviceInterfacePatternRuleAdmin(ModelAdmin):
+    """Управление общими паттернами интерфейсов по производителю и модели."""
+
+    compressed_fields = True
+    warn_unsaved_form = True
+    list_filter_submit = True
+    list_display = [
+        "name",
+        "enabled",
+        "vendor",
+        "model_match_type",
+        "model_pattern",
+        "interface_pattern",
+        "priority",
+        "matched_devices_count",
+        "updated_at",
+    ]
+    list_filter = [
+        "enabled",
+        InterfacePatternVendorDropdownFilter,
+        ("model_match_type", ChoicesDropdownFilter),
+    ]
+    search_fields = ["name", "vendor", "model_pattern", "interface_pattern", "description"]
+    readonly_fields = ["matched_devices_count", "created_at", "updated_at"]
+    ordering = ["vendor", "model_pattern", "-priority", "id"]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "enabled",
+                    "name",
+                    "vendor",
+                    "model_match_type",
+                    "model_pattern",
+                    "interface_pattern",
+                    "priority",
+                    "description",
+                )
+            },
+        ),
+        (
+            "Служебная информация",
+            {"fields": ("matched_devices_count", "created_at", "updated_at")},
+        ),
+    )
+
+    @admin.display(description="Подходит устройств")
+    def matched_devices_count(self, obj: DeviceInterfacePatternRule) -> int:
+        """Return number of devices matched by this rule."""
+        devices = Devices.objects.filter(vendor__iexact=obj.vendor.strip()).only("vendor", "model")
+        return sum(1 for device in devices if obj.matches_device(device))
 
 
 @admin.register(DeviceGroup)
@@ -156,15 +215,17 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
     fieldsets = (
         (
             "Характеристика",
-            {"fields": ("ip", "name", "active"), "classes": ("tab", "wide")},
+            {
+                "fields": ("name", "ip", "active"),
+                "classes": ("tab", "wide"),
+            },
         ),
         (
-            "Координаты",
-            {"fields": ("latitude", "longitude"), "classes": ("tab",)},
-        ),
-        (
-            "Тип",
-            {"fields": ("vendor", "model", "serial_number", "os_version"), "classes": ("tab",)},
+            "Данные",
+            {
+                "fields": ("vendor", "model", "serial_number", "os_version", "latitude", "longitude"),
+                "classes": ("tab",),
+            },
         ),
         (
             "Принадлежность",
@@ -461,8 +522,14 @@ class BrasAdmin(ModelAdmin):
 
     compressed_fields = True
     warn_unsaved_form = True
-    list_display = ["name", "ip"]
-    search_fields = ["name", "ip"]
+    list_display = ["device", "device_ip"]
+    list_select_related = ["device"]
+    search_fields = ["device__name", "device__ip"]
+
+    @admin.display(description="IP адрес", ordering="device__ip")
+    def device_ip(self, obj: Bras) -> str:
+        """Вернуть IP-адрес связанного оборудования."""
+        return obj.device.ip
 
 
 @admin.register(Profile)
@@ -777,13 +844,141 @@ class DeviceMediaAdmin(ModelAdmin):
         return ""
 
 
+COMMAND_MACRO_LABELS = {
+    "ip": "IP-адрес",
+    "port": "Порт оборудования",
+    "mac": "MAC-адрес",
+    "number": "Целое число",
+    "word": "Слово без пробелов",
+}
+COMMAND_MACRO_STYLE = (
+    "color: #1d4ed8; background-color: rgba(37, 99, 235, 0.12); "
+    "border: 1px solid rgba(37, 99, 235, 0.35); border-radius: 0.25rem; "
+    "cursor: help; padding: 0.05rem 0.2rem;"
+)
+COMMAND_IF_MACRO_STYLE = (
+    "color: #b45309; background-color: rgba(245, 158, 11, 0.15); "
+    "border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 0.25rem; "
+    "cursor: help; padding: 0.05rem 0.2rem;"
+)
+
+
+def command_macro_description(macro: CommandMacro) -> str:
+    """Return a detailed tooltip for one command macro."""
+    if macro.kind == "if":
+        return (
+            "Условный макрос: после отправки команды ожидать регулярное выражение "
+            f"«{macro.condition}», затем отправить ответ «{macro.response}»."
+        )
+
+    description = COMMAND_MACRO_LABELS[macro.kind]
+    if macro.name:
+        description += f". Имя параметра: «{macro.name}»"
+    else:
+        description += ". Используется значение параметра без имени"
+
+    if macro.kind == "number":
+        if macro.min_value is not None and macro.max_value is not None:
+            description += f". Допустимый диапазон: от {macro.min_value} до {macro.max_value}"
+        elif macro.min_value is not None:
+            description += f". Минимальное значение: {macro.min_value}"
+        elif macro.max_value is not None:
+            description += f". Максимальное значение: {macro.max_value}"
+
+    return description + "."
+
+
+def command_macro_name_styles(command: str) -> dict[str, str]:
+    """Assign a distinct color to each macro parameter name."""
+    names = dict.fromkeys(macro.name for macro in iter_command_macros(command) if macro.name)
+    styles = {}
+
+    for index, name in enumerate(names):
+        hue = round((210 + index * 137.508) % 360)
+        styles[name] = (
+            f"color: hsl({hue}, 75%, 32%); background-color: hsl({hue}, 85%, 90%); "
+            "border-radius: 0.2rem; font-weight: 700; padding: 0 0.1rem;"
+        )
+
+    return styles
+
+
+def render_command_macro(macro: CommandMacro, name_styles: dict[str, str]):
+    """Render one command macro with highlighting and a tooltip."""
+    macro_class = "device-command-macro"
+    macro_style = COMMAND_MACRO_STYLE
+    if macro.kind == "if":
+        macro_class += " device-command-macro-if"
+        macro_style = COMMAND_IF_MACRO_STYLE
+
+    macro_content = format_html("{}", macro.text)
+    if macro.name and macro.name_start is not None and macro.name_end is not None:
+        name_start = macro.name_start - macro.start
+        name_end = macro.name_end - macro.start
+        macro_content = format_html(
+            '{}<span class="device-command-macro-name" style="{}">{}</span>{}',
+            macro.text[:name_start],
+            name_styles[macro.name],
+            macro.name,
+            macro.text[name_end:],
+        )
+
+    description = command_macro_description(macro)
+    return format_html(
+        '<span class="{}" style="{}" title="{}" aria-label="{}">{}</span>',
+        macro_class,
+        macro_style,
+        description,
+        description,
+        macro_content,
+    )
+
+
+def render_command_line(command_line: str, name_styles: dict[str, str]):
+    """Render one command line and add a detailed macro summary tooltip."""
+    macros = list(iter_command_macros(command_line))
+    fragments = []
+    position = 0
+
+    for macro in macros:
+        fragments.append(format_html("{}", command_line[position : macro.start]))
+        fragments.append(render_command_macro(macro, name_styles))
+        position = macro.end
+
+    fragments.append(format_html("{}", command_line[position:]))
+    line_html = format_html_join("", "{}", ((fragment,) for fragment in fragments))
+    if not command_line:
+        line_html = format_html("&nbsp;")
+
+    if not macros:
+        return format_html(
+            '<span class="device-command-line" style="display: inline-block; min-width: 100%;">{}</span>',
+            line_html,
+        )
+
+    tooltip = "\n".join(
+        f"{index}. {command_macro_description(macro)}" for index, macro in enumerate(macros, start=1)
+    )
+    return format_html(
+        '<span class="device-command-line" style="cursor: help; display: inline-block; min-width: 100%;" '
+        'title="{}" aria-label="{}">{}</span>',
+        tooltip,
+        tooltip,
+        line_html,
+    )
+
+
 class DeviceCommandModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         uniq_vendors = list(sorted(set(Devices.objects.all().values_list("vendor", flat=True)), key=str))
-        self.fields["device_vendor"] = forms.ChoiceField(
-            choices=[(v, v) for v in uniq_vendors], required=True
-        )
+        self.fields["device_vendor"].widget = UnfoldAdminSelectWidget(choices=[(v, v) for v in uniq_vendors])
+
+    def clean_command(self) -> str:
+        """Validate command macros before saving the template."""
+        command = self.cleaned_data["command"]
+        validate_command_template(command)
+        return command
 
     class Meta:
         model = DeviceCommand
@@ -797,9 +992,10 @@ class DeviceCommandModelForm(forms.ModelForm):
             "perm_groups",
         ]
         widgets = {
-            "command": forms.Textarea(
+            "command": UnfoldAdminTextareaWidget(
                 attrs={
-                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%; border: 1px solid #00000007",
+                    "rows": 10,
+                    "style": "font-family: monospace; font-size: 1rem; padding: 1rem; min-width: 100%;",
                     "wrap": "off",
                 },
             ),
@@ -818,8 +1014,15 @@ class DeviceCommandAdmin(ModelAdmin):
 
     @admin.display(description="Команда", ordering="command")
     def command_html(self, obj):
-        cmd_text = escape(obj.command).replace("\n", "<br/>")
-        return mark_safe(f'<code style="font-family: monospace;">{cmd_text}</code>')
+        name_styles = command_macro_name_styles(obj.command)
+        rendered_lines = [
+            render_command_line(command_line, name_styles) for command_line in obj.command.split("\n")
+        ]
+        command_html = mark_safe("<br>".join(str(line) for line in rendered_lines))
+        return format_html(
+            '<code style="font-family: monospace; white-space: nowrap;">{}</code>',
+            command_html,
+        )
 
 
 @admin.register(AccessGroup)

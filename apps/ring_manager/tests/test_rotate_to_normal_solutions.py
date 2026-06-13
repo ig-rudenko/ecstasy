@@ -1,4 +1,3 @@
-import pprint
 from unittest.mock import patch
 
 from django.utils import timezone
@@ -423,7 +422,7 @@ class TestRotateToNormalSolutions(TestRingBase):
         performer = SolutionsPerformer(ring=ring)
         performed_solutions = performer.perform_all()
 
-        pprint.pprint(performed_solutions)
+        # pprint.pprint(performed_solutions)
 
         # Найдено 3 решения
         self.assertEqual(len(performed_solutions), 3)

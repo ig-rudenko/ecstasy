@@ -256,7 +256,6 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
-        self.lock = False
         return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]  # noqa
 
     @BaseDevice.lock_session
@@ -396,7 +395,6 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
             return self.save_config() if save_config else "Without saving"
 
         return "Этот порт нельзя перезагружать"
@@ -425,7 +423,6 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
             return self.save_config() if save_config else "Without saving"
 
         return "Этот порт нельзя установить в " + status
@@ -485,7 +482,6 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
             return {
                 "description": desc,
                 "port": port,

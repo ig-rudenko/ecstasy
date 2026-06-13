@@ -2,6 +2,7 @@ from . import UnknownDeviceError
 from .vendors.almatek import AlmatekFactory
 from .vendors.base.device import BaseDevice
 from .vendors.base.factory import AbstractDeviceFactory
+from .vendors.base.helpers import remove_ansi_escape_codes
 from .vendors.base.types import DeviceAuthDict
 from .vendors.cisco import CiscoFactory
 from .vendors.dlink import DlinkFactory
@@ -83,7 +84,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
         |            SNR              |             "SNR"             |
 
         """
-
+        version_output += remove_ansi_escape_codes(session.before)
         version_output += cls.send_command(session, "show version")
 
         factory_data = {

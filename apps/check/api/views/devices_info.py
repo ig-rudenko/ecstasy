@@ -332,7 +332,7 @@ class DeviceInfoAPIView(DeviceAPIView):
 
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         device: models.Devices = self.get_object()
         zabbix_info = DeviceManager(name=device.name).zabbix_info
         coordinates = get_devices_coordinates([device.name]).get(device.name)

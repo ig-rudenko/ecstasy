@@ -42,6 +42,7 @@ urlpatterns = [
     path("api/v1/gather/", include("apps.gathering.api.urls")),
     path("api/v1/gpon/", include("apps.gpon.api.urls")),
     path("api/v1/ring-manager/", include("apps.ring_manager.api.urls")),
+    path("api/v1/news/", include("apps.news.api.urls")),
     path("api/v1/accounts/", include("apps.accounting.urls")),
     # JWT
     path("api/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),

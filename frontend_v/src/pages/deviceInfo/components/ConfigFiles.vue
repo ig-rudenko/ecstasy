@@ -135,7 +135,14 @@
         </div>
     </div>
 
-    <Dialog v-model:visible="visibleConfigText" modal maximizable class="w-[min(96vw,1400px)]" content-class="!p-0">
+    <Dialog
+        v-model:visible="visibleConfigText"
+        modal
+        maximizable
+        class="w-[min(96vw,1400px)]"
+        content-class="!p-0"
+        @hide="resetConfigSearch"
+    >
         <template #header>
             <div class="min-w-0 px-1">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">
@@ -147,10 +154,97 @@
             </div>
         </template>
 
-        <div v-if="selectedFile?.content" class="rounded-b-3xl bg-gray-950 px-4 py-4 text-gray-100">
-            <pre class="overflow-auto whitespace-pre-wrap break-all font-mono text-[12px] leading-6">{{
-                selectedFile.content
-            }}</pre>
+        <div v-if="selectedFile?.content" class="rounded-b-3xl bg-gray-950 p-4 text-gray-100">
+            <div
+                class="mb-4 flex flex-col gap-4 rounded-2xl border border-gray-700 bg-gray-900/90 p-3 lg:flex-row lg:items-end"
+            >
+                <div class="min-w-0 flex-1">
+                    <label
+                        for="config-regex-search"
+                        class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-400"
+                    >
+                        Поиск по регулярному выражению
+                    </label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <InputText
+                            id="config-regex-search"
+                            v-model="configSearchPattern"
+                            class="min-w-[16rem] flex-1 font-mono"
+                            placeholder="Например: interface\s+\S+"
+                            autocomplete="off"
+                            aria-describedby="config-search-help"
+                            @keydown.enter.prevent="handleConfigSearchEnter"
+                        />
+                        <span
+                            class="min-w-16 text-center text-sm tabular-nums text-gray-300"
+                            aria-live="polite"
+                            aria-label="Текущее совпадение и общее количество"
+                        >
+                            {{ configMatchCounter }}
+                        </span>
+                        <Button
+                            icon="pi pi-chevron-up"
+                            severity="secondary"
+                            outlined
+                            rounded
+                            :disabled="configMatches.length === 0"
+                            aria-label="Предыдущее совпадение"
+                            title="Предыдущее совпадение (Shift+Enter)"
+                            @click="showPreviousConfigMatch"
+                        />
+                        <Button
+                            icon="pi pi-chevron-down"
+                            severity="secondary"
+                            outlined
+                            rounded
+                            :disabled="configMatches.length === 0"
+                            aria-label="Следующее совпадение"
+                            title="Следующее совпадение (Enter)"
+                            @click="showNextConfigMatch"
+                        />
+                    </div>
+                    <div
+                        id="config-search-help"
+                        class="mt-2 min-h-5 text-xs"
+                        :class="configSearchError ? 'text-red-300' : 'text-gray-500'"
+                    >
+                        {{
+                            configSearchError ||
+                            "Поиск без учёта регистра; ^ и $ работают для каждой строки. Ctrl+F переводит фокус в это поле."
+                        }}
+                    </div>
+                </div>
+
+                <div class="w-full lg:w-64">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <label
+                            for="config-font-size"
+                            class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400"
+                        >
+                            Размер шрифта
+                        </label>
+                        <output for="config-font-size" class="text-sm tabular-nums text-gray-200">
+                            {{ configFontSize }} px
+                        </output>
+                    </div>
+                    <input
+                        id="config-font-size"
+                        v-model.number="configFontSize"
+                        type="range"
+                        min="10"
+                        max="24"
+                        step="1"
+                        class="h-2 w-full cursor-pointer accent-sky-500"
+                    />
+                </div>
+            </div>
+
+            <pre
+                ref="configText"
+                class="config-content max-h-[70vh] overflow-auto whitespace-pre-wrap break-all rounded-2xl bg-black/20 p-3 font-mono"
+                :style="{ fontSize: `${configFontSize}px`, lineHeight: 1.6 }"
+                v-html="highlightedConfigText"
+            ></pre>
         </div>
         <div v-else class="flex justify-center p-10">
             <ProgressSpinner />
@@ -219,6 +313,21 @@ interface ConfigFile {
     display?: boolean;
 }
 
+interface ConfigMatch {
+    start: number;
+    end: number;
+}
+
+/** Экранирует текст конфигурации перед добавлением безопасной разметки подсветки. */
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 class CollectNewConfig {
     constructor(
         public active: boolean = false,
@@ -250,10 +359,50 @@ export default defineComponent({
             showDiffDialog: false,
             visibleConfigText: false,
             visibleDeleteDialog: false,
+            configSearchPattern: "",
+            configSearchError: "",
+            configMatches: [] as ConfigMatch[],
+            activeConfigMatch: -1,
+            configFontSize: 12,
         };
+    },
+    computed: {
+        configMatchCounter(): string {
+            if (!this.configMatches.length) return "0 / 0";
+            return `${this.activeConfigMatch + 1} / ${this.configMatches.length}`;
+        },
+        highlightedConfigText(): string {
+            const content = this.selectedFile?.content ? this.formatConfigFile(this.selectedFile.content) : "";
+            if (!this.configMatches.length) return escapeHtml(content);
+
+            let result = "";
+            let offset = 0;
+
+            this.configMatches.forEach((match, index) => {
+                const matchClass =
+                    index === this.activeConfigMatch ? "config-match config-match-active" : "config-match";
+
+                result += escapeHtml(content.slice(offset, match.start));
+                result += `<mark class="${matchClass}" data-config-match="${index}">${escapeHtml(
+                    content.slice(match.start, match.end)
+                )}</mark>`;
+                offset = match.end;
+            });
+
+            return result + escapeHtml(content.slice(offset));
+        },
+    },
+    watch: {
+        configSearchPattern() {
+            this.updateConfigSearch();
+        },
     },
     mounted() {
         this.getFiles();
+        window.addEventListener("keydown", this.handleConfigSearchShortcut);
+    },
+    beforeUnmount() {
+        window.removeEventListener("keydown", this.handleConfigSearchShortcut);
     },
     methods: {
         fileIcon(fileName: string): string {
@@ -321,6 +470,7 @@ export default defineComponent({
         },
         toggleFileDisplay(file: ConfigFile) {
             if (file.size > 1024 * 1024) return;
+            this.resetConfigSearch();
             this.selectedFile = file;
 
             if (!file.content) {
@@ -334,6 +484,82 @@ export default defineComponent({
             }
             this.visibleConfigText = true;
             file.display = !file.display;
+        },
+        updateConfigSearch() {
+            this.configSearchError = "";
+            this.configMatches = [];
+            this.activeConfigMatch = -1;
+
+            const content = this.selectedFile?.content ? this.formatConfigFile(this.selectedFile.content) : "";
+            if (!this.configSearchPattern || !content) return;
+
+            let expression: RegExp;
+            try {
+                expression = new RegExp(this.configSearchPattern, "gim");
+            } catch (error) {
+                this.configSearchError =
+                    error instanceof SyntaxError ? "Некорректное регулярное выражение" : "Не удалось выполнить поиск";
+                return;
+            }
+
+            let match: RegExpExecArray | null;
+            while ((match = expression.exec(content)) !== null) {
+                if (!match[0].length) {
+                    expression.lastIndex += 1;
+                    continue;
+                }
+
+                this.configMatches.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                });
+            }
+
+            if (this.configMatches.length) {
+                this.activeConfigMatch = 0;
+                this.scrollToActiveConfigMatch();
+            }
+        },
+        resetConfigSearch() {
+            this.configSearchPattern = "";
+            this.configSearchError = "";
+            this.configMatches = [];
+            this.activeConfigMatch = -1;
+        },
+        handleConfigSearchEnter(event: KeyboardEvent) {
+            if (event.shiftKey) {
+                this.showPreviousConfigMatch();
+                return;
+            }
+            this.showNextConfigMatch();
+        },
+        showNextConfigMatch() {
+            if (!this.configMatches.length) return;
+            this.activeConfigMatch = (this.activeConfigMatch + 1) % this.configMatches.length;
+            this.scrollToActiveConfigMatch();
+        },
+        showPreviousConfigMatch() {
+            if (!this.configMatches.length) return;
+            this.activeConfigMatch =
+                (this.activeConfigMatch - 1 + this.configMatches.length) % this.configMatches.length;
+            this.scrollToActiveConfigMatch();
+        },
+        scrollToActiveConfigMatch() {
+            this.$nextTick(() => {
+                const configText = this.$refs.configText as HTMLElement | undefined;
+                const activeMatch = configText?.querySelector<HTMLElement>(
+                    `[data-config-match="${this.activeConfigMatch}"]`
+                );
+                activeMatch?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+            });
+        },
+        handleConfigSearchShortcut(event: KeyboardEvent) {
+            if (!this.visibleConfigText || (!event.ctrlKey && !event.metaKey) || event.key.toLowerCase() !== "f") {
+                return;
+            }
+
+            event.preventDefault();
+            document.getElementById("config-regex-search")?.focus();
         },
         formatConfigFile(content: string): string {
             return content.replace(/\r\n?/g, "\n");
@@ -359,3 +585,18 @@ export default defineComponent({
     },
 });
 </script>
+
+<style scoped>
+.config-content :deep(.config-match) {
+    border-radius: 0.2rem;
+    background: rgb(250 204 21 / 0.55);
+    color: inherit;
+}
+
+.config-content :deep(.config-match-active) {
+    background: rgb(251 146 60);
+    color: rgb(17 24 39);
+    outline: 2px solid rgb(254 215 170);
+    outline-offset: 1px;
+}
+</style>

@@ -178,9 +178,7 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
     def get_vlans(self) -> InterfaceVLANListType:
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
 
         # Далее смотрим текущую конфигурацию front портов, чтобы найти VLAN.
         interfaces_running_config_output: str = self.send_command(
@@ -420,7 +418,6 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
             self.session.send("exit\r")
             self.session.expect(self.prompt)
 
-            self.lock = False
             return {
                 "description": desc,
                 "port": port,

@@ -1,7 +1,7 @@
 import re
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from ipaddress import IPv4Address
@@ -10,6 +10,7 @@ from typing import Any
 import orjson
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
 from devicemanager.device.interfaces import Interfaces
@@ -31,6 +32,173 @@ class ContextValidator:
     pattern: re.Pattern
     validate: Callable[[re.Match[str], str], None]
     clean: Callable[[Any, Devices], str]
+
+
+@dataclass(frozen=True)
+class CommandMacro:
+    """One recognized macro in a command template."""
+
+    kind: str
+    text: str
+    start: int
+    end: int
+    name: str | None = None
+    name_start: int | None = None
+    name_end: int | None = None
+    condition: str | None = None
+    response: str | None = None
+    min_value: str | None = None
+    max_value: str | None = None
+
+
+IP_MACRO_PATTERN = re.compile(r"\{ip(?:#(?P<name>\S+?)?)?}")
+PORT_MACRO_PATTERN = re.compile(r"\{port(?:#(?P<name>\S+?)?)?}")
+MAC_MACRO_PATTERN = re.compile(r"\{mac(?:#(?P<name>\S+?)?)?}")
+NUMBER_MACRO_PATTERN = re.compile(
+    r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+?)?)?}"
+)
+WORD_MACRO_PATTERN = re.compile(r"\{word(?:#(?P<name>\S+?)?)?}")
+CONDITION_MACRO_PATTERN = re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.*?)?)?(?<!\\)}")
+COMMAND_MACRO_PATTERNS = (
+    ("ip", IP_MACRO_PATTERN),
+    ("port", PORT_MACRO_PATTERN),
+    ("mac", MAC_MACRO_PATTERN),
+    ("number", NUMBER_MACRO_PATTERN),
+    ("word", WORD_MACRO_PATTERN),
+    ("if", CONDITION_MACRO_PATTERN),
+)
+
+
+def _match_command_macro(command: str, position: int) -> tuple[str, re.Match[str]] | None:
+    """Return a recognized macro starting at the given position."""
+    for kind, pattern in COMMAND_MACRO_PATTERNS:
+        match = pattern.match(command, position)
+        if match is not None:
+            return kind, match
+    return None
+
+
+def _is_escaped_opening_brace(command: str, position: int) -> bool:
+    """Return whether an opening brace is preceded by an odd slash count."""
+    slash_count = 0
+    position -= 1
+    while position >= 0 and command[position] == "\\":
+        slash_count += 1
+        position -= 1
+    return slash_count % 2 == 1
+
+
+def iter_command_macros(command: str) -> Iterator[CommandMacro]:
+    """Yield recognized, unescaped macros from a command template."""
+    position = 0
+
+    while position < len(command):
+        if command[position] != "{" or _is_escaped_opening_brace(command, position):
+            position += 1
+            continue
+
+        macro_match = _match_command_macro(command, position)
+        if macro_match is None:
+            position += 1
+            continue
+
+        kind, match = macro_match
+        name = match.groupdict().get("name")
+        name_start = None
+        name_end = None
+        if name is not None:
+            name_start, name_end = match.span("name")
+
+        yield CommandMacro(
+            kind=kind,
+            text=match.group(0),
+            start=match.start(),
+            end=match.end(),
+            name=name,
+            name_start=name_start,
+            name_end=name_end,
+            condition=match.groupdict().get("condition"),
+            response=match.groupdict().get("command"),
+            min_value=match.groupdict().get("start"),
+            max_value=match.groupdict().get("end"),
+        )
+        position = match.end()
+
+
+def _validate_command_macro(match: re.Match[str]) -> None:
+    """Validate constraints encoded in one recognized command macro."""
+    if match.re is NUMBER_MACRO_PATTERN:
+        start = match.group("start")
+        end = match.group("end")
+        if start and end and int(start) > int(end):
+            raise DjangoValidationError(
+                f"В макросе {match.group(0)} минимальное значение не может быть больше максимального."
+            )
+
+    if match.re is CONDITION_MACRO_PATTERN:
+        condition = match.group("condition")
+        response = match.group("command")
+        if condition is None or response is None:
+            raise DjangoValidationError(
+                f"Условный макрос {match.group(0)} должен иметь формат {{if:ожидание:ответ}}."
+            )
+        try:
+            re.compile(condition.replace("\\\\", "\\"))
+        except re.error as exc:
+            raise DjangoValidationError(
+                f"В условном макросе {match.group(0)} указано неверное регулярное выражение: {exc}."
+            ) from exc
+
+
+def _prepare_command_template(command: str) -> tuple[str, str]:
+    """Validate macros and mask escaped opening braces before rendering."""
+    escaped_brace_marker = "\0escaped-opening-brace\0"
+    while escaped_brace_marker in command:
+        escaped_brace_marker += "\0"
+
+    prepared_command: list[str] = []
+    position = 0
+
+    while position < len(command):
+        if command[position] == "\\":
+            slash_end = position
+            while slash_end < len(command) and command[slash_end] == "\\":
+                slash_end += 1
+
+            slash_count = slash_end - position
+            if slash_end < len(command) and command[slash_end] == "{":
+                prepared_command.append("\\" * (slash_count // 2))
+                if slash_count % 2:
+                    prepared_command.append(escaped_brace_marker)
+                    position = slash_end + 1
+                    continue
+
+                position = slash_end
+                continue
+
+            prepared_command.append("\\" * slash_count)
+            position = slash_end
+            continue
+
+        if command[position] == "{":
+            macro_match = _match_command_macro(command, position)
+            if macro_match is None:
+                raise DjangoValidationError(
+                    "Команда содержит неизвестный или незавершённый макрос. "
+                    "Для обычного символа `{` используйте `\\{`. "
+                    "Доступны: {port}, {ip}, {mac}, {number}, {word}, {if:ожидание:ответ}."
+                )
+
+            _, match = macro_match
+            _validate_command_macro(match)
+            prepared_command.append(match.group(0))
+            position = match.end()
+            continue
+
+        prepared_command.append(command[position])
+        position += 1
+
+    return "".join(prepared_command), escaped_brace_marker
 
 
 def normalize_device_vendor(value) -> str:
@@ -120,42 +288,52 @@ def validate_number(number_string: str, min_value: str, max_value: str) -> None:
         raise ValidationError(f"Число должно быть меньше или равно {max_value}")
 
 
+def validate_command_template(command: str) -> None:
+    """Validate command macros without requiring a device or context values."""
+    _prepare_command_template(command)
+
+
 def validate_command(device: Devices, command: str, context: dict) -> list[RemoteCommand]:
     """Validate command macros for one device and render command list."""
+    try:
+        prepared_command, escaped_brace_marker = _prepare_command_template(command)
+    except DjangoValidationError as exc:
+        raise ValidationError(exc.messages) from exc
+
     context_validators: list[ContextValidator] = [
         ContextValidator(
             key="ip",
-            pattern=re.compile(r"\{ip(?:#(?P<name>\S+?)?)?}"),
+            pattern=IP_MACRO_PATTERN,
             validate=lambda m, ip: validate_ip(ip),
             clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="port",
-            pattern=re.compile(r"\{port(?:#(?P<name>\S+?)?)?}"),
+            pattern=PORT_MACRO_PATTERN,
             validate=lambda m, port: validate_device_port(device, port),
             clean=lambda v, d: clean_device_port(v, d),
         ),
         ContextValidator(
             key="mac",
-            pattern=re.compile(r"\{mac(?:#(?P<name>\S+?)?)?}"),
+            pattern=MAC_MACRO_PATTERN,
             validate=lambda m, mac: validate_mac(mac),
             clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="number",
-            pattern=re.compile(r"\{number(?::(?P<start>-?\d+)?)?(?::(?P<end>-?\d+)?)?(?:#(?P<name>\S+?)?)?}"),
+            pattern=NUMBER_MACRO_PATTERN,
             validate=lambda m, v: validate_number(v, m.group("start"), m.group("end")),
             clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="word",
-            pattern=re.compile(r"\{word(?:#(?P<name>\S+?)?)?}"),
+            pattern=WORD_MACRO_PATTERN,
             validate=lambda m, word: validate_word(word),
             clean=lambda v, d: str(v),
         ),
         ContextValidator(
             key="if",
-            pattern=re.compile(r"\{if(?::(?P<condition>.+?)?)?(?:(?<!\\):(?P<command>.*?)?)?(?<!\\)}"),
+            pattern=CONDITION_MACRO_PATTERN,
             validate=lambda m, word: validate_word(word),
             clean=lambda v, d: str(v),
         ),
@@ -168,7 +346,7 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
 
     validated_commands: list[RemoteCommand] = []
 
-    for cmd_line in command.splitlines():
+    for cmd_line in prepared_command.splitlines():
         valid_cmd_line: RemoteCommand = {"command": cmd_line.strip(), "conditions": []}
 
         for validator in context_validators:
@@ -222,6 +400,7 @@ def validate_command(device: Devices, command: str, context: dict) -> list[Remot
                     + valid_cmd_line["command"][end_pos:]
                 )
 
+        valid_cmd_line["command"] = valid_cmd_line["command"].replace(escaped_brace_marker, "{")
         validated_commands.append(valid_cmd_line)
 
     return validated_commands

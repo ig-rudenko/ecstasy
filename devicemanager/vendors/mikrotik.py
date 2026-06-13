@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import partial
 from typing import Literal
 
-import pysftp
+import paramiko
 
 from ..exceptions import UnknownDeviceError
 from .base.device import AbstractConfigDevice, AbstractPOEDevice, BaseDevice
@@ -180,9 +180,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     def get_vlans(self) -> InterfaceVLANListType:
         interfaces_with_vlans = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
         for line in interfaces:
             bridge_name = self._ether_interfaces.get(line[0], {}).get("bridge", "")
             bridge = self._bridges.get(bridge_name, {"vlans": []})
@@ -395,18 +393,17 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
 
         config_file_name += ".backup"
 
-        cnopts = pysftp.CnOpts()
-        cnopts.hostkeys = None
-
-        with pysftp.Connection(
-            host=self.ip,
-            username=self.auth["login"],
-            password=self.auth["password"],
-            cnopts=cnopts,
-        ) as session:
+        with paramiko.SSHClient() as ssh_client:
+            ssh_client.load_system_host_keys()
+            ssh_client.connect(
+                hostname=self.ip,
+                username=self.auth["login"],
+                password=self.auth["password"],
+            )
             path = str((local_folder_path / config_file_name).absolute())
             # Приведенный выше код создает резервную копию файла конфигурации.
-            session.get(config_file_name, path)
+            with ssh_client.open_sftp() as sftp_client:
+                sftp_client.get(config_file_name, path)
 
         self.send_command(f"file remove {config_file_name}")
 

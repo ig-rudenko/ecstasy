@@ -1,6 +1,8 @@
 import { ref } from "vue";
+import { isAxiosError } from "axios";
 
 import api from "@/services/api";
+import store from "@/store";
 
 interface PermissionResponse {
     permissions: string[];
@@ -16,16 +18,23 @@ class Permissions {
     constructor() {
         this.load();
 
-        api.get<PermissionResponse>("/api/v1/accounts/myself/permissions").then((value) => {
-            const samePermissions =
-                value.data.permissions.length === this.perms.value.permissions.length &&
-                this.perms.value.permissions.every((p, i) => p === value.data.permissions[i]);
+        api.get<PermissionResponse>("/api/v1/accounts/myself/permissions")
+            .then((value) => {
+                const samePermissions =
+                    value.data.permissions.length === this.perms.value.permissions.length &&
+                    this.perms.value.permissions.every((p, i) => p === value.data.permissions[i]);
 
-            if (!samePermissions || this.perms.value.console !== value.data.console) {
-                this.perms.value = value.data;
-                this.save();
-            }
-        });
+                if (!samePermissions || this.perms.value.console !== value.data.console) {
+                    this.perms.value = value.data;
+                    this.save();
+                }
+            })
+            .catch(async (error: unknown) => {
+                if (!isAxiosError(error) || error.response?.status !== 401) throw error;
+
+                await store.dispatch("auth/logout");
+                location.replace("/account/login");
+            });
     }
 
     private save() {

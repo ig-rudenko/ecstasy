@@ -1,6 +1,7 @@
 import { reactive } from "vue";
 
 import { tokenService } from "@/services/auth/token.service";
+import { normalizeAuthRedirectPath } from "@/services/auth/redirect";
 
 const OIDC_PENDING_STORAGE_KEY = "oidc-pending-state";
 const OIDC_LOGIN_STORAGE_KEY = "oidc-login";
@@ -231,7 +232,7 @@ export async function completeOIDCLogin(code: string, state: string): Promise<st
     scheduleRefresh(payload.expires_in);
     clearOIDCState();
 
-    return pendingState.redirectPath;
+    return normalizeAuthRedirectPath(pendingState.redirectPath);
 }
 
 export async function refreshOIDCTokens(force = false): Promise<boolean> {

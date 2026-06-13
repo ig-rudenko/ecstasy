@@ -17,7 +17,7 @@ class TestLog(TestCase):
                 name="auth group", login="login", password="password", secret="secret"
             ),
         )
-        self.bras = Bras.objects.create(name="test_bras", ip="192.168.10.2")
+        self.bras = Bras.objects.create(device=self.devices)
 
     @patch("apps.check.logger.django_actions_logger.info")
     def test_invalid_inputs(self, mock_logger_info: Mock):
@@ -39,25 +39,25 @@ class TestLog(TestCase):
 
     @patch("apps.check.logger.django_actions_logger.info")
     def test_log_bras(self, mock_logger_info: Mock):
-        # Проверка, что для объекта models.Bras создается запись в базе данных и лог-файле
+        """Действие с Bras должно логироваться для связанного оборудования."""
 
         log(self.user, self.bras, "test_bras_action")
-        bras_log = UsersActions.objects.get(action__contains="test_bras_action")
-        self.assertEqual(bras_log.action, f"{self.bras} | test_bras_action")
-        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.bras} | test_bras_action")
+        bras_log = UsersActions.objects.get(device=self.devices)
+        self.assertEqual(bras_log.action, "test_bras_action")
+        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.devices} | test_bras_action")
 
     @patch("apps.check.logger.django_actions_logger.info")
     def test_very_long_log_bras(self, mock_logger_info: Mock):
-        # Проверка, что можно передавать любую длину лога. Запись в базе будет создана без ошибок
+        """Длинное действие с Bras должно обрезаться до размера поля."""
 
         log_str = "test_bras_action" * 50  # Слишком длинный лог
         # Максимальная длина поля в базе
         action_max_length = UsersActions._meta.get_field("action").max_length
         # Строка, которая должна быть сохранена в базе
-        log_str_in_db = f"{self.bras} | {log_str}"[:action_max_length]
+        log_str_in_db = log_str[:action_max_length]
 
         log(self.user, self.bras, log_str)  # Делаем лог
 
-        bras_log = UsersActions.objects.get(action=log_str_in_db)
+        bras_log = UsersActions.objects.get(device=self.devices, action=log_str_in_db)
         self.assertEqual(bras_log.action, log_str_in_db)
-        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.bras} | {log_str}")
+        mock_logger_info.assert_called_with(f"| {self.user.username:<10} | {self.devices} | {log_str_in_db}")

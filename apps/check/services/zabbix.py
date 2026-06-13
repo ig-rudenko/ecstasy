@@ -84,9 +84,12 @@ def get_zabbix_graphs(device_name: str) -> tuple[int, list]:
 
 @cached(60 * 10, key=lambda host_id: f"zabbix_map_and_uptime:{host_id}")
 def get_zabbix_host_map_and_uptime(host_id: int | str) -> tuple[list[dict[str, str | int]], int]:
-    with zabbix_api.connect() as zbx:
-        devices_maps = get_device_zabbix_maps_ids(zbx, host_id)
-        uptime = get_device_uptime(zbx, host_id)
+    try:
+        with zabbix_api.connect() as zbx:
+            devices_maps = get_device_zabbix_maps_ids(zbx, host_id)
+            uptime = get_device_uptime(zbx, host_id)
+    except (Exception, RequestException):
+        return [], -1
     return devices_maps, uptime
 
 
@@ -103,7 +106,7 @@ def get_zabbix_host_info(device_name: str) -> dict:
             )
             if len(info) > 0:
                 return info[0]
-    except (MaxRetryError, RequestException, ZabbixAPIException):
+    except (Exception, RequestException):
         pass
     return {}
 

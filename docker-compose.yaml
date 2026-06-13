@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:20.0.3
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.3
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.4
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.4
 x-logging: &logging
   options:
     max-size: "10m"
@@ -35,6 +35,7 @@ services:
       - .env
     environment:
       DJANGO_ENV: "${DJANGO_ENV:-prod}"
+      CONFIG_STORAGE_DIR: "/configurations"
 
     volumes:
       - "./logs:/app/logs"
@@ -42,6 +43,8 @@ services:
       - "./media:/app/media"
       - "./map_layer_files:/app/media/map_layer_files"
       - "./configurations:/configurations"
+      - "./db-backup:/app/db-backup"
+      - "./ssh_data:/app/.ssh"
 
     depends_on:
       redis:
@@ -70,6 +73,7 @@ services:
       - "./media:/app/media"
       - "./map_layer_files:/app/media/map_layer_files"
       - "./configurations:/configurations"
+      - "./ssh_data:/app/.ssh"
     networks:
       - backend
 
@@ -94,6 +98,8 @@ services:
       DEVICE_CONNECTOR_LOG_LEVEL: "${DEVICE_CONNECTOR_LOG_LEVEL:-INFO}"
       DEVICE_CONNECTOR_BIND_HOST: "${DEVICE_CONNECTOR_BIND_HOST:-0.0.0.0}"
       DEVICE_CONNECTOR_BIND_PORT: "${DEVICE_CONNECTOR_BIND_PORT:-8000}"
+    volumes:
+      - "./ssh_data:/app/.ssh"
     networks:
       - backend
 

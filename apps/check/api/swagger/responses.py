@@ -252,9 +252,17 @@ class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
     portReloadStatus = serializers.CharField()
 
 
+class DevicePoolConnectionSwaggerSerializer(SwaggerSerializer):
+    active = serializers.BooleanField()
+    protocol = serializers.CharField(allow_null=True)
+
+
 class DevicePoolStatusesSwaggerSerializer(SwaggerSerializer):
     connectionPoolSize = serializers.IntegerField(min_value=1)
+    portScanProtocol = serializers.CharField()
+    commandProtocol = serializers.CharField()
     statuses = serializers.ListSerializer(child=serializers.BooleanField())  # type: ignore
+    connections = DevicePoolConnectionSwaggerSerializer(many=True)
 
 
 class BulkCommandLaunchDeviceSwaggerSerializer(SwaggerSerializer):

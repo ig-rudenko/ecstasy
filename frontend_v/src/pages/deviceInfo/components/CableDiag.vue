@@ -26,13 +26,19 @@ interface CopperPairCard extends PairInfo {
     align: "left" | "right";
 }
 
+type CopperPairKey = "pair1" | "pair2" | "pair3" | "pair4";
+
 interface DiagInfo {
     len: string;
     status: string;
     pair1?: PairInfo;
     pair2?: PairInfo;
+    pair3?: PairInfo;
+    pair4?: PairInfo;
     sfp?: SFPDiagInfo;
 }
+
+const COPPER_PAIR_KEYS: CopperPairKey[] = ["pair1", "pair2", "pair3", "pair4"];
 
 export default defineComponent({
     props: {
@@ -55,13 +61,19 @@ export default defineComponent({
                 return [];
             }
 
-            return Object.entries(this.diagInfo.sfp).map(([parameter, value]) => ({
-                parameter,
-                current: value.Current ?? "-",
-                lowWarning: value["Low Warning"] ?? "-",
-                highWarning: value["High Warning"] ?? "-",
-                status: value.Status ?? "-",
-            }));
+            return Object.entries(this.diagInfo.sfp).map(([parameter, value]) => {
+                const current = value.Current ?? "-";
+                const lowWarning = value["Low Warning"] ?? "-";
+                const highWarning = value["High Warning"] ?? "-";
+
+                return {
+                    parameter,
+                    current,
+                    lowWarning,
+                    highWarning,
+                    status: value.Status ?? "-",
+                };
+            });
         },
         copperPairs() {
             if (!this.diagInfo) {
@@ -70,23 +82,17 @@ export default defineComponent({
 
             const pairs: CopperPairCard[] = [];
 
-            if (this.diagInfo.pair1) {
-                pairs.push({
-                    key: "pair1",
-                    label: "Пара 1",
-                    align: "left" as const,
-                    ...this.diagInfo.pair1,
-                });
-            }
+            COPPER_PAIR_KEYS.forEach((key, index) => {
+                const pair = this.diagInfo?.[key];
+                if (!pair) return;
 
-            if (this.diagInfo.pair2) {
                 pairs.push({
-                    key: "pair2",
-                    label: "Пара 2",
-                    align: "right" as const,
-                    ...this.diagInfo.pair2,
+                    key,
+                    label: "Пара " + (index + 1),
+                    align: "left",
+                    ...pair,
                 });
-            }
+            });
 
             return pairs;
         },
@@ -128,16 +134,6 @@ export default defineComponent({
                 this.diagnosticsStarted = false;
             }
         },
-        statusColor(status: string) {
-            const colors: Record<string, string> = {
-                Up: "#39d286",
-                Down: "#ff4b4d",
-                Empty: "#19b7f3",
-                Open: "#ff9100",
-                Short: "#d80000",
-            };
-            return colors[status] || "#64748b";
-        },
         statusDotClass(status: string) {
             const colors: Record<string, string> = {
                 Up: "bg-emerald-500 dark:bg-emerald-400",
@@ -162,6 +158,9 @@ export default defineComponent({
             );
         },
         pairImage(status: string, align: "left" | "right") {
+            if (status.toLowerCase() == "skip") status = "Mismatch";
+            if (status.toLowerCase() == "fail") status = "Error";
+            if (status.toLowerCase() == "normal") status = "Open";
             return `/img/rj45-status-${String(status).toLowerCase()}-${align}.png`;
         },
         pairStatusLabel(status: string) {
@@ -178,7 +177,7 @@ export default defineComponent({
         >
             <div class="min-w-0">
                 <div class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-                    Cable Diagnostics
+                    Interface Diagnostics
                 </div>
                 <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Проверка состояния линии и оптических параметров интерфейса прямо из карточки порта.
@@ -221,19 +220,7 @@ export default defineComponent({
                         </div>
                     </div>
 
-                    <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)]">
-                        <div
-                            class="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-700/80 dark:bg-slate-900/70"
-                        >
-                            <div class="flex h-full items-center justify-center">
-                                <img
-                                    src="/img/rj45-back.jpg"
-                                    class="max-h-72 w-full max-w-xs rounded-2xl object-contain dark:opacity-80"
-                                    alt="RJ45 background"
-                                />
-                            </div>
-                        </div>
-
+                    <div class="p-4">
                         <div class="grid gap-3">
                             <div
                                 v-for="card in summaryCards"
@@ -249,30 +236,34 @@ export default defineComponent({
                                 </div>
                             </div>
 
-                            <div
-                                v-for="pair in copperPairs"
-                                :key="pair.key"
-                                :class="['rounded-[1.25rem] border px-4 py-4', statusToneClass(pair.status)]"
-                            >
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-80">
-                                            {{ pair.label }}
+                            <div class="flex flex-wrap gap-2 justify-between">
+                                <div
+                                    v-for="pair in copperPairs"
+                                    :key="pair.key"
+                                    :class="['rounded-[1.25rem] border px-4 py-4', statusToneClass(pair.status)]"
+                                >
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div
+                                                class="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-80"
+                                            >
+                                                {{ pair.label }}
+                                            </div>
+                                            <div class="mt-2 text-base font-semibold">
+                                                {{ pairStatusLabel(pair.status) }}
+                                            </div>
+                                            <div class="mt-1 text-sm opacity-80">
+                                                Длина: <span class="font-mono">{{ pair.len }} м</span>
+                                            </div>
                                         </div>
-                                        <div class="mt-2 text-base font-semibold">
-                                            {{ pairStatusLabel(pair.status) }}
-                                        </div>
-                                        <div class="mt-1 text-sm opacity-80">
-                                            Длина: <span class="font-mono">{{ pair.len }} м</span>
-                                        </div>
-                                    </div>
 
-                                    <div class="shrink-0 rounded-2xl bg-white/70 p-2 dark:bg-slate-950/40">
-                                        <img
-                                            :src="pairImage(pair.status, pair.align)"
-                                            :alt="`${pair.label} ${pair.status}`"
-                                            class="h-14 w-auto object-contain"
-                                        />
+                                        <div class="shrink-0 rounded-2xl bg-white/70 p-2 dark:bg-slate-950/40">
+                                            <img
+                                                :src="pairImage(pair.status, pair.align)"
+                                                :alt="`${pair.label} ${pair.status}`"
+                                                class="h-14 w-auto object-contain"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -296,6 +287,7 @@ export default defineComponent({
                     :value="sfpData"
                     :rows="10"
                     paginator
+                    :always-show-paginator="false"
                     class="text-sm"
                     :pt="{
                         table: { class: 'min-w-full' },
@@ -336,17 +328,6 @@ export default defineComponent({
                     <Column field="highWarning" header="High warning">
                         <template #body="{ data }">
                             <span class="font-mono">{{ data.highWarning }}</span>
-                        </template>
-                    </Column>
-
-                    <Column field="status" header="Статус">
-                        <template #body="{ data }">
-                            <span
-                                class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
-                                :class="statusToneClass(data.status)"
-                            >
-                                {{ data.status }}
-                            </span>
                         </template>
                     </Column>
                 </DataTable>

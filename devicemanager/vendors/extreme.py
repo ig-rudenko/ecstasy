@@ -140,9 +140,7 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
         :return: ```[ ('name', 'status', 'desc', ['{vid}', '{vid},{vid},...{vid}', ...] ), ... ]```
         """
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         vlan_ports_info = self._get_vlan_ports_info()
 
@@ -262,7 +260,6 @@ class Extreme(BaseDevice, AbstractConfigDevice):
         self.session.sendline(f"enable ports {port}")
         self.session.expect(self.prompt)
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -289,7 +286,6 @@ class Extreme(BaseDevice, AbstractConfigDevice):
         self.session.sendline(f"{cmd} ports {port}")
         self.session.expect(self.prompt)
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
@@ -344,7 +340,6 @@ class Extreme(BaseDevice, AbstractConfigDevice):
                 expect_command=False,
             )
 
-        self.lock = False
         # Возвращаем результат работы и сохраняем конфигурацию
         return {
             "description": desc,
@@ -404,7 +399,6 @@ class Extreme(BaseDevice, AbstractConfigDevice):
         for vlan in vlans:
             self.send_command(f"configure vlan v{vlan} {operation} ports {port} {tagged_option}")
 
-        self.lock = False
         self.save_config()
 
 

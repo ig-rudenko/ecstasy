@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.check.models import Devices
 from apps.check.services.device.extra import get_all_device_names_list
+from apps.check.services.device.interface_patterns import InterfacePatternResolver
 from apps.check.services.zabbix import get_zabbix_graphs
 from apps.net_tools.models import DevicesInfo
 from devicemanager.device import DeviceManager, Interfaces, zabbix_api
@@ -39,9 +40,10 @@ class DeviceInterfacesGather:
             raise_exception=True,
             make_session_global=make_session_global,
         )
-        if self.device.interface_pattern:
+        interface_pattern = InterfacePatternResolver.from_cache().resolve(self.device)
+        if interface_pattern:
             self.device_collector.interfaces = self.device_collector.interfaces.filter_by_name(
-                self.device.interface_pattern
+                interface_pattern
             )
         return self.device_collector.interfaces
 

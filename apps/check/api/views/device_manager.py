@@ -2,7 +2,8 @@ import re
 
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -39,7 +40,11 @@ from ...services.device.interfaces import (
 )
 from ...services.filters import filter_devices_qs_by_user
 from ..decorators import except_connection_errors
-from ..permissions import BulkDeviceCommandExecutionPermission, has_user_access_to_device
+from ..permissions import (
+    BulkDeviceCommandExecutionPermission,
+    DeviceCommentPermission,
+    has_user_access_to_device,
+)
 from ..serializers import (
     ADSLProfileSerializer,
     BulkDeviceCommandExecutionResultSerializer,
@@ -422,20 +427,20 @@ class ChangeDSLProfileAPIView(DeviceAPIView):
         return Response({"status": change_profile_status})
 
 
-class CreateInterfaceCommentAPIView(generics.CreateAPIView):
+class CreateInterfaceCommentAPIView(generics.CreateAPIView, UserAuthenticatedAPIView):
     serializer_class = InterfacesCommentsSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        if not has_user_access_to_device(self.request.user, serializer.validated_data["device"]):
+        if not has_user_access_to_device(self.current_user, serializer.validated_data["device"]):
             self.permission_denied(self.request, message="У вас нет доступа к данному устройству")
         serializer.save(user=self.request.user)
 
 
-class InterfaceCommentAPIView(generics.RetrieveUpdateDestroyAPIView):
+class InterfaceCommentAPIView(RetrieveUpdateDestroyAPIView, UserAuthenticatedAPIView):
     queryset = models.InterfacesComments.objects.all().select_related("device")
     serializer_class = InterfacesCommentsSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DeviceCommentPermission]
     lookup_field = "pk"
     lookup_url_kwarg = "pk"
 
@@ -503,7 +508,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             raise NotFound("Command not found")
 
         try:
-            valid_command = validate_command(device, command.command, request.data)
+            valid_command = validate_command(device, command.command, request.data)  # noqa
         except InvalidMethod as exc:
             raise UnsupportedDeviceOperation(
                 {
@@ -725,10 +730,13 @@ class DevicePoolManager(DeviceAPIView):
         Возвращает максимальное кол-во сессий в пуле подключений и список статусов работоспособности текущих пулов.
         """
         device = self.get_object()
+        connection_status = pool_controller.get_connection_status(device.ip)
         return Response(
             {
                 "connectionPoolSize": device.connection_pool_size,
-                "statuses": pool_controller.get_pool_status(device.ip),
+                "portScanProtocol": device.port_scan_protocol,
+                "commandProtocol": device.cmd_protocol,
+                **connection_status,
             }
         )
 
@@ -740,3 +748,29 @@ class DevicePoolManager(DeviceAPIView):
         if pool_controller.clear_pool(device.ip):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DeviceSSHHostKeyManager(DeviceAPIView):
+    """Confirm changed SSH host keys for devices available to a staff user."""
+
+    pagination_class = None
+
+    def post(self, request, *args, **kwargs):
+        """Confirm the pending SSH host key in device-connector."""
+
+        if not request.user.is_staff:
+            raise PermissionDenied("Подтверждение SSH ключа доступно только сотрудникам")
+
+        device = self.get_object()
+        confirmation_status = pool_controller.confirm_ssh_host_key(device.ip)
+        if confirmation_status == status.HTTP_204_NO_CONTENT:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if confirmation_status != status.HTTP_409_CONFLICT:
+            return Response(
+                {"detail": "DeviceConnector не смог обновить SSH ключ"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(
+            {"detail": "Нет ожидающего подтверждения SSH ключа"},
+            status=status.HTTP_409_CONFLICT,
+        )

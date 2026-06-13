@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cache
 
-from apps.app_settings.models import ZabbixConfig
 from apps.check.models import Devices
-from devicemanager.device import Interfaces, zabbix_api
+from devicemanager.device import Interfaces
 from devicemanager.exceptions import BaseDeviceException
 from devicemanager.vendors import BaseDevice
 
@@ -22,9 +21,6 @@ class AbstractRealtimeCollector(ABC):
         interfaces_desc: dict[str, str] | None = None,
         normalize_interface: Callable[[str], str] | None = None,
     ) -> None:
-        if not zabbix_api.zabbix_url:
-            zabbix_api.set_lazy_attributes(ZabbixConfig.load())
-
         self.device: Devices = device
         self.interfaces: Interfaces = interfaces or Interfaces()
         self.interfaces_desc: dict[str, str] = interfaces_desc or {}

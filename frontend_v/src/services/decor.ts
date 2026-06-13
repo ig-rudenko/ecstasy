@@ -3,6 +3,7 @@ import { Ref, ref } from "vue";
 export class DecorConfig {
     public _winterDecor: Ref<boolean> = ref(true);
     public _compactMenu: Ref<boolean> = ref(false);
+    public _autoExpandLargeInterfaceInfo: Ref<boolean> = ref(false);
 
     constructor() {
         this.load();
@@ -14,6 +15,7 @@ export class DecorConfig {
             const parsedData = JSON.parse(loadData);
             this._winterDecor.value = Boolean(parsedData.winterDecor);
             this._compactMenu.value = Boolean(parsedData.compactMenu);
+            this._autoExpandLargeInterfaceInfo.value = Boolean(parsedData.autoExpandLargeInterfaceInfo);
         }
     }
 
@@ -21,6 +23,7 @@ export class DecorConfig {
         const data = {
             winterDecor: this._winterDecor.value,
             compactMenu: this._compactMenu.value,
+            autoExpandLargeInterfaceInfo: this._autoExpandLargeInterfaceInfo.value,
         };
         localStorage.setItem("decorConfig", JSON.stringify(data));
     }
@@ -40,6 +43,15 @@ export class DecorConfig {
 
     set compactMenu(val: boolean) {
         this._compactMenu.value = val;
+        this.save();
+    }
+
+    get autoExpandLargeInterfaceInfo(): boolean {
+        return this._autoExpandLargeInterfaceInfo.value;
+    }
+
+    set autoExpandLargeInterfaceInfo(val: boolean) {
+        this._autoExpandLargeInterfaceInfo.value = val;
         this.save();
     }
 }

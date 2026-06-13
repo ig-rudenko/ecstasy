@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from ..models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
@@ -273,56 +274,35 @@ class DeviceRelationsTest(TestCase):
 class BrasTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.bras = Bras.objects.create(name="BRAS", ip="192.168.1.1", login="login", password="password")
+        group = DeviceGroup.objects.create(name="BRAS")
+        auth_group = AuthGroup.objects.create(name="BRAS", login="login", password="password")
+        cls.device = Devices.objects.create(
+            name="BRAS",
+            ip="192.168.1.1",
+            group=group,
+            auth_group=auth_group,
+        )
+        cls.bras = Bras.objects.create(device=cls.device)
 
-    # NAME
-    def test_name_label(self):
-        label = self.bras._meta.get_field("name").verbose_name
-        self.assertEqual(label, "Название")
+    def test_device_relation(self):
+        """Bras должен ссылаться на запись оборудования."""
+        self.assertEqual(self.bras.device, self.device)
 
-    def test_name_max_length(self):
-        max_length = self.bras._meta.get_field("name").max_length
-        self.assertEqual(max_length, 10)
+    def test_device_relation_is_unique(self):
+        """Одно устройство не должно иметь несколько записей Bras."""
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Bras.objects.create(device=self.device)
 
-    # IP
-    def test_ip_label(self):
-        label = self.bras._meta.get_field("ip").verbose_name
-        self.assertEqual(label, "IP адрес")
-
-    def test_ip_max_length(self):
-        max_length = self.bras._meta.get_field("ip").max_length
-        self.assertEqual(max_length, 39)
-
-    # LOGIN
-    def test_login_label(self):
-        label = self.bras._meta.get_field("login").verbose_name
-        self.assertEqual(label, "Логин")
-
-    def test_login_max_length(self):
-        max_length = self.bras._meta.get_field("login").max_length
-        self.assertEqual(max_length, 64)
-
-    # LOGIN
-    def test_password_label(self):
-        label = self.bras._meta.get_field("password").verbose_name
-        self.assertEqual(label, "Пароль")
-
-    def test_password_max_length(self):
-        max_length = self.bras._meta.get_field("password").max_length
-        self.assertEqual(max_length, 64)
-
-    # SECRET
-    def test_secret_label(self):
-        label = self.bras._meta.get_field("secret").verbose_name
-        self.assertEqual(label, "Пароль от привилегированного режима")
-
-    def test_secret_max_length(self):
-        max_length = self.bras._meta.get_field("secret").max_length
-        self.assertEqual(max_length, 64)
-
-    # STR
     def test_str(self):
-        self.assertEqual(self.bras.name, str(self.bras))
+        """Строковое представление Bras должно использовать имя оборудования."""
+        self.assertEqual(str(self.bras), self.device.name)
+
+    @patch.object(Devices, "connect")
+    def test_connect_uses_device(self, mocked_connect):
+        """Подключение к Bras должно выполняться через связанную запись оборудования."""
+        self.bras.connect()
+
+        mocked_connect.assert_called_once_with()
 
 
 class ProfileTest(TestCase):

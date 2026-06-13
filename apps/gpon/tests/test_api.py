@@ -1,6 +1,5 @@
 import copy
 import json
-from pprint import pprint
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -50,4 +49,3 @@ class TestTechDataAPIView(APITestCase):
         with self.assertNumQueries(14):
             resp = self.client.get(path=reverse("gpon-api:tech-data"))
             self.assertEqual(resp.status_code, 200)
-            pprint(resp.data)

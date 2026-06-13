@@ -4,17 +4,18 @@
 
 """
 
+import re
 from decimal import Decimal
 
 from django.contrib.auth.models import Group, User
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.text import slugify
 
-from devicemanager.dc import SimpleAuthObject
 from devicemanager.remote import remote_connector
 from devicemanager.remote.connector import RemoteDevice
 
@@ -258,6 +259,133 @@ class Devices(models.Model):
         verbose_name_plural = "Devices"
 
 
+class DeviceInterfacePatternRule(models.Model):
+    """Правило фильтрации интерфейсов для устройств одного вендора или модели."""
+
+    MODEL_MATCH_EXACT = "exact"
+    MODEL_MATCH_CONTAINS = "contains"
+    MODEL_MATCH_REGEXP = "regexp"
+    MODEL_MATCH_TYPES = (
+        (MODEL_MATCH_EXACT, "Точное совпадение"),
+        (MODEL_MATCH_CONTAINS, "Содержит"),
+        (MODEL_MATCH_REGEXP, "RegExp"),
+    )
+    CACHE_KEY = "check:device_interface_pattern_rules:v1"
+
+    name = models.CharField(max_length=100, verbose_name="Название")
+    enabled = models.BooleanField(default=True, verbose_name="Включено")
+    vendor = models.CharField(
+        max_length=100,
+        verbose_name="Производитель",
+        help_text="Правило применяется только к оборудованию этого вендора.",
+    )
+    model_pattern = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Шаблон модели",
+        help_text="Пустое значение означает все модели указанного производителя.",
+    )
+    model_match_type = models.CharField(
+        max_length=8,
+        choices=MODEL_MATCH_TYPES,
+        default=MODEL_MATCH_EXACT,
+        verbose_name="Тип совпадения модели",
+    )
+    interface_pattern = models.CharField(
+        max_length=255,
+        verbose_name="Паттерн имени интерфейса",
+        help_text=r"RegExp, по которому будут оставлены интерфейсы. Например: `^Gi|^Fa`.",
+    )
+    priority = models.IntegerField(
+        default=0,
+        verbose_name="Приоритет",
+        help_text="При равной специфичности выбирается правило с большим приоритетом.",
+    )
+    description = models.TextField(blank=True, default="", verbose_name="Описание")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+
+    def __str__(self):
+        """Return human-readable rule name."""
+        return self.name
+
+    def clean(self):
+        """Validate rule regexp fields and normalize text values."""
+        super().clean()
+        self.vendor = self.vendor.strip()
+        self.model_pattern = self.model_pattern.strip()
+        self.interface_pattern = self.interface_pattern.strip()
+
+        if not self.vendor:
+            raise ValidationError({"vendor": "Укажите производителя оборудования."})
+
+        try:
+            re.compile(self.interface_pattern)
+        except re.error as exc:
+            raise ValidationError({"interface_pattern": f"Неверный RegExp: {exc}"}) from exc
+
+        if self.model_match_type == self.MODEL_MATCH_REGEXP and self.model_pattern:
+            try:
+                re.compile(self.model_pattern)
+            except re.error as exc:
+                raise ValidationError({"model_pattern": f"Неверный RegExp: {exc}"}) from exc
+
+    def matches_device(self, device: Devices) -> bool:
+        """Return whether this rule matches the provided device."""
+        device_vendor = (device.vendor or "").strip().casefold()
+        rule_vendor = self.vendor.strip().casefold()
+        if not device_vendor or device_vendor != rule_vendor:
+            return False
+        return self._model_matches(device.model or "")
+
+    def _model_matches(self, model: str) -> bool:
+        """Return whether the model value satisfies the rule model condition."""
+        rule_model = self.model_pattern.strip()
+        if not rule_model:
+            return True
+
+        model = model.strip()
+        if not model:
+            return False
+
+        if self.model_match_type == self.MODEL_MATCH_EXACT:
+            return model.casefold() == rule_model.casefold()
+        if self.model_match_type == self.MODEL_MATCH_CONTAINS:
+            return rule_model.casefold() in model.casefold()
+
+        try:
+            return re.search(rule_model, model, flags=re.IGNORECASE) is not None
+        except re.error:
+            return False
+
+    @property
+    def has_model_condition(self) -> bool:
+        """Return whether this rule targets a model or model family."""
+        return bool(self.model_pattern.strip())
+
+    class Meta:
+        db_table = "device_interface_pattern_rules"
+        ordering = ("vendor", "model_pattern", "-priority", "id")
+        indexes = [
+            models.Index(fields=["enabled"], name="dev_int_pat_enabled_idx"),
+            models.Index(fields=["vendor"], name="dev_int_pat_vendor_idx"),
+            models.Index(fields=["vendor", "enabled"], name="dev_int_pat_vendor_enabled_idx"),
+            models.Index(
+                fields=["vendor", "model_match_type", "model_pattern"],
+                name="dev_int_pat_model_idx",
+            ),
+        ]
+        verbose_name = "Правило паттерна интерфейсов"
+        verbose_name_plural = "Правила паттернов интерфейсов"
+
+
+@receiver([post_save, post_delete], sender=DeviceInterfacePatternRule)
+def clear_device_interface_pattern_rules_cache(sender, **kwargs) -> None:
+    """Clear cached interface pattern rules after rule changes."""
+    cache.delete(sender.CACHE_KEY)
+
+
 class AccessGroup(models.Model):
     """Группа доступа к оборудованию"""
 
@@ -317,45 +445,29 @@ class Bras(models.Model):
     Модель для маршрутизаторов широкополосного удалённого доступа (BRAS - Broadband Remote Access Server)
     """
 
-    name = models.CharField(max_length=10, null=False, verbose_name="Название")
-    ip = models.GenericIPAddressField(protocol="ipv4", null=False, unique=True, verbose_name="IP адрес")
-    login = models.CharField(max_length=64, null=False, verbose_name="Логин")
-    password = models.CharField(max_length=64, null=False, verbose_name="Пароль")
-    secret = models.CharField(
-        max_length=64,
-        null=True,
-        blank=True,
-        verbose_name="Пароль от привилегированного режима",
-    )
-    connection_pool_size = models.PositiveSmallIntegerField(
-        default=2,
-        verbose_name="Размер пула подключений",
-        help_text="Количество подключений к оборудованию, которые могут быть одновременно открыты",
+    device = models.ForeignKey(
+        Devices,
+        on_delete=models.PROTECT,
+        related_name="bras",
+        verbose_name="Оборудование",
     )
 
     def __str__(self):
-        return self.name
+        """Вернуть имя связанного оборудования."""
+        return self.device.name
 
     class Meta:
         db_table = "brases"
-        ordering = ("name",)
+        ordering = ("device__name",)
+        constraints = [
+            models.UniqueConstraint(fields=["device"], name="unique_bras_device"),
+        ]
         verbose_name = "BRAS"
         verbose_name_plural = "BRASes"
 
     def connect(self) -> RemoteDevice:
-        return remote_connector.create(
-            ip=self.ip,
-            cmd_protocol="telnet",
-            port_scan_protocol="telnet",
-            snmp_community="",
-            auth_obj=SimpleAuthObject(self.login, self.password, self.secret or ""),
-            make_session_global=True,
-            pool_size=self.connection_pool_size,
-        )
-
-    @staticmethod
-    def format_mac(mac_str: str) -> str:
-        return "{}{}{}{}-{}{}{}{}-{}{}{}{}".format(*mac_str)
+        """Подключиться к BRAS через связанную запись оборудования."""
+        return self.device.connect()
 
 
 class Profile(models.Model):

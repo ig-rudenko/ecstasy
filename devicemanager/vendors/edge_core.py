@@ -89,7 +89,6 @@ class EdgeCore(BaseDevice):
 
         # Получение текущей конфигурации устройства.
         running_config = self.send_command("show running-config")
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
 
         # Разделение текущей конфигурации на список строк. Каждая строка является частью конфигурации порта.
@@ -112,7 +111,7 @@ class EdgeCore(BaseDevice):
 
         # Распаковка кортежа `line` и добавление кортежа `vlans` в конец нового кортежа.
         # Создание списка кортежей.
-        return [
+        return [  # noqa
             (
                 line[0],  # Интерфейс
                 line[1],  # Статус
@@ -218,7 +217,6 @@ class EdgeCore(BaseDevice):
         self.session.sendline("end")
         self.session.expect(self.prompt)
 
-        self.lock = False
         return self.save_config() if save_config else "Without saving"
 
     @BaseDevice.lock_session
@@ -260,13 +258,12 @@ class EdgeCore(BaseDevice):
 
         r = (self.session.before or b"").decode(errors="ignore")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
     @validate_and_format_port_as_normal()
     @BaseDevice.lock_session
-    def __get_port_info(self, port: str) -> str:
+    def _get_port_info(self, port: str) -> str:
         """
         ## Возвращает информацию о порте.
 
@@ -295,7 +292,7 @@ class EdgeCore(BaseDevice):
 
         return {
             "type": "text",
-            "data": self.__get_port_info(port).strip(),
+            "data": self._get_port_info(port).strip(),
         }
 
     @validate_and_format_port_as_normal()
@@ -308,14 +305,14 @@ class EdgeCore(BaseDevice):
         """
         port_type_result = ""
         # Нахождение режима комбо.
-        combo_mode = self.find_or_empty("Combo forced mode: (.+)", self.__get_port_info(port))
+        combo_mode = self.find_or_empty("Combo forced mode: (.+)", self._get_port_info(port))
 
         if combo_mode != "None":
             # Код проверяет, является ли тип порта комбинированным портом.
             port_type_result += "COMBO-"
 
         # Получение типа порта.
-        port_type = self.find_or_empty(r"Port type: (\S+)", self.__get_port_info(port))
+        port_type = self.find_or_empty(r"Port type: (\S+)", self._get_port_info(port))
 
         if "SFP" in port_type:
             port_type_result += "SFP"
@@ -419,7 +416,6 @@ class EdgeCore(BaseDevice):
             res = self.send_command(f"description {desc}", expect_command=False)
 
         self.session.sendline("end")  # Выходим из режима редактирования
-        self.lock = False
         if "Invalid parameter value/range" in res:
             # Длина описания больше допустимого у Edge-Core 64
             return {

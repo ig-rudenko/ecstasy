@@ -20,7 +20,7 @@ def get_bras_sessions(mac: str) -> dict[str, BrasSession]:
     result: dict[str, BrasSession] = {}
 
     with ThreadPoolExecutor() as executor:
-        for bras in Bras.objects.all():
+        for bras in Bras.objects.select_related("device"):
             # Приведенный выше код создает пул потоков,
             # а затем отправляет функцию get_user_session в пул потоков.
             executor.submit(get_bras_user_session, bras, mac, result)
@@ -36,12 +36,13 @@ def get_bras_user_session(bras: Bras, mac: str, result: dict[str, BrasSession]):
     :param result: dict, содержащий информацию сессий.
     """
 
-    result[bras.name] = {"session": None, "errors": []}
+    bras_name = str(bras)
+    result[bras_name] = {"session": None, "errors": []}
 
     try:
-        result[bras.name]["session"] = bras.connect().get_access_user_data(mac)
+        result[bras_name]["session"] = bras.connect().get_access_user_data(mac)
     except BaseDeviceException as exc:
-        result[bras.name]["errors"].append(exc.message)
+        result[bras_name]["errors"].append(exc.message)
 
 
 def cut_bras_session(device: Devices | None, user: AbstractBaseUser, mac: str, port: str) -> dict:
@@ -52,7 +53,7 @@ def cut_bras_session(device: Devices | None, user: AbstractBaseUser, mac: str, p
     # Словарь, который будет содержать данные для отправки
     result: dict = {"errors": [], "portReloadStatus": "SKIP"}
 
-    for bras in Bras.objects.all():
+    for bras in Bras.objects.select_related("device"):
         bras.connect().cut_access_user_session(mac)
         log(user, bras, f"cut access-user mac-address {mac}")
 

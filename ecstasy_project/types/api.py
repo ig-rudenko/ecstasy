@@ -2,6 +2,7 @@ from typing import cast
 
 from django.contrib.auth.models import User
 from rest_framework.generics import GenericAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -15,3 +16,8 @@ class UserAuthenticatedAPIView(GenericAPIView):
     @property
     def current_user(self) -> User:
         return cast(User, self.request.user)
+
+
+class PageSizePageNumberPagination(PageNumberPagination):
+    page_size_query_param = "page_size"
+    max_page_size = 100

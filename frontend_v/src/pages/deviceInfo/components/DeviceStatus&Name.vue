@@ -117,13 +117,93 @@
         </div>
     </div>
 
+    <ConfirmPopup />
     <Popover ref="deviceStatus">
-        <div v-if="poolStatus" class="min-w-[18rem] text-sm">
+        <div v-if="poolStatus" class="w-[min(30rem,calc(100vw-2rem))] text-sm">
             <div class="mb-3 flex items-center justify-between gap-3">
                 <div>Лимит одновременных подключений</div>
                 <Badge class="font-mono" :value="poolStatus.connectionPoolSize" />
             </div>
-            <template v-if="poolStatus.statuses.length">
+            <div class="mb-3 grid gap-2 rounded-xl bg-gray-50 p-3 dark:bg-white/5">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Поиск интерфейсов</span>
+                    <Badge class="font-mono uppercase" severity="secondary" :value="poolStatus.portScanProtocol" />
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Command</span>
+                    <Badge class="font-mono uppercase" severity="secondary" :value="poolStatus.commandProtocol" />
+                </div>
+            </div>
+            <div
+                v-if="poolStatus.error"
+                class="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+                role="alert"
+            >
+                <div class="mb-1 flex items-center gap-2 font-medium">
+                    <i class="pi pi-exclamation-triangle" />
+                    Ошибка подключения
+                </div>
+                <div class="font-mono text-xs">{{ poolStatus.error.type }}</div>
+                <div class="mt-1 break-words">{{ poolStatus.error.message }}</div>
+                <div class="mt-2 text-xs opacity-75">{{ formatDate(poolStatus.error.occurredAt) }}</div>
+            </div>
+            <div
+                v-if="poolStatus.sshHostKeyChange"
+                class="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+            >
+                <div class="mb-2 flex items-center gap-2 font-medium">
+                    <i class="pi pi-key" />
+                    Изменился SSH host key
+                </div>
+                <div class="mb-3 text-xs">
+                    Порт {{ poolStatus.sshHostKeyChange.port }},
+                    {{ formatDate(poolStatus.sshHostKeyChange.detectedAt) }}
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <div class="mb-1 text-xs font-medium uppercase tracking-wide opacity-70">Сохранённый ключ</div>
+                        <div v-if="poolStatus.sshHostKeyChange.previousKeys.length" class="space-y-1">
+                            <div
+                                v-for="key in poolStatus.sshHostKeyChange.previousKeys"
+                                :key="`${key.type}-${key.fingerprint}`"
+                                class="rounded-lg bg-white/70 px-2 py-1 font-mono text-xs dark:bg-black/20"
+                            >
+                                <div>{{ key.type }}</div>
+                                <div class="break-all">{{ key.fingerprint }}</div>
+                            </div>
+                        </div>
+                        <div v-else class="text-xs opacity-75">Сохранённый ключ не найден</div>
+                    </div>
+                    <div>
+                        <div class="mb-1 text-xs font-medium uppercase tracking-wide opacity-70">Новый ключ</div>
+                        <div class="space-y-1">
+                            <div
+                                v-for="key in poolStatus.sshHostKeyChange.newKeys"
+                                :key="`${key.type}-${key.fingerprint}`"
+                                class="rounded-lg bg-white/70 px-2 py-1 font-mono text-xs dark:bg-black/20"
+                            >
+                                <div>{{ key.type }}</div>
+                                <div class="break-all">{{ key.fingerprint }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <Button
+                    v-if="isStaff"
+                    class="mt-3"
+                    :disabled="confirmKeyLoading"
+                    :loading="confirmKeyLoading"
+                    icon="pi pi-check"
+                    label="Подтвердить новый ключ"
+                    severity="warn"
+                    size="small"
+                    @click="confirmSSHHostKey"
+                />
+                <div v-else class="mt-3 text-xs opacity-75">
+                    Подтверждение нового ключа доступно только сотрудникам.
+                </div>
+            </div>
+            <template v-if="poolStatus.connections.length">
                 <div class="pb-3">
                     Переподключиться
                     <Button
@@ -138,15 +218,26 @@
                     />
                 </div>
                 <div class="flex gap-2 flex-col">
-                    <div v-for="(isActive, index) in poolStatus.statuses" :key="index" class="flex gap-2 items-center">
-                        <span v-if="isActive" class="relative flex size-3">
+                    <div
+                        v-for="(connection, index) in poolStatus.connections"
+                        :key="index"
+                        class="flex items-center gap-2"
+                    >
+                        <span v-if="connection.active" class="relative flex size-3">
                             <span
                                 class="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75"
                             ></span>
                             <span class="relative inline-flex size-3 rounded-full bg-teal-500"></span>
                         </span>
                         <span v-else class="relative inline-flex size-3 rounded-full bg-red-500"></span>
-                        Подключение {{ index + 1 }} {{ isActive ? "активно" : "неактивно" }}
+                        <span class="flex-1">
+                            Подключение {{ index + 1 }} {{ connection.active ? "активно" : "неактивно" }}
+                        </span>
+                        <Badge
+                            class="font-mono uppercase"
+                            severity="secondary"
+                            :value="connection.protocol || 'неизвестен'"
+                        />
                     </div>
                 </div>
             </template>
@@ -162,13 +253,49 @@ import { defineComponent, PropType } from "vue";
 import api from "@/services/api";
 import pinnedDevices from "@/services/pinnedDevices";
 import { Device } from "@/services/devices";
+import { errorToast, successToast } from "@/services/my.toast";
+import store from "@/store";
 import PinDevice from "@/components/PinDevice.vue";
 import PinnedDevicesPopover from "@/components/PinnedDevicesPopover.vue";
 import Commands from "@/pages/deviceInfo/components/Commands.vue";
 
+interface ConnectionError {
+    type: string;
+    message: string;
+    occurredAt: string;
+}
+
+interface SSHKeyInfo {
+    type: string;
+    fingerprint: string;
+}
+
+interface SSHHostKeyChange {
+    detectedAt: string;
+    port: number;
+    previousKeys: SSHKeyInfo[];
+    newKeys: SSHKeyInfo[];
+}
+
 interface PoolStatus {
     connectionPoolSize: number;
     statuses: boolean[];
+    connections: {
+        active: boolean;
+        protocol: string | null;
+    }[];
+    portScanProtocol: string;
+    commandProtocol: string;
+    error: ConnectionError | null;
+    sshHostKeyChange: SSHHostKeyChange | null;
+}
+
+interface RootState {
+    auth: {
+        user: {
+            isStaff: boolean;
+        } | null;
+    };
 }
 
 export default defineComponent({
@@ -186,6 +313,7 @@ export default defineComponent({
             poolStatus: null as null | PoolStatus,
             poolStatusLoading: false,
             resetPoolLoading: false,
+            confirmKeyLoading: false,
             poolStatusTimer: null as null | number,
         };
     },
@@ -206,8 +334,15 @@ export default defineComponent({
         pinnedDevices() {
             return pinnedDevices;
         },
+        isStaff(): boolean {
+            return Boolean((store.state as RootState).auth.user?.isStaff);
+        },
     },
     methods: {
+        formatDate(value: string): string {
+            return new Date(value).toLocaleString("ru-RU");
+        },
+
         copyIP() {
             this.copied = true;
             navigator.clipboard
@@ -246,6 +381,34 @@ export default defineComponent({
             setTimeout(() => {
                 this.resetPoolLoading = false;
             }, 3000);
+        },
+
+        confirmSSHHostKey(event: Event) {
+            this.$confirm.require({
+                target: event.currentTarget as HTMLElement,
+                message: "Подтвердить новый SSH host key? Выполните это только после проверки fingerprint.",
+                icon: "pi pi-exclamation-triangle",
+                acceptLabel: "Подтвердить",
+                rejectLabel: "Отмена",
+                acceptClass: "p-button-warning p-button-sm",
+                defaultFocus: "reject",
+                accept: () => this.acceptSSHHostKey(),
+            });
+        },
+
+        async acceptSSHHostKey() {
+            if (this.confirmKeyLoading) return;
+
+            this.confirmKeyLoading = true;
+            try {
+                await api.post(`/api/v1/devices/${this.device.name}/ssh-host-key`);
+                successToast("SSH ключ подтверждён", "Новое подключение будет использовать подтверждённый ключ.");
+                await this.getPoolStatus();
+            } catch {
+                errorToast("Ошибка подтверждения", "Не удалось подтвердить новый SSH ключ.");
+            } finally {
+                this.confirmKeyLoading = false;
+            }
         },
     },
 });

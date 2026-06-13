@@ -7,6 +7,17 @@ export interface MACDetail {
     address: string;
 }
 
+export interface EcstasyDevice {
+    id: number;
+    name: string;
+    ip: string;
+    url: string;
+    group: string;
+    vendor: string;
+    model: string;
+    active: boolean;
+}
+
 export interface IPMACInfoResult {
     info: {
         device: {
@@ -26,6 +37,7 @@ export interface IPMACInfoResult {
         hostid: string;
     }[];
     zabbix_url: string;
+    ecstasy_devices: EcstasyDevice[];
 }
 
 class MacSearch {
@@ -52,7 +64,6 @@ class MacSearch {
     }
 
     async getMacDetail(mac: string) {
-        this.dialogVisible.value = true;
         this.lastMacDetail.value = null;
         try {
             const resp = await api.get<IPMACInfoResult>("/api/v1/tools/ip-mac-info/" + mac);

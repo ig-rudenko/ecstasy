@@ -3,14 +3,32 @@ FROM ubuntu:24.04
 ARG USER_PASSWORD
 
 RUN apt-get update && \
-    apt-get install -y curl wget openssh-server openssh-client && \
-    apt-get install -y nmap telnet mtr traceroute net-tools snmp iputils-ping netcat && \
-    apt-get install -y htop less nano mc jq figlet && \
-    apt-get autoremove && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        wget \
+        openssh-server \
+        openssh-client \
+        nmap \
+        telnet \
+        mtr \
+        traceroute \
+        net-tools \
+        snmp \
+        iputils-ping \
+        netcat-openbsd \
+        htop \
+        less \
+        nano \
+        mc \
+        jq \
+        figlet \
+        ca-certificates && \
+    apt-get autoremove -y && \
     apt-get autoclean && \
-    mkdir /var/run/sshd && \
-    adduser --gecos "" --uid 1002 --shell /bin/bash --home /home/default default;
-
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /var/run/sshd && \
+    adduser --gecos "" --uid 1002 --shell /bin/bash --home /home/default default
+ 
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
 
 # SSH login fix. Otherwise user is kicked off after login

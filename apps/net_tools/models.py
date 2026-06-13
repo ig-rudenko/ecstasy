@@ -53,8 +53,8 @@ class DescNameFormat(models.Model):
     replacement = models.TextField(verbose_name="Возможные варианты (через запятую)")
 
     class Meta:
-        db_table = "vlan_traceroute_desc_name_format"
-        verbose_name = "VLAN traceroute desc name format"
+        db_table = "traceroute_desc_name_format"
+        verbose_name = "Traceroute desc name format"
 
 
 class VlanName(models.Model):
@@ -135,9 +135,9 @@ class TracerouteNodeKind(models.Model):
     )
 
     class Meta:
-        db_table = "vlan_traceroute_node_kind"
-        verbose_name = "VLAN traceroute node kind"
-        verbose_name_plural = "VLAN traceroute node kinds"
+        db_table = "traceroute_node_kind"
+        verbose_name = "Traceroute node kind"
+        verbose_name_plural = "Traceroute node kinds"
 
     def __str__(self) -> str:
         return f"{self.code}: {self.name}"
@@ -246,9 +246,9 @@ class TracerouteNodeStyleRule(models.Model):
     description = models.TextField(blank=True, default="", verbose_name="Описание")
 
     class Meta:
-        db_table = "vlan_traceroute_node_style_rule"
-        verbose_name = "VLAN traceroute node style rule"
-        verbose_name_plural = "VLAN traceroute node style rules"
+        db_table = "traceroute_node_style_rule"
+        verbose_name = "Traceroute node style rule"
+        verbose_name_plural = "Traceroute node style rules"
         ordering = ("priority", "id")
 
     def __str__(self) -> str:

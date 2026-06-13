@@ -118,6 +118,7 @@ urlpatterns = [
         name="device-command-history-results",
     ),
     path("<device_name_or_ip>/pool", device_manager.DevicePoolManager.as_view()),
+    path("<device_name_or_ip>/ssh-host-key", device_manager.DeviceSSHHostKeyManager.as_view()),
     # ===========================================
     #               Device Viewings
     # ===========================================

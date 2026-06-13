@@ -4,6 +4,7 @@ from django.test import SimpleTestCase
 
 from devicemanager.dc import DeviceRemoteConnector, SimpleAuthObject, SSHSpawn
 from devicemanager.device_connector.factory import DeviceSessionFactory
+from devicemanager.exceptions import SSHConnectionError
 from devicemanager.remote.connector import RemoteDevice
 
 
@@ -94,34 +95,44 @@ class DeviceConnectionPortsTests(SimpleTestCase):
 
         self.assertIn("ssh -p 2222 user@192.0.2.10", spawn.get_spawn_string())
 
-    @patch("devicemanager.dc.pexpect.spawn", create=True)
-    def test_telnet_connection_uses_custom_port(self, spawn):
-        """Telnet connection command uses configured telnet port."""
+    def test_ssh_spawn_uses_first_offered_cipher(self):
+        """SSH spawn передает один шифр, а не несовместимый список."""
+
+        spawn = SSHSpawn(ip="192.0.2.10", login="user")
+
+        spawn.get_ciphers("Their offer: aes128-cbc,3des-cbc,des-cbc")
+
+        self.assertEqual(spawn.ciphers, "aes128-cbc")
+        self.assertIn("-c aes128-cbc", spawn.get_spawn_string())
+
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_stops_when_negotiation_offer_cannot_be_parsed(self, get_session):
+        """Нераспознанный ответ OpenSSH не запускает бесконечный цикл подключения."""
 
         session = Mock()
-        session.isalive.return_value = True
-        spawn.return_value = session
+        session.expect.side_effect = [2, 0]
+        session.before = b" type 'aes128-cbc,3des-cbc,des-cbc'\r\n"
+        session.isalive.return_value = False
+        get_session.return_value = session
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",
-            protocol="telnet",
+            protocol="ssh",
             snmp_community="public",
             auth_obj=SimpleAuthObject(login="user", password="password"),
-            telnet_port=2323,
         )
 
-        with patch.object(
-            DeviceRemoteConnector, "_DeviceRemoteConnector__login_to_by_telnet", return_value="Connected"
-        ):
-            connector._connect_by_telnet()
+        with self.assertRaises(SSHConnectionError):
+            connector.get_session()
 
-        spawn.assert_called_once_with("telnet 192.0.2.10 2323", timeout=20)
+        get_session.assert_called_once()
 
     @patch("devicemanager.dc.DeviceMultiFactory.get_device")
     def test_device_remote_connector_passes_snmp_port_to_device_factory(self, get_device):
         """DeviceRemoteConnector passes SNMP port to detected device instance."""
 
         session = Mock()
-        get_device.return_value = Mock()
+        detected_device = Mock()
+        get_device.return_value = detected_device
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",
             protocol="telnet",
@@ -134,3 +145,4 @@ class DeviceConnectionPortsTests(SimpleTestCase):
             connector.get_session()
 
         self.assertEqual(get_device.call_args.kwargs["snmp_port"], 1161)
+        self.assertEqual(detected_device.connection_protocol, "telnet")

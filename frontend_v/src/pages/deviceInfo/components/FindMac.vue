@@ -109,6 +109,41 @@
 
                 <div v-if="macSearch.lastMacDetail" class="mt-4 flex flex-col gap-4">
                     <div
+                        v-if="ecstasyDevices.length"
+                        class="rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-4 dark:border-emerald-900/70 dark:bg-emerald-500/10"
+                    >
+                        <div
+                            class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200"
+                        >
+                            Оборудование Ecstasy
+                        </div>
+                        <div class="mt-3 grid gap-3 md:grid-cols-2">
+                            <router-link
+                                v-for="device in ecstasyDevices"
+                                :key="device.id"
+                                :to="device.url"
+                                class="flex min-w-0 items-center gap-3 rounded-xl border border-emerald-200/80 bg-white/80 p-3 text-gray-900 transition hover:border-emerald-400 dark:border-emerald-900/70 dark:bg-gray-950/30 dark:text-gray-100"
+                            >
+                                <i class="pi pi-server shrink-0 text-emerald-600 dark:text-emerald-300" />
+                                <span class="min-w-0">
+                                    <span class="block truncate text-sm font-semibold">{{ device.name }}</span>
+                                    <span
+                                        class="mt-1 block truncate font-mono text-xs text-gray-500 dark:text-gray-400"
+                                    >
+                                        {{ device.ip }} · {{ device.group }}
+                                    </span>
+                                    <span
+                                        v-if="device.vendor || device.model"
+                                        class="mt-1 block truncate text-xs text-gray-500 dark:text-gray-400"
+                                    >
+                                        {{ [device.vendor, device.model].filter(Boolean).join(" ") }}
+                                    </span>
+                                </span>
+                            </router-link>
+                        </div>
+                    </div>
+
+                    <div
                         v-if="!macSearch.lastMacDetail.info?.length"
                         class="rounded-2xl border border-dashed border-gray-200/80 bg-white/70 px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-700/80 dark:bg-gray-950/25 dark:text-gray-400"
                     >
@@ -235,6 +270,9 @@ export default defineComponent({
     computed: {
         zabbixLinks() {
             return this.macSearch.lastMacDetail?.zabbix || [];
+        },
+        ecstasyDevices() {
+            return this.macSearch.lastMacDetail?.ecstasy_devices || [];
         },
     },
     data() {

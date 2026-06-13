@@ -61,8 +61,7 @@ def normalize_cable_diag_result(result: dict[str, Any] | None) -> CableDiagResul
     if isinstance(sfp_data, dict) and sfp_data:
         normalized["sfp"] = sfp_data
         normalized["len"] = "-"
-        if normalized["status"] == "Unknown":
-            normalized["status"] = "SFP"
+        normalized["status"] = "SFP"
 
     return normalized
 

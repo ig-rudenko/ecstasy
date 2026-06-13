@@ -238,22 +238,13 @@ NON_ABON_INTERFACES_PATTERN = re.compile(
 
 # ================= CACHE ===================
 
-if DEBUG:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "unique-snowflake",
-        },
-    }
-
-else:
-    REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/0")
-
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL")
+if REDIS_CACHE_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_CACHE_URL,
-            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev"),
+            "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "ecstasy_dev" if DEBUG else ""),
         }
     }
 

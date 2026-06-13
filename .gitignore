@@ -1,12 +1,5 @@
 /static/*
-!/static/bootstrap
-!/static/leaflet
-!/static/swagger
-!/static/css
-!/static/js
-!/static/img
 !/static/flavico.ico
-!/static/video
 
 media
 
@@ -30,6 +23,9 @@ mysql_data
 tmp
 map_layer_files
 db-backup
+db_export
+ssh_data
+configurations
 
 venv
 .env

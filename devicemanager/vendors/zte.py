@@ -128,9 +128,7 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         :return: ```[ ('name', 'status', 'desc', [vid:int, vid:int, ...] ), ... ]```
         """
 
-        self.lock = False
         interfaces = self.get_interfaces()
-        self.lock = True
         output = self.send_command("show vlan")
 
         with open(
@@ -256,7 +254,6 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         sleep(1)
         self.session.sendline(f"set port {port} enable")
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return f"reset port {port} " + s
 
@@ -285,7 +282,6 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         else:
             return f"Неверный статус {status}"
 
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return f"{status} port {port} " + s
 
@@ -411,7 +407,6 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
                 "max_length": max_length,
             }
 
-        self.lock = False
         return {
             "description": desc,
             "port": port,

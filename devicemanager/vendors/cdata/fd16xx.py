@@ -2,15 +2,11 @@ import io
 import re
 from time import sleep
 
-import textfsm
-
-from .base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
-from .base.factory import AbstractDeviceFactory
-from .base.helpers import interface_normal_view, parse_by_template, range_to_numbers
-from .base.types import (
+from devicemanager.vendors.base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
+from devicemanager.vendors.base.factory import AbstractDeviceFactory
+from devicemanager.vendors.base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
-    TEMPLATE_FOLDER,
     ArpInfoResult,
     DeviceAuthDict,
     InterfaceListType,
@@ -22,28 +18,18 @@ from .base.types import (
     PortInfoType,
     VlanTableType,
 )
-from .base.validators import validate_and_format_port_as_normal
+from devicemanager.vendors.snr.vlan_parser import parse_vlan_output
 
 
-class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
+class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     """
-    # Для оборудования от производителя Cisco
-
-    Проверено для:
-     - WC-C3550
-     - WC-C3560
-     - WC-C3750G
-     - WC-C4500X
-     - ME-3400
-     - ME-3600X
-     - ME-3800X
-     - ME-4924
+    # Для оборудования от производителя C-Data
     """
 
-    prompt = r"\S+#$"
-    space_prompt = r" --More-- "
-    mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"  # 0018.e7d3.1d43
-    vendor = "Cisco"
+    prompt = r"\S+> $|\S+# $"
+    space_prompt = "--More--"
+    mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"
+    vendor = "C-Data"
 
     def __init__(
         self,
@@ -54,13 +40,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         snmp_community: str = "",
     ):
         """
-        ## При инициализации смотрим характеристики устройства:
-
-            # show version
-
-          - MAC
-          - серийный номер
-
         :param session: Это объект сеанса pexpect c установленной сессией оборудования
         :param ip: IP-адрес устройства, к которому вы подключаетесь
         :param auth: словарь, содержащий имя пользователя и пароль для устройства
@@ -68,16 +47,13 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         """
         super().__init__(session, ip, auth, model, snmp_community)
         self.send_command("terminal length 0", expect_command=False)
-
-        version = self.send_command("show version")
-        self.serialno = self.find_or_empty(r"System serial number\s+: (\S+)", version)
-        self.mac = self.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version)
-        self.os_version = self.find_or_empty(r"(Version \S+),.+Copyright", version, flags=re.DOTALL)
+        device_info = self.send_command("show device")
+        self.serialno = self.find_or_empty(r"Device serial-number\s+:\s+(\S+))", device_info)
         self.__cache_port_info: dict[str, str] = {}
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
-        return interface_normal_view(intf)
+        return intf
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -92,8 +68,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         for _ in range(3):  # Пробуем 3 раза, если ошибка
             self.session.sendline("write")
-            # self.session.expect(r'Building configuration')
-            if self.session.expect([self.prompt, r"\[OK\]"]):
+            if self.session.expect([self.prompt, "Building configuration"]):
                 self.session.expect(self.prompt)
                 return self.SAVED_OK
         return self.SAVED_ERR
@@ -105,20 +80,21 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         Команда на оборудовании:
 
-            # show interfaces description
+            # show interface description
 
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show interfaces description", expect_command=False)
-        output = re.sub(".+\nInterface", "Interface", output)
+        output = self.send_command("show interface description", expect_command=False)
 
-        result: list[list[str]] = parse_by_template("interfaces/cisco.template", output)
+        result: list[tuple[str, str, str, str]] = re.findall(
+            r"^\s*(\S+)\s+(up|administratively down)\s+(up|down)\s*(\S*)\s*$", output, flags=re.MULTILINE
+        )
 
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
             status: InterfaceType = "up"
-            if admin_status.lower() == "admin down":
+            if admin_status.lower() == "administratively down":
                 status = "admin down"
             elif "down" in link_status.lower():
                 status = "down"
@@ -146,45 +122,26 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         result: InterfaceVLANListType = []
 
-        self.lock = False
         interfaces: InterfaceListType = self.get_interfaces()
-        self.lock = True
 
         interfaces_config: dict[str, str] = self._get_interfaces_config()
 
         for line in interfaces:
             # Отфильтровываем интерфейсы VLAN.
-            if not line[0].startswith("V"):
-                intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
-                vlans_group: list[str] = re.findall(
-                    r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
-                    intf_config,
-                )
-                result.append((line[0], line[1], line[2], vlans_group))  # noqa
+            intf_config = interfaces_config.get(self.normalize_interface_name(line[0]), "")
+            vlans_group: list[str] = re.findall(
+                r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
+                intf_config,
+            )
+            result.append((line[0], line[1], line[2], vlans_group))  # noqa
 
         return result
 
     @BaseDevice.lock_session
     def get_vlan_table(self) -> VlanTableType:
         vlan_output = self.send_command("show vlan brief")
-        parsed = re.findall(r"^(?P<vid>\d+)\s+(?P<desc>\S+)", vlan_output, flags=re.MULTILINE)
-        # Формируем словарь: { 123: "vlan_desc" }
-        vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
-
-        self.lock = False
-        interfaces_vlans = self.get_vlans()
-        self.lock = True
-
-        # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
-        vlan_ports: dict[int, list[str]] = {}
-        for line in interfaces_vlans:
-            for vlan in range_to_numbers(",".join(map(str, line[-1]))):
-                vlan_ports.setdefault(vlan, []).append(line[0])
-
-        result: VlanTableType = []
-        for vlan, ports in vlan_ports.items():
-            result.append((vlan, ports, vlan_desc.get(vlan, "")))
-        return result
+        parsed = parse_vlan_output(vlan_output)
+        return [(line["vlan_id"], line["ports"], line["name"]) for line in parsed]
 
     def _get_interfaces_config(self) -> dict[str, str]:
         output = self.send_command("show running-config", expect_command=False)
@@ -195,7 +152,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         return interfaces_config
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return=[])
     def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -244,7 +200,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -281,12 +236,10 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.sendline("end")
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -322,11 +275,9 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.expect(self.prompt)
 
         r = (self.session.before or b"").decode(errors="ignore")
-        self.lock = False
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
     @BaseDevice.lock_session
     def get_port_info(self, port: str) -> PortInfoType:
         """
@@ -334,7 +285,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         Через команду:
 
-            # show interfaces {port}
+            # show interface {port}
 
         Выводим строчки в которых указано **media**
 
@@ -346,7 +297,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
         """
 
-        port_info = self.send_command(f"show interfaces {port}", expect_command=False)
+        port_info = self.send_command(f"show interface {port}", expect_command=False)
 
         # Сохраняем в кэш
         self.__cache_port_info[port] = port_info
@@ -356,56 +307,29 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             "data": "\n".join(port_info.splitlines()[1:]),
         }
 
-    @validate_and_format_port_as_normal()
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
-
-        Тип порта определяется по стандарту IEE 802.3
-
-        ### Обозначения медных типов
-            T, TX, VG, CX, CR
-        ### Обозначения оптоволоконных типов:
-            FOIRL, F, FX, SX, LX, BX, EX, ZX, SR, ER, SW, LW, EW, LRM, PR, LR, ER, FR, LH
-
-        Оптоволокно:
-
-            media type is LX
-            media type is SFP-LR
-            media type is No XCVR
-            media type is 10GBase-LR
-            media type is 1000BaseBX10-U SFP
-
-        Медь:
-
-            media type is RJ45
-            media type is 10/100/1000BaseTX
-
-        Не определено:
-
-            media type is unsupported
-            media type is Not Present
-            media type is unknown media type
-
         :param port: Порт для проверки
-        :return: "SFP", "COPPER" или "?"
+        :return: "SFP", "COPPER", "COMBO-SFP", "COMBO-COPPER" или "?"
         """
 
         # Получаем информацию о порте.
         port_info = self.__cache_port_info.get(port) or self.get_port_info(port).get("data", "")
         # Ищем тип порта.
-        port_type = "".join(
-            self.find_or_empty(r"media type is .+[Bb]ase[-]?(\S{1,2})|media type is (.+)", port_info)
-        )
-        # Проверка, является ли порт оптоволоконным.
-        if "No XCVR" in port_type or "SFP" in port_info or port_type in FIBER_TYPES:
+        port_type = self.find_or_empty(r"Hardware is (\S+)", port_info)
+
+        if "Combo" in port_type:
+            if "F" in port_type:
+                return "COMBO-SFP"
+            return "COMBO-COPPER"
+        if "SFP" in port_info or port_type in FIBER_TYPES:
             return "SFP"
-        if "RJ45" in port_type or port_type in COOPER_TYPES:
+        if self.find_or_empty(r"G-(\S+)", port_type) in COOPER_TYPES:
             return "COPPER"
 
         return "?"
 
-    @validate_and_format_port_as_normal()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -416,11 +340,10 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         # Получаем информацию о порте.
         port_info = self.get_port_info(port).get("data", "")
 
-        media_type = [line.strip() for line in port_info.split("\n") if "errors" in line]
+        media_type = [line.strip() for line in port_info.split("\n") if "error" in line]
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -430,11 +353,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
             # show running-config interface {port}
         """
 
-        return self.send_command(
-            f"show running-config interface {port}",
-            before_catch=r"Current configuration.+?\!",
-            expect_command=False,
-        ).strip()
+        return self.send_command(f"show running-config interface {port}").strip()
 
     @BaseDevice.lock_session
     def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
@@ -476,18 +395,21 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         return self._search_in_arp(address=ip_address)
 
     def _search_in_arp(self, address: str) -> list[ArpInfoResult]:
-        match = self.send_command(f"show arp | include {address}", expect_command=False)
-        # Форматируем вывод
-        with open(
-            f"{TEMPLATE_FOLDER}/arp_format/{self.vendor.lower()}.template",
-            encoding="utf-8",
-        ) as template_file:
-            template = textfsm.TextFSM(template_file)
-        result = template.ParseText(match)
-        return [ArpInfoResult(*r) for r in result]
+        arp_output = self.send_command(f"show arp | include {address}", expect_command=False)
+        parsed: list[tuple[str, str, str]] = re.findall(
+            rf"(\d\S+\d)\s+({self.mac_format})\s+vlan(\d+)\s+\S+", arp_output
+        )
+
+        result = []
+        for ip, mac, vlan in parsed:
+            mac_output = self.send_command(f"show mac address-table address {mac}", expect_command=False)
+            port = self.find_or_empty(rf"{vlan}\s+{self.mac_format}\s+\S+\s+(\S+)", mac_output)
+
+            result.append(ArpInfoResult(ip=ip, mac=mac, vlan=vlan, port=port))
+
+        return result
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -536,8 +458,6 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         self.session.sendline("end")  # Выходим из режима редактирования
         self.session.expect(self.prompt)
 
-        self.lock = False
-
         if "Invalid input detected" in res:
             return {
                 "status": "fail",
@@ -554,11 +474,11 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
 
     @BaseDevice.lock_session
     def get_device_info(self) -> dict:
-        data: dict[str, dict] = {"cpu": {}, "ram": {}, "flash": {}}
-        for key, value in data.items():
-            value["util"] = getattr(self, f"get_{key}_utilization")()
-        data["temp"] = self.get_temp()
-        return data
+        return {
+            "cpu": {"util": self.get_cpu_utilization()},
+            "ram": {},
+            "flash": {"util": self.get_flash_utilization()},
+        }
 
     def get_cpu_utilization(self) -> tuple:
         """
@@ -566,8 +486,8 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         """
 
         cpu_percent = re.findall(
-            r"one minute: (\d+)%",
-            self.send_command("show processes cpu | include minute", expect_command=False),
+            r"Last 1 minute CPU usage\s+:\s+(\d+)%",
+            self.send_command("show system resources", expect_command=False),
             flags=re.IGNORECASE,
         )
 
@@ -579,100 +499,31 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
         """
 
         flash = self.find_or_empty(
-            r"(\d+)\s+(\d+)\s+\S+\s+\S+\s+[boot]*flash",
-            self.send_command("show file systems", expect_command=False),
+            r"Use:(\d+)%",
+            self.send_command("show flash", expect_command=False),
             flags=re.IGNORECASE,
         )
 
         return int((int(flash[0]) - int(flash[1])) / int(flash[0]) * 100) if flash else -1
 
-    def get_ram_utilization(self) -> int:
-        """
-        ## Возвращает использование DRAM в процентах
-        """
-
-        output = self.send_command("show memory statistics", expect_command=False)
-        pattern = r"Processor\s+\S+\s+(\d+)\s+(\d+)"
-
-        if "Invalid input" in output:
-            output = self.send_command("show memory", expect_command=False)
-            pattern = r"Process\s+(\d+)\s+(\d+)"
-
-        ram = self.find_or_empty(pattern, output, flags=re.IGNORECASE)
-        return int(int(ram[1]) / int(ram[0]) * 100) if ram else -1
-
-    def get_temp(self) -> dict:
-        output = self.send_command("show env temp status", expect_command=False)
-
-        if "Invalid input" in output:
-            output = self.send_command("show env temp", expect_command=False)
-            pattern = r"CPU\s+([-]?\d+)C"
-        else:
-            pattern = r"Temperature Value: ([-]?\d+[.]?\d?) Degree Celsius"
-
-        temp = self.find_or_empty(pattern, output)
-
-        if not temp:
-            return {}
-
-        current_temp = float(temp)
-
-        high_temp_limit: list[tuple[str, str]] = re.findall(
-            r"SYSTEM High Temperature Shutdown Threshold: (\d+[.]?\d?) Degree Celsius|"
-            r"Red Threshold {4}: (\d+) Degree Celsius",
-            output,
-        )
-        if high_temp_limit:
-            high_temp = float("".join(high_temp_limit[0]))
-        else:
-            high_temp = 60.0
-
-        medium_temp_limit: list[tuple[str, str]] = re.findall(
-            r"SYSTEM High Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius|"
-            r"Yellow Threshold : (\d+) Degree Celsius",
-            output,
-        )
-        if medium_temp_limit:
-            medium_temp = float("".join(medium_temp_limit[0]))
-        else:
-            medium_temp = 60.0
-
-        low_temp = float(
-            self.find_or_empty(
-                r"SYSTEM Low Temperature Alert Threshold: (\d+[.]?\d?) Degree Celsius",
-                output,
-            )
-            or 0
-        )
-
-        status = "normal"
-        if current_temp >= medium_temp:
-            status = "medium"
-        elif current_temp >= high_temp - 6:
-            status = "high"
-        elif current_temp <= low_temp:
-            status = "low"
-
-        return {"value": current_temp, "status": status}
-
     @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
-        data = self.send_command(
-            "show running-config",
-            expect_command=False,
-            before_catch=r"Building configuration\.\.\.",
-        )
+        data = self.send_command("show running-config")
         return io.BytesIO(data.encode())
 
 
-class CiscoFactory(AbstractDeviceFactory):
+class CDataFactory(AbstractDeviceFactory):
     @staticmethod
     def support_devices() -> list[type[BaseDevice]]:
-        return [Cisco]
+        return [CDataFD16XXDevice]
 
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and "cisco" in str(version_output).lower()
+        return (
+            version_output
+            and "GPON OLT Integrated Operating System" in version_output
+            and re.search(r"Device Model\s+:\s+FD16\S+", version_output) is not None
+        )
 
     @classmethod
     def get_device(
@@ -683,5 +534,7 @@ class CiscoFactory(AbstractDeviceFactory):
         auth: DeviceAuthDict,
         version_output: str = "",
     ) -> BaseDevice:
-        model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
-        return Cisco(session, ip, auth, model=model, snmp_community=snmp_community)
+        model = BaseDevice.find_or_empty(r"Device Model\s+:\s+(\S+)", version_output)
+        dev = CDataFD16XXDevice(session, ip, auth, model=model, snmp_community=snmp_community)
+        dev.mac = dev.find_or_empty(r"Mac Address\s+:\s+(\S+)", version_output)
+        return dev

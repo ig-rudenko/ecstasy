@@ -352,7 +352,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
             else:
                 value = self.find_or_empty(r"-?\d+\.?\d*", line)  # Числовое значение
                 if value:
-                    line_new = {"color": color(float(value), line), "value": value}
+                    line_new: dict = {"color": color(float(value), line), "value": value}
                 else:  # Если нет значения - ошибка
                     line_new = {"color": "#e55d22", "value": 0}
 

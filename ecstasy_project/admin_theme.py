@@ -1,68 +1,5 @@
-from django.apps import apps
 from django.conf import settings
 from django.templatetags.static import static
-from django.urls import NoReverseMatch, reverse_lazy
-
-APP_GROUPS = {
-    "check": {"title": "Оборудование", "icon": "memory"},
-    "gathering": {"title": "Сбор данных", "icon": "hub"},
-    "gpon": {"title": "GPON", "icon": "device_hub"},
-    "maps": {"title": "Карты", "icon": "map"},
-    "app_settings": {"title": "Настройки платформы", "icon": "tune"},
-    "accounting": {"title": "API и доступ", "icon": "vpn_key"},
-    "news": {"title": "Новости", "icon": "newspaper"},
-    "notifications": {"title": "Уведомления", "icon": "notifications"},
-    "ring_manager": {"title": "Кольца", "icon": "timeline"},
-    "net_tools": {"title": "Сетевые справочники", "icon": "lan"},
-    "discovery": {"title": "Обнаружение", "icon": "travel_explore"},
-}
-
-MODEL_ICONS = {
-    "DeviceGroup": "inventory_2",
-    "AuthGroup": "key",
-    "Devices": "dns",
-    "AccessGroup": "shield",
-    "DeviceMedia": "perm_media",
-    "Bras": "dns",
-    "Profile": "badge",
-    "UsersActions": "history",
-    "InterfacesComments": "comment",
-    "DeviceCommand": "terminal",
-    "MacAddress": "dns",
-    "Vlan": "dataset",
-    "VlanPort": "cable",
-    "Address": "home_pin",
-    "OLTState": "lan",
-    "HouseOLTState": "apartment",
-    "HouseB": "apartment",
-    "End3": "device_hub",
-    "TechCapability": "settings_input_hdmi",
-    "Customer": "group",
-    "Service": "sell",
-    "SubscriberConnection": "hub",
-    "Layers": "layers",
-    "Maps": "map",
-    "LogsElasticStackSettings": "article",
-    "ZabbixConfig": "monitor_heart",
-    "VlanTracerouteConfig": "route",
-    "AccessRingSettings": "tune",
-    "UserAPIToken": "vpn_key",
-    "DescNameFormat": "text_fields",
-    "VlanName": "label",
-    "DevicesForMacSearch": "manage_search",
-    "DevicesInfo": "dns",
-    "GlobalNews": "campaign",
-    "WebhookNotification": "webhook",
-    "TelegramNotification": "send",
-    "NotificationTrigger": "bolt",
-    "NotificationCondition": "rule",
-    "TransportRing": "timeline",
-    "RingDev": "dns",
-    "DiscoveryProfile": "manage_search",
-    "DiscoveryRun": "history",
-    "DiscoveryCandidate": "fact_check",
-    "DiscoveryAttempt": "rule",
-}
 
 
 def admin_stylesheet(_request):
@@ -107,11 +44,7 @@ def site_dropdown(_request):
 def account_links(request):
     links = [
         {
-            "title": "Главная Ecstasy",
-            "link": "/",
-        },
-        {
-            "title": "Swagger UI",
+            "title": "API документация",
             "link": "/api/swagger",
         },
     ]
@@ -127,119 +60,188 @@ def account_links(request):
     return links
 
 
-def _app_model_items(app_label: str):
-    """Build sidebar links for registered admin models in an app."""
-    app_config = apps.get_app_config(app_label)
-    items = []
-
-    for model in sorted(app_config.get_models(), key=lambda item: item._meta.verbose_name_plural):  # type: ignore
-        try:
-            link = reverse_lazy(f"admin:{app_label}_{model._meta.model_name}_changelist")
-        except NoReverseMatch:
-            continue
-
-        items.append(
-            {
-                "title": str(model._meta.verbose_name_plural).capitalize(),
-                "icon": MODEL_ICONS.get(model.__name__, APP_GROUPS[app_label]["icon"]),
-                "link": str(link),
-            }
-        )
-
-    return items
+def has_permission_to_model(app: str, model: str, permissions: set[str]):
+    apps_permissions = filter(lambda item: item.startswith(f"{app}."), permissions)
+    return any(filter(lambda item: model in str(item), apps_permissions))
 
 
-def _installed_app_labels() -> list[str]:
-    """Return project app labels from INSTALLED_APPS in a stable order."""
-    installed_labels = [
-        app_path.removeprefix("apps.") for app_path in settings.INSTALLED_APPS if app_path.startswith("apps.")
-    ]
-    ordered_labels = [label for label in APP_GROUPS if label in installed_labels]
-    ordered_labels.extend(label for label in installed_labels if label not in ordered_labels)
-    return ordered_labels
+def model_link(title: str, icon: str, app: str, model: str, permissions: set[str]):
+    return {
+        "title": title,
+        "icon": icon,
+        "link": f"/admin/{app}/{model}/",
+        "permission": lambda r: has_permission_to_model(app, model, permissions),
+    }
 
 
 def sidebar_navigation(request):
-    operations = [
-        {
-            "title": "Главная админки",
-            "icon": "dashboard",
-            "link": "/admin/",
-        },
-        {
-            "title": "Сайт",
-            "icon": "language",
-            "link": "/",
-        },
-        {
-            "title": "Swagger UI",
-            "icon": "terminal",
-            "link": "/api/swagger",
-        },
-    ]
+    perms: set[str] = request.user.get_all_permissions()
 
     navigation = [
         {
-            "title": "Операции",
+            "title": "",
             "separator": False,
             "collapsible": False,
-            "items": operations,
+            "items": [
+                {"title": "Главная админки", "icon": "dashboard", "link": "/admin/"},
+                {"title": "Сайт", "icon": "language", "link": "/"},
+                {"title": "API документация", "icon": "data_object", "link": "/api/swagger"},
+            ],
         },
         {
-            "title": "Пользователи и группы",
+            "title": "Users & Groups",
             "separator": False,
             "collapsible": True,
             "items": [
-                {
-                    "title": "Пользователи",
-                    "icon": "person",
-                    "link": "/admin/auth/user/",
-                },
-                {
-                    "title": "Группы",
-                    "icon": "person",
-                    "link": "/admin/auth/group/",
-                },
+                model_link("Users", "people", "auth", "user", perms),
+                model_link("Users profiles", "badge", "check", "profile", perms),
+                model_link("Groups", "person", "auth", "group", perms),
+            ],
+        },
+        {
+            "title": "Device control",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                model_link("Devices", "dns", "check", "devices", perms),
+                model_link("Device groups", "inventory_2", "check", "devicegroup", perms),
+                model_link("Auth groups", "key", "check", "authgroup", perms),
+                model_link("Access groups", "shield", "check", "accessgroup", perms),
+                model_link("Device commands", "terminal", "check", "devicecommand", perms),
+                model_link("Device interface comments", "comment", "check", "interfacescomments", perms),
+                model_link("Media files", "perm_media", "check", "devicemedia", perms),
+                model_link("Interface pattern rules", "memory", "check", "deviceinterfacepatternrule", perms),
+                model_link("Users profiles", "badge", "check", "profile", perms),
+                model_link("Users actions", "history", "check", "usersactions", perms),
+                model_link("BRAS", "dns", "check", "bras", perms),
+                model_link(
+                    "Bulk device command executions", "memory", "check", "bulkdevicecommandexecution", perms
+                ),
+                model_link(
+                    "Bulk command execution results",
+                    "memory",
+                    "check",
+                    "bulkdevicecommandexecutionresult",
+                    perms,
+                ),
+            ],
+        },
+        {
+            "title": "Device information",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("Interfaces", "dns", "net_tools", "devicesinfo", perms),
+                model_link("MAC addresses", "dns", "gathering", "macaddress", perms),
+                model_link("VLANs", "dataset", "gathering", "vlan", perms),
+                model_link("VLAN ports", "cable", "gathering", "vlanport", perms),
+            ],
+        },
+        {
+            "title": "Device discovery",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("Discovery attempts", "rule", "discovery", "discoveryattempt", perms),
+                model_link("Discovery candidates", "fact_check", "discovery", "discoverycandidate", perms),
+                model_link("Discovery profiles", "manage_search", "discovery", "discoveryprofile", perms),
+                model_link("Discovery runs", "history", "discovery", "discoveryrun", perms),
+            ],
+        },
+        {
+            "title": "Device ring manager",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("Ring devs", "dns", "ring_manager", "ringdev", perms),
+                model_link("Transport rings", "timeline", "ring_manager", "transportring", perms),
+            ],
+        },
+        {
+            "title": "GPON",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                model_link("OLT ports", "lan", "gpon", "oltstate", perms),
+                model_link("Buildings", "apartment", "gpon", "houseb", perms),
+                model_link("OLT to Buildings", "apartment", "gpon", "houseoltstate", perms),
+                model_link("End3s", "device_hub", "gpon", "end3", perms),
+                model_link("Tech capabilities", "settings_input_hdmi", "gpon", "techcapability", perms),
+                model_link("Subscriber connections", "hub", "gpon", "subscriberconnection", perms),
+                model_link("Customers", "group", "gpon", "customer", perms),
+                model_link("Services", "sell", "gpon", "service", perms),
+                model_link("Addresses", "home_pin", "gpon", "address", perms),
+            ],
+        },
+        {
+            "title": "Maps",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("Карты", "map", "maps", "maps", perms),
+                model_link("Слои", "layers", "maps", "layers", perms),
+            ],
+        },
+        {
+            "title": "Notifications",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("Conditions", "rule", "notifications", "notificationcondition", perms),
+                model_link("Triggers", "bolt", "notifications", "notificationtrigger", perms),
+                model_link("Telegram notifications", "send", "notifications", "telegramnotification", perms),
+                model_link("Webhook notifications", "webhook", "notifications", "webhooknotification", perms),
+            ],
+        },
+        {
+            "title": "Dictionaries",
+            "separator": False,
+            "collapsible": True,
+            "items": [
+                model_link("VLAN names", "label", "net_tools", "vlanname", perms),
+                model_link(
+                    "Vlan traceroute desc name formats", "text_fields", "net_tools", "descnameformat", perms
+                ),
+            ],
+        },
+        {
+            "title": "Settings",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                model_link(
+                    "Devices for MAC search in ARP table",
+                    "manage_search",
+                    "net_tools",
+                    "devicesformacsearch",
+                    perms,
+                ),
+                model_link("Traceroute", "route", "app_settings", "tracerouteconfig", perms),
+                model_link("VLAN traceroute node kind", "lan", "net_tools", "traceroutenodekind", perms),
+                model_link(
+                    "VLAN traceroute node style rules", "lan", "net_tools", "traceroutenodestylerule", perms
+                ),
+                model_link("Access rings", "tune", "app_settings", "accessringsettings", perms),
+                model_link("Elastic", "article", "app_settings", "logselasticstacksettings", perms),
+                model_link("Zabbix API", "monitor_heart", "app_settings", "zabbixconfig", perms),
             ],
         },
     ]
 
-    for index, app_label in enumerate(_installed_app_labels()):
-        if app_label not in APP_GROUPS:
-            continue
-
-        items = _app_model_items(app_label)
-        if not items:
-            continue
-
-        navigation.append(
-            {
-                "title": APP_GROUPS[app_label]["title"],
-                "separator": index == 0,
-                "collapsible": True,
-                "items": items,
-            }
-        )
-
     if request.user.is_superuser:
         navigation.append(
             {
-                "title": "Системное",
-                "separator": False,
-                "collapsible": True,
+                "title": "System",
+                "separator": True,
+                "collapsible": False,
                 "items": [
-                    {
-                        "title": "Celery Beat",
-                        "icon": "schedule",
-                        "link": "/admin/django_celery_beat/",
-                    },
-                    {
-                        "title": "Импорт и экспорт",
-                        "icon": "import_export",
-                        "link": "/admin/check/devices/",
-                    },
+                    {"title": "API Tokens", "icon": "vpn_key", "link": "/admin/accounting/userapitoken/"},
+                    {"title": "Periodical Tasks", "icon": "schedule", "link": "/admin/django_celery_beat/"},
+                    {"title": "Cookie Sessions", "icon": "people", "link": "/admin/sessions/session/"},
+                    {"title": "JWT Blacklist", "icon": "vpn_key", "link": "/admin/token_blacklist/"},
+                    {"title": "Global News", "icon": "campaign", "link": "/admin/news/globalnews/"},
                 ],
-            }
+            },
         )
 
     return navigation
