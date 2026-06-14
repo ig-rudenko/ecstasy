@@ -485,11 +485,14 @@ export function useDiscoveryPage() {
     }
 
     function resolveCandidatePortScanProtocol(candidate: DiscoveryCandidate): "snmp" | "ssh" | "telnet" {
+        const cliProtocol = candidate.rawFingerprint?.cliProtocol;
+        if (cliProtocol === "ssh" || cliProtocol === "telnet") {
+            return cliProtocol;
+        }
         if (candidate.detectedProtocols.snmp) {
             return "snmp";
         }
-        const cmdProtocol = resolveCandidateCmdProtocol(candidate);
-        return cmdProtocol === "telnet" ? "telnet" : "ssh";
+        return resolveCandidateCmdProtocol(candidate);
     }
 
     function openAcceptDialog(candidate: DiscoveryCandidate): void {

@@ -100,10 +100,90 @@ class DeviceConnectionPortsTests(SimpleTestCase):
 
         spawn = SSHSpawn(ip="192.0.2.10", login="user")
 
-        spawn.get_ciphers("Their offer: aes128-cbc,3des-cbc,des-cbc")
+        with patch("devicemanager.dc.subprocess.run") as run:
+            run.return_value = Mock(
+                stdout="aes128-cbc\n3des-cbc\ndes-cbc\n",
+                returncode=0,
+            )
+            spawn.get_ciphers("Their offer: aes128-cbc,3des-cbc,des-cbc")
 
         self.assertEqual(spawn.ciphers, "aes128-cbc")
         self.assertIn("-c aes128-cbc", spawn.get_spawn_string())
+
+    @patch("devicemanager.dc.subprocess.run")
+    def test_ssh_spawn_skips_host_key_algorithms_unsupported_by_local_client(self, run):
+        """SSH spawn выбирает первый предложенный алгоритм, доступный локальному OpenSSH."""
+
+        run.return_value = Mock(stdout="rsa-sha2-256\nssh-ed25519\n", returncode=0)
+        spawn = SSHSpawn(ip="192.0.2.10", login="user")
+
+        spawn.get_host_key_algorithms("Their offer: ssh-dss,rsa-sha2-256")
+
+        self.assertEqual(spawn.host_key_algorithms, "rsa-sha2-256")
+        self.assertIn("-oHostKeyAlgorithms=+rsa-sha2-256", spawn.get_spawn_string())
+
+    @patch("devicemanager.dc.subprocess.run")
+    def test_ssh_spawn_adds_supported_mac_algorithm(self, run):
+        """SSH spawn поддерживает согласование устаревшего MAC алгоритма."""
+
+        run.return_value = Mock(stdout="hmac-sha1\nhmac-sha2-256\n", returncode=0)
+        spawn = SSHSpawn(ip="192.0.2.10", login="user")
+
+        spawn.get_macs("Their offer: hmac-md5,hmac-sha1")
+
+        self.assertEqual(spawn.macs, "hmac-sha1")
+        self.assertIn("-oMACs=+hmac-sha1", spawn.get_spawn_string())
+
+    @patch("devicemanager.dc.subprocess.run")
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_retries_with_supported_mac_algorithm(self, get_session, run):
+        """SSH connector повторяет подключение с MAC из предложения сервера."""
+
+        run.return_value = Mock(stdout="hmac-sha1\nhmac-sha2-256\n", returncode=0)
+        failed_session = Mock()
+        failed_session.expect.side_effect = [12, 0]
+        failed_session.before = b"Their offer: hmac-md5,hmac-sha1\r\n"
+        connected_session = Mock()
+        connected_session.expect.return_value = 5
+        get_session.side_effect = [failed_session, connected_session]
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+        )
+
+        session = connector._connect_by_ssh()
+
+        self.assertIs(session, connected_session)
+        self.assertEqual(get_session.call_count, 2)
+
+    @patch("devicemanager.dc.subprocess.run")
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_does_not_retry_with_unsupported_host_key_algorithm(
+        self,
+        get_session,
+        run,
+    ):
+        """SSH connector не запускает команду с неподдерживаемым host key алгоритмом."""
+
+        run.return_value = Mock(stdout="rsa-sha2-256\nssh-ed25519\n", returncode=0)
+        session = Mock()
+        session.expect.side_effect = [1, 0]
+        session.before = b"Their offer: ssh-dss\r\n"
+        session.isalive.return_value = False
+        get_session.return_value = session
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+        )
+
+        with self.assertRaises(SSHConnectionError):
+            connector._connect_by_ssh()
+
+        get_session.assert_called_once()
 
     @patch("devicemanager.dc.SSHSpawn.get_session")
     def test_ssh_connector_stops_when_negotiation_offer_cannot_be_parsed(self, get_session):

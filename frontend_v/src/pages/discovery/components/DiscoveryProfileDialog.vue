@@ -96,34 +96,36 @@ const modelVisible = computed({
                     </label>
                 </div>
             </div>
-            <div class="grid gap-2 sm:grid-cols-2">
-                <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Port scan
-                    <Select
-                        v-model="form.portScanProtocol"
-                        :options="portScanProtocolOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="rounded-2xl"
-                    />
-                </label>
-                <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Command
-                    <Select
-                        v-model="form.cmdProtocol"
-                        :options="cmdProtocolOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        class="rounded-2xl"
-                    />
-                </label>
+            <div class="flex flex-col gap-2">
+                <div class="grid gap-2 sm:grid-cols-2">
+                    <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Port scan
+                        <Select
+                            v-model="form.portScanProtocol"
+                            :options="portScanProtocolOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="rounded-2xl"
+                        />
+                    </label>
+                    <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Command
+                        <Select
+                            v-model="form.cmdProtocol"
+                            :options="cmdProtocolOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="rounded-2xl"
+                        />
+                    </label>
+                </div>
+                <div
+                    v-if="form.portScanProtocol === 'auto' || form.cmdProtocol === 'auto'"
+                    class="text-xs text-gray-500 dark:text-gray-400"
+                >
+                    Авто использует протокол успешной CLI-проверки: сначала SSH, затем Telnet.
+                </div>
             </div>
-            <p
-                v-if="form.portScanProtocol === 'auto' || form.cmdProtocol === 'auto'"
-                class="text-xs text-gray-500 dark:text-gray-400"
-            >
-                Авто использует протокол успешной CLI-проверки: сначала SSH, затем Telnet.
-            </p>
             <div class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 CLI protocols
                 <div class="flex flex-wrap gap-3 rounded-2xl border border-gray-200/80 p-3 dark:border-gray-700/80">

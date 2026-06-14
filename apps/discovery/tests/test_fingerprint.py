@@ -6,6 +6,7 @@ from django.test import SimpleTestCase, TestCase
 from apps.check.models import AuthGroup
 from apps.discovery.models import DiscoveryAttempt
 from apps.discovery.services.fingerprint import CliFingerprinter, SnmpFingerprinter
+from devicemanager.exceptions import SSHConnectionError
 
 
 class SnmpFingerprinterTests(SimpleTestCase):
@@ -50,7 +51,7 @@ class CliFingerprinterTests(TestCase):
 
         with patch("apps.discovery.services.fingerprint.DeviceRemoteConnector") as mock_connector:
             mock_connector.side_effect = [
-                Exception("SSH unavailable"),
+                SSHConnectionError("Не найден поддерживаемый SSH HostKeyAlgorithms", ip="192.0.2.13"),
                 _FakeConnector({"vendor": "Eltex", "model": "MES"}),
             ]
 
