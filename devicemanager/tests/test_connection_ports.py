@@ -1,3 +1,4 @@
+import os
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
@@ -204,6 +205,90 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         with self.assertRaises(SSHConnectionError):
             connector.get_session()
 
+        get_session.assert_called_once()
+
+    @patch.dict(os.environ, {"DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY": "1"})
+    @patch("devicemanager.dc.SSHSpawn.accept_changed_host_key")
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_accepts_changed_host_key_and_retries_connection(
+        self,
+        get_session,
+        accept_changed_host_key,
+    ):
+        """Автопринятие ключа повторяет handshake и возвращает сессию в первом вызове."""
+
+        changed_key_session = Mock()
+        changed_key_session.expect.return_value = 11
+        changed_key_session.isalive.return_value = False
+        connected_session = Mock()
+        connected_session.expect.return_value = 5
+        get_session.side_effect = [changed_key_session, connected_session]
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+            ssh_port=2222,
+        )
+
+        session = connector._connect_by_ssh()
+
+        self.assertIs(session, connected_session)
+        accept_changed_host_key.assert_called_once_with()
+        self.assertEqual(get_session.call_count, 2)
+
+    @patch.dict(os.environ, {"DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY": "0"})
+    @patch("devicemanager.dc.SSHSpawn.accept_changed_host_key")
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_keeps_manual_confirmation_when_auto_accept_is_disabled(
+        self,
+        get_session,
+        accept_changed_host_key,
+    ):
+        """Без флага изменившийся ключ по-прежнему требует ручного подтверждения."""
+
+        changed_key_session = Mock()
+        changed_key_session.expect.return_value = 11
+        changed_key_session.isalive.return_value = False
+        get_session.return_value = changed_key_session
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+        )
+
+        with self.assertRaisesMessage(SSHConnectionError, "SSH HOST IDENTIFICATION HAS CHANGED"):
+            connector._connect_by_ssh()
+
+        accept_changed_host_key.assert_not_called()
+        get_session.assert_called_once()
+
+    @patch.dict(os.environ, {"DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY": "1"})
+    @patch("devicemanager.dc.SSHSpawn.accept_changed_host_key", side_effect=RuntimeError("write failed"))
+    @patch("devicemanager.dc.SSHSpawn.get_session")
+    def test_ssh_connector_keeps_changed_key_error_when_auto_accept_fails(
+        self,
+        get_session,
+        accept_changed_host_key,
+    ):
+        """Ошибка записи ключа сохраняет ручный сценарий подтверждения."""
+
+        changed_key_session = Mock()
+        changed_key_session.expect.return_value = 11
+        changed_key_session.isalive.return_value = False
+        get_session.return_value = changed_key_session
+        connector = DeviceRemoteConnector(
+            ip="192.0.2.10",
+            protocol="ssh",
+            snmp_community="public",
+            auth_obj=SimpleAuthObject(login="user", password="password"),
+        )
+
+        with self.assertRaisesMessage(SSHConnectionError, "SSH HOST IDENTIFICATION HAS CHANGED"):
+            connector._connect_by_ssh()
+
+        accept_changed_host_key.assert_called_once_with()
         get_session.assert_called_once()
 
     @patch("devicemanager.dc.DeviceMultiFactory.get_device")

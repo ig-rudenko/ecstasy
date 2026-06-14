@@ -3,16 +3,23 @@ import os
 import subprocess
 import tempfile
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from ipaddress import IPv4Address
 from pathlib import Path
 
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - fcntl is available in the Linux service containers.
+    fcntl = None
+
 logger = logging.getLogger(__name__)
 
 HOST_KEY_CHANGED_MESSAGE = "HOST IDENTIFICATION HAS CHANGED"
 MAX_ERROR_MESSAGE_LENGTH = 2_000
+KNOWN_HOSTS_THREAD_LOCK = threading.RLock()
 
 
 @dataclass(frozen=True)
@@ -149,11 +156,25 @@ class SSHKnownHostsStore:
             new_key_lines=new_key_lines,
         )
 
-    def confirm(self, change: PendingSSHHostKeyChange) -> None:
-        """Replace known_hosts entries with the exact keys shown for confirmation."""
+    @contextmanager
+    def _locked(self) -> Iterator[None]:
+        """Serialize known_hosts updates across threads and Linux service processes."""
+
+        self.known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        lock_path = self.known_hosts_path.with_name(f"{self.known_hosts_path.name}.lock")
+        with KNOWN_HOSTS_THREAD_LOCK, lock_path.open("a", encoding="utf-8") as lock_file:
+            if fcntl is not None:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    def _confirm(self, change: PendingSSHHostKeyChange) -> None:
+        """Replace known_hosts entries while the caller holds the update lock."""
 
         host = self._host(change.ip, change.port)
-        self.known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         descriptor, temporary_name = tempfile.mkstemp(
             prefix=".known_hosts.",
             dir=self.known_hosts_path.parent,
@@ -188,6 +209,20 @@ class SSHKnownHostsStore:
         finally:
             temporary_path.unlink(missing_ok=True)
             backup_path.unlink(missing_ok=True)
+
+    def confirm(self, change: PendingSSHHostKeyChange) -> None:
+        """Replace known_hosts entries with the exact keys shown for confirmation."""
+
+        with self._locked():
+            self._confirm(change)
+
+    def accept_current(self, ip: str, port: int, detected_at: datetime) -> PendingSSHHostKeyChange:
+        """Scan and atomically accept the SSH keys currently presented by a host."""
+
+        with self._locked():
+            change = self.inspect(ip, port, detected_at)
+            self._confirm(change)
+        return change
 
 
 class ConnectionStatusStore:

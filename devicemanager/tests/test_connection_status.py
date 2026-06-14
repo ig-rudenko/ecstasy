@@ -139,6 +139,50 @@ class SSHKnownHostsStoreTests(SimpleTestCase):
             self.assertEqual(Path(command[4]).parent, known_hosts_path.parent)
 
     @patch("devicemanager.device_connector.connection_status.subprocess.run")
+    def test_accept_current_scans_and_writes_key_in_one_operation(self, run):
+        """Automatic acceptance writes the key scanned inside the locked operation."""
+
+        command_results = iter(
+            [
+                Mock(
+                    returncode=0,
+                    stdout="192.0.2.10 ssh-ed25519 AAAAold\n",
+                    stderr="",
+                ),
+                Mock(
+                    returncode=0,
+                    stdout="192.0.2.10 ssh-ed25519 AAAAnew\n",
+                    stderr="",
+                ),
+                Mock(returncode=0, stdout="256 SHA256:old host (ED25519)\n", stderr=""),
+                Mock(returncode=0, stdout="256 SHA256:new host (ED25519)\n", stderr=""),
+            ]
+        )
+
+        def run_command(command, **kwargs):
+            """Emulate ssh-keygen removal while returning prepared command output."""
+
+            if command[:2] == ["ssh-keygen", "-R"]:
+                Path(command[4]).write_text("", encoding="utf-8")
+                return Mock(returncode=0, stdout="", stderr="")
+            return next(command_results)
+
+        run.side_effect = run_command
+        with TemporaryDirectory() as temporary_directory:
+            known_hosts_path = Path(temporary_directory) / ".ssh" / "known_hosts"
+            known_hosts_path.parent.mkdir()
+            known_hosts_path.write_text("192.0.2.10 ssh-ed25519 AAAAold\n", encoding="utf-8")
+            store = SSHKnownHostsStore(known_hosts_path)
+
+            change = store.accept_current("192.0.2.10", 22, self.make_change().detected_at)
+
+            self.assertEqual(change.new_keys[0].fingerprint, "SHA256:new")
+            self.assertEqual(
+                known_hosts_path.read_text(encoding="utf-8"),
+                "192.0.2.10 ssh-ed25519 AAAAnew\n",
+            )
+
+    @patch("devicemanager.device_connector.connection_status.subprocess.run")
     def test_failed_confirmation_keeps_original_known_hosts(self, run):
         """A failed replacement never removes the currently trusted key."""
 

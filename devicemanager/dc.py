@@ -2,13 +2,16 @@
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
 
+import os
 import re
 import subprocess
+from datetime import UTC, datetime
 from dataclasses import dataclass
 
 import pexpect
 
 from .connection_ports import normalize_connection_ports
+from .device_connector.connection_status import SSHKnownHostsStore
 from .exceptions import (
     DeviceException,
     DeviceLoginError,
@@ -19,6 +22,8 @@ from .multifactory import DeviceMultiFactory
 from .session_spawner import SessionSpawner
 from .vendors.base.device import BaseDevice
 from .vendors.base.types import SimpleAuthObjectProtocol
+
+TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -105,6 +110,11 @@ class SSHSpawn:
 
     def get_session(self):
         return SessionSpawner(self.get_spawn_string(), ip=self.ip, timeout=15)
+
+    def accept_changed_host_key(self) -> None:
+        """Atomically trust the SSH keys currently presented by this host."""
+
+        SSHKnownHostsStore().accept_current(self.ip, self.port, datetime.now(UTC))
 
 
 class DeviceRemoteConnector:
@@ -215,6 +225,7 @@ class DeviceRemoteConnector:
         session = None
         negotiation_restarts = 0
         max_negotiation_restarts = 4
+        host_key_restarts = 0
 
         try:
             ssh_spawn = SSHSpawn(ip=self.ip, login=self.login, port=self.ssh_port)
@@ -307,7 +318,21 @@ class DeviceRemoteConnector:
                     session.send(self.login + "\r")  # Login
                 elif expect_index == 11:
                     session.close()
-                    raise SSHConnectionError("SSH HOST IDENTIFICATION HAS CHANGED", ip=self.ip)
+                    auto_accept_host_key = (
+                        os.getenv("DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY", "0").lower()
+                        in TRUE_VALUES
+                    )
+                    if not auto_accept_host_key or host_key_restarts >= 1:
+                        raise SSHConnectionError("SSH HOST IDENTIFICATION HAS CHANGED", ip=self.ip)
+                    host_key_restarts += 1
+                    try:
+                        ssh_spawn.accept_changed_host_key()
+                    except Exception as exc:
+                        raise SSHConnectionError(
+                            "SSH HOST IDENTIFICATION HAS CHANGED",
+                            ip=self.ip,
+                        ) from exc
+                    session = ssh_spawn.get_session()
                 elif expect_index == 12:
                     session.expect(pexpect.EOF)
                     ssh_spawn.get_macs(session.before.decode("utf-8", errors="ignore"))
