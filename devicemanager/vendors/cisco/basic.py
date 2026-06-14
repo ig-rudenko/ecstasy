@@ -12,12 +12,7 @@ from ..base.device import (
     BaseDevice,
     CableDiagResult,
 )
-from ..base.helpers import (
-    interface_normal_view,
-    normalize_cable_diag_result,
-    parse_by_template,
-    range_to_numbers,
-)
+from ..base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -33,7 +28,7 @@ from ..base.types import (
     PortInfoType,
     VlanTableType,
 )
-from ..base.validators import validate_and_format_port_as_normal
+from .validators import cisco_interface_normal_view, validate_and_format_port_for_cisco
 
 
 class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCableTestDevice):
@@ -78,7 +73,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
     @staticmethod
     def normalize_interface_name(intf: str) -> str:
-        return interface_normal_view(intf)
+        return cisco_interface_normal_view(intf)
 
     @BaseDevice.lock_session
     def save_config(self):
@@ -192,7 +187,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return interfaces_config
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return=[])
+    @validate_and_format_port_for_cisco(if_invalid_return=[])
     def get_mac(self, port) -> MACListType:
         """
         ## Возвращаем список из VLAN и MAC-адреса для данного порта.
@@ -241,7 +236,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return [(int(vid), mac, mac_type(type_), port) for vid, mac, type_, port in mac_table]
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def reload_port(self, port, save_config=True) -> str:
         """
         ## Перезагружает порт
@@ -282,7 +277,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return r + s
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def set_port(self, port, status, save_config=True) -> str:
         """
         ## Устанавливает статус порта на коммутаторе **up** или **down**
@@ -321,7 +316,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         s = self.save_config() if save_config else "Without saving"
         return r + s
 
-    @validate_and_format_port_as_normal({"type": "error", "data": "Неверный порт"})
+    @validate_and_format_port_for_cisco({"type": "error", "data": "Неверный порт"})
     @BaseDevice.lock_session
     def get_port_info(self, port: str) -> PortInfoType:
         """
@@ -351,7 +346,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
             "data": "\n".join(port_info.splitlines()[1:]),
         }
 
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def get_port_type(self, port: str) -> str:
         """
         ## Возвращает тип порта
@@ -400,7 +395,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
         return "?"
 
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def get_port_errors(self, port: str) -> str:
         """
         ## Выводим ошибки на порту
@@ -415,7 +410,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return "<p>" + "\n".join(media_type) + "</p>"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def get_port_config(self, port: str) -> str:
         """
         ## Выводим конфигурацию порта
@@ -482,7 +477,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return [ArpInfoResult(*r) for r in result]
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    @validate_and_format_port_for_cisco(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
@@ -649,7 +644,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         return {"value": current_temp, "status": status}
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"len": "-", "status": "Unknown"})
+    @validate_and_format_port_for_cisco(if_invalid_return={"len": "-", "status": "Unknown"})
     def virtual_cable_test(self, port: str) -> CableDiagResult:
         output = self.send_command(f"test cable-diagnostics tdr interface {port}", expect_command=False)
         if "test started" not in output:

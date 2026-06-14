@@ -13,9 +13,9 @@ from ..base.types import (
     InterfaceType,
     VlanTableType,
 )
-from ..base.validators import validate_and_format_port_as_normal
 from .basic import Cisco
 from .helpers import parse_nexus_cpu_utilization, parse_nexus_flash_usage_percent, parse_nexus_ram_utilization
+from .validators import validate_and_format_port_for_cisco
 
 
 class CiscoNexus(Cisco):
@@ -117,7 +117,7 @@ class CiscoNexus(Cisco):
         return result
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def get_port_type(self, port: str) -> str:
         """
         Возвращает тип порта.
@@ -167,7 +167,7 @@ class CiscoNexus(Cisco):
         return "?"
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal()
+    @validate_and_format_port_for_cisco()
     def get_port_config(self, port: str) -> str:
         """
         Выводим конфигурацию порта
@@ -207,7 +207,7 @@ class CiscoNexus(Cisco):
         return result
 
     @BaseDevice.lock_session
-    @validate_and_format_port_as_normal(if_invalid_return={"error": "Неверный порт", "status": "fail"})
+    @validate_and_format_port_for_cisco(if_invalid_return={"error": "Неверный порт", "status": "fail"})
     def set_description(self, port: str, desc: str) -> dict:
         """
         ## Устанавливаем описание для порта предварительно очистив его от лишних символов
