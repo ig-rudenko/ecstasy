@@ -172,7 +172,10 @@ function emitQueryChange(): void {
 }
 
 function statusClass(status: string): string {
-    if (["READY", "CREATED", "SUCCESS"].includes(status)) {
+    if (["CREATED"].includes(status)) {
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200";
+    }
+    if (["READY", "SUCCESS"].includes(status)) {
         return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
     }
     if (["FAILED", "FAILURE"].includes(status)) {

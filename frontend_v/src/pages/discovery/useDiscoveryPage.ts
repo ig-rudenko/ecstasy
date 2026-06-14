@@ -86,8 +86,8 @@ export function useDiscoveryPage() {
         authGroups: [] as number[],
         snmpCommunities: "",
         tryProtocols: ["ssh"] as string[],
-        portScanProtocol: "snmp" as "auto" | "snmp" | "telnet" | "ssh",
-        cmdProtocol: "ssh" as "auto" | "telnet" | "ssh",
+        portScanProtocol: "auto" as "auto" | "snmp" | "telnet" | "ssh",
+        cmdProtocol: "auto" as "auto" | "telnet" | "ssh",
         maxWorkers: 32,
         timeoutSeconds: 2,
         autoCreate: false,
@@ -161,14 +161,14 @@ export function useDiscoveryPage() {
     function resetProfileForm(): void {
         editingProfile.value = null;
         profileForm.name = "";
-        profileForm.networks = "192.0.2.0/24";
-        profileForm.excludeIps = "";
+        profileForm.networks = "192.168.0.0/24";
+        profileForm.excludeIps = "192.168.0.255";
         profileForm.deviceGroup = lookups.deviceGroups[0]?.id || null;
         profileForm.authGroups = [];
         profileForm.snmpCommunities = "";
-        profileForm.tryProtocols = ["ssh"];
-        profileForm.portScanProtocol = "snmp";
-        profileForm.cmdProtocol = "ssh";
+        profileForm.tryProtocols = ["telnet", "ssh"];
+        profileForm.portScanProtocol = "auto";
+        profileForm.cmdProtocol = "auto";
         profileForm.maxWorkers = 32;
         profileForm.timeoutSeconds = 2;
         profileForm.autoCreate = false;
