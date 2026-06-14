@@ -179,12 +179,14 @@ export async function deleteDiscoveryRun(runId: number): Promise<void> {
     await api.delete(`/api/v1/discovery/runs/${runId}`);
 }
 
-export async function getDiscoveryCandidates(params: {
-    page?: number;
-    status?: string;
-    search?: string;
-    vendor?: string;
-} & Partial<DiscoveryCandidateTableQuery>): Promise<PaginatedResponse<DiscoveryCandidate>> {
+export async function getDiscoveryCandidates(
+    params: {
+        page?: number;
+        status?: string;
+        search?: string;
+        vendor?: string;
+    } & Partial<DiscoveryCandidateTableQuery>
+): Promise<PaginatedResponse<DiscoveryCandidate>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", String(params.page));
     if (params.status) searchParams.set("status", params.status);

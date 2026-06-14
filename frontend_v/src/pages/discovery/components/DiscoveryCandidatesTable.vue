@@ -415,7 +415,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="name" header="Кандидат" sortable>
+            <Column field="name" header="Кандидат" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <div class="min-w-48">
                         <div class="font-semibold text-gray-900 dark:text-gray-100">{{ data.name || "Без имени" }}</div>
@@ -424,7 +424,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="model" header="Устройство" sortable>
+            <Column field="model" header="Устройство" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <div class="min-w-56">
                         <div class="text-sm font-medium text-gray-800 dark:text-gray-200">
@@ -438,7 +438,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="status" header="Discovery" sortable>
+            <Column field="status" header="Discovery" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <div class="min-w-28">
                         <span
@@ -451,7 +451,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="confidence" header="Confidence" sortable>
+            <Column field="confidence" header="Confidence" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <span class="font-mono font-semibold text-gray-800 dark:text-gray-100">{{ data.confidence }}</span>
                 </template>
@@ -473,7 +473,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="authCheckStatus" header="Проверка AuthGroup" sortable>
+            <Column field="authCheckStatus" header="Проверка AuthGroup" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <div class="min-w-96">
                         <span
@@ -484,7 +484,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                         </span>
                         <pre
                             v-if="data.authCheckError"
-                            class="mt-3 max-w-160 whitespace-pre-wrap break-words rounded-xl border border-rose-200/80 bg-rose-50/70 p-3 font-mono text-xs leading-5 text-rose-800 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"
+                            class="mt-3 max-w-160 whitespace-pre-wrap wrap-break-word rounded-xl border border-rose-200/80 bg-rose-50/70 p-3 font-mono text-xs leading-5 text-rose-800 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"
                             >{{ data.authCheckError }}</pre
                         >
                         <span v-else class="mt-2 block text-xs text-gray-400">Ошибки проверки нет</span>
@@ -492,7 +492,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="lastSeenAt" header="Последняя активность" sortable>
+            <Column field="lastSeenAt" header="Последняя активность" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
                     <div class="min-w-80">
                         <div class="text-sm text-gray-700 dark:text-gray-200">
@@ -500,7 +500,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                         </div>
                         <pre
                             v-if="data.lastError"
-                            class="mt-3 max-w-120 whitespace-pre-wrap break-words rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 font-mono text-xs leading-5 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-100"
+                            class="mt-3 max-w-120 whitespace-pre-wrap wrap-break-word rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 font-mono text-xs leading-5 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-100"
                             >{{ data.lastError }}</pre
                         >
                         <span v-else class="mt-2 block text-xs text-gray-400">Последней ошибки нет</span>
