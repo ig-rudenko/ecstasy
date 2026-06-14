@@ -653,11 +653,11 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         # Команда для теста медного порта
         diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
-        if "Available commands" in diag_output or "can't support" in diag_output or "Unknown" in diag_output:
+        if re.search(r"(Available commands|can't\s+support|Unknown|Not\s+Support)", diag_output):
             # Если не поддерживается диагностика медного порта, то пробуем SFP диагностику
             sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
             if sfp_parameter_data:
-                return normalize_cable_diag_result({"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)})
+                return normalize_cable_diag_result({"sfp": self._parse_sfp_diagnostics(sfp_parameter_data)})
 
             # Если нет данных, то не поддерживается и этот способ диагностики
             return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
@@ -692,7 +692,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         return normalize_cable_diag_result(result)
 
     @staticmethod
-    def __parse_sfp_diagnostics(output) -> dict:
+    def _parse_sfp_diagnostics(output) -> dict:
         """
         Parses SFP transceiver diagnostic information using regex.
 

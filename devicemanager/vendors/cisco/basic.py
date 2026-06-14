@@ -657,7 +657,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
             output = self.send_command(f"show cable-diagnostics tdr interface {port}", expect_command=False)
 
             parsed = re.findall(
-                r"Pair\s+(?P<pair>[ABCD])\s+(?P<lenght>\d+)\s+\S+\s+\S+\s+\S+\s+\S+\s+[ABCD]\s+(?P<status>\S+)",
+                r"Pair\s+(?P<pair>[ABCD])\s+(?P<lenght>\S+)\s+.*\s+[ABCD]\s+(?P<status>\S+)",
                 output,
             )
             if parsed:
