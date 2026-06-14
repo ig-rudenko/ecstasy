@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices
 
@@ -202,6 +204,16 @@ class DiscoveryCandidate(models.Model):
         """Вернуть IP и имя кандидата."""
 
         return f"{self.name or self.ip} ({self.status})"
+
+
+@receiver(pre_delete, sender=Devices)
+def reset_candidate_before_device_delete(sender, instance: Devices, **kwargs) -> None:
+    """Вернуть связанного discovery-кандидата в READY перед удалением оборудования."""
+
+    DiscoveryCandidate.objects.filter(
+        device=instance,
+        status=DiscoveryCandidate.Status.CREATED,
+    ).update(status=DiscoveryCandidate.Status.READY)
 
 
 class DiscoveryAttempt(models.Model):

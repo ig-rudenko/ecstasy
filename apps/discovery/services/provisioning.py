@@ -93,8 +93,10 @@ def resolve_created_device_active(
 
 
 def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
-    """Определить cmd_protocol из fingerprint кандидата или профиля."""
+    """Определить cmd_protocol из профиля или fingerprint кандидата."""
 
+    if profile:
+        return profile.cmd_protocol
     cli_protocol = str(candidate.raw_fingerprint.get("cliProtocol", "")).lower()
     if cli_protocol in {"ssh", "telnet"}:
         return cli_protocol
@@ -102,21 +104,23 @@ def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: Disco
         return "ssh"
     if candidate.detected_protocols.get("telnet"):
         return "telnet"
-    return profile.cmd_protocol if profile else "ssh"
+    return "ssh"
 
 
 def resolve_candidate_port_scan_protocol(
     candidate: DiscoveryCandidate, profile: DiscoveryProfile | None
 ) -> str:
-    """Определить port_scan_protocol из fingerprint кандидата или профиля."""
+    """Определить port_scan_protocol из профиля или fingerprint кандидата."""
 
+    if profile:
+        return profile.port_scan_protocol
     if candidate.detected_protocols.get("snmp"):
         return "snmp"
     if candidate.detected_protocols.get("ssh"):
         return "ssh"
     if candidate.detected_protocols.get("telnet"):
         return "telnet"
-    return profile.port_scan_protocol if profile else "snmp"
+    return "snmp"
 
 
 def collect_initial_interfaces(device: Devices) -> None:
