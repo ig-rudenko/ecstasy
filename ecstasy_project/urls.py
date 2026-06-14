@@ -77,7 +77,7 @@ if settings.KEYCLOAK_ENABLE:
         path("admin/oidc/", include("mozilla_django_oidc.urls")),
     )
 
-if settings.ENV == "dev":
+if settings.DEBUG:
     from debug_toolbar.toolbar import debug_toolbar_urls
 
     urlpatterns += debug_toolbar_urls()
