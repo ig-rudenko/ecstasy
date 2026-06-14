@@ -261,9 +261,7 @@ class DeviceInterfacesAPIView(DeviceAPIView):
         check_status = request.GET.get("check_status", "true") in status_on
 
         interfaces_data: DeviceInterfacesResult | None = None
-        cache_key = (
-            f"interfaces:{device.name}:cs:{current_status}:vlans:{with_vlans}:check_status:{check_status}"
-        )
+        cache_key = f"interfaces:{device.name.encode().hex()}:cs:{current_status}:vlans:{with_vlans}:check_status:{check_status}"
         if current_status:
             interfaces_data = cache.get(cache_key)
 
@@ -442,7 +440,7 @@ class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
         :param host_id: Идентификатор узла сети в Zabbix.
         """
 
-        dev = DeviceManager.from_hostid(host_id)
+        dev = DeviceManager.from_hostid(host_id, zabbix_info=False)
         if dev is None:
             raise Http404
 

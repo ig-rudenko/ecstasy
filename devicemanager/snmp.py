@@ -72,7 +72,7 @@ def _snmpwalk_single_value(community: str, ip: str, port: int, mib: str, timeout
 def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
     """
 
-    С помощью snmpwalk смотрит состояние интерфейсов, имена, описания
+    С помощью snmpbulkwalk смотрит состояние интерфейсов, имена, описания
 
     Текущее рабочее состояние интерфейса. (Oper Status)
 
@@ -109,9 +109,9 @@ def get_interfaces(device_ip, community, snmp_port=161) -> InterfaceListType:
     }
 
     def snmpget(community, ip, port, mib) -> None:
-        # Выполнение команды `snmpwalk -Oq -v2c -c <community> <ip>:<port> <mib>` и возврат результата.
+        # Выполнение команды `snmpbulkwalk -Oq -v2c -Cr10 -c <community> <ip>:<port> <mib>` и возврат результата.
         res = subprocess.run(
-            ["snmpwalk", "-Oq", "-v2c", "-c", community, f"{ip}:{port}", mib],
+            ["snmpbulkwalk", "-Oq", "-v2c", "-Cr10", "-c", community, f"{ip}:{port}", mib],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             encoding="utf-8",

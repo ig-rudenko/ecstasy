@@ -11,6 +11,7 @@ import {
     deleteDiscoveryProfile,
     deleteDiscoveryRun,
     DiscoveryCandidate,
+    DiscoveryCandidateTableQuery,
     DiscoveryLookupItem,
     DiscoveryProfile,
     DiscoveryProfilePayload,
@@ -47,6 +48,19 @@ export function useDiscoveryPage() {
     const candidateStatus = ref("");
     const candidateSearch = ref("");
     const candidateVendor = ref("");
+    const candidateTableQuery = reactive<DiscoveryCandidateTableQuery>({
+        name: "",
+        ip: "",
+        authCheckStatus: "",
+        confidenceMin: null,
+        confidenceMax: null,
+        protocols: [],
+        model: "",
+        osVersion: "",
+        lastError: "",
+        authCheckError: "",
+        ordering: "",
+    });
     const loadingProfiles = ref(false);
     const loadingRuns = ref(false);
     const loadingCandidates = ref(false);
@@ -72,12 +86,13 @@ export function useDiscoveryPage() {
         authGroups: [] as number[],
         snmpCommunities: "",
         tryProtocols: ["ssh"] as string[],
-        portScanProtocol: "snmp" as "snmp" | "telnet" | "ssh",
-        cmdProtocol: "ssh" as "telnet" | "ssh",
+        portScanProtocol: "auto" as "auto" | "snmp" | "telnet" | "ssh",
+        cmdProtocol: "auto" as "auto" | "telnet" | "ssh",
         maxWorkers: 32,
         timeoutSeconds: 2,
         autoCreate: false,
         autoCreateMinConfidence: 70,
+        activateCreatedDevices: false,
         isActive: true,
     });
 
@@ -113,6 +128,14 @@ export function useDiscoveryPage() {
         { label: "SSH", value: "ssh" },
         { label: "Telnet", value: "telnet" },
     ];
+    const profilePortScanProtocolOptions: {
+        label: string;
+        value: "auto" | "snmp" | "ssh" | "telnet";
+    }[] = [{ label: "Авто: SSH → Telnet", value: "auto" }, ...portScanProtocolOptions];
+    const profileCmdProtocolOptions: {
+        label: string;
+        value: "auto" | "ssh" | "telnet";
+    }[] = [{ label: "Авто: SSH → Telnet", value: "auto" }, ...cmdProtocolOptions];
 
     const readyCandidatesCount = computed(
         () => candidates.value.filter((candidate) => candidate.status === "READY").length
@@ -138,18 +161,19 @@ export function useDiscoveryPage() {
     function resetProfileForm(): void {
         editingProfile.value = null;
         profileForm.name = "";
-        profileForm.networks = "192.0.2.0/24";
-        profileForm.excludeIps = "";
+        profileForm.networks = "192.168.0.0/24";
+        profileForm.excludeIps = "192.168.0.255";
         profileForm.deviceGroup = lookups.deviceGroups[0]?.id || null;
         profileForm.authGroups = [];
         profileForm.snmpCommunities = "";
-        profileForm.tryProtocols = ["ssh"];
-        profileForm.portScanProtocol = "snmp";
-        profileForm.cmdProtocol = "ssh";
+        profileForm.tryProtocols = ["telnet", "ssh"];
+        profileForm.portScanProtocol = "auto";
+        profileForm.cmdProtocol = "auto";
         profileForm.maxWorkers = 32;
         profileForm.timeoutSeconds = 2;
         profileForm.autoCreate = false;
         profileForm.autoCreateMinConfidence = 70;
+        profileForm.activateCreatedDevices = false;
         profileForm.isActive = true;
     }
 
@@ -168,6 +192,7 @@ export function useDiscoveryPage() {
         profileForm.timeoutSeconds = profile.timeoutSeconds;
         profileForm.autoCreate = profile.autoCreate;
         profileForm.autoCreateMinConfidence = profile.autoCreateMinConfidence;
+        profileForm.activateCreatedDevices = profile.activateCreatedDevices;
         profileForm.isActive = profile.isActive;
     }
 
@@ -190,6 +215,7 @@ export function useDiscoveryPage() {
             timeoutSeconds: profileForm.timeoutSeconds,
             autoCreate: profileForm.autoCreate,
             autoCreateMinConfidence: profileForm.autoCreateMinConfidence,
+            activateCreatedDevices: profileForm.activateCreatedDevices,
             isActive: profileForm.isActive,
         };
         const snmpCommunities = parseLines(profileForm.snmpCommunities);
@@ -248,6 +274,7 @@ export function useDiscoveryPage() {
                 status: candidateStatus.value,
                 search: candidateSearch.value,
                 vendor: candidateVendor.value,
+                ...candidateTableQuery,
             });
             candidates.value = response.results;
             candidatesTotal.value = response.count;
@@ -458,11 +485,14 @@ export function useDiscoveryPage() {
     }
 
     function resolveCandidatePortScanProtocol(candidate: DiscoveryCandidate): "snmp" | "ssh" | "telnet" {
+        const cliProtocol = candidate.rawFingerprint?.cliProtocol;
+        if (cliProtocol === "ssh" || cliProtocol === "telnet") {
+            return cliProtocol;
+        }
         if (candidate.detectedProtocols.snmp) {
             return "snmp";
         }
-        const cmdProtocol = resolveCandidateCmdProtocol(candidate);
-        return cmdProtocol === "telnet" ? "telnet" : "ssh";
+        return resolveCandidateCmdProtocol(candidate);
     }
 
     function openAcceptDialog(candidate: DiscoveryCandidate): void {
@@ -561,6 +591,10 @@ export function useDiscoveryPage() {
     }
     function setCandidateVendor(value: string): void {
         candidateVendor.value = value;
+    }
+    async function setCandidateTableQuery(value: DiscoveryCandidateTableQuery): Promise<void> {
+        Object.assign(candidateTableQuery, value);
+        await loadCandidates(1);
     }
 
     async function deleteSelectedCandidates(): Promise<void> {
@@ -736,6 +770,7 @@ export function useDiscoveryPage() {
         candidateStatus,
         candidateSearch,
         candidateVendor,
+        candidateTableQuery,
         loadingProfiles,
         loadingRuns,
         loadingCandidates,
@@ -756,6 +791,8 @@ export function useDiscoveryPage() {
         protocolOptions,
         portScanProtocolOptions,
         cmdProtocolOptions,
+        profilePortScanProtocolOptions,
+        profileCmdProtocolOptions,
         readyCandidatesCount,
         activeRunsCount,
         candidateVendorOptions,
@@ -777,6 +814,7 @@ export function useDiscoveryPage() {
         setCandidateSearch,
         setCandidateStatus,
         setCandidateVendor,
+        setCandidateTableQuery,
         confirmDeleteSelectedCandidates,
         confirmRescanSelectedCandidates,
         confirmQuickAcceptSelectedCandidates,

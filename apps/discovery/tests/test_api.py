@@ -36,6 +36,7 @@ class DiscoveryAPITests(APITestCase):
                 "cmdProtocol": "ssh",
                 "maxWorkers": 4,
                 "timeoutSeconds": 1,
+                "activateCreatedDevices": True,
             },
             format="json",
         )
@@ -43,6 +44,30 @@ class DiscoveryAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertNotIn("snmpCommunities", response.data)
         self.assertEqual(response.data["snmpCommunitiesCount"], 1)
+        self.assertTrue(response.data["activateCreatedDevices"])
+
+    def test_create_profile_accepts_auto_protocol_selection(self):
+        """API принимает автоматический выбор рабочего CLI-протокола."""
+
+        response = self.client.post(
+            reverse("discovery-api:profiles-list"),
+            {
+                "name": "mixed-cli-network",
+                "networks": ["192.0.2.0/24"],
+                "deviceGroup": self.group.id,
+                "authGroups": [self.auth_group.id],
+                "tryProtocols": ["telnet", "ssh"],
+                "portScanProtocol": "auto",
+                "cmdProtocol": "auto",
+                "maxWorkers": 4,
+                "timeoutSeconds": 1,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["portScanProtocol"], "auto")
+        self.assertEqual(response.data["cmdProtocol"], "auto")
 
     def test_create_profile_rejects_network_larger_than_24(self):
         """API отклоняет discovery profile с CIDR шире /24."""
@@ -91,6 +116,43 @@ class DiscoveryAPITests(APITestCase):
         candidate.refresh_from_db()
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.CREATED)
         self.assertFalse(candidate.device.active)
+
+    def test_accept_candidate_endpoint_uses_profile_active_device_option(self):
+        """Ручное принятие использует настройку профиля последнего discovery run."""
+
+        profile = self._create_profile()
+        profile.activate_created_devices = True
+        profile.save(update_fields=["activate_created_devices"])
+        run = DiscoveryRun.objects.create(profile=profile, status=DiscoveryRun.Status.SUCCESS)
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.32",
+            name="sw-32",
+            status=DiscoveryCandidate.Status.READY,
+            selected_auth_group=self.auth_group,
+        )
+        DiscoveryAttempt.objects.create(
+            run=run,
+            candidate=candidate,
+            ip=candidate.ip,
+            method=DiscoveryAttempt.Method.PING,
+            status=DiscoveryAttempt.Status.SUCCESS,
+        )
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-accept", args=[candidate.id]),
+            {
+                "deviceGroup": self.group.id,
+                "authGroup": self.auth_group.id,
+                "cmdProtocol": "ssh",
+                "portScanProtocol": "snmp",
+                "collectInterfaces": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        candidate.refresh_from_db()
+        self.assertTrue(candidate.device.active)
 
     def test_accept_candidate_uses_selected_auth_group_and_detected_protocols_by_default(self):
         """Accept endpoint использует auth/protocol кандидата, если override не передан."""
@@ -236,6 +298,122 @@ class DiscoveryAPITests(APITestCase):
         candidate = response.data["results"][0]
         self.assertEqual(candidate["authCheckStatus"], "FAILED")
         self.assertEqual(candidate["authCheckError"], "логин неверный")
+
+    def test_candidate_list_filters_candidates_before_pagination(self):
+        """Candidate list применяет составные фильтры ко всему queryset."""
+
+        matched = DiscoveryCandidate.objects.create(
+            ip="192.0.2.51",
+            name="edge-access-51",
+            model="S5720-28X",
+            os_version="V200R019",
+            status=DiscoveryCandidate.Status.READY,
+            confidence=85,
+            detected_protocols={"ssh": True, "snmp": True, "telnet": False},
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+            last_error="Authentication failed for operator",
+        )
+        DiscoveryCandidate.objects.create(
+            ip="192.0.2.52",
+            name="edge-access-52",
+            model="S5720-28X",
+            os_version="V200R019",
+            status=DiscoveryCandidate.Status.READY,
+            confidence=85,
+            detected_protocols={"ssh": True, "snmp": False},
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+            last_error="Authentication failed for operator",
+        )
+
+        response = self.client.get(
+            reverse("discovery-api:candidates-list"),
+            {
+                "name": "ACCESS-51",
+                "ip": "192.0.2.5",
+                "model": "5720",
+                "osVersion": "r019",
+                "authCheckStatus": "FAILED",
+                "confidenceMin": 80,
+                "confidenceMax": 90,
+                "protocols": "ssh,snmp",
+                "lastError": "operator",
+                "authCheckError": "authentication failed",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], matched.id)
+
+    def test_candidate_list_filters_computed_auth_check_status(self):
+        """Candidate list фильтрует вычисляемый статус проверки AuthGroup."""
+
+        success = DiscoveryCandidate.objects.create(
+            ip="192.0.2.53",
+            selected_auth_group=self.auth_group,
+        )
+        failed = DiscoveryCandidate.objects.create(
+            ip="192.0.2.54",
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+        )
+        unknown = DiscoveryCandidate.objects.create(ip="192.0.2.55")
+
+        expected_candidates = {
+            "SUCCESS": success,
+            "FAILED": failed,
+            "UNKNOWN": unknown,
+        }
+        for auth_check_status, expected_candidate in expected_candidates.items():
+            with self.subTest(auth_check_status=auth_check_status):
+                response = self.client.get(
+                    reverse("discovery-api:candidates-list"),
+                    {"authCheckStatus": auth_check_status},
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.data["count"], 1)
+                self.assertEqual(response.data["results"][0]["id"], expected_candidate.id)
+
+    def test_candidate_list_orders_candidates_on_backend(self):
+        """Candidate list сортирует обычные и вычисляемые поля до пагинации."""
+
+        unknown = DiscoveryCandidate.objects.create(
+            ip="192.0.2.56",
+            name="unknown",
+            confidence=10,
+        )
+        success = DiscoveryCandidate.objects.create(
+            ip="192.0.2.57",
+            name="success",
+            confidence=90,
+            selected_auth_group=self.auth_group,
+        )
+        failed = DiscoveryCandidate.objects.create(
+            ip="192.0.2.58",
+            name="failed",
+            confidence=50,
+            raw_fingerprint={"authCheck": {"status": "FAILED"}},
+        )
+
+        confidence_response = self.client.get(
+            reverse("discovery-api:candidates-list"),
+            {"ordering": "-confidence"},
+        )
+        auth_status_response = self.client.get(
+            reverse("discovery-api:candidates-list"),
+            {"ordering": "authCheckStatus"},
+        )
+
+        self.assertEqual(confidence_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [candidate["id"] for candidate in confidence_response.data["results"]],
+            [success.id, failed.id, unknown.id],
+        )
+        self.assertEqual(auth_status_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [candidate["id"] for candidate in auth_status_response.data["results"]],
+            [failed.id, success.id, unknown.id],
+        )
 
     def test_bulk_delete_candidates_endpoint_removes_requested_candidates(self):
         """Bulk delete удаляет выбранных кандидатов одним запросом."""

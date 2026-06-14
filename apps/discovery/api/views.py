@@ -2,7 +2,9 @@ from collections import defaultdict
 
 from celery import chain
 from celery.result import AsyncResult
+from django.db.models import Case, CharField, Value, When
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +15,7 @@ from ecstasy_project.error_handler import ResourceConflict
 from ..models import DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 from ..services.provisioning import accept_candidate
 from ..tasks import discovery_run_task
+from .filters import DiscoveryCandidateFilter
 from .permissions import DiscoveryAdminPermission
 from .serializers import (
     DiscoveryCandidateAcceptSerializer,
@@ -145,23 +148,26 @@ class DiscoveryRunCancelAPIView(APIView):
 class DiscoveryCandidateListAPIView(generics.ListAPIView):
     """Список discovery candidates."""
 
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DiscoveryCandidateFilter
     serializer_class = DiscoveryCandidateSerializer
     permission_classes = [DiscoveryAdminPermission]
 
     def get_queryset(self):
-        """Вернуть отфильтрованный список кандидатов."""
+        """Вернуть кандидатов с вычисляемым статусом проверки AuthGroup."""
 
-        queryset = DiscoveryCandidate.objects.all().select_related("selected_auth_group", "device")
-        status_filter = self.request.query_params.get("status")
-        vendor = self.request.query_params.get("vendor")
-        search = self.request.query_params.get("search")
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        if vendor:
-            queryset = queryset.filter(vendor__icontains=vendor)
-        if search:
-            queryset = queryset.filter(name__icontains=search) | queryset.filter(ip__icontains=search)
-        return queryset
+        return (
+            DiscoveryCandidate.objects.all()
+            .select_related("selected_auth_group", "device")
+            .annotate(
+                auth_check_status_value=Case(
+                    When(selected_auth_group__isnull=False, then=Value("SUCCESS")),
+                    When(raw_fingerprint__authCheck__status="FAILED", then=Value("FAILED")),
+                    default=Value("UNKNOWN"),
+                    output_field=CharField(),
+                )
+            )
+        )
 
 
 class DiscoveryCandidateDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

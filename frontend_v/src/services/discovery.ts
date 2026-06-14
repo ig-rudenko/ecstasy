@@ -20,12 +20,13 @@ export interface DiscoveryProfile {
     authGroups: number[];
     snmpCommunitiesCount: number;
     tryProtocols: string[];
-    portScanProtocol: "snmp" | "telnet" | "ssh";
-    cmdProtocol: "telnet" | "ssh";
+    portScanProtocol: "auto" | "snmp" | "telnet" | "ssh";
+    cmdProtocol: "auto" | "telnet" | "ssh";
     maxWorkers: number;
     timeoutSeconds: number;
     autoCreate: boolean;
     autoCreateMinConfidence: number;
+    activateCreatedDevices: boolean;
     isActive: boolean;
     created_at: string;
     updated_at: string;
@@ -39,12 +40,13 @@ export interface DiscoveryProfilePayload {
     authGroups: number[];
     snmpCommunities?: string[];
     tryProtocols: string[];
-    portScanProtocol: "snmp" | "telnet" | "ssh";
-    cmdProtocol: "telnet" | "ssh";
+    portScanProtocol: "auto" | "snmp" | "telnet" | "ssh";
+    cmdProtocol: "auto" | "telnet" | "ssh";
     maxWorkers: number;
     timeoutSeconds: number;
     autoCreate: boolean;
     autoCreateMinConfidence: number;
+    activateCreatedDevices: boolean;
     isActive: boolean;
 }
 
@@ -99,6 +101,20 @@ export interface PaginatedResponse<T> {
     next: string | null;
     previous: string | null;
     results: T[];
+}
+
+export interface DiscoveryCandidateTableQuery {
+    name: string;
+    ip: string;
+    authCheckStatus: "" | DiscoveryCandidate["authCheckStatus"];
+    confidenceMin: number | null;
+    confidenceMax: number | null;
+    protocols: string[];
+    model: string;
+    osVersion: string;
+    lastError: string;
+    authCheckError: string;
+    ordering: string;
 }
 
 export interface AcceptCandidatePayload {
@@ -163,17 +179,30 @@ export async function deleteDiscoveryRun(runId: number): Promise<void> {
     await api.delete(`/api/v1/discovery/runs/${runId}`);
 }
 
-export async function getDiscoveryCandidates(params: {
-    page?: number;
-    status?: string;
-    search?: string;
-    vendor?: string;
-}): Promise<PaginatedResponse<DiscoveryCandidate>> {
+export async function getDiscoveryCandidates(
+    params: {
+        page?: number;
+        status?: string;
+        search?: string;
+        vendor?: string;
+    } & Partial<DiscoveryCandidateTableQuery>
+): Promise<PaginatedResponse<DiscoveryCandidate>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", String(params.page));
     if (params.status) searchParams.set("status", params.status);
     if (params.search?.trim()) searchParams.set("search", params.search.trim());
     if (params.vendor?.trim()) searchParams.set("vendor", params.vendor.trim());
+    if (params.name?.trim()) searchParams.set("name", params.name.trim());
+    if (params.ip?.trim()) searchParams.set("ip", params.ip.trim());
+    if (params.authCheckStatus) searchParams.set("authCheckStatus", params.authCheckStatus);
+    if (params.confidenceMin != null) searchParams.set("confidenceMin", String(params.confidenceMin));
+    if (params.confidenceMax != null) searchParams.set("confidenceMax", String(params.confidenceMax));
+    if (params.protocols?.length) searchParams.set("protocols", params.protocols.join(","));
+    if (params.model?.trim()) searchParams.set("model", params.model.trim());
+    if (params.osVersion?.trim()) searchParams.set("osVersion", params.osVersion.trim());
+    if (params.lastError?.trim()) searchParams.set("lastError", params.lastError.trim());
+    if (params.authCheckError?.trim()) searchParams.set("authCheckError", params.authCheckError.trim());
+    if (params.ordering) searchParams.set("ordering", params.ordering);
 
     const response = await api.get<PaginatedResponse<DiscoveryCandidate>>(
         `/api/v1/discovery/candidates?${searchParams.toString()}`

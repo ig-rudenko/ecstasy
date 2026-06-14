@@ -30,8 +30,14 @@ class DiscoveryProfileSerializer(serializers.ModelSerializer):
         child=serializers.ChoiceField(choices=["ssh", "telnet"]),
         required=False,
     )
-    portScanProtocol = serializers.ChoiceField(source="port_scan_protocol", choices=["snmp", "telnet", "ssh"])
-    cmdProtocol = serializers.ChoiceField(source="cmd_protocol", choices=["telnet", "ssh"])
+    portScanProtocol = serializers.ChoiceField(
+        source="port_scan_protocol",
+        choices=DiscoveryProfile.PORT_SCAN_PROTOCOLS,
+    )
+    cmdProtocol = serializers.ChoiceField(
+        source="cmd_protocol",
+        choices=DiscoveryProfile.CMD_PROTOCOLS,
+    )
     maxWorkers = serializers.IntegerField(source="max_workers", min_value=1, max_value=80)
     timeoutSeconds = serializers.IntegerField(source="timeout_seconds", min_value=1, max_value=30)
     autoCreate = serializers.BooleanField(source="auto_create", required=False)
@@ -39,6 +45,10 @@ class DiscoveryProfileSerializer(serializers.ModelSerializer):
         source="auto_create_min_confidence",
         min_value=0,
         max_value=100,
+        required=False,
+    )
+    activateCreatedDevices = serializers.BooleanField(
+        source="activate_created_devices",
         required=False,
     )
     isActive = serializers.BooleanField(source="is_active", required=False)
@@ -61,6 +71,7 @@ class DiscoveryProfileSerializer(serializers.ModelSerializer):
             "timeoutSeconds",
             "autoCreate",
             "autoCreateMinConfidence",
+            "activateCreatedDevices",
             "isActive",
             "created_at",
             "updated_at",

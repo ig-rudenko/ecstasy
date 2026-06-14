@@ -2,13 +2,18 @@
 # Модуль для подключения к оборудованию через SSH, TELNET
 """
 
+import os
 import re
+import subprocess
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import pexpect
 
 from .connection_ports import normalize_connection_ports
+from .device_connector.ssh_host_keys import SSHKnownHostsStore
 from .exceptions import (
+    DeviceException,
     DeviceLoginError,
     SSHConnectionError,
     TelnetConnectionError,
@@ -17,6 +22,8 @@ from .multifactory import DeviceMultiFactory
 from .session_spawner import SessionSpawner
 from .vendors.base.device import BaseDevice
 from .vendors.base.types import SimpleAuthObjectProtocol
+
+TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 @dataclass
@@ -34,24 +41,55 @@ class SSHSpawn:
         self.kex_algorithms = ""
         self.host_key_algorithms = ""
         self.ciphers = ""
+        self.macs = ""
 
     @staticmethod
-    def _get_algorithm(output: str) -> str:
-        """Вернуть первый алгоритм из списка, предложенного SSH-сервером."""
+    def _get_supported_algorithms(query: str) -> set[str] | None:
+        """Вернуть алгоритмы указанного типа, поддерживаемые локальным OpenSSH."""
+
+        try:
+            result = subprocess.run(
+                ["ssh", "-Q", query],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            return None
+        if result.returncode != 0:
+            return None
+        return {algorithm.strip() for algorithm in result.stdout.splitlines() if algorithm.strip()}
+
+    @classmethod
+    def _get_algorithm(cls, output: str, query: str) -> str:
+        """Вернуть первый предложенный алгоритм, поддерживаемый локальным OpenSSH."""
 
         algorithms = re.findall(r"Their offer: (\S+)", output)
-        if algorithms:
-            return algorithms[0].split(",", maxsplit=1)[0]
+        if not algorithms:
+            return ""
+
+        offered_algorithms = algorithms[0].split(",")
+        supported_algorithms = cls._get_supported_algorithms(query)
+        if supported_algorithms is None:
+            return offered_algorithms[0]
+        for algorithm in offered_algorithms:
+            if algorithm in supported_algorithms:
+                return algorithm
         return ""
 
     def get_kex_algorithms(self, output: str):
-        self.kex_algorithms = self._get_algorithm(output)
+        self.kex_algorithms = self._get_algorithm(output, "kex")
 
     def get_host_key_algorithms(self, output: str):
-        self.host_key_algorithms = self._get_algorithm(output)
+        self.host_key_algorithms = self._get_algorithm(output, "key")
 
     def get_ciphers(self, output: str):
-        self.ciphers = self._get_algorithm(output)
+        self.ciphers = self._get_algorithm(output, "cipher")
+
+    def get_macs(self, output: str):
+        """Сохранить поддерживаемый MAC из предложения SSH-сервера."""
+
+        self.macs = self._get_algorithm(output, "mac")
 
     def get_spawn_string(self) -> str:
         base = f"ssh -p {self.port} {self.login}@{self.ip}"
@@ -65,10 +103,23 @@ class SSHSpawn:
         if self.ciphers:
             base += f" -c {self.ciphers}"
 
+        if self.macs:
+            base += f" -oMACs=+{self.macs}"
+
         return base
 
     def get_session(self):
         return SessionSpawner(self.get_spawn_string(), ip=self.ip, timeout=15)
+
+    def accept_changed_host_key(self, ssh_output: str) -> None:
+        """Atomically trust the SSH key reported by this connection."""
+
+        SSHKnownHostsStore().accept_changed(
+            self.ip,
+            self.port,
+            datetime.now(UTC),
+            ssh_output,
+        )
 
 
 class DeviceRemoteConnector:
@@ -153,10 +204,12 @@ class DeviceRemoteConnector:
         return self._get_device_session()
 
     def _get_device_session(self) -> BaseDevice:
-        if self.protocol == "ssh":
+        if self.protocol == "telnet":
+            self.session = self._connect_by_telnet()
+        elif self.protocol == "ssh":
             self.session = self._connect_by_ssh()
         else:
-            self.session = self._connect_by_telnet()
+            raise DeviceException(f"Unknown protocol: {self.protocol!r}")
 
         device = DeviceMultiFactory.get_device(
             self.session,
@@ -176,7 +229,8 @@ class DeviceRemoteConnector:
         connected = False
         session = None
         negotiation_restarts = 0
-        max_negotiation_restarts = 3
+        max_negotiation_restarts = 4
+        host_key_restarts = 0
 
         try:
             ssh_spawn = SSHSpawn(ip=self.ip, login=self.login, port=self.ssh_port)
@@ -197,6 +251,7 @@ class DeviceRemoteConnector:
                         pexpect.EOF,  # 9,
                         self.login_input_expect,  # 10
                         r"HOST IDENTIFICATION HAS CHANGED",  # 11
+                        r"no matching MAC found",  # 12
                     ],
                     timeout=30,
                 )
@@ -267,8 +322,45 @@ class DeviceRemoteConnector:
                 elif expect_index == 10:
                     session.send(self.login + "\r")  # Login
                 elif expect_index == 11:
+                    warning_parts = [session.before, session.after]
+                    session.expect(pexpect.EOF)
+                    warning_parts.append(session.before)
+                    ssh_output = "".join(
+                        part.decode("utf-8", errors="ignore") if isinstance(part, bytes) else str(part)
+                        for part in warning_parts
+                    )
                     session.close()
-                    raise SSHConnectionError("SSH HOST IDENTIFICATION HAS CHANGED", ip=self.ip)
+                    auto_accept_host_key = (
+                        os.getenv("DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY", "0").lower()
+                        in TRUE_VALUES
+                    )
+                    if not auto_accept_host_key or host_key_restarts >= 1:
+                        raise SSHConnectionError(
+                            "SSH HOST IDENTIFICATION HAS CHANGED",
+                            ip=self.ip,
+                            ssh_output=ssh_output,
+                        )
+                    host_key_restarts += 1
+                    try:
+                        ssh_spawn.accept_changed_host_key(ssh_output)
+                    except Exception as exc:
+                        raise SSHConnectionError(
+                            "SSH HOST IDENTIFICATION HAS CHANGED",
+                            ip=self.ip,
+                            ssh_output=ssh_output,
+                        ) from exc
+                    session = ssh_spawn.get_session()
+                elif expect_index == 12:
+                    session.expect(pexpect.EOF)
+                    ssh_spawn.get_macs(session.before.decode("utf-8", errors="ignore"))
+                    negotiation_restarts += 1
+                    self._validate_ssh_negotiation(
+                        ssh_spawn.macs,
+                        "MAC",
+                        negotiation_restarts,
+                        max_negotiation_restarts,
+                    )
+                    session = ssh_spawn.get_session()
 
         except Exception as exc:
             if session is not None and session.isalive():
@@ -288,7 +380,7 @@ class DeviceRemoteConnector:
 
         if not algorithm:
             raise SSHConnectionError(
-                f"Не удалось определить предложенный SSH {algorithm_type}",
+                f"Не найден поддерживаемый SSH {algorithm_type} из предложения сервера",
                 ip=self.ip,
             )
         if restart_count > max_restarts:

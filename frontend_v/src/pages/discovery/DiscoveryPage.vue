@@ -21,6 +21,7 @@ const {
     candidateStatus,
     candidateSearch,
     candidateVendor,
+    candidateTableQuery,
     loadingProfiles,
     loadingRuns,
     loadingCandidates,
@@ -41,6 +42,8 @@ const {
     protocolOptions,
     portScanProtocolOptions,
     cmdProtocolOptions,
+    profilePortScanProtocolOptions,
+    profileCmdProtocolOptions,
     readyCandidatesCount,
     activeRunsCount,
     candidateVendorOptions,
@@ -62,6 +65,7 @@ const {
     setCandidateSearch,
     setCandidateStatus,
     setCandidateVendor,
+    setCandidateTableQuery,
     confirmDeleteSelectedCandidates,
     confirmRescanSelectedCandidates,
     confirmQuickAcceptSelectedCandidates,
@@ -73,7 +77,7 @@ const {
 <template>
     <ConfirmPopup />
 
-    <main class="mx-auto max-w-375 px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
+    <main class="mx-auto px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
                 class="rounded-3xl border border-gray-200/70 bg-white/80 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-7"
@@ -233,12 +237,15 @@ const {
 
                 <DiscoveryCandidatesTable
                     :candidates="candidates"
+                    :totalRecords="candidatesTotal"
+                    :query="candidateTableQuery"
                     :loading="loadingCandidates"
                     :deletingCandidateId="deletingCandidateId"
                     :rescanningCandidateId="rescanningCandidateId"
                     :rescanningSelected="rescanningSelected"
                     :selectedIds="selectedCandidateIds"
                     @update:selectedIds="setSelectedCandidateIds"
+                    @query-change="setCandidateTableQuery"
                     @accept="openAcceptDialog"
                     @quick-accept="quickAcceptCandidate"
                     @ignore="ignoreCandidate"
@@ -269,8 +276,8 @@ const {
         :deviceGroups="lookups.deviceGroups"
         :authGroups="lookups.authGroups"
         :protocolOptions="protocolOptions"
-        :portScanProtocolOptions="portScanProtocolOptions"
-        :cmdProtocolOptions="cmdProtocolOptions"
+        :portScanProtocolOptions="profilePortScanProtocolOptions"
+        :cmdProtocolOptions="profileCmdProtocolOptions"
         @save="saveProfile"
     />
 

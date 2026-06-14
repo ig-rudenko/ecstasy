@@ -645,59 +645,54 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для тестирования
         :return: Словарь с данными тестирования
         """
-        port_type = self.get_port_type(port)
+        result: dict[str, Any] = {
+            "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
+            "status": "",  # Состояние на порту (Up, Down, Empty)
+        }
 
-        if port_type in ["COPPER", "?"]:
-            diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
+        # Команда для теста медного порта
+        diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
-            if "Available commands" in diag_output:
-                return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
+        if re.search(r"(Available commands|can't\s+support|Unknown|Not\s+Support)", diag_output):
+            # Если не поддерживается диагностика медного порта, то пробуем SFP диагностику
+            sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
+            if sfp_parameter_data:
+                return normalize_cable_diag_result({"sfp": self._parse_sfp_diagnostics(sfp_parameter_data)})
 
-            result: dict[str, Any] = {
-                "len": "-",  # Длина кабеля в метрах, либо "-", когда не определено
-                "status": "",  # Состояние на порту (Up, Down, Empty)
-            }
+            # Если нет данных, то не поддерживается и этот способ диагностики
+            return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
 
-            if "can't support" in diag_output or "Unknown" in diag_output:
-                result["status"] = "Unsupported"
-                return normalize_cable_diag_result(result)
-
-            if "No Cable" in diag_output:
-                # Нет кабеля
-                result["status"] = "Empty"
-                return normalize_cable_diag_result(result)
-
-            if re.findall(r"Link (Up|Down)\s+OK", diag_output):
-                # Если статус OK
-                match = re.findall(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
-                if match and len(match[0]) == 2:
-                    result["len"] = match[0][1]  # Длина
-                    result["status"] = match[0][0]  # Up или Down
-            else:
-                # С ошибкой
-                result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
-                # Смотрим по очереди 4 пары
-                for i in range(1, 5):
-                    # Нахождение пары по номеру `i`.
-                    pair_n = self.find_or_empty(rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output)
-                    # Проверка, не является ли пара пустой.
-                    if pair_n:
-                        # Создаем пустой словарь для пары
-                        result["pair" + str(i)] = {
-                            "status": pair_n[0].lower(),  # Open, Short
-                            "len": pair_n[1],  # Длина
-                        }
-
+        # Парсим медную диагностику
+        if "No Cable" in diag_output:
+            # Нет кабеля
+            result["status"] = "Empty"
             return normalize_cable_diag_result(result)
 
-        if port_type in ["SFP"]:
-            sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
-            return normalize_cable_diag_result({"sfp": self.__parse_sfp_diagnostics(sfp_parameter_data)})
+        if re.findall(r"Link (Up|Down)\s+OK", diag_output):
+            # Если статус OK
+            match = re.findall(r"\s+\d+\s+\S+\s+Link (Up|Down)\s+OK\s+(\S+)", diag_output)
+            if match and len(match[0]) == 2:
+                result["len"] = match[0][1]  # Длина
+                result["status"] = match[0][0]  # Up или Down
+        else:
+            # С ошибкой
+            result["status"] = self.find_or_empty(r"\s+\d+\s+\S+\s+Link (Up|Down)", diag_output) or "None"
+            # Смотрим по очереди 4 пары
+            for i in range(1, 5):
+                # Нахождение пары по номеру `i`.
+                pair_n = self.find_or_empty(rf"Pair\s*{i} (\S+)\s+at\s+(\d+)", diag_output)
+                # Проверка, не является ли пара пустой.
+                if pair_n:
+                    # Создаем пустой словарь для пары
+                    result["pair" + str(i)] = {
+                        "status": pair_n[0].lower(),  # Open, Short
+                        "len": pair_n[1],  # Длина
+                    }
 
-        return normalize_cable_diag_result({"len": "-", "status": "Unknown"})
+        return normalize_cable_diag_result(result)
 
     @staticmethod
-    def __parse_sfp_diagnostics(output) -> dict:
+    def _parse_sfp_diagnostics(output) -> dict:
         """
         Parses SFP transceiver diagnostic information using regex.
 
@@ -786,7 +781,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         data = {}
 
         for key in stats:
-            value = getattr(self, f"get_{key}_utilization")()
+            value: int | float = getattr(self, f"get_{key}_utilization")()
             if isinstance(value, tuple) and all(value) or value > 0:
                 data[key] = {"util": value}
 

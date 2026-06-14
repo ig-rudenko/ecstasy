@@ -8,8 +8,21 @@ from .models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile, Disc
 class DiscoveryProfileAdmin(ModelAdmin):
     """Администрирование профилей auto discovery."""
 
-    list_display = ("name", "device_group", "auto_create", "is_active", "updated_at")
-    list_filter = ("auto_create", "is_active", "port_scan_protocol", "cmd_protocol")
+    list_display = (
+        "name",
+        "device_group",
+        "auto_create",
+        "activate_created_devices",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = (
+        "auto_create",
+        "activate_created_devices",
+        "is_active",
+        "port_scan_protocol",
+        "cmd_protocol",
+    )
     search_fields = ("name",)
     filter_horizontal = ("auth_groups",)
 

@@ -3,6 +3,7 @@
 }
 
 .p-fieldset,
+.p-paginator,
 .p-fieldset-legend {
     background-color: transparent !important;
 }

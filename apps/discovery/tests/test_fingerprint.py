@@ -6,6 +6,7 @@ from django.test import SimpleTestCase, TestCase
 from apps.check.models import AuthGroup
 from apps.discovery.models import DiscoveryAttempt
 from apps.discovery.services.fingerprint import CliFingerprinter, SnmpFingerprinter
+from devicemanager.exceptions import SSHConnectionError
 
 
 class SnmpFingerprinterTests(SimpleTestCase):
@@ -28,6 +29,43 @@ class SnmpFingerprinterTests(SimpleTestCase):
 
 class CliFingerprinterTests(TestCase):
     """Тесты CLI fingerprint без реального подключения к оборудованию."""
+
+    def test_collect_prefers_ssh_regardless_of_profile_protocol_order(self):
+        """SSH проверяется раньше Telnet независимо от порядка в профиле."""
+
+        auth_group = AuthGroup.objects.create(name="default", login="user", password="password")
+
+        with patch("apps.discovery.services.fingerprint.DeviceRemoteConnector") as mock_connector:
+            mock_connector.return_value = _FakeConnector({"vendor": "Eltex", "model": "MES"})
+
+            fingerprint, attempts = CliFingerprinter(["telnet", "ssh"], [auth_group]).collect("192.0.2.12")
+
+        self.assertEqual(fingerprint.raw["cliProtocol"], "ssh")
+        self.assertEqual(attempts[0].method, DiscoveryAttempt.Method.SSH)
+        self.assertEqual(mock_connector.call_args.kwargs["protocol"], "ssh")
+
+    def test_collect_falls_back_to_telnet_when_ssh_connection_fails(self):
+        """После неудачного SSH выполняется попытка подключения по Telnet."""
+
+        auth_group = AuthGroup.objects.create(name="default", login="user", password="password")
+
+        with patch("apps.discovery.services.fingerprint.DeviceRemoteConnector") as mock_connector:
+            mock_connector.side_effect = [
+                SSHConnectionError("Не найден поддерживаемый SSH HostKeyAlgorithms", ip="192.0.2.13"),
+                _FakeConnector({"vendor": "Eltex", "model": "MES"}),
+            ]
+
+            fingerprint, attempts = CliFingerprinter(["telnet", "ssh"], [auth_group]).collect("192.0.2.13")
+
+        self.assertEqual(fingerprint.raw["cliProtocol"], "telnet")
+        self.assertEqual(
+            [attempt.method for attempt in attempts],
+            [
+                DiscoveryAttempt.Method.SSH,
+                DiscoveryAttempt.Method.TELNET,
+            ],
+        )
+        self.assertEqual(attempts[-1].status, DiscoveryAttempt.Status.SUCCESS)
 
     def test_collect_uses_first_auth_group_that_connects(self):
         """CLI fingerprint перебирает AuthGroup до первого успешного подключения."""

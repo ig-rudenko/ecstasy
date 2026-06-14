@@ -44,6 +44,7 @@ def accept_candidate(
         candidate, profile
     )
     resolved_snmp_community = snmp_community or candidate.selected_snmp_community
+    resolved_active = resolve_created_device_active(candidate, profile)
 
     try:
         with transaction.atomic():
@@ -59,7 +60,7 @@ def accept_candidate(
                 snmp_community=resolved_snmp_community,
                 port_scan_protocol=resolved_port_scan_protocol,
                 cmd_protocol=resolved_cmd_protocol,
-                active=False,
+                active=resolved_active,
             )
             candidate.device = device
             candidate.status = DiscoveryCandidate.Status.CREATED
@@ -79,8 +80,28 @@ def accept_candidate(
     return device
 
 
+def resolve_created_device_active(
+    candidate: DiscoveryCandidate,
+    profile: DiscoveryProfile | None,
+) -> bool:
+    """Определить начальный active по профилю discovery кандидата."""
+
+    if profile is None:
+        last_attempt = candidate.attempts.select_related("run__profile").order_by("-created_at").first()
+        profile = last_attempt.run.profile if last_attempt else None
+    return bool(profile and profile.activate_created_devices)
+
+
 def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
-    """Определить cmd_protocol из fingerprint кандидата или профиля."""
+    """Определить cmd_protocol из профиля или fingerprint кандидата."""
+
+    if profile and profile.cmd_protocol != DiscoveryProfile.AUTO_PROTOCOL:
+        return profile.cmd_protocol
+    return resolve_candidate_cli_protocol(candidate)
+
+
+def resolve_candidate_cli_protocol(candidate: DiscoveryCandidate) -> str:
+    """Определить рабочий CLI-протокол кандидата с приоритетом SSH."""
 
     cli_protocol = str(candidate.raw_fingerprint.get("cliProtocol", "")).lower()
     if cli_protocol in {"ssh", "telnet"}:
@@ -89,21 +110,25 @@ def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: Disco
         return "ssh"
     if candidate.detected_protocols.get("telnet"):
         return "telnet"
-    return profile.cmd_protocol if profile else "ssh"
+    return "ssh"
 
 
 def resolve_candidate_port_scan_protocol(
     candidate: DiscoveryCandidate, profile: DiscoveryProfile | None
 ) -> str:
-    """Определить port_scan_protocol из fingerprint кандидата или профиля."""
+    """Определить port_scan_protocol из профиля или fingerprint кандидата."""
 
+    if profile:
+        if profile.port_scan_protocol == DiscoveryProfile.AUTO_PROTOCOL:
+            return resolve_candidate_cli_protocol(candidate)
+        return profile.port_scan_protocol
     if candidate.detected_protocols.get("snmp"):
         return "snmp"
     if candidate.detected_protocols.get("ssh"):
         return "ssh"
     if candidate.detected_protocols.get("telnet"):
         return "telnet"
-    return profile.port_scan_protocol if profile else "snmp"
+    return "snmp"
 
 
 def collect_initial_interfaces(device: Devices) -> None:

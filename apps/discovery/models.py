@@ -1,11 +1,23 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices
 
 
 class DiscoveryProfile(models.Model):
     """Профиль настроек для запуска auto discovery."""
+
+    AUTO_PROTOCOL = "auto"
+    PORT_SCAN_PROTOCOLS = (
+        (AUTO_PROTOCOL, "Авто (SSH → Telnet)"),
+        *Devices.PROTOCOLS,
+    )
+    CMD_PROTOCOLS = (
+        (AUTO_PROTOCOL, "Авто (SSH → Telnet)"),
+        *Devices.PROTOCOLS[1:],
+    )
 
     name = models.CharField(max_length=100, unique=True, verbose_name="Название")
     networks = models.JSONField(default=list, verbose_name="IPv4 подсети")
@@ -25,13 +37,13 @@ class DiscoveryProfile(models.Model):
     snmp_communities = models.JSONField(default=list, blank=True, verbose_name="SNMP communities")
     try_protocols = models.JSONField(default=list, blank=True, verbose_name="CLI протоколы")
     port_scan_protocol = models.CharField(
-        choices=Devices.PROTOCOLS,
+        choices=PORT_SCAN_PROTOCOLS,
         max_length=6,
         default="snmp",
         verbose_name="Протокол сбора интерфейсов",
     )
     cmd_protocol = models.CharField(
-        choices=Devices.PROTOCOLS[1:],
+        choices=CMD_PROTOCOLS,
         max_length=6,
         default="ssh",
         verbose_name="Протокол выполнения команд",
@@ -42,6 +54,10 @@ class DiscoveryProfile(models.Model):
     auto_create_min_confidence = models.PositiveSmallIntegerField(
         default=70,
         verbose_name="Минимальный confidence для автосоздания",
+    )
+    activate_created_devices = models.BooleanField(
+        default=False,
+        verbose_name="Активировать созданное оборудование",
     )
     is_active = models.BooleanField(default=True, verbose_name="Активно")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -198,6 +214,16 @@ class DiscoveryCandidate(models.Model):
         """Вернуть IP и имя кандидата."""
 
         return f"{self.name or self.ip} ({self.status})"
+
+
+@receiver(pre_delete, sender=Devices)
+def reset_candidate_before_device_delete(sender, instance: Devices, **kwargs) -> None:
+    """Вернуть связанного discovery-кандидата в READY перед удалением оборудования."""
+
+    DiscoveryCandidate.objects.filter(
+        device=instance,
+        status=DiscoveryCandidate.Status.CREATED,
+    ).update(status=DiscoveryCandidate.Status.READY)
 
 
 class DiscoveryAttempt(models.Model):
