@@ -96,6 +96,20 @@ class DeviceConnectionPortsTests(SimpleTestCase):
 
         self.assertIn("ssh -p 2222 user@192.0.2.10", spawn.get_spawn_string())
 
+    @patch("devicemanager.dc.SSHKnownHostsStore")
+    def test_ssh_spawn_uses_warning_fallback_when_keyscan_fails(self, known_hosts_store):
+        """Automatic acceptance falls back to the fingerprint printed by OpenSSH."""
+
+        store = known_hosts_store.return_value
+        spawn = SSHSpawn(ip="192.0.2.10", login="user", port=2222)
+        ssh_output = "The fingerprint for the ED25519 key sent by the remote host is\n" "SHA256:new."
+
+        spawn.accept_changed_host_key(ssh_output)
+
+        store.accept_changed.assert_called_once()
+        self.assertEqual(store.accept_changed.call_args.args[:2], ("192.0.2.10", 2222))
+        self.assertEqual(store.accept_changed.call_args.args[3], ssh_output)
+
     def test_ssh_spawn_uses_first_offered_cipher(self):
         """SSH spawn передает один шифр, а не несовместимый список."""
 
@@ -223,7 +237,7 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         changed_key_session.before = b"SHA256:new"
         changed_key_session.after = b"HOST IDENTIFICATION HAS CHANGED"
         connected_session = Mock()
-        connected_session.expect.return_value = 5
+        connected_session.expect.side_effect = [3, 5]
         get_session.side_effect = [changed_key_session, connected_session]
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",
@@ -236,7 +250,9 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         session = connector._connect_by_ssh()
 
         self.assertIs(session, connected_session)
-        accept_changed_host_key.assert_called_once_with()
+        accept_changed_host_key.assert_called_once()
+        self.assertIn("HOST IDENTIFICATION HAS CHANGED", accept_changed_host_key.call_args.args[0])
+        connected_session.sendline.assert_called_once_with("yes")
         self.assertEqual(get_session.call_count, 2)
 
     @patch.dict(os.environ, {"DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY": "0"})
@@ -295,7 +311,7 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         with self.assertRaisesMessage(SSHConnectionError, "SSH HOST IDENTIFICATION HAS CHANGED"):
             connector._connect_by_ssh()
 
-        accept_changed_host_key.assert_called_once_with()
+        accept_changed_host_key.assert_called_once()
         get_session.assert_called_once()
 
     @patch("devicemanager.dc.DeviceMultiFactory.get_device")

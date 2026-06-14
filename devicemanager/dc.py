@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 import pexpect
 
 from .connection_ports import normalize_connection_ports
-from .device_connector.connection_status import SSHKnownHostsStore
+from .device_connector.ssh_host_keys import SSHKnownHostsStore
 from .exceptions import (
     DeviceException,
     DeviceLoginError,
@@ -111,10 +111,15 @@ class SSHSpawn:
     def get_session(self):
         return SessionSpawner(self.get_spawn_string(), ip=self.ip, timeout=15)
 
-    def accept_changed_host_key(self) -> None:
-        """Atomically trust the SSH keys currently presented by this host."""
+    def accept_changed_host_key(self, ssh_output: str) -> None:
+        """Atomically trust the SSH key reported by this connection."""
 
-        SSHKnownHostsStore().accept_current(self.ip, self.port, datetime.now(UTC))
+        SSHKnownHostsStore().accept_changed(
+            self.ip,
+            self.port,
+            datetime.now(UTC),
+            ssh_output,
+        )
 
 
 class DeviceRemoteConnector:
@@ -337,7 +342,7 @@ class DeviceRemoteConnector:
                         )
                     host_key_restarts += 1
                     try:
-                        ssh_spawn.accept_changed_host_key()
+                        ssh_spawn.accept_changed_host_key(ssh_output)
                     except Exception as exc:
                         raise SSHConnectionError(
                             "SSH HOST IDENTIFICATION HAS CHANGED",
