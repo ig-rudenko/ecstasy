@@ -11,7 +11,6 @@ from ecstasy_project.admin_filters import distinct_dropdown_filter
 
 from .models import (
     NotificationCondition,
-    NotificationTrigger,
     TelegramNotification,
     WebhookNotification,
 )

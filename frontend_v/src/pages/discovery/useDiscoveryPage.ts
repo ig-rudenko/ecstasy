@@ -11,6 +11,7 @@ import {
     deleteDiscoveryProfile,
     deleteDiscoveryRun,
     DiscoveryCandidate,
+    DiscoveryCandidateTableQuery,
     DiscoveryLookupItem,
     DiscoveryProfile,
     DiscoveryProfilePayload,
@@ -47,6 +48,19 @@ export function useDiscoveryPage() {
     const candidateStatus = ref("");
     const candidateSearch = ref("");
     const candidateVendor = ref("");
+    const candidateTableQuery = reactive<DiscoveryCandidateTableQuery>({
+        name: "",
+        ip: "",
+        authCheckStatus: "",
+        confidenceMin: null,
+        confidenceMax: null,
+        protocols: [],
+        model: "",
+        osVersion: "",
+        lastError: "",
+        authCheckError: "",
+        ordering: "",
+    });
     const loadingProfiles = ref(false);
     const loadingRuns = ref(false);
     const loadingCandidates = ref(false);
@@ -248,6 +262,7 @@ export function useDiscoveryPage() {
                 status: candidateStatus.value,
                 search: candidateSearch.value,
                 vendor: candidateVendor.value,
+                ...candidateTableQuery,
             });
             candidates.value = response.results;
             candidatesTotal.value = response.count;
@@ -562,6 +577,10 @@ export function useDiscoveryPage() {
     function setCandidateVendor(value: string): void {
         candidateVendor.value = value;
     }
+    async function setCandidateTableQuery(value: DiscoveryCandidateTableQuery): Promise<void> {
+        Object.assign(candidateTableQuery, value);
+        await loadCandidates(1);
+    }
 
     async function deleteSelectedCandidates(): Promise<void> {
         const selected = getSelectedCandidates();
@@ -736,6 +755,7 @@ export function useDiscoveryPage() {
         candidateStatus,
         candidateSearch,
         candidateVendor,
+        candidateTableQuery,
         loadingProfiles,
         loadingRuns,
         loadingCandidates,
@@ -777,6 +797,7 @@ export function useDiscoveryPage() {
         setCandidateSearch,
         setCandidateStatus,
         setCandidateVendor,
+        setCandidateTableQuery,
         confirmDeleteSelectedCandidates,
         confirmRescanSelectedCandidates,
         confirmQuickAcceptSelectedCandidates,

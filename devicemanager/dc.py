@@ -9,10 +9,10 @@ import pexpect
 
 from .connection_ports import normalize_connection_ports
 from .exceptions import (
+    DeviceException,
     DeviceLoginError,
     SSHConnectionError,
     TelnetConnectionError,
-    DeviceException,
 )
 from .multifactory import DeviceMultiFactory
 from .session_spawner import SessionSpawner

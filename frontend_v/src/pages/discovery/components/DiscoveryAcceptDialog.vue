@@ -37,7 +37,13 @@ const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus
 </script>
 
 <template>
-    <Dialog v-model:visible="modelVisible" modal maximizable header="Принять кандидата" class="w-[min(96vw,720px)]">
+    <Dialog
+        v-model:visible="modelVisible"
+        modal
+        maximizable
+        header="Принять кандидата"
+        class="w-[min(96vw,820px)] w-fit"
+    >
         <div v-if="selectedCandidate" class="grid gap-4">
             <div
                 class="rounded-2xl border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-800/60"
@@ -47,7 +53,7 @@ const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus
                     {{ [selectedCandidate.vendor, selectedCandidate.model].filter(Boolean).join(" · ") || "Unknown" }}
                 </div>
             </div>
-            <Message v-if="authCheckFailed" severity="error" icon="pi pi-exclamation-triangle">
+            <Message v-if="authCheckFailed" severity="error" class="whitespace-pre font-mono">
                 {{ selectedCandidate.authCheckError || "Не удалось подключиться с AuthGroup из профиля discovery." }}
             </Message>
             <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -77,7 +83,7 @@ const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus
                     />
                 </label>
             </div>
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2">
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     Port scan
                     <Select
@@ -98,12 +104,17 @@ const authCheckSuccess = computed(() => props.selectedCandidate?.authCheckStatus
                         class="rounded-2xl"
                     />
                 </label>
+            </div>
+            <div>
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     SNMP community
-                    <InputText v-model.trim="form.snmpCommunity" class="rounded-2xl" />
+                    <InputText v-model.trim="form.snmpCommunity" class="rounded-2xl" placeholder="******" />
+                    <div class="text-xs text-muted">
+                        Значение будет взято из discovery, если хотите заменить на своё, то укажите его здесь
+                    </div>
                 </label>
             </div>
-            <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+            <label class="mt-3 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 <ToggleSwitch v-model="form.collectInterfaces" />
                 Первичный сбор интерфейсов
             </label>
