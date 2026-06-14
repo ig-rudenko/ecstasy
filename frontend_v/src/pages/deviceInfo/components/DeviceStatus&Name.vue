@@ -343,16 +343,24 @@ export default defineComponent({
             return new Date(value).toLocaleString("ru-RU");
         },
 
-        copyIP() {
+        async copyIP(): Promise<void> {
             this.copied = true;
-            navigator.clipboard
-                .writeText(this.device.ip)
-                .then(() => (this.copiedStatus = "Скопировано!"))
-                .catch((err) => {
-                    this.copiedStatus = "Ошибка!";
-                    console.error("Could not copy text: ", err);
-                });
-            setTimeout(() => (this.copied = false), 1000);
+            this.copiedStatus = "";
+
+            try {
+                if (!navigator.clipboard?.writeText) {
+                    this.copiedStatus = "Копирование доступно только через HTTPS или localhost";
+                    return;
+                }
+
+                await navigator.clipboard.writeText(this.device.ip);
+                this.copiedStatus = "Скопировано!";
+            } catch (err) {
+                this.copiedStatus = "Браузер запретил доступ к буферу обмена";
+                console.error("Could not copy text: ", err);
+            } finally {
+                window.setTimeout(() => (this.copied = false), 3000);
+            }
         },
 
         toggleStatus(event: Event) {
