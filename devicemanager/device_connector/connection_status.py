@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import threading
@@ -11,6 +12,8 @@ from datetime import UTC, datetime
 from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Protocol, cast
+
+from devicemanager.exceptions import SSHConnectionError
 
 
 class FcntlModule(Protocol):
@@ -170,6 +173,40 @@ class SSHKnownHostsStore:
             new_key_lines=new_key_lines,
         )
 
+    def inspect_warning(
+        self,
+        ip: str,
+        port: int,
+        detected_at: datetime,
+        ssh_output: str,
+    ) -> PendingSSHHostKeyChange:
+        """Build a pending change from the fingerprint printed by OpenSSH."""
+
+        match = re.search(
+            r"The fingerprint for the (?P<type>\S+) key sent by the remote host is\s+"
+            r"(?P<fingerprint>SHA256:[A-Za-z0-9+/=]+)",
+            ssh_output,
+            flags=re.IGNORECASE,
+        )
+        if match is None:
+            raise RuntimeError("OpenSSH warning did not contain the new host key fingerprint")
+
+        host = self._host(ip, port)
+        key_type = {
+            "dsa": "ssh-dss",
+            "ecdsa": "ecdsa",
+            "ed25519": "ssh-ed25519",
+            "rsa": "ssh-rsa",
+        }.get(match.group("type").lower(), match.group("type").lower())
+        return PendingSSHHostKeyChange(
+            ip=IPv4Address(ip).compressed,
+            port=port,
+            detected_at=detected_at,
+            previous_keys=tuple(self._fingerprint(line) for line in self._find_previous_key_lines(host)),
+            new_keys=(SSHKeyInfo(type=key_type, fingerprint=match.group("fingerprint")),),
+            new_key_lines=(),
+        )
+
     @contextmanager
     def _locked(self) -> Iterator[None]:
         """Serialize known_hosts updates across threads and Linux service processes."""
@@ -213,10 +250,11 @@ class SSHKnownHostsStore:
             if remove_result.returncode not in (0, 1):
                 raise RuntimeError(remove_result.stderr.strip() or "ssh-keygen failed to update known_hosts")
 
-            with temporary_path.open("a", encoding="utf-8", newline="\n") as known_hosts_file:
-                known_hosts_file.write("\n".join(change.new_key_lines) + "\n")
-                known_hosts_file.flush()
-                os.fsync(known_hosts_file.fileno())
+            if change.new_key_lines:
+                with temporary_path.open("a", encoding="utf-8", newline="\n") as known_hosts_file:
+                    known_hosts_file.write("\n".join(change.new_key_lines) + "\n")
+                    known_hosts_file.flush()
+                    os.fsync(known_hosts_file.fileno())
 
             os.replace(temporary_path, self.known_hosts_path)
             self.known_hosts_path.chmod(0o600)
@@ -270,11 +308,27 @@ class ConnectionStatusStore:
             try:
                 pending_change = self._host_key_store.inspect(valid_ip, ssh_port, occurred_at)
             except Exception as inspect_error:  # noqa: BLE001 - diagnostics must not hide the original error.
-                logger.error(
-                    "Device: %s | Не удалось получить изменившийся SSH host key",
-                    valid_ip,
-                    exc_info=inspect_error,
-                )
+                ssh_output = error.ssh_output if isinstance(error, SSHConnectionError) else ""
+                if ssh_output:
+                    try:
+                        pending_change = self._host_key_store.inspect_warning(
+                            valid_ip,
+                            ssh_port,
+                            occurred_at,
+                            ssh_output,
+                        )
+                    except Exception as warning_error:  # noqa: BLE001 - keep the original connection error.
+                        logger.error(
+                            "Device: %s | Не удалось получить изменившийся SSH host key",
+                            valid_ip,
+                            exc_info=warning_error,
+                        )
+                else:
+                    logger.error(
+                        "Device: %s | Не удалось получить изменившийся SSH host key",
+                        valid_ip,
+                        exc_info=inspect_error,
+                    )
 
         with self._lock:
             self._errors[valid_ip] = error_status

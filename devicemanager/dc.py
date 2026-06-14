@@ -317,13 +317,24 @@ class DeviceRemoteConnector:
                 elif expect_index == 10:
                     session.send(self.login + "\r")  # Login
                 elif expect_index == 11:
+                    warning_parts = [session.before, session.after]
+                    session.expect(pexpect.EOF)
+                    warning_parts.append(session.before)
+                    ssh_output = "".join(
+                        part.decode("utf-8", errors="ignore") if isinstance(part, bytes) else str(part)
+                        for part in warning_parts
+                    )
                     session.close()
                     auto_accept_host_key = (
                         os.getenv("DEVICE_CONNECTOR_AUTO_ACCEPT_CHANGED_SSH_HOST_KEY", "0").lower()
                         in TRUE_VALUES
                     )
                     if not auto_accept_host_key or host_key_restarts >= 1:
-                        raise SSHConnectionError("SSH HOST IDENTIFICATION HAS CHANGED", ip=self.ip)
+                        raise SSHConnectionError(
+                            "SSH HOST IDENTIFICATION HAS CHANGED",
+                            ip=self.ip,
+                            ssh_output=ssh_output,
+                        )
                     host_key_restarts += 1
                     try:
                         ssh_spawn.accept_changed_host_key()
@@ -331,6 +342,7 @@ class DeviceRemoteConnector:
                         raise SSHConnectionError(
                             "SSH HOST IDENTIFICATION HAS CHANGED",
                             ip=self.ip,
+                            ssh_output=ssh_output,
                         ) from exc
                     session = ssh_spawn.get_session()
                 elif expect_index == 12:

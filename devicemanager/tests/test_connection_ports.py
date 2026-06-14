@@ -220,6 +220,8 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         changed_key_session = Mock()
         changed_key_session.expect.return_value = 11
         changed_key_session.isalive.return_value = False
+        changed_key_session.before = b"SHA256:new"
+        changed_key_session.after = b"HOST IDENTIFICATION HAS CHANGED"
         connected_session = Mock()
         connected_session.expect.return_value = 5
         get_session.side_effect = [changed_key_session, connected_session]
@@ -250,6 +252,8 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         changed_key_session = Mock()
         changed_key_session.expect.return_value = 11
         changed_key_session.isalive.return_value = False
+        changed_key_session.before = b"SHA256:new"
+        changed_key_session.after = b"HOST IDENTIFICATION HAS CHANGED"
         get_session.return_value = changed_key_session
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",
@@ -258,9 +262,10 @@ class DeviceConnectionPortsTests(SimpleTestCase):
             auth_obj=SimpleAuthObject(login="user", password="password"),
         )
 
-        with self.assertRaisesMessage(SSHConnectionError, "SSH HOST IDENTIFICATION HAS CHANGED"):
+        with self.assertRaisesMessage(SSHConnectionError, "SSH HOST IDENTIFICATION HAS CHANGED") as context:
             connector._connect_by_ssh()
 
+        self.assertIn("SHA256:new", context.exception.ssh_output)
         accept_changed_host_key.assert_not_called()
         get_session.assert_called_once()
 
@@ -277,6 +282,8 @@ class DeviceConnectionPortsTests(SimpleTestCase):
         changed_key_session = Mock()
         changed_key_session.expect.return_value = 11
         changed_key_session.isalive.return_value = False
+        changed_key_session.before = b"SHA256:new"
+        changed_key_session.after = b"HOST IDENTIFICATION HAS CHANGED"
         get_session.return_value = changed_key_session
         connector = DeviceRemoteConnector(
             ip="192.0.2.10",

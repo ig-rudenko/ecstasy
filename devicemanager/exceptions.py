@@ -19,7 +19,11 @@ class DeviceException(BaseDeviceException):
 
 
 class SSHConnectionError(DeviceException):
-    pass
+    def __init__(self, message: str, ip: str = "no ip", ssh_output: str = ""):
+        """Store safe OpenSSH output used to inspect a changed host key."""
+
+        super().__init__(message, ip=ip)
+        self.ssh_output = ssh_output
 
 
 class TelnetConnectionError(DeviceException):

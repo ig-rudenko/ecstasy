@@ -74,6 +74,39 @@ class ConnectionStatusStoreTests(SimpleTestCase):
         )
         self.host_key_store.inspect.assert_called_once_with("192.0.2.10", 2222, self.now)
 
+    def test_uses_ssh_warning_when_keyscan_cannot_inspect_changed_key(self):
+        """The OpenSSH warning keeps manual confirmation available when keyscan fails."""
+
+        pending_change = PendingSSHHostKeyChange(
+            ip="192.0.2.10",
+            port=22,
+            detected_at=self.now,
+            previous_keys=(SSHKeyInfo(type="ssh-rsa", fingerprint="SHA256:old"),),
+            new_keys=(SSHKeyInfo(type="ssh-ed25519", fingerprint="SHA256:new"),),
+            new_key_lines=(),
+        )
+        self.host_key_store.inspect.side_effect = RuntimeError("keyscan failed")
+        self.host_key_store.inspect_warning.return_value = pending_change
+        error = SSHConnectionError(
+            "SSH HOST IDENTIFICATION HAS CHANGED",
+            ip="192.0.2.10",
+            ssh_output=("The fingerprint for the ED25519 key sent by the remote host is\n" "SHA256:new."),
+        )
+
+        self.store.record_error("192.0.2.10", error, ssh_port=22)
+
+        status = self.store.get_status("192.0.2.10")
+        self.assertEqual(
+            status["sshHostKeyChange"]["newKeys"],
+            [{"type": "ssh-ed25519", "fingerprint": "SHA256:new"}],
+        )
+        self.host_key_store.inspect_warning.assert_called_once_with(
+            "192.0.2.10",
+            22,
+            self.now,
+            error.ssh_output,
+        )
+
     def test_confirmation_applies_pending_key_and_clears_status(self):
         """Confirmation uses the recorded key material and removes diagnostics."""
 
@@ -183,6 +216,40 @@ class SSHKnownHostsStoreTests(SimpleTestCase):
             )
 
     @patch("devicemanager.device_connector.connection_status.subprocess.run")
+    def test_inspect_warning_extracts_new_key_fingerprint(self, run):
+        """OpenSSH warning provides a fallback fingerprint for manual confirmation."""
+
+        run.side_effect = [
+            Mock(
+                returncode=0,
+                stdout="192.0.2.10 ssh-rsa AAAAold\n",
+                stderr="",
+            ),
+            Mock(returncode=0, stdout="2048 SHA256:old host (RSA)\n", stderr=""),
+        ]
+        with TemporaryDirectory() as temporary_directory:
+            known_hosts_path = Path(temporary_directory) / ".ssh" / "known_hosts"
+            known_hosts_path.parent.mkdir()
+            known_hosts_path.write_text("192.0.2.10 ssh-rsa AAAAold\n", encoding="utf-8")
+            store = SSHKnownHostsStore(known_hosts_path)
+
+            change = store.inspect_warning(
+                "192.0.2.10",
+                22,
+                self.make_change().detected_at,
+                (
+                    "@ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @\n"
+                    "The fingerprint for the ED25519 key sent by the remote host is\n"
+                    "SHA256:new."
+                ),
+            )
+
+            self.assertEqual(change.previous_keys[0].fingerprint, "SHA256:old")
+            self.assertEqual(change.new_keys[0].type, "ssh-ed25519")
+            self.assertEqual(change.new_keys[0].fingerprint, "SHA256:new")
+            self.assertEqual(change.new_key_lines, ())
+
+    @patch("devicemanager.device_connector.connection_status.subprocess.run")
     def test_failed_confirmation_keeps_original_known_hosts(self, run):
         """A failed replacement never removes the currently trusted key."""
 
@@ -200,3 +267,32 @@ class SSHKnownHostsStoreTests(SimpleTestCase):
                 known_hosts_path.read_text(encoding="utf-8"),
                 "192.0.2.10 ssh-ed25519 AAAAold\n",
             )
+
+    @patch("devicemanager.device_connector.connection_status.subprocess.run")
+    def test_confirmation_without_scanned_lines_only_removes_old_key(self, run):
+        """Warning-based confirmation lets the next SSH handshake save the new key."""
+
+        def run_command(command, **kwargs):
+            """Emulate ssh-keygen removing the old host entry."""
+
+            Path(command[4]).write_text("", encoding="utf-8")
+            return Mock(returncode=0, stdout="", stderr="")
+
+        run.side_effect = run_command
+        with TemporaryDirectory() as temporary_directory:
+            known_hosts_path = Path(temporary_directory) / ".ssh" / "known_hosts"
+            known_hosts_path.parent.mkdir()
+            known_hosts_path.write_text("192.0.2.10 ssh-ed25519 AAAAold\n", encoding="utf-8")
+            store = SSHKnownHostsStore(known_hosts_path)
+            change = PendingSSHHostKeyChange(
+                ip="192.0.2.10",
+                port=22,
+                detected_at=self.make_change().detected_at,
+                previous_keys=(SSHKeyInfo(type="ssh-ed25519", fingerprint="SHA256:old"),),
+                new_keys=(SSHKeyInfo(type="ssh-ed25519", fingerprint="SHA256:new"),),
+                new_key_lines=(),
+            )
+
+            store.confirm(change)
+
+            self.assertEqual(known_hosts_path.read_text(encoding="utf-8"), "")
