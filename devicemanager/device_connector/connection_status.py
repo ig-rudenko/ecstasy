@@ -1,3 +1,4 @@
+import importlib
 import logging
 import os
 import subprocess
@@ -9,11 +10,24 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from ipaddress import IPv4Address
 from pathlib import Path
+from typing import Protocol, cast
 
+
+class FcntlModule(Protocol):
+    """Subset of fcntl used for the Linux known_hosts file lock."""
+
+    LOCK_EX: int
+    LOCK_UN: int
+
+    def flock(self, fd: int, operation: int) -> None:
+        """Apply or release an advisory file lock."""
+
+
+fcntl_module: FcntlModule | None
 try:
-    import fcntl
+    fcntl_module = cast(FcntlModule, importlib.import_module("fcntl"))  # noqa
 except ImportError:  # pragma: no cover - fcntl is available in the Linux service containers.
-    fcntl = None
+    fcntl_module = None
 
 logger = logging.getLogger(__name__)
 
@@ -163,13 +177,13 @@ class SSHKnownHostsStore:
         self.known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         lock_path = self.known_hosts_path.with_name(f"{self.known_hosts_path.name}.lock")
         with KNOWN_HOSTS_THREAD_LOCK, lock_path.open("a", encoding="utf-8") as lock_file:
-            if fcntl is not None:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            if fcntl_module is not None:
+                fcntl_module.flock(lock_file.fileno(), fcntl_module.LOCK_EX)
             try:
                 yield
             finally:
-                if fcntl is not None:
-                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                if fcntl_module is not None:
+                    fcntl_module.flock(lock_file.fileno(), fcntl_module.LOCK_UN)
 
     def _confirm(self, change: PendingSSHHostKeyChange) -> None:
         """Replace known_hosts entries while the caller holds the update lock."""
