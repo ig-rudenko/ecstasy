@@ -41,6 +41,10 @@ class DiscoveryProfileSerializer(serializers.ModelSerializer):
         max_value=100,
         required=False,
     )
+    activateCreatedDevices = serializers.BooleanField(
+        source="activate_created_devices",
+        required=False,
+    )
     isActive = serializers.BooleanField(source="is_active", required=False)
 
     class Meta:
@@ -61,6 +65,7 @@ class DiscoveryProfileSerializer(serializers.ModelSerializer):
             "timeoutSeconds",
             "autoCreate",
             "autoCreateMinConfidence",
+            "activateCreatedDevices",
             "isActive",
             "created_at",
             "updated_at",

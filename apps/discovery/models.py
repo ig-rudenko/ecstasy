@@ -43,6 +43,10 @@ class DiscoveryProfile(models.Model):
         default=70,
         verbose_name="Минимальный confidence для автосоздания",
     )
+    activate_created_devices = models.BooleanField(
+        default=False,
+        verbose_name="Активировать созданное оборудование",
+    )
     is_active = models.BooleanField(default=True, verbose_name="Активно")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")

@@ -38,6 +38,31 @@ class DiscoveryProvisioningTests(TestCase):
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.CREATED)
         self.assertEqual(candidate.device, device)
 
+    def test_accept_candidate_activates_device_when_profile_option_enabled(self):
+        """Профиль может создавать оборудование сразу активным."""
+
+        profile = DiscoveryProfile.objects.create(
+            name="active-devices",
+            networks=["192.0.2.0/24"],
+            device_group=self.group,
+            try_protocols=["ssh"],
+            port_scan_protocol="snmp",
+            cmd_protocol="ssh",
+            max_workers=4,
+            timeout_seconds=1,
+            activate_created_devices=True,
+        )
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.23",
+            name="sw-23",
+            status=DiscoveryCandidate.Status.READY,
+            selected_auth_group=self.auth_group,
+        )
+
+        device = accept_candidate(candidate, profile=profile)
+
+        self.assertTrue(device.active)
+
     def test_accept_duplicate_candidate_is_rejected(self):
         """DUPLICATE candidate нельзя создать как новое устройство."""
 

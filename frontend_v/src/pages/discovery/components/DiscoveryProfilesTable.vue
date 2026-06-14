@@ -34,6 +34,7 @@ function getLookupName(items: DiscoveryLookupItem[], id: number | null): string 
                         <th class="px-4 py-3 text-left font-semibold">Auth</th>
                         <th class="px-4 py-3 text-left font-semibold">Discovery</th>
                         <th class="px-4 py-3 text-left font-semibold">Авто</th>
+                        <th class="px-4 py-3 text-left font-semibold">Новое оборудование</th>
                         <th class="px-4 py-3 text-right font-semibold">Действия</th>
                     </tr>
                 </thead>
@@ -72,6 +73,12 @@ function getLookupName(items: DiscoveryLookupItem[], id: number | null): string 
                             <Tag
                                 :severity="profile.autoCreate ? 'success' : 'secondary'"
                                 :value="profile.autoCreate ? `>= ${profile.autoCreateMinConfidence}` : 'выкл'"
+                            />
+                        </td>
+                        <td class="px-4 py-3">
+                            <Tag
+                                :severity="profile.activateCreatedDevices ? 'success' : 'secondary'"
+                                :value="profile.activateCreatedDevices ? 'активно' : 'неактивно'"
                             />
                         </td>
                         <td class="px-4 py-3">
@@ -117,7 +124,7 @@ function getLookupName(items: DiscoveryLookupItem[], id: number | null): string 
                         </td>
                     </tr>
                     <tr v-if="!loading && !profiles.length">
-                        <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
+                        <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">
                             Профили discovery еще не созданы
                         </td>
                     </tr>

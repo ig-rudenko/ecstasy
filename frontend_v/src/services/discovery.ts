@@ -26,6 +26,7 @@ export interface DiscoveryProfile {
     timeoutSeconds: number;
     autoCreate: boolean;
     autoCreateMinConfidence: number;
+    activateCreatedDevices: boolean;
     isActive: boolean;
     created_at: string;
     updated_at: string;
@@ -45,6 +46,7 @@ export interface DiscoveryProfilePayload {
     timeoutSeconds: number;
     autoCreate: boolean;
     autoCreateMinConfidence: number;
+    activateCreatedDevices: boolean;
     isActive: boolean;
 }
 

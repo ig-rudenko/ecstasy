@@ -16,6 +16,7 @@ type ProfileForm = {
     timeoutSeconds: number;
     autoCreate: boolean;
     autoCreateMinConfidence: number;
+    activateCreatedDevices: boolean;
     isActive: boolean;
 };
 
@@ -95,7 +96,7 @@ const modelVisible = computed({
                     </label>
                 </div>
             </div>
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-2 sm:grid-cols-2">
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     Port scan
                     <Select
@@ -130,48 +131,55 @@ const modelVisible = computed({
                     </label>
                 </div>
             </div>
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-2 sm:grid-cols-3">
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     Workers
-                    <input
-                        v-model.number="form.maxWorkers"
-                        type="number"
-                        min="1"
-                        max="80"
-                        class="rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                    <InputNumber
+                        v-model="form.maxWorkers"
+                        :min="1"
+                        :max="80"
+                        fluid
+                        :useGrouping="false"
+                        input-class="rounded-2xl"
                     />
                 </label>
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     Timeout
-                    <input
-                        v-model.number="form.timeoutSeconds"
-                        type="number"
-                        min="1"
-                        max="30"
-                        class="rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                    <InputNumber
+                        v-model="form.timeoutSeconds"
+                        :min="1"
+                        :max="30"
+                        fluid
+                        :useGrouping="false"
+                        input-class="rounded-2xl"
                     />
                 </label>
                 <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     Confidence
-                    <input
-                        v-model.number="form.autoCreateMinConfidence"
-                        type="number"
-                        min="0"
-                        max="100"
-                        class="rounded-2xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                    <InputNumber
+                        v-model="form.autoCreateMinConfidence"
+                        :min="0"
+                        :max="100"
+                        fluid
+                        :useGrouping="false"
+                        input-class="rounded-2xl"
                     />
                 </label>
             </div>
             <div
-                class="flex flex-wrap items-center gap-6 rounded-2xl border border-gray-200/80 p-3 dark:border-gray-700/80"
+                class="flex flex-wrap flex-col gap-2 rounded-2xl border border-gray-200/80 p-3 dark:border-gray-700/80"
             >
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <ToggleSwitch v-model="form.isActive" />
+                    Профиль активен
+                </label>
                 <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                     <ToggleSwitch v-model="form.autoCreate" />
                     Автосоздание
                 </label>
                 <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                    <ToggleSwitch v-model="form.isActive" />
-                    Активен
+                    <ToggleSwitch v-model="form.activateCreatedDevices" />
+                    Создавать оборудование активным
                 </label>
             </div>
         </div>

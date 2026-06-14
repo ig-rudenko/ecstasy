@@ -44,6 +44,7 @@ def accept_candidate(
         candidate, profile
     )
     resolved_snmp_community = snmp_community or candidate.selected_snmp_community
+    resolved_active = resolve_created_device_active(candidate, profile)
 
     try:
         with transaction.atomic():
@@ -59,7 +60,7 @@ def accept_candidate(
                 snmp_community=resolved_snmp_community,
                 port_scan_protocol=resolved_port_scan_protocol,
                 cmd_protocol=resolved_cmd_protocol,
-                active=False,
+                active=resolved_active,
             )
             candidate.device = device
             candidate.status = DiscoveryCandidate.Status.CREATED
@@ -77,6 +78,18 @@ def accept_candidate(
         collect_initial_interfaces(device)
 
     return device
+
+
+def resolve_created_device_active(
+    candidate: DiscoveryCandidate,
+    profile: DiscoveryProfile | None,
+) -> bool:
+    """Определить начальный active по профилю discovery кандидата."""
+
+    if profile is None:
+        last_attempt = candidate.attempts.select_related("run__profile").order_by("-created_at").first()
+        profile = last_attempt.run.profile if last_attempt else None
+    return bool(profile and profile.activate_created_devices)
 
 
 def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:

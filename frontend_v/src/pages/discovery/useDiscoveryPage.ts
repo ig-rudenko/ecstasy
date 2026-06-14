@@ -92,6 +92,7 @@ export function useDiscoveryPage() {
         timeoutSeconds: 2,
         autoCreate: false,
         autoCreateMinConfidence: 70,
+        activateCreatedDevices: false,
         isActive: true,
     });
 
@@ -164,6 +165,7 @@ export function useDiscoveryPage() {
         profileForm.timeoutSeconds = 2;
         profileForm.autoCreate = false;
         profileForm.autoCreateMinConfidence = 70;
+        profileForm.activateCreatedDevices = false;
         profileForm.isActive = true;
     }
 
@@ -182,6 +184,7 @@ export function useDiscoveryPage() {
         profileForm.timeoutSeconds = profile.timeoutSeconds;
         profileForm.autoCreate = profile.autoCreate;
         profileForm.autoCreateMinConfidence = profile.autoCreateMinConfidence;
+        profileForm.activateCreatedDevices = profile.activateCreatedDevices;
         profileForm.isActive = profile.isActive;
     }
 
@@ -204,6 +207,7 @@ export function useDiscoveryPage() {
             timeoutSeconds: profileForm.timeoutSeconds,
             autoCreate: profileForm.autoCreate,
             autoCreateMinConfidence: profileForm.autoCreateMinConfidence,
+            activateCreatedDevices: profileForm.activateCreatedDevices,
             isActive: profileForm.isActive,
         };
         const snmpCommunities = parseLines(profileForm.snmpCommunities);

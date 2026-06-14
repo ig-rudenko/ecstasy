@@ -36,6 +36,7 @@ class DiscoveryAPITests(APITestCase):
                 "cmdProtocol": "ssh",
                 "maxWorkers": 4,
                 "timeoutSeconds": 1,
+                "activateCreatedDevices": True,
             },
             format="json",
         )
@@ -43,6 +44,7 @@ class DiscoveryAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertNotIn("snmpCommunities", response.data)
         self.assertEqual(response.data["snmpCommunitiesCount"], 1)
+        self.assertTrue(response.data["activateCreatedDevices"])
 
     def test_create_profile_rejects_network_larger_than_24(self):
         """API отклоняет discovery profile с CIDR шире /24."""
@@ -91,6 +93,43 @@ class DiscoveryAPITests(APITestCase):
         candidate.refresh_from_db()
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.CREATED)
         self.assertFalse(candidate.device.active)
+
+    def test_accept_candidate_endpoint_uses_profile_active_device_option(self):
+        """Ручное принятие использует настройку профиля последнего discovery run."""
+
+        profile = self._create_profile()
+        profile.activate_created_devices = True
+        profile.save(update_fields=["activate_created_devices"])
+        run = DiscoveryRun.objects.create(profile=profile, status=DiscoveryRun.Status.SUCCESS)
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.32",
+            name="sw-32",
+            status=DiscoveryCandidate.Status.READY,
+            selected_auth_group=self.auth_group,
+        )
+        DiscoveryAttempt.objects.create(
+            run=run,
+            candidate=candidate,
+            ip=candidate.ip,
+            method=DiscoveryAttempt.Method.PING,
+            status=DiscoveryAttempt.Status.SUCCESS,
+        )
+
+        response = self.client.post(
+            reverse("discovery-api:candidates-accept", args=[candidate.id]),
+            {
+                "deviceGroup": self.group.id,
+                "authGroup": self.auth_group.id,
+                "cmdProtocol": "ssh",
+                "portScanProtocol": "snmp",
+                "collectInterfaces": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        candidate.refresh_from_db()
+        self.assertTrue(candidate.device.active)
 
     def test_accept_candidate_uses_selected_auth_group_and_detected_protocols_by_default(self):
         """Accept endpoint использует auth/protocol кандидата, если override не передан."""
