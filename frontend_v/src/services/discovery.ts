@@ -20,8 +20,8 @@ export interface DiscoveryProfile {
     authGroups: number[];
     snmpCommunitiesCount: number;
     tryProtocols: string[];
-    portScanProtocol: "snmp" | "telnet" | "ssh";
-    cmdProtocol: "telnet" | "ssh";
+    portScanProtocol: "auto" | "snmp" | "telnet" | "ssh";
+    cmdProtocol: "auto" | "telnet" | "ssh";
     maxWorkers: number;
     timeoutSeconds: number;
     autoCreate: boolean;
@@ -40,8 +40,8 @@ export interface DiscoveryProfilePayload {
     authGroups: number[];
     snmpCommunities?: string[];
     tryProtocols: string[];
-    portScanProtocol: "snmp" | "telnet" | "ssh";
-    cmdProtocol: "telnet" | "ssh";
+    portScanProtocol: "auto" | "snmp" | "telnet" | "ssh";
+    cmdProtocol: "auto" | "telnet" | "ssh";
     maxWorkers: number;
     timeoutSeconds: number;
     autoCreate: boolean;

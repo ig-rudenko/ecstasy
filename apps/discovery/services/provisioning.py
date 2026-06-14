@@ -95,8 +95,14 @@ def resolve_created_device_active(
 def resolve_candidate_cmd_protocol(candidate: DiscoveryCandidate, profile: DiscoveryProfile | None) -> str:
     """Определить cmd_protocol из профиля или fingerprint кандидата."""
 
-    if profile:
+    if profile and profile.cmd_protocol != DiscoveryProfile.AUTO_PROTOCOL:
         return profile.cmd_protocol
+    return resolve_candidate_cli_protocol(candidate)
+
+
+def resolve_candidate_cli_protocol(candidate: DiscoveryCandidate) -> str:
+    """Определить рабочий CLI-протокол кандидата с приоритетом SSH."""
+
     cli_protocol = str(candidate.raw_fingerprint.get("cliProtocol", "")).lower()
     if cli_protocol in {"ssh", "telnet"}:
         return cli_protocol
@@ -113,6 +119,8 @@ def resolve_candidate_port_scan_protocol(
     """Определить port_scan_protocol из профиля или fingerprint кандидата."""
 
     if profile:
+        if profile.port_scan_protocol == DiscoveryProfile.AUTO_PROTOCOL:
+            return resolve_candidate_cli_protocol(candidate)
         return profile.port_scan_protocol
     if candidate.detected_protocols.get("snmp"):
         return "snmp"

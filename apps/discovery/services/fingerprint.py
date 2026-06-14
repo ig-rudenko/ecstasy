@@ -135,7 +135,8 @@ class CliFingerprinter:
     ) -> None:
         """Сохранить протоколы и группы авторизации для CLI fingerprint."""
 
-        self.protocols = [protocol for protocol in protocols if protocol in {"ssh", "telnet"}]
+        enabled_protocols = set(protocols)
+        self.protocols = [protocol for protocol in ("ssh", "telnet") if protocol in enabled_protocols]
         self.auth_groups = list(auth_groups)
         self.snmp_community = snmp_community
 

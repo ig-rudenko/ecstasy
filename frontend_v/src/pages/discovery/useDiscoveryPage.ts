@@ -86,8 +86,8 @@ export function useDiscoveryPage() {
         authGroups: [] as number[],
         snmpCommunities: "",
         tryProtocols: ["ssh"] as string[],
-        portScanProtocol: "snmp" as "snmp" | "telnet" | "ssh",
-        cmdProtocol: "ssh" as "telnet" | "ssh",
+        portScanProtocol: "snmp" as "auto" | "snmp" | "telnet" | "ssh",
+        cmdProtocol: "ssh" as "auto" | "telnet" | "ssh",
         maxWorkers: 32,
         timeoutSeconds: 2,
         autoCreate: false,
@@ -128,6 +128,14 @@ export function useDiscoveryPage() {
         { label: "SSH", value: "ssh" },
         { label: "Telnet", value: "telnet" },
     ];
+    const profilePortScanProtocolOptions: {
+        label: string;
+        value: "auto" | "snmp" | "ssh" | "telnet";
+    }[] = [{ label: "Авто: SSH → Telnet", value: "auto" }, ...portScanProtocolOptions];
+    const profileCmdProtocolOptions: {
+        label: string;
+        value: "auto" | "ssh" | "telnet";
+    }[] = [{ label: "Авто: SSH → Telnet", value: "auto" }, ...cmdProtocolOptions];
 
     const readyCandidatesCount = computed(
         () => candidates.value.filter((candidate) => candidate.status === "READY").length
@@ -780,6 +788,8 @@ export function useDiscoveryPage() {
         protocolOptions,
         portScanProtocolOptions,
         cmdProtocolOptions,
+        profilePortScanProtocolOptions,
+        profileCmdProtocolOptions,
         readyCandidatesCount,
         activeRunsCount,
         candidateVendorOptions,

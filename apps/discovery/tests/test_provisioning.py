@@ -92,6 +92,33 @@ class DiscoveryProvisioningTests(TestCase):
         self.assertEqual(device.cmd_protocol, "telnet")
         self.assertEqual(device.snmp_community, "public")
 
+    def test_accept_candidate_auto_protocol_uses_successful_cli_protocol(self):
+        """Режим auto сохраняет протокол успешной CLI-авторизации."""
+
+        profile = DiscoveryProfile.objects.create(
+            name="auto-protocol",
+            networks=["192.0.2.0/24"],
+            device_group=self.group,
+            try_protocols=["ssh", "telnet"],
+            port_scan_protocol="auto",
+            cmd_protocol="auto",
+            max_workers=4,
+            timeout_seconds=1,
+        )
+        candidate = DiscoveryCandidate.objects.create(
+            ip="192.0.2.26",
+            name="sw-26",
+            status=DiscoveryCandidate.Status.READY,
+            selected_auth_group=self.auth_group,
+            detected_protocols={"ssh": True, "telnet": True},
+            raw_fingerprint={"cliProtocol": "telnet"},
+        )
+
+        device = accept_candidate(candidate, profile=profile)
+
+        self.assertEqual(device.port_scan_protocol, "telnet")
+        self.assertEqual(device.cmd_protocol, "telnet")
+
     def test_deleted_device_returns_candidate_to_ready_for_recreation(self):
         """После удаления оборудования кандидата можно создать повторно."""
 

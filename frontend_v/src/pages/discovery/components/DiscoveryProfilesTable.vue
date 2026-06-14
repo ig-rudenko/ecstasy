@@ -19,6 +19,10 @@ const emit = defineEmits<{
 function getLookupName(items: DiscoveryLookupItem[], id: number | null): string {
     return items.find((item) => item.id === id)?.name || "—";
 }
+
+function protocolLabel(protocol: string): string {
+    return protocol === "auto" ? "AUTO: SSH → TELNET" : protocol;
+}
 </script>
 
 <template>
@@ -64,8 +68,8 @@ function getLookupName(items: DiscoveryLookupItem[], id: number | null): string 
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
-                                <Tag severity="info" :value="profile.portScanProtocol" />
-                                <Tag severity="secondary" :value="profile.cmdProtocol" />
+                                <Tag severity="info" :value="protocolLabel(profile.portScanProtocol)" />
+                                <Tag severity="secondary" :value="protocolLabel(profile.cmdProtocol)" />
                                 <Tag severity="contrast" :value="`${profile.snmpCommunitiesCount} SNMP`" />
                             </div>
                         </td>

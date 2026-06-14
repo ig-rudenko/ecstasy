@@ -42,6 +42,8 @@ const {
     protocolOptions,
     portScanProtocolOptions,
     cmdProtocolOptions,
+    profilePortScanProtocolOptions,
+    profileCmdProtocolOptions,
     readyCandidatesCount,
     activeRunsCount,
     candidateVendorOptions,
@@ -274,8 +276,8 @@ const {
         :deviceGroups="lookups.deviceGroups"
         :authGroups="lookups.authGroups"
         :protocolOptions="protocolOptions"
-        :portScanProtocolOptions="portScanProtocolOptions"
-        :cmdProtocolOptions="cmdProtocolOptions"
+        :portScanProtocolOptions="profilePortScanProtocolOptions"
+        :cmdProtocolOptions="profileCmdProtocolOptions"
         @save="saveProfile"
     />
 

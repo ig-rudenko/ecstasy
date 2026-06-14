@@ -9,6 +9,16 @@ from apps.check.models import AuthGroup, DeviceGroup, Devices
 class DiscoveryProfile(models.Model):
     """Профиль настроек для запуска auto discovery."""
 
+    AUTO_PROTOCOL = "auto"
+    PORT_SCAN_PROTOCOLS = (
+        (AUTO_PROTOCOL, "Авто (SSH → Telnet)"),
+        *Devices.PROTOCOLS,
+    )
+    CMD_PROTOCOLS = (
+        (AUTO_PROTOCOL, "Авто (SSH → Telnet)"),
+        *Devices.PROTOCOLS[1:],
+    )
+
     name = models.CharField(max_length=100, unique=True, verbose_name="Название")
     networks = models.JSONField(default=list, verbose_name="IPv4 подсети")
     exclude_ips = models.JSONField(default=list, blank=True, verbose_name="Исключенные IP/CIDR")
@@ -27,13 +37,13 @@ class DiscoveryProfile(models.Model):
     snmp_communities = models.JSONField(default=list, blank=True, verbose_name="SNMP communities")
     try_protocols = models.JSONField(default=list, blank=True, verbose_name="CLI протоколы")
     port_scan_protocol = models.CharField(
-        choices=Devices.PROTOCOLS,
+        choices=PORT_SCAN_PROTOCOLS,
         max_length=6,
         default="snmp",
         verbose_name="Протокол сбора интерфейсов",
     )
     cmd_protocol = models.CharField(
-        choices=Devices.PROTOCOLS[1:],
+        choices=CMD_PROTOCOLS,
         max_length=6,
         default="ssh",
         verbose_name="Протокол выполнения команд",

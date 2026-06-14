@@ -46,6 +46,29 @@ class DiscoveryAPITests(APITestCase):
         self.assertEqual(response.data["snmpCommunitiesCount"], 1)
         self.assertTrue(response.data["activateCreatedDevices"])
 
+    def test_create_profile_accepts_auto_protocol_selection(self):
+        """API принимает автоматический выбор рабочего CLI-протокола."""
+
+        response = self.client.post(
+            reverse("discovery-api:profiles-list"),
+            {
+                "name": "mixed-cli-network",
+                "networks": ["192.0.2.0/24"],
+                "deviceGroup": self.group.id,
+                "authGroups": [self.auth_group.id],
+                "tryProtocols": ["telnet", "ssh"],
+                "portScanProtocol": "auto",
+                "cmdProtocol": "auto",
+                "maxWorkers": 4,
+                "timeoutSeconds": 1,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["portScanProtocol"], "auto")
+        self.assertEqual(response.data["cmdProtocol"], "auto")
+
     def test_create_profile_rejects_network_larger_than_24(self):
         """API отклоняет discovery profile с CIDR шире /24."""
 

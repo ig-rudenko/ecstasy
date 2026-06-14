@@ -10,8 +10,8 @@ type ProfileForm = {
     authGroups: number[];
     snmpCommunities: string;
     tryProtocols: string[];
-    portScanProtocol: "snmp" | "telnet" | "ssh";
-    cmdProtocol: "telnet" | "ssh";
+    portScanProtocol: "auto" | "snmp" | "telnet" | "ssh";
+    cmdProtocol: "auto" | "telnet" | "ssh";
     maxWorkers: number;
     timeoutSeconds: number;
     autoCreate: boolean;
@@ -28,8 +28,8 @@ const props = defineProps<{
     deviceGroups: DiscoveryLookupItem[];
     authGroups: DiscoveryLookupItem[];
     protocolOptions: { label: string; value: string }[];
-    portScanProtocolOptions: { label: string; value: "snmp" | "telnet" | "ssh" }[];
-    cmdProtocolOptions: { label: string; value: "telnet" | "ssh" }[];
+    portScanProtocolOptions: { label: string; value: "auto" | "snmp" | "telnet" | "ssh" }[];
+    cmdProtocolOptions: { label: string; value: "auto" | "telnet" | "ssh" }[];
 }>();
 
 const emit = defineEmits<{
@@ -118,6 +118,12 @@ const modelVisible = computed({
                     />
                 </label>
             </div>
+            <p
+                v-if="form.portScanProtocol === 'auto' || form.cmdProtocol === 'auto'"
+                class="text-xs text-gray-500 dark:text-gray-400"
+            >
+                Авто использует протокол успешной CLI-проверки: сначала SSH, затем Telnet.
+            </p>
             <div class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 CLI protocols
                 <div class="flex flex-wrap gap-3 rounded-2xl border border-gray-200/80 p-3 dark:border-gray-700/80">
