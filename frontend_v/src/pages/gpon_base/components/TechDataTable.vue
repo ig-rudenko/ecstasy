@@ -34,7 +34,7 @@
             <div
                 v-show="show_filter"
                 id="filter"
-                class="table-plate rounded-xl filter-plate border bg-gray-50 dark:bg-gray-900 p-4"
+                class="table-plate rounded-xl filter-plate border border-surface-300 dark:border-surface-700 bg-gray-50 dark:bg-gray-900 p-4"
             >
                 <div class="flex flex-wrap">
                     <div style="width: 200px" class="me-2">

@@ -130,6 +130,7 @@ const supportedVendors = [
     "Extreme",
     "ZTE",
     "Q-Tech",
+    "SNR",
 ];
 
 const userDisplayName = computed(() => user?.firstName || user?.username || "оператор");

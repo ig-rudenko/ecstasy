@@ -1,4 +1,4 @@
-import "vis-network/dist/dist/vis-network.min.css";
+import "vis-network/styles/vis-network.min.css";
 
 const baseVisOptions = {
     height: "100%",
