@@ -28,6 +28,8 @@ def validate_port(port: str) -> str | None:
     ## Проверка правильности порта Q-Tech.
 
     valid ports:
+      - "Ethernet1/2/1"
+      - "Ethernet 1/2/1"
       - "1/2/1"
       - "1/1/21"
 
@@ -37,8 +39,8 @@ def validate_port(port: str) -> str | None:
     """
 
     port = port.strip()
-    if re.match(r"^\d+/\d+/\d+$", port):
-        return port
+    if port_math := re.match(r"^(?:[Ee]thernet\s*)?(?P<indexes>\d+/\d+/\d+)$", port):
+        return port_math.group("indexes")
     return None
 
 
@@ -71,6 +73,11 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         super().__init__(session, ip, auth, model, snmp_community)
         self.send_command("terminal length 100")
         self.__cache_port_info: dict[str, str] = {}
+
+    @staticmethod
+    def normalize_interface_name(intf: str) -> str:
+        intf = intf.strip()
+        return validate_port(intf) or intf
 
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
@@ -175,10 +182,6 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
                 continue
 
         return [(line["vlan_id"], line["ports"], line["name"]) for line in vlans]
-
-    @staticmethod
-    def normalize_interface_name(intf: str) -> str:
-        return BaseDevice.find_or_empty(r"(\d+/\d+/?\d*)", intf)
 
     @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:

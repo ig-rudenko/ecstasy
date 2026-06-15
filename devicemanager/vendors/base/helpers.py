@@ -30,6 +30,8 @@ def normalize_cable_diag_status(status: Any) -> str:
         return "Unsupported"
     if "empty" in lowered or "no cable" in lowered:
         return "Empty"
+    if "Mismatch" in status:
+        return "Mismatch"
     if lowered in {"up", "down", "open", "short", "mismatch", "unknown", "unsupported"}:
         return lowered.capitalize()
     if lowered == "none":

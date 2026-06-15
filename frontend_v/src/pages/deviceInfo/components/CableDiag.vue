@@ -158,9 +158,15 @@ export default defineComponent({
             );
         },
         pairImage(status: string, align: "left" | "right") {
-            if (status.toLowerCase() == "skip") status = "Mismatch";
-            if (status.toLowerCase() == "fail") status = "Error";
-            if (status.toLowerCase() == "normal") status = "Open";
+            if (["fail", "error"].includes(status.toLowerCase())) {
+                status = "Error";
+            } else if (status.toLowerCase() == "short") {
+                status = "Short";
+            } else if (["normal", "open", "up"].includes(status.toLowerCase())) {
+                status = "Open";
+            } else {
+                status = "Mismatch";
+            }
             return `/img/rj45-status-${String(status).toLowerCase()}-${align}.png`;
         },
         pairStatusLabel(status: string) {
