@@ -54,6 +54,36 @@ class DiscoveryReconcileTests(TestCase):
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.DUPLICATE)
         self.assertEqual(candidate.device, device)
 
+    def test_upsert_candidate_does_not_reassign_device_from_existing_candidate(self):
+        """Новый IP того же устройства не отбирает связь у существующего кандидата."""
+
+        device = Devices.objects.create(
+            ip="192.0.2.13",
+            name="known",
+            group=self.group,
+            auth_group=self.auth_group,
+        )
+        existing_candidate = DiscoveryCandidate.objects.create(
+            ip=device.ip,
+            name=device.name,
+            status=DiscoveryCandidate.Status.DUPLICATE,
+            device=device,
+        )
+        fingerprint = DeviceFingerprint(
+            ip="192.0.2.14",
+            name=device.name,
+            vendor="Cisco",
+            detected_protocols={"ping": True},
+        )
+
+        candidate = upsert_candidate(fingerprint)
+
+        self.assertEqual(candidate.status, DiscoveryCandidate.Status.DUPLICATE)
+        self.assertIsNone(candidate.device)
+        self.assertEqual(candidate.raw_fingerprint["duplicateDeviceId"], device.id)
+        existing_candidate.refresh_from_db()
+        self.assertEqual(existing_candidate.device, device)
+
     def test_calculate_confidence_clamps_duplicate_penalty(self):
         """Confidence не уходит ниже нуля после штрафа за дубли."""
 

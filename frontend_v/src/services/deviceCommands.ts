@@ -372,3 +372,26 @@ export async function getBulkCommandHistoryResults(
     );
     return response.data;
 }
+
+/**
+ * Downloads XLSX results for one bulk command task.
+ */
+export async function downloadBulkCommandTaskResults(taskId: string, search = ""): Promise<void> {
+    const searchParams = new URLSearchParams();
+    if (search.trim()) {
+        searchParams.set("search", search.trim());
+    }
+    const query = searchParams.toString();
+    const response = await api.get<Blob>(`/api/v1/devices/commands/tasks/${taskId}/export${query ? `?${query}` : ""}`, {
+        responseType: "blob",
+    });
+
+    const href = URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = href;
+    link.setAttribute("download", `bulk-command-results-${taskId}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+}

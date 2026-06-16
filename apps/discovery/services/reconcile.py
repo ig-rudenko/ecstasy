@@ -55,6 +55,13 @@ def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     duplicate = duplicate_device is not None
     confidence = calculate_confidence(fingerprint, duplicate=duplicate)
     name = suggested_name(fingerprint)
+    device_is_linked = bool(
+        duplicate_device
+        and DiscoveryCandidate.objects.filter(device=duplicate_device).exclude(ip=fingerprint.ip).exists()
+    )
+    raw_fingerprint = dict(fingerprint.raw)
+    if device_is_linked and duplicate_device is not None:
+        raw_fingerprint["duplicateDeviceId"] = duplicate_device.id
 
     if duplicate:
         status = DiscoveryCandidate.Status.DUPLICATE
@@ -80,8 +87,8 @@ def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
         "detected_protocols": fingerprint.detected_protocols,
         "selected_auth_group": fingerprint.selected_auth_group,
         "selected_snmp_community": fingerprint.selected_snmp_community,
-        "device": duplicate_device,
-        "raw_fingerprint": fingerprint.raw,
+        "device": None if device_is_linked else duplicate_device,
+        "raw_fingerprint": raw_fingerprint,
         "last_error": fingerprint.last_error,
     }
 

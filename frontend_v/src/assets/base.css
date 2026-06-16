@@ -4,6 +4,7 @@
 
 .p-fieldset,
 .p-paginator,
+.p-datatable-header,
 .p-fieldset-legend {
     background-color: transparent !important;
 }

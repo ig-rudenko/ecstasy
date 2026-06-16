@@ -16,6 +16,7 @@ import {
     BulkCommandTaskStatus,
     cloneCommandTemplate,
     DeviceCommandTemplate,
+    downloadBulkCommandTaskResults,
     executeBulkDeviceCommand,
     getBulkCommandHistory,
     getBulkCommandHistoryResults,
@@ -91,6 +92,7 @@ const historyTotal = ref(0);
 const historyLoaded = ref(false);
 const isLoadingHistory = ref(false);
 const historyResults = ref<Record<number, HistoryResultsState>>({});
+const exportingTaskIds = ref<Record<string, boolean>>({});
 const currentOutput = ref<TaskDeviceState | null>(null);
 const outputVisible = ref(false);
 let pollingTimer: number | null = null;
@@ -642,6 +644,31 @@ async function retryHistoryResult(entry: BulkCommandExecutionHistoryEntry, devic
     await launchTask(command, [deviceId]);
 }
 
+/**
+ * Returns whether export for a task is currently running.
+ */
+function isExportingTask(taskId: string): boolean {
+    return !!exportingTaskIds.value[taskId];
+}
+
+/**
+ * Downloads Excel results for one bulk command task.
+ */
+async function exportTaskResults(taskId: string, search = ""): Promise<void> {
+    exportingTaskIds.value = { ...exportingTaskIds.value, [taskId]: true };
+
+    try {
+        await downloadBulkCommandTaskResults(taskId, search);
+    } catch (error: any) {
+        console.error(error);
+        errorToast("Не удалось экспортировать результаты", errorFmt(error));
+    } finally {
+        const nextState = { ...exportingTaskIds.value };
+        delete nextState[taskId];
+        exportingTaskIds.value = nextState;
+    }
+}
+
 onMounted(async () => {
     if (!permissions.hasBulkDeviceCommandExecutePermission()) await useRouter().push("/");
     await loadDevices();
@@ -920,6 +947,15 @@ onBeforeUnmount(() => {
 
                                     <div class="flex flex-wrap items-center gap-2">
                                         <Button
+                                            icon="pi pi-download"
+                                            label="Экспорт Excel"
+                                            severity="secondary"
+                                            outlined
+                                            class="rounded-2xl!"
+                                            :loading="isExportingTask(task.taskId)"
+                                            @click="exportTaskResults(task.taskId, task.deviceFilter)"
+                                        />
+                                        <Button
                                             v-if="task.devices.some((device) => device.status === 'ERROR')"
                                             icon="pi pi-refresh"
                                             label="Повторить ошибки"
@@ -1189,6 +1225,17 @@ onBeforeUnmount(() => {
                                     </IconField>
                                 </div>
                                 <div class="flex flex-wrap gap-2">
+                                    <Button
+                                        icon="pi pi-download"
+                                        label="Экспорт Excel"
+                                        severity="secondary"
+                                        outlined
+                                        class="rounded-2xl!"
+                                        :loading="isExportingTask(entry.task_id)"
+                                        @click="
+                                            exportTaskResults(entry.task_id, getHistoryResultsState(entry.id).search)
+                                        "
+                                    />
                                     <Button
                                         icon="pi pi-search"
                                         label="Найти"

@@ -1,5 +1,6 @@
 import re
 
+from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
@@ -23,6 +24,10 @@ from ... import models
 from ...logging import log
 from ...models import DeviceCommand
 from ...permissions import profile_permission
+from ...services.device.command_results_export import (
+    EXCEL_CONTENT_TYPE,
+    build_bulk_command_results_workbook,
+)
 from ...services.device.commands import (
     dispatch_bulk_execute_command_task,
     execute_command,
@@ -664,6 +669,48 @@ class BulkDeviceCommandTaskAPIView(UserAuthenticatedAPIView):
         if execution is None:
             return "PENDING"
         return execution.status
+
+
+class BulkDeviceCommandTaskResultsExportAPIView(UserAuthenticatedAPIView):
+    """Export results for one bulk device command task."""
+
+    permission_classes = [BulkDeviceCommandExecutionPermission]
+
+    @method_decorator(profile_permission(models.Profile.CMD_RUN))
+    def get(self, request, *args, **kwargs) -> HttpResponse:
+        """Return XLSX file with all result rows for one task."""
+        task_id = str(self.kwargs["task_id"])
+        execution = self.get_execution(task_id)
+        results = list(self.get_results_queryset(execution))
+        workbook = build_bulk_command_results_workbook(execution, results)
+
+        response = HttpResponse(workbook, content_type=EXCEL_CONTENT_TYPE)
+        response["Content-Disposition"] = (
+            f'attachment; filename="bulk_command_results_{self.safe_filename_part(task_id)}.xlsx"'
+        )
+        return response
+
+    def get_execution(self, task_id: str) -> models.BulkDeviceCommandExecution:
+        """Return execution available for the current user."""
+        queryset = models.BulkDeviceCommandExecution.objects.filter(task_id=task_id)
+        if not self.current_user.is_superuser:
+            queryset = queryset.filter(user=self.current_user)
+        return generics.get_object_or_404(queryset)
+
+    def get_results_queryset(self, execution: models.BulkDeviceCommandExecution):
+        """Return result rows for export."""
+        queryset = execution.results.select_related("device").order_by("device_name", "id")
+
+        search_query = str(self.request.query_params.get("search", "")).strip()
+        if search_query:
+            queryset = queryset.filter(device_name__icontains=search_query)
+
+        return queryset
+
+    @staticmethod
+    def safe_filename_part(value: str) -> str:
+        """Return a filesystem-safe filename segment."""
+        return re.sub(r"[^A-Za-z0-9_.-]+", "_", value)
 
 
 class BulkDeviceCommandExecutionListAPIView(UserAuthenticatedAPIView, generics.ListAPIView):

@@ -24,7 +24,7 @@
             <template #header>
                 <div class="flex items-center gap-2">
                     <InputText v-model.trim="search" fluid placeholder="Поиск" @keyup.enter="loadCustomers(1)" />
-                    <Button label="Найти" icon="pi pi-search" size="small" @click="loadCustomers(1)" />
+                    <Button label="Найти" icon="pi pi-search" @click="loadCustomers(1)" class="px-5" />
                 </div>
             </template>
             <Column field="type">

@@ -108,6 +108,11 @@ urlpatterns = [
         name="device-command-task-status",
     ),
     path(
+        "commands/tasks/<str:task_id>/export",
+        device_manager.BulkDeviceCommandTaskResultsExportAPIView.as_view(),
+        name="device-command-task-results-export",
+    ),
+    path(
         "commands/history",
         device_manager.BulkDeviceCommandExecutionListAPIView.as_view(),
         name="device-command-history",

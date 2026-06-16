@@ -653,11 +653,16 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         parsed: list[tuple[str, str, str]] = []
         time.sleep(2)  # По умолчанию ждем 2 сек.
 
-        for _ in range(10):  # Ждём дополнительно максимум 10 сек.
+        for _ in range(5):  # Ждём дополнительно максимум 5 сек.
             output = self.send_command(f"show cable-diagnostics tdr interface {port}", expect_command=False)
 
+            if "Not Completed" in output:
+                # Ещё тестируется, то ожидаем завершения.
+                time.sleep(1)  # Ждём 1 сек, пока выполнится тестирование.
+                continue
+
             parsed = re.findall(
-                r"Pair\s+(?P<pair>[ABCD])\s+(?P<lenght>\S+)\s+.*\s+[ABCD]\s+(?P<status>\S+)",
+                r"Pair\s+(?P<pair>[ABCD])\s+(?P<lenght>\S+)\s+.*\s+(?:[ABCD]|N/A)\s+(?P<status>.+)",
                 output,
             )
             if parsed:
@@ -678,6 +683,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
         result: dict = {"len": "-", "status": "Unknown"}
 
         for pair, length, status in parsed:
+            status = status.strip()
             result["status"] = status
             result["len"] = length
 
