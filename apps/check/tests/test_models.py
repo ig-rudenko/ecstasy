@@ -370,8 +370,10 @@ class UsersActionsTest(TestCase):
 
     def test_user_action_when_delete_one_user(self):
         # После удаления пользователя, удаляются его логи
-        u1 = User.objects.get(username="test_user1").delete()
-        actions = UsersActions.objects.filter(user=u1)
+        u1 = User.objects.get(username="test_user1")
+        user_id = u1.id
+        u1.delete()
+        actions = UsersActions.objects.filter(user_id=user_id)
         self.assertEqual(len(actions), 0)
 
         # Для другого пользователя все остается
