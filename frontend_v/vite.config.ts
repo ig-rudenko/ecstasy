@@ -7,7 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
     plugins: [vue(), tailwindcss()],
     build: {
-        rollupOptions: {
+        rolldownOptions: {
             output: {
                 manualChunks(id) {
                     if (id.indexOf("node_modules") !== -1) {
