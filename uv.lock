@@ -765,7 +765,7 @@ wheels = [
 
 [[package]]
 name = "ecstasy"
-version = "20.0.6"
+version = "20.0.7"
 source = { virtual = "." }
 dependencies = [
     { name = "alive-progress" },

@@ -69,6 +69,22 @@ Vl1                            admin down     down
 Vl101                          up             up
 Vl106                          up             up
 """
+        elif command == "show vlan brief":
+            self.before = b"""VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Gi1/0/1,   Gi1/0/4  Gi1/0/8
+                                                Gi1/0/9
+                                                Gi1/0/10
+                                                Gi1/0/25
+                                                Gi1/0/26
+3    Proxy_kspi                       active    
+4    VLAN0004                         active    
+5    VLAN0005                         active    
+6    VLAN0006                         active    Gi1/0/13
+7    VLAN0007                         active    
+8    VLAN0008                         active    
+9    VLAN0009                         active    
+"""
 
         elif command == "show arp | include 0000.aaaa.0000" or command == "show arp | include 10.100.10.100":
             self.before = b"""
@@ -312,6 +328,44 @@ class TestCiscoInit(SimpleTestCase):
 
         self.assertEqual(cisco.mac, "F4:1F:C2:71:49:10")
         self.assertEqual(cisco.serialno, "FOC6734Z6AH")
+
+
+class TestCiscoVlanTable(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса Cisco.
+        fake_session = CiscoPexpectFaker()
+        # Создание объекта Cisco с fake_session, ip-адресом и авторизацией.
+        cls.cisco = Cisco(fake_session, "10.10.10.10", auth=fake_auth)
+
+    def test_get_vlan_table(self):
+        vlan_table = self.cisco.get_vlan_table()
+        self.assertListEqual(
+            vlan_table,
+            [
+                (
+                    1,
+                    [
+                        "GigabitEthernet 1/0/1",
+                        "GigabitEthernet 1/0/4",
+                        "GigabitEthernet 1/0/8",
+                        "GigabitEthernet 1/0/9",
+                        "GigabitEthernet 1/0/10",
+                        "GigabitEthernet 1/0/25",
+                        "GigabitEthernet 1/0/26",
+                    ],
+                    "default",
+                ),
+                (3, [], "Proxy_kspi"),
+                (4, [], "VLAN0004"),
+                (5, [], "VLAN0005"),
+                (6, ["GigabitEthernet 1/0/13"], "VLAN0006"),
+                (7, [], "VLAN0007"),
+                (8, [], "VLAN0008"),
+                (9, [], "VLAN0009"),
+            ],
+        )
 
 
 class TestCiscoInterfaces(SimpleTestCase):

@@ -12,7 +12,7 @@ from ..base.device import (
     BaseDevice,
     CableDiagResult,
 )
-from ..base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
+from ..base.helpers import normalize_cable_diag_result, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -161,17 +161,26 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
     @BaseDevice.lock_session
     def get_vlan_table(self) -> VlanTableType:
         vlan_output = self.send_command("show vlan brief")
-        parsed = re.findall(r"^(?P<vid>\d+)\s+(?P<desc>\S+)", vlan_output, flags=re.MULTILINE)
-        # Формируем словарь: { 123: "vlan_desc" }
-        vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
 
-        interfaces_vlans = self.get_vlans()
-
-        # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
+        active_vlan: int = 0
         vlan_ports: dict[int, list[str]] = {}
-        for line in interfaces_vlans:
-            for vlan in range_to_numbers(",".join(map(str, line[-1]))):
-                vlan_ports.setdefault(vlan, []).append(line[0])
+        vlan_desc: dict[int, str] = {}
+
+        for line in vlan_output.splitlines():
+            parsed = re.search(r"^(?P<vid>\d+)\s+(?P<desc>\S+)\s+active\s+(?P<ports>.*)", line)
+            ports: list[str] = []
+            if parsed:
+                active_vlan = int(parsed.group("vid"))
+                vlan_desc[int(parsed.group("vid"))] = parsed.group("desc")
+                ports = parsed.group("ports").split()
+
+            elif active_vlan:
+                ports = line.split()
+
+            if active_vlan:
+                vlan_ports.setdefault(active_vlan, []).extend(
+                    self.normalize_interface_name(port) for port in ports
+                )
 
         result: VlanTableType = []
         for vlan, ports in vlan_ports.items():
