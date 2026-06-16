@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:20.0.4
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.4
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.6
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.6
 x-logging: &logging
   options:
     max-size: "10m"
