@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import ClassVar
 from unittest.mock import MagicMock, Mock, patch
 
@@ -5,6 +6,7 @@ import orjson
 from django.contrib.auth.models import Permission
 from django.core.cache import cache
 from django.urls import reverse
+from openpyxl import load_workbook
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -772,6 +774,59 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["deviceId"], self.device.id)
         self.assertEqual(response.data["results"][0]["error"], "boom")
 
+    def test_export_bulk_command_task_results(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-export-1",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={"word": {"_": "TEST"}},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=2,
+            total=2,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.device,
+            device_name=self.device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_SUCCESS,
+            command_text="show version",
+            output="show version output",
+            duration=0.231,
+        )
+        BulkDeviceCommandExecutionResult.objects.create(
+            execution=execution,
+            device=self.unmatched_device,
+            device_name=self.unmatched_device.name,
+            status=BulkDeviceCommandExecutionResult.STATUS_ERROR,
+            command_text="show version",
+            error="boom",
+            duration=0.5,
+        )
+
+        response = self.client.get(
+            reverse("devices-api:device-command-task-results-export", args=(execution.task_id,)),
+            data={"search": self.device.name},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn("bulk_command_results_task-export-1.xlsx", response["Content-Disposition"])
+
+        workbook = load_workbook(BytesIO(response.content))
+        sheet = workbook["results"]
+        self.assertEqual(sheet["B1"].value, execution.task_id)
+        self.assertEqual(sheet["B2"].value, self.command.name)
+        self.assertEqual(sheet["A10"].value, "Device ID")
+        self.assertEqual(sheet["B11"].value, self.device.name)
+        self.assertEqual(sheet["E11"].value, "show version output")
+        self.assertIsNone(sheet["B12"].value)
+
     def test_get_bulk_command_history_results_forbidden_without_permission(self):
         execution = BulkDeviceCommandExecution.objects.create(
             task_id="task-history-3",
@@ -790,6 +845,28 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
 
         response = self.client.get(
             reverse("devices-api:device-command-history-results", args=(execution.id,))
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_export_bulk_command_task_results_forbidden_without_permission(self):
+        execution = BulkDeviceCommandExecution.objects.create(
+            task_id="task-export-2",
+            user=self.user,
+            command=self.command,
+            command_name=self.command.name,
+            command_body=self.command.command,
+            context={},
+            status=BulkDeviceCommandExecution.STATUS_SUCCESS,
+            progress=100,
+            processed=1,
+            total=1,
+        )
+        no_perm_user = self.create_user_without_bulk_permission()
+        self.client.force_login(no_perm_user)
+
+        response = self.client.get(
+            reverse("devices-api:device-command-task-results-export", args=(execution.task_id,))
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
