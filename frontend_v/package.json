@@ -1,7 +1,7 @@
 {
     "name": "ecstasy",
     "private": true,
-    "version": "20.0.6",
+    "version": "20.0.7",
     "type": "module",
     "scripts": {
         "dev": "vite --host 0.0.0.0",

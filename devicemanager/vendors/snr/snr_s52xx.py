@@ -8,7 +8,7 @@ from devicemanager.vendors.base.device import (
     AbstractSearchDevice,
     BaseDevice,
 )
-from devicemanager.vendors.base.helpers import normalize_cable_diag_status
+from devicemanager.vendors.base.helpers import normalize_cable_diag_result, normalize_cable_diag_status
 from devicemanager.vendors.base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -542,6 +542,9 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
 
     @BaseDevice.lock_session
     def virtual_cable_test(self, port: str) -> CableDiagResult:
+        if self.get_port_type(port) == "COMBO-SFP":
+            return normalize_cable_diag_result({"sfp": self._get_transceiver_diag(port)})
+
         result: CableDiagResult = {
             "len": "-",
             "status": "Skip",

@@ -1,7 +1,5 @@
 import re
 
-from django.db.models import Q
-
 from apps.check.models import Devices
 
 from ..models import DiscoveryCandidate
@@ -37,15 +35,9 @@ def suggested_name(fingerprint: DeviceFingerprint) -> str:
 
 
 def find_duplicate_device(fingerprint: DeviceFingerprint) -> Devices | None:
-    """Найти существующее устройство по IP, имени или серийному номеру."""
+    """Найти существующее устройство по IP."""
 
-    query = Q(ip=fingerprint.ip)
-    name = suggested_name(fingerprint)
-    if name:
-        query |= Q(name=name)
-    if fingerprint.serial_number:
-        query |= Q(serial_number=fingerprint.serial_number)
-    return Devices.objects.filter(query).first()
+    return Devices.objects.filter(ip=fingerprint.ip).first()
 
 
 def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
