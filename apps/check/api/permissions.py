@@ -19,9 +19,7 @@ def has_user_access_to_device(user: User | AnonymousUser, device: Devices) -> bo
                 | Q(access_groups__user_groups__user=user)
             )
         )
-        .exclude(
-            Q(forbidden_access_groups__users=user) | Q(forbidden_access_groups__user_groups__id=device.id)
-        )
+        .exclude(Q(forbidden_access_groups__users=user) | Q(forbidden_access_groups__user_groups__user=user))
         .only("id")
     )
     return qs.exists()
