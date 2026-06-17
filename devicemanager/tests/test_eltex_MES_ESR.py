@@ -3,8 +3,36 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.eltex import EltexESR, EltexMES
+from devicemanager.vendors.eltex.vlan_parser import parse_vlan_output
 
 from .base_factory_test import AbstractTestFactory
+
+SHOW_VLAN_OUTPUT = """
+Vlan       Name           Tagged Ports      UnTagged Ports      Created by
+---- ----------------- ------------------ ------------------ ----------------
+ 1           -                            gi1/0/18-19,Po1-48        D
+ 7     RTPC_L2VPN_7        te1/0/1-4                                S
+ 12    RTPC_L2VPN_12       te1/0/1-4                                S
+ 36    MGMT_EPU_Corp       te1/0/1-4                                S
+ 51    RTPC_L2VPN_51       te1/0/1-4                                S
+ 52    RTPC_L2VPN_52       te1/0/1-4                                S
+ 53    RTPC_L2VPN_53       te1/0/1-4                                S
+ 63  MGMT_PC_ats63_Cor     te1/0/1-4                                S
+             p
+101        mgmt        gi1/0/1,gi1/0/24,                            S
+                           te1/0/1-4
+106        Honet           te1/0/1-4                                S
+110    PPPoE_IES3000       te1/0/1-4                                S
+118      old_MGMT          te1/0/1-4                                S
+119        temp            te1/0/1-4                                S
+192       SNdem13      te1/0/1,te1/0/3-4                            S
+195      Asso1125          te1/0/1-4                                S
+201     Portinvest         te1/0/1-4                                S
+202      SNvak26_2         te1/0/1-4                                S
+205  omegatv_musson_rt     te1/0/1-4                                S
+            pc
+206      SNvak294      te1/0/1,te1/0/3-4                            S
+"""
 
 
 class TestEltexMESFactory(AbstractTestFactory):
@@ -439,6 +467,51 @@ class TestEltexMESInterfaces(SimpleTestCase):
             interfaces_vlans,
             valid_interfaces_vlans,
         )
+
+
+class TestEltexMESVlanTable(SimpleTestCase):
+    def test_parse_vlan_output_handles_wrapped_names_and_ports(self):
+        """Parse Eltex show vlan output with wrapped names and ranged ports."""
+        vlans = {line["vlan_id"]: line for line in parse_vlan_output(SHOW_VLAN_OUTPUT)}
+
+        self.assertEqual(vlans[63]["name"], "MGMT_PC_ats63_Corp")
+        self.assertEqual(vlans[63]["ports"], ["te1/0/1", "te1/0/2", "te1/0/3", "te1/0/4"])
+        self.assertEqual(
+            vlans[101]["ports"],
+            ["gi1/0/1", "gi1/0/24", "te1/0/1", "te1/0/2", "te1/0/3", "te1/0/4"],
+        )
+        self.assertEqual(vlans[205]["name"], "omegatv_musson_rtpc")
+        self.assertEqual(vlans[206]["ports"], ["te1/0/1", "te1/0/3", "te1/0/4"])
+        self.assertEqual(vlans[1]["ports"][:2], ["gi1/0/18", "gi1/0/19"])
+        self.assertEqual(vlans[1]["ports"][2], "Po1")
+        self.assertEqual(vlans[1]["ports"][-1], "Po48")
+
+    def test_get_vlan_table_uses_show_vlan_output(self):
+        """Return VLAN table parsed directly from show vlan command output."""
+        device = EltexMES.__new__(EltexMES)  # noqa
+        sent_commands = []
+
+        def send_command(command: str):
+            sent_commands.append(command)
+            return SHOW_VLAN_OUTPUT
+
+        device.send_command = send_command
+
+        vlan_table = {vlan: (ports, name) for vlan, ports, name in device.get_vlan_table()}
+
+        self.assertEqual(
+            vlan_table[63],
+            (["te1/0/1", "te1/0/2", "te1/0/3", "te1/0/4"], "MGMT_PC_ats63_Corp"),
+        )
+        self.assertEqual(
+            vlan_table[101],
+            (["gi1/0/1", "gi1/0/24", "te1/0/1", "te1/0/2", "te1/0/3", "te1/0/4"], "mgmt"),
+        )
+        self.assertEqual(
+            vlan_table[106],
+            (["te1/0/1", "te1/0/2", "te1/0/3", "te1/0/4"], "Honet"),
+        )
+        self.assertEqual(sent_commands, ["show vlan"])
 
 
 class TestEltexMESMacAddress(SimpleTestCase):

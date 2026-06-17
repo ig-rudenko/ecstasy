@@ -30,6 +30,9 @@ class CiscoFactory(AbstractDeviceFactory):
             return CiscoNexus(session, ip, auth, snmp_community)
 
         model = BaseDevice.find_or_empty(r"Model number\s*:\s*(\S+)", version_output)
+        if not model:
+            model = BaseDevice.find_or_empty(r"cisco\s+(\S+)\s+\(\S+\)\s+processor", version_output)
+
         mac = Cisco.find_or_empty(r"[MACmac] [Aa]ddress\s+: (\S+)", version_output)
         os_version = Cisco.find_or_empty(r"(Version \S+),.+Copyright", version_output, flags=re.DOTALL)
         serial_no = Cisco.find_or_empty(r"System serial number\s*:\s*(\S+)", version_output)
