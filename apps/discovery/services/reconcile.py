@@ -35,7 +35,8 @@ def suggested_name(fingerprint: DeviceFingerprint) -> str:
 
 
 def find_duplicate_device(fingerprint: DeviceFingerprint) -> Devices | None:
-    """Найти существующее устройство по IP"""
+    """Найти существующее устройство по IP."""
+
     return Devices.objects.filter(ip=fingerprint.ip).first()
 
 

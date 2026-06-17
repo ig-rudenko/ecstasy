@@ -54,8 +54,8 @@ class DiscoveryReconcileTests(TestCase):
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.DUPLICATE)
         self.assertEqual(candidate.device, device)
 
-    def test_upsert_candidate_does_not_reassign_device_from_existing_candidate(self):
-        """Новый IP того же устройства не отбирает связь у существующего кандидата."""
+    def test_upsert_candidate_does_not_mark_duplicate_by_name(self):
+        """Кандидат с совпадающим именем и новым IP не получает DUPLICATE."""
 
         device = Devices.objects.create(
             ip="192.0.2.13",
@@ -78,11 +78,35 @@ class DiscoveryReconcileTests(TestCase):
 
         candidate = upsert_candidate(fingerprint)
 
-        self.assertEqual(candidate.status, DiscoveryCandidate.Status.DUPLICATE)
+        self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)
         self.assertIsNone(candidate.device)
-        self.assertEqual(candidate.raw_fingerprint["duplicateDeviceId"], device.id)
+        self.assertNotIn("duplicateDeviceId", candidate.raw_fingerprint)
         existing_candidate.refresh_from_db()
         self.assertEqual(existing_candidate.device, device)
+
+    def test_upsert_candidate_does_not_mark_duplicate_by_serial_number(self):
+        """Кандидат с совпадающим серийным номером и новым IP не получает DUPLICATE."""
+
+        Devices.objects.create(
+            ip="192.0.2.15",
+            name="known-serial",
+            group=self.group,
+            auth_group=self.auth_group,
+            serial_number="SERIAL-1",
+        )
+        fingerprint = DeviceFingerprint(
+            ip="192.0.2.16",
+            name="new-device",
+            vendor="Cisco",
+            serial_number="SERIAL-1",
+            detected_protocols={"ping": True},
+        )
+
+        candidate = upsert_candidate(fingerprint)
+
+        self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)
+        self.assertIsNone(candidate.device)
+        self.assertNotIn("duplicateDeviceId", candidate.raw_fingerprint)
 
     def test_calculate_confidence_clamps_duplicate_penalty(self):
         """Confidence не уходит ниже нуля после штрафа за дубли."""
