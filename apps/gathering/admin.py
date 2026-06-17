@@ -1,8 +1,7 @@
 import re
 
 from django.contrib import admin
-from django.db.models import QuerySet
-from django.http import HttpRequest
+from django.db.models import Q
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter, RelatedDropdownFilter
@@ -83,28 +82,14 @@ class VlansAdmin(ModelAdmin):
     autocomplete_fields = ["device"]
     paginator = LargeTablePaginator
 
+    def get_search_results(self, request, queryset, search_term):
+        if not search_term:
+            return queryset, False
 
-class VlanDeviceDropdownFilter(RelatedDropdownFilter):
-    """Filter by related VLAN with optimized label loading."""
+        if search_term.isdigit() and 1 <= (vid := int(search_term)) <= 4096:
+            return queryset.filter(vlan=vid), False
 
-    def field_choices(self, field, request: HttpRequest, model_admin: ModelAdmin):
-        """Return VLAN choices with preloaded device to avoid N+1 in `Vlan.__str__`."""
-        del field
-        vlan_ids = model_admin.get_queryset(request).order_by().values_list("vlan_id", flat=True).distinct()
-        vlans = (
-            Vlan.objects.filter(pk__in=vlan_ids)
-            .select_related("device")
-            .only("id", "vlan", "desc", "device__name")
-            .order_by("device__name", "vlan")
-        )
-        return [(vlan.pk, str(vlan)) for vlan in vlans]
-
-    def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet | None:
-        """Apply selected filter value to the changelist queryset."""
-        qs = super().queryset(request, queryset)
-        if qs is not None:
-            return qs.select_related("vlan__device")
-        return qs
+        return queryset.filter(Q(desc__icontains=search_term) | Q(device__name__icontains=search_term)), False
 
 
 @admin.register(VlanPort)
@@ -131,3 +116,19 @@ class VlanPortsAdmin(ModelAdmin):
     def vlan_verbose(self, obj: VlanPort):
         """Render VLAN number and description in one column."""
         return f"{obj.vlan.vlan} - ({obj.vlan.desc})"
+
+    def get_search_results(self, request, queryset, search_term):
+        if not search_term:
+            return queryset, False
+
+        if search_term.isdigit() and 1 <= (vid := int(search_term)) <= 4096:
+            return queryset.filter(vlan__vlan=vid), False
+
+        return (
+            queryset.filter(
+                Q(desc__icontains=search_term)
+                | Q(vlan__device__name__icontains=search_term)
+                | Q(vlan__desc__icontains=search_term)
+            ),
+            False,
+        )
