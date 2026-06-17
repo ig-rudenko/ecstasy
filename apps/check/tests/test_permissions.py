@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.test import RequestFactory, TestCase
 
 from .. import models
 from ..api.permissions import DevicePermission
-from ..models import AuthGroup
+from ..models import AccessGroup, AuthGroup
 from ..permissions import profile_permission
 
 
@@ -205,4 +205,58 @@ class DevicePermissionTest(TestCase):
 
         self.user.profile.devices_groups.add(self.device_group)
         result = self.permission.has_object_permission(Mock(user=self.user), None, other_device)  # type: ignore
+        self.assertFalse(result)
+
+    def test_device_permission_with_only_acl_allow(self):
+        acl = AccessGroup.objects.create(name="test_acl")
+        acl.users.add(self.user)
+        acl.devices.add(self.device)
+
+        result = self.permission.has_object_permission(Mock(user=self.user), None, self.device)
+        self.assertTrue(result)
+
+    def test_device_permission_with_group_allow_but_acl_deny(self):
+        acl = AccessGroup.objects.create(name="test_acl")
+        acl.users.add(self.user)
+
+        # Группа оборудования разрешена пользователю
+        self.user.profile.devices_groups.add(self.device_group)
+        # Но ACL запрещает доступ на конкретное оборудование.
+        acl.forbidden_devices.add(self.device)
+
+        # ACL имеет приоритет.
+        result = self.permission.has_object_permission(Mock(user=self.user), None, self.device)
+        self.assertFalse(result)
+
+    def test_device_permission_with_user_group_in_acl_allow(self):
+        acl = AccessGroup.objects.create(name="test_acl")
+
+        # Создаём группу для пользователя
+        user_group = Group.objects.create(name="test_user_group")
+        # Добавляем в неё пользователя.
+        user_group.user_set.add(self.user)
+
+        acl.user_groups.add(user_group)  # Вешаем ACL на группу пользователя
+        acl.devices.add(self.device)  # ACL разрешает доступ на оборудование.
+
+        # Пользователь должен иметь доступ, так как его группе доступен ACL и он разрешает доступ.
+        result = self.permission.has_object_permission(Mock(user=self.user), None, self.device)
+        self.assertTrue(result)
+
+    def test_device_permission_with_user_group_in_acl_deny(self):
+        acl = AccessGroup.objects.create(name="test_acl")
+
+        # Добавляем доступ пользователю на группу оборудования.
+        self.user.profile.devices_groups.add(self.device_group)
+
+        # Создаём группу пользователя.
+        user_group = Group.objects.create(name="test_user_group")
+        # Добавляем в неё пользователя.
+        user_group.user_set.add(self.user)
+
+        acl.user_groups.add(user_group)  # Вешаем ACL на группу пользователя
+        acl.forbidden_devices.add(self.device)  # ACL запрещает доступ на конкретное оборудование.
+
+        # Пользователь НЕ должен иметь доступ, так как его группе доступен ЗАПРЕЩЁН.
+        result = self.permission.has_object_permission(Mock(user=self.user), None, self.device)
         self.assertFalse(result)

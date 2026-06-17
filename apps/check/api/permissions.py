@@ -3,29 +3,28 @@ from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.request import Request
 
-from ..models import AccessGroup, DeviceMedia, Devices, InterfacesComments, Profile
-
-
-def has_access_by_profile(user_id: int, group_id: int) -> bool:
-    """Проверка доступа пользователя через его профиль"""
-    return Profile.objects.filter(user_id=user_id, devices_groups__id=group_id).exists()
-
-
-def has_access_by_access_group(user: User, device: Devices) -> bool:
-    """Проверка доступа через AccessGroup"""
-    return (
-        AccessGroup.objects.filter(devices=device)
-        .filter(Q(users=user) | Q(user_groups__in=user.groups.all()))
-        .exclude(forbidden_devices=device)
-        .exists()
-    )
+from ..models import DeviceMedia, Devices, InterfacesComments
 
 
 def has_user_access_to_device(user: User | AnonymousUser, device: Devices) -> bool:
     """Объединённая проверка доступа: через профиль или AccessGroup"""
     if not user.is_authenticated:
         return False
-    return has_access_by_profile(user.id or 0, device.group_id) or has_access_by_access_group(user, device)
+    qs = (
+        Devices.objects.filter(
+            Q(id=device.id)
+            & (
+                Q(group__profile__user=user)
+                | Q(access_groups__users=user)
+                | Q(access_groups__user_groups__user=user)
+            )
+        )
+        .exclude(
+            Q(forbidden_access_groups__users=user) | Q(forbidden_access_groups__user_groups__id=device.id)
+        )
+        .only("id")
+    )
+    return qs.exists()
 
 
 class DevicePermission(permissions.BasePermission):

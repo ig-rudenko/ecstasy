@@ -1,5 +1,6 @@
 import pathlib
 import re
+from unittest.mock import MagicMock, patch
 
 import textfsm
 from django.test import SimpleTestCase
@@ -312,52 +313,86 @@ Port      Type      Link Status    Test Result                 Cable Length (M)
 
 
 class TestDLinkInit(SimpleTestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Создание поддельного объекта сеанса, который будет использоваться для тестирования класса DLink.
+    @patch("devicemanager.vendors.Dlink.send_command")
+    def test_show_switch_command(self, send_command: MagicMock):
+        send_command.return_value = """
+Command: show switch
+
+Device Type        : DES-1228/ME Metro Ethernet Switch
+MAC Address        : B8-A3-86-C2-65-20
+IP Address         : 127.20.69.128 (Manual)
+VLAN Name          : MGMT
+Subnet Mask        : 255.255.254.0
+Default Gateway    : 127.20.69.254
+Boot PROM Version  : Build 2.00.R001
+Firmware Version   : Build 2.63.B001
+Hardware Version   : B1
+Serial Number      : PPCM4BB014291
+System Name        : Device_name
+System Location    :
+System Uptime      : 31 days, 22 hours, 56 minutes, 21 seconds
+System Contact     :
+Spanning Tree      : Disabled
+GVRP               : Disabled
+IGMP Snooping      : Enabled
+VLAN Trunk         : Disabled
+802.1X             : Disabled
+Telnet             : Enabled (TCP 23)
+Web                : Disabled
+RMON               : Disabled
+SSH                : Disabled
+SSL                : Disabled
+CLI Paging         : Disabled
+Syslog Global State: Enabled
+Dual Image         : Supported
+Password Encryption Status : Enabled
+        """
         fake_session = DLinkPexpectFaker()
         auth = {"privilege_mode_password": ""}
-        # Создание объекта Dlink с fake_session, ip-адресом и авторизацией.
-        cls.dlink = Dlink(fake_session, "10.10.10.10", auth=auth)
+        dlink = Dlink(fake_session, "10.10.10.10", auth=auth)  # type: ignore
 
-    def test_show_switch_command(self):
+        self.assertEqual(dlink.mac, "B8-A3-86-C2-65-20")
+        self.assertEqual(dlink.model, "DES-1228/ME")
+        self.assertEqual(dlink.serialno, "PPCM4BB014291")
+
+    @patch("devicemanager.vendors.Dlink.send_command")
+    def test_dlink_with_empty_serial_number(self, send_command: MagicMock):
+        send_command.return_value = """
+Command: show switch
+
+Device Type        : DES-1228/ME Metro Ethernet Switch
+MAC Address        : B8-A3-86-C2-65-20
+IP Address         : 127.20.69.128 (Manual)
+VLAN Name          : MGMT
+Subnet Mask        : 255.255.254.0
+Default Gateway    : 127.20.69.254
+Boot PROM Version  : Build 2.00.R001
+Firmware Version   : Build 2.63.B001
+Hardware Version   : B1
+Serial Number      :
+System Name        : Device_name
+System Location    :
+System Uptime      : 31 days, 22 hours, 56 minutes, 21 seconds
+System Contact     :
+Spanning Tree      : Disabled
+GVRP               : Disabled
+IGMP Snooping      : Enabled
+VLAN Trunk         : Disabled
+802.1X             : Disabled
+Telnet             : Enabled (TCP 23)
+Web                : Disabled
+RMON               : Disabled
+SSH                : Disabled
+SSL                : Disabled
+CLI Paging         : Disabled
+Syslog Global State: Enabled
+Dual Image         : Supported
+Password Encryption Status : Enabled
         """
-        Command: show switch
-
-        Device Type        : DES-1228/ME Metro Ethernet Switch
-        MAC Address        : B8-A3-86-C2-65-20
-        IP Address         : 127.20.69.128 (Manual)
-        VLAN Name          : MGMT
-        Subnet Mask        : 255.255.254.0
-        Default Gateway    : 127.20.69.254
-        Boot PROM Version  : Build 2.00.R001
-        Firmware Version   : Build 2.63.B001
-        Hardware Version   : B1
-        Serial Number      : PPCM4BB014291
-        System Name        : Device_name
-        System Location    :
-        System Uptime      : 31 days, 22 hours, 56 minutes, 21 seconds
-        System Contact     :
-        Spanning Tree      : Disabled
-        GVRP               : Disabled
-        IGMP Snooping      : Enabled
-        VLAN Trunk         : Disabled
-        802.1X             : Disabled
-        Telnet             : Enabled (TCP 23)
-        Web                : Disabled
-        RMON               : Disabled
-        SSH                : Disabled
-        SSL                : Disabled
-        CLI Paging         : Disabled
-        Syslog Global State: Enabled
-        Dual Image         : Supported
-        Password Encryption Status : Enabled
-
-        """
-
-        self.assertEqual(self.dlink.mac, "B8-A3-86-C2-65-20")
-        self.assertEqual(self.dlink.model, "DES-1228/ME")
-        self.assertEqual(self.dlink.serialno, "PPCM4BB014291")
+        fake_session = DLinkPexpectFaker()
+        auth = {"privilege_mode_password": ""}
+        dlink = Dlink(fake_session, "10.10.10.10", auth=auth)  # type: ignore
+        self.assertEqual(dlink.serialno, "")
 
 
 class TestDLinkInterfaceParser(SimpleTestCase):
