@@ -2,15 +2,12 @@ import re
 from time import sleep
 from typing import Literal
 
-import textfsm
-
 from .base.device import AbstractCableTestDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
-    TEMPLATE_FOLDER,
     ArpInfoResult,
     CableDiagResult,
     DeviceAuthDict,
@@ -131,31 +128,16 @@ class ZTE(BaseDevice, AbstractCableTestDevice, AbstractSearchDevice):
         """
 
         interfaces = self.get_interfaces()
-        output = self.send_command("show vlan")
-
-        with open(
-            f"{TEMPLATE_FOLDER}/vlans_templates/zte_vlan.template",
-            encoding="utf-8",
-        ) as template_file:
-            vlan_templ = textfsm.TextFSM(template_file)
-            result_vlan = vlan_templ.ParseText(output)
-
-        vlan_port = {}
-        for vlan in result_vlan:
-            # Если не нашли влан, или он деактивирован, то пропускаем
-            if not vlan[0] or vlan[4] == "disabled":
-                continue
-            # Объединяем тегированные вланы и нетегированные в один список
-            vlan_port[int(vlan[0])] = range_to_numbers(",".join([vlan[2], vlan[3]]))
+        vlan_table = self.get_vlan_table()
+        port_vlans: dict[str, list[int]] = {}
+        for vid, ports, _desc in vlan_table:
+            for port in ports:
+                port_vlans.setdefault(port, []).append(vid)
 
         interfaces_vlan = []  # итоговый список (интерфейсы и вланы)
 
-        for line in interfaces:
-            vlans = []  # Строка со списком VLANов с переносами
-            for vlan_id, ports in vlan_port.items():
-                if int(line[0]) in ports:
-                    vlans.append(vlan_id)
-            interfaces_vlan.append((line[0], line[1], line[2], vlans))
+        for name, status, desc in interfaces:
+            interfaces_vlan.append((name, status, desc, port_vlans.get(name, [])))
         return interfaces_vlan
 
     @BaseDevice.lock_session
