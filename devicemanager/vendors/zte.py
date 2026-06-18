@@ -4,13 +4,14 @@ from typing import Literal
 
 import textfsm
 
-from .base.device import AbstractCableTestDevice, BaseDevice
+from .base.device import AbstractCableTestDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
     TEMPLATE_FOLDER,
+    ArpInfoResult,
     CableDiagResult,
     DeviceAuthDict,
     InterfaceListType,
@@ -20,11 +21,12 @@ from .base.types import (
     MACTableType,
     MACType,
     PortInfoType,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port_only_digit
 
 
-class ZTE(BaseDevice, AbstractCableTestDevice):
+class ZTE(BaseDevice, AbstractCableTestDevice, AbstractSearchDevice):
     """
     # Для оборудования от производителя ZTE
 
@@ -157,6 +159,38 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         return interfaces_vlan
 
     @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        output = self.send_command("show vlan", expect_command=False)
+
+        result: VlanTableType = []
+
+        for line in re.finditer(
+            r"VlanId *: *(?P<vid>\d+) +VlanStatus: *enabled\s+"
+            r"VlanName *: *(?P<name>\S*).+?"
+            r"Tagged ports *: *(?P<t_ports>\d[\d, ]*)?\s+"
+            r"Untagged ports *: *(?P<ut_ports>\d[\d, -]*)?\s+",
+            output,
+            flags=re.DOTALL,
+        ):
+            result.append(
+                (
+                    int(line.group("vid")),
+                    list(
+                        map(
+                            str,
+                            sorted(
+                                set(range_to_numbers(line.group("t_ports") or ""))
+                                | set(range_to_numbers(line.group("ut_ports") or ""))
+                            ),
+                        )
+                    ),
+                    line.group("name"),
+                )
+            )
+
+        return result
+
+    @BaseDevice.lock_session
     def get_mac_table(self) -> MACTableType:
         """
         ## Возвращаем список из VLAN, MAC-адреса, MAC-type и порта для данного оборудования.
@@ -177,17 +211,38 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
         output = self.send_command("show fdb detail", expect_command=False)
         if "Command not found" in output:
             output = self.send_command("show mac", expect_command=False)
-            parsed1: list[list[str]] = re.findall(rf"({self.mac_format})\s+(\d+)\s+port-(\d+)\s+", output)
+            parsed1: list[tuple[str, str, str, str]] = re.findall(
+                rf"({self.mac_format})\s+(?P<vid>\d+)\s+(?P<port>\S+)\s+\d+\s+(?P<is_static>[01])", output
+            )
             mac_table: MACTableType = []
-            # type_: Literal["dynamic"] = "dynamic"
-            for mac, vid, port in parsed1:
-                mac_table.append((int(vid), mac, "dynamic", port))
+
+            for mac, vid, port, is_static in parsed1:
+                type_: MACType = "dynamic"
+
+                # Парсим номер порта из `port-26`, если есть.
+                if port_number := re.match(r"port-(\d+)", port):
+                    port = port_number.group(1)
+
+                if is_static == "1":
+                    type_ = "static"
+
+                mac_table.append((int(vid), mac, type_, port))
             return mac_table
 
+        # Другой формат MAC таблицы
         parsed2: list[tuple[str, str, str, MACType]] = re.findall(
-            rf"({self.mac_format})\s+(\d+)\s+(\d+)\s+(\S+).*\n", output
+            rf"({self.mac_format})\s+(?P<vid>\d+)\s+(?P<port>\S+)\s+(?P<type>\S+)", output
         )
-        return [(int(vid), mac, type_, port) for mac, vid, port, type_ in parsed2]
+
+        return [  # noqa
+            (
+                int(vid),
+                mac,
+                type_,
+                port,
+            )
+            for mac, vid, port, type_ in parsed2
+        ]
 
     @BaseDevice.lock_session
     @validate_and_format_port_only_digit(if_invalid_return=[])
@@ -505,6 +560,43 @@ class ZTE(BaseDevice, AbstractCableTestDevice):
 
     def get_device_info(self) -> dict:
         return {}
+
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
+        return self._search_in_arp(ip_address)
+
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
+        if len(mac_address) < 12:
+            return []
+        formatted_mac = "{}{}.{}{}.{}{}.{}{}.{}{}.{}{}".format(*mac_address.lower())
+        return self._search_in_arp(formatted_mac)
+
+    def _search_in_arp(self, value: str) -> list[ArpInfoResult]:
+        output = self.send_command("show arp", expect_command=False)
+
+        result = []
+        for line in output.splitlines():
+            if value not in line:
+                continue
+
+            matched_line = re.search(
+                r"(?P<ip>\S+\.\S+\.\S+\.\S+)\s+(?P<mac>\S+)\s+(?P<vid>\d+) +(?P<port>\S*) *?(?:static|dynamic|secur\S+)",
+                line,
+            )
+            if not matched_line:
+                continue
+
+            ip = matched_line.group("ip")
+            mac = matched_line.group("mac")
+            vlan = matched_line.group("vid")
+            port = matched_line.group("port")
+            if not port:
+                mac_search_output = self.send_command(f"show fdb mac {mac}", expect_command=False)
+                if port_match := re.search(rf"{mac}\s+{vlan}\s+(?P<port>\S+)", mac_search_output):
+                    port = port_match.group("port")
+
+            result.append(ArpInfoResult(ip=ip, mac=mac, vlan=vlan, port=port))
+
+        return result
 
 
 class ZTEFactory(AbstractDeviceFactory):

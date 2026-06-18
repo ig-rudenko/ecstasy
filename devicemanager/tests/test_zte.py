@@ -1,7 +1,10 @@
+from unittest.mock import MagicMock, patch
+
 from django.test import SimpleTestCase
 
 from devicemanager.vendors.zte import ZTE
 
+from ..vendors.base.types import ArpInfoResult
 from .base_factory_test import AbstractTestFactory
 
 
@@ -170,12 +173,37 @@ class FakeZTE2936FISession:
     Cable Length is unknown."""
         elif command == "show vct port 9\n":
             self._output = b"""  %  Port 9 doesn't support VCT!"""
+        elif "show arp" in command:
+            self._output = b"""
+  ARP table usage: used = 3, free = 1021, waiting send packet = 0
+  IpPort Time(min) IpAddress       MacAddress        Vlan Type
+  ------ --------- --------------- ----------------- ---- -------
+  0      0         172.30.0.71     00.22.93.57.df.dc 3991 static 
+  0      2         172.30.0.65     00.23.9c.9b.5f.c1 3991 dynamic
+  0      2         172.30.0.68     00.04.96.8b.d0.b2 3991 dynamic
+"""
+        elif "show fdb mac 00.23.9c.9b.5f.c1" in command:
+            self._output = b"""
+  MacAddress        Vlan  PortId   Type    
+  ----------------- ----- -------- --------
+  00.23.9c.9b.5f.c1 306   36       dynamic  
+  00.23.9c.9b.5f.c1 710   36       dynamic  
+  00.23.9c.9b.5f.c1 720   36       dynamic  
+  00.23.9c.9b.5f.c1 1054  36       dynamic  
+  00.23.9c.9b.5f.c1 1959  36       dynamic  
+  00.23.9c.9b.5f.c1 2004  36       dynamic  
+  00.23.9c.9b.5f.c1 3738  36       dynamic  
+  00.23.9c.9b.5f.c1 3796  36       dynamic  
+  00.23.9c.9b.5f.c1 3900  36       dynamic  
+  00.23.9c.9b.5f.c1 3991  36       dynamic  
+  Total: 10
+"""
 
     @staticmethod
     def _show_fdb_detail_output() -> bytes:
         return b"""
   1c.69.7a.11.22.85 1052  28       dynamic
-  d4.5d.64.11.22.91 3764  36       dynamic
+  d4.5d.64.11.22.91 3764  -        static
   c4.2f.90.11.22.c9 2850  36       dynamic
   8c.1a.bf.11.22.e0 3764  36       security
   00.22.93.11.22.dc 3991  CPU      static
@@ -236,9 +264,10 @@ class TestZTE2936FI(SimpleTestCase):
             res,
             [
                 (1052, "1c.69.7a.11.22.85", "dynamic", "28"),
-                (3764, "d4.5d.64.11.22.91", "dynamic", "36"),
+                (3764, "d4.5d.64.11.22.91", "static", "-"),
                 (2850, "c4.2f.90.11.22.c9", "dynamic", "36"),
                 (3764, "8c.1a.bf.11.22.e0", "security", "36"),
+                (3991, "00.22.93.11.22.dc", "static", "CPU"),
             ],
         )
 
@@ -270,6 +299,28 @@ class TestZTE2936FI(SimpleTestCase):
             {"len": "-", "status": "Unsupported"},
         )
 
+    def test_search_mac_address(self) -> None:
+        res = self.device.search_mac("00239c9b5fc1")
+        self.assertListEqual(
+            res,
+            [
+                ArpInfoResult(
+                    ip="172.30.0.65", mac="00.23.9c.9b.5f.c1", vlan="3991", device_name="", port="36"
+                )
+            ],
+        )
+
+    def test_search_ip_address(self) -> None:
+        res = self.device.search_ip("172.30.0.65")
+        self.assertListEqual(
+            res,
+            [
+                ArpInfoResult(
+                    ip="172.30.0.65", mac="00.23.9c.9b.5f.c1", vlan="3991", device_name="", port="36"
+                )
+            ],
+        )
+
 
 class FakeZTE2928ESession(FakeZTE2936FISession):
     @staticmethod
@@ -296,9 +347,10 @@ class FakeZTE2928ESession(FakeZTE2936FISession):
 -------------------------------------------------------------------------------
 8416.1122.bcff   702   port-1     0   0   0   0  -    0   0   0    00:16:39:28
 dc2c.1122.f457  1052   port-28    0   0   0   0  -    0   0   0    00:00:10:25
-0021.1122.386c   702   port-28    0   0   0   0  -    0   0   0    00:00:00:08
+0021.1122.386c   702     cpu      0   1   0   0  -    0   0   0    00:00:00:08
 dc02.1122.f9ca   702   port-28    0   0   0   0  -    0   0   0    00:00:00:08
-e01c.1122.ecc3   702   port-28    0   0   0   0  -    0   0   0    00:11:24:00"""
+e01c.1122.ecc3   702   port-28    0   0   0   0  -    0   0   0    00:11:24:00
+"""
         elif "show mac dynamic port" in command:
             self._output = b""" Total MAC Address : 1
 
@@ -330,6 +382,15 @@ RX PAIR :
 TX PAIR :
   Cable Test Passed. Cable is open.
   Approximately 42 meters from the tested port."""
+        elif "show arp" in command:
+            self._output = b"""
+  IpPort Time(min) IpAddress       MacAddress        Vlan MacPort   Type
+  ------ --------- --------------- ----------------- ---- --------- -------
+  0      0         172.30.0.77     00.22.93.65.49.1b 3991 cpu       static 
+  0      2         172.30.0.65     00.23.9c.9b.5f.c1 3991 port-26   dynamic
+  0      6         172.30.0.67     00.04.96.6c.f7.7f 3991 port-26   dynamic
+  0      2         172.30.0.66     00.04.96.52.67.4b 3991 port-26   dynamic
+"""
 
 
 class TestZTE2928E(SimpleTestCase):
@@ -352,7 +413,7 @@ class TestZTE2928E(SimpleTestCase):
             [
                 (702, "8416.1122.bcff", "dynamic", "1"),
                 (1052, "dc2c.1122.f457", "dynamic", "28"),
-                (702, "0021.1122.386c", "dynamic", "28"),
+                (702, "0021.1122.386c", "static", "cpu"),
                 (702, "dc02.1122.f9ca", "dynamic", "28"),
                 (702, "e01c.1122.ecc3", "dynamic", "28"),
             ],
@@ -378,4 +439,135 @@ class TestZTE2928E(SimpleTestCase):
                 "pair1": {"status": "Open", "len": "43"},
                 "pair2": {"status": "Open", "len": "42"},
             },
+        )
+
+    def test_search_mac_address(self) -> None:
+        res = self.device.search_mac("00229365491b")
+
+        self.assertListEqual(
+            res,
+            [
+                ArpInfoResult(
+                    ip="172.30.0.77", mac="00.22.93.65.49.1b", vlan="3991", device_name="", port="cpu"
+                )
+            ],
+        )
+
+    def test_search_ip_address(self) -> None:
+        res = self.device.search_ip("172.30.0.77")
+
+        self.assertListEqual(
+            res,
+            [
+                ArpInfoResult(
+                    ip="172.30.0.77", mac="00.22.93.65.49.1b", vlan="3991", device_name="", port="cpu"
+                )
+            ],
+        )
+
+
+class TestZTEVlanTable(SimpleTestCase):
+
+    def setUp(self) -> None:
+        self.device = ZTE(
+            session=FakeZTE2928ESession(),
+            ip="10.10.10.10",
+            snmp_community="",
+            auth={
+                "login": "user",
+                "password": "passwd",
+                "privilege_mode_password": "secret",
+            },
+        )
+
+    @patch("devicemanager.vendors.base.device.BaseDevice.send_command")
+    def test_vlan_table(self, send_command: MagicMock) -> None:
+        send_command.return_value = """
+  VlanType: 802.1q vlan
+
+  VlanId  : 1     VlanStatus: enabled
+  VlanName:
+  VlanMode: Static
+  Tagged ports    :
+  Untagged ports  :
+  Forbidden ports :
+
+  VlanId  : 7     VlanStatus: enabled
+  VlanName: V7
+  VlanMode: Static
+  Tagged ports    : 27
+  Untagged ports  :
+  Forbidden ports :
+
+  VlanId  : 8     VlanStatus: enabled
+  VlanName: V8
+  VlanMode: Static
+  Tagged ports    : 27
+  Untagged ports  : 1-5,7-15,17-24
+  Forbidden ports :
+
+  VlanId  : 10    VlanStatus: enabled
+  VlanName: V10
+  VlanMode: Static
+  Tagged ports    : 27
+  Untagged ports  :
+  Forbidden ports :
+
+  VlanId  : 44    VlanStatus: enabled
+  VlanName: V44
+  VlanMode: Static
+  Tagged ports    : 27
+  Untagged ports  : 16
+  Forbidden ports :
+
+  VlanId  : 629   VlanStatus: enabled
+  VlanName: V629
+  VlanMode: Static
+  Tagged ports    : 27
+  Untagged ports  : 6
+  Forbidden ports :
+
+  Total Vlans: 6
+
+"""
+
+        result = self.device.get_vlan_table()
+        self.assertListEqual(
+            result,
+            [
+                (1, [], ""),
+                (7, ["27"], "V7"),
+                (
+                    8,
+                    [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "7",
+                        "8",
+                        "9",
+                        "10",
+                        "11",
+                        "12",
+                        "13",
+                        "14",
+                        "15",
+                        "17",
+                        "18",
+                        "19",
+                        "20",
+                        "21",
+                        "22",
+                        "23",
+                        "24",
+                        "27",
+                    ],
+                    "V8",
+                ),
+                (10, ["27"], "V10"),
+                (44, ["16", "27"], "V44"),
+                (629, ["6", "27"], "V629"),
+            ],
         )
