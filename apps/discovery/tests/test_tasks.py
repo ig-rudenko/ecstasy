@@ -1,12 +1,90 @@
+from datetime import timedelta
 from threading import get_ident
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase, TransactionTestCase
+from django.utils import timezone
+from django_celery_beat.models import PeriodicTask
 
 from apps.check.models import AuthGroup, DeviceGroup
-from apps.discovery.models import DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
+from apps.discovery.apps import register_task
+from apps.discovery.models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 from apps.discovery.services.dataclasses import DeviceFingerprint
-from apps.discovery.tasks import discovery_run_task, should_auto_create
+from apps.discovery.tasks import cleanup_discovery_runs_task, discovery_run_task, should_auto_create
+
+
+class DiscoveryCleanupTaskTests(TestCase):
+    """Тесты очистки старых запусков discovery."""
+
+    def setUp(self) -> None:
+        """Создать профиль discovery."""
+
+        self.group = DeviceGroup.objects.create(name="Access")
+        self.profile = DiscoveryProfile.objects.create(
+            name="access-net",
+            networks=["192.0.2.0/30"],
+            device_group=self.group,
+        )
+
+    def test_cleanup_discovery_runs_task_deletes_old_finished_runs_and_attempts(self) -> None:
+        """Cleanup удаляет только старые завершенные запуски и их попытки."""
+
+        old_finished = DiscoveryRun.objects.create(
+            profile=self.profile,
+            status=DiscoveryRun.Status.SUCCESS,
+            finished_at=timezone.now(),
+        )
+        recent_finished = DiscoveryRun.objects.create(
+            profile=self.profile,
+            status=DiscoveryRun.Status.SUCCESS,
+            finished_at=timezone.now(),
+        )
+        old_active = DiscoveryRun.objects.create(
+            profile=self.profile,
+            status=DiscoveryRun.Status.PROGRESS,
+            finished_at=timezone.now(),
+        )
+        DiscoveryAttempt.objects.create(
+            run=old_finished,
+            ip="192.0.2.10",
+            method=DiscoveryAttempt.Method.PING,
+            status=DiscoveryAttempt.Status.SUCCESS,
+        )
+        DiscoveryAttempt.objects.create(
+            run=recent_finished,
+            ip="192.0.2.11",
+            method=DiscoveryAttempt.Method.PING,
+            status=DiscoveryAttempt.Status.SUCCESS,
+        )
+        old_finished_at = timezone.now() - timedelta(days=31)
+        recent_finished_at = timezone.now() - timedelta(days=5)
+        DiscoveryRun.objects.filter(id=old_finished.id).update(finished_at=old_finished_at)
+        DiscoveryRun.objects.filter(id=recent_finished.id).update(finished_at=recent_finished_at)
+        DiscoveryRun.objects.filter(id=old_active.id).update(finished_at=old_finished_at)
+
+        result = cleanup_discovery_runs_task(30)
+
+        self.assertEqual(result["deletedRuns"], 1)
+        self.assertFalse(DiscoveryRun.objects.filter(id=old_finished.id).exists())
+        self.assertFalse(DiscoveryAttempt.objects.filter(run_id=old_finished.id).exists())
+        self.assertTrue(DiscoveryRun.objects.filter(id=recent_finished.id).exists())
+        self.assertTrue(DiscoveryRun.objects.filter(id=old_active.id).exists())
+
+
+class DiscoveryTasksRegistrationTestCase(TestCase):
+    """Тесты регистрации фоновых задач discovery."""
+
+    def test_register_task_creates_discovery_cleanup_periodic_task(self) -> None:
+        """Post-migrate registration создает задачу очистки старых discovery runs."""
+
+        register_task()
+
+        task = PeriodicTask.objects.get(name="Очистка старых запусков discovery")
+        self.assertEqual(task.task, cleanup_discovery_runs_task.name)
+        self.assertTrue(task.enabled)
+        self.assertEqual(task.kwargs, '{"retention_days": 14}')
+        self.assertEqual(task.crontab.minute, "30")
+        self.assertEqual(task.crontab.hour, "4")
 
 
 class DiscoveryTaskTests(TransactionTestCase):

@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from datetime import timedelta
 
 from celery import shared_task
 from django.utils import timezone
@@ -12,6 +13,11 @@ from .services.reconcile import upsert_candidate
 from .services.scanner import build_scan_hosts, preflight_address
 
 DISCOVERY_PROGRESS_UPDATE_INTERVAL = 10
+FINISHED_DISCOVERY_STATUSES = (
+    DiscoveryRun.Status.SUCCESS,
+    DiscoveryRun.Status.FAILURE,
+    DiscoveryRun.Status.REVOKED,
+)
 
 
 @dataclass(slots=True)
@@ -240,4 +246,22 @@ def build_task_result(run: DiscoveryRun) -> dict:
         "created": run.created,
         "skipped": run.skipped,
         "errors": run.errors,
+    }
+
+
+@shared_task(name="cleanup_discovery_runs_task")
+def cleanup_discovery_runs_task(retention_days: int) -> dict:
+    """Удалить старые завершенные discovery runs вместе с attempts."""
+
+    retention_days = int(retention_days)
+    if retention_days < 1:
+        raise ValueError("retention_days must be positive")
+
+    cutoff = timezone.now() - timedelta(days=retention_days)
+    old_runs = DiscoveryRun.objects.filter(status__in=FINISHED_DISCOVERY_STATUSES, finished_at__lt=cutoff)
+    deleted_runs = old_runs.count()
+    old_runs.delete()
+    return {
+        "deletedRuns": deleted_runs,
+        "retentionDays": retention_days,
     }
