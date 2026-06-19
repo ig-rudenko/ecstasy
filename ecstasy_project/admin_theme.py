@@ -1,6 +1,73 @@
 from django.conf import settings
 from django.templatetags.static import static
 
+UNFOLD: dict[str, object] = {
+    "SITE_TITLE": "Ecstasy Admin",
+    "SITE_HEADER": "Ecstasy",
+    "SITE_SUBHEADER": "Network operations control",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "settings_ethernet",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "ENVIRONMENT": "ecstasy_project.admin_theme.environment_label",
+    # "STYLES": ["ecstasy_project.admin_theme.admin_stylesheet"],
+    "SITE_DROPDOWN": "ecstasy_project.admin_theme.site_dropdown",
+    "SITE_FAVICONS": [
+        {
+            "href": "ecstasy_project.admin_theme.admin_favicon",
+            "rel": "icon",
+            "type": "image/x-icon",
+        }
+    ],
+    "BORDER_RADIUS": "1.25rem",
+    "COLORS": {
+        "base": {
+            "50": "oklch(98.4% 0.003 247.858)",
+            "100": "oklch(96.8% 0.006 255.328)",
+            "200": "oklch(92.9% 0.013 255.508)",
+            "300": "oklch(86.8% 0.024 252.894)",
+            "400": "oklch(70.2% 0.047 256.788)",
+            "500": "oklch(55.2% 0.047 257.417)",
+            "600": "oklch(44.6% 0.043 257.281)",
+            "700": "oklch(37.2% 0.044 257.287)",
+            "800": "oklch(27.8% 0.041 260.031)",
+            "900": "oklch(20.9% 0.039 265.754)",
+            "950": "oklch(13.1% 0.031 263.229)",
+        },
+        "primary": {
+            "50": "oklch(97.6% 0.018 236.62)",
+            "100": "oklch(94.3% 0.039 234.632)",
+            "200": "oklch(89.1% 0.077 233.972)",
+            "300": "oklch(81.2% 0.131 232.661)",
+            "400": "oklch(72.1% 0.182 234.451)",
+            "500": "oklch(63.5% 0.205 239.392)",
+            "600": "oklch(55.9% 0.211 252.819)",
+            "700": "oklch(48.9% 0.196 257.102)",
+            "800": "oklch(42.4% 0.163 258.614)",
+            "900": "oklch(38.1% 0.126 258.338)",
+            "950": "oklch(28.2% 0.092 260.031)",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",
+            "subtle-dark": "var(--color-base-400)",
+            "default-light": "var(--color-base-600)",
+            "default-dark": "var(--color-base-300)",
+            "important-light": "var(--color-base-900)",
+            "important-dark": "var(--color-base-100)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "command_search": True,
+        "show_all_applications": True,
+        "navigation": "ecstasy_project.admin_theme.sidebar_navigation",
+    },
+    "ACCOUNT": {
+        "navigation": "ecstasy_project.admin_theme.account_links",
+    },
+}
+
 
 def admin_stylesheet(_request):
     return static("admin/css/ecstasy-unfold.css")

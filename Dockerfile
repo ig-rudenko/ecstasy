@@ -25,6 +25,7 @@ ENV PATH="/root/.local/bin/:$PATH" \
     UV_PROJECT_ENVIRONMENT=/app/venv \
     UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
+    PYTHONUTF8=1 \
     PYTHONOPTIMIZE=1
 
 COPY pyproject.toml uv.lock /app/
@@ -59,6 +60,7 @@ RUN addgroup -g $group_id appgroup \
     && chown -R $user_id:$group_id /app;
 
 ENV PATH=/app/venv/bin:$PATH \
+    PYTHONUTF8=1 \
     PYTHONOPTIMIZE=1 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
