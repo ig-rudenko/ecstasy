@@ -2,6 +2,38 @@ from django.apps import AppConfig
 from django.db.models.signals import post_migrate
 
 
+class DiscoveryConfig(AppConfig):
+    """Конфигурация приложения auto discovery."""
+
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.discovery"
+    verbose_name = "Auto Discovery"
+
+    def ready(self) -> None:
+        """Подключить post-migrate hooks discovery."""
+
+        from .new_permissions import create_groups_with_permissions, create_permission
+
+        post_migrate.connect(
+            create_permission,
+            sender=self,
+            weak=False,
+            dispatch_uid="discovery.create_permission",
+        )
+        post_migrate.connect(
+            create_groups_with_permissions,
+            sender=self,
+            weak=False,
+            dispatch_uid="discovery.create_groups_with_permissions",
+        )
+        post_migrate.connect(
+            register_task,
+            sender=self,
+            weak=False,
+            dispatch_uid="discovery.register_task",
+        )
+
+
 def register_task(*args, **kwargs) -> None:
     """Создать периодические задачи discovery после миграций."""
 
@@ -25,29 +57,3 @@ def register_task(*args, **kwargs) -> None:
             "В аргументе указывается кол-во дней, старше которых discovery будут удалены.",
         },
     )
-
-
-class DiscoveryConfig(AppConfig):
-    """Конфигурация приложения auto discovery."""
-
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.discovery"
-    verbose_name = "Auto Discovery"
-
-    def ready(self) -> None:
-        """Подключить post-migrate hooks discovery."""
-
-        from .new_permissions import create_permission
-
-        post_migrate.connect(
-            create_permission,
-            sender=self,
-            weak=False,
-            dispatch_uid="discovery.create_permission",
-        )
-        post_migrate.connect(
-            register_task,
-            sender=self,
-            weak=False,
-            dispatch_uid="discovery.register_task",
-        )

@@ -11,7 +11,7 @@ UNFOLD: dict[str, object] = {
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_BACK_BUTTON": True,
     "ENVIRONMENT": "ecstasy_project.admin_theme.environment_label",
-    # "STYLES": ["ecstasy_project.admin_theme.admin_stylesheet"],
+    "STYLES": ["ecstasy_project.admin_theme.admin_stylesheet"],
     "SITE_DROPDOWN": "ecstasy_project.admin_theme.site_dropdown",
     "SITE_FAVICONS": [
         {
@@ -70,7 +70,7 @@ UNFOLD: dict[str, object] = {
 
 
 def admin_stylesheet(_request):
-    return static("admin/css/ecstasy-unfold.css")
+    return static("admin.css")
 
 
 def admin_favicon(_request):
