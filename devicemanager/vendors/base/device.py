@@ -501,9 +501,9 @@ class BaseDevice(AbstractDevice, ABC):
         return cmd_outputs
 
     @lock_session
-    def get_mac_table(self) -> VlanTableType:
+    def get_mac_table(self) -> MACTableType:
         return []
 
     @lock_session
-    def get_vlan_table(self) -> MACTableType:
+    def get_vlan_table(self) -> VlanTableType:
         return []

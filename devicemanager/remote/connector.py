@@ -301,3 +301,6 @@ class RemoteDevice(
 
     def get_vlan_table(self) -> VlanTableType:
         return self._remote_call("get_vlan_table")
+
+    def get_mac_table(self) -> MACTableType:
+        return self._remote_call("get_mac_table")

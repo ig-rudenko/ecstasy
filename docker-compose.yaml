@@ -118,7 +118,8 @@ services:
       - backend
 
   mysql:
-    image: mysql:9.7.0-oracle
+    image: mysql:9.7.1-oracle
+    command: --max-connections=300
     logging: *logging
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"

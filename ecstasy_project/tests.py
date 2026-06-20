@@ -1,3 +1,7 @@
+from typing import cast
+from unittest.mock import patch
+
+from django.db.models import QuerySet
 from django.test import SimpleTestCase, override_settings
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from rest_framework import status
@@ -11,6 +15,71 @@ from ecstasy_project.error_handler import (
     build_problem,
     custom_exception_handler,
 )
+from ecstasy_project.task import ThreadUpdatedStatusTask
+
+
+class FakeQuerySet:
+    """Minimal queryset fake for task lifecycle tests."""
+
+    def count(self) -> int:
+        """Return one object for task initialization."""
+        return 1
+
+    def all(self) -> list[object]:
+        """Return fake objects for worker dispatch."""
+        return [object()]
+
+
+class SuccessfulThreadTask(ThreadUpdatedStatusTask):
+    """Thread task that completes successfully."""
+
+    queryset = cast(QuerySet, FakeQuerySet())
+    max_workers = 1
+
+    def thread_task(self, obj, **kwargs) -> str:
+        """Return a marker value from the worker body."""
+        return "ok"
+
+
+class FailingThreadTask(ThreadUpdatedStatusTask):
+    """Thread task that raises from the worker body."""
+
+    queryset = cast(QuerySet, FakeQuerySet())
+    max_workers = 1
+
+    def thread_task(self, obj, **kwargs) -> None:
+        """Raise an error from the worker body."""
+        raise RuntimeError("boom")
+
+
+class ThreadUpdatedStatusTaskTests(SimpleTestCase):
+    """Tests for threaded Celery task database connection cleanup."""
+
+    @patch("ecstasy_project.task.connections.close_all")
+    @patch("ecstasy_project.task.close_old_connections")
+    def test_thread_task_closes_database_connections(self, close_old_connections, close_all) -> None:
+        """Thread worker closes its Django DB connection after successful work."""
+        task = SuccessfulThreadTask()
+
+        result = task._run_thread_task(object())
+
+        self.assertEqual(result, "ok")
+        close_old_connections.assert_called_once_with()
+        close_all.assert_called_once_with()
+
+    @patch("ecstasy_project.task.connections.close_all")
+    @patch("ecstasy_project.task.close_old_connections")
+    def test_thread_task_closes_database_connections_after_error(
+        self, close_old_connections, close_all
+    ) -> None:
+        """Thread worker closes its Django DB connection after failed work."""
+        task = FailingThreadTask()
+
+        with self.assertRaises(RuntimeError):
+            task._run_thread_task(object())
+
+        close_old_connections.assert_called_once_with()
+        close_all.assert_called_once_with()
 
 
 class ErrorHandlerTests(SimpleTestCase):
