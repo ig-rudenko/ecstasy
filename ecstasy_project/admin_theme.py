@@ -141,7 +141,7 @@ def model_link(title: str, icon: str, app: str, model: str, permissions: set[str
     }
 
 
-def sidebar_navigation(request):
+def sidebar_navigation(request) -> list:
     perms: set[str] = request.user.get_all_permissions()
 
     navigation = [

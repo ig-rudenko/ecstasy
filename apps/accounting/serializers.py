@@ -12,7 +12,7 @@ class UserPermissionsSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_permissions(obj: User):
-        return obj.get_all_permissions()
+        return sorted(obj.get_all_permissions())
 
     def get_console(self, obj: User):
         if obj.profile.console_access and obj.profile.console_url:

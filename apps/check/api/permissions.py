@@ -76,5 +76,5 @@ class BulkDeviceCommandExecutionPermission(permissions.BasePermission):
         return (
             request.user
             and request.user.is_authenticated
-            and (request.user.has_perm(perm) or request.user.is_superuser)
+            and (request.user.is_superuser or request.user.has_perm(perm))
         )

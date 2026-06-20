@@ -14,14 +14,12 @@ def has_permission_to_device(device_to_check: models.Devices, user: models.User)
     )
 
 
-def profile_permission(required_perm=models.Profile.READ):
+def profile_permission(*required_perm: str):
     """
     ## Декоратор для определения прав пользователя
 
-    :param required_perm: "read", "reboot", "up_down", "bras"
+    :param required_perm: Profile device permission codename.
     """
-
-    all_permissions = models.Profile.permissions_level
 
     def decorator(func):
         @wraps(func)
@@ -30,10 +28,10 @@ def profile_permission(required_perm=models.Profile.READ):
             if not request.user.is_authenticated:
                 return HttpResponse(status=401)  # Неавторизованный
 
-            required_perm_idx = all_permissions.index(required_perm)
-
-            # Если суперпользователь или его уровень привилегий равен или выше требуемых
-            if request.user.is_superuser or request.user.profile.perm_level >= required_perm_idx:
+            # Если суперпользователь или у пользователя есть требуемое право.
+            if request.user.is_superuser or any(
+                request.user.profile.has_device_permission(permission) for permission in required_perm
+            ):
                 return func(request, *args, **kwargs)  # Выполняем функцию
 
             return HttpResponseForbidden()  # Недостаточно прав

@@ -80,7 +80,6 @@ class InterfaceControlAPIView(DeviceAPIView):
     serializer_class = PortControlSerializer
 
     @except_connection_errors
-    @method_decorator(profile_permission(models.Profile.REBOOT))
     def post(self, request: Request, *args, **kwargs):
         """
         ## Изменяем состояние порта оборудования
@@ -130,7 +129,7 @@ class ChangeDescriptionAPIView(DeviceAPIView):
         return super().get_queryset().select_related("auth_group", "devicesinfo")
 
     @except_connection_errors
-    @method_decorator(profile_permission(models.Profile.BRAS))
+    @method_decorator(profile_permission(models.Profile.BRAS_READ_WRITE))
     def post(self, request: Request, *args, **kwargs):
         """
         ## Меняем описание на порту оборудования
@@ -291,7 +290,7 @@ class SetPoEAPIView(DeviceAPIView):
     serializer_class = PoEPortStatusSerializer
 
     @except_connection_errors
-    @method_decorator(profile_permission(models.Profile.BRAS))
+    @method_decorator(profile_permission(models.Profile.BRAS_READ_WRITE))
     def post(self, request: Request, *args, **kwargs):
         """Устанавливает PoE статус на порту"""
         serializer = self.get_serializer(data=self.request.data)
@@ -387,7 +386,7 @@ class ChangeDSLProfileAPIView(DeviceAPIView):
         return super().get_queryset().select_related("auth_group")
 
     @except_connection_errors
-    @method_decorator(profile_permission(models.Profile.BRAS))
+    @method_decorator(profile_permission(models.Profile.INTERFACE_UP_DOWN))
     def post(self, request, *args, **kwargs):
         """
         Изменяем профиль xDSL порта на другой
@@ -535,7 +534,6 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
     permission_classes = [BulkDeviceCommandExecutionPermission]
 
     @schemas.execute_bulk_device_command_api_doc
-    @method_decorator(profile_permission(models.Profile.CMD_RUN))
     def post(self, request, *args, **kwargs) -> Response:
         """Validate request and dispatch celery task."""
         command = self.get_command()

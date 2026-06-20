@@ -172,7 +172,6 @@ class DeviceInfoSwaggerSerializer(SwaggerSerializer):
     zabbixHostID = serializers.IntegerField()
     zabbixURL = serializers.URLField()
     zabbixInfo = DeviceZabbixInfoSwaggerSerializer()
-    permission = serializers.IntegerField(min_value=0, max_value=4)
     coords = serializers.ListField(
         child=serializers.FloatField(), min_length=2, max_length=2, allow_null=True
     )

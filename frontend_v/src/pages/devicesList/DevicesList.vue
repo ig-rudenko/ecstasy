@@ -75,6 +75,7 @@
                                     </div>
                                 </div>
                                 <div
+                                    v-if="devices.length !== devices_count"
                                     class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
                                 >
                                     <div

@@ -43,9 +43,17 @@ function buildMenuItems(): MenuItem[] {
 
     if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
         built.push({
-            label: "Discovery",
+            label: "Обнаружение",
             icon: "discovery",
             url: "/discovery",
+        });
+    }
+
+    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+        built.push({
+            label: "Команды",
+            icon: "bulk-commands",
+            url: "/devices/commands",
         });
     }
 

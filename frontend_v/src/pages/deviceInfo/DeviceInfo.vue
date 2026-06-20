@@ -31,7 +31,7 @@
                 >
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <DeviceDetailInfo :general-info="generalInfo" />
-                        <Commands :device-name="deviceName" :interfaces="interfaces" />
+                        <Commands v-if="canRunDeviceCommand" :device-name="deviceName" :interfaces="interfaces" />
 
                         <ToZabbixLink
                             v-if="generalInfo.zabbixHostID"
@@ -45,7 +45,7 @@
                             :logs-url="generalInfo.elasticStackLink"
                         />
                         <MapCoordLink v-if="generalInfo.coords" :coords="generalInfo.coords" />
-                        <ConfigFilesSwitchButton :config-files="configFiles" />
+                        <ConfigFilesSwitchButton v-if="canViewConfigFiles" :config-files="configFiles" />
                         <DeviceImages :device-name="deviceName" />
                         <ZabbixMapsDropdown
                             v-if="generalInfo.zabbixInfo?.maps.length > 0"
@@ -98,7 +98,7 @@
                 v-if="generalInfo && configFiles.display"
                 class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur"
             >
-                <ConfigFiles :device-name="generalInfo.deviceName" />
+                <ConfigFiles :device-name="generalInfo.deviceName" :permissions="devicePermissions" />
             </div>
 
             <div
@@ -158,7 +158,7 @@
                                     :dynamic-opacity="dynamicOpacity"
                                     :interface="_interface"
                                     :show-vlans="withVlans"
-                                    :permission-level="generalInfo ? generalInfo.permission : 100"
+                                    :permissions="devicePermissions"
                                 />
                             </template>
                         </tbody>
@@ -306,6 +306,7 @@ import { HardwareStats } from "./hardwareStats";
 import { DeviceInterface, InterfacesCount, newInterfacesList, reconcileInterfacesList } from "@/services/interfaces";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
 import { errorToast } from "@/services/my.toast.ts";
+import permissions from "@/services/permissions";
 import DeviceVlanInfo from "@/pages/deviceInfo/components/DeviceVlanInfo.vue";
 import Commands from "@/pages/deviceInfo/components/Commands.vue";
 import DeviceViewings from "@/pages/deviceInfo/components/DeviceViewings.vue";
@@ -384,6 +385,15 @@ export default defineComponent({
                 return { opacity: 0.6 };
             }
             return { opacity: 1 };
+        },
+        devicePermissions(): string[] {
+            return permissions.getAll();
+        },
+        canRunDeviceCommand(): boolean {
+            return permissions.has("check.device_cmd_run");
+        },
+        canViewConfigFiles(): boolean {
+            return permissions.has("check.device_config_view");
         },
     },
 

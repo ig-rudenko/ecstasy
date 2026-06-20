@@ -7,7 +7,7 @@
 import re
 from decimal import Decimal
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -473,24 +473,49 @@ class Bras(models.Model):
 class Profile(models.Model):
     """Профиль пользователя"""
 
-    READ = "read"
-    REBOOT = "reboot"
-    UP_DOWN = "up_down"
-    BRAS = "bras"
-    CMD_RUN = "cmd_run"
+    INTERFACE_REBOOT = "device_interface_reboot"
+    INTERFACE_UP_DOWN = "device_interface_up_down"
+    BRAS_READ = "device_bras_read"
+    BRAS_READ_WRITE = "device_bras_read_write"
+    CONFIG_VIEW = "device_config_view"
+    CONFIG_COLLECT = "device_config_collect"
+    CONFIG_DELETE = "device_config_delete"
+    CMD_RUN = "device_cmd_run"
 
-    permissions_level = [READ, REBOOT, UP_DOWN, BRAS, CMD_RUN]
+    PERMISSION_APP_LABEL = "check"
+    PERMISSION_LEVELS = [
+        INTERFACE_REBOOT,
+        INTERFACE_UP_DOWN,
+        BRAS_READ,
+        BRAS_READ_WRITE,
+        CONFIG_VIEW,
+        CONFIG_COLLECT,
+        CONFIG_DELETE,
+        CMD_RUN,
+    ]
+    DEVICE_PERMISSION_NAMES = {
+        "check.device_interface_reboot",
+        "check.device_interface_up_down",
+        "check.device_bras_read",
+        "check.device_bras_read_write",
+        "check.device_config_view",
+        "check.device_config_collect",
+        "check.device_config_delete",
+        "check.device_cmd_run",
+    }
 
     PERMS = (
-        (READ, "Чтение"),
-        (REBOOT, "Перезагрузка порта"),
-        (UP_DOWN, "Изменение состояния порта"),
-        (BRAS, "Сброс сессий клиента"),
+        (INTERFACE_REBOOT, "Перезагрузка порта"),
+        (INTERFACE_UP_DOWN, "Изменение состояния порта"),
+        (BRAS_READ, "Просмотр сессий BRAS"),
+        (BRAS_READ_WRITE, "Сброс сессий BRAS"),
+        (CONFIG_VIEW, "Просмотр конфигураций оборудования"),
+        (CONFIG_COLLECT, "Сбор конфигураций оборудования"),
+        (CONFIG_DELETE, "Удаление конфигураций оборудования"),
         (CMD_RUN, "Выполнение команд"),
     )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, verbose_name="Пользователь")
-    permissions = models.CharField(choices=PERMS, default=READ, max_length=15, verbose_name="Уровень доступа")
     devices_groups = models.ManyToManyField(DeviceGroup, verbose_name="Доступные группы оборудования")
     port_guard_pattern = models.CharField(
         max_length=500,
@@ -498,7 +523,7 @@ class Profile(models.Model):
         blank=True,
         verbose_name="Защитный RegExp для описания порта",
         help_text="Регулярное выражение, совпадение которого с описанием"
-        " порта будет запрещать определенные действия с ним",
+        " порта будет запрещать изменять его статус и менять описание",
     )
     console_access = models.BooleanField(
         default=False,
@@ -520,12 +545,37 @@ class Profile(models.Model):
         " Доступны: {ip}, {name}, {username} и {protocol}",
     )
 
-    @property
-    def perm_level(self) -> int:
-        try:
-            return self.permissions_level.index(self.permissions)
-        except ValueError:
-            return 0
+    def has_device_permission(self, codename: str) -> bool:
+        """Return whether user has a device access permission."""
+        return self.user.has_perm(f"{self.PERMISSION_APP_LABEL}.{codename}")
+
+    @classmethod
+    def get_permission(cls, codename: str):
+        """Return queryset with one device permission by codename."""
+        return Permission.objects.filter(
+            content_type__app_label=cls.PERMISSION_APP_LABEL,
+            codename=codename,
+        )
+
+    @classmethod
+    def get_permissions(cls):
+        """Return queryset with all device permissions."""
+        return Permission.objects.filter(
+            content_type__app_label=cls.PERMISSION_APP_LABEL,
+            codename__in=cls.PERMISSION_LEVELS,
+        )
+
+    @classmethod
+    def get_user_device_permissions(cls, user: User) -> set[str]:
+        """Return device permission names assigned to user."""
+        return set(user.get_all_permissions()) & cls.DEVICE_PERMISSION_NAMES
+
+    def set_permission(self, codename: str) -> None:
+        """Assign one device permission directly to profile user."""
+        self.user.user_permissions.remove(*self.get_permissions())
+        self.user.user_permissions.add(*self.get_permission(codename))
+        for cache_name in ("_perm_cache", "_user_perm_cache", "_group_perm_cache"):
+            self.user.__dict__.pop(cache_name, None)
 
     def __str__(self):
         return f"Profile: {self.user.username}"

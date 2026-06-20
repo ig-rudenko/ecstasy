@@ -1,5 +1,5 @@
 <template>
-    <div v-if="permissionLevel >= 2" class="flex sm:flex-col gap-1 my-2">
+    <div v-if="canChangePortState" class="flex sm:flex-col gap-1 my-2">
         <!--     ВКЛЮЧИТЬ ПОРТ -->
         <Button
             class="text-green-600 sm:h-5 rounded-2xl"
@@ -49,7 +49,7 @@
 
     <!--     ПЕРЕЗАГРУЗКА ПОРТА -->
     <Button
-        v-if="permissionLevel >= 1"
+        v-if="canRebootPort"
         text
         severity="warn"
         @click="() => registerAction('reload', interface.name, interface.description, deviceName)"
@@ -78,15 +78,23 @@ import { DeviceInterface } from "@/services/interfaces";
 import interfaceControlService from "@/services/interface.control";
 
 export default defineComponent({
+    props: {
+        permissions: { required: true, type: Array as PropType<string[]> },
+        deviceName: { required: true, type: String },
+        interface: { required: true, type: Object as PropType<DeviceInterface> },
+    },
+    computed: {
+        canChangePortState(): boolean {
+            return this.permissions.includes("check.device_interface_up_down");
+        },
+        canRebootPort(): boolean {
+            return this.permissions.includes("check.device_interface_reboot");
+        },
+    },
     methods: {
         registerAction(action: "up" | "down" | "reload", port: string, description: string, device: string) {
             interfaceControlService.registerAction(action, port, description, device);
         },
-    },
-    props: {
-        permissionLevel: { required: true, type: Number },
-        deviceName: { required: true, type: String },
-        interface: { required: true, type: Object as PropType<DeviceInterface> },
     },
 });
 </script>
