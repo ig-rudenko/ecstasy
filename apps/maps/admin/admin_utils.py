@@ -18,6 +18,10 @@ svg_zabbix_icon = """<svg style="vertical-align: middle" xmlns="http://www.w3.or
   <path d="M18.8 15.382h26.393v3.424l-21.24 26.027h21.744v3.784H18.293v-3.43l21.24-26.02H18.8z" fill="#fff"/>
 </svg>"""
 
+svg_device_icon = """<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-pc-horizontal" viewBox="0 0 16 16">
+  <path d="M1 6a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1zm11.5 1a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1m2 0a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1M1 7.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5M1.25 9h5.5a.25.25 0 0 1 0 .5h-5.5a.25.25 0 0 1 0-.5"/>
+</svg>"""
+
 
 def get_icons_html_code(fill_color: str, stroke_color: str, icon_name=None) -> str | tuple[str | tuple, ...]:
     """Return icon html by name, or all icons as choices when name is None."""

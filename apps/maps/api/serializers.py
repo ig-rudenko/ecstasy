@@ -7,7 +7,7 @@ class MapLayerField(serializers.CharField):
     def to_representation(self, value):
         if value.type == "zabbix":
             return value.zabbix_group_name
-        if value.type == "file":
+        if value.type in ("file", "device_group"):
             return value.name
         return "None"
 
@@ -40,4 +40,6 @@ class LayerSerializer(serializers.ModelSerializer):
             "description",
             "type",
             "from_file",
+            "zabbix_group_name",
+            "device_group",
         ]

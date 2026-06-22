@@ -7,6 +7,8 @@ from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 
+from apps.check.models import DeviceGroup
+
 
 class Layers(models.Model):
     class Meta:
@@ -61,6 +63,16 @@ class Layers(models.Model):
         help_text="Все узлы сети из данной группы будут на этом слое",
     )
 
+    device_group = models.ForeignKey(
+        DeviceGroup,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="map_layers",
+        verbose_name="Группа оборудования",
+        help_text="Все устройства из данной группы с координатами будут на этом слое",
+    )
+
     points_color = models.CharField(
         max_length=10,
         default="#00CC00",
@@ -91,6 +103,8 @@ class Layers(models.Model):
             return "file"
         if self.zabbix_group_name:
             return "zabbix"
+        if self.device_group:
+            return "device_group"
         return "none"
 
 

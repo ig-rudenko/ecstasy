@@ -166,3 +166,50 @@ onUnmounted(() => {
         </div>
     </div>
 </template>
+
+<style>
+.device-popup {
+    min-width: 14rem;
+    color: #111827;
+    font-family: monospace;
+}
+
+.device-popup__title {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.device-popup__rows {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.device-popup__row {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, max-content) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: baseline;
+}
+
+.device-popup__row span {
+    color: #6b7280;
+}
+
+.device-popup__row strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+}
+
+.device-popup__link {
+    display: inline-flex;
+    margin-top: 0.75rem;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.device-popup__link:hover {
+    color: #1d4ed8;
+}
+</style>
