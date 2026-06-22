@@ -9,7 +9,7 @@
             </div>
         </template>
 
-        <div>
+        <div v-if="canCutBrasSession">
             <!--СРЕЗАТЬ СЕССИЮ   -->
             <!--        НОЖ-->
             <SplitButton
@@ -123,6 +123,7 @@ import { defineComponent } from "vue";
 
 import brasSessionsService from "@/services/bras.sessions";
 import brasSessions from "@/services/bras.sessions";
+import permissions from "@/services/permissions";
 import UpdateCommonButton from "@/components/UpdateCommonButton.vue";
 
 export default defineComponent({
@@ -137,6 +138,9 @@ export default defineComponent({
     computed: {
         sessions() {
             return brasSessionsService.sessions;
+        },
+        canCutBrasSession(): boolean {
+            return permissions.has("check.device_bras_read_write");
         },
     },
 

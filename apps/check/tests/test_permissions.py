@@ -9,35 +9,35 @@ from ..models import AccessGroup, AuthGroup
 from ..permissions import profile_permission
 
 
-class ReadPermissionsDecoratorTest(TestCase):
+class NoDevicePermissionsDecoratorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.request = RequestFactory()
-        cls.request.user = User.objects.create_user(username="read_permission_user", password="password")
+        cls.request.user = User.objects.create_user(username="no_device_permission_user", password="password")
 
-    def test_read_perms(self):
-        @profile_permission(models.Profile.READ)
-        def test_(request):
-            return "func"
-
-        self.assertEqual(test_(self.request), "func")
-
-    def test_reboot_with_read_perms(self):
-        @profile_permission(models.Profile.REBOOT)
+    def test_reboot_without_perms(self):
+        @profile_permission(models.Profile.INTERFACE_REBOOT)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
-    def test_up_down_with_read_perms(self):
-        @profile_permission(models.Profile.UP_DOWN)
+    def test_up_down_without_perms(self):
+        @profile_permission(models.Profile.INTERFACE_UP_DOWN)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
-    def test_bras_with_read_perms(self):
-        @profile_permission(models.Profile.BRAS)
+    def test_bras_without_perms(self):
+        @profile_permission(models.Profile.BRAS_READ)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_bras_write_without_perms(self):
+        @profile_permission(models.Profile.BRAS_READ_WRITE)
         def test_(request):
             return "func"
 
@@ -50,32 +50,24 @@ class RebootPermissionsDecoratorTest(TestCase):
         cls.request = RequestFactory()
         user = User.objects.create_user(username="reboot_permission_user", password="password")
         cls.request.user = user
-        user.profile.permissions = models.Profile.REBOOT
-        user.profile.save()
+        user.profile.set_permission(models.Profile.INTERFACE_REBOOT)
 
-    def test_read_perms(self):
-        @profile_permission(models.Profile.READ)
+    def test_reboot_perms(self):
+        @profile_permission(models.Profile.INTERFACE_REBOOT)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
 
-    def test_reboot_with_read_perms(self):
-        @profile_permission(models.Profile.REBOOT)
-        def test_(request):
-            return "func"
-
-        self.assertEqual(test_(self.request), "func")
-
-    def test_up_down_with_read_perms(self):
-        @profile_permission(models.Profile.UP_DOWN)
+    def test_up_down_with_reboot_perms(self):
+        @profile_permission(models.Profile.INTERFACE_UP_DOWN)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
-    def test_bras_with_read_perms(self):
-        @profile_permission(models.Profile.BRAS)
+    def test_bras_with_reboot_perms(self):
+        @profile_permission(models.Profile.BRAS_READ)
         def test_(request):
             return "func"
 
@@ -88,32 +80,24 @@ class UpDownPermissionsDecoratorTest(TestCase):
         cls.request = RequestFactory()
         user = User.objects.create_user(username="up_down_permission_user", password="password")
         cls.request.user = user
-        user.profile.permissions = models.Profile.UP_DOWN
-        user.profile.save()
+        user.profile.set_permission(models.Profile.INTERFACE_UP_DOWN)
 
-    def test_read_perms(self):
-        @profile_permission(models.Profile.READ)
+    def test_reboot_with_up_down_perms(self):
+        @profile_permission(models.Profile.INTERFACE_REBOOT)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_up_down_perms(self):
+        @profile_permission(models.Profile.INTERFACE_UP_DOWN)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
 
-    def test_reboot_with_read_perms(self):
-        @profile_permission(models.Profile.REBOOT)
-        def test_(request):
-            return "func"
-
-        self.assertEqual(test_(self.request), "func")
-
-    def test_up_down_with_read_perms(self):
-        @profile_permission(models.Profile.UP_DOWN)
-        def test_(request):
-            return "func"
-
-        self.assertEqual(test_(self.request), "func")
-
-    def test_bras_with_read_perms(self):
-        @profile_permission(models.Profile.BRAS)
+    def test_bras_with_up_down_perms(self):
+        @profile_permission(models.Profile.BRAS_READ)
         def test_(request):
             return "func"
 
@@ -126,36 +110,95 @@ class BrasPermissionsDecoratorTest(TestCase):
         cls.request = RequestFactory()
         user = User.objects.create_user(username="bras_permission_user", password="password")
         cls.request.user = user
-        user.profile.permissions = models.Profile.BRAS
-        user.profile.save()
+        user.profile.set_permission(models.Profile.BRAS_READ_WRITE)
 
-    def test_read_perms(self):
-        @profile_permission(models.Profile.READ)
+    def test_reboot_with_bras_perms(self):
+        @profile_permission(models.Profile.INTERFACE_REBOOT)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_up_down_with_bras_perms(self):
+        @profile_permission(models.Profile.INTERFACE_UP_DOWN)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_bras_read_with_bras_write_perms(self):
+        @profile_permission(models.Profile.BRAS_READ)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_bras_write_perms(self):
+        @profile_permission(models.Profile.BRAS_READ_WRITE)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
 
-    def test_reboot_with_read_perms(self):
-        @profile_permission(models.Profile.REBOOT)
+    def test_bras_read_endpoint_accepts_bras_write_perms(self):
+        @profile_permission(models.Profile.BRAS_READ, models.Profile.BRAS_READ_WRITE)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
 
-    def test_up_down_with_read_perms(self):
-        @profile_permission(models.Profile.UP_DOWN)
+
+class BrasReadPermissionsDecoratorTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.request = RequestFactory()
+        user = User.objects.create_user(username="bras_read_permission_user", password="password")
+        cls.request.user = user
+        user.profile.set_permission(models.Profile.BRAS_READ)
+
+    def test_bras_read_perms(self):
+        @profile_permission(models.Profile.BRAS_READ)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
 
-    def test_bras_with_read_perms(self):
-        @profile_permission(models.Profile.BRAS)
+    def test_bras_write_with_bras_read_perms(self):
+        @profile_permission(models.Profile.BRAS_READ_WRITE)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+
+class ConfigPermissionsDecoratorTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.request = RequestFactory()
+        user = User.objects.create_user(username="config_view_permission_user", password="password")
+        cls.request.user = user
+        user.profile.set_permission(models.Profile.CONFIG_VIEW)
+
+    def test_config_view_perms(self):
+        @profile_permission(models.Profile.CONFIG_VIEW)
         def test_(request):
             return "func"
 
         self.assertEqual(test_(self.request), "func")
+
+    def test_config_collect_with_config_view_perms(self):
+        @profile_permission(models.Profile.CONFIG_COLLECT)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
+
+    def test_config_delete_with_config_view_perms(self):
+        @profile_permission(models.Profile.CONFIG_DELETE)
+        def test_(request):
+            return "func"
+
+        self.assertEqual(test_(self.request).status_code, 403)  # type: ignore
 
 
 class DevicePermissionTest(TestCase):

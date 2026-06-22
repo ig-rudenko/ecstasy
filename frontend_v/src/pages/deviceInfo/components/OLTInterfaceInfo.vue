@@ -51,7 +51,7 @@
                         <OLT_ONT_Detail_info
                             :device-name="deviceName"
                             :interface="interface"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                             :line="line"
                             :show-subscribers-data="showSubscribersData"
                             :subscriber-row="subscribersData[Number(line[0])] || null"
@@ -85,7 +85,7 @@ export default defineComponent({
     },
     props: {
         deviceName: { required: true, type: String },
-        permissionLevel: { required: true, type: Number },
+        permissions: { required: true, type: Array as PropType<string[]> },
         data: { required: true, type: Object as PropType<ontData> },
         interface: { required: true, type: Object as PropType<DeviceInterface> },
     },

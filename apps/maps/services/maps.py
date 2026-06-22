@@ -5,7 +5,7 @@ from rest_framework.exceptions import APIException
 from devicemanager.device import zabbix_api
 
 from ..models import Layers, Maps
-from .layers import get_file_layer_data, get_zabbix_layer_data
+from .layers import get_device_group_layer_data, get_file_layer_data, get_zabbix_layer_data
 from .map_alerts import get_group_problems
 
 
@@ -23,6 +23,9 @@ def get_map_layers_geo_data(map_object: Maps) -> list[dict]:
             if layer_data:
                 layers_data.append(layer_data)
 
+        elif layer.type == "device_group":
+            layers_data.append(get_device_group_layer_data(layer))
+
     if zabbix_layers:  # Если есть zabbix слои
         try:
             with zabbix_api.connect() as zbx_session:
@@ -33,7 +36,7 @@ def get_map_layers_geo_data(map_object: Maps) -> list[dict]:
         except RequestException as exc:
             raise APIException({"detail": "Не удалось подключиться к Zabbix API"}) from exc
 
-    return layers_data  # Возвращаем список геообъектов
+    return layers_data
 
 
 def get_zabbix_problems_on_map(map_object: Maps) -> list[dict]:

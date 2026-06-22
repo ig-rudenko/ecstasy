@@ -60,9 +60,13 @@ def check_user_interface_permission(
     ):
         raise PermissionDenied(detail="Запрещено изменять состояние данного порта!")
 
-    # Если недостаточно привилегий для изменения статуса порта
-    if profile is not None and profile.perm_level < 2 and action in ["up", "down"]:
-        # Логи
+    action_permissions = {
+        "reload": Profile.INTERFACE_REBOOT,
+        "up": Profile.INTERFACE_UP_DOWN,
+        "down": Profile.INTERFACE_UP_DOWN,
+    }
+    required_permission = action_permissions.get(action)
+    if required_permission is not None and not profile.has_device_permission(required_permission):
         log(
             user,
             device,

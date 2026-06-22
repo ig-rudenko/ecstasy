@@ -1,7 +1,8 @@
+import type {LayersControlEvent} from "leaflet";
 import {
+    canvas,
     CircleMarker,
     circleMarker,
-    canvas,
     Control,
     divIcon,
     featureGroup,
@@ -19,10 +20,10 @@ import {
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import { Paginator } from "@/types/paginator";
-import { errorToast } from "@/services/my.toast";
-import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
-import { loadLayers, saveLayers } from "@/pages/maps/layers";
+import {Paginator} from "@/types/paginator";
+import {errorToast} from "@/services/my.toast";
+import {strFormatArgs, textToHtml, wrapLinks} from "@/formats";
+import {loadLayers, saveLayers} from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
 
 enum mapType {
@@ -86,7 +87,6 @@ interface StaticElementData {
 }
 
 const popupDefaultOptions = { maxWidth: 1200 };
-const defaultMapCenter: LatLngExpression = [44.6, 33.5];
 const defaultMapZoom = 12;
 const renderBatchSize = 250;
 const viewportPadding = 0.2;
@@ -119,7 +119,6 @@ export async function getMapDetail(mapID: string): Promise<MapDetail | null> {
 }
 
 export class MapService {
-    public mapData: MapDetail | null = null;
     public mapGroups: string[] = [];
     public map: LMap;
     public points: Map<string, PointData> = new Map();
@@ -134,30 +133,29 @@ export class MapService {
     private visiblePointIds: Set<string> = new Set();
     private visibleStaticElementIds: Set<string> = new Set();
     private pointsBySourceId: Map<string, PointData[]> = new Map();
+    private initialViewReady = false;
 
     constructor(
         public mapID: string,
         public mapHTMLElementID: string
     ) {
         this.map = new LMap(mapHTMLElementID, { layers: [osm], minZoom: 5, preferCanvas: true });
-        this.map.setView(defaultMapCenter, defaultMapZoom);
         this.map.attributionControl.getContainer()?.remove();
         this.map.addControl(new Control.Scale());
-        this.map.on("overlayadd overlayremove", () => {
+        this.map.on("overlayadd", (event: LayersControlEvent) => {
+            saveLayers(this.mapID, this.map, this.overlays);
+
+            if (this.initialViewReady) {
+                this.fitMapToLayer(event.name);
+            }
+
+            this.queueVisibilityRefresh();
+        });
+        this.map.on("overlayremove", () => {
             saveLayers(this.mapID, this.map, this.overlays);
             this.queueVisibilityRefresh();
         });
         this.map.on("moveend zoomend", () => this.queueVisibilityRefresh());
-    }
-
-    /**
-     * Загружает подробные данные карты.
-     *
-     * @returns Подробные данные карты или null.
-     */
-    async getMapData(): Promise<MapDetail | null> {
-        this.mapData = await getMapDetail(this.mapID);
-        return this.mapData;
     }
 
     /**
@@ -227,7 +225,41 @@ export class MapService {
             }
         }
 
+        this.fitMapToVisibleContent();
         await this.refreshVisibleElements();
+    }
+
+    /**
+     * Подбирает начальную область просмотра по активным слоям карты.
+     */
+    private fitMapToVisibleContent() {
+        const layerNames = new Set(this.mapGroups.filter((layerName) => this.isOverlayVisible(layerName)));
+        this.fitMapToBounds(getMapContentBounds(this.points.values(), this.staticElements, layerNames));
+    }
+
+    /**
+     * Подбирает область просмотра по объектам слоя.
+     *
+     * @param layerName - Имя слоя.
+     */
+    private fitMapToLayer(layerName: string) {
+        this.fitMapToBounds(getMapContentBounds(this.points.values(), this.staticElements, new Set([layerName])));
+    }
+
+    /**
+     * Применяет область просмотра карты.
+     *
+     * @param bounds - Границы объектов.
+     */
+    private fitMapToBounds(bounds: LatLngBounds) {
+        if (bounds.isValid()) {
+            this.map.fitBounds(bounds, { maxZoom: defaultMapZoom });
+            this.initialViewReady = true;
+            return;
+        }
+
+        this.map.fitWorld();
+        this.initialViewReady = true;
     }
 
     /**
@@ -294,6 +326,13 @@ export class MapService {
                     feature.properties?.name,
                     feature.properties?.iconCaption,
                     feature.properties?.description,
+                    feature.properties?.device?.name,
+                    feature.properties?.device?.ip,
+                    feature.properties?.device?.group,
+                    feature.properties?.device?.vendor,
+                    feature.properties?.device?.model,
+                    feature.properties?.device?.serialNumber,
+                    feature.properties?.device?.osVersion,
                 ]),
             };
 
@@ -439,6 +478,10 @@ export class MapService {
      * Освежает видимые слои батчами после перемещения карты.
      */
     async refreshVisibleElements() {
+        if (!this.initialViewReady) {
+            return;
+        }
+
         const paddedBounds = this.map.getBounds().pad(viewportPadding);
         const nextVisiblePoints = this.collectVisiblePointIds(paddedBounds);
         const nextVisibleStaticElements = this.collectVisibleStaticElementIds(paddedBounds);
@@ -451,6 +494,10 @@ export class MapService {
      * Синхронно обновляет видимость сразу после поиска/переключения слоя.
      */
     private refreshVisibleElementsSync() {
+        if (!this.initialViewReady) {
+            return;
+        }
+
         const paddedBounds = this.map.getBounds().pad(viewportPadding);
         const nextVisiblePoints = this.collectVisiblePointIds(paddedBounds);
         const nextVisibleStaticElements = this.collectVisibleStaticElementIds(paddedBounds);
@@ -463,6 +510,10 @@ export class MapService {
      * Ставит обновление видимости в очередь следующего animation frame.
      */
     private queueVisibilityRefresh() {
+        if (!this.initialViewReady) {
+            return;
+        }
+
         if (this.visibilityRefreshQueued) {
             return;
         }
@@ -759,6 +810,40 @@ function normalizeSearchText(values: unknown[]): string {
 }
 
 /**
+ * Возвращает границы всех объектов карты.
+ *
+ * @param points - Динамические точки.
+ * @param staticElements - Статические GeoJSON-объекты.
+ * @param layerNames - Имена слоев для фильтрации.
+ * @returns Географические границы объектов.
+ */
+function getMapContentBounds(
+    points: Iterable<PointData>,
+    staticElements: StaticElementData[],
+    layerNames?: Set<string>
+) {
+    const bounds = new LatLngBounds([]);
+
+    for (const point of points) {
+        if (layerNames && !layerNames.has(point.layerName)) {
+            continue;
+        }
+
+        bounds.extend(toLatLng(point.latlng));
+    }
+
+    for (let i = 0; i < staticElements.length; i++) {
+        if (layerNames && !layerNames.has(staticElements[i].layerName)) {
+            continue;
+        }
+
+        bounds.extend(staticElements[i].bounds);
+    }
+
+    return bounds;
+}
+
+/**
  * Формирует HTML проблем узла.
  *
  * @param problem - Описание проблем.
@@ -869,7 +954,7 @@ function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any,
  * @returns Leaflet marker.
  */
 function createMarker(feature: any, latlng: LatLngExpression, defaults: any, renderer?: any) {
-    let popupText = feature.properties?.description || null;
+    let popupContent = getFeaturePopupContent(feature);
     let tooltipText = feature.properties?.iconCaption || feature.properties?.name || null;
     let fillColor =
         feature.properties?.["marker-color"] ||
@@ -891,7 +976,7 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any, ren
         });
 
         attachLazyInteractions(point, {
-            popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "",
+            popupContent,
             tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
         });
 
@@ -907,10 +992,101 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any, ren
 
     const markerLayer = marker(latlng, { opacity: 1, icon: svgIcon });
     attachLazyInteractions(markerLayer, {
-        popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "",
+        popupContent,
         tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
     });
     return markerLayer;
+}
+
+/**
+ * Возвращает HTML popup для GeoJSON feature.
+ *
+ * @param feature - GeoJSON feature.
+ * @returns HTML popup.
+ */
+function getFeaturePopupContent(feature: any) {
+    if (feature.properties?.device) {
+        return renderDevicePopup(feature.properties.device);
+    }
+
+    const popupText = feature.properties?.description;
+    return popupText ? wrapLinks(textToHtml(popupText)) : "";
+}
+
+/**
+ * Рендерит popup оборудования на фронтенде из структурированных данных.
+ *
+ * @param device - Данные оборудования.
+ * @returns HTML popup.
+ */
+function renderDevicePopup(device: any) {
+    const rows = [
+        ["IP", device.ip],
+        ["Группа", device.group],
+        ["Вендор", device.vendor],
+        ["Модель", device.model],
+        ["Серийный номер", device.serialNumber],
+        ["Версия ПО", device.osVersion],
+    ].filter(([, value]) => hasPopupValue(value));
+    const rowsHtml = rows
+        .map(([label, value]) => {
+            return [
+                '<div class="device-popup__row">',
+                `<span>${escapeHtml(label)}</span>`,
+                `<strong>${escapeHtml(value)}</strong>`,
+                "</div>",
+            ].join("");
+        })
+        .join("");
+
+    return `<div class="device-popup">
+        <div class="device-popup__title">${escapeHtml(device.name || "Оборудование")}</div>
+        <div class="device-popup__rows">${rowsHtml}</div>
+        ${renderDevicePopupLink(device)}
+    </div>`;
+}
+
+/**
+ * Рендерит ссылку на карточку оборудования.
+ *
+ * @param device - Данные оборудования.
+ * @returns HTML ссылки.
+ */
+function renderDevicePopupLink(device: any) {
+    if (!hasPopupValue(device.url)) {
+        return "";
+    }
+
+    return [
+        `<a class="device-popup__link" href="${escapeHtml(device.url)}" target="_blank" rel="noopener noreferrer">`,
+        "Открыть оборудование",
+        "</a>",
+    ].join("");
+}
+
+/**
+ * Проверяет, можно ли показать значение в popup.
+ *
+ * @param value - Значение.
+ * @returns Признак непустого значения.
+ */
+function hasPopupValue(value: unknown) {
+    return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
+/**
+ * Экранирует строку для вставки в HTML popup.
+ *
+ * @param value - Значение.
+ * @returns Экранированная строка.
+ */
+function escapeHtml(value: unknown) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 /**

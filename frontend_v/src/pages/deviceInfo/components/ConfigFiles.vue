@@ -22,6 +22,7 @@
 
                     <div class="flex flex-wrap gap-2">
                         <Button
+                            v-if="canCollectConfig"
                             @click="collectConfig"
                             icon="pi pi-plus"
                             label="Собрать новую"
@@ -113,6 +114,7 @@
                                     class="rounded-2xl!"
                                 />
                                 <Button
+                                    v-if="canDeleteConfig"
                                     @click="showDeleteDialog(file)"
                                     icon="pi pi-trash"
                                     label="Удалить"
@@ -274,7 +276,7 @@
                     @click="visibleDeleteDialog = false"
                 />
                 <Button
-                    v-if="selectedFile"
+                    v-if="selectedFile && canDeleteConfig"
                     @click="deleteFile(selectedFile)"
                     icon="pi pi-trash"
                     severity="danger"
@@ -297,7 +299,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, PropType } from "vue";
 import { AxiosResponse } from "axios";
 import Dialog from "primevue/dialog";
 
@@ -350,6 +352,7 @@ export default defineComponent({
     },
     props: {
         deviceName: { required: true, type: String },
+        permissions: { required: true, type: Array as PropType<string[]> },
     },
     data() {
         return {
@@ -370,6 +373,12 @@ export default defineComponent({
         configMatchCounter(): string {
             if (!this.configMatches.length) return "0 / 0";
             return `${this.activeConfigMatch + 1} / ${this.configMatches.length}`;
+        },
+        canCollectConfig(): boolean {
+            return this.permissions.includes("check.device_config_collect");
+        },
+        canDeleteConfig(): boolean {
+            return this.permissions.includes("check.device_config_delete");
         },
         highlightedConfigText(): string {
             const content = this.selectedFile?.content ? this.formatConfigFile(this.selectedFile.content) : "";

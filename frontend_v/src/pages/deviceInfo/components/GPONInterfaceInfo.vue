@@ -28,7 +28,7 @@
                             :device-name="deviceName"
                             :line="line"
                             :interface="interface"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                         />
                     </template>
                 </tbody>
@@ -56,7 +56,7 @@ export default defineComponent({
     props: {
         interface: { required: true, type: Object as PropType<DeviceInterface> },
         deviceName: { required: true, type: String },
-        permissionLevel: { required: true, type: Number },
+        permissions: { required: true, type: Array as PropType<string[]> },
         gponData: { required: true, type: Object as PropType<ontData> },
     },
     data() {

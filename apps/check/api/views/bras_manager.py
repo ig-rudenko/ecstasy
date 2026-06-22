@@ -17,7 +17,7 @@ class BrassSessionAPIView(UserAuthenticatedAPIView):
     pagination_class = None
 
     @method_decorator(bras_get_session_api_doc)
-    @method_decorator(profile_permission(models.Profile.BRAS))
+    @method_decorator(profile_permission(models.Profile.BRAS_READ, models.Profile.BRAS_READ_WRITE))
     def get(self, request):
         """
         ## Возвращаем сессию на BRAS для конкретного MAC адреса
@@ -54,7 +54,7 @@ class CutBrassSessionAPIView(UserAuthenticatedAPIView):
     serializer_class = BrassSessionSerializer
 
     @method_decorator(cut_bras_session_api_doc)
-    @method_decorator(profile_permission(models.Profile.BRAS))
+    @method_decorator(profile_permission(models.Profile.BRAS_READ_WRITE))
     def post(self, request):
         """
         ## Сбрасываем сессию абонента и перезагружаем порт на оборудовании

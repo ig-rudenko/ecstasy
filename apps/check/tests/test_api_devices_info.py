@@ -416,7 +416,6 @@ class DeviceInfoAPIViewTestCase(APITestCase):
                 "monitoringAvailable": False,
                 "maps": [],
             },
-            "permission": self.user.profile.perm_level,
             "coords": None,
             "consoleURL": "",
             "uptime": -1,
@@ -447,7 +446,6 @@ class DeviceInfoAPIViewTestCase(APITestCase):
                 "monitoringAvailable": False,
                 "maps": [],
             },
-            "permission": self.user.profile.perm_level,
             "coords": None,
             "consoleURL": get_device_console_url(
                 self.user.profile,

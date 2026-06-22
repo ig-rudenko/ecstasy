@@ -20,6 +20,7 @@ from .types import (
     InterfaceListType,
     InterfaceVLANListType,
     MACListType,
+    MACTableType,
     PortInfoType,
     SystemInfo,
     VlanTableType,
@@ -55,6 +56,14 @@ class AbstractDevice(ABC):
 
         :return: ```[ ('vid', 'mac'), ... ]```
         """
+
+    @abstractmethod
+    def get_mac_table(self) -> MACTableType:
+        """Возвращает всю таблицу MAC адресов оборудования"""
+
+    @abstractmethod
+    def get_vlan_table(self) -> VlanTableType:
+        """Возвращает сконфигурированные активные на оборудовании VLAN и на каких интерфейсах имеются"""
 
     @abstractmethod
     def reload_port(self, port: str, save_config=True) -> str:
@@ -490,6 +499,10 @@ class BaseDevice(AbstractDevice, ABC):
 
         self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0.2)
         return cmd_outputs
+
+    @lock_session
+    def get_mac_table(self) -> MACTableType:
+        return []
 
     @lock_session
     def get_vlan_table(self) -> VlanTableType:

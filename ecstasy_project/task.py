@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import orjson
 from celery import Task
+from django.db import close_old_connections, connections
 from django.db.models import QuerySet
 
 
@@ -52,7 +53,15 @@ class ThreadUpdatedStatusTask(Task):
         """
         with ThreadPoolExecutor(max_workers=self.max_workers) as execute:
             for obj in self.queryset.all():
-                execute.submit(self.__class__.thread_task, self, obj)
+                execute.submit(self._run_thread_task, obj)
+
+    def _run_thread_task(self, obj):
+        """Run a worker task with a clean Django DB connection lifecycle."""
+        close_old_connections()
+        try:
+            return self.thread_task(obj)
+        finally:
+            connections.close_all()
 
     def thread_task(self, obj, **kwargs):
         """

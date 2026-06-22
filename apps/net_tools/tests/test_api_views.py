@@ -15,6 +15,7 @@ class IpMacInfoViewTestCase(TestCase):
         """Создает пользователя и оборудование для проверки WTF API."""
         cls.user = User.objects.create_superuser(username="wtf_admin", password="password")
         cls.group = DeviceGroup.objects.create(name="WTF")
+        cls.user.profile.devices_groups.add(cls.group)
         cls.auth_group = AuthGroup.objects.create(name="test", login="test", password="test")
         cls.search_device = Devices.objects.create(
             name="search-device",

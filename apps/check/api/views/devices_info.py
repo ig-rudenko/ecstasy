@@ -319,7 +319,6 @@ class DeviceInfoAPIView(DeviceAPIView):
                     "vendor": "Eltex"
                 }
             },
-            "permission": 3,
             "coords": [
                 23.322332,
                 32.233223
@@ -355,7 +354,6 @@ class DeviceInfoAPIView(DeviceAPIView):
                     "inventory": zabbix_info.inventory.to_dict,
                     "maps": devices_maps,
                 },
-                "permission": self.current_user.profile.perm_level,
                 "coords": (coordinates.lat, coordinates.lon) if coordinates else None,
                 "consoleURL": get_device_console_url(
                     self.current_user.profile,

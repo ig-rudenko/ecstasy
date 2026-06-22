@@ -8,11 +8,7 @@
                     {{ line[0] }}
                 </div>
 
-                <PortControlButtons
-                    :device-name="deviceName"
-                    :interface="ontInterface"
-                    :permission-level="permissionLevel"
-                />
+                <PortControlButtons :device-name="deviceName" :interface="ontInterface" :permissions="permissions" />
 
                 <Button @click="toggleDetailInfo" text class="rounded-2xl">
                     <svg
@@ -86,6 +82,7 @@
                 :complex-info="complexInfo"
                 :interface="ontInterface"
                 :device-name="deviceName"
+                :permissions="permissions"
             />
         </td>
     </tr>
@@ -107,7 +104,7 @@ const props = defineProps({
     deviceName: { required: true, type: String },
     interface: { required: true, type: Object as PropType<DeviceInterface> },
     line: { required: true, type: Array as PropType<any[]> },
-    permissionLevel: { required: true, type: Number },
+    permissions: { required: true, type: Array as PropType<string[]> },
     showSubscribersData: { required: false, type: Boolean, default: false },
     subscriberRow: {
         required: false,

@@ -15,7 +15,6 @@ export interface GeneralInfo {
     deviceIP: string;
     deviceName: string;
     elasticStackLink: string;
-    permission: number;
     zabbixHostID: number;
     zabbixInfo: ZabbixInfo;
     zabbixURL: string;

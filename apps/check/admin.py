@@ -539,11 +539,10 @@ class ProfileAdmin(ModelAdmin):
     compressed_fields = True
     warn_unsaved_form = True
     list_filter_submit = True
-    list_display = ["user", "permissions", "user_is_active", "dev_groups", "console_access"]
+    list_display = ["user", "profile_permissions", "user_is_active", "dev_groups", "console_access"]
     list_select_related = ["user"]
     filter_horizontal = ["devices_groups"]
     list_filter = [
-        ("permissions", ChoicesDropdownFilter),
         ("devices_groups", MultipleRelatedDropdownFilter),
         "console_access",
         "user__is_active",
@@ -561,7 +560,23 @@ class ProfileAdmin(ModelAdmin):
         return obj.user.is_active
 
     def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related("devices_groups")
+        return (
+            super()
+            .get_queryset(request)
+            .prefetch_related(
+                "devices_groups",
+                "user__groups__permissions",
+                "user__user_permissions",
+            )
+        )
+
+    @admin.display(description="Права доступа на оборудование")
+    def profile_permissions(self, obj: Profile) -> str:
+        """Отображение прав пользователя на управление оборудованием."""
+        return ", ".join(
+            permission.split(".", 1)[1].removeprefix("device_")
+            for permission in sorted(Profile.get_user_device_permissions(obj.user))
+        )
 
     @admin.display(description="Группы")
     def dev_groups(self, obj: Profile):
@@ -595,7 +610,9 @@ class UserProfileAdmin(UserAdmin):
     @admin.display(description="Права")
     def permission(self, obj: User):
         """Отображение привилегий пользователя"""
-        return Profile.objects.get(user_id=obj.pk).permissions
+        return ", ".join(
+            permission.split(".", 1)[1] for permission in sorted(Profile.get_user_device_permissions(obj))
+        )
 
     @admin.display(description="Группы")
     def dev_groups(self, obj: User):

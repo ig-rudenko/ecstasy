@@ -17,7 +17,7 @@ class LayerFrom(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["zabbix_group_name"] = forms.ChoiceField(
             label="Выберите группу Zabbix",
-            choices=get_zabbix_groups(),
+            choices=(("", "---------"), *tuple(get_zabbix_groups())),
             required=False,
             widget=UnfoldAdminSelectWidget,  # noqa
         )

@@ -10,9 +10,9 @@ class DiscoveryConfig(AppConfig):
     verbose_name = "Auto Discovery"
 
     def ready(self) -> None:
-        """Подключить создание custom permissions после миграций."""
+        """Подключить post-migrate hooks discovery."""
 
-        from .new_permissions import create_permission
+        from .new_permissions import create_groups_with_permissions, create_permission
 
         post_migrate.connect(
             create_permission,
@@ -20,3 +20,40 @@ class DiscoveryConfig(AppConfig):
             weak=False,
             dispatch_uid="discovery.create_permission",
         )
+        post_migrate.connect(
+            create_groups_with_permissions,
+            sender=self,
+            weak=False,
+            dispatch_uid="discovery.create_groups_with_permissions",
+        )
+        post_migrate.connect(
+            register_task,
+            sender=self,
+            weak=False,
+            dispatch_uid="discovery.register_task",
+        )
+
+
+def register_task(*args, **kwargs) -> None:
+    """Создать периодические задачи discovery после миграций."""
+
+    # pylint: disable-next=import-outside-toplevel
+    from django_celery_beat.models import CrontabSchedule, PeriodicTask
+
+    from .tasks import cleanup_discovery_runs_task
+
+    crontab, _ = CrontabSchedule.objects.get_or_create(
+        minute="30",
+        hour="4",
+    )
+    PeriodicTask.objects.get_or_create(
+        name="Очистка старых запусков discovery",
+        defaults={
+            "task": cleanup_discovery_runs_task.name,
+            "crontab": crontab,
+            "kwargs": '{"retention_days": 14}',
+            "enabled": True,
+            "description": "Удаляет старые discovery. "
+            "В аргументе указывается кол-во дней, старше которых discovery будут удалены.",
+        },
+    )

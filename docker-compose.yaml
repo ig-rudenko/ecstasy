@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:20.0.7
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.7
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.8
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.8
 x-logging: &logging
   options:
     max-size: "10m"
@@ -118,7 +118,8 @@ services:
       - backend
 
   mysql:
-    image: mysql:9.7.0-oracle
+    image: mysql:9.7.1-oracle
+    command: --max-connections=300
     logging: *logging
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"

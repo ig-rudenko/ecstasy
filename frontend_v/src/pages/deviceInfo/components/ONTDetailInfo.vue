@@ -7,11 +7,7 @@
                 <div @click="toggleDetailInfo" class="text-xl font-mono text-center px-4">{{ line[0] }}</div>
 
                 <!--        Управление состоянием интерфейсов-->
-                <PortControlButtons
-                    :device-name="deviceName"
-                    :interface="ontInterface"
-                    :permission-level="permissionLevel"
-                />
+                <PortControlButtons :device-name="deviceName" :interface="ontInterface" :permissions="permissions" />
 
                 <!--        Посмотреть порт -->
                 <Button @click="toggleDetailInfo" text class="rounded-2xl">
@@ -64,7 +60,12 @@
             </div>
 
             <!--      ANOTHER INFO  -->
-            <ComplexInterfaceInfo :complex-info="complexInfo" :interface="ontInterface" :device-name="deviceName" />
+            <ComplexInterfaceInfo
+                :complex-info="complexInfo"
+                :interface="ontInterface"
+                :device-name="deviceName"
+                :permissions="permissions"
+            />
         </td>
 
         <td v-else colspan="5">
@@ -97,7 +98,7 @@ export default defineComponent({
     props: {
         interface: { required: true, type: Object as PropType<DeviceInterface> },
         deviceName: { required: true, type: String },
-        permissionLevel: { required: true, type: Number },
+        permissions: { required: true, type: Array as PropType<string[]> },
         line: { required: true, type: Object },
     },
     data() {

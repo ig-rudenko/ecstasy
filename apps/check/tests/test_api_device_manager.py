@@ -98,8 +98,7 @@ class PortControlAPIViewTestCase(APITestCase):
 
     @patch("devicemanager.remote.connector.ping", return_value=False)
     def test_port_down_dev_unavailable(self, *args):
-        self.user.profile.permissions = self.user.profile.UP_DOWN
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.client.force_login(user=self.user)
 
         resp = self.client.post(
@@ -117,8 +116,7 @@ class PortControlAPIViewTestCase(APITestCase):
         self.assertEqual(resp.data["errors"]["error"], "Оборудование недоступно!")
 
     def test_port_down_invalid_request_data(self):
-        self.user.profile.permissions = self.user.profile.UP_DOWN
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.client.force_login(user=self.user)
 
         # Неверный статус.
@@ -165,8 +163,7 @@ class PortControlAPIViewTestCase(APITestCase):
 
     @patch("apps.check.models.Devices.connect")
     def test_port_down_invalid_port(self, dev_connect_mock: Mock):
-        self.user.profile.permissions = self.user.profile.UP_DOWN
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.client.force_login(user=self.user)
 
         # Меняем IP, чтобы работал ping.
@@ -186,8 +183,7 @@ class PortControlAPIViewTestCase(APITestCase):
 
     def test_port_down_not_enough_permission(self):
         # Права только на перезагрузку.
-        self.user.profile.permissions = self.user.profile.REBOOT
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_REBOOT)
         self.client.force_login(user=self.user)
 
         # Попытка выключить порт.
@@ -213,7 +209,7 @@ class PortControlAPIViewTestCase(APITestCase):
         )
 
     def test_port_down_no_access_to_change_core_port_by_desc(self):
-        self.user.profile.permissions = self.user.profile.UP_DOWN
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.user.profile.port_guard_pattern = r"core-\d"
         self.user.profile.save()
         self.client.force_login(user=self.user)
@@ -233,8 +229,7 @@ class PortControlAPIViewTestCase(APITestCase):
     ):
         mock_available.return_value = True
 
-        self.user.profile.permissions = self.user.profile.UP_DOWN
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.client.force_login(user=self.user)
         self.user.is_superuser = True
         self.user.save()
@@ -261,8 +256,7 @@ class PortControlAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_port_down_valid(self, dev_connect_mock: Mock, mock_available: Mock):
         mock_available.return_value = True
-        self.user.profile.permissions = self.user.profile.UP_DOWN
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.INTERFACE_UP_DOWN)
         self.client.force_login(user=self.user)
 
         device_mock = MagicMock()
@@ -315,8 +309,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_clear_description(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.permissions = self.user.profile.BRAS
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
 
         # Подготовка данных.
         set_description_result = SetDescriptionResult(
@@ -368,8 +361,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_set_description(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.permissions = self.user.profile.BRAS
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
 
         # Подготовка данных.
         description = "Новое описание"
@@ -425,8 +417,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_set_description_too_long(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.permissions = self.user.profile.BRAS
-        self.user.profile.save()
+        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
 
         # Подготовка данных.
         description = "Новое описание" * 100
@@ -563,9 +554,8 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create_user(username="bulk_user", password="password")
-        cls.user.profile.permissions = cls.user.profile.CMD_RUN
+        cls.user.profile.set_permission(cls.user.profile.CMD_RUN)
         cls.user.user_permissions.add(Permission.objects.get(codename="access_bulk_device_cmd"))
-        cls.user.profile.save()
 
         cls.group = DeviceGroup.objects.create(name="Bulk devices")
         cls.user.profile.devices_groups.add(cls.group)
@@ -604,8 +594,7 @@ class BulkDeviceCommandAPIViewTestCase(APITestCase):
     def create_user_without_bulk_permission(self) -> User:
         """Create authenticated user with CMD_RUN access but without bulk command permission."""
         user = User.objects.create_user(username="bulk_user_no_perm", password="password")
-        user.profile.permissions = user.profile.CMD_RUN
-        user.profile.save()
+        user.profile.set_permission(user.profile.CMD_RUN)
         user.profile.devices_groups.add(self.group)
         user.groups.add(*self.user.groups.all())
         return user

@@ -1,0 +1,20 @@
+.selector {
+    max-width: none!important;
+}
+
+.selector-available, .selector-chosen {
+    width: 100%!important;
+}
+
+.selector-available select {
+    height: 250px;
+}
+
+.selector-available select option {
+    text-wrap-mode: wrap;
+    padding: 4px 9px;
+}
+
+.selector-available select option:hover {
+    background-color: rgb(10 110 189 / 0.22);
+}

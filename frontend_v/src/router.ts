@@ -6,6 +6,7 @@ import { normalizeAuthRedirectPath } from "@/services/auth/redirect";
 const router = createRouter({
     history: createWebHistory(),
     routes: [
+        { path: "/maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view" },
         {
             path: "/",
             component: () => import("@/layouts/MainLayout.vue"),
@@ -53,7 +54,6 @@ const router = createRouter({
                     name: "tools-wtf",
                 },
                 { path: "maps", component: () => import("@/pages/maps/MapsListView.vue"), name: "maps" },
-                { path: "maps/:id", component: () => import("@/pages/maps/MapView.vue"), name: "map-view" },
                 {
                     path: "ring-manager",
                     component: () => import("@/pages/ring-manager/RingManager.vue"),

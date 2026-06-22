@@ -77,14 +77,36 @@ def range_to_numbers(ports_string: str) -> list[int]:
     >>> range_to_numbers("10 to 14")
     [10, 11, 12, 13, 14]
 
+    >>> range_to_numbers("2 9 10 to 14")
+    [2, 9, 10, 11, 12, 13, 14]
+
+    >>> range_to_numbers("2, 9, 10 to 14")
+    [2, 9, 10, 11, 12, 13, 14]
+
+    >>> range_to_numbers("2; 9; 10 to 14")
+    [2, 9, 10, 11, 12, 13, 14]
+
     >>> range_to_numbers("134-136, 234, 411")
     [134, 135, 136, 234, 411]
+
+    >>> range_to_numbers("134-136,234,411")
+    [134, 135, 136, 234, 411]
+
+    >>> range_to_numbers("134-136; 234; 411")
+    [134, 135, 136, 234, 411]
+
+    >>> range_to_numbers("134-136;234;411")
+    [134, 135, 136, 234, 411]
+
+    >>> range_to_numbers("11")
+    [11]
     """
 
     ports_split: set = set()
 
     # Проверка наличия слова "to" в файле ports_string.
     if "to" in ports_string:
+        ports_string = re.sub("[,;]", " ", ports_string)
         # Если имеется формат "1 to 7 10 12 to 44"
         ports_split.update(
             *[set(range(int(v[0]), int(v[1]) + 1)) for v in re.findall(r"(\d+)\s*to\s*(\d+)", ports_string)]
@@ -95,8 +117,9 @@ def range_to_numbers(ports_string: str) -> list[int]:
 
         return sorted(ports_split)
 
-    if "," in ports_string:
-        ports_split = set(ports_string.replace(" ", "").split(","))
+    # Разделители `,` или `;`
+    if re.search("[,;]", ports_string):
+        ports_split = set(re.split("[,;]", re.sub(r"\s+", "", ports_string)))
     else:
         ports_split = set(ports_string.split())
 
@@ -104,7 +127,7 @@ def range_to_numbers(ports_string: str) -> list[int]:
     for p in ports_split:
         try:
             if "-" in p:
-                # Создаем список целых чисел, представляющих диапазон портов. ( 134-136 )
+                # Создаем список целых чисел, представляющих диапазон портов. (134-136)
                 # Строка `p`, содержит диапазон портов, разделенных дефисом, разбиваем ее на два целых числа,
                 # используя дефис в качестве разделителя, а затем создаем список целых чисел,
                 # используя функцию `range()`, которая затем преобразуется в список с помощью функции `list()`.

@@ -28,9 +28,23 @@ class CheckConfig(AppConfig):
 
     def ready(self):
         """Connect post-migrate hooks for check app tasks."""
+        from .new_permissions import create_groups_with_permissions, create_permission
+
         post_migrate.connect(
             register_task,
             sender=self,
             weak=False,
             dispatch_uid="check.register_task",
+        )
+        post_migrate.connect(
+            create_permission,
+            sender=self,
+            weak=False,
+            dispatch_uid="check.create_permission",
+        )
+        post_migrate.connect(
+            create_groups_with_permissions,
+            sender=self,
+            weak=False,
+            dispatch_uid="check.create_groups_with_permissions",
         )

@@ -1,8 +1,9 @@
 from decimal import Decimal
+from importlib import import_module
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
@@ -318,16 +319,80 @@ class ProfileTest(TestCase):
 
     def test_default_permissions(self):
         p = Profile.objects.get(user=User.objects.get(username="first_user"))
-        self.assertEqual(p.permissions, "read")
+        self.assertEqual(list(p.user.user_permissions.values_list("codename", flat=True)), [])
 
     def test_permissions_list(self):
-        p = Profile.objects.get(user=User.objects.get(username="first_user"))
-        self.assertEqual(p.permissions_level, ["read", "reboot", "up_down", "bras", "cmd_run"])
+        self.assertEqual(
+            Profile.PERMISSION_LEVELS,
+            [
+                "device_interface_reboot",
+                "device_interface_up_down",
+                "device_bras_read",
+                "device_bras_read_write",
+                "device_config_view",
+                "device_config_collect",
+                "device_config_delete",
+                "device_cmd_run",
+            ],
+        )
 
-    def test_permissions_max_length(self):
+    def test_permissions_migration_keeps_legacy_hierarchy(self):
+        migration = import_module("apps.check.migrations.0043_profile_permissions_to_auth_permissions")
+        legacy_permission_map = dict(migration.LEGACY_PERMISSION_MAP)
+
+        self.assertEqual(
+            legacy_permission_map["bras"],
+            [
+                "device_interface_reboot",
+                "device_interface_up_down",
+                "device_bras_read",
+                "device_bras_read_write",
+                "device_config_view",
+                "device_config_collect",
+                "device_config_delete",
+            ],
+        )
+        self.assertEqual(
+            legacy_permission_map["cmd_run"],
+            [
+                "device_interface_reboot",
+                "device_interface_up_down",
+                "device_bras_read",
+                "device_bras_read_write",
+                "device_config_view",
+                "device_config_collect",
+                "device_config_delete",
+                "device_cmd_run",
+            ],
+        )
+        self.assertEqual(legacy_permission_map["read"], [])
+
+    def test_permissions_migration_restore_uses_highest_legacy_level(self):
+        migration = import_module("apps.check.migrations.0043_profile_permissions_to_auth_permissions")
+
+        self.assertEqual(
+            migration.REVERSE_LEGACY_PERMISSION_MAP,
+            [
+                ("cmd_run", ["device_cmd_run"]),
+                (
+                    "bras",
+                    [
+                        "device_bras_read",
+                        "device_bras_read_write",
+                        "device_config_view",
+                        "device_config_collect",
+                        "device_config_delete",
+                    ],
+                ),
+                ("up_down", ["device_interface_up_down"]),
+                ("reboot", ["device_interface_reboot"]),
+            ],
+        )
+
+    def test_permissions_field_removed_from_profile(self):
         p = Profile.objects.get(user=User.objects.get(username="first_user"))
-        max_length = p._meta.get_field("permissions").max_length
-        self.assertEqual(max_length, 15)
+        with self.assertRaises(FieldDoesNotExist):
+            p._meta.get_field("permissions")
 
     def test_str(self):
         p = Profile.objects.get(user=User.objects.get(username="first_user"))

@@ -11,6 +11,7 @@ from .admin_utils import (
     get_polygon,
     parse_layer_file,
     resolve_marker_icon,
+    svg_device_icon,
     svg_file_icon,
     svg_zabbix_icon,
 )
@@ -25,6 +26,7 @@ class LayersAdmin(ModelAdmin):
         ("Описание", {"fields": ("name", "description"), "classes": ("tab", "wide")}),
         ("Из файла", {"fields": ("from_file",), "classes": ("tab", "wide")}),
         ("Из Zabbix", {"fields": ("zabbix_group_name",), "classes": ("tab", "wide")}),
+        ("Из группы оборудования", {"fields": ("device_group",), "classes": ("tab", "wide")}),
         (
             "Настройки по умолчанию для Маркера",
             {
@@ -56,6 +58,8 @@ class LayersAdmin(ModelAdmin):
             return format_html("{} {}", mark_safe(svg_zabbix_icon), instance.name)
         if instance.type == "file":
             return format_html("{} {}", mark_safe(svg_file_icon), instance.name)
+        if instance.type == "device_group":
+            return format_html("{} {}", mark_safe(svg_device_icon), instance.name)
         return instance.name
 
     @admin.display(description="Структура")
@@ -63,6 +67,10 @@ class LayersAdmin(ModelAdmin):
         if instance.type == "zabbix":
             html = get_icons_html_code(
                 instance.points_color, instance.points_border_color, icon_name="circle-fill"
+            )
+        elif instance.type == "device_group":
+            html = resolve_marker_icon(
+                instance.points_color, instance.points_border_color, instance.marker_icon_name
             )
         else:
             try:
@@ -92,4 +100,6 @@ class LayersAdmin(ModelAdmin):
             )
         if instance.zabbix_group_name:
             return mark_safe(f'{svg_zabbix_icon} - <strong>"{instance.zabbix_group_name}"</strong>')
+        if instance.device_group:
+            return format_html('Группа оборудования - <strong>"{}"</strong>', instance.device_group.name)
         return "Неизвестный тип слоя"

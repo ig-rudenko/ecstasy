@@ -39,7 +39,7 @@
                         <PortControlButtons
                             :interface="interface"
                             :device-name="deviceName"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                         />
 
                         <!--Посмотреть порт -->
@@ -72,7 +72,7 @@
                         <PortControlButtons
                             :interface="interface"
                             :device-name="deviceName"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                         />
 
                         <!--Посмотреть порт -->
@@ -200,7 +200,7 @@
                         <GPONInterfaceInfo
                             :device-name="deviceName"
                             :gpon-data="complexInfo.portDetailInfo.data"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                             :interface="interface"
                         />
                     </div>
@@ -210,14 +210,19 @@
                         <OLTInterfaceInfo
                             :device-name="deviceName"
                             :data="complexInfo.portDetailInfo.data"
-                            :permission-level="permissionLevel"
+                            :permissions="permissions"
                             :interface="interface"
                         />
                     </div>
                 </div>
 
                 <!--      ANOTHER INFO  -->
-                <ComplexInterfaceInfo :complex-info="complexInfo" :interface="interface" :device-name="deviceName" />
+                <ComplexInterfaceInfo
+                    :complex-info="complexInfo"
+                    :interface="interface"
+                    :device-name="deviceName"
+                    :permissions="permissions"
+                />
             </div>
         </td>
 
@@ -274,7 +279,7 @@ export default defineComponent({
     props: {
         deviceName: { required: true, type: String },
         interface: { required: true, type: Object as PropType<DeviceInterface> },
-        permissionLevel: { required: true, type: Number },
+        permissions: { required: true, type: Array as PropType<string[]> },
         dynamicOpacity: { required: true, type: Object as PropType<{ opacity: Number }> },
         showVlans: { required: false, type: Boolean, default: true },
     },

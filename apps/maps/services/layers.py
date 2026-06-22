@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from pyzabbix.api import ZabbixAPI
 
 from apps.app_settings.models import ZabbixConfig
+from apps.check.models import Devices
 
 from ..models import Layers
 
@@ -26,7 +27,6 @@ def get_zabbix_layer_data(zbx_session: ZabbixAPI, layer: Layers) -> dict:
 
     # Находим группу в Zabbix
     group = zbx_session.hostgroup.get(filter={"name": layer.zabbix_group_name})
-    print(group)
 
     features: dict = {}
     if group and layer.zabbix_group_name is not None:  # Если такая группа существует
@@ -85,6 +85,70 @@ def get_file_layer_data(layer: Layers) -> dict:
                 return {}
     except FileNotFoundError:
         return {}
+
+    return layer_data
+
+
+def get_device_group_layer_data(layer: Layers) -> dict:
+    """Возвращает GeoJSON-данные слоя на основе группы оборудования."""
+    layer_data: dict = {
+        "name": layer.name,
+        "type": "geojson",
+        "properties": {
+            "Polygon": {
+                "FillColor": layer.polygon_fill_color,
+                "Color": layer.polygon_border_color,
+                "Opacity": layer.polygon_opacity,
+            },
+            "Marker": {
+                "FillColor": layer.points_color,
+                "BorderColor": layer.points_border_color,
+                "Size": layer.points_size,
+                "IconName": layer.marker_icon_name,
+            },
+        },
+        "features": {
+            "type": "FeatureCollection",
+            "features": [],
+        },
+    }
+
+    if layer.device_group is None:
+        return layer_data
+
+    devices = Devices.objects.filter(
+        group=layer.device_group,
+        latitude__isnull=False,
+        longitude__isnull=False,
+    ).select_related("group")
+
+    layer_data["features"]["features"] = [
+        {
+            "type": "Feature",
+            "id": device.id,
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(device.longitude), float(device.latitude)],  # type: ignore[arg-type]
+            },
+            "properties": {
+                "name": device.name,
+                "group": device.group.name,
+                "iconName": layer.marker_icon_name,
+                "marker-color": layer.points_color,
+                "device": {
+                    "name": device.name,
+                    "ip": device.ip,
+                    "group": device.group.name,
+                    "url": device.get_absolute_url(),
+                    "vendor": device.vendor,
+                    "model": device.model,
+                    "serialNumber": device.serial_number,
+                    "osVersion": device.os_version,
+                },
+            },
+        }
+        for device in devices
+    ]
 
     return layer_data
 

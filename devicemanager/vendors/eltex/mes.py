@@ -5,7 +5,7 @@ from time import sleep
 import pexpect
 
 from ..base.device import AbstractConfigDevice, BaseDevice
-from ..base.helpers import interface_normal_view, parse_by_template, range_to_numbers
+from ..base.helpers import interface_normal_view, parse_by_template
 from ..base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -16,6 +16,7 @@ from ..base.types import (
     VlanTableType,
 )
 from ..base.validators import validate_and_format_port_as_normal
+from .vlan_parser import parse_vlan_output
 
 
 class EltexMES(BaseDevice, AbstractConfigDevice):
@@ -193,22 +194,8 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
     @BaseDevice.lock_session
     def get_vlan_table(self) -> VlanTableType:
         vlan_output = self.send_command("show vlan")
-        parsed = re.findall(r"^\s*(?P<vid>\d+)\s+(?P<desc>\S+)", vlan_output, flags=re.MULTILINE)
-        # Формируем словарь: { 123: "vlan_desc" }
-        vlan_desc: dict[int, str] = {int(line[0]): line[1] for line in parsed}
-
-        interfaces_vlans = self.get_vlans()
-
-        # Формируем словарь: { 123: ["Eth0/1", "Gi0/2", ...], ... }
-        vlan_ports: dict[int, list[str]] = {}
-        for line in interfaces_vlans:
-            for vlan in range_to_numbers(",".join(map(str, line[-1]))):
-                vlan_ports.setdefault(vlan, []).append(line[0])
-
-        result: VlanTableType = []
-        for vlan, ports in vlan_ports.items():
-            result.append((vlan, ports, vlan_desc.get(vlan, "")))
-        return result
+        parsed = parse_vlan_output(vlan_output)
+        return [(line["vlan_id"], line["ports"], line["name"]) for line in parsed]
 
     def _get_interfaces_config(self) -> dict[str, str]:
         output = self.send_command("show running-config", expect_command=False)

@@ -27,6 +27,7 @@ const props = defineProps({
         required: true,
         type: Object as PropType<ComplexInterfaceInfoType>,
     },
+    permissions: { required: true, type: Array as PropType<string[]> },
 });
 
 const macFilters = ref({
@@ -91,6 +92,12 @@ const detailActions = computed(() =>
                 "border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-700 dark:bg-sky-500/15 dark:text-sky-100",
         },
     ].filter((item) => item.visible)
+);
+
+const canReadBras = computed(
+    () =>
+        props.permissions.includes("check.device_bras_read") ||
+        props.permissions.includes("check.device_bras_read_write")
 );
 
 function toggleMenu(key: "" | "portConfig" | "portErrors" | "cableDiag") {
@@ -279,7 +286,7 @@ onMounted(async () => {
                             </template>
                         </Column>
 
-                        <Column header="" field="mac">
+                        <Column v-if="canReadBras" header="" field="mac">
                             <template #body="{ data }">
                                 <Button
                                     size="small"
