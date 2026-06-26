@@ -140,7 +140,14 @@ onUnmounted(() => {
                                     class="not-sm:text-xs w-full rounded-2xl"
                                     @keydown.enter="searchElement"
                                 />
-                                <Button @click="searchElement" icon="pi pi-search" severity="contrast" text rounded size="small" />
+                                <Button
+                                    @click="searchElement"
+                                    icon="pi pi-search"
+                                    severity="contrast"
+                                    text
+                                    rounded
+                                    size="small"
+                                />
                             </div>
                         </div>
                     </div>

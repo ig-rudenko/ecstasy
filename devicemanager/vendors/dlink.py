@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 import textfsm
 
+from ecstasy_project.settings_utils import env_bool
+
 from .. import DeviceException
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
@@ -62,6 +64,9 @@ def validate_port(port: str) -> str | None:
 @contextmanager
 def no_clipaging(dev: "Dlink"):
     """Temporarily disable CLI paging for one possibly nested operation."""
+    if not dev._enable_clipaging_control:  # noqa
+        yield
+        return
 
     depth = dev._no_clipaging_depth  # noqa
     dev._no_clipaging_depth = depth + 1
@@ -137,6 +142,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         super().__init__(session, ip, auth, model, snmp_community)
         self._no_clipaging_depth = 0
 
+        # Контроль включения и отключения clipaging.
+        self._enable_clipaging_control = env_bool("DEVICE_DLINK_CLIPAGING_CONTROL", False)
+
         # Повышает уровень привилегий до уровня администратора
         self.session.sendline("enable admin")
 
@@ -149,6 +157,11 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         if self.session.expect([self.prompt, "Fail"]):
             self.session.sendline("\n")
             raise DeviceException("privilege_mode_password wrong!", ip=ip)
+
+        if not self._enable_clipaging_control:
+            # Отключение режима постраничного вывода, если нет контроля clipaging
+            self.session.sendline("disable clipaging")
+            self.session.expect(self.prompt)
 
         # Смотрим характеристики устройства
         with no_clipaging(self):
@@ -356,7 +369,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             return "static"
 
         with no_clipaging(self):
-            mac_str = self.send_command("show fdb", expect_command=False)
+            mac_str = self.send_command("show fdb", expect_command=False, timeout=180)
 
         mac_table: list[tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",

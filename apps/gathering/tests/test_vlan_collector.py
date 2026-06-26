@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -65,7 +65,7 @@ class DlinkVlanParserTests(TestCase):
     def test_get_vlan_table_expands_ranges_and_strips_port_suffixes(self, no_clipaging: MagicMock):
         """Parse D-Link show vlan output into collector table entries."""
         device = Dlink.__new__(Dlink)  # noqa
-        device.lock = False
+        device.lock = False  # type: ignore
 
         @contextmanager
         def test_no_clipaging(*args, **kwargs):
@@ -73,7 +73,7 @@ class DlinkVlanParserTests(TestCase):
 
         no_clipaging.return_value = test_no_clipaging()
 
-        device.send_command = lambda *args, **kwargs: ("""
+        show_vlan_output = """
 command: show vlan
 
 
@@ -94,15 +94,16 @@ Member Ports    : 1-3,26(C), 28(F)
 VID             : 20          VLAN Name       : uplink
 VLAN Type       : Static      Advertisement   : Disabled
 Member Ports    :
-""")
+"""
 
-        self.assertEqual(
-            device.get_vlan_table(),
-            [
-                (10, ["1", "2", "3", "26", "28"], "users vlan"),
-                (20, [], "uplink"),
-            ],
-        )
+        with patch.object(device, "send_command", return_value=show_vlan_output):
+            self.assertEqual(
+                device.get_vlan_table(),
+                [
+                    (10, ["1", "2", "3", "26", "28"], "users vlan"),
+                    (20, [], "uplink"),
+                ],
+            )
 
 
 class VlanAPITests(APITestCase):

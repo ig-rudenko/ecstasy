@@ -10,14 +10,15 @@ from ..models import Bras, Devices
 
 
 class BrasSession(TypedDict):
+    name: str
     session: str | None
     errors: list[str]
 
 
-def get_bras_sessions(mac: str) -> dict[str, BrasSession]:
+def get_bras_sessions(mac: str) -> list[BrasSession]:
     """Возвращает словарь сессий на оборудовании BRAS по MAC адресу."""
 
-    result: dict[str, BrasSession] = {}
+    result: list[BrasSession] = []
 
     with ThreadPoolExecutor() as executor:
         for bras in Bras.objects.select_related("device"):
@@ -27,7 +28,7 @@ def get_bras_sessions(mac: str) -> dict[str, BrasSession]:
     return result
 
 
-def get_bras_user_session(bras: Bras, mac: str, result: dict[str, BrasSession]):
+def get_bras_user_session(bras: Bras, mac: str, result: list[BrasSession]):
     """
     ## Получает сеанс пользователя для заданного MAC-адреса.
 
@@ -35,14 +36,14 @@ def get_bras_user_session(bras: Bras, mac: str, result: dict[str, BrasSession]):
     :param mac: MAC адрес пользователя
     :param result: dict, содержащий информацию сессий.
     """
-
-    bras_name = str(bras)
-    result[bras_name] = {"session": None, "errors": []}
+    item: BrasSession = {"name": bras.device.name, "session": None, "errors": []}
 
     try:
-        result[bras_name]["session"] = bras.connect().get_access_user_data(mac)
+        item["session"] = bras.connect().get_access_user_data(mac)
     except BaseDeviceException as exc:
-        result[bras_name]["errors"].append(exc.message)
+        item["errors"].append(exc.message)
+
+    result.append(item)
 
 
 def cut_bras_session(device: Devices | None, user: AbstractBaseUser, mac: str, port: str) -> dict:

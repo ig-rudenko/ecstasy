@@ -20,22 +20,7 @@ class BrassSessionAPIView(UserAuthenticatedAPIView):
     @method_decorator(profile_permission(models.Profile.BRAS_READ, models.Profile.BRAS_READ_WRITE))
     def get(self, request):
         """
-        ## Возвращаем сессию на BRAS для конкретного MAC адреса
-
-        Пример ответа:
-
-            {
-                "BRAS1": {
-                    "session": null,
-                    "errors": [
-                        "Не удалось подключиться"
-                    ]
-                },
-                "BRAS2": {
-                    "session": " ... ",
-                    "errors": []
-                }
-            }
+        Возвращает сессию на BRAS для конкретного MAC адреса
         """
 
         serializer = MacSerializer(data=request.GET)
