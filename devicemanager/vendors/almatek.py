@@ -5,6 +5,7 @@ from typing import Literal
 
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
+from .base.helpers import create_mac_regexp
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -21,7 +22,7 @@ from .base.validators import validate_and_format_port_as_normal
 class Almatek(BaseDevice, AbstractConfigDevice):
     prompt = r"\S+# $"
     space_prompt = r"--More--"
-    mac_format = r"\S\S:\S\S\:\S\S:\S\S\:\S\S:\S\S"  # 00:11:22:33:44:55
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "Almatek"
 
     def __init__(self, session, ip: str, auth: DeviceAuthDict, snmp_community: str = ""):

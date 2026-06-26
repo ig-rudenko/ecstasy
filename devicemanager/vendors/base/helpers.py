@@ -56,16 +56,18 @@ def create_mac_regexp(*patterns: str) -> str:
     return "|".join(result_formats)
 
 
-def remove_ansi_escape_codes(string: bytes | str | None) -> str:
-    """Убираем управляющие последовательности ANSI"""
-    if string is not None:
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\s?\x08")
-        if isinstance(string, bytes):
-            clean_string = string.decode("utf-8", errors="ignore")
-        else:
-            clean_string = str(string)
+ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\s?\x08")
 
-        return ansi_escape.sub("", clean_string)
+
+def remove_ansi_escape_codes(string_: bytes | str | None) -> str:
+    """Убираем управляющие последовательности ANSI"""
+    if string_ is not None:
+        if isinstance(string_, bytes):
+            clean_string = string_.decode("utf-8", errors="ignore")
+        else:
+            clean_string = str(string_)
+
+        return ANSI_ESCAPE.sub("", clean_string)
     return ""
 
 

@@ -4,6 +4,7 @@ from typing import Literal
 
 from devicemanager.vendors import BaseDevice
 from devicemanager.vendors.base.factory import AbstractDeviceFactory
+from devicemanager.vendors.base.helpers import create_mac_regexp
 from devicemanager.vendors.base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -32,7 +33,7 @@ class Zyxel(BaseDevice):
     vendor = "Zyxel"
     prompt = r">\s*$"
     space_prompt = "Press any key to continue"
-    mac_format = r"\S\S:" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
 
     def __init__(
         self,

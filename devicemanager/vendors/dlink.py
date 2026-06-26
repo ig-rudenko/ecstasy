@@ -12,7 +12,7 @@ from ecstasy_project.settings_utils import env_bool
 from .. import DeviceException
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
+from .base.helpers import create_mac_regexp, normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -106,7 +106,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     prompt = r"\S+#"
     space_prompt = r"Quit.+?mSPACE.+?mENTER"
-    mac_format = r"\S\S-" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00-11-22-33-44-55")
     vendor = "D-Link"
 
     def __init__(

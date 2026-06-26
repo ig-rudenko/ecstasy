@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template
+from .base.helpers import create_mac_regexp, parse_by_template
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -45,7 +45,7 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
     prompt = r"\S+[#>] "
     space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
     vendor = "ProCurve"
-    mac_format = r"\b[0-9a-f]{6}-[0-9a-f]{6}\b"
+    mac_format = create_mac_regexp("000000-000000")
 
     def __init__(
         self,

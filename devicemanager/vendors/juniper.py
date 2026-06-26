@@ -11,6 +11,7 @@ import textfsm
 from .. import UnknownDeviceError
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
+from .base.helpers import create_mac_regexp
 from .base.types import (
     TEMPLATE_FOLDER,
     ArpInfoResult,
@@ -30,7 +31,7 @@ class Juniper(BaseDevice, AbstractConfigDevice):
     prompt = r"> $"
     space_prompt = r"-+\(more.*?\)-+"
     vendor = "juniper"
-    mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
 
     def __init__(self, session, ip: str, auth: DeviceAuthDict, *args, **kwargs):
         super().__init__(session, ip, auth, *args, **kwargs)

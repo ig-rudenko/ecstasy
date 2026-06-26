@@ -12,6 +12,7 @@ from devicemanager.vendors.base.types import (
 )
 from devicemanager.vendors.snr.vlan_parser import VlanInfo
 
+from ..base.helpers import create_mac_regexp
 from .snr_s52xx import SNRS52XX
 
 
@@ -24,7 +25,7 @@ class SNRS29XX(SNRS52XX):
 
     prompt = r"\S+#$"
     space_prompt = "--More--"
-    mac_format = r"\S\S-\S\S\-\S\S-\S\S\-\S\S-\S\S"
+    mac_format = create_mac_regexp("00-11-22-33-44-55")
     vendor = "SNR"
 
     @BaseDevice.lock_session

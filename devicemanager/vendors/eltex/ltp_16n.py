@@ -5,6 +5,7 @@ from functools import wraps
 from packaging.version import Version
 
 from ..base.device import AbstractConfigDevice, BaseDevice
+from ..base.helpers import create_mac_regexp
 from ..base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -97,7 +98,7 @@ class EltexLTP16N(BaseDevice, AbstractConfigDevice):
     # Это переменная, которая используется для поиска файла шаблона для анализа вывода команды.
     _template_name = "eltex-ltp"
     # Регулярное выражение, которое будет соответствовать MAC-адресу.
-    mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"  # aa.bb.cc.dd.ee.ff
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "Eltex"
     supported_models = re.compile("LTP-16N")
 

@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 from devicemanager import snmp
 
 from ..base.device import AbstractDSLProfileDevice, BaseDevice
+from ..base.helpers import create_mac_regexp
 from ..base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -27,7 +28,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
     prompt = r"config\S+#|\S+#"
     space_prompt = r"---- More \( Press \'Q\' to break \) ----"
     # Регулярное выражение, которое соответствует MAC-адресу.
-    mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
+    mac_format = create_mac_regexp("0000-0000-0000")
     vendor = "Huawei"
     supported_models = re.compile(r"MA500\d")
 
