@@ -1,3 +1,6 @@
+from contextlib import contextmanager
+from unittest.mock import patch, MagicMock
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -58,10 +61,18 @@ class VlanTableGatherTests(TestCase):
 class DlinkVlanParserTests(TestCase):
     """Tests for D-Link VLAN table parsing."""
 
-    def test_get_vlan_table_expands_ranges_and_strips_port_suffixes(self):
+    @patch("devicemanager.vendors.dlink.no_clipaging", return_value=None)
+    def test_get_vlan_table_expands_ranges_and_strips_port_suffixes(self, no_clipaging: MagicMock):
         """Parse D-Link show vlan output into collector table entries."""
         device = Dlink.__new__(Dlink)  # noqa
         device.lock = False
+
+        @contextmanager
+        def test_no_clipaging(*args, **kwargs):
+            yield
+
+        no_clipaging.return_value = test_no_clipaging()
+
         device.send_command = lambda *args, **kwargs: ("""
 command: show vlan
 
