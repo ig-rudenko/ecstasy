@@ -1,4 +1,3 @@
-import contextlib
 import io
 import re
 import string
@@ -460,8 +459,8 @@ class BaseDevice(AbstractDevice, ABC):
                     pages_limit -= 1
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
-            with contextlib.suppress(pexpect.TIMEOUT):
-                self.session.expect(prompt, timeout=timeout)  # noqa
+            # with contextlib.suppress(pexpect.TIMEOUT):
+            self.session.expect(prompt, timeout=timeout)  # noqa
             # Убираем управляющие последовательности ANSI
             output += remove_ansi_escape_codes(self.session.before)
         return output

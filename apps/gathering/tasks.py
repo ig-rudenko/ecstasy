@@ -177,9 +177,10 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
         storage = LocalConfigStorage(obj)
         try:
             gather = ConfigurationGather(storage=storage)
-            gather.delete_outdated_configs()
-            status = gather.collect_config_file()
-            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {status}")
+            is_collected = gather.collect_config_file()
+            if is_collected:
+                gather.delete_outdated_configs()
+            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {is_collected}")
         except ConfigFileError as error:
             self.log_error(device=self.device_log_format(obj), message=error.message)
         except Exception as error:

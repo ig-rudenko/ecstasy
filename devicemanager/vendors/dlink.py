@@ -1,11 +1,13 @@
 import io
 import re
+from contextlib import contextmanager
 from functools import partial
 from time import sleep
 from typing import Any, Literal
 
 import textfsm
 
+from .. import DeviceException
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
@@ -57,6 +59,28 @@ def validate_port(port: str) -> str | None:
     return None
 
 
+@contextmanager
+def no_clipaging(dev: "Dlink"):
+    """Temporarily disable CLI paging for one possibly nested operation."""
+
+    depth = dev._no_clipaging_depth  # noqa
+    dev._no_clipaging_depth = depth + 1
+    try:
+        if depth == 0:
+            dev.session.sendline("disable clipaging")
+            dev.session.expect("disable clipaging")
+            dev.session.expect(dev.prompt)
+
+        yield
+
+        if depth == 0:
+            dev.session.sendline("enable clipaging")
+            dev.session.expect("enable clipaging")
+            dev.session.expect(dev.prompt)
+    finally:
+        dev._no_clipaging_depth = depth
+
+
 # Создаем свой декоратор для проверки портов
 dlink_validate_and_format_port = partial(validate_and_format_port, validator=validate_port)
 
@@ -76,7 +100,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     """
 
     prompt = r"\S+#"
-    space_prompt = None
+    space_prompt = r"Quit.+?mSPACE.+?mENTER"
     mac_format = r"\S\S-" * 5 + r"\S\S"
     vendor = "D-Link"
 
@@ -111,8 +135,8 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param model: Модель коммутатора
         """
         super().__init__(session, ip, auth, model, snmp_community)
+        self._no_clipaging_depth = 0
 
-        status = True
         # Повышает уровень привилегий до уровня администратора
         self.session.sendline("enable admin")
 
@@ -121,21 +145,15 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             # Вводим пароль администратора
             self.session.sendline(self.auth["privilege_mode_password"])
 
-        # Проверка prompt или строки "Fail!"
-        while self.session.expect([self.prompt, "Fail!"]):
+        # Если "Fail"
+        if self.session.expect([self.prompt, "Fail"]):
             self.session.sendline("\n")
-            print(self.ip, "privilege_mode_password wrong!")
-            status = False
-        if status:
-            # отключение режима постраничного вывода
-            self.session.sendline("disable clipaging")
-            self.session.expect(self.prompt)
-
-        # Уровень администратора
-        self._admin_status: bool = status
+            raise DeviceException("privilege_mode_password wrong!", ip=ip)
 
         # Смотрим характеристики устройства
-        version = self.send_command("show switch")
+        with no_clipaging(self):
+            version = self.send_command("show switch")
+
         self.mac = self.find_or_empty(r"MAC Address\s+:\s+(\S+-\S+-\S+-\S+-\S+-\S+)", version)
         self.model = self.model or self.find_or_empty(r"Device Type\s+:\s+(\S+)\s", version)
         self.serialno = self.find_or_empty(r"Serial Number\s+: *(\S*)", version)
@@ -169,7 +187,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         prompt=None,
         pages_limit=None,
         command_linesep="\n",
-        timeout=10,
+        timeout=30,
     ):
         return super().send_command(
             command,
@@ -195,7 +213,8 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :return: ```[ ('name', 'status', 'desc'), ... ]```
         """
 
-        output = self.send_command("show ports des")
+        with no_clipaging(self):
+            output = self.send_command("show ports des")
 
         result: list[list[str]] = parse_by_template("interfaces/d-link.template", output)
 
@@ -223,7 +242,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
          :return: ```[ ('vid', ['port', 'port'], 'vlan name'), ... ]```
         """
 
-        vlan_str = self.send_command("show vlan", expect_command=False)
+        with no_clipaging(self):
+            vlan_str = self.send_command("show vlan", expect_command=False)
+
         # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
         vlan_table: list[tuple[str, str, str]] = re.findall(
             r"VID\s+:\s+(\d+)\s+VLAN Name\s+:\s+([^\n]+?)\s+VLAN Type\s+:.*?Member Ports\s+?:\s+?([^\n]*)",
@@ -279,7 +300,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
         interfaces = self.get_interfaces()
 
-        output = self.send_command("show vlan")
+        with no_clipaging(self):
+            output = self.send_command("show vlan")
+
         with open(f"{TEMPLATE_FOLDER}/vlans_templates/d-link.template", encoding="utf-8") as template_file:
             vlan_templ = textfsm.TextFSM(template_file)
             result_vlan = vlan_templ.ParseText(output)
@@ -332,7 +355,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
                 return "dynamic"
             return "static"
 
-        mac_str = self.send_command("show fdb", expect_command=False)
+        with no_clipaging(self):
+            mac_str = self.send_command("show fdb", expect_command=False)
+
         mac_table: list[tuple[str, str, str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+(\d+)\s+(\S+).*\n",
             mac_str,
@@ -354,7 +379,9 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :return: ```[ ('vid', 'mac'), ... ]```
         """
 
-        mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
+        with no_clipaging(self):
+            mac_str = self.send_command(f"show fdb port {port}", expect_command=False)
+
         # Используем регулярное выражение для поиска всех MAC-адресов и VLAN в mac_str.
         mac_lines: list[tuple[str, str]] = re.findall(
             rf"(\d+)\s+\S+\s+({self.mac_format})\s+\d+\s+\S+", mac_str
@@ -532,13 +559,14 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         :param port: Порт для проверки на наличие ошибок
         """
 
-        self.session.sendline(f"show error ports {port}")
+        with no_clipaging(self):
+            self.session.sendline(f"show error ports {port}")
 
-        # Если не удалось отключить clipaging
-        if self.session.expect([self.prompt, "Previous Page"]):
-            self.session.sendline("q")
+            # Если не удалось отключить clipaging
+            if self.session.expect([self.prompt, "Previous Page"]):
+                self.session.sendline("q")
 
-        return (self.session.before or b"").decode()
+            return (self.session.before or b"").decode()
 
     @BaseDevice.lock_session
     def set_description(self, port: str, desc: str) -> dict:
@@ -651,16 +679,19 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         }
 
         # Команда для теста медного порта
-        diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
+        with no_clipaging(self):
+            diag_output = self.send_command(f"cable_diag ports {port}", expect_command=False)
 
-        if re.search(r"(Available commands|can't\s+support|Unknown|Not\s+Support)", diag_output):
-            # Если не поддерживается диагностика медного порта, то пробуем SFP диагностику
-            sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
-            if sfp_parameter_data:
-                return normalize_cable_diag_result({"sfp": self._parse_sfp_diagnostics(sfp_parameter_data)})
+            if re.search(r"(Available commands|can't\s+support|Unknown|Not\s+Support)", diag_output):
+                # Если не поддерживается диагностика медного порта, то пробуем SFP диагностику
+                sfp_parameter_data = self.send_command(f"show ddm ports {port} status", expect_command=False)
+                if sfp_parameter_data:
+                    return normalize_cable_diag_result(
+                        {"sfp": self._parse_sfp_diagnostics(sfp_parameter_data)}
+                    )
 
-            # Если нет данных, то не поддерживается и этот способ диагностики
-            return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
+                # Если нет данных, то не поддерживается и этот способ диагностики
+                return normalize_cable_diag_result({"len": "-", "status": "Unsupported"})
 
         # Парсим медную диагностику
         if "No Cable" in diag_output:
@@ -780,10 +811,11 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         stats = ["cpu", "ram", "flash"]
         data = {}
 
-        for key in stats:
-            value: int | float = getattr(self, f"get_{key}_utilization")()
-            if isinstance(value, tuple) and all(value) or value > 0:
-                data[key] = {"util": value}
+        with no_clipaging(self):
+            for key in stats:
+                value: int | float = getattr(self, f"get_{key}_utilization")()
+                if isinstance(value, tuple) and all(value) or value > 0:
+                    data[key] = {"util": value}
 
         return data
 
@@ -821,8 +853,13 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     @BaseDevice.lock_session
     @dlink_validate_and_format_port(if_invalid_return={"type": "text", "data": ""})
     def get_port_info(self, port: str) -> PortInfoType:
-        cmd = f"show ports {port} details"
-        res = self.send_command(cmd, expect_command=True, before_catch="Command: .+?\n")
+        with no_clipaging(self):
+            res = self.send_command(
+                f"show ports {port} details",
+                expect_command=True,
+                before_catch="Command: .+?\n",
+            )
+
         if "Next possible completions" in res:
             res = ""
         return {"type": "text", "data": res}
@@ -832,11 +869,13 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     @BaseDevice.lock_session
     def get_current_configuration(self) -> io.BytesIO:
-        config = self.send_command(
-            "show config current_config",
-            expect_command=False,
-            before_catch="Command: .+?\n",
-        )
+        with no_clipaging(self):
+            config = self.send_command(
+                "show config current_config",
+                expect_command=False,
+                before_catch="Command: .+?\n",
+                timeout=40,
+            )
         config = re.sub("[\r\n]{3}", "\n", config.strip())
         return io.BytesIO(config.encode())
 

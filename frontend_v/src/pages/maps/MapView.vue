@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import "leaflet/dist/leaflet.css";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import api from "@/services/api";
@@ -15,18 +15,6 @@ const mapData = ref<MapDetail | null>(null);
 let updateMapTimer: ReturnType<typeof setInterval> | null = null;
 let mapService: MapService | null = null;
 let isDisposed = false;
-
-const mapTypeLabel = computed(() => {
-    if (mapData.value?.interactive) {
-        return "Интерактивная";
-    }
-
-    if (mapData.value?.type === "file") {
-        return "HTML-карта";
-    }
-
-    return "Карта";
-});
 
 /**
  * Загружает HTML-карту в iframe и освобождает старый blob URL.
@@ -128,36 +116,31 @@ onUnmounted(() => {
 <template>
     <div class="relative h-screen w-screen overflow-hidden bg-slate-950">
         <div v-if="fileMapUrl" class="h-full w-full p-4">
-            <iframe :src="fileMapUrl" class="h-full w-full rounded-[2rem]" />
+            <iframe :src="fileMapUrl" class="h-full w-full rounded-4xl" />
         </div>
         <div v-else id="map" class="h-full w-full"></div>
 
-        <div class="pointer-events-none absolute inset-x-0 -top-8 z-9999">
+        <div class="pointer-events-none absolute inset-x-0 -top-8 z-500 px-16">
             <div class="mx-auto flex max-w-7xl flex-col">
                 <div
                     class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/10 p-2 pt-10 text-white shadow-xl backdrop-blur-xl"
                 >
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div class="min-w-0 px-4">
-                            <div class="flex flex-wrap items-center justify-center gap-2">
-                                <router-link :to="'/maps'" class="flex items-center gap-2">
-                                    <i class="pi pi-arrow-left text-xs" />
-                                    <span>К списку</span>
-                                </router-link>
-                                <Tag severity="contrast" :value="mapTypeLabel" />
-                            </div>
-                            <div class="font-semibold">{{ mapData?.name || "Карта" }}</div>
+                    <div class="flex sm:gap-4 items-center flex-row lg:items-center lg:justify-between">
+                        <div class="px-4">
+                            <router-link :to="'/maps'">
+                                <Button class="pi pi-arrow-left" severity="contrast" rounded text size="small" />
+                            </router-link>
                         </div>
 
                         <div v-if="showSearch" class="w-full lg:min-w-[24rem] lg:w-auto">
-                            <div class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
+                            <div class="flex items-center gap-2 rounded-3xl">
                                 <InputText
                                     v-model="search"
                                     placeholder="Поиск по карте"
-                                    class="w-full"
+                                    class="not-sm:text-xs w-full rounded-2xl"
                                     @keydown.enter="searchElement"
                                 />
-                                <Button @click="searchElement" icon="pi pi-search" />
+                                <Button @click="searchElement" icon="pi pi-search" severity="contrast" text rounded size="small" />
                             </div>
                         </div>
                     </div>

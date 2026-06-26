@@ -141,7 +141,10 @@ class ConnectionPool:
 
         if last_available is not None:
             last_available.reserve()
-        return last_available
+            if last_available.alive:
+                return last_available
+            last_available.connection.release_session()
+        return None
 
     def renew(self) -> None:
         """Продлить срок жизни пула после использования."""

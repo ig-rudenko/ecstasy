@@ -21,7 +21,7 @@ class ConfigurationGather:
         ##  Удаляет файлы, если их больше 10
         """
         # Удаление файлов в каталоге, кроме 10 самых последних.
-        for file in self.files[:-10]:
+        for file in self.files[10:]:
             self.storage.delete(file.name)
 
     def _save_by_content(self, current_config: str | bytes, file_format: str) -> bool:
