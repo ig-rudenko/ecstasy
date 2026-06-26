@@ -1,4 +1,5 @@
 import re
+import string
 from typing import Any
 
 import textfsm
@@ -6,10 +7,59 @@ import textfsm
 from devicemanager.vendors.base.types import TEMPLATE_FOLDER, CableDiagResult
 
 
+def create_mac_regexp(*patterns: str) -> str:
+    """
+    Формирует регулярное выражение для поиска MAC-адреса на основе его паттернов.
+
+    Примеры паттернов:
+        - "00:11:22:33:44:55"
+        - "aaaa.bbbb.cccc"
+        - "00-00-00-00-00-00"
+
+    Можно передать несколько.
+
+    >>> create_mac_regexp("00:11:22:33:44:55")
+    '[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]:[a-fA-F0-9][a-fA-F0-9]'
+
+    >>> bool(re.match(create_mac_regexp("00:11:22:33:44:55"), "00:11:22:33:44:55"))
+    True
+
+    >>> create_mac_regexp("0000.0000.0000")
+    '[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]\\\\.[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]\\\\.[a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]'
+
+    >>> bool(re.match(create_mac_regexp("aaaa.bbbb.cccc"), "0000.0000.0000"))
+    True
+
+    >>> create_mac_regexp("00-00-00-00-00-00")
+    '[a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9]-[a-fA-F0-9][a-fA-F0-9]'
+
+    >>> bool(re.match(create_mac_regexp("aaaa.bbbb.cccc", "00-00-00-00-00-00"), "0000.0000.0000"))
+    True
+    """
+
+    unit = "[a-fA-F0-9]"
+    result_formats = []
+
+    for pattern in patterns:
+        format_part = ""
+
+        for letter in pattern:
+            if letter == ".":
+                format_part += "\\."
+            elif letter in ["-", ":", ";", "_", "/"]:
+                format_part += letter
+            elif letter in string.ascii_letters + string.digits:
+                format_part += unit
+
+        result_formats.append(format_part)
+
+    return "|".join(result_formats)
+
+
 def remove_ansi_escape_codes(string: bytes | str | None) -> str:
     """Убираем управляющие последовательности ANSI"""
     if string is not None:
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08")
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\s?\x08")
         if isinstance(string, bytes):
             clean_string = string.decode("utf-8", errors="ignore")
         else:

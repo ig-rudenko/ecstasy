@@ -8,7 +8,12 @@ from typing import Literal
 import pexpect
 
 from ..base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
-from ..base.helpers import interface_normal_view, normalize_cable_diag_result, parse_by_template
+from ..base.helpers import (
+    create_mac_regexp,
+    interface_normal_view,
+    normalize_cable_diag_result,
+    parse_by_template,
+)
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -24,6 +29,7 @@ from ..base.types import (
     VlanTableType,
 )
 from ..base.validators import validate_and_format_port_as_normal
+from .vlan_helpers import parse_vlan_table_quidway_s2326, parse_vlan_table_quidway_s2403
 
 
 @dataclass
@@ -43,7 +49,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
     space_prompt = r"---- More ----"
-    mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
+    mac_format = create_mac_regexp("0000-0000-0000")
     vendor = "Huawei"
     supported_models = re.compile(r"^S\d+")
 
@@ -221,68 +227,21 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
          :return: ```[ ('vid', ['port', 'port'], 'vlan name'), ... ]```
         """
-        vlan_str = self.send_command("show vlan", expect_command=False)
-        # Regex pattern to capture VLAN details including VID, VLAN Name, and Member Ports
-        vlan_lines = vlan_str.splitlines()
-        # Split into ports and description sections
-        second_header_index = 7
-        for i, line in enumerate(vlan_lines):
-            if line.startswith("VID  Status"):
-                second_header_index = i
-                break
+        result: VlanTableType = []
 
-        ports_lines = vlan_lines[7:second_header_index]  # Skip the header lines
-        desc_lines = vlan_lines[second_header_index + 1 :]  # Skip header and separator
+        if "S2403" in self.model:
+            output = self.send_command("display vlan all", expect_command=False)
+            result = parse_vlan_table_quidway_s2403(output)
 
-        # Process ports section
-        port_vlans = []
-        current_vlan: dict = {}
-        for line in ports_lines:
-            if line.startswith("VID  Type") or line.startswith("----"):
-                continue
-            match = re.match(r"^(\d+)\s+(\w+)\s+(.*)", line)
-            if match:
-                if current_vlan:
-                    port_vlans.append(current_vlan)
-                vid = int(match.group(1))
-                ports: list[str] = match.group(3).split()
-                current_vlan = {"vid": vid, "ports": ports}
-            else:
-                # Continuation line
-                if current_vlan:
-                    ports = line.strip().split()
-                    current_vlan["ports"].extend(ports)
-        if current_vlan:
-            port_vlans.append(current_vlan)
+        elif "S2326" in self.model:
+            output = self.send_command("display vlan", expect_command=False)
+            result = parse_vlan_table_quidway_s2326(output)
 
-        # Process description section
-        desc_vlans = {}
-        for line in desc_lines:
-            if line.startswith("----"):
-                continue
-            parts = re.split(r"\s{2,}", line.strip())
-            if len(parts) >= 6:
-                vid = int(parts[0])
-                desc = parts[-1]
-                desc_vlans[vid] = desc
-
-        # Merge the data
-        result = []
-        for vlan in port_vlans:
-            vid = vlan["vid"]
-            ports = vlan["ports"]
-            # Clean ports
-            cleaned_ports = []
-            for port in ports:
-                # Split on colon to remove prefixes like UT: or TG:
-                port_part = port.split(":")[-1]
-                # Remove (U) or (D) at the end
-                port_clean = re.sub(r"\([UD]\)$", "", port_part)
-                cleaned_ports.append(port_clean)
-            description = desc_vlans.get(vid, "")
-            result.append((vid, cleaned_ports, description))
-
-        return result
+        # Нормализуем названия интерфейсов
+        return [
+            (vid, [self.normalize_interface_name(port) for port in ports], desc)
+            for vid, ports, desc in result
+        ]
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:

@@ -138,8 +138,8 @@
                                 <InputText
                                     v-model="filterModel.value"
                                     type="text"
-                                    class="w-full min-w-12!"
-                                    placeholder="VLAN"
+                                    class="min-w-14!"
+                                    fluid
                                     @input="filterCallback()"
                                 />
                             </template>
@@ -155,8 +155,8 @@
                                 <InputText
                                     v-model="filterModel.value"
                                     type="text"
-                                    class="w-full"
-                                    placeholder="Name"
+                                    class="min-w-20!"
+                                    fluid
                                     @input="filterCallback()"
                                 />
                             </template>
@@ -200,13 +200,7 @@
                                 </div>
                             </template>
                             <template #filter="{ filterModel, filterCallback }">
-                                <InputText
-                                    v-model="filterModel.value"
-                                    type="text"
-                                    class="w-full"
-                                    placeholder="Порт или описание"
-                                    @input="filterCallback()"
-                                />
+                                <InputText v-model="filterModel.value" type="text" fluid @input="filterCallback()" />
                             </template>
                         </Column>
                     </DataTable>

@@ -449,7 +449,8 @@ class BaseDevice(AbstractDevice, ABC):
                 if match == 1:
                     # Отправляем символ пробела, для дальнейшего вывода
                     self.session.send(" ")
-                    output += "\n"
+                    if output[-1] != "\n":
+                        output += "\n"
                 else:
                     print(f'{self.ip} - timeout во время выполнения команды "{command}"')
                     break
