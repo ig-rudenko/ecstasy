@@ -35,6 +35,7 @@ class DeviceSessionFactoryTests(SimpleTestCase):
             auth_obj=SimpleAuthObject(login="user", password="password"),
             make_session_global=True,
             pool_size=pool_size,
+            pool_expired_seconds=2,
             snmp_community="public",
             port_scan_protocol="ssh",
         )
@@ -42,8 +43,8 @@ class DeviceSessionFactoryTests(SimpleTestCase):
     def test_empty_pool_is_not_replaced_during_initialization(self):
         """Repeated lookup returns the same pending pool instance."""
 
-        first_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2)
-        second_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2)
+        first_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2, pool_expired_seconds=2)
+        second_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2, pool_expired_seconds=2)
 
         self.assertIs(second_pool, first_pool)
 
@@ -67,6 +68,7 @@ class DeviceSessionFactoryTests(SimpleTestCase):
         self.sessions.add_connections_to_pool(
             "192.0.2.10",
             pool_size=1,
+            pool_expired_seconds=2,
             connections=[connection],
         )
 

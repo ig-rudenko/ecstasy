@@ -38,6 +38,9 @@ def run_discover_profile(dis_prof_id: int):
     except DiscoveryProfile.DoesNotExist:
         return
 
+    if not dis_profile.is_active:
+        return
+
     run = DiscoveryRun.objects.create(profile=dis_profile, created_by=None, dry_run=False)
     discovery_run_task(run.id, dis_profile.networks)
 

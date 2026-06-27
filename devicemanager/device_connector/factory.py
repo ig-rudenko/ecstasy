@@ -17,6 +17,7 @@ logger.addHandler(logging.StreamHandler())
 
 DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", "3"))
 MAX_POOL_SIZE = int(os.getenv("MAX_POOL_SIZE", "3"))
+DEVICE_POOL_EXPIRED_SECONDS = int(os.getenv("DEVICE_POOL_EXPIRED_SECONDS", "120"))
 SESSION_CREATION_TIMEOUT = 30.0
 
 
@@ -28,6 +29,7 @@ class DeviceSessionFactory:
         auth_obj,
         make_session_global: bool,
         pool_size: int | None,
+        pool_expired_seconds: int,
         snmp_community: str,
         port_scan_protocol: str,
         telnet_port: int | None = None,
@@ -45,6 +47,7 @@ class DeviceSessionFactory:
         self.ssh_port = ports.ssh_port
         self.snmp_port = ports.snmp_port
         self.pool_size = self._validate_pool_size(pool_size)
+        self.pool_expired_seconds = pool_expired_seconds
 
         self.make_session_global = make_session_global
         self.auth_obj = auth_obj
@@ -137,7 +140,9 @@ class DeviceSessionFactory:
 
     def _make_and_get_connection(self) -> BaseDevice:
         while True:
-            pool, should_create = DEVICE_SESSIONS.start_pool_creation(self.ip, self.pool_size)
+            pool, should_create = DEVICE_SESSIONS.start_pool_creation(
+                self.ip, self.pool_size, pool_expired_seconds=self.pool_expired_seconds
+            )
             if should_create:
                 break
 
@@ -187,6 +192,7 @@ class DeviceSessionFactory:
         connection_added = DEVICE_SESSIONS.add_connections_to_pool(
             self.ip,
             pool_size=self.pool_size,
+            pool_expired_seconds=self.pool_expired_seconds,
             connections=[first_connection],
             expected_pool=pool,
         )
@@ -323,6 +329,7 @@ class DeviceSessionFactory:
                 DEVICE_SESSIONS.add_connections_to_pool(
                     self.ip,
                     pool_size=self.pool_size,
+                    pool_expired_seconds=self.pool_expired_seconds,
                     connections=[connection],
                     expected_pool=pool,
                 )

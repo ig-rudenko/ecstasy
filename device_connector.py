@@ -29,6 +29,7 @@ class ConnectionType(TypedDict):
     telnet_port: NotRequired[int]
     ssh_port: NotRequired[int]
     snmp_port: NotRequired[int]
+    pool_expired_seconds: NotRequired[int]
 
 
 def handle_method_data(data):
@@ -87,6 +88,7 @@ def connector(ip: str, method: str):
             auth_obj=SimpleAuthObject(**data.get("auth")),
             make_session_global=connection.get("make_session_global", True),
             pool_size=connection.get("pool_size", None),
+            pool_expired_seconds=connection.get("pool_expired_seconds", 2),
             snmp_community=connection.get("snmp_community", ""),
             port_scan_protocol=connection.get("port_scan_protocol", "ssh"),
             telnet_port=connection.get("telnet_port"),

@@ -41,7 +41,6 @@ services:
       - "./logs:/app/logs"
       - "./static:/app/static"
       - "./media:/app/media"
-      - "./map_layer_files:/app/media/map_layer_files"
       - "./configurations:/configurations"
       - "./db-backup:/app/db-backup"
       - "./ssh_data:/app/.ssh"

@@ -31,7 +31,7 @@ from devicemanager.vendors.base.types import (
     VlanTableType,
 )
 
-from ..device_connector.factory import DEFAULT_POOL_SIZE
+from ..device_connector.factory import DEFAULT_POOL_SIZE, DEVICE_POOL_EXPIRED_SECONDS
 from .exceptions import InvalidMethod, RemoteAuthenticationFailed
 
 
@@ -109,6 +109,7 @@ class RemoteDevice(
         snmp_community: str,
         make_session_global: bool,
         pool_size: int = DEFAULT_POOL_SIZE,
+        pool_expired_seconds: int = DEVICE_POOL_EXPIRED_SECONDS,
         telnet_port: int | None = None,
         ssh_port: int | None = None,
         snmp_port: int | None = None,
@@ -132,7 +133,9 @@ class RemoteDevice(
         self._snmp_port = ports.snmp_port
         self._make_session_global = make_session_global
         self._remote_connector_address = os.getenv("DEVICE_CONNECTOR_ADDRESS")
+
         self._pool_size = pool_size
+        self._pool_expired_seconds = pool_expired_seconds
 
         self._timeout = 60
         self._session = requests.Session()
@@ -178,6 +181,7 @@ class RemoteDevice(
                         "snmp_port": self._snmp_port,
                         "make_session_global": self._make_session_global,
                         "pool_size": self._pool_size,
+                        "pool_expired_seconds": self._pool_expired_seconds,
                     },
                     "auth": self._remote_auth,
                     "params": params,

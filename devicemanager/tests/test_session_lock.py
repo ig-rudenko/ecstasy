@@ -116,6 +116,7 @@ class SessionLockTests(SimpleTestCase):
         sessions.add_connections_to_pool(
             "192.0.2.10",
             pool_size=1,
+            pool_expired_seconds=2,
             connections=[connection],
         )
 
