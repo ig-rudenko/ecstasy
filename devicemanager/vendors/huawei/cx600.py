@@ -5,6 +5,7 @@ from typing import Literal
 import textfsm
 
 from ..base.device import AbstractUserSessionsDevice, BaseDevice
+from ..base.helpers import create_mac_regexp
 from ..base.types import (
     TEMPLATE_FOLDER,
     ArpInfoResult,
@@ -50,7 +51,7 @@ class HuaweiCX600(BaseDevice, AbstractUserSessionsDevice):
     prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
     space_prompt = r"  ---- More ----|Are you sure to display some information"
     # Регулярное выражение, которое соответствует MAC-адресу.
-    mac_format = r"\S\S\S\S-\S\S\S\S-\S\S\S\S"
+    mac_format = create_mac_regexp("0000-0000-0000")
     vendor = "Huawei"
     supported_models = re.compile(r"CX600")
 

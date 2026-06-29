@@ -1,4 +1,4 @@
-import type {LayersControlEvent} from "leaflet";
+import type { LayersControlEvent } from "leaflet";
 import {
     canvas,
     CircleMarker,
@@ -20,10 +20,10 @@ import {
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
-import {Paginator} from "@/types/paginator";
-import {errorToast} from "@/services/my.toast";
-import {strFormatArgs, textToHtml, wrapLinks} from "@/formats";
-import {loadLayers, saveLayers} from "@/pages/maps/layers";
+import { Paginator } from "@/types/paginator";
+import { errorToast } from "@/services/my.toast";
+import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
+import { loadLayers, saveLayers } from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
 
 enum mapType {

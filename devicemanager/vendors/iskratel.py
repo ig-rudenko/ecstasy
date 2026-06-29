@@ -11,6 +11,7 @@ from apps.gathering.services.ftp.exceptions import NotFound
 from .. import UnknownDeviceError
 from .base.device import AbstractConfigDevice, AbstractDSLProfileDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
+from .base.helpers import create_mac_regexp
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -30,7 +31,7 @@ class IskratelControl(BaseDevice):
 
     prompt = r"\(\S+\)\s*#"
     space_prompt = r"--More-- or \(q\)uit"
-    mac_format = r"\S\S:" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "Iskratel"
     supported_models = re.compile("ISKRATEL Switching")
 

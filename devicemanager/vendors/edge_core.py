@@ -6,7 +6,7 @@ import pexpect
 
 from .base.device import BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import interface_normal_view, parse_by_template
+from .base.helpers import create_mac_regexp, interface_normal_view, parse_by_template
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -28,7 +28,7 @@ class EdgeCore(BaseDevice):
     prompt = r"\S+#$"
     space_prompt = "---More---"
     vendor = "Edge-Core"
-    mac_format = r"\S\S-" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00-11-22-33-44-55")
 
     def __init__(
         self,

@@ -4,7 +4,7 @@ from time import sleep
 from typing import Literal
 
 from ..base.device import AbstractConfigDevice, BaseDevice
-from ..base.helpers import parse_by_template, range_to_numbers
+from ..base.helpers import create_mac_regexp, parse_by_template, range_to_numbers
 from ..base.types import (
     InterfaceListType,
     InterfaceType,
@@ -31,12 +31,12 @@ def validate_huawei_ce6865_port(if_invalid_return=None):
 
 class HuaweiCE6865(BaseDevice, AbstractConfigDevice):
     """
-    # Для оборудования от производителя Huawei CE6865
+    Для оборудования от производителя Huawei CE6865
     """
 
     prompt = r"<\S+>$|\[\S+\]$|Unrecognized command"
     space_prompt = r"---- More ----"
-    mac_format = r"[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}"
+    mac_format = create_mac_regexp("0000-0000-0000")
     vendor = "Huawei"
     supported_models = re.compile(r"ce6865", flags=re.IGNORECASE)
 

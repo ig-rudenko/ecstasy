@@ -8,7 +8,11 @@ from devicemanager.vendors.base.device import (
     AbstractSearchDevice,
     BaseDevice,
 )
-from devicemanager.vendors.base.helpers import normalize_cable_diag_result, normalize_cable_diag_status
+from devicemanager.vendors.base.helpers import (
+    create_mac_regexp,
+    normalize_cable_diag_result,
+    normalize_cable_diag_status,
+)
 from devicemanager.vendors.base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -36,7 +40,7 @@ class SNRS52XX(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractC
 
     prompt = r"\S+#$"
     space_prompt = "--More--"
-    mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"
+    mac_format = create_mac_regexp("0000.0000.0000")
     vendor = "SNR"
 
     def __init__(

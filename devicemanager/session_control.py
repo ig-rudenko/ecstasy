@@ -45,7 +45,7 @@ class GlobalSession:
 
 
 class ConnectionPool:
-    def __init__(self, max_size: int = 5):
+    def __init__(self, max_size: int = 5, expired_seconds: int = 2):
         self._size = max_size
         self._pool: list[GlobalSession] = []
         self._created = False
@@ -53,7 +53,8 @@ class ConnectionPool:
         self._creation_event = threading.Event()
         self._expanding = False
         self._lock = threading.RLock()
-        self.expired = datetime.now() + timedelta(minutes=2)
+        self.expired_seconds = expired_seconds
+        self.expired = datetime.now() + timedelta(seconds=expired_seconds)
 
     def __bool__(self):
         with self._lock:
@@ -141,13 +142,16 @@ class ConnectionPool:
 
         if last_available is not None:
             last_available.reserve()
-        return last_available
+            if last_available.alive:
+                return last_available
+            last_available.connection.release_session()
+        return None
 
     def renew(self) -> None:
         """Продлить срок жизни пула после использования."""
 
         with self._lock:
-            self.expired = datetime.now() + timedelta(minutes=2)
+            self.expired = datetime.now() + timedelta(seconds=self.expired_seconds)
 
     def close_all(self) -> None:
         with self._lock:
@@ -180,15 +184,17 @@ class SessionController:
         with self._lock:
             return device_ip in self._sessions
 
-    def get_or_create_pool(self, device_ip: str, pool_size: int) -> ConnectionPool:
+    def get_or_create_pool(self, device_ip: str, pool_size: int, pool_expired_seconds: int) -> ConnectionPool:
         with self._lock:
             pool = self._sessions.get(device_ip)
             if pool is None:
-                pool = ConnectionPool(max_size=pool_size)
+                pool = ConnectionPool(max_size=pool_size, expired_seconds=pool_expired_seconds)
                 self._sessions[device_ip] = pool
             return pool
 
-    def start_pool_creation(self, device_ip: str, pool_size: int) -> tuple[ConnectionPool, bool]:
+    def start_pool_creation(
+        self, device_ip: str, pool_size: int, pool_expired_seconds: int
+    ) -> tuple[ConnectionPool, bool]:
         """Вернуть пул и указать, должен ли вызывающий поток создать его."""
 
         with self._lock:
@@ -196,7 +202,7 @@ class SessionController:
             if pool is not None:
                 return pool, False
 
-            pool = ConnectionPool(max_size=pool_size)
+            pool = ConnectionPool(max_size=pool_size, expired_seconds=pool_expired_seconds)
             self._sessions[device_ip] = pool
             return pool, True
 
@@ -246,6 +252,7 @@ class SessionController:
         device_ip: str,
         pool_size: int,
         connections: list[BaseDevice],
+        pool_expired_seconds: int,
         expected_pool: ConnectionPool | None = None,
     ) -> bool:
         """Добавить сессии только в актуальное поколение пула."""
@@ -254,7 +261,7 @@ class SessionController:
         with self._lock:
             pool = self._sessions.get(device_ip)
             if pool is None and expected_pool is None:
-                pool = ConnectionPool(max_size=pool_size)
+                pool = ConnectionPool(max_size=pool_size, expired_seconds=pool_expired_seconds)
                 self._sessions[device_ip] = pool
 
             if pool is None or (expected_pool is not None and pool is not expected_pool):

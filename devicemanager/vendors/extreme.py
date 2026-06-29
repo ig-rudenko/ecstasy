@@ -7,7 +7,7 @@ from typing import Literal
 from .. import DeviceException
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template
+from .base.helpers import create_mac_regexp, parse_by_template
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -33,7 +33,7 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
     prompt = r"\S+ ?#\s*$"
     space_prompt = "Press <SPACE> to continue or <Q> to quit:"
-    mac_format = r"\S\S:" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "Extreme"
 
     def __init__(

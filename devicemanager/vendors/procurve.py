@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .base.device import AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import parse_by_template
+from .base.helpers import create_mac_regexp, parse_by_template
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -43,9 +43,9 @@ def validate_port(if_invalid_return=None):
 
 class ProCurve(BaseDevice, AbstractConfigDevice):
     prompt = r"\S+[#>] "
-    space_prompt = r"-- MORE --, next page: Space, next line: Enter, quit: Control-C"
+    space_prompt = r"\s*-- MORE --.+quit: Control-C\s*"
     vendor = "ProCurve"
-    mac_format = r"\b[0-9a-f]{6}-[0-9a-f]{6}\b"
+    mac_format = create_mac_regexp("000000-000000")
 
     def __init__(
         self,
@@ -61,7 +61,6 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
 
         sys_info = self.send_command("show system-information", before_catch="General System Information")
         self.mac = self.find_or_empty(r"Base MAC Addr\s+: (\S+)", sys_info)
-        self.model = ""
         self.serialno = self.find_or_empty(r"Serial Number\s+: (\S+)", sys_info)
         self.os_version = self.find_or_empty(r"Software revision\s+: (\S+)", sys_info)
         self._grant_privileges()
@@ -278,7 +277,12 @@ class ProCurveFactory(AbstractDeviceFactory):
 
     @staticmethod
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
-        return version_output and "Image stamp:" in str(version_output)
+        if not version_output:
+            return False
+        return (
+            re.search(r"Hewlett-Packard|ProCurve|Image stamp:", str(version_output), flags=re.IGNORECASE)
+            is not None
+        )
 
     @classmethod
     def get_device(
@@ -289,4 +293,5 @@ class ProCurveFactory(AbstractDeviceFactory):
         auth: DeviceAuthDict,
         version_output: str = "",
     ) -> BaseDevice:
-        return ProCurve(session, ip, auth, snmp_community=snmp_community)
+        model = ProCurve.find_or_empty(r"ProCurve\s+(\S+)\s+Switch", version_output)
+        return ProCurve(session, ip, auth, snmp_community=snmp_community, model=model)

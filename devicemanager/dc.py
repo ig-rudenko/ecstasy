@@ -183,7 +183,7 @@ class DeviceRemoteConnector:
             snmp_port=snmp_port,
         )
         self.ip = ip
-        self.session = None
+        self.session: SessionSpawner | None = None
         self.snmp_community = snmp_community
         self.snmp_port = ports.snmp_port
         self.telnet_port = ports.telnet_port
@@ -205,14 +205,16 @@ class DeviceRemoteConnector:
 
     def _get_device_session(self) -> BaseDevice:
         if self.protocol == "telnet":
-            self.session = self._connect_by_telnet()
+            session = self._connect_by_telnet()
         elif self.protocol == "ssh":
-            self.session = self._connect_by_ssh()
+            session = self._connect_by_ssh()
         else:
             raise DeviceException(f"Unknown protocol: {self.protocol!r}")
 
+        self.session = session
+
         device = DeviceMultiFactory.get_device(
-            self.session,
+            session,
             ip=self.ip,
             auth={
                 "login": self.login,
@@ -225,7 +227,7 @@ class DeviceRemoteConnector:
         device.connection_protocol = self.protocol
         return device
 
-    def _connect_by_ssh(self):
+    def _connect_by_ssh(self) -> SessionSpawner:
         connected = False
         session = None
         negotiation_restarts = 0
@@ -255,6 +257,7 @@ class DeviceRemoteConnector:
                     ],
                     timeout=30,
                 )
+                session.save_before()
 
                 if expect_index == 0:
                     # KexAlgorithms
@@ -367,6 +370,7 @@ class DeviceRemoteConnector:
                 session.close()
             raise exc
 
+        session.save_before()
         return session
 
     def _validate_ssh_negotiation(
@@ -389,7 +393,7 @@ class DeviceRemoteConnector:
                 ip=self.ip,
             )
 
-    def _connect_by_telnet(self):
+    def _connect_by_telnet(self) -> SessionSpawner:
         session = None
         timeout = 20
         try:
@@ -406,6 +410,7 @@ class DeviceRemoteConnector:
                 session.close()
             raise exc
 
+        session.save_before()
         return session
 
     def __login_to_by_telnet(self, session, login: str, password: str, timeout: int) -> str:
@@ -413,6 +418,7 @@ class DeviceRemoteConnector:
 
         while True:
             expect_index = session.expect(self.telnet_authentication_expect, timeout=timeout)
+            session.save_before()
 
             # Login
             if expect_index == 0:

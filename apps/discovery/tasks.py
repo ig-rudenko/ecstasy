@@ -5,7 +5,7 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
-from .models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryRun
+from .models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
 from .services.dataclasses import DeviceFingerprint, DiscoveryAttemptData
 from .services.fingerprint import DeviceFingerprinter
 from .services.provisioning import accept_candidate
@@ -31,7 +31,21 @@ class DiscoveryScanResult:
     error: str = ""
 
 
-@shared_task(bind=True, name="discovery_run_task")
+@shared_task(name="discovery_run_task", ignore_result=True)
+def run_discover_profile(dis_prof_id: int):
+    try:
+        dis_profile = DiscoveryProfile.objects.get(pk=dis_prof_id)
+    except DiscoveryProfile.DoesNotExist:
+        return
+
+    if not dis_profile.is_active:
+        return
+
+    run = DiscoveryRun.objects.create(profile=dis_profile, created_by=None, dry_run=False)
+    discovery_run_task(run.id, dis_profile.networks)
+
+
+@shared_task(bind=True)
 def discovery_run_task(self, run_id: int, networks_override: list[str] | None = None) -> dict:
     """Выполнить auto discovery run в фоне."""
 

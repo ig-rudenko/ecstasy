@@ -41,6 +41,7 @@ class AbstractTestFactory(SimpleTestCase):
         fake_session.sendline.return_value = ""
         fake_session.before.decode.return_value = ""
         fake_session.expect.return_value = 0
+        fake_session.before_history = ""
         return fake_session
 
     def _is_need_skip(self) -> bool:

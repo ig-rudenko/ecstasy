@@ -34,6 +34,7 @@ class CiscoPexpectFaker:
         self.before = b""
         self.sent_commands = []
         self.expect_cmd = 0
+        self.before_history = ""
 
     def send(self, command: str):
         return self.sendline(command.strip())

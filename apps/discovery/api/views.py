@@ -6,6 +6,7 @@ from django.db.models import Case, CharField, Value, When
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -99,6 +100,9 @@ class DiscoveryRunListCreateAPIView(generics.ListAPIView):
         ensure_discovery_is_not_running()
         profile = serializer.validated_data["profile"]
         networks = serializer.validated_data.get("networks")
+        if not profile.is_active:
+            raise ValidationError("Профиль выключен и не может быть запущен")
+
         run = DiscoveryRun.objects.create(
             profile=profile,
             created_by=request.user,

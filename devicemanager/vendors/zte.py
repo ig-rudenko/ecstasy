@@ -1,10 +1,11 @@
+import io
 import re
 from time import sleep
 from typing import Literal
 
-from .base.device import AbstractCableTestDevice, AbstractSearchDevice, BaseDevice
+from .base.device import AbstractCableTestDevice, AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import normalize_cable_diag_result, parse_by_template, range_to_numbers
+from .base.helpers import create_mac_regexp, normalize_cable_diag_result, parse_by_template, range_to_numbers
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -23,7 +24,7 @@ from .base.types import (
 from .base.validators import validate_and_format_port_only_digit
 
 
-class ZTE(BaseDevice, AbstractCableTestDevice, AbstractSearchDevice):
+class ZTE(BaseDevice, AbstractCableTestDevice, AbstractConfigDevice, AbstractSearchDevice):
     """
     # Для оборудования от производителя ZTE
 
@@ -35,9 +36,9 @@ class ZTE(BaseDevice, AbstractCableTestDevice, AbstractSearchDevice):
     """
 
     prompt = r"\S+\(cfg\)#|\S+>"
-    space_prompt = "----- more -----"
+    space_prompt = r"-+ more -+.+"
     # Два формата для МАС "e1.3f.45.d6.23.53" и "e13f.45d6.2353"
-    mac_format = r"\S\S\.\S\S\.\S\S\.\S\S\.\S\S\.\S\S" + "|" + r"[a-f0-9]{4}\.[a-f0-9]{4}\.[a-f0-9]{4}"
+    mac_format = create_mac_regexp("00.00.00.00.00.00", "aaaa.bbbb.cccc")
     vendor = "ZTE"
 
     def __init__(
@@ -579,6 +580,13 @@ class ZTE(BaseDevice, AbstractCableTestDevice, AbstractSearchDevice):
             result.append(ArpInfoResult(ip=ip, mac=mac, vlan=vlan, port=port))
 
         return result
+
+    def get_current_configuration(self) -> io.BytesIO:
+        config = self.send_command(
+            "show running-config",
+            timeout=40,
+        )
+        return io.BytesIO(config.strip().encode())
 
 
 class ZTEFactory(AbstractDeviceFactory):

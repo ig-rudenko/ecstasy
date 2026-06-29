@@ -69,6 +69,7 @@ Software Version : VRP (R) Software, Version 5.70 (V100R006C05)"""
 class FakeHuaweiMA5600TSession:
     def __init__(self):
         self._output = b""
+        self.before_history = ""
 
     @staticmethod
     def expect(*args, **kwargs):

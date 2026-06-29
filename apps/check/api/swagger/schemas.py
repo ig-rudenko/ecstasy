@@ -8,7 +8,7 @@ from .requests import (
     ExecuteBulkDeviceCommandRequestSwaggerSerializer,
 )
 from .responses import (
-    BrasPairSessionResultSwaggerSerializer,
+    BrasSessionSwaggerSerializer,
     BulkCommandLaunchResponseSwaggerSerializer,
     BulkCommandTaskStatusSwaggerSerializer,
     CableDiagnosticResultSwaggerSerializer,
@@ -149,7 +149,7 @@ change_description_api_doc = swagger_auto_schema(
 bras_get_session_api_doc = swagger_auto_schema(
     query_serializer=MacSerializer(),
     responses={
-        200: BrasPairSessionResultSwaggerSerializer(),
+        200: BrasSessionSwaggerSerializer(many=True),
     },
 )
 

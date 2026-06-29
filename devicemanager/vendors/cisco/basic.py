@@ -12,7 +12,7 @@ from ..base.device import (
     BaseDevice,
     CableDiagResult,
 )
-from ..base.helpers import normalize_cable_diag_result, parse_by_template
+from ..base.helpers import create_mac_regexp, normalize_cable_diag_result, parse_by_template
 from ..base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -48,7 +48,7 @@ class Cisco(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
     prompt = r"\S+#$"
     space_prompt = r" --More-- "
-    mac_format = r"\S\S\S\S\.\S\S\S\S\.\S\S\S\S"  # 0018.e7d3.1d43
+    mac_format = create_mac_regexp("0000.0000.0000")
     vendor = "Cisco"
     EXTRA_FIBER_TYPES = ["XBIT"]
 

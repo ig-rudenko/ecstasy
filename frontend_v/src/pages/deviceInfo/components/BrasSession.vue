@@ -9,7 +9,7 @@
             </div>
         </template>
 
-        <div v-if="canCutBrasSession">
+        <div v-if="canCutBrasSession && sessions?.length">
             <!--СРЕЗАТЬ СЕССИЮ   -->
             <!--        НОЖ-->
             <SplitButton
@@ -48,21 +48,27 @@
 
         <div class="pt-4">
             <!--        SESSIONS-->
-            <div v-if="sessions" class="overflow-auto">
-                <Fieldset legend="BRAS1" :toggleable="true" v-if="sessions.BRAS1" class="rounded-2xl">
-                    <div class="p-4" v-if="sessions.BRAS1.errors.length">
-                        {{ sessions.BRAS1.errors }}
-                    </div>
-                    <div class="p-4 font-mono whitespace-pre" v-html="formatSession(sessions.BRAS1.session)"></div>
-                </Fieldset>
-
-                <Fieldset legend="BRAS2" :toggleable="true" v-if="sessions.BRAS2" class="rounded-2xl">
-                    <div class="p-4" v-if="sessions.BRAS2.errors.length">
-                        {{ sessions.BRAS2.errors }}
-                    </div>
-                    <div class="p-4 font-mono whitespace-pre" v-html="formatSession(sessions.BRAS2.session)"></div>
+            <div v-if="sessions !== null && sessions.length > 0" class="overflow-auto">
+                <Fieldset
+                    v-for="item in sessions"
+                    :key="item.name"
+                    :legend="item.name"
+                    :toggleable="true"
+                    class="rounded-2xl"
+                >
+                    <Message severity="error" class="p-4 whitespace-pre-wrap" v-if="item.errors.length">
+                        {{ item.errors.join("\n") }}
+                    </Message>
+                    <div
+                        v-if="item.session"
+                        class="p-4 font-mono whitespace-pre"
+                        v-html="formatSession(item.session)"
+                    ></div>
                 </Fieldset>
             </div>
+
+            <!--        LOADING SESSIONS-->
+            <div v-else-if="sessions !== null && sessions.length === 0" class="flex justify-center">Не найдено</div>
 
             <!--        LOADING SESSIONS-->
             <div v-else class="flex justify-center">

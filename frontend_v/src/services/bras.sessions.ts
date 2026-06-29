@@ -11,14 +11,9 @@ interface MacAffiliation {
 }
 
 interface BrasData {
-    BRAS1: {
-        session: string;
-        errors: string[];
-    };
-    BRAS2: {
-        session: string;
-        errors: string[];
-    };
+    name: string;
+    session: string;
+    errors: string[];
 }
 
 interface BrasCutSessionResult {
@@ -28,7 +23,7 @@ interface BrasCutSessionResult {
 
 class BrasSessionsService {
     public dialogVisible: Ref<boolean> = ref(false);
-    private lastSessions: Ref<BrasData | null> = ref(null);
+    private lastSessions: Ref<BrasData[] | null> = ref(null);
     public current: Ref<MacAffiliation | null> = ref(null);
     public cuttingNow: Ref<boolean> = ref(false);
     public cutSessionResult: Ref<BrasCutSessionResult | null> = ref(null);
@@ -42,7 +37,7 @@ class BrasSessionsService {
         };
         this.dialogVisible.value = true;
         try {
-            const resp = await api.get<BrasData>("/api/v1/devices/session?mac=" + mac);
+            const resp = await api.get<BrasData[]>("/api/v1/devices/session?mac=" + mac);
             this.lastSessions.value = resp.data;
         } catch (error: any) {
             errorToast("Ошибка", errorFmt(error));

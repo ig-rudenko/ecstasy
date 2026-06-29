@@ -101,11 +101,11 @@ git checkout v20.0.4
 cp .env.example .env
 ```
 
-Создайте папки для хранения данных. И дайте права на запись.
+Создайте папки для хранения данных и смените владельца на пользователя в контейнере.
 
 ```shell
-mkdir logs static media map_layer_files configurations db-backup
-chmod 777 logs static media map_layer_files configurations
+mkdir logs static media configurations db-backup ssh_data
+chown 1000:1001 logs static media configurations db-backup ssh_data
 ```
 
 Теперь запустите контейнеры.
@@ -233,7 +233,7 @@ docker compose exec backend python manage.py createsuperuser;
 
 > [!NOTE]
 > По умолчанию используются данные авторизации Zabbix хранимые в базе.
-> Указывается через панель администратора: `App settings -> Zabbix API settings`
+> Указывается через панель администратора: `Settings -> Zabbix API`
 > Чтобы не сохранять в базу данных, а только протестировать какие узлы будут учитываться
 > нужно выполнять команды без параметра `--save`.
 

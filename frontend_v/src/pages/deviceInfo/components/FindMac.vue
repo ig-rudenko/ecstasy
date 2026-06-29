@@ -258,6 +258,8 @@
                     <ProgressSpinner />
                 </div>
             </section>
+
+            <MacAddressTable v-if="macSearch.lastMac" :mac-address="macSearch.lastMac" />
         </div>
     </Dialog>
 </template>
@@ -265,8 +267,10 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import macSearch from "@/services/macSearch";
+import MacAddressTable from "@/pages/wtf/MacAddressTable.vue";
 
 export default defineComponent({
+    components: { MacAddressTable },
     computed: {
         zabbixLinks() {
             return this.macSearch.lastMacDetail?.zabbix || [];

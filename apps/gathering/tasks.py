@@ -9,6 +9,7 @@ from pyzabbix.api import logger
 
 from apps.check.models import Devices
 from apps.check.services.device.interfaces_collector import DeviceDBSynchronizer
+from devicemanager import snmp
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, Interfaces
 from ecstasy_project.celery import app
@@ -50,14 +51,17 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
 
             with DeviceRemoteConnector(
                 ip=obj.ip,
-                protocol=obj.port_scan_protocol,
+                protocol=obj.cmd_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
                 telnet_port=obj.telnet_port,
                 ssh_port=obj.ssh_port,
                 snmp_port=obj.snmp_port,
             ) as session:
-                interfaces = Interfaces(session.get_interfaces())
+                if obj.port_scan_protocol == "snmp":
+                    interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
+                else:
+                    interfaces = Interfaces(session.get_interfaces())
 
                 gather = MacAddressTableGather(obj, session=session, interfaces=interfaces)
                 gather.run_gathering()
@@ -124,14 +128,17 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
 
             with DeviceRemoteConnector(
                 ip=obj.ip,
-                protocol=obj.port_scan_protocol,
+                protocol=obj.cmd_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
                 telnet_port=obj.telnet_port,
                 ssh_port=obj.ssh_port,
                 snmp_port=obj.snmp_port,
             ) as session:
-                interfaces = Interfaces(session.get_interfaces())
+                if obj.port_scan_protocol == "snmp":
+                    interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
+                else:
+                    interfaces = Interfaces(session.get_interfaces())
 
                 gather = VlanTableGather(obj, session=session, interfaces=interfaces)
                 gather.run_gathering()
@@ -177,9 +184,10 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
         storage = LocalConfigStorage(obj)
         try:
             gather = ConfigurationGather(storage=storage)
-            gather.delete_outdated_configs()
-            status = gather.collect_config_file()
-            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {status}")
+            is_collected = gather.collect_config_file()
+            if is_collected:
+                gather.delete_outdated_configs()
+            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {is_collected}")
         except ConfigFileError as error:
             self.log_error(device=self.device_log_format(obj), message=error.message)
         except Exception as error:
@@ -231,7 +239,7 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
 
             with DeviceRemoteConnector(
                 ip=obj.ip,
-                protocol=obj.port_scan_protocol,
+                protocol=obj.cmd_protocol,
                 auth_obj=obj.auth_group,
                 snmp_community=obj.snmp_community or "",
                 telnet_port=obj.telnet_port,

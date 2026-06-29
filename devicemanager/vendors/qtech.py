@@ -6,7 +6,7 @@ from typing import Literal
 
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import normalize_cable_diag_result, parse_by_template
+from .base.helpers import create_mac_regexp, normalize_cable_diag_result, parse_by_template
 from .base.types import (
     ArpInfoResult,
     CableDiagResult,
@@ -59,7 +59,7 @@ class Qtech(BaseDevice, AbstractConfigDevice, AbstractSearchDevice, AbstractCabl
 
     prompt = r"\S+#$"
     space_prompt = r"\s*--More--\s*"
-    mac_format = r"\S\S-" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00-11-22-33-44-55")
     vendor = "Q-Tech"
 
     def __init__(

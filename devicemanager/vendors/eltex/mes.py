@@ -5,7 +5,7 @@ from time import sleep
 import pexpect
 
 from ..base.device import AbstractConfigDevice, BaseDevice
-from ..base.helpers import interface_normal_view, parse_by_template
+from ..base.helpers import create_mac_regexp, interface_normal_view, parse_by_template
 from ..base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -38,7 +38,7 @@ class EltexMES(BaseDevice, AbstractConfigDevice):
     # Это переменная, которая используется для поиска файла шаблона для анализа вывода команды.
     _template_name = "eltex-mes"
     # Регулярное выражение, которое будет соответствовать MAC-адресу.
-    mac_format = r"\S\S:" * 5 + r"\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "Eltex"
     supported_models = re.compile(r"MES\S+")
 

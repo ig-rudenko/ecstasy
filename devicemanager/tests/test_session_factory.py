@@ -8,7 +8,7 @@ from devicemanager.dc import SimpleAuthObject
 from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.device_connector.factory import DeviceSessionFactory
 from devicemanager.exceptions import DeviceException, SSHConnectionError
-from devicemanager.session_control import ConnectionPool, SessionController
+from devicemanager.session_control import ConnectionPool, GlobalSession, SessionController
 
 
 class DeviceSessionFactoryTests(SimpleTestCase):
@@ -35,6 +35,7 @@ class DeviceSessionFactoryTests(SimpleTestCase):
             auth_obj=SimpleAuthObject(login="user", password="password"),
             make_session_global=True,
             pool_size=pool_size,
+            pool_expired_seconds=2,
             snmp_community="public",
             port_scan_protocol="ssh",
         )
@@ -42,8 +43,8 @@ class DeviceSessionFactoryTests(SimpleTestCase):
     def test_empty_pool_is_not_replaced_during_initialization(self):
         """Repeated lookup returns the same pending pool instance."""
 
-        first_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2)
-        second_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2)
+        first_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2, pool_expired_seconds=2)
+        second_pool = self.sessions.get_or_create_pool("192.0.2.10", pool_size=2, pool_expired_seconds=2)
 
         self.assertIs(second_pool, first_pool)
 
@@ -67,6 +68,7 @@ class DeviceSessionFactoryTests(SimpleTestCase):
         self.sessions.add_connections_to_pool(
             "192.0.2.10",
             pool_size=1,
+            pool_expired_seconds=2,
             connections=[connection],
         )
 
@@ -74,6 +76,20 @@ class DeviceSessionFactoryTests(SimpleTestCase):
             self.sessions.get_pool_connections("192.0.2.10"),
             [{"active": True, "protocol": "ssh"}],
         )
+
+    def test_pool_does_not_return_connection_closed_while_waiting(self):
+        """A connection must still be alive after its reservation becomes available."""
+
+        connection = Mock()
+        connection.session.isalive.side_effect = [True, False]
+        connection.acquire_session.side_effect = [False, True]
+        pool = ConnectionPool(max_size=1)
+        pool.add(GlobalSession(connection=connection))
+
+        result = pool.get()
+
+        self.assertIsNone(result)
+        connection.release_session.assert_called_once_with()
 
     @patch("devicemanager.device_connector.factory.DeviceRemoteConnector.get_session")
     def test_failed_creation_removes_pending_pool(self, get_session):

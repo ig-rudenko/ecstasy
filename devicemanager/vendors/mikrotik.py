@@ -11,7 +11,7 @@ import paramiko
 from ..exceptions import UnknownDeviceError
 from .base.device import AbstractConfigDevice, AbstractPOEDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import normalize_number_suffix
+from .base.helpers import create_mac_regexp, normalize_number_suffix
 from .base.types import (
     DeviceAuthDict,
     InterfaceListType,
@@ -49,7 +49,7 @@ mikrotik_validate_and_format_port = partial(validate_and_format_port, validator=
 class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     prompt = r"\] > $"
     space_prompt = None
-    mac_format = r"\S\S:\S\S:\S\S:\S\S:\S\S:\S\S"
+    mac_format = create_mac_regexp("00:11:22:33:44:55")
     vendor = "MikroTik"
 
     def __init__(

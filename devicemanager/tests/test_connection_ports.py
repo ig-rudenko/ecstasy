@@ -76,6 +76,7 @@ class DeviceConnectionPortsTests(SimpleTestCase):
             auth_obj=SimpleAuthObject(login="user", password="password"),
             make_session_global=True,
             pool_size=1,
+            pool_expired_seconds=2,
             snmp_community="public",
             port_scan_protocol="snmp",
             snmp_port=1161,

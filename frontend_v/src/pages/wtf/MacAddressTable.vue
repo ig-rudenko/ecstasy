@@ -93,7 +93,6 @@ onMounted(() => loadRows());
 
 <template>
     <section
-        v-if="rows.length > 0"
         class="rounded-2xl border border-sky-200/80 bg-sky-50/50 p-4 dark:border-sky-900/70 dark:bg-sky-500/10 sm:p-5"
     >
         <div class="flex flex-col gap-4">

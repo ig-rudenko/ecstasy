@@ -156,9 +156,9 @@
             </div>
         </template>
 
-        <div v-if="selectedFile?.content" class="rounded-b-3xl bg-gray-950 p-4 text-gray-100">
+        <div v-if="selectedFile?.content" class="relative rounded-b-3xl bg-gray-950 sm:p-4 text-gray-100">
             <div
-                class="mb-4 flex flex-col gap-4 rounded-2xl border border-gray-700 bg-gray-900/90 p-3 lg:flex-row lg:items-end"
+                class="sticky top-0 sm:top-4 flex flex-col gap-4 rounded-2xl border border-gray-700 bg-gray-900/90 p-3 lg:flex-row lg:items-center"
             >
                 <div class="min-w-0 flex-1">
                     <label
@@ -167,18 +167,19 @@
                     >
                         Поиск по регулярному выражению
                     </label>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-wrap flex-row items-center gap-1">
                         <InputText
                             id="config-regex-search"
                             v-model="configSearchPattern"
-                            class="min-w-[16rem] flex-1 font-mono"
+                            class="flex-1 font-mono"
                             placeholder="Например: interface\s+\S+"
                             autocomplete="off"
                             aria-describedby="config-search-help"
+                            fluid
                             @keydown.enter.prevent="handleConfigSearchEnter"
                         />
                         <span
-                            class="min-w-16 text-center text-sm tabular-nums text-gray-300"
+                            class="px-2 text-center text-sm tabular-nums text-gray-300"
                             aria-live="polite"
                             aria-label="Текущее совпадение и общее количество"
                         >
@@ -189,6 +190,7 @@
                             severity="secondary"
                             outlined
                             rounded
+                            size="small"
                             :disabled="configMatches.length === 0"
                             aria-label="Предыдущее совпадение"
                             title="Предыдущее совпадение (Shift+Enter)"
@@ -199,6 +201,7 @@
                             severity="secondary"
                             outlined
                             rounded
+                            size="small"
                             :disabled="configMatches.length === 0"
                             aria-label="Следующее совпадение"
                             title="Следующее совпадение (Enter)"
@@ -218,14 +221,14 @@
                 </div>
 
                 <div class="w-full lg:w-64">
-                    <div class="mb-2 flex items-center justify-between gap-3">
+                    <div class="flex items-center justify-between gap-3">
                         <label
                             for="config-font-size"
                             class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400"
                         >
                             Размер шрифта
                         </label>
-                        <output for="config-font-size" class="text-sm tabular-nums text-gray-200">
+                        <output for="config-font-size" class="text-sm font-mono tabular-nums text-gray-200">
                             {{ configFontSize }} px
                         </output>
                     </div>
@@ -243,7 +246,7 @@
 
             <pre
                 ref="configText"
-                class="config-content max-h-[70vh] overflow-auto whitespace-pre-wrap break-all rounded-2xl bg-black/20 p-3 font-mono"
+                class="config-content overflow-auto whitespace-pre-wrap break-all rounded-2xl bg-black/20 p-3 font-mono"
                 :style="{ fontSize: `${configFontSize}px`, lineHeight: 1.6 }"
                 v-html="highlightedConfigText"
             ></pre>

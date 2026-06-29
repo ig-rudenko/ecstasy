@@ -1,11 +1,12 @@
 import pathlib
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
+import pexpect
 import textfsm
 from django.test import SimpleTestCase
 
-from devicemanager.vendors.dlink import Dlink, validate_port
+from devicemanager.vendors.dlink import Dlink, no_clipaging, validate_port
 
 from .base_factory_test import AbstractTestFactory
 
@@ -310,6 +311,48 @@ Port      Type      Link Status    Test Result                 Cable Length (M)
             9: b"",
         }
         return data[port]
+
+
+class TestDLinkClipaging(SimpleTestCase):
+    """Tests for temporary D-Link CLI paging changes."""
+
+    def test_nested_context_switches_clipaging_once(self):
+        """Nested operations keep paging disabled until the outer operation ends."""
+
+        device = MagicMock()
+        device._no_clipaging_depth = 0
+
+        with no_clipaging(device), no_clipaging(device):
+            pass
+
+        self.assertEqual(
+            device.session.sendline.call_args_list,
+            [call("disable clipaging"), call("enable clipaging")],
+        )
+        self.assertEqual(
+            device.session.expect.call_args_list,
+            [
+                call("disable clipaging"),
+                call(device.prompt),
+                call("enable clipaging"),
+                call(device.prompt),
+            ],
+        )
+
+    def test_send_command_propagates_prompt_timeout(self):
+        """A missing prompt invalidates the session instead of starting another command."""
+
+        session = MagicMock()
+        session.before = b"partial output"
+        session.expect.side_effect = [0, 0, pexpect.TIMEOUT("Timeout exceeded")]
+        device = object.__new__(Dlink)
+        device.session = session
+        device.prompt = r"\S+#"
+        device.space_prompt = None
+        device.ip = "192.0.2.10"
+
+        with self.assertRaises(pexpect.TIMEOUT):
+            device.send_command("show ports description")
 
 
 class TestDLinkInit(SimpleTestCase):

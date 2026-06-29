@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:20.0.8
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.8
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.9
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.9
 x-logging: &logging
   options:
     max-size: "10m"
@@ -41,7 +41,6 @@ services:
       - "./logs:/app/logs"
       - "./static:/app/static"
       - "./media:/app/media"
-      - "./map_layer_files:/app/media/map_layer_files"
       - "./configurations:/configurations"
       - "./db-backup:/app/db-backup"
       - "./ssh_data:/app/.ssh"
@@ -63,6 +62,9 @@ services:
     command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
     env_file:
       - .env
+    environment:
+      DJANGO_ENV: "${DJANGO_ENV:-prod}"
+      CONFIG_STORAGE_DIR: "/configurations"
     depends_on:
       redis:
         condition: service_healthy

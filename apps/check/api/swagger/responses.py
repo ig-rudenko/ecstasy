@@ -237,13 +237,9 @@ class ChangeDescriptionSwaggerSerializer(SwaggerSerializer):
 
 
 class BrasSessionSwaggerSerializer(SwaggerSerializer):
+    name = serializers.CharField()
     session = serializers.CharField(allow_null=True)
     errors = serializers.ListSerializer(child=serializers.CharField())  # type: ignore
-
-
-class BrasPairSessionResultSwaggerSerializer(SwaggerSerializer):
-    BRAS1 = BrasSessionSwaggerSerializer()
-    BRAS2 = BrasSessionSwaggerSerializer()
 
 
 class CutBrasSessionSwaggerSerializer(SwaggerSerializer):
