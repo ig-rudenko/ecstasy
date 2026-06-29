@@ -4,6 +4,8 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
+from devicemanager.vendors.base.helpers import remove_ansi_escape_codes
+
 if TYPE_CHECKING:
     from pexpect import spawn as Spawn  # noqa
 else:
@@ -59,6 +61,15 @@ class SessionSpawner(Spawn):
             use_poll,
         )
         self.ip = ip
+        self._before_history = ""
+
+    @property
+    def before_history(self) -> str:
+        return self._before_history
+
+    def save_before(self) -> None:
+        if self.before is not None:
+            self._before_history += "\n" + remove_ansi_escape_codes(self.before)
 
     def sendline(self, s: str | bytes = "") -> int:
         logger.debug("Device: %s | sendline: %s", self.ip, s)

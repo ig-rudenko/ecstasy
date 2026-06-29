@@ -1,8 +1,8 @@
 from . import UnknownDeviceError
+from .session_spawner import SessionSpawner
 from .vendors.almatek import AlmatekFactory
 from .vendors.base.device import BaseDevice
 from .vendors.base.factory import AbstractDeviceFactory
-from .vendors.base.helpers import remove_ansi_escape_codes
 from .vendors.base.types import DeviceAuthDict
 from .vendors.cisco import CiscoFactory
 from .vendors.dlink import DlinkFactory
@@ -53,7 +53,7 @@ class DeviceMultiFactory(AbstractDeviceFactory):
     @classmethod
     def get_device(
         cls,
-        session,
+        session: SessionSpawner,
         ip: str,
         snmp_community: str,
         auth: DeviceAuthDict,
@@ -84,10 +84,10 @@ class DeviceMultiFactory(AbstractDeviceFactory):
         |            SNR              |             "SNR"             |
 
         """
-        version_output += remove_ansi_escape_codes(session.before)
+        version_output += session.before_history
         version_output += cls.send_command(session, "show version")
 
-        factory_data = {
+        factory_data: dict = {
             "session": session,
             "ip": ip,
             "snmp_community": snmp_community,
