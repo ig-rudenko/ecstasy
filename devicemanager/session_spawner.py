@@ -4,8 +4,6 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
-from devicemanager.vendors.base.helpers import remove_ansi_escape_codes
-
 if TYPE_CHECKING:
     from pexpect import spawn as Spawn  # noqa
 else:
@@ -20,7 +18,6 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class SessionSpawner(Spawn):
-
     def __init__(
         self,
         command: str,
@@ -68,6 +65,8 @@ class SessionSpawner(Spawn):
         return self._before_history
 
     def save_before(self) -> None:
+        from devicemanager.vendors.base.helpers import remove_ansi_escape_codes
+
         if self.before is not None:
             self._before_history += "\n" + remove_ansi_escape_codes(self.before)
 
@@ -79,13 +78,7 @@ class SessionSpawner(Spawn):
         logger.debug("Device: %s | send: %s", self.ip, s)
         return super().send(s)
 
-    def expect(
-        self,
-        pattern,
-        timeout=-1,
-        searchwindowsize=-1,
-        async_=False,
-    ):
+    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):  # noqa
         logger.debug("Device: %s | expect: %s", self.ip, pattern)
 
         res = super().expect(pattern, timeout, searchwindowsize, async_)  # noqa

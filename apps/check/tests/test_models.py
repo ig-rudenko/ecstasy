@@ -2,12 +2,14 @@ from decimal import Decimal
 from importlib import import_module
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from ..models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
+
+User = get_user_model()
 
 
 class DeviceModelTest(TestCase):

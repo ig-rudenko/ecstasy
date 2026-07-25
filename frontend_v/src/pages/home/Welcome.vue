@@ -20,10 +20,10 @@ const store = useStore();
 const user: User | null = store.state.auth.user;
 
 const showGPONCard = computed(() => permissions.hasGPONAnyPermission());
-const showMapsCard = computed(() => permissions.has("auth.can_view_maps"));
-const showTracerouteCard = computed(() => permissions.has("auth.access_traceroute"));
-const showDescSearchCard = computed(() => permissions.has("auth.access_desc_search"));
-const showWTFCard = computed(() => permissions.has("auth.access_wtf_search"));
+const showMapsCard = computed(() => permissions.has("accounting.can_view_maps"));
+const showTracerouteCard = computed(() => permissions.has("accounting.access_traceroute"));
+const showDescSearchCard = computed(() => permissions.has("accounting.access_desc_search"));
+const showWTFCard = computed(() => permissions.has("accounting.access_wtf_search"));
 
 const modules = computed<ModuleCard[]>(() => {
     const cards: ModuleCard[] = [

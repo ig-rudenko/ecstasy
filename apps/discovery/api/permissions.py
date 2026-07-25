@@ -13,4 +13,4 @@ class DiscoveryAdminPermission(permissions.BasePermission):
             return False
         if user.is_superuser:
             return True
-        return user.has_perm("auth.access_discovery")
+        return user.has_perm("accounting.access_discovery")

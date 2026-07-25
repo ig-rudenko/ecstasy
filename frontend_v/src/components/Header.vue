@@ -41,7 +41,7 @@ function buildMenuItems(): MenuItem[] {
     //     });
     // }
 
-    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+    if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Обнаружение",
             icon: "discovery",
@@ -49,7 +49,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+    if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Команды",
             icon: "bulk-commands",
@@ -57,7 +57,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.can_view_maps")) {
+    if (permissions.has("accounting.can_view_maps")) {
         built.push({
             label: "Карты",
             icon: "map",
@@ -65,7 +65,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_desc_search")) {
+    if (permissions.has("accounting.access_desc_search")) {
         built.push({
             label: "Поиск",
             icon: "search",
@@ -73,7 +73,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_traceroute")) {
+    if (permissions.has("accounting.access_traceroute")) {
         built.push({
             label: "Трассировка",
             icon: "topology",
@@ -81,7 +81,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_wtf_search")) {
+    if (permissions.has("accounting.access_wtf_search")) {
         built.push({
             label: "WTF",
             icon: "radar",
@@ -89,7 +89,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_rings") || permissions.has("auth.access_transport_rings")) {
+    if (permissions.has("accounting.access_rings") || permissions.has("accounting.access_transport_rings")) {
         built.push({
             label: "Кольца",
             icon: "ring",

@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
@@ -10,7 +9,47 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
-from .models import UserAPIToken
+from apps.check.models import Profile
+
+from .models import User, UserAPIToken
+
+
+@admin.register(User)
+class UserProfileAdmin(BaseUserAdmin):
+    """Переопределенный класс для пользователя"""
+
+    list_display = [
+        "username",
+        "verbose_name",
+        "email",
+        "is_active",
+        "last_login",
+        "permission",
+        "dev_groups",
+    ]
+
+    @admin.display(description="")
+    def verbose_name(self, obj: User):
+        return f"{obj.first_name} {obj.last_name}"
+
+    @admin.display(description="Права")
+    def permission(self, obj: User):
+        """Отображение привилегий пользователя"""
+        return ", ".join(
+            permission.split(".", 1)[1] for permission in sorted(Profile.get_user_device_permissions(obj))
+        )
+
+    @admin.display(description="Группы")
+    def dev_groups(self, obj: User):
+        """Отображение доступных групп для пользователя"""
+        try:
+            profile: Profile = Profile.objects.get(user=obj)
+        except Profile.DoesNotExist:
+            return ""
+
+        user_groups = profile.devices_groups.all()
+        groups_string = "".join([f"<li>{group}</li>" for group in user_groups])
+        return mark_safe(groups_string)
 
 
 @admin.register(UserAPIToken)
@@ -71,13 +110,12 @@ class SessionAdmin(ModelAdmin):
         return obj.get_decoded()
 
 
-User = get_user_model()
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin, ModelAdmin):
+class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     # Forms loaded from `unfold.forms`
     form = UserChangeForm
     add_form = UserCreationForm

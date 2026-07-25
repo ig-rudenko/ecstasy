@@ -1,12 +1,12 @@
 import os
 from typing import Literal
 
-from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 
+from apps.accounting.models import User
 from apps.check.models import DeviceGroup
 
 

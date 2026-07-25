@@ -101,7 +101,7 @@ export default {
     },
 
     async mounted() {
-        if (!permissions.has("auth.access_transport_rings")) {
+        if (!permissions.has("accounting.access_transport_rings")) {
             location.href = "/";
             return;
         }

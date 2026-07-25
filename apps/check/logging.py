@@ -1,11 +1,9 @@
-from django.contrib.auth.models import AbstractBaseUser
-
 from . import models
 from .logger import django_actions_logger
 
 
 def log(
-    user: models.User | AbstractBaseUser,
+    user: models.User,
     model_device: models.Devices | models.Bras,
     operation: str,
 ):

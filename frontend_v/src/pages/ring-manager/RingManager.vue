@@ -7,7 +7,7 @@ const cards = [
         title: "Транспортные кольца",
         description: "Кольца агрегации, используются для разворота VLAN и контроля состояния магистрали.",
         route: "/ring-manager/transport-ring",
-        permission: "auth.access_transport_rings",
+        permission: "accounting.access_transport_rings",
         image: "/img/ring_manager/background/transport_ring.jpg",
     },
     {
@@ -15,7 +15,7 @@ const cards = [
         title: "Абонентские кольца",
         description: "Оборудование доступа с кольцевой топологией и быстрым переходом к диагностике.",
         route: "/ring-manager/access-ring",
-        permission: "auth.access_rings",
+        permission: "accounting.access_rings",
         image: "/img/ring_manager/background/access_ring.jpg",
     },
 ];

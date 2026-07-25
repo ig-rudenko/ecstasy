@@ -59,6 +59,74 @@ REVERSE_LEGACY_PERMISSION_MAP = [
 ]
 
 
+PROFILE_TABLE = "user_profiles"
+OLD_PERMISSION_COLUMN = "permissions"
+LEGACY_PERMISSION_COLUMN = "legacy_permissions"
+LEGACY_PERMISSION_COLUMN_DEFINITION = "varchar(15) NOT NULL DEFAULT 'read'"
+
+
+def column_exists(schema_editor, table_name: str, column_name: str) -> bool:
+    """Return whether a database column exists in the current schema."""
+    with schema_editor.connection.cursor() as cursor:
+        columns = schema_editor.connection.introspection.get_table_description(cursor, table_name)
+    return any(column.name == column_name for column in columns)
+
+
+def rename_column(schema_editor, table_name: str, old_name: str, new_name: str) -> None:
+    """Rename a column using SQL supported by the active test/production backend."""
+    quote_name = schema_editor.quote_name
+    quoted_table = quote_name(table_name)
+    quoted_old_name = quote_name(old_name)
+    quoted_new_name = quote_name(new_name)
+    if schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            f"ALTER TABLE {quoted_table} CHANGE {quoted_old_name} "
+            f"{quoted_new_name} {LEGACY_PERMISSION_COLUMN_DEFINITION}"
+        )
+    else:
+        schema_editor.execute(
+            f"ALTER TABLE {quoted_table} RENAME COLUMN {quoted_old_name} TO {quoted_new_name}"
+        )
+
+
+def prepare_legacy_permissions_column(apps, schema_editor) -> None:
+    """Rename the legacy profile permission column when it still exists."""
+    if not column_exists(schema_editor, PROFILE_TABLE, OLD_PERMISSION_COLUMN):
+        return
+    if column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
+    rename_column(schema_editor, PROFILE_TABLE, OLD_PERMISSION_COLUMN, LEGACY_PERMISSION_COLUMN)
+
+
+def restore_permissions_column_name(apps, schema_editor) -> None:
+    """Restore the old column name when reversing the migration."""
+    if not column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
+    if column_exists(schema_editor, PROFILE_TABLE, OLD_PERMISSION_COLUMN):
+        return
+    rename_column(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN, OLD_PERMISSION_COLUMN)
+
+
+def add_legacy_permissions_column(apps, schema_editor) -> None:
+    """Restore the temporary column so reverse data migration can run."""
+    if column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
+    schema_editor.execute(
+        f"ALTER TABLE {schema_editor.quote_name(PROFILE_TABLE)} ADD COLUMN "
+        f"{schema_editor.quote_name(LEGACY_PERMISSION_COLUMN)} {LEGACY_PERMISSION_COLUMN_DEFINITION}"
+    )
+
+
+def drop_legacy_permissions_column(apps, schema_editor) -> None:
+    """Drop the temporary legacy profile permission column if it exists."""
+    if not column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
+    schema_editor.execute(
+        f"ALTER TABLE {schema_editor.quote_name(PROFILE_TABLE)} DROP COLUMN "
+        f"{schema_editor.quote_name(LEGACY_PERMISSION_COLUMN)}"
+    )
+
+
 def create_device_permissions(apps) -> dict[str, object]:
     """Create permissions needed before post_migrate hooks and return them by codename."""
     ContentType = apps.get_model("contenttypes", "ContentType")
@@ -82,9 +150,11 @@ def create_device_permissions(apps) -> dict[str, object]:
 def migrate_profile_permissions(apps, schema_editor) -> None:
     """Migrate legacy profile access level to cumulative device permissions."""
     Profile = apps.get_model("check", "Profile")
-    User = apps.get_model("auth", "User")
+    User = apps.get_model("accounting", "User")
     user_permissions = User.user_permissions.through
     permissions = create_device_permissions(apps)
+    if not column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
     legacy_permission_map = dict(LEGACY_PERMISSION_MAP)
 
     for profile in Profile.objects.all():
@@ -99,9 +169,11 @@ def migrate_profile_permissions(apps, schema_editor) -> None:
 def restore_profile_permissions(apps, schema_editor) -> None:
     """Restore legacy profile access level from device permissions."""
     Profile = apps.get_model("check", "Profile")
-    User = apps.get_model("auth", "User")
+    User = apps.get_model("accounting", "User")
     user_permissions = User.user_permissions.through
     permissions = create_device_permissions(apps)
+    if not column_exists(schema_editor, PROFILE_TABLE, LEGACY_PERMISSION_COLUMN):
+        return
     reverse_permission_map = {}
     for legacy_permission, codenames in REVERSE_LEGACY_PERMISSION_MAP:
         for codename in codenames:
@@ -129,21 +201,42 @@ def restore_profile_permissions(apps, schema_editor) -> None:
 
 class Migration(migrations.Migration):
     dependencies = [
+        ("accounting", "0001_initial"),
         ("auth", "0012_alter_user_first_name_max_length"),
         ("contenttypes", "0002_remove_content_type_name"),
         ("check", "0042_bras_device"),
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name="profile",
-            old_name="permissions",
-            new_name="legacy_permissions",
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    prepare_legacy_permissions_column,
+                    restore_permissions_column_name,
+                ),
+            ],
+            state_operations=[
+                migrations.RenameField(
+                    model_name="profile",
+                    old_name="permissions",
+                    new_name="legacy_permissions",
+                ),
+            ],
         ),
         migrations.RunPython(migrate_profile_permissions, restore_profile_permissions),
-        migrations.RemoveField(
-            model_name="profile",
-            name="legacy_permissions",
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    drop_legacy_permissions_column,
+                    add_legacy_permissions_column,
+                ),
+            ],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="profile",
+                    name="legacy_permissions",
+                ),
+            ],
         ),
         migrations.AlterField(
             model_name="profile",

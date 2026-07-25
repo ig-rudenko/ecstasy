@@ -7,7 +7,7 @@
 import re
 from decimal import Decimal
 
-from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.models import Group, Permission
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -16,6 +16,7 @@ from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 from django.utils.text import slugify
 
+from apps.accounting.models import User
 from devicemanager.remote import remote_connector
 from devicemanager.remote.connector import RemoteDevice
 
@@ -174,14 +175,12 @@ class Devices(models.Model):
     collect_interfaces = models.BooleanField(
         default=True,
         verbose_name="Сбор интерфейсов",
-        help_text="Если включено, то будут собраны интерфейсы "
-        'во время периодической задачи "interfaces_scan"',
+        help_text='Если включено, то будут собраны интерфейсы во время периодической задачи "interfaces_scan"',
     )
     collect_mac_addresses = models.BooleanField(
         default=True,
         verbose_name="Сбор MAC адресов",
-        help_text="Если включено, то будут собраны MAC адреса "
-        'во время периодической задачи "mac_table_gather_task"',
+        help_text='Если включено, то будут собраны MAC адреса во время периодической задачи "mac_table_gather_task"',
     )
     collect_vlan_info = models.BooleanField(
         default=True,
@@ -647,8 +646,7 @@ class DeviceCommand(models.Model):
         null=False,
         blank=False,
         verbose_name="Команды",
-        help_text="Вы можете использовать макросы - {port}, "
-        "чтобы подставить название интерфейса, а также {ip}, {mac}",
+        help_text="Вы можете использовать макросы - {port}, чтобы подставить название интерфейса, а также {ip}, {mac}",
     )
     device_vendor = models.CharField(
         max_length=100,

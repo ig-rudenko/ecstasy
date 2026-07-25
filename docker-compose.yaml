@@ -87,7 +87,18 @@ services:
     build: .
     image: *ecstasy-image
     logging: *logging
-    command: "gunicorn -b ${DEVICE_CONNECTOR_BIND_HOST:-0.0.0.0}:${DEVICE_CONNECTOR_BIND_PORT:-8000} device_connector:app -k gthread -w 1 --keep-alive 180 --threads 200 --no-control-socket"
+    command: >
+      gunicorn device_connector:app
+        -b ${DEVICE_CONNECTOR_BIND_HOST:-0.0.0.0}:${DEVICE_CONNECTOR_BIND_PORT:-8000}
+        -w 1
+        -k gthread
+        --threads 200
+        --keep-alive 180
+        --access-logfile -
+        --error-logfile -
+        --no-control-socket
+        --log-level info
+
     restart: unless-stopped
     environment:
       DEVICE_CONNECTOR_TOKEN: "${DEVICE_CONNECTOR_TOKEN:?set DEVICE_CONNECTOR_TOKEN}"

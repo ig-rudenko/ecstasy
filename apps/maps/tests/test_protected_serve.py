@@ -1,8 +1,11 @@
-from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.http import HttpRequest
 from django.test import TestCase
 
 from ..protected_serve import MapMediaServeLimitation
+
+User = get_user_model()
 
 
 class MapMediaServeLimitationTestCase(TestCase):

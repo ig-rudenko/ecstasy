@@ -160,7 +160,7 @@ def sidebar_navigation(request) -> list:
             "separator": False,
             "collapsible": True,
             "items": [
-                model_link("Users", "people", "auth", "user", perms),
+                model_link("Users", "people", "accounting", "user", perms),
                 model_link("Users profiles", "badge", "check", "profile", perms),
                 model_link("Groups", "person", "auth", "group", perms),
             ],

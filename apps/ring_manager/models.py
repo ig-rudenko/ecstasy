@@ -4,6 +4,8 @@ from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
+from apps.accounting.models import User
+
 
 class TransportRing(models.Model):
     NORMAL = "NORMAL"
@@ -24,7 +26,7 @@ class TransportRing(models.Model):
     )
     description = models.TextField(verbose_name="Описание")
     users = models.ManyToManyField(
-        "auth.User",
+        User,
         verbose_name="Пользователи",
         help_text="Выберите, кто будет иметь доступ к кольцу",
     )
@@ -49,11 +51,11 @@ class TransportRing(models.Model):
         help_text="Для данного оборудования будут добавляться VLAN в случае разворота кольца",
     )
     # Форматируется при обращении в list
-    vlans: list = models.TextField(
+    vlans: list = models.TextField(  # type: ignore
         verbose_name="VLAN'S",
         help_text="Укажите через запятую, "
         "какие VLAN необходимо добавить для оконечного оборудования в кольце в случае разворота",
-    )  # type: ignore
+    )
     status = models.CharField(
         choices=_STATUS,
         max_length=20,
