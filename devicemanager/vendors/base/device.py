@@ -11,6 +11,7 @@ import pexpect
 
 from devicemanager.device_connector.types import RemoteCommand
 
+from ...session_spawner import SessionSpawner
 from .helpers import remove_ansi_escape_codes
 from .types import (
     ArpInfoResult,
@@ -175,7 +176,7 @@ class BaseDevice(AbstractDevice, ABC):
         snmp_community: str = "",
         snmp_port: int = 161,
     ):
-        self.session: pexpect.spawn = session
+        self.session: SessionSpawner = session
         self.ip = ip
         self.model: str = model
         self.auth: DeviceAuthDict = auth
@@ -449,7 +450,7 @@ class BaseDevice(AbstractDevice, ABC):
                 if match == 1:
                     # Отправляем символ пробела, для дальнейшего вывода
                     self.session.send(" ")
-                    if output[-1] != "\n":
+                    if output and output[-1] != "\n":
                         output += "\n"
                 else:
                     print(f'{self.ip} - timeout во время выполнения команды "{command}"')
