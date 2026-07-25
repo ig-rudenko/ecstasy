@@ -8,7 +8,7 @@ from apps.net_tools.services.interface_finder.types import InterfaceFinderFilter
 from devicemanager.vendors.base.helpers import range_to_numbers
 
 
-class DescFinderQuerySerializer(serializers.Serializer):
+class InterfaceFinderQuerySerializer(serializers.Serializer):
     has_comment = serializers.BooleanField(default=False, help_text="Только с комментариями")
     device_name = serializers.CharField(allow_null=True, default=None)
     device_name_regex = serializers.CharField(allow_null=True, default=None)

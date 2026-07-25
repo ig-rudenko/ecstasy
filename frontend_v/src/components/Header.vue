@@ -67,9 +67,9 @@ function buildMenuItems(): MenuItem[] {
 
     if (permissions.has("accounting.access_desc_search")) {
         built.push({
-            label: "Поиск",
+            label: "Интерфейсы",
             icon: "search",
-            url: "/tools/search",
+            url: "/tools/interfaces",
         });
     }
 
@@ -195,15 +195,13 @@ const mobileMenuOpen = ref(false);
 const closeMobileMenu = () => {
     mobileMenuOpen.value = false;
 };
-
-const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
 </script>
 
 <template>
     <div class="sticky top-0 z-30">
-        <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
+        <div class="mx-auto sm:px-4 lg:px-8 sm:py-2">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
+                class="relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
             >
                 <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10" />
                 <!-- Mobile header -->
@@ -488,9 +486,6 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                 <router-link to="/profile" class="w-full">
                     <Button label="Профиль" icon="pi pi-user" fluid severity="secondary" outlined />
                 </router-link>
-                <div v-if="isWinterMonth" class="text-xs text-gray-500 dark:text-gray-400">
-                    Переключатель зимнего декора перенесен в профиль.
-                </div>
             </div>
         </div>
     </Popover>

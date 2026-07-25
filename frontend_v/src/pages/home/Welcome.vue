@@ -22,7 +22,7 @@ const user: User | null = store.state.auth.user;
 const showGPONCard = computed(() => permissions.hasGPONAnyPermission());
 const showMapsCard = computed(() => permissions.has("accounting.can_view_maps"));
 const showTracerouteCard = computed(() => permissions.has("accounting.access_traceroute"));
-const showDescSearchCard = computed(() => permissions.has("accounting.access_desc_search"));
+const showInterfaceFinderCard = computed(() => permissions.has("accounting.access_desc_search"));
 const showWTFCard = computed(() => permissions.has("accounting.access_wtf_search"));
 
 const modules = computed<ModuleCard[]>(() => {
@@ -59,18 +59,18 @@ const modules = computed<ModuleCard[]>(() => {
             visible: showTracerouteCard.value,
         },
         {
-            key: "search",
-            title: "Поиск по описаниям",
-            description: "Поиск интерфейсов по текстовому описанию порта, линии, клиента или служебной пометке.",
+            key: "interfaces",
+            title: "Поиск интерфейсов",
+            description: "Поиск интерфейсов по описанию, комментариям, имени порта, оборудованию, статусу и VLAN.",
             features: [
-                "Поиск по описанию интерфейса",
+                "Поиск по описанию и комментариям",
                 "Быстрый переход к нужному порту",
                 "Ускорение диагностики и инвентаризации",
             ],
             icon: "pi pi-search",
-            to: "/tools/search",
+            to: "/tools/interfaces",
             accent: "from-amber-500/15 via-orange-500/10 to-red-500/5",
-            visible: showDescSearchCard.value,
+            visible: showInterfaceFinderCard.value,
         },
         {
             key: "wtf",

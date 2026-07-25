@@ -18,7 +18,7 @@ from ..services.interface_finder.types import InterfaceFinderFilter
 from ..services.mac_finder import get_mac_info
 from ..services.traceroute import build_traceroute_graph_data, build_traceroute_map_data
 from .permissions import InterfaceFinderPermission
-from .queries import DescFinderQuerySerializer
+from .queries import InterfaceFinderQuerySerializer
 from .serializers import GetVlanDescQuerySerializer, TracerouteMapQuerySerializer, TracerouteQuerySerializer
 from .swagger.schemas import (
     find_by_description_schema,
@@ -64,7 +64,7 @@ class InterfaceFinderAPIView(UserAuthenticatedAPIView):
         return Response({"interfaces": result, "count": len(result)})
 
     def _get_query(self) -> InterfaceFinderFilter:
-        serializer = DescFinderQuerySerializer(data=self.request.query_params)
+        serializer = InterfaceFinderQuerySerializer(data=self.request.query_params)
         serializer.is_valid(raise_exception=True)
         return serializer.create(serializer.validated_data)
 

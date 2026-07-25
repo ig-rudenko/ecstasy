@@ -153,7 +153,7 @@ class InterfacesFinder:
                     isinstance(self._filter.description_pattern, re.Pattern)
                     and self._filter.description_pattern.search(interface.desc)
                     or isinstance(self._filter.description_pattern, str)
-                    and self._filter.description_pattern in interface.desc
+                    and self._filter.description_pattern.lower() in interface.desc.lower()
                 ):
                     find_on_desc = True
 

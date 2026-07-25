@@ -18,6 +18,7 @@ import {
     Image,
     InlineMessage,
     InputGroup,
+    InputGroupAddon,
     InputIcon,
     InputMask,
     InputNumber,
@@ -73,6 +74,7 @@ app.component("IconField", IconField);
 app.component("IftaLabel", IftaLabel);
 app.component("InlineMessage", InlineMessage);
 app.component("InputGroup", InputGroup);
+app.component("InputGroupAddon", InputGroupAddon);
 app.component("InputIcon", InputIcon);
 app.component("InputNumber", InputNumber);
 app.component("Image", Image);

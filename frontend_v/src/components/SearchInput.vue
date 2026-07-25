@@ -5,7 +5,8 @@
             type="text"
             v-model="text"
             fluid
-            class="rounded-2xl"
+            :class="inputClass"
+            class="rounded-2xl placeholder:opacity-50 text-sm sm:text-base"
             autofocus
             :placeholder="placeholder"
             @input="$emit('update:modelValue', text)"

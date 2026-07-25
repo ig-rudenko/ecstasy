@@ -40,8 +40,12 @@ const router = createRouter({
                 },
                 {
                     path: "tools/search",
-                    component: () => import("@/pages/descriptionSearch/DescriptionSearch.vue"),
-                    name: "tools-search",
+                    redirect: { name: "tools-interface-finder" },
+                },
+                {
+                    path: "tools/interfaces",
+                    component: () => import("@/pages/interfaceFinder/InterfaceFinder.vue"),
+                    name: "tools-interface-finder",
                 },
                 {
                     path: "tools/traceroute",

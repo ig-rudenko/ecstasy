@@ -75,7 +75,7 @@ class Permissions {
             { key: "console", label: "Консоль", enabled: this.hasConsoleAccess() },
             { key: "discovery", label: "Discovery", enabled: this.has("accounting.access_discovery") },
             { key: "maps", label: "Карты", enabled: this.has("accounting.can_view_maps") },
-            { key: "search", label: "Поиск", enabled: this.has("accounting.access_desc_search") },
+            { key: "interfaces", label: "Интерфейсы", enabled: this.has("accounting.access_desc_search") },
             { key: "traceroute", label: "Трассировка", enabled: this.has("accounting.access_traceroute") },
             { key: "wtf", label: "WTF", enabled: this.has("accounting.access_wtf_search") },
             {
