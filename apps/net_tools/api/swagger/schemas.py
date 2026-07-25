@@ -1,8 +1,8 @@
 from drf_yasg.utils import swagger_auto_schema
 
+from ..queries import DescFinderQuerySerializer
 from ..serializers import GetVlanDescQuerySerializer, TracerouteMapQuerySerializer, TracerouteQuerySerializer
 from .serializers import (
-    FindByDescQuerySerializer,
     GetVendorSerializer,
     GetVlanDescSerializer,
     SearchInterfaceByDescResultSerializer,
@@ -11,14 +11,12 @@ from .serializers import (
 )
 
 get_vendor_schema = swagger_auto_schema(
-    methods=["GET"],
     responses={200: GetVendorSerializer()},
 )
 
 
 find_by_description_schema = swagger_auto_schema(
-    methods=["GET"],
-    query_serializer=FindByDescQuerySerializer(),
+    query_serializer=DescFinderQuerySerializer(),
     responses={200: SearchInterfaceByDescResultSerializer()},
 )
 

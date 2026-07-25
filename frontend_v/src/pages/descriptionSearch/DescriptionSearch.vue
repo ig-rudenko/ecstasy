@@ -14,14 +14,14 @@
                                 <h1
                                     class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl"
                                 >
-                                    Поиск по описанию портов
+                                    Поиск интерфейсов
                                 </h1>
 
                                 <p
                                     class="mt-3 max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base"
                                 >
-                                    Поиск строки в описаниях интерфейсов и комментариях по ранее собранным данным
-                                    оборудования.
+                                    Вы сможете найти интерфейсы оборудования по различным параметрам, если они были
+                                    собраны ранее.
                                 </p>
                             </div>
 
@@ -280,6 +280,15 @@
                                                     <i :class="sortIcon('vlans')" />
                                                 </button>
                                             </th>
+                                            <th class="px-4 py-3 text-left font-semibold">
+                                                <button
+                                                    class="inline-flex items-center gap-2 cursor-pointer"
+                                                    @click="toggleSort('savedTime')"
+                                                >
+                                                    <span>Время обнаружения</span>
+                                                    <i :class="sortIcon('savedTime')" />
+                                                </button>
+                                            </th>
                                         </tr>
                                     </thead>
 
@@ -319,6 +328,7 @@
                                                 <div
                                                     :class="statusClass(data.interface.status)"
                                                     class="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-medium"
+                                                    v-tooltip="data.interface.verboseSavedTime"
                                                 >
                                                     <span>{{ data.interface.status }}</span>
                                                     <i class="pi pi-clock text-xs" />
@@ -348,6 +358,10 @@
                                                 >
                                                     {{ truncateVlans(data.interface.vlans) }}
                                                 </button>
+                                            </td>
+
+                                            <td class="px-4 py-3">
+                                                {{ new Date(data.interface.savedTime).toLocaleString() }}
                                             </td>
                                         </tr>
 
@@ -426,7 +440,7 @@ import SearchInput from "@/components/SearchInput.vue";
 import { DeviceInterface, findInterfacesByDescription, InterfaceDescriptionMatchResult } from "@/services/interfaces";
 import { markText } from "@/formats.ts";
 
-type SortKey = "device" | "port" | "status" | "description" | "vlans";
+type SortKey = "device" | "port" | "status" | "description" | "vlans" | "savedTime";
 type SortDir = "asc" | "desc";
 
 export default defineComponent({
@@ -574,6 +588,7 @@ export default defineComponent({
             if (key === "port") return data.interface.name || "";
             if (key === "status") return data.interface.status || "";
             if (key === "description") return data.interface.description || "";
+            if (key === "savedTime") return data.interface.savedTime || "";
             return data.interface.vlans || "";
         },
         toggleSort(key: SortKey) {

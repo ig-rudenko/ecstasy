@@ -45,7 +45,9 @@ export interface InterfaceDescriptionMatchResult {
         description: string;
         vlans: string;
         savedTime: string;
+        verboseSavedTime: string;
         vlansSavedTime: string;
+        verboseVlansSavedTime: string;
     };
 }
 
@@ -75,7 +77,7 @@ export async function findInterfacesByDescription(
     pattern: string,
     isRegex = false
 ): Promise<InterfaceDescriptionMatchResult[]> {
-    const url = "/api/v1/tools/find-by-desc";
+    const url = "/api/v1/tools/interfaces-finder";
     let params = {
         pattern: pattern,
         is_regex: isRegex ? "1" : "0",
