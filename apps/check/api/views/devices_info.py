@@ -30,7 +30,9 @@ from ...services.zabbix import get_zabbix_host_map_and_uptime
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter
 from ..permissions import DevicesAdminPermission
+from ..queries import DeviceInterfaceQuery
 from ..serializers import (
+    DeviceInterfaceQuerySerializer,
     DevicesDetailSerializer,
     DevicesDetailUpdateSerializer,
     DevicesSerializer,
@@ -69,7 +71,6 @@ class DevicesListCreateAPIView(UserAuthenticatedAPIView, ListCreateAPIView):
 
 
 class DevicesDetailAPIView(DeviceAPIView, RetrieveUpdateDestroyAPIView):
-
     def get_serializer_class(self):
         if self.request.method == "GET":
             return DevicesDetailSerializer
@@ -192,7 +193,6 @@ class AllDevicesInterfacesWorkLoadAPIView(UserAuthenticatedAPIView):
 
 @method_decorator(interfaces_workload_api_doc, name="get")
 class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
-
     def get_queryset(self):
         return super().get_queryset().select_related("devicesinfo")
 
@@ -209,6 +209,7 @@ class DeviceInterfacesWorkLoadAPIView(DeviceAPIView):
 @method_decorator(interfaces_list_api_doc, name="get")
 class DeviceInterfacesAPIView(DeviceAPIView):
     pagination_class = None
+    cache_timeout = 4
 
     def get_queryset(self):
         return super().get_queryset().select_related("auth_group", "devicesinfo")
@@ -252,35 +253,30 @@ class DeviceInterfacesAPIView(DeviceAPIView):
                 "collected": "2023-03-01T15:13:11.559175"
             }
         """
+        query = self._get_query()
         device: models.Devices = self.get_object()
 
-        status_on = ["1", "yes", "true"]
-
-        current_status = request.GET.get("current_status") in status_on
-        with_vlans = request.GET.get("vlans") in status_on
-        check_status = request.GET.get("check_status", "true") in status_on
-
         interfaces_data: DeviceInterfacesResult | None = None
-        cache_key = f"interfaces:{device.name.encode().hex()}:cs:{current_status}:vlans:{with_vlans}:check_status:{check_status}"
-        if current_status:
+        cache_key = f"interfaces:{device.name.encode().hex()}:cs:{query.current_status}:vlans:{query.vlans}:check_status:{query.check_status}"
+        if query.current_status:
             interfaces_data = cache.get(cache_key)
 
         if not interfaces_data:
             interfaces_data = get_device_interfaces(
                 device,
                 DeviceManager.from_model(device),
-                current_status=current_status,
-                with_vlans=with_vlans,
-                check_status=check_status,
+                current_status=query.current_status,
+                with_vlans=query.vlans,
+                check_status=query.check_status,
             )
-            cache.set(cache_key, interfaces_data, timeout=4)
+            cache.set(cache_key, interfaces_data, timeout=self.cache_timeout)
 
         interfaces_builder = InterfacesBuilder(device)
         interfaces = interfaces_builder.build(
             interfaces=interfaces_data.interfaces.json(),
-            add_links=request.GET.get("add_links", "1") in status_on,
-            add_comments=request.GET.get("add_comments", "1") in status_on,
-            add_zabbix_graph=request.GET.get("add_zabbix_graph", "1") in status_on,
+            add_links=query.add_links,
+            add_comments=query.add_comments,
+            add_zabbix_graph=query.add_zabbix_graph,
         )
 
         return Response(
@@ -290,6 +286,11 @@ class DeviceInterfacesAPIView(DeviceAPIView):
                 "collected": interfaces_data.collected,
             }
         )
+
+    def _get_query(self) -> DeviceInterfaceQuery:
+        serializer = DeviceInterfaceQuerySerializer(data=self.request.query_params)
+        serializer.is_valid(raise_exception=True)
+        return serializer.create(serializer.validated_data)
 
 
 @method_decorator(device_info_api_doc, name="get")
@@ -428,7 +429,6 @@ class DeviceStatsInfoAPIView(DeviceAPIView):
 
 
 class GetDeviceByZabbixHostIDAPIView(DeviceAPIView):
-
     @get_device_by_zabbix_serializer_api_doc
     def get(self, request, host_id: str):
         """

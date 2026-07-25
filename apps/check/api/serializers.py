@@ -18,6 +18,26 @@ from ..models import (
     InterfacesComments,
     UsersActions,
 )
+from .queries import DeviceInterfaceQuery
+
+
+class DeviceInterfaceQuerySerializer(serializers.Serializer):
+    current_status = serializers.BooleanField(default=False)
+    vlans = serializers.BooleanField(default=False)
+    check_status = serializers.BooleanField(default=True)
+    add_links = serializers.BooleanField(default=True)
+    add_comments = serializers.BooleanField(default=True)
+    add_zabbix_graph = serializers.BooleanField(default=True)
+
+    def create(self, validated_data: Any) -> DeviceInterfaceQuery:
+        return DeviceInterfaceQuery(
+            current_status=validated_data["current_status"],
+            vlans=validated_data["vlans"],
+            check_status=validated_data["check_status"],
+            add_links=validated_data["add_links"],
+            add_comments=validated_data["add_comments"],
+            add_zabbix_graph=validated_data["add_zabbix_graph"],
+        )
 
 
 class DeviceCoordinatesValidationMixin:
@@ -83,7 +103,7 @@ class DevicesSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSeria
         try:
             group = DeviceGroup.objects.get(name=group_name_dict["name"])
         except DeviceGroup.DoesNotExist as exc:
-            raise ValidationError(f"Group {group_name_dict["name"]} does not exist") from exc
+            raise ValidationError(f"Group {group_name_dict['name']} does not exist") from exc
         validated_data["group"] = group
         return super().create(validated_data)
 
@@ -101,7 +121,6 @@ class DeviceAuthGroupSerializer(serializers.ModelSerializer):
 
 
 class DevicesDetailUpdateSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSerializer):
-
     class Meta:
         model = Devices
         fields = [

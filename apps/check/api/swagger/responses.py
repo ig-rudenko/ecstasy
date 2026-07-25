@@ -145,7 +145,7 @@ class InterfaceInfoSwaggerSerializer(SwaggerSerializer):
 
 class InterfacesListSwaggerSerializer(SwaggerSerializer):
     interfaces = InterfaceInfoSwaggerSerializer(many=True)
-    deviceAvailable = serializers.BooleanField()
+    deviceAvailable = serializers.BooleanField(allow_null=True)
     collected = serializers.DateTimeField()
 
 

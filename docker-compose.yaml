@@ -5,6 +5,9 @@ x-logging: &logging
     max-size: "10m"
     max-file: "3"
 
+x-common-environment: &common-environment
+  TZ: ${TZ:-UTC}
+
 volumes:
   redis-data:
 
@@ -15,6 +18,8 @@ services:
     logging: *logging
     build: frontend_v
     restart: unless-stopped
+    environment:
+      <<: *common-environment
     ports:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8000}:80"
     volumes:
@@ -34,6 +39,7 @@ services:
     env_file:
       - .env
     environment:
+      <<: *common-environment
       DJANGO_ENV: "${DJANGO_ENV:-prod}"
       CONFIG_STORAGE_DIR: "/configurations"
 
@@ -63,6 +69,7 @@ services:
     env_file:
       - .env
     environment:
+      <<: *common-environment
       DJANGO_ENV: "${DJANGO_ENV:-prod}"
       CONFIG_STORAGE_DIR: "/configurations"
     depends_on:
@@ -101,6 +108,7 @@ services:
 
     restart: unless-stopped
     environment:
+      <<: *common-environment
       DEVICE_CONNECTOR_TOKEN: "${DEVICE_CONNECTOR_TOKEN:?set DEVICE_CONNECTOR_TOKEN}"
 
       # Кол-во одновременных подключений к оборудованию по умолчанию.
@@ -121,6 +129,8 @@ services:
     image: redis:8.6.3-alpine
     restart: unless-stopped
     logging: *logging
+    environment:
+      <<: *common-environment
     volumes:
       - "redis-data:/data"
     healthcheck:
@@ -135,6 +145,7 @@ services:
     command: --max-connections=300
     logging: *logging
     environment:
+      <<: *common-environment
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"
       MYSQL_USER: "${MYSQL_USER:?set MYSQL_USER}"
       MYSQL_PASSWORD: "${MYSQL_PASSWORD:?set MYSQL_PASSWORD}"

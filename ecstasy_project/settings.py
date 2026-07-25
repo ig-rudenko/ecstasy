@@ -179,7 +179,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 LANGUAGE_CODE = "ru-ru"
 
-TIME_ZONE = "Europe/Moscow"
+TIME_ZONE = os.getenv("TZ", "UTC")
 
 USE_I18N = True
 

@@ -347,7 +347,7 @@ export default defineComponent({
             generalInfo: null as GeneralInfo | null,
             interfaces: [] as DeviceInterface[],
 
-            collected: new Date(Date.now()) as Date,
+            collected: new Date() as Date,
             staleTick: 0,
 
             deviceAvailable: -1,
@@ -378,7 +378,7 @@ export default defineComponent({
     computed: {
         secondsFromLastCollection(): number {
             this.staleTick;
-            return Math.floor((Date.now() - this.collected.getTime()) / 1000);
+            return Math.floor((new Date().getTime() - this.collected.getTime()) / 1000);
         },
         dynamicOpacity(): { opacity: number } {
             if (this.deviceAvailable === -1 || this.secondsFromLastCollection >= 60) {
@@ -604,7 +604,7 @@ export default defineComponent({
                 }
                 this.collected = new Date(resp.data.collected);
                 this.staleTick = 0;
-                this.deviceAvailable = resp.data.deviceAvailable ? 1 : 0;
+                this.deviceAvailable = resp.data.deviceAvailable == null ? -1 : resp.data.deviceAvailable ? 1 : 0;
             } finally {
                 this._getting_interfaces = false;
             }
