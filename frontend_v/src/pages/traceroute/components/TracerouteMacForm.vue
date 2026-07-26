@@ -1,7 +1,7 @@
 <template>
     <section
         v-show="mode === 'mac'"
-        class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+        class="sm:rounded-4xl border-t sm:border border-gray-200/70 bg-white/80 p-4 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
     >
         <div class="flex flex-col gap-5">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Traceroute</h2>

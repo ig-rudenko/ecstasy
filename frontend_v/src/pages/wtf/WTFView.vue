@@ -74,13 +74,13 @@ async function find() {
 </script>
 
 <template>
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full">
+    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 py-6 sm:py-10 w-full">
         <div class="flex flex-col gap-6">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="relative overflow-hidden not-sm:-my-6 not-sm:pt-6 not-sm:mb-1! sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
-                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-sky-500/10" />
-                <div class="relative p-6 sm:p-8">
+                <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10" />
+                <div class="relative p-5 sm:p-8">
                     <div class="flex flex-col lg:flex-row gap-8 lg:items-start lg:justify-between">
                         <div class="max-w-2xl">
                             <h1
@@ -105,12 +105,12 @@ async function find() {
 
                             <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center">
                                 <div
-                                    class="flex flex-1 w-full min-w-0 items-center gap-2 rounded-2xl border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-900/50 px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/25 dark:focus-within:ring-indigo-400/20"
+                                    class="flex flex-1 w-full min-w-0 items-center sm:gap-2 rounded-2xl border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-900/50 pl-3 py-1 sm:py-2 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/25 dark:focus-within:ring-indigo-400/20"
                                 >
                                     <i class="pi pi-search text-gray-400 dark:text-gray-500 text-sm shrink-0" />
                                     <InputText
                                         v-model="text"
-                                        class="flex-1 min-w-0 !border-0 !bg-transparent !shadow-none !outline-none font-mono text-sm sm:text-base"
+                                        class="flex-1 min-w-0 border-0! bg-transparent! shadow-none! outline-none! font-mono text-sm sm:text-base"
                                         placeholder="Например: 192.168.0.1 или aa:bb:cc:dd:ee:ff"
                                         :disabled="running"
                                         @keyup.enter="find"
@@ -121,7 +121,7 @@ async function find() {
                                         :loading="running"
                                         icon="pi pi-search"
                                         label="Найти"
-                                        class="!rounded-2xl"
+                                        class="rounded-2xl!"
                                         @click="find"
                                     />
                                     <Button
@@ -130,7 +130,7 @@ async function find() {
                                         label="Очистить результаты"
                                         severity="secondary"
                                         outlined
-                                        class="!rounded-2xl"
+                                        class="rounded-2xl!"
                                         @click="clearResults"
                                     />
                                 </div>
@@ -141,7 +141,7 @@ async function find() {
                         </div>
 
                         <div class="hidden lg:flex w-40 shrink-0 justify-center opacity-90">
-                            <img class="w-full max-w-[10rem]" src="/img/mac-icon.svg" alt="" />
+                            <img class="w-full max-w-40" src="/img/mac-icon.svg" alt="" />
                         </div>
                     </div>
                 </div>

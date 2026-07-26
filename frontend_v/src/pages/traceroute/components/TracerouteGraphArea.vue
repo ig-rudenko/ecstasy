@@ -1,6 +1,6 @@
 <template>
     <section
-        class="relative min-h-120 overflow-hidden rounded-4xl border border-gray-700 bg-neutral-950 shadow-inner"
+        class="relative min-h-120 overflow-hidden sm:rounded-4xl sm:border border-gray-700 bg-neutral-950 shadow-inner"
         :class="maximized ? 'overflow-visible! rounded-none! border-0 shadow-none min-h-0 bg-transparent' : ''"
     >
         <div
@@ -11,17 +11,20 @@
                 <InputText
                     :model-value="graphNodeSearch"
                     placeholder="Node"
+                    fluid
                     class="w-full rounded-xl! bg-white/95! text-gray-900! dark:bg-gray-950/80! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60! sm:w-44!"
                     @update:model-value="$emit('update:graphNodeSearch', String($event ?? ''))"
                     @keyup.enter="$emit('focus-node')"
                 />
-                <Button
-                    icon="pi pi-search"
-                    rounded
-                    severity="secondary"
-                    v-tooltip.bottom="'Найти узел'"
-                    @click="$emit('focus-node')"
-                />
+                <div>
+                    <Button
+                        icon="pi pi-search"
+                        rounded
+                        severity="secondary"
+                        v-tooltip.bottom="'Найти узел'"
+                        @click="$emit('focus-node')"
+                    />
+                </div>
                 <span
                     v-if="graphSearchMatchesCount > 0"
                     class="rounded-lg bg-black/60 px-2 py-1 font-mono text-xs text-white"
@@ -71,13 +74,15 @@
                     @update:model-value="$emit('update:graphNodeSearch', String($event ?? ''))"
                     @keyup.enter="$emit('focus-node')"
                 />
-                <Button
-                    icon="pi pi-search"
-                    rounded
-                    severity="secondary"
-                    v-tooltip.bottom="'Найти узел'"
-                    @click="$emit('focus-node')"
-                />
+                <div>
+                    <Button
+                        icon="pi pi-search"
+                        rounded
+                        severity="secondary"
+                        v-tooltip.bottom="'Найти узел'"
+                        @click="$emit('focus-node')"
+                    />
+                </div>
                 <span
                     v-if="graphSearchMatchesCount > 0"
                     class="rounded-lg bg-black/60 px-2 py-1 font-mono text-xs text-white"

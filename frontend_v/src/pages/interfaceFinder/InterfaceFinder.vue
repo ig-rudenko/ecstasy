@@ -12,7 +12,7 @@
                         <div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
                             <div class="max-w-4xl">
                                 <h1
-                                    class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl"
+                                    class="mt-5 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
                                 >
                                     Поиск интерфейсов
                                 </h1>

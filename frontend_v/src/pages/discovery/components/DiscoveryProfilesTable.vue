@@ -27,7 +27,7 @@ function protocolLabel(protocol: string): string {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden sm:rounded-2xl border-t sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="overflow-x-auto">
             <table class="min-w-240 w-full text-sm">
@@ -46,11 +46,11 @@ function protocolLabel(protocol: string): string {
                     <tr
                         v-for="profile in profiles"
                         :key="profile.id"
-                        class="border-b border-gray-200/60 transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
+                        class="text-xs md:text-base border-b border-gray-200/60 transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
                     >
                         <td class="px-4 py-3">
                             <div class="font-semibold text-gray-900 dark:text-gray-100">{{ profile.name }}</div>
-                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 font-mono">
                                 {{ profile.networks.join(", ") }}
                             </div>
                         </td>
@@ -60,6 +60,7 @@ function protocolLabel(protocol: string): string {
                                 <Tag
                                     v-for="authId in profile.authGroups"
                                     :key="authId"
+                                    class="text-xs md:text-base"
                                     severity="secondary"
                                     :value="getLookupName(authGroups, authId)"
                                 />
@@ -68,19 +69,33 @@ function protocolLabel(protocol: string): string {
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
-                                <Tag severity="info" :value="protocolLabel(profile.portScanProtocol)" />
-                                <Tag severity="secondary" :value="protocolLabel(profile.cmdProtocol)" />
-                                <Tag severity="contrast" :value="`${profile.snmpCommunitiesCount} SNMP`" />
+                                <Tag
+                                    class="text-xs md:text-base"
+                                    severity="info"
+                                    :value="protocolLabel(profile.portScanProtocol)"
+                                />
+                                <Tag
+                                    class="text-xs md:text-base"
+                                    severity="secondary"
+                                    :value="protocolLabel(profile.cmdProtocol)"
+                                />
+                                <Tag
+                                    class="text-xs md:text-base"
+                                    severity="contrast"
+                                    :value="`${profile.snmpCommunitiesCount} SNMP`"
+                                />
                             </div>
                         </td>
                         <td class="px-4 py-3">
                             <Tag
+                                class="text-xs md:text-base"
                                 :severity="profile.autoCreate ? 'success' : 'secondary'"
                                 :value="profile.autoCreate ? `>= ${profile.autoCreateMinConfidence}` : 'выкл'"
                             />
                         </td>
                         <td class="px-4 py-3">
                             <Tag
+                                class="text-xs md:text-base"
                                 :severity="profile.activateCreatedDevices ? 'success' : 'secondary'"
                                 :value="profile.activateCreatedDevices ? 'активно' : 'неактивно'"
                             />
@@ -93,14 +108,14 @@ function protocolLabel(protocol: string): string {
                                     size="small"
                                     severity="secondary"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs md:text-base"
                                     @click="emit('edit', profile)"
                                 />
                                 <Button
                                     icon="pi pi-play"
                                     label="Запуск"
                                     size="small"
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs md:text-base"
                                     :loading="launchingProfileId === profile.id"
                                     @click="emit('launch', profile, false)"
                                 />
@@ -110,7 +125,7 @@ function protocolLabel(protocol: string): string {
                                     size="small"
                                     severity="secondary"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs md:text-base"
                                     :loading="launchingProfileId === profile.id"
                                     @click="emit('launch', profile, true)"
                                 />
@@ -120,7 +135,7 @@ function protocolLabel(protocol: string): string {
                                     size="small"
                                     severity="danger"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs md:text-base"
                                     :loading="deletingProfileId === profile.id"
                                     @click="(event: MouseEvent) => emit('delete', event, profile)"
                                 />

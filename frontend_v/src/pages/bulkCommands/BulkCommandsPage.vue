@@ -680,10 +680,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="mx-auto px-2 py-2 sm:px-4 sm:py-6 xl:px-8">
+    <div class="mx-auto sm:p-2 sm:px-4 sm:py-6 xl:px-8">
         <div class="flex flex-col gap-6">
             <section
-                class="relative overflow-hidden rounded-4xl border border-gray-200/70 bg-white/80 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+                class="relative overflow-hidden sm:rounded-4xl border-b sm:border border-gray-200/70 bg-white/80 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
             >
                 <div
                     class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(34,197,94,0.12),transparent_22%),radial-gradient(circle_at_52%_100%,rgba(59,130,246,0.12),transparent_25%)]"
@@ -692,72 +692,69 @@ onBeforeUnmount(() => {
                 <div class="relative p-5 sm:p-8">
                     <div class="flex flex-col gap-8 2xl:flex-row 2xl:items-start 2xl:justify-between">
                         <div class="max-w-5xl">
-                            <h1
-                                class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl"
+                            <div
+                                class="mt-5 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
                             >
                                 Массовое выполнение команд
-                            </h1>
+                            </div>
 
-                            <p class="mt-3 max-w-4xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base">
+                            <p
+                                class="mt-3 max-w-4xl text-xs sm:text-base sm:leading-7 text-gray-600 dark:text-gray-300"
+                            >
                                 Выберите оборудование галочками, задайте шаблон команды и наблюдайте прогресс выполнения
                                 в реальном времени. Результаты по каждому устройству собираются в общем списке задачи и
                                 доступны для повторного запуска.
                             </p>
                         </div>
 
-                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="grid gap-2 sm:gap-3 sm:grid-cols-2 xl:grid-cols-4">
                             <div
-                                class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
+                                v-for="line in [
+                                    ['Всего', devices.length, 'Доступных устройств'],
+                                    ['Выбрано', selectedDeviceIds.length, 'Устройств для задачи'],
+                                    ['Активных задач', activeTasksCount, 'Сейчас выполняются'],
+                                ]"
+                                class="rounded-2xl sm:rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
                             >
                                 <div
-                                    class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
+                                    class="text-xs font-semibold uppercase sm:tracking-[0.24em] text-gray-500 dark:text-gray-400"
                                 >
-                                    Всего
+                                    {{ line[0] }}
                                 </div>
-                                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ devices.length }}
+                                <div class="mt-2 sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ line[1] }}
                                 </div>
-                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Доступных устройств</div>
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ line[2] }}</div>
                             </div>
                             <div
-                                class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
+                                class="rounded-2xl sm:rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
                             >
                                 <div
-                                    class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
-                                >
-                                    Выбрано
-                                </div>
-                                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ selectedDeviceIds.length }}
-                                </div>
-                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Устройств для задачи</div>
-                            </div>
-                            <div
-                                class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
-                            >
-                                <div
-                                    class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
-                                >
-                                    Активных задач
-                                </div>
-                                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ activeTasksCount }}
-                                </div>
-                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Сейчас выполняются</div>
-                            </div>
-                            <div
-                                class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
-                            >
-                                <div
-                                    class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
+                                    class="text-xs font-semibold uppercase sm:tracking-[0.24em] text-gray-500 dark:text-gray-400"
                                 >
                                     Последняя задача
                                 </div>
                                 <div class="mt-2 flex flex-wrap gap-2 text-sm">
-                                    <Tag severity="success" :value="`OK ${latestTaskSummary.success}`" />
-                                    <Tag severity="danger" :value="`ERR ${latestTaskSummary.error}`" />
-                                    <Tag severity="warn" :value="`SKIP ${latestTaskSummary.skipped}`" />
-                                    <Tag severity="info" :value="`WAIT ${latestTaskSummary.waiting}`" />
+                                    <Tag
+                                        class="text-xs sm:text-base"
+                                        severity="success"
+                                        :value="`OK ${latestTaskSummary.success}`"
+                                    />
+                                    <Tag
+                                        class="text-xs sm:text-base"
+                                        severity="danger"
+                                        :value="`ERR ${latestTaskSummary.error}`"
+                                    />
+                                    <Tag
+                                        class="text-xs sm:text-base"
+                                        severity="warn"
+                                        :value="`SKIP ${latestTaskSummary.skipped}`"
+                                    />
+                                    <Tag
+                                        class="text-xs sm:text-base"
+                                        severity="info"
+                                        :value="`WAIT ${latestTaskSummary.waiting}`"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -767,9 +764,9 @@ onBeforeUnmount(() => {
 
             <section class="xl:grid gap-6 xl:grid-cols-2">
                 <div
-                    class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+                    class="sm:rounded-4xl sm:border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
                 >
-                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div class="not-sm:px-2 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div class="w-full md:max-w-xl">
                             <SearchInput
                                 @update:modelValue="(value: string) => (search = value)"
@@ -806,18 +803,20 @@ onBeforeUnmount(() => {
 
                 <div class="flex flex-col gap-6">
                     <div
-                        class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+                        class="sm:rounded-4xl sm:border sm:p-6 border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
                     >
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div
+                            class="not-sm:pt-8 not-sm:px-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                        >
                             <div>
                                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                     Параметры запуска
                                 </div>
                                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                     Опорное устройство для списка команд:
-                                    <span class="font-mono text-gray-900 dark:text-gray-100">{{
-                                        referenceDevice?.name || "не выбрано"
-                                    }}</span>
+                                    <span class="font-mono text-gray-900 dark:text-gray-100">
+                                        {{ referenceDevice?.name || "не выбрано" }}
+                                    </span>
                                 </div>
                             </div>
 
@@ -841,7 +840,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div
-                            class="mt-5 rounded-3xl border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-800/50"
+                            class="mt-5 sm:rounded-3xl sm:border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-700/80 dark:bg-gray-800/50"
                         >
                             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                 <div>
@@ -862,23 +861,23 @@ onBeforeUnmount(() => {
                                     :loading="isLaunchingTask"
                                     :disabled="!selectedCommand || !selectedDeviceIds.length || isLaunchingTask"
                                     @click="runSelectedCommand"
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs sm:text-base"
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div
-                        class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+                        class="sm:rounded-4xl sm:border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
                     >
                         <div class="flex items-center justify-between gap-3">
                             <div>
                                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Задачи</div>
-                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                <div class="mt-1 text-xs sm:text-base text-gray-500 dark:text-gray-400">
                                     Ход выполнения, ожидание и повторные запуски.
                                 </div>
                             </div>
-                            <Tag severity="secondary" :value="`История ${tasks.length}`" />
+                            <Tag severity="secondary" class="text-xs sm:text-base" :value="`История ${tasks.length}`" />
                         </div>
 
                         <div v-if="tasks.length" class="mt-5 flex flex-col gap-4 overflow-auto">
@@ -886,7 +885,7 @@ onBeforeUnmount(() => {
                                 v-for="task in tasks"
                                 :key="task.taskId"
                                 toggleable
-                                class="overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/50"
+                                class="overflow-hidden sm:rounded-3xl sm:border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/50"
                             >
                                 <template #legend="{ toggleCallback }">
                                     <div class="flex w-full flex-wrap items-center gap-3 px-2 py-1">
@@ -1105,14 +1104,14 @@ onBeforeUnmount(() => {
             </section>
 
             <section
-                class="rounded-4xl border border-gray-200/70 bg-white/80 p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+                class="sm:rounded-4xl border-t sm:border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
             >
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col p-6 gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                             {{ isSuperuser ? "История запусков" : "Мои запуски" }}
                         </div>
-                        <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <div class="mt-1 text-xs sm:text-base text-gray-500 dark:text-gray-400">
                             История массовых команд из базы данных для аудита действий.
                         </div>
                     </div>
@@ -1121,18 +1120,18 @@ onBeforeUnmount(() => {
                         :label="historyLoaded ? 'Обновить список' : 'Загрузить список'"
                         severity="secondary"
                         outlined
-                        class="rounded-2xl!"
+                        class="rounded-2xl! text-xs sm:text-base"
                         :loading="isLoadingHistory"
                         @click="loadHistory(historyLoaded ? historyPage : 1)"
                     />
                 </div>
 
-                <div v-if="historyLoaded && historyEntries.length" class="mt-5 flex flex-col gap-4">
+                <div v-if="historyLoaded && historyEntries.length" class="mt-5 flex flex-col gap-4 overflow-auto">
                     <Fieldset
                         v-for="entry in historyEntries"
                         :key="entry.id"
                         toggleable
-                        class="overflow-hidden rounded-3xl border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/50"
+                        class="sm:rounded-3xl border-x-0 sm:border border-gray-200/80 bg-gray-50/80 dark:border-gray-700/80 dark:bg-gray-800/50"
                     >
                         <template #legend="{ toggleCallback }">
                             <div class="flex w-full flex-wrap items-center gap-3 px-2 py-1">
@@ -1146,6 +1145,7 @@ onBeforeUnmount(() => {
                                     </div>
                                 </div>
                                 <Badge
+                                    class="text-xs sm:text-base"
                                     :severity="getDeviceSeverity(entry.status === 'FAILURE' ? 'ERROR' : entry.status)"
                                     :value="entry.status"
                                 />
@@ -1153,37 +1153,39 @@ onBeforeUnmount(() => {
                         </template>
 
                         <div class="flex flex-col gap-4">
-                            <div class="grid gap-3 md:grid-cols-6">
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Пользователь</div>
+                            <div class="flex flex-wrap sm:grid sm:gap-3 md:grid-cols-6">
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">
+                                        Пользователь
+                                    </div>
                                     <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                                         {{ entry.user }}
                                     </div>
                                 </div>
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Прогресс</div>
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Прогресс</div>
                                     <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                                         {{ entry.progress }}%
                                     </div>
                                 </div>
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Успешно</div>
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Успешно</div>
                                     <div class="mt-2 text-sm font-semibold text-emerald-600">
                                         {{ entry.successCount }}
                                     </div>
                                 </div>
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Ошибки</div>
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Ошибки</div>
                                     <div class="mt-2 text-sm font-semibold text-rose-600">{{ entry.errorCount }}</div>
                                 </div>
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Пропущено</div>
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Пропущено</div>
                                     <div class="mt-2 text-sm font-semibold text-amber-600">
                                         {{ entry.skippedCount }}
                                     </div>
                                 </div>
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Устройств</div>
+                                <div class="rounded-2xl bg-white/80 p-2 sm:p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Устройств</div>
                                     <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                                         {{ entry.processed }}/{{ entry.total }}
                                     </div>
@@ -1191,15 +1193,17 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div class="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
-                                <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Шаблон команды</div>
+                                <div class="sm:rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">
+                                        Шаблон команды
+                                    </div>
                                     <pre
                                         class="mt-2 overflow-auto whitespace-pre-wrap rounded-xl bg-gray-950 px-3 py-2 text-xs text-gray-100"
                                         >{{ entry.commandBody }}</pre
                                     >
                                 </div>
                                 <div class="rounded-2xl bg-white/80 p-3 dark:bg-gray-900/50">
-                                    <div class="text-xs uppercase tracking-[0.2em] text-gray-400">Время</div>
+                                    <div class="text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400">Время</div>
                                     <div class="mt-2 text-sm text-gray-700 dark:text-gray-200">
                                         Запуск:
                                         {{ verboseDatetime(entry.launchedAt) }}
@@ -1218,7 +1222,7 @@ onBeforeUnmount(() => {
                                         <InputText
                                             v-model.trim="getHistoryResultsState(entry.id).search"
                                             fluid
-                                            class="rounded-2xl"
+                                            class="rounded-2xl text-xs sm:text-base"
                                             placeholder="Поиск по имени оборудования"
                                             @keyup.enter="loadHistoryResults(entry.id, 1)"
                                         />
@@ -1230,7 +1234,7 @@ onBeforeUnmount(() => {
                                         label="Экспорт Excel"
                                         severity="secondary"
                                         outlined
-                                        class="rounded-2xl!"
+                                        class="rounded-2xl! text-xs sm:text-base"
                                         :loading="isExportingTask(entry.task_id)"
                                         @click="
                                             exportTaskResults(entry.task_id, getHistoryResultsState(entry.id).search)
@@ -1240,7 +1244,7 @@ onBeforeUnmount(() => {
                                         icon="pi pi-search"
                                         label="Найти"
                                         outlined
-                                        class="rounded-2xl!"
+                                        class="rounded-2xl! text-xs sm:text-base"
                                         :loading="getHistoryResultsState(entry.id).loading"
                                         @click="loadHistoryResults(entry.id, 1)"
                                     />
@@ -1253,7 +1257,7 @@ onBeforeUnmount(() => {
                                         "
                                         severity="secondary"
                                         outlined
-                                        class="rounded-2xl!"
+                                        class="rounded-2xl! text-xs sm:text-base"
                                         :loading="getHistoryResultsState(entry.id).loading"
                                         @click="
                                             loadHistoryResults(
@@ -1268,10 +1272,10 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div v-if="getHistoryResultsState(entry.id).loaded" class="overflow-x-auto">
-                                <table class="min-w-230 w-full text-sm">
+                                <table class="sm:min-w-230 w-full text-xs sm:text-sm border-collapse">
                                     <thead>
                                         <tr
-                                            class="border-b border-gray-200/80 text-left text-xs uppercase tracking-[0.2em] text-gray-500 dark:border-gray-700/80 dark:text-gray-400"
+                                            class="border-b border-gray-200/80 text-left text-xs sm:uppercase sm:tracking-[0.2em] text-gray-500 dark:border-gray-700/80 dark:text-gray-400"
                                         >
                                             <th class="px-3 py-3">Устройство</th>
                                             <th class="px-3 py-3">Статус</th>
@@ -1286,8 +1290,8 @@ onBeforeUnmount(() => {
                                             :key="result.id"
                                             class="border-b border-gray-200/70 last:border-b-0 dark:border-gray-700/70"
                                         >
-                                            <td class="px-3 py-3">
-                                                <div class="font-medium text-gray-900 dark:text-gray-100">
+                                            <td class="px-3 py-3 font-mono">
+                                                <div class="truncate font-medium text-gray-900 dark:text-gray-100">
                                                     {{ result.deviceName }}
                                                 </div>
                                                 <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -1308,7 +1312,7 @@ onBeforeUnmount(() => {
                                                 </div>
                                             </td>
                                             <td class="px-3 py-3">
-                                                <div class="max-w-xl truncate text-sm text-gray-600 dark:text-gray-300">
+                                                <div class="max-w-xl text-gray-600 dark:text-gray-300">
                                                     {{
                                                         result.error ||
                                                         result.detail ||
@@ -1319,14 +1323,14 @@ onBeforeUnmount(() => {
                                                 </div>
                                             </td>
                                             <td class="px-3 py-3">
-                                                <div class="flex justify-end gap-2">
+                                                <div class="flex not-sm:flex-wrap justify-end gap-2">
                                                     <Button
                                                         v-if="result.output || result.error || result.detail"
                                                         icon="pi pi-file"
                                                         label="Вывод"
                                                         size="small"
                                                         outlined
-                                                        class="rounded-2xl!"
+                                                        class="rounded-2xl! text-xs sm:text-base"
                                                         @click="showHistoryResultOutput(entry, result)"
                                                     />
                                                     <Button
@@ -1336,7 +1340,7 @@ onBeforeUnmount(() => {
                                                         size="small"
                                                         severity="secondary"
                                                         outlined
-                                                        class="rounded-2xl!"
+                                                        class="rounded-2xl! text-xs sm:text-base"
                                                         @click="retryHistoryResult(entry, result.deviceId)"
                                                     />
                                                 </div>
@@ -1406,7 +1410,7 @@ onBeforeUnmount(() => {
                     "
                     :pt="{
                         root: {
-                            class: 'mt-5 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2',
+                            class: 'mt-5 sm:rounded-2xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-2',
                         },
                     }"
                 />

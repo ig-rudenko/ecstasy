@@ -228,6 +228,13 @@ class AggregationRingFinder:
 def get_ring_by_device(
     device: Devices, *, request_ports: str, current_status: bool, collect_vlans: bool
 ) -> RingStructure | None:
+    """
+    Возвращает данные кольца
+    :param device: Оборудование агрегации
+    :param request_ports: Порты, которые образуют кольцо.
+    :param current_status: Собирать информацию в реальном времени?
+    :param collect_vlans: Собирать VLAN?
+    """
 
     ring_settings = AccessRingSettings.load()
     ring_finder = AggregationRingFinder(device, ring_settings)
@@ -239,7 +246,9 @@ def get_ring_by_device(
                 thread_ping(ring.devices)
 
             for point in ring.devices:
-                point.ping = current_status
+                # Если не нужно проверять статус оборудования в реальном времени
+                if not current_status:
+                    point.ping = None
                 point.collect_vlans = collect_vlans
 
             collect_current_interfaces(ring.devices)

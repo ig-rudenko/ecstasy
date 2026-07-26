@@ -248,7 +248,7 @@ function exportCSV(): void {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden rounded-2xl sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="border-b border-gray-200/70 p-4 dark:border-gray-700/70">
             <div class="flex flex-col gap-4">
@@ -295,7 +295,8 @@ function exportCSV(): void {
                             v-model="vendorFilter"
                             :options="vendors"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            class="w-full rounded-2xl text-xs sm:text-base"
+                            input-class="text-xs sm:text-base"
                             :showClear="true"
                             scroll-height="300px"
                         >
@@ -305,7 +306,7 @@ function exportCSV(): void {
                                         class="h-2.5 w-2.5 rounded-full"
                                         :style="{ backgroundColor: stringToColour(slotProps.option) }"
                                     />
-                                    <span class="font-mono">{{ slotProps.option }}</span>
+                                    <span class="font-mono text-xs sm:text-base">{{ slotProps.option }}</span>
                                 </div>
                             </template>
                         </Select>
@@ -325,7 +326,8 @@ function exportCSV(): void {
                             filter
                             :showClear="true"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            class="w-full rounded-2xl text-xs sm:text-base"
+                            input-class="text-xs sm:text-base"
                             scroll-height="350px"
                         >
                             <template #optiongroup="slotProps">
@@ -334,11 +336,11 @@ function exportCSV(): void {
                                         class="h-2.5 w-2.5 rounded-full"
                                         :style="{ backgroundColor: stringToColour(slotProps.option.label) }"
                                     />
-                                    <span class="font-mono">{{ slotProps.option.label }}</span>
+                                    <span class="font-mono text-xs sm:text-base">{{ slotProps.option.label }}</span>
                                 </div>
                             </template>
                             <template #option="slotProps">
-                                <div class="font-mono">{{ slotProps.option }}</div>
+                                <div class="font-mono text-xs sm:text-base">{{ slotProps.option }}</div>
                             </template>
                         </Select>
                     </div>
@@ -353,12 +355,13 @@ function exportCSV(): void {
                             v-model="groupFilter"
                             :options="groups"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            class="w-full rounded-2xl text-xs sm:text-base"
+                            input-class="text-xs sm:text-base"
                             :showClear="true"
                             scroll-height="300px"
                         >
                             <template #option="slotProps">
-                                <div class="font-mono">{{ slotProps.option }}</div>
+                                <div class="font-mono text-xs sm:text-base">{{ slotProps.option }}</div>
                             </template>
                         </Select>
                     </div>
@@ -370,9 +373,17 @@ function exportCSV(): void {
                             Абоненты
                         </div>
                         <div class="flex items-center gap-2">
-                            <InputNumber v-model="workloadRange[0]" input-class="w-full" class="w-full" />
+                            <InputNumber
+                                v-model="workloadRange[0]"
+                                input-class="w-full rounded-2xl text-xs sm:text-base"
+                                class="w-full"
+                            />
                             <span class="text-gray-400">—</span>
-                            <InputNumber v-model="workloadRange[1]" input-class="w-full" class="w-full" />
+                            <InputNumber
+                                v-model="workloadRange[1]"
+                                input-class="w-full rounded-2xl text-xs sm:text-base"
+                                class="w-full"
+                            />
                         </div>
                     </div>
                 </div>
@@ -380,7 +391,7 @@ function exportCSV(): void {
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-240 w-full text-sm">
+            <table class="sm:min-w-240 w-full text-sm">
                 <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
                     <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
                         <th class="px-4 py-3 text-left font-semibold">
@@ -431,14 +442,18 @@ function exportCSV(): void {
                         :key="dev.ip"
                         class="border-b border-gray-200/60 transition hover:bg-white/70 dark:border-gray-700/60 dark:hover:bg-gray-900/50"
                     >
-                        <td class="px-4 py-3">
-                            <div class="group/ip flex items-center gap-3">
-                                <div class="font-mono text-gray-900 dark:text-gray-100 xl:text-lg">{{ dev.ip }}</div>
+                        <td class="px-4 sm:py-3">
+                            <div class="w-fit group/ip flex items-center gap-3">
+                                <div
+                                    class="font-mono truncate text-gray-900 dark:text-gray-100 text-xs sm:text-sm xl:text-lg"
+                                >
+                                    {{ dev.ip }}
+                                </div>
                                 <a
                                     v-if="(dev as any).console_url"
                                     :href="(dev as any).console_url"
                                     target="_blank"
-                                    class="opacity-0 transition gpoup-console group-hover/ip:opacity-100 text-indigo-600 dark:text-indigo-300"
+                                    class="sm:opacity-0 not-sm:pb-1 transition gpoup-console group-hover/ip:opacity-100 text-indigo-600 dark:text-indigo-300"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -471,14 +486,14 @@ function exportCSV(): void {
                             </div>
                         </td>
 
-                        <td class="px-4 py-3">
-                            <div class="group/device-name flex items-center gap-2 font-mono">
+                        <td class="sm:px-4 sm:py-3">
+                            <div class="group/device-name flex items-center sm:gap-2 font-mono">
                                 <router-link :to="'/device/' + dev.name">
                                     <Button
                                         text
                                         icon="pi pi-box"
                                         :label="dev.name"
-                                        class="rounded-2xl! hover:shadow-sm"
+                                        class="rounded-2xl! truncate hover:shadow-sm text-xs sm:text-sm"
                                     />
                                 </router-link>
                                 <span
@@ -491,7 +506,10 @@ function exportCSV(): void {
                             <InterfacesWorkload class="px-2 pb-1" :dev="dev" />
                         </td>
 
-                        <td v-if="hasInterfacesCount" class="px-4 py-3 font-mono text-gray-900 dark:text-gray-100">
+                        <td
+                            v-if="hasInterfacesCount"
+                            class="sm:px-4 sm:py-3 font-mono text-gray-900 dark:text-gray-100 text-center"
+                        >
                             {{ getAbonsUp(dev) }}
                         </td>
 
@@ -505,13 +523,17 @@ function exportCSV(): void {
                                     class="h-2.5 w-2.5 rounded-full"
                                     :style="{ backgroundColor: stringToColour(dev.vendor) }"
                                 />
-                                <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.vendor }}</span>
+                                <span class="font-mono text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate">
+                                    {{ dev.vendor }}
+                                </span>
                             </button>
                         </td>
 
                         <td class="px-4 py-3">
                             <div v-if="dev.model" class="flex items-center gap-2 group">
-                                <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.model }}</span>
+                                <span class="font-mono text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate">
+                                    {{ dev.model }}
+                                </span>
                                 <Button
                                     v-if="modelFilter !== dev.model"
                                     @click="modelFilter = dev.model"
@@ -533,7 +555,9 @@ function exportCSV(): void {
 
                         <td class="px-4 py-3">
                             <div v-if="dev.group" class="flex items-center gap-2 group">
-                                <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.group }}</span>
+                                <span class="font-mono text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate">
+                                    {{ dev.group }}
+                                </span>
                                 <Button
                                     v-if="groupFilter !== dev.group"
                                     @click="groupFilter = dev.group"

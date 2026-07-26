@@ -1,18 +1,18 @@
 <template>
-    <div class="mx-auto max-w-375 px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
+    <div class="mx-auto max-w-375 py-2 sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
-                class="relative overflow-hidden rounded-3xl sm:rounded-4xl border border-gray-200/70 bg-white/80 dark:border-gray-700/70 dark:bg-gray-900/45 backdrop-blur delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="relative overflow-hidden not-sm:-my-4 sm:rounded-4xl sm:border border-gray-200/70 bg-white/80 dark:border-gray-700/70 dark:bg-gray-900/45 backdrop-blur delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <div
                     class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.14),transparent_25%),radial-gradient(circle_at_85%_20%,rgba(14,165,233,0.14),transparent_22%)]"
                 />
 
-                <div class="relative p-5 sm:p-8">
-                    <div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+                <div class="relative sm:p-8">
+                    <div class="p-4 sm:p-5 flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
                         <div class="max-w-4xl">
                             <h1
-                                class="mt-5 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl"
+                                class="mt-5 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
                             >
                                 Устройства сети
                             </h1>
@@ -29,7 +29,7 @@
                                         icon="pi pi-send"
                                         label="Массовые команды"
                                         text
-                                        class="rounded-2xl! hover:shadow-sm"
+                                        class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
                                     />
                                 </router-link>
                                 <Button
@@ -38,7 +38,7 @@
                                     icon="pi pi-chart-pie"
                                     label="Нагрузка по портам"
                                     text
-                                    class="rounded-2xl! hover:shadow-sm"
+                                    class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
                                 />
                                 <Button
                                     v-else-if="displayMode === 'waiting'"
@@ -46,7 +46,7 @@
                                     label="Загружаю нагрузку..."
                                     text
                                     disabled
-                                    class="rounded-2xl! hover:shadow-sm"
+                                    class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
                                 />
                                 <Button
                                     v-else-if="displayMode === 'interfaces_loading'"
@@ -54,7 +54,7 @@
                                     icon="pi pi-list"
                                     label="Обычный вид"
                                     text
-                                    class="rounded-2xl! hover:shadow-sm"
+                                    class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
                                 />
                             </div>
 
@@ -63,14 +63,16 @@
                                     class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
                                 >
                                     <div
-                                        class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
+                                        class="text-xs font-semibold sm:uppercase sm:tracking-[0.24em] text-gray-500 dark:text-gray-400"
                                     >
                                         Всего
                                     </div>
-                                    <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                    <div
+                                        class="mt-2 text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100"
+                                    >
                                         {{ devices.length }}
                                     </div>
-                                    <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <div class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                         Устройств в текущем наборе
                                     </div>
                                 </div>
@@ -79,14 +81,16 @@
                                     class="rounded-3xl border border-white/70 bg-white/70 p-4 dark:border-gray-700/80 dark:bg-gray-900/60"
                                 >
                                     <div
-                                        class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
+                                        class="text-xs font-semibold sm:uppercase sm:tracking-[0.24em] text-gray-500 dark:text-gray-400"
                                     >
                                         Найдено
                                     </div>
-                                    <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                    <div
+                                        class="mt-2 text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100"
+                                    >
                                         {{ devices_count }}
                                     </div>
-                                    <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <div class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                         После фильтрации и поиска
                                     </div>
                                 </div>
@@ -108,7 +112,7 @@
 
                     <div v-show="displayMode === 'interfaces_loading'" class="mt-8 grid gap-4 xl:grid-cols-12">
                         <div
-                            class="rounded-[1.75rem] border border-gray-200/80 bg-white/30 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-9"
+                            class="sm:rounded-2xl border-t sm:border border-gray-200/80 bg-white/30 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-9"
                         >
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="md:pl-6">
@@ -142,7 +146,7 @@
                         </div>
 
                         <div
-                            class="rounded-[1.75rem] border border-gray-200/80 bg-white/30 p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-3"
+                            class="sm:rounded-2xl border-b sm:border pb-10 border-gray-200/80 bg-white/30 px-5 sm:p-5 dark:border-gray-700/80 dark:bg-gray-900/60 xl:col-span-3"
                         >
                             <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Легенда</div>
                             <div class="mt-4 grid gap-3 text-sm">
@@ -173,9 +177,9 @@
             </section>
 
             <section
-                class="rounded-3xl sm:rounded-4xl border border-gray-200/70 bg-white/80 sm:p-4 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
+                class="sm:rounded-4xl pt-4 sm:border border-gray-200/70 bg-white/80 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
             >
-                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-4 px-2 md:flex-row md:items-center md:justify-between">
                     <div class="w-full md:max-w-xl">
                         <SearchInput
                             @update:modelValue="(v: string) => (search = v)"
@@ -185,7 +189,7 @@
                         />
                     </div>
                     <div
-                        class="rounded-2xl sm:border border-gray-200/80 bg-gray-50/80 px-4 py-2 font-mono text-sm text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
+                        class="rounded-xl sm:border border-gray-200/80 bg-gray-50/80 px-4 py-2 font-mono text-sm text-gray-600 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
                     >
                         Найдено: <span class="font-semibold text-gray-900 dark:text-gray-100">{{ devices_count }}</span>
                     </div>

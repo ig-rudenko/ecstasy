@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col gap-6">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="not-sm:px-2 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <Button text rounded icon="pi pi-arrow-left" @click="backToAllRings" />
                 <div>
@@ -24,10 +24,10 @@
 
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
             <div
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-5 sm:p-6 backdrop-blur"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 sm:p-6 backdrop-blur"
             >
                 <div
-                    class="rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/50 dark:bg-gray-950/20 p-4"
+                    class="sm:rounded-2xl border-y sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/50 dark:bg-gray-950/20 p-4"
                 >
                     <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Разворот кольца</div>
                     <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -41,55 +41,57 @@
                     </div>
                 </div>
 
-                <Button
-                    class="mt-5 !rounded-2xl w-full"
-                    :loading="getSolutionsActive || rotatingNow"
-                    loading-icon=""
-                    @click="getSolutions"
-                    :disabled="rotatingNow"
-                >
-                    <span v-if="getSolutionsActive || rotatingNow" class="flex items-center gap-2">
-                        <i class="pi pi-spin pi-spinner" />
-                        Ожидайте
-                    </span>
-                    <span v-else class="flex items-center justify-center gap-2">
-                        <i class="pi pi-sitemap" />
-                        {{
-                            !solutions.length
-                                ? "Проверить статус и построить план решений"
-                                : "Обновить статус и построить новый план"
-                        }}
-                    </span>
-                </Button>
+                <div class="not-sm:px-4">
+                    <Button
+                        class="mt-5 rounded-2xl! w-full"
+                        :loading="getSolutionsActive || rotatingNow"
+                        loading-icon=""
+                        @click="getSolutions"
+                        :disabled="rotatingNow"
+                    >
+                        <span v-if="getSolutionsActive || rotatingNow" class="flex items-center gap-2">
+                            <i class="pi pi-spin pi-spinner" />
+                            Ожидайте
+                        </span>
+                        <span v-else class="flex items-center justify-center gap-2">
+                            <i class="pi pi-sitemap" />
+                            {{
+                                !solutions.length
+                                    ? "Проверить статус и построить план решений"
+                                    : "Обновить статус и построить новый план"
+                            }}
+                        </span>
+                    </Button>
 
-                <div v-if="reversedErrors.length" class="mt-5 space-y-3">
-                    <template v-for="error in reversedErrors" :key="`${error.time}-${error.text}`">
-                        <div class="text-xs font-mono text-gray-500 dark:text-gray-400"># {{ error.time }}</div>
-                        <Message severity="error">{{ error.text }}</Message>
-                    </template>
-                </div>
+                    <div v-if="reversedErrors.length" class="mt-5 space-y-3">
+                        <template v-for="error in reversedErrors" :key="`${error.time}-${error.text}`">
+                            <div class="text-xs font-mono text-gray-500 dark:text-gray-400"># {{ error.time }}</div>
+                            <Message severity="error">{{ error.text }}</Message>
+                        </template>
+                    </div>
 
-                <div v-if="reversedInfos.length" class="mt-5 space-y-3">
-                    <template v-for="info in reversedInfos" :key="`${info.time}-${info.text}`">
-                        <div class="text-xs font-mono text-gray-500 dark:text-gray-400"># {{ info.time }}</div>
-                        <Message severity="info">{{ info.text }}</Message>
-                    </template>
-                </div>
+                    <div v-if="reversedInfos.length" class="mt-5 space-y-3">
+                        <template v-for="info in reversedInfos" :key="`${info.time}-${info.text}`">
+                            <div class="text-xs font-mono text-gray-500 dark:text-gray-400"># {{ info.time }}</div>
+                            <Message severity="info">{{ info.text }}</Message>
+                        </template>
+                    </div>
 
-                <div v-if="solutions.length" class="mt-5">
-                    <div class="mb-3 text-xs font-mono text-gray-500 dark:text-gray-400"># {{ solutionsTime }}</div>
-                    <Solutions
-                        :solutions="solutions"
-                        :safe-solutions="safeSolutions"
-                        :rotating-now="rotatingNow"
-                        :performed="solutionsPerformed"
-                        @submitSolutions="submitSolutions"
-                    />
+                    <div v-if="solutions.length" class="mt-5">
+                        <div class="mb-3 text-xs font-mono text-gray-500 dark:text-gray-400"># {{ solutionsTime }}</div>
+                        <Solutions
+                            :solutions="solutions"
+                            :safe-solutions="safeSolutions"
+                            :rotating-now="rotatingNow"
+                            :performed="solutionsPerformed"
+                            @submitSolutions="submitSolutions"
+                        />
+                    </div>
                 </div>
             </div>
 
             <div
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/50 dark:bg-gray-950/20 p-4 sm:p-6"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/50 dark:bg-gray-950/20 p-4 sm:p-6"
             >
                 <RingView :points="points" />
             </div>

@@ -173,16 +173,16 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
 
 <template>
     <section
-        class="rounded-3xl border border-gray-200/80 bg-white/85 p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55"
+        class="sm:rounded-3xl sm:border border-gray-200/80 bg-white/85 sm:p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-900/55"
     >
         <div class="flex flex-col gap-4">
-            <div class="flex flex-col flex-wrap gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div class="flex flex-col flex-wrap p-4 gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                     <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ title }}</div>
                     <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ description }}</div>
                     <div
                         v-if="deviceName"
-                        class="mt-2 text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500"
+                        class="mt-2 text-xs sm:uppercase sm:tracking-[0.2em] text-gray-400 dark:text-gray-500"
                     >
                         Источник команд: {{ deviceName }}
                     </div>
@@ -195,7 +195,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                             v-model.trim="searchByName"
                             placeholder="Фильтр по названию"
                             fluid
-                            class="rounded-2xl"
+                            class="rounded-2xl text-xs sm:text-base"
                         />
                     </IconField>
                     <IconField>
@@ -204,7 +204,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                             v-model.trim="searchByCommand"
                             placeholder="Фильтр по команде"
                             fluid
-                            class="rounded-2xl"
+                            class="rounded-2xl text-xs sm:text-base"
                         />
                     </IconField>
                 </div>
@@ -214,7 +214,7 @@ function syncCommandContext(command: DeviceCommandTemplate): void {
                 {{ loadError }}
             </Message>
 
-            <div class="overflow-hidden rounded-3xl border border-gray-200/80 dark:border-gray-700/80">
+            <div class="overflow-hidden sm:rounded-3xl sm:border border-gray-200/80 dark:border-gray-700/80">
                 <div
                     class="hidden command-grid gap-4 bg-gray-100/80 px-4 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:bg-gray-800/80 dark:text-gray-400 lg:grid"
                 >

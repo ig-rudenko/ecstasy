@@ -90,23 +90,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <div class="mx-auto max-w-7xl sm:px-6 sm:py-10 lg:px-8">
         <div class="flex flex-col gap-6">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
+                class="not-sm:py-4 relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 bg-white/70 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
             >
                 <div
-                    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10"
+                    class="pointer-events-none absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-blue-500/10"
                 />
                 <div class="relative p-6 sm:p-8">
-                    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
                         <div class="max-w-3xl">
                             <h1
-                                class="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100"
+                                class="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
                             >
                                 Карты
                             </h1>
-                            <p class="mt-2 text-sm text-gray-600 sm:text-base dark:text-gray-300">
+                            <p class="mt-2 text-xs sm:text-base text-gray-600 dark:text-gray-300">
                                 Список интерактивных и статических карт с быстрым переходом к просмотру.
                             </p>
                         </div>
@@ -117,14 +117,14 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <div v-if="maps" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div v-if="maps" class="not-sm:px-2 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 <router-link
                     v-for="map in maps.results"
                     :key="map.id"
                     :to="'/maps/' + map.id"
                     class="group overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700/70 dark:bg-gray-900/40"
                 >
-                    <div class="relative h-64 overflow-hidden">
+                    <div class="relative h-48 sm:h-64 overflow-hidden">
                         <div
                             v-if="map.resolvedPreviewImage"
                             class="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
@@ -143,7 +143,7 @@ onUnmounted(() => {
 
                     <div class="p-5">
                         <div class="flex items-start justify-between gap-3">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ map.name }}</h2>
+                            <div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ map.name }}</div>
                             <i
                                 class="pi pi-arrow-right text-sm text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500"
                             />

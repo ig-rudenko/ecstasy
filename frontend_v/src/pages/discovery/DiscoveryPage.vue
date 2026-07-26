@@ -77,31 +77,33 @@ const {
 <template>
     <ConfirmPopup />
 
-    <main class="mx-auto px-2 py-2 sm:px-6 sm:py-8 lg:px-8">
+    <main class="mx-auto sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
-                class="rounded-3xl border border-gray-200/70 bg-white/80 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-7"
+                class="sm:border border-gray-200/70 bg-white/80 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-7"
             >
                 <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-                    <div>
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900/60"
-                            >
-                                <i class="pi pi-compass text-xl" />
+                    <div class="pb-4">
+                        <div class="flex items-center gap-3 md:gap-6">
+                            <div>
+                                <div
+                                    class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900/60"
+                                >
+                                    <i class="pi pi-compass text-xl" />
+                                </div>
                             </div>
                             <div>
-                                <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 sm:text-3xl">
-                                    Auto Discovery
-                                </h1>
-                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                <div class="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-gray-100">
+                                    Обнаружение
+                                </div>
+                                <div class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                     Профили сканирования, фоновые запуски и найденные кандидаты
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid gap-3 sm:grid-cols-3 xl:min-w-160">
+                    <div class="grid gap-3 grid-cols-3 xl:min-w-160">
                         <div
                             class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-4 py-3 dark:border-gray-700/80 dark:bg-gray-800/60"
                         >
@@ -135,7 +137,7 @@ const {
                             icon="pi pi-sliders-h"
                             label="Профили"
                             :outlined="activeTab !== 'profiles'"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs md:text-base"
                             @click="switchTab('profiles')"
                         />
                         <Button
@@ -143,7 +145,7 @@ const {
                             label="Запуски"
                             :outlined="activeTab !== 'runs'"
                             severity="secondary"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs md:text-base"
                             @click="switchTab('runs')"
                         />
                         <Button
@@ -151,7 +153,7 @@ const {
                             label="Кандидаты"
                             :outlined="activeTab !== 'candidates'"
                             severity="secondary"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs md:text-base"
                             @click="switchTab('candidates')"
                         />
                     </div>
@@ -160,7 +162,7 @@ const {
                         <Button
                             icon="pi pi-plus"
                             label="Новый профиль"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs md:text-base"
                             @click="
                                 resetProfileForm();
                                 profileDialogVisible = true;
@@ -171,7 +173,7 @@ const {
                             label="Обновить"
                             severity="secondary"
                             outlined
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs md:text-base"
                             :loading="loadingProfiles || loadingRuns || loadingCandidates"
                             @click="refreshCurrentData"
                         />
@@ -181,7 +183,7 @@ const {
 
             <section
                 v-if="activeTab === 'profiles'"
-                class="rounded-3xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
+                class="sm:border border-gray-200/70 bg-white/80 sm:p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
             >
                 <DiscoveryProfilesTable
                     :profiles="profiles"
@@ -198,7 +200,7 @@ const {
 
             <section
                 v-if="activeTab === 'runs'"
-                class="rounded-3xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
+                class="sm:border border-gray-200/70 bg-white/80 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
             >
                 <DiscoveryRunsTable
                     :runs="runs"
@@ -220,7 +222,7 @@ const {
 
             <section
                 v-if="activeTab === 'candidates'"
-                class="rounded-3xl border border-gray-200/70 bg-white/80 p-4 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
+                class="sm:border border-gray-200/70 bg-white/80 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-6"
             >
                 <DiscoveryCandidatesFilters
                     :candidateSearch="candidateSearch"

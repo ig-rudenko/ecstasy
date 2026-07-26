@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <div class="relative mx-auto h-[240px] w-[240px]">
+        <div class="relative mx-auto h-60 w-60">
             <Doughnut id="devices-workload-chart" :options="chartOptions" :data="chartData" />
             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
                 <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">

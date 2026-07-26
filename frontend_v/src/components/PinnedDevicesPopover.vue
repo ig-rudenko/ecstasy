@@ -23,7 +23,7 @@ function toggle(event: Event) {
             :label="showText ? 'Избранное (' + count + ')' : ''"
             text
             :severity="count > 0 ? 'success' : 'secondary'"
-            class="rounded-2xl! hover:shadow-sm"
+            class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
             @click="toggle"
         />
 
@@ -38,7 +38,7 @@ function toggle(event: Event) {
                 content: { class: 'p-0!' },
             }"
         >
-            <div class="p-4">
+            <div class="p-4 max-w-[99vw]">
                 <div
                     class="pb-3 mb-3 flex w-full justify-between items-start gap-3 border-b border-gray-200/80 dark:border-gray-700/70"
                 >
@@ -69,7 +69,7 @@ function toggle(event: Event) {
                     >
                         <router-link
                             :to="'/device/' + dev.name"
-                            class="text-sm font-mono flex-1 min-w-0 truncate text-indigo-600 dark:text-indigo-400 hover:underline"
+                            class="text-sm font-mono flex-1 min-w-0 text-indigo-600 dark:text-indigo-400 hover:underline"
                             v-tooltip.bottom="dev.vendor + ' ' + dev.model"
                         >
                             {{ dev.name }}

@@ -210,7 +210,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden sm:rounded-2xl sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="border-b border-gray-200/70 p-3 dark:border-gray-700/70">
             <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

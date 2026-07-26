@@ -10,7 +10,7 @@
             </div>
 
             <div
-                class="ring-node first:!bg-indigo-100 last:!bg-indigo-100 dark:first:!bg-indigo-900/60 dark:last:!bg-indigo-900/60"
+                class="ring-node first:bg-indigo-100! last:bg-indigo-100! dark:first:bg-indigo-900/60! dark:last:bg-indigo-900/60!"
             >
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-4">
@@ -57,17 +57,17 @@
 
                         <div>
                             <router-link
-                                class="point-name hover:text-indigo-600 dark:hover:text-indigo-300"
+                                class="point-name font-mono text-sm sm:text-base hover:text-indigo-600 dark:hover:text-indigo-300"
                                 :to="getURLForDevice(dev.name)"
                                 target="_blank"
                             >
                                 {{ dev.name }}
                             </router-link>
-                            <div class="mt-1 font-mono text-sm text-gray-500 dark:text-gray-400">{{ dev.ip }}</div>
+                            <div class="mt-1 font-mono text-xs sm:text-base text-gray-500 dark:text-gray-400">
+                                {{ dev.ip }}
+                            </div>
                         </div>
                     </div>
-
-                    <Badge severity="secondary">{{ dev.ip }}</Badge>
                 </div>
             </div>
 

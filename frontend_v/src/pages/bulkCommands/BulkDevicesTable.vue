@@ -184,7 +184,7 @@ function clearSelection(): void {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden sm:rounded-[1.75rem] border-y sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="border-b border-gray-200/70 p-4 dark:border-gray-700/70">
             <div class="flex flex-col gap-4">
@@ -196,7 +196,7 @@ function clearSelection(): void {
                             severity="secondary"
                             outlined
                             size="small"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs sm:text-base"
                         />
                         <Button
                             @click="selectAllFiltered"
@@ -204,7 +204,7 @@ function clearSelection(): void {
                             severity="contrast"
                             size="small"
                             label="Выделить все"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs sm:text-base"
                         />
                         <Button
                             @click="clearSelection"
@@ -213,7 +213,7 @@ function clearSelection(): void {
                             outlined
                             size="small"
                             label="Снять выделение"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs sm:text-base"
                         />
                         <Button
                             v-if="vendorFilter || modelFilter || groupFilter || sortKey"
@@ -223,7 +223,7 @@ function clearSelection(): void {
                             outlined
                             size="small"
                             label="Сбросить"
-                            class="rounded-2xl!"
+                            class="rounded-2xl! text-xs sm:text-base"
                         />
                     </div>
 
@@ -251,7 +251,8 @@ function clearSelection(): void {
                             v-model="vendorFilter"
                             :options="vendors"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            input-class="text-xs sm:text-base"
+                            class="w-full rounded-2xl text-xs sm:text-base"
                             :showClear="true"
                             scroll-height="300px"
                         >
@@ -281,7 +282,8 @@ function clearSelection(): void {
                             filter
                             :showClear="true"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            input-class="text-xs sm:text-base"
+                            class="w-full rounded-2xl text-xs sm:text-base"
                             scroll-height="350px"
                         >
                             <template #optiongroup="slotProps">
@@ -309,7 +311,8 @@ function clearSelection(): void {
                             v-model="groupFilter"
                             :options="groups"
                             placeholder="Все"
-                            class="w-full rounded-2xl"
+                            input-class="text-xs sm:text-base"
+                            class="w-full rounded-2xl text-xs sm:text-base"
                             :showClear="true"
                             scroll-height="300px"
                         >
@@ -323,7 +326,7 @@ function clearSelection(): void {
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-245 w-full text-sm">
+            <table class="sm:min-w-245 w-full text-sm">
                 <thead class="border-b border-gray-200/70 bg-gray-50/80 dark:border-gray-700/70 dark:bg-gray-900/70">
                     <tr class="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
                         <th class="px-4 py-3 text-left font-semibold">
@@ -334,7 +337,7 @@ function clearSelection(): void {
                             />
                         </th>
                         <th class="px-4 py-3 text-left font-semibold">
-                            <button class="inline-flex items-center gap-2" @click="toggleSort('ip')">
+                            <button class="inline-flex items-center gap-2 font-mono" @click="toggleSort('ip')">
                                 <span>IP</span>
                                 <i :class="sortIcon('ip')" />
                             </button>
@@ -383,26 +386,20 @@ function clearSelection(): void {
 
                         <td class="px-4 py-3">
                             <div class="group/ip flex items-center gap-3">
-                                <div class="font-mono text-gray-900 dark:text-gray-100">{{ dev.ip }}</div>
-                                <a
-                                    v-if="(dev as any).console_url"
-                                    :href="(dev as any).console_url"
-                                    target="_blank"
-                                    class="opacity-0 transition group-hover/ip:opacity-100 text-indigo-600 dark:text-indigo-300"
-                                >
-                                    <i class="pi pi-desktop" />
-                                </a>
+                                <div class="font-mono text-xs sm:text-base text-gray-900 dark:text-gray-100">
+                                    {{ dev.ip }}
+                                </div>
                             </div>
                         </td>
 
                         <td class="px-4 py-3">
-                            <div class="group/device-name flex items-center gap-2 font-mono">
+                            <div class="group/device-name flex items-center sm:gap-2 font-mono">
                                 <router-link :to="'/device/' + dev.name">
                                     <Button
                                         text
-                                        icon="pi pi-box"
+                                        icon="pi sm:pi-box"
                                         :label="dev.name"
-                                        class="rounded-2xl! hover:shadow-sm"
+                                        class="rounded-2xl! hover:shadow-sm text-xs sm:text-base"
                                     />
                                 </router-link>
                                 <span
@@ -424,16 +421,23 @@ function clearSelection(): void {
                                     class="h-2.5 w-2.5 rounded-full"
                                     :style="{ backgroundColor: stringToColour(dev.vendor) }"
                                 />
-                                <span class="font-mono text-gray-900 dark:text-gray-100">{{ dev.vendor }}</span>
+                                <span
+                                    class="text-xs sm:text-base truncate font-mono text-gray-900 dark:text-gray-100"
+                                    >{{ dev.vendor }}</span
+                                >
                             </button>
                         </td>
 
                         <td class="px-4 py-3">
-                            <div class="font-mono text-gray-900 dark:text-gray-100">{{ dev.model || "—" }}</div>
+                            <div class="text-xs sm:text-base truncate font-mono text-gray-900 dark:text-gray-100">
+                                {{ dev.model || "—" }}
+                            </div>
                         </td>
 
                         <td class="px-4 py-3">
-                            <div class="font-mono text-gray-900 dark:text-gray-100">{{ dev.group || "—" }}</div>
+                            <div class="text-xs sm:text-base truncate font-mono text-gray-900 dark:text-gray-100">
+                                {{ dev.group || "—" }}
+                            </div>
                         </td>
                     </tr>
 

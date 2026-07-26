@@ -36,7 +36,7 @@ const modules = computed<ModuleCard[]>(() => {
                 "Интерфейсы в реальном времени",
                 "Сбор и хранение конфигураций",
                 "Шаблоны команд и действия с портами",
-                "Ошибки, MAC-адреса, логи и сессии",
+                "Автоматическое обнаружение оборудование",
             ],
             icon: "pi pi-box",
             to: "/devices",
@@ -124,7 +124,6 @@ const supportedVendors = [
     "Eltex",
     "MikroTik",
     "Huawei",
-    "Huawei DSL/MSAN",
     "Iskratel DSL",
     "D-Link",
     "Extreme",
@@ -137,9 +136,9 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
 </script>
 
 <template>
-    <main class="mx-auto max-w-375 px-2 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <main class="mx-auto max-w-375 sm:px-6 sm:py-10 lg:px-8">
         <section
-            class="relative overflow-hidden rounded-4xl border border-gray-200/70 bg-white/80 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.42)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+            class="relative overflow-hidden sm:rounded-4xl sm:border border-gray-200/70 bg-white/80 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.42)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
         >
             <div
                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_26%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.14),transparent_24%),radial-gradient(circle_at_72%_78%,rgba(45,212,191,0.14),transparent_22%),linear-gradient(135deg,rgba(255,255,255,0.38),transparent)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_72%_78%,rgba(45,212,191,0.16),transparent_22%),linear-gradient(135deg,rgba(15,23,42,0.4),transparent)]"
@@ -149,15 +148,17 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                 <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem] xl:items-start">
                     <div>
                         <div
-                            class="mt-5 max-w-5xl text-3xl font-semibold tracking-wide text-slate-950 dark:text-white sm:text-5xl"
+                            class="mt-5 max-w-5xl font-semibold tracking-wide text-slate-950 dark:text-white sm:text-5xl"
                         >
-                            <span class="block text-3xl sm:text-6xl">Ecstasy</span>
-                            <span class="mt-3 block text-balance text-xl leading-tight sm:text-3xl">
+                            <span class="block text-3xl sm:text-4xl">Ecstasy</span>
+                            <span class="mt-3 block text-balance text-base leading-tight sm:text-2xl">
                                 Веб-приложение для взаимодействия с сетевым оборудованием и диагностики сети
                             </span>
                         </div>
 
-                        <p class="mt-5 max-w-4xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+                        <p
+                            class="mt-5 max-w-4xl text-sm sm:text-base lg:text-lg leading-5 sm:leading-7 text-slate-600 dark:text-slate-300"
+                        >
                             <span class="font-semibold text-slate-900 dark:text-slate-100">{{ userDisplayName }}</span
                             >, на этой странице собрана краткая информация о проекте: из каких функциональных блоков он
                             состоит, какие задачи решает и какие инструменты доступны для повседневной эксплуатации
@@ -170,16 +171,16 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                                     label="Перейти к оборудованию"
                                     icon="pi pi-server"
                                     text
-                                    class="rounded-2xl hover:shadow-sm"
+                                    class="rounded-2xl hover:shadow-sm text-xs sm:text-base"
                                 />
                             </router-link>
-                            <router-link to="/maps" v-if="showMapsCard">
+                            <router-link to="/tools/interfaces" v-if="showInterfaceFinderCard">
                                 <Button
-                                    label="Открыть карты"
-                                    icon="pi pi-map"
+                                    label="Поиск интерфейсов"
+                                    icon="pi pi-search"
                                     severity="secondary"
                                     text
-                                    class="rounded-2xl hover:shadow-sm"
+                                    class="rounded-2xl hover:shadow-sm text-xs sm:text-base"
                                 />
                             </router-link>
                         </div>
@@ -190,11 +191,11 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <div
-                                class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400"
+                                class="sm:text-xs font-semibold sm:uppercase sm:tracking-[0.24em] text-slate-500 dark:text-slate-400"
                             >
                                 Компоненты
                             </div>
-                            <div class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                            <div class="mt-2 sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                                 Что есть в проекте
                             </div>
                         </div>
@@ -249,20 +250,15 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                     </div>
                 </section>
 
-                <section class="mt-8 grid gap-4 xl:grid-cols-2">
+                <section class="mt-4 grid gap-4 xl:grid-cols-2">
                     <div
                         class="rounded-[1.9rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
                     >
-                        <div
-                            class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400"
-                        >
-                            Дополнительно
-                        </div>
-                        <div class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                            Другие возможности проекта
+                        <div class="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                            Другие возможности
                         </div>
 
-                        <div class="mt-5 grid gap-3">
+                        <div class="mt-5 grid gap-2">
                             <div
                                 v-for="capability in extraCapabilities"
                                 :key="capability"
@@ -285,7 +281,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                             С какими устройствами работает Ecstasy
                         </div>
 
-                        <div class="mt-5 flex flex-wrap gap-2.5 font-mono">
+                        <div class="mt-5 flex flex-wrap gap-2 font-mono">
                             <span
                                 v-for="vendor in supportedVendors"
                                 :key="vendor"
