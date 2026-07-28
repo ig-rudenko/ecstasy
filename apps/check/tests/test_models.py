@@ -117,8 +117,8 @@ class DeviceModelTest(TestCase):
 
     def test_coordinates_reject_zero_zero_pair(self):
         dev = Devices.objects.all().first()
-        dev.latitude = Decimal("0")
-        dev.longitude = Decimal("0")
+        dev.latitude = Decimal(0)
+        dev.longitude = Decimal(0)
 
         with self.assertRaises(ValidationError):
             dev.full_clean()

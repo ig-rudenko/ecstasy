@@ -217,7 +217,7 @@ class ZTE(BaseDevice, AbstractCableTestDevice, AbstractConfigDevice, AbstractSea
             rf"({self.mac_format})\s+(?P<vid>\d+)\s+(?P<port>\S+)\s+(?P<type>\S+)", output
         )
 
-        return [  # noqa
+        return [
             (
                 int(vid),
                 mac,

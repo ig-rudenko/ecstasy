@@ -425,7 +425,7 @@ class VlanNetwork:
         edge_index: int,
         src_node: str,
         dst_node: str,
-        line_width: int | float,
+        line_width: float,
         edge_title: dict,
     ) -> None:
         """Заменяет дубль ребра, если новое VLAN-совпадение точнее текущего."""
@@ -445,7 +445,7 @@ class VlanNetwork:
     def _build_edge_data(
         src_node: str,
         dst_node: str,
-        line_width: int | float,
+        line_width: float,
         edge_title: dict,
         edge_options: dict | None = None,
     ) -> dict:
@@ -464,7 +464,7 @@ class VlanNetwork:
         self,
         src_node: str,
         dst_node: str,
-        line_width: int | float,
+        line_width: float,
         edge_title: dict,
         edge_options: dict | None = None,
     ) -> None:

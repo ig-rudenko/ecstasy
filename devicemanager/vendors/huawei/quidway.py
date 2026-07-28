@@ -291,9 +291,9 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             # Check if there are any VLANs before appending
             if vlans:  # This ensures you don't append empty VLAN lists
-                result.append((intf, status, desc, vlans))  # noqa
+                result.append((intf, status, desc, vlans))
             else:
-                result.append((intf, status, desc, []))  # noqa # Or append an empty list if no VLANs found
+                result.append((intf, status, desc, []))  # Or append an empty list if no VLANs found
 
         return result
 
@@ -473,7 +473,7 @@ class Huawei(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
 
         port_info: _PortInfo | None = self.__ports_info.get(port, None)
-        now = datetime.now()
+        now = datetime.now()  # noqa: DTZ005
         if port_info is None or port_info.exp < now:
             new_port_info = _PortInfo(
                 info=self.send_command(f"display interface {port}", expect_command=False, timeout=5),

@@ -86,7 +86,7 @@ class Devices(models.Model):
         decimal_places=6,
         null=True,
         blank=True,
-        validators=[MinValueValidator(Decimal("-90")), MaxValueValidator(Decimal("90"))],
+        validators=[MinValueValidator(Decimal(-90)), MaxValueValidator(Decimal(90))],
         verbose_name="Широта",
     )
     longitude = models.DecimalField(
@@ -94,7 +94,7 @@ class Devices(models.Model):
         decimal_places=6,
         null=True,
         blank=True,
-        validators=[MinValueValidator(Decimal("-180")), MaxValueValidator(Decimal("180"))],
+        validators=[MinValueValidator(Decimal(-180)), MaxValueValidator(Decimal(180))],
         verbose_name="Долгота",
     )
     model = models.CharField(
@@ -222,7 +222,7 @@ class Devices(models.Model):
         has_longitude = self.longitude is not None
         if has_latitude != has_longitude:
             raise ValidationError("Широта и долгота должны быть указаны вместе.")
-        if self.latitude == Decimal("0") and self.longitude == Decimal("0"):
+        if self.latitude == Decimal(0) and self.longitude == Decimal(0):
             raise ValidationError("Координаты 0,0 невалидны.")
 
     def get_absolute_url(self):

@@ -5,12 +5,12 @@ from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pexpect import spawn as Spawn  # noqa
+    from pexpect import spawn as Spawn
 else:
     from pexpect.spawnbase import SpawnBase as Spawn
 
 if TYPE_CHECKING or sys.platform != "win32":
-    from pexpect import spawn as Spawn  # noqa
+    from pexpect import spawn as Spawn
 
 logger = logging.getLogger(__name__)
 logger.setLevel(str(os.getenv("DEVICE_CONNECTOR_LOG_LEVEL", "INFO")))
@@ -78,10 +78,10 @@ class SessionSpawner(Spawn):
         logger.debug("Device: %s | send: %s", self.ip, s)
         return super().send(s)
 
-    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):  # noqa
+    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):
         logger.debug("Device: %s | expect: %s", self.ip, pattern)
 
-        res = super().expect(pattern, timeout, searchwindowsize, async_)  # noqa
+        res = super().expect(pattern, timeout, searchwindowsize, async_)
 
         logger.debug("Device: %s | expect: %s", self.ip, res)
         logger.debug("Device: %s | before: %s", self.ip, self.before)

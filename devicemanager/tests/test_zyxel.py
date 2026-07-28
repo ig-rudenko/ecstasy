@@ -612,8 +612,8 @@ class TestZyxelInfo(SimpleTestCase):
         self.assertEqual(len(value["data"]["streams"]), 4)
 
         # Смотрим что все значения получены.
-        self.assertTrue(all(map(lambda x: x["up"]["value"] > 0, value["data"]["streams"])))
-        self.assertTrue(all(map(lambda x: x["down"]["value"] > 0, value["data"]["streams"])))
+        self.assertTrue(all(x["up"]["value"] > 0 for x in value["data"]["streams"]))
+        self.assertTrue(all(x["down"]["value"] > 0 for x in value["data"]["streams"]))
 
     def test_invalid_get_port_info(self):
         status = self.zyxel.get_port_info(port="Re 0/1")

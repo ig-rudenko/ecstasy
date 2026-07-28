@@ -488,7 +488,7 @@ class TestEltexMESVlanTable(SimpleTestCase):
 
     def test_get_vlan_table_uses_show_vlan_output(self):
         """Return VLAN table parsed directly from show vlan command output."""
-        device = EltexMES.__new__(EltexMES)  # noqa
+        device = EltexMES.__new__(EltexMES)
         sent_commands = []
 
         def send_command(command: str):

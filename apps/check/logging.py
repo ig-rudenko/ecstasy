@@ -27,7 +27,7 @@ def log(
         or not isinstance(model_device, models.Devices)
         or not isinstance(operation, str)
     ):
-        django_actions_logger.info(f"| NO DB | {str(user):<10} | {str(model_device):<15} | {str(operation)}")
+        django_actions_logger.info(f"| NO DB | {user!s:<10} | {model_device!s:<15} | {operation!s}")
         return
 
     # В базу

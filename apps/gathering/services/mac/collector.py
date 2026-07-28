@@ -73,7 +73,7 @@ class MacAddressTableGather(AbstractRealtimeCollector):
             if not batch:
                 break
             # Создание пакета объектов в базе данных.
-            MacAddress.objects.bulk_create(objs=batch, **self._bulk_options)  # noqa
+            MacAddress.objects.bulk_create(objs=batch, **self._bulk_options)
 
         return count
 

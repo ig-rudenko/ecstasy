@@ -124,7 +124,7 @@ class DeviceSessionFactoryTests(SimpleTestCase):
         def connect():
             try:
                 self.make_factory()._make_and_get_connection()
-            except Exception as exc:  # noqa: BLE001 - test records the propagated error type.
+            except Exception as exc:
                 errors.append(exc)
 
         get_session.side_effect = fail_connection

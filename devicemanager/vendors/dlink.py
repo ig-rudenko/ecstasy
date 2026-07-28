@@ -71,11 +71,11 @@ def validate_port(port: str) -> str | None:
 @contextmanager
 def no_clipaging(dev: "Dlink"):
     """Temporarily disable CLI paging for one possibly nested operation."""
-    if not dev._enable_clipaging_control:  # noqa
+    if not dev._enable_clipaging_control:
         yield
         return
 
-    depth = dev._no_clipaging_depth  # noqa
+    depth = dev._no_clipaging_depth
     dev._no_clipaging_depth = depth + 1
     try:
         if depth == 0:
@@ -247,14 +247,14 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             prompt = self.prompt
 
         # Убираем предыдущий вывод до промпта, если он был.
-        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)  # noqa
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)
 
         output = ""
         self.session.send(command + "\n")  # Отправляем команду
 
         while True:
             match = self.session.expect(
-                [  # noqa
+                [
                     prompt,  # 0 - конец
                     space_prompt,  # 1 - далее
                     pexpect.TIMEOUT,  # 2

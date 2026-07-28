@@ -63,7 +63,9 @@ class FTPCollector(AbstractFTPCollector):
         elif isinstance(local_dir, pathlib.Path):
             self.local_dir = local_dir
         else:
-            ValueError(f"`local_dir должен быть `str` либо `pathlib.Path`, а был передан {type(local_dir)}")
+            raise TypeError(
+                f"`local_dir должен быть `str` либо `pathlib.Path`, а был передан {type(local_dir)}"
+            )
 
         self.retry_after_fail = retry_after_fail
         self.retry_counts = retry_counts
@@ -119,7 +121,7 @@ class FTPCollector(AbstractFTPCollector):
                 return item.name
 
         # Если не удалось найти папку по паттерну
-        raise NotFound(f"По паттерну {repr(pattern.pattern)} не была найдена папка")
+        raise NotFound(f"По паттерну {pattern.pattern!r} не была найдена папка")
 
     def _mirror_ftp_dir(self, path: str):
         """

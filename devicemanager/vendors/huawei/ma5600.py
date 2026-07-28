@@ -739,7 +739,7 @@ class HuaweiMA5600T(BaseDevice, AbstractDSLProfileDevice):
         if port_type not in ["adsl", "vdsl"] or len(indexes) != 3 or profile_index <= 0:
             return "Неверный порт!"
 
-        if port_type == "adsl":  # noqa: SIM108
+        if port_type == "adsl":
             # Если порт ADSL, то команда для смена профиля
             change_profile_cmd = "profile-index"
         else:

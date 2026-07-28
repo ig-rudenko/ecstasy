@@ -130,11 +130,11 @@ def parse_coordinates(latitude: Any, longitude: Any) -> Coordinates | None:
     except InvalidOperation as exc:
         raise ValueError("Coordinates must be decimal numbers.") from exc
 
-    if parsed_latitude == Decimal("0") and parsed_longitude == Decimal("0"):
+    if parsed_latitude == Decimal(0) and parsed_longitude == Decimal(0):
         raise ValueError("Coordinates 0,0 are invalid.")
-    if not Decimal("-90") <= parsed_latitude <= Decimal("90"):
+    if not Decimal(-90) <= parsed_latitude <= Decimal(90):
         raise ValueError("Latitude is out of range.")
-    if not Decimal("-180") <= parsed_longitude <= Decimal("180"):
+    if not Decimal(-180) <= parsed_longitude <= Decimal(180):
         raise ValueError("Longitude is out of range.")
     return Coordinates(latitude=parsed_latitude, longitude=parsed_longitude)
 

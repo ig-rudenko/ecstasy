@@ -419,7 +419,7 @@ class BaseDevice(AbstractDevice, ABC):
             prompt = self.prompt
 
         # Убираем предыдущий вывод до промпта, если он был.
-        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)  # noqa
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)
 
         output = ""
         self.session.send(command + command_linesep)  # Отправляем команду
@@ -435,7 +435,7 @@ class BaseDevice(AbstractDevice, ABC):
         if space_prompt:  # Если необходимо постранично считать данные, то создаем цикл
             while pages_limit is None or pages_limit > 0:
                 match = self.session.expect(
-                    [  # noqa
+                    [
                         prompt,  # 0 - конец
                         space_prompt,  # 1 - далее
                         pexpect.TIMEOUT,  # 2
@@ -462,7 +462,7 @@ class BaseDevice(AbstractDevice, ABC):
 
         else:  # Если вывод команды выдается полностью, то пропускаем цикл
             # with contextlib.suppress(pexpect.TIMEOUT):
-            self.session.expect(prompt, timeout=timeout)  # noqa
+            self.session.expect(prompt, timeout=timeout)
             # Убираем управляющие последовательности ANSI
             output += remove_ansi_escape_codes(self.session.before)
         return output

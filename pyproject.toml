@@ -47,17 +47,18 @@ dev = [
     "black>=26.5.1",
     "pdoc>=15.0.2",
     "pylint>=4.0.5",
-    "pylint-django>=2.7.0",
+    "pylint-django>=2.8.0",
     "celery-types>=0.26.0",
-    "django-stubs>=6.0.5",
+    "django-stubs>=6.0.7",
     "djangorestframework-stubs>=3.17.0",
     "drf-yasg-stubs>=0.1.4",
-    "mypy>=2.1.0",
-    "types-paramiko>=5.0.0.20260617",
+    "mypy>=2.3.0",
+    "types-paramiko>=5.0.0.20260724",
     "types-pexpect>=4.9.0.20260518",
     "types-tabulate>=0.10.0.20260508",
-    "types-requests>=2.33.0.20260518",
+    "types-requests>=2.33.0.20260712",
     "django-extensions>=4.1",
+    "ruff>=0.16.0",
 ]
 
 [tool.ruff]
@@ -98,6 +99,13 @@ lint.ignore = [
     "W291",
     # Blank line contains whitespace
     "W293",
+    "RUF012",
+    "RUF015",
+    "C408",
+    "BLE001",
+    "TRY002",
+    "TRY004",
+    "N999",
 ]
 
 [tool.mypy]

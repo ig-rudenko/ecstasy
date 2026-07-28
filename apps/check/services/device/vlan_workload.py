@@ -54,11 +54,11 @@ class DevicesVlanWorkloadCollector:
             "devices": [],
         }
 
-        for device_info in data["devices"]:  # noqa
+        for device_info in data["devices"]:
             if device_info["group"] not in groups_names:
                 user_data["devices_count"] -= 1
             else:
-                user_data["devices"].append(device_info)  # noqa
+                user_data["devices"].append(device_info)
         return user_data
 
     def get_all_device_vlans_workload(self, from_cache=True):

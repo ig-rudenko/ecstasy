@@ -45,7 +45,7 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
         )
 
     vlan_traceroute_settings = TracerouteConfig.load()
-    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)  # noqa
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
 
     if vlan_traceroute_settings.start_device:
         devices_names = tuple(map(str.strip, vlan_traceroute_settings.start_device.split("\n")))

@@ -22,8 +22,8 @@ class Migration(migrations.Migration):
                 max_digits=9,
                 null=True,
                 validators=[
-                    django.core.validators.MinValueValidator(Decimal("-90")),
-                    django.core.validators.MaxValueValidator(Decimal("90")),
+                    django.core.validators.MinValueValidator(Decimal(-90)),
+                    django.core.validators.MaxValueValidator(Decimal(90)),
                 ],
                 verbose_name="Широта",
             ),
@@ -37,8 +37,8 @@ class Migration(migrations.Migration):
                 max_digits=9,
                 null=True,
                 validators=[
-                    django.core.validators.MinValueValidator(Decimal("-180")),
-                    django.core.validators.MaxValueValidator(Decimal("180")),
+                    django.core.validators.MinValueValidator(Decimal(-180)),
+                    django.core.validators.MaxValueValidator(Decimal(180)),
                 ],
                 verbose_name="Долгота",
             ),

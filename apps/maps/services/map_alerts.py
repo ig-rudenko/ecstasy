@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.utils import timezone
 from pyzabbix.api import ZabbixAPI
 
 
@@ -52,7 +53,9 @@ def get_host_acknowledges(zbx_session: ZabbixAPI, problem: dict) -> dict:
     acknowledges = [
         [
             ack["message"],
-            datetime.fromtimestamp(int(ack["clock"])).strftime("%H:%M %d-%m-%Y"),
+            datetime.fromtimestamp(int(ack["clock"]), tz=timezone.get_default_timezone()).strftime(
+                "%H:%M %d-%m-%Y"
+            ),
         ]
         for ack in problem["acknowledges"]
     ]

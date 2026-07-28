@@ -19,13 +19,13 @@ class LayerFrom(forms.ModelForm):
             label="Выберите группу Zabbix",
             choices=(("", "---------"), *tuple(get_zabbix_groups())),
             required=False,
-            widget=UnfoldAdminSelectWidget,  # noqa
+            widget=UnfoldAdminSelectWidget,
         )
         icons = get_icons_html_code(self.instance.points_color, self.instance.points_border_color)
         self.fields["marker_icon_name"] = forms.ChoiceField(
             label="Выберите иконку",
-            widget=UnfoldAdminRadioSelectWidget,  # noqa
-            choices=icons,  # noqa
+            widget=UnfoldAdminRadioSelectWidget,
+            choices=icons,
             initial=icons[0],
         )
 

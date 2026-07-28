@@ -257,7 +257,7 @@ class EltexLTP(BaseDevice, AbstractConfigDevice):
 
     @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
-        return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]  # noqa
+        return [(line[0], line[1], line[2], []) for line in self.get_interfaces()]
 
     @BaseDevice.lock_session
     @_validate_port(if_invalid_return=[])

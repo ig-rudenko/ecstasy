@@ -33,7 +33,7 @@ class VlanTableGatherTests(TestCase):
         VlanPort.objects.create(vlan=vlan, port="3", desc="stale")
         VlanPort.objects.create(vlan=old_vlan, port="1", desc="stale")
 
-        gather = VlanTableGather.__new__(VlanTableGather)  # noqa
+        gather = VlanTableGather.__new__(VlanTableGather)
         gather.device = self.device
         gather.table = [(10, ["1", "2", "3"], "users")]
         gather.interfaces_desc = {
@@ -64,7 +64,7 @@ class DlinkVlanParserTests(TestCase):
     @patch("devicemanager.vendors.dlink.no_clipaging", return_value=None)
     def test_get_vlan_table_expands_ranges_and_strips_port_suffixes(self, no_clipaging: MagicMock):
         """Parse D-Link show vlan output into collector table entries."""
-        device = Dlink.__new__(Dlink)  # noqa
+        device = Dlink.__new__(Dlink)
         device.lock = False  # type: ignore
 
         @contextmanager

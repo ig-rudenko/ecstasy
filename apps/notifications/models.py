@@ -99,7 +99,7 @@ class TelegramNotification(DateTimeModel):
     parse_mode = models.CharField(
         max_length=16,
         default=ParseModeChoices.HTML,
-        choices=ParseModeChoices.choices,  # noqa
+        choices=ParseModeChoices.choices,
     )
 
     active = models.BooleanField(default=True, help_text="Активно ли оповещение.")

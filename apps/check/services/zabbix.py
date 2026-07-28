@@ -106,8 +106,8 @@ def get_zabbix_host_info(device_name: str) -> dict:
             )
             if len(info) > 0:
                 return info[0]
-    except (Exception, RequestException):
-        pass
+    except (Exception, RequestException) as exc:
+        print(exc)
     return {}
 
 

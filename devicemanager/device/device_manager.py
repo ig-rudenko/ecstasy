@@ -145,9 +145,9 @@ class DeviceManager:
                     auth_obj=auth_obj,
                     make_session_global=make_session_global,
                 )
-            except BaseDeviceException as exc:
+            except BaseDeviceException:
                 if raise_exception:
-                    raise exc
+                    raise
 
     def _get_interfaces_from_history(self, with_vlans: bool):
         from apps.net_tools.models import DevicesInfo

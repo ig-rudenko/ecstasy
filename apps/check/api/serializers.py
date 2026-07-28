@@ -53,7 +53,7 @@ class DeviceCoordinatesValidationMixin:
 
         if has_latitude != has_longitude:
             raise ValidationError("Latitude and longitude must be provided together.")
-        if latitude == Decimal("0") and longitude == Decimal("0"):
+        if latitude == Decimal(0) and longitude == Decimal(0):
             raise ValidationError("Coordinates 0,0 are invalid.")
         return attrs
 

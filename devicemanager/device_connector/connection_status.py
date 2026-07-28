@@ -43,7 +43,7 @@ class ConnectionStatusStore:
         if HOST_KEY_CHANGED_MESSAGE in str(error):
             try:
                 pending_change = self._host_key_store.inspect(valid_ip, ssh_port, occurred_at)
-            except Exception as inspect_error:  # noqa: BLE001 - diagnostics must not hide the original error.
+            except Exception as inspect_error:
                 ssh_output = error.ssh_output if isinstance(error, SSHConnectionError) else ""
                 if ssh_output:
                     try:
@@ -53,7 +53,7 @@ class ConnectionStatusStore:
                             occurred_at,
                             ssh_output,
                         )
-                    except Exception as warning_error:  # noqa: BLE001 - keep the original connection error.
+                    except Exception as warning_error:
                         logger.error(
                             "Device: %s | Не удалось получить изменившийся SSH host key",
                             valid_ip,

@@ -146,7 +146,7 @@ class Extreme(BaseDevice, AbstractConfigDevice):
 
         interfaces_vlan: InterfaceVLANListType = []  # итоговый список (интерфейсы и вланы)
         for line in interfaces:
-            interfaces_vlan.append((line[0], line[1], line[2], vlan_ports_info.get(line[0], [])))  # noqa
+            interfaces_vlan.append((line[0], line[1], line[2], vlan_ports_info.get(line[0], [])))
 
         return interfaces_vlan
 

@@ -94,7 +94,7 @@ class DiscoveryRun(models.Model):
     task_id = models.CharField(max_length=255, blank=True, db_index=True, verbose_name="Celery task ID")
     status = models.CharField(
         max_length=20,
-        choices=Status.choices,  # noqa
+        choices=Status.choices,
         default=Status.PENDING,
         db_index=True,
         verbose_name="Статус",
@@ -161,13 +161,13 @@ class DiscoveryCandidate(models.Model):
     sys_object_id = models.CharField(max_length=255, blank=True, verbose_name="SNMP sysObjectID")
     source = models.CharField(
         max_length=20,
-        choices=Source.choices,  # noqa
+        choices=Source.choices,
         default=Source.PING,
         verbose_name="Источник",
     )
     status = models.CharField(
         max_length=20,
-        choices=Status.choices,  # noqa
+        choices=Status.choices,
         default=Status.NEW,
         db_index=True,
         verbose_name="Статус",
@@ -260,8 +260,8 @@ class DiscoveryAttempt(models.Model):
         verbose_name="Кандидат",
     )
     ip = models.GenericIPAddressField(protocol="ipv4", verbose_name="IP адрес")
-    method = models.CharField(max_length=20, choices=Method.choices, verbose_name="Метод")  # noqa
-    status = models.CharField(max_length=20, choices=Status.choices, verbose_name="Статус")  # noqa
+    method = models.CharField(max_length=20, choices=Method.choices, verbose_name="Метод")
+    status = models.CharField(max_length=20, choices=Status.choices, verbose_name="Статус")
     duration_ms = models.PositiveIntegerField(default=0, verbose_name="Длительность, мс")
     error = models.TextField(blank=True, verbose_name="Ошибка")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")

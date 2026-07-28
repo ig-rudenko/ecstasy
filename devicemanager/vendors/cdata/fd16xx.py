@@ -133,7 +133,7 @@ class CDataFD16XXDevice(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
                 r"(?<=access|llowed) vlan [ad\s]*(\S*\d)",
                 intf_config,
             )
-            result.append((line[0], line[1], line[2], vlans_group))  # noqa
+            result.append((line[0], line[1], line[2], vlans_group))
 
         return result
 
