@@ -185,9 +185,7 @@
                             class="rounded-2xl"
                             :class="!formState.secondStep.person.surname.valid ? 'p-invalid' : ''"
                         />
-                        <InlineMessage v-if="customerFirstNameError" severity="error">{{
-                            customerFirstNameError
-                        }}</InlineMessage>
+                        <Message v-if="customerFirstNameError" severity="error">{{ customerFirstNameError }}</Message>
                     </div>
 
                     <div class="input-part">
@@ -202,9 +200,7 @@
                             class="rounded-2xl"
                             :class="!formState.secondStep.person.firstName.valid ? 'p-invalid' : ''"
                         />
-                        <InlineMessage v-if="customerSurnameError" severity="error">{{
-                            customerSurnameError
-                        }}</InlineMessage>
+                        <Message v-if="customerSurnameError" severity="error">{{ customerSurnameError }}</Message>
                     </div>
 
                     <div class="input-part">
@@ -219,9 +215,7 @@
                             class="rounded-2xl"
                             :class="!formState.secondStep.person.lastName.valid ? 'p-invalid' : ''"
                         />
-                        <InlineMessage v-if="customerLastNameError" severity="error">{{
-                            customerLastNameError
-                        }}</InlineMessage>
+                        <Message v-if="customerLastNameError" severity="error">{{ customerLastNameError }}</Message>
                     </div>
                 </div>
 
@@ -239,9 +233,9 @@
                             class="rounded-2xl"
                             :class="!formState.secondStep.companyName.valid ? 'p-invalid' : ''"
                         />
-                        <InlineMessage v-if="customerCompanyNameError" severity="error"
+                        <Message v-if="customerCompanyNameError" severity="error"
                             >{{ customerCompanyNameError }}
-                        </InlineMessage>
+                        </Message>
                     </div>
                 </div>
 
@@ -259,9 +253,7 @@
                             class="rounded-2xl"
                             :class="!formState.secondStep.contract.valid ? 'p-invalid' : ''"
                         />
-                        <InlineMessage v-if="customerContractError" severity="error">{{
-                            customerContractError
-                        }}</InlineMessage>
+                        <Message v-if="customerContractError" severity="error">{{ customerContractError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 flex items-center gap-1 pb-2">
@@ -276,7 +268,7 @@
                             style="width: 100%"
                             type="number"
                         />
-                        <InlineMessage v-if="transitError" severity="error">{{ transitError }}</InlineMessage>
+                        <Message v-if="transitError" severity="error">{{ transitError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">Контактный номер</div>
@@ -290,16 +282,14 @@
                                 :class="!formState.secondStep.phone.valid ? 'p-invalid' : ''"
                                 mask="+7 (999) 999-99-99"
                             />
-                            <InlineMessage v-if="customerPhoneError" severity="error">{{
-                                customerPhoneError
-                            }}</InlineMessage>
+                            <Message v-if="customerPhoneError" severity="error">{{ customerPhoneError }}</Message>
                         </div>
                     </div>
                 </div>
 
                 <div class="p-2">Выберите услуги</div>
 
-                <InlineMessage v-if="servicesError" severity="error">{{ servicesError }}</InlineMessage>
+                <Message v-if="servicesError" severity="error">{{ servicesError }}</Message>
                 <div class="flex flex-wrap gap-4 p-2">
                     <div class="flex items-center gap-2 select-none">
                         <Checkbox
@@ -345,9 +335,7 @@
                         :allow-create="true"
                         :is-mobile="isMobile"
                     />
-                    <InlineMessage v-if="connectionAddressError" severity="error">{{
-                        connectionAddressError
-                    }}</InlineMessage>
+                    <Message v-if="connectionAddressError" severity="error">{{ connectionAddressError }}</Message>
                 </div>
 
                 <div class="flex flex-wrap">
@@ -363,7 +351,7 @@
                             class="rounded-2xl"
                             :class="formState.thirdStep.ont_id.valid ? [] : ['p-invalid']"
                         />
-                        <InlineMessage v-if="ontIDError" severity="error">{{ ontIDError }}</InlineMessage>
+                        <Message v-if="ontIDError" severity="error">{{ ontIDError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">Серийный номер ONT</div>
@@ -373,7 +361,7 @@
                             style="width: 100%"
                             class="rounded-2xl"
                         />
-                        <InlineMessage v-if="ontSerialError" severity="error">{{ ontSerialError }}</InlineMessage>
+                        <Message v-if="ontSerialError" severity="error">{{ ontSerialError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">MAC адрес ONT</div>
@@ -383,7 +371,7 @@
                             style="width: 100%"
                             class="rounded-2xl"
                         />
-                        <InlineMessage v-if="ontMACError" severity="error">{{ ontMACError }}</InlineMessage>
+                        <Message v-if="ontMACError" severity="error">{{ ontMACError }}</Message>
                     </div>
                 </div>
 
@@ -391,7 +379,7 @@
                     <div class="input-part">
                         <div class="px-2 pb-2">IP Адрес</div>
                         <InputText v-model.trim="formData.ip" type="text" style="width: 100%" class="rounded-2xl" />
-                        <InlineMessage v-if="ontIPError" severity="error">{{ ontIPError }}</InlineMessage>
+                        <Message v-if="ontIPError" severity="error">{{ ontIPError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">Номер наряда</div>
@@ -401,7 +389,7 @@
                             style="width: 100%"
                             class="rounded-2xl"
                         />
-                        <InlineMessage v-if="orderError" severity="error">{{ orderError }}</InlineMessage>
+                        <Message v-if="orderError" severity="error">{{ orderError }}</Message>
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">Дата подключения</div>
@@ -415,9 +403,7 @@
                             input-class="rounded-l-2xl"
                             style="width: 100%"
                         />
-                        <InlineMessage v-if="connectedDatetimeError" severity="error">{{
-                            connectedDatetimeError
-                        }}</InlineMessage>
+                        <Message v-if="connectedDatetimeError" severity="error">{{ connectedDatetimeError }}</Message>
                     </div>
                 </div>
 

@@ -4,8 +4,6 @@
         class="sm:rounded-4xl border-y sm:border border-gray-200/70 bg-white/80 p-4 backdrop-blur transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-6"
     >
         <div class="flex flex-col gap-5">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Traceroute</h2>
-
             <div
                 class="rounded-2xl border border-gray-200/80 bg-gray-50/70 p-3 dark:border-gray-700/80 dark:bg-gray-800/40"
             >
@@ -50,6 +48,13 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-[auto_1fr_1fr_auto] lg:items-end">
+                <TracerouteCommonOptions
+                    :options="options"
+                    :show-nodes-only="true"
+                    @update:option="(key, value) => $emit('update:option', key, value)"
+                />
             </div>
 
             <div class="flex flex-wrap gap-3">
@@ -110,14 +115,6 @@
                         По умолчанию сомнительные связи помечаются пунктиром
                     </span>
                 </div>
-            </div>
-
-            <div class="grid gap-3 lg:grid-cols-[auto_1fr_1fr_auto] lg:items-end">
-                <TracerouteCommonOptions
-                    :options="options"
-                    :show-nodes-only="true"
-                    @update:option="(key, value) => $emit('update:option', key, value)"
-                />
             </div>
         </div>
     </section>

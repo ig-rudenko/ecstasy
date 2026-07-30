@@ -6,7 +6,7 @@
             <div class="pl-4">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Визуализация</div>
                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Граф связей или географическая карта по координатам Zabbix
+                    Граф связей или географическая карта по координатам
                 </div>
             </div>
             <div

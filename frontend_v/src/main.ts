@@ -16,7 +16,6 @@ import {
     IconField,
     IftaLabel,
     Image,
-    InlineMessage,
     InputGroup,
     InputGroupAddon,
     InputIcon,
@@ -72,7 +71,6 @@ app.component("Divider", Divider);
 app.component("Drawer", Drawer);
 app.component("IconField", IconField);
 app.component("IftaLabel", IftaLabel);
-app.component("InlineMessage", InlineMessage);
 app.component("InputGroup", InputGroup);
 app.component("InputGroupAddon", InputGroupAddon);
 app.component("InputIcon", InputIcon);

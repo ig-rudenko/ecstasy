@@ -19,7 +19,7 @@
                         <InputText
                             :model-value="input.mac"
                             placeholder="AA:BB:CC:DD:EE:FF"
-                            class="w-full rounded-2xl! font-mono! bg-white/95! text-gray-900! dark:bg-gray-950/60! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
+                            class="w-full rounded-2xl text-center font-mono bg-white/95! text-gray-900! dark:bg-gray-950/60! dark:text-gray-100! border-gray-200/80! dark:border-gray-700/60!"
                             @update:model-value="$emit('update:mac', String($event ?? ''))"
                             @keyup.enter="$emit('load')"
                         />
@@ -36,7 +36,7 @@
                             :min="1"
                             :max="4096"
                             class="block w-full"
-                            input-class="!w-full rounded-2xl! text-center! font-mono! bg-white/95! dark:!bg-gray-950/60 !text-gray-900 dark:!text-gray-100 !border-gray-200/80 dark:!border-gray-700/60"
+                            input-class="w-full rounded-2xl text-center font-mono bg-white/95! dark:!bg-gray-950/60 !text-gray-900 dark:!text-gray-100 !border-gray-200/80 dark:!border-gray-700/60"
                             @update:model-value="$emit('update:mac-vlan-filter', $event as number | null)"
                         />
                     </div>

@@ -80,8 +80,11 @@ const {
     <main class="mx-auto sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
-                class="sm:border border-gray-200/70 bg-white/80 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.35)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:rounded-4xl sm:p-7"
+                class="sm:p-7 sm:rounded-4xl sm:border border-gray-200/70 bg-white/70 backdrop-blur relative overflow-hidden transition hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
             >
+                <div
+                    class="pointer-events-none absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-blue-500/10"
+                />
                 <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
                     <div class="pb-4">
                         <div class="flex items-center gap-3 md:gap-6">
