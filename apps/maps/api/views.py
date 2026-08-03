@@ -3,10 +3,10 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from ..models import Maps
+from ..models import Maps, TileLayer
 from ..services.maps import get_map_layers_geo_data, get_zabbix_problems_on_map
-from .permissions import MapPermission
-from .serializers import MapDetailSerializer, MapLayerSerializer, MapSerializer
+from .permissions import CanViewMapsPermission, MapPermission
+from .serializers import MapDetailSerializer, MapLayerSerializer, MapSerializer, TileLayerSerializer
 from .swagger.schemas import map_layers_render_api_doc, map_update_layers_api_doc
 
 
@@ -23,6 +23,13 @@ class MapListAPIView(generics.ListAPIView):
 class MapRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Maps.objects.all()
     serializer_class = MapDetailSerializer
+
+
+class TileLayerListAPIView(generics.ListAPIView):
+    queryset = TileLayer.objects.all()
+    permission_classes = [IsAuthenticated, CanViewMapsPermission]
+    serializer_class = TileLayerSerializer
+    pagination_class = None
 
 
 class MapLayersListAPIView(generics.RetrieveAPIView):

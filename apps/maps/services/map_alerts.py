@@ -3,7 +3,10 @@ from datetime import datetime
 from django.utils import timezone
 from pyzabbix.api import ZabbixAPI
 
+from ecstasy_project.decorators import cached
 
+
+@cached(20, key=lambda _, group: f"zabbix:group_problems:{group}")
 def get_group_problems(zbx_session: ZabbixAPI, zabbix_group_name: str) -> list[dict]:
     """
     Эта функция возвращает список проблем для данной группы хостов Zabbix, если она существует.

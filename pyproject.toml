@@ -61,9 +61,14 @@ dev = [
     "ruff>=0.16.0",
 ]
 
+[tool.uv]
+package = false
+
 [tool.ruff]
 line-length = 120
-lint.extend-select = [
+
+[tool.ruff.lint]
+select = [
     # pycodestyle
     "E",
     "W",
@@ -86,7 +91,7 @@ lint.extend-select = [
     # flake8-builtins
     "A",
 ]
-lint.ignore = [
+ignore = [
     # Line too long
     "E501",
     # Functions with a high complexity

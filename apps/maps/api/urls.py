@@ -6,6 +6,7 @@ from .views import (
     MapLayersListAPIView,
     MapListAPIView,
     MapRetrieveAPIView,
+    TileLayerListAPIView,
     UpdateInteractiveMapAPIView,
 )
 
@@ -15,6 +16,7 @@ app_name = "maps-api"
 
 urlpatterns = [
     path("", MapListAPIView.as_view()),
+    path("tile-layers/", TileLayerListAPIView.as_view(), name="tile-layers"),
     path("<int:pk>", MapRetrieveAPIView.as_view()),
     path("layers/", LayerListView.as_view()),
     path("layers/<int:pk>/", LayerUpdateView.as_view()),

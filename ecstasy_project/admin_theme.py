@@ -247,6 +247,7 @@ def sidebar_navigation(request) -> list:
             "items": [
                 model_link("Карты", "map", "maps", "maps", perms),
                 model_link("Слои", "layers", "maps", "layers", perms),
+                model_link("Tiles", "layers", "maps", "tilelayer", perms),
             ],
         },
         {

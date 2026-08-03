@@ -18,3 +18,10 @@ class LayerModelPermission(BasePermission):
         if request.method == "DELETE":
             return request.user.is_authenticated and request.user.has_perm("maps.delete_layers")
         return request.user.is_authenticated and request.user.has_perm("maps.view_layers")
+
+
+class CanViewMapsPermission(BasePermission):
+    def has_permission(self, request, view):
+        """Проверить право просмотра карт."""
+
+        return request.user.is_authenticated and request.user.has_perm("accounting.can_view_maps")
