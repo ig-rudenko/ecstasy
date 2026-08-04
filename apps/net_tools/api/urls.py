@@ -6,8 +6,8 @@ from ..api import views
 
 urlpatterns = [
     path("interfaces-finder", views.InterfaceFinderAPIView.as_view()),
-    path("traceroute", views.get_traceroute),
-    path("traceroute-map", views.get_traceroute_map),
+    path("traceroute", views.TracerouteAPIView.as_view()),
+    path("traceroute-map", views.TracerouteMapAPIView.as_view()),
     path("vlan-desc", views.VlanNameAPIView.as_view()),
     path("mac-vendor/<mac>", views.GetVendorByMacAPIView.as_view()),
     path("ip-mac-info/<ip_or_mac>", views.ARPSearchAPIView.as_view()),
