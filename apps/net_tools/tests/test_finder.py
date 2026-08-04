@@ -62,7 +62,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
         """Трассировка рекурсивно обходит связанный подграф."""
         finder = self._make_finder()
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -81,7 +81,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
         """Device-name filter limits edges found after the root queryset is selected."""
         finder = self._make_finder()
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -107,7 +107,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             ]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -129,7 +129,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -149,7 +149,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=[98, 99, 100, 101, 102])]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -172,7 +172,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=[100])]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -196,7 +196,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth2", status="up", desc="dev-a", vlan=list(range(90, 111)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -269,7 +269,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=scattered_vlans)]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=1944,
             empty_ports=False,
@@ -291,7 +291,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,

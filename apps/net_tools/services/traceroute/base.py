@@ -265,7 +265,7 @@ class Traceroute:
             or filter_value in interface_desc.casefold()
         )
 
-    def find_vlan(
+    def execute(
         self,
         device: str,
         vlan_to_find: int | None,
@@ -384,7 +384,7 @@ class Traceroute:
 
             # Проверка наличия следующего устройства в списке пройденных устройств.
             if next_device and next_device not in self.passed_devices:
-                self.find_vlan(
+                self.execute(
                     device=next_device,
                     vlan_to_find=vlan_to_find,
                     empty_ports=empty_ports,
@@ -638,8 +638,7 @@ class MultipleTraceroute:
                 continue
 
             self._finder.reset_state()
-            # Трассировка vlan
-            self._finder.find_vlan(
+            self._finder.execute(
                 device=device_name,
                 vlan_to_find=vlan,
                 empty_ports=empty_ports,

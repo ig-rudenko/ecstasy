@@ -62,7 +62,7 @@
             :model-value="options.nodesOnly"
             @update:model-value="$emit('update:option', 'nodesOnly', $event)"
         />
-        <span>Only network nodes</span>
+        <span>Только узлы сети</span>
     </label>
 </template>
 
