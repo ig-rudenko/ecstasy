@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import IO
 
 from django.conf import settings
+from django.utils import timezone
 
 from apps.check.models import Devices
 
@@ -100,7 +101,7 @@ class LocalConfigStorage(ConfigStorage):
                 ConfigFile(
                     name=file.name,
                     size=stats.st_size,  # Размер в байтах
-                    modTime=datetime.fromtimestamp(stats.st_mtime).strftime(
+                    modTime=datetime.fromtimestamp(stats.st_mtime, tz=timezone.get_default_timezone()).strftime(
                         "%H:%M %d.%m.%Y"  # Время последней модификации
                     ),
                     path=file.absolute(),

@@ -40,7 +40,7 @@ def register_task(*args, **kwargs) -> None:
     # pylint: disable-next=import-outside-toplevel
     from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
-    from .tasks import cleanup_discovery_runs_task
+    from .tasks import cleanup_discovery_candidate_task, cleanup_discovery_runs_task
 
     crontab, _ = CrontabSchedule.objects.get_or_create(
         minute="30",
@@ -53,7 +53,19 @@ def register_task(*args, **kwargs) -> None:
             "crontab": crontab,
             "kwargs": '{"retention_days": 14}',
             "enabled": True,
-            "description": "Удаляет старые discovery. "
+            "description": "Удаляет старые discovery runs. "
             "В аргументе указывается кол-во дней, старше которых discovery будут удалены.",
+        },
+    )
+    PeriodicTask.objects.get_or_create(
+        name="Очистка старых discovery candidates",
+        defaults={
+            "task": cleanup_discovery_candidate_task.name,
+            "crontab": crontab,
+            "kwargs": '{"retention_days": 14}',
+            "enabled": False,
+            "description": "Удаляет старые discovery candidates. "
+            "В аргументе указывается кол-во дней, старше которых были обнаружены discovery candidates, "
+            "они будут удалены.",
         },
     )

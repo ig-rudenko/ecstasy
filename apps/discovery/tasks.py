@@ -2,7 +2,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import timedelta
 
-from celery import shared_task
+from celery import Task, shared_task
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from .models import DiscoveryAttempt, DiscoveryCandidate, DiscoveryProfile, DiscoveryRun
@@ -46,7 +47,7 @@ def run_discover_profile(dis_prof_id: int):
 
 
 @shared_task(bind=True)
-def discovery_run_task(self, run_id: int, networks_override: list[str] | None = None) -> dict:
+def discovery_run_task(self: Task, run_id: int, networks_override: list[str] | None = None) -> dict:
     """Выполнить auto discovery run в фоне."""
 
     run = (
@@ -119,7 +120,7 @@ def discovery_run_task(self, run_id: int, networks_override: list[str] | None = 
 
             fingerprint, fingerprint_attempts = DeviceFingerprinter(
                 profile,
-                auth_groups=auth_groups,
+                auth_groups=auth_groups,  # noqa
                 include_cli=True,
             ).collect(
                 ip,
@@ -263,19 +264,33 @@ def build_task_result(run: DiscoveryRun) -> dict:
     }
 
 
-@shared_task(name="cleanup_discovery_runs_task")
-def cleanup_discovery_runs_task(retention_days: int) -> dict:
-    """Удалить старые завершенные discovery runs вместе с attempts."""
+def _cleanup_discovery_objects(
+    retention_days: int, dt_field: str, qs: QuerySet[DiscoveryRun | DiscoveryCandidate]
+) -> dict[str, int]:
+    """Удалить переданный QuerySet"""
 
     retention_days = int(retention_days)
     if retention_days < 1:
         raise ValueError("retention_days must be positive")
 
     cutoff = timezone.now() - timedelta(days=retention_days)
-    old_runs = DiscoveryRun.objects.filter(status__in=FINISHED_DISCOVERY_STATUSES, finished_at__lt=cutoff)
-    deleted_runs = old_runs.count()
-    old_runs.delete()
+
+    deleted_count, _ = qs.filter(**{f"{dt_field}__lt": cutoff}).delete()
     return {
-        "deletedRuns": deleted_runs,
+        "deletedCount": deleted_count,
         "retentionDays": retention_days,
     }
+
+
+@shared_task(name="cleanup_discovery_runs_task")
+def cleanup_discovery_runs_task(retention_days: int) -> dict:
+    """Удалить старые завершенные discovery runs вместе с attempts."""
+    qs = DiscoveryRun.objects.filter(status__in=FINISHED_DISCOVERY_STATUSES)
+    return _cleanup_discovery_objects(retention_days, "finished_at", qs)
+
+
+@shared_task(name="cleanup_discovery_candidate_task")
+def cleanup_discovery_candidate_task(retention_days: int) -> dict:
+    """Удалить старые завершенные discovery candidate."""
+    qs = DiscoveryCandidate.objects.all()
+    return _cleanup_discovery_objects(retention_days, "first_seen_at", qs)

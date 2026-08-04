@@ -339,7 +339,7 @@ class MultipleTracerouteTestCase(SimpleTestCase):
                 self.result = []
                 self.passed_devices = set()
 
-            def find_vlan(self, **kwargs) -> None:
+            def execute(self, **kwargs) -> None:
                 """Имитирует обход компоненты dev-a -> dev-b."""
                 self.calls.append(kwargs["device"])
                 self.passed_devices.update({"dev-a", "dev-b"})

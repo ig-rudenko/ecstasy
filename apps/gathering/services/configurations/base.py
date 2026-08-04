@@ -21,7 +21,7 @@ class ConfigFile:
     def __bool__(self):
         return bool(self.name)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             raise TypeError(
                 f"Проверять на равенство можно только такой же тип класса: {self.__class__}, а не {other.__class__}"
