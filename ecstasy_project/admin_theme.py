@@ -181,7 +181,9 @@ def sidebar_navigation(request) -> list:
                 model_link("Users profiles", "badge", "check", "profile", perms),
                 model_link("Users actions", "history", "check", "usersactions", perms),
                 model_link("BRAS", "dns", "check", "bras", perms),
-                model_link("Bulk device command executions", "memory", "check", "bulkdevicecommandexecution", perms),
+                model_link(
+                    "Bulk device command executions", "memory", "check", "bulkdevicecommandexecution", perms
+                ),
                 model_link(
                     "Bulk command execution results",
                     "memory",
@@ -264,7 +266,9 @@ def sidebar_navigation(request) -> list:
             "collapsible": True,
             "items": [
                 model_link("VLAN names", "label", "net_tools", "vlanname", perms),
-                model_link("Vlan traceroute desc name formats", "text_fields", "net_tools", "descnameformat", perms),
+                model_link(
+                    "Vlan traceroute desc name formats", "text_fields", "net_tools", "descnameformat", perms
+                ),
             ],
         },
         {
@@ -281,7 +285,9 @@ def sidebar_navigation(request) -> list:
                 ),
                 model_link("Traceroute", "route", "app_settings", "tracerouteconfig", perms),
                 model_link("Traceroute node kind", "lan", "net_tools", "traceroutenodekind", perms),
-                model_link("Traceroute node style rules", "lan", "net_tools", "traceroutenodestylerule", perms),
+                model_link(
+                    "Traceroute node style rules", "lan", "net_tools", "traceroutenodestylerule", perms
+                ),
                 model_link("Access rings", "tune", "app_settings", "accessringsettings", perms),
                 model_link("Elastic", "article", "app_settings", "logselasticstacksettings", perms),
                 model_link("Zabbix API", "monitor_heart", "app_settings", "zabbixconfig", perms),
