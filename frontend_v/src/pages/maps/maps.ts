@@ -3,7 +3,6 @@ import {
     CircleMarker,
     circleMarker,
     Control,
-    CRS,
     divIcon,
     featureGroup,
     GeoJSON,
@@ -16,13 +15,18 @@ import {
     marker,
     polygon,
     polyline,
-    tileLayer,
 } from "leaflet";
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
 import { Paginator } from "@/types/paginator";
 import { errorToast } from "@/services/my.toast";
+import {
+    createDefaultTileLayer,
+    defaultTileLayerCrs,
+    getLeafletTileLayerCrs,
+    LeafletTileLayerManager,
+} from "@/services/mapTiles";
 import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
 import { loadLayers, saveLayers } from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
@@ -87,25 +91,13 @@ interface StaticElementData {
     element?: any;
 }
 
-type TileLayerCrs = "EPSG:3857" | "EPSG:3395" | "EPSG:4326";
-
-interface MapTileLayer {
-    name: string;
-    url: string;
-    crs: TileLayerCrs;
-}
-
 const popupDefaultOptions = { maxWidth: Math.min(1200, window.innerWidth - 100) };
 const defaultMapZoom = 12;
 const renderBatchSize = 250;
 const viewportPadding = 0.2;
 const spatialCellSize = 0.25;
-const osmLayerName = "Open Street Map";
-const defaultTileLayerCrs: TileLayerCrs = "EPSG:3857";
 
 export type MapsPage = Paginator<MapBrief>;
-
-const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 
 /**
  * Загружает подробные данные карты.
@@ -120,21 +112,6 @@ export async function getMapDetail(mapID: string): Promise<MapDetail | null> {
     } catch (error: any) {
         errorToast("Не удалось загрузить карту", errorFmt(error));
         return null;
-    }
-}
-
-/**
- * Загружает список подложек географических карт.
- *
- * @returns Список подложек или пустой список при ошибке.
- */
-export async function getMapTileLayers(): Promise<MapTileLayer[]> {
-    try {
-        const resp = await api.get<MapTileLayer[]>("/api/v1/maps/tile-layers/");
-        return resp.data;
-    } catch (error: any) {
-        errorToast("Не удалось загрузить подложки карт", errorFmt(error));
-        return [];
     }
 }
 
@@ -153,29 +130,31 @@ export class MapService {
     private visiblePointIds: Set<string> = new Set();
     private visibleStaticElementIds: Set<string> = new Set();
     private pointsBySourceId: Map<string, PointData[]> = new Map();
-    private tileLayerCrs: Map<Layer, TileLayerCrs> = new Map([[osm, defaultTileLayerCrs]]);
-    private activeTileLayerName = osmLayerName;
+    private tileLayerManager: LeafletTileLayerManager;
     private initialViewReady = false;
 
     constructor(
         public mapID: string,
         public mapHTMLElementID: string
     ) {
+        const defaultTileLayer = createDefaultTileLayer();
         this.map = new LMap(mapHTMLElementID, {
-            layers: [osm],
+            layers: [defaultTileLayer],
             minZoom: 5,
             preferCanvas: true,
-            crs: getLeafletCrs(defaultTileLayerCrs),
+            crs: getLeafletTileLayerCrs(defaultTileLayerCrs),
         });
+        this.tileLayerManager = new LeafletTileLayerManager(this.map, defaultTileLayer, undefined, () =>
+            this.queueVisibilityRefresh()
+        );
         this.map.attributionControl.getContainer()?.remove();
         this.map.addControl(new Control.Scale());
         this.map.on("baselayerchange", (event: LayersControlEvent) => {
-            this.activeTileLayerName = event.name;
-            this.applyTileLayerCrs(event.layer);
-            saveLayers(this.mapID, this.map, this.overlays, this.activeTileLayerName);
+            this.tileLayerManager.selectTileLayer(event.name, event.layer);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
         });
         this.map.on("overlayadd", (event: LayersControlEvent) => {
-            saveLayers(this.mapID, this.map, this.overlays, this.activeTileLayerName);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
 
             if (this.initialViewReady) {
                 this.fitMapToLayer(event.name);
@@ -184,7 +163,7 @@ export class MapService {
             this.queueVisibilityRefresh();
         });
         this.map.on("overlayremove", () => {
-            saveLayers(this.mapID, this.map, this.overlays, this.activeTileLayerName);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
             this.queueVisibilityRefresh();
         });
         this.map.on("moveend zoomend", () => this.queueVisibilityRefresh());
@@ -228,10 +207,9 @@ export class MapService {
             })
         );
 
-        const savedState = loadLayers(this.mapID, this.map, this.overlays, tileLayers);
+        const savedState = loadLayers(this.mapID, this.map, this.overlays);
         if (savedState.tiles && tileLayers[savedState.tiles]) {
-            this.activeTileLayerName = savedState.tiles;
-            this.applyTileLayerCrs(tileLayers[savedState.tiles]);
+            this.tileLayerManager.restoreTileLayer(tileLayers, savedState.tiles);
         }
     }
 
@@ -241,43 +219,12 @@ export class MapService {
      * @returns Слои подложек для Leaflet control.
      */
     private async getTileLayers(): Promise<LayersObject> {
-        const baseLayers: LayersObject = { [osmLayerName]: osm };
-        const tileLayers = await getMapTileLayers();
-
-        for (let i = 0; i < tileLayers.length; i++) {
-            const layer = tileLayer(tileLayers[i].url);
-            baseLayers[tileLayers[i].name] = layer;
-            this.tileLayerCrs.set(layer, normalizeTileLayerCrs(tileLayers[i].crs));
+        try {
+            return await this.tileLayerManager.getTileLayers();
+        } catch (error: any) {
+            errorToast("Не удалось загрузить подложки карт", errorFmt(error));
+            return this.tileLayerManager.getDefaultTileLayers();
         }
-
-        return baseLayers;
-    }
-
-    /**
-     * Применяет CRS выбранной подложки.
-     *
-     * @param layer - Выбранная подложка.
-     */
-    private applyTileLayerCrs(layer: Layer) {
-        const crs = this.tileLayerCrs.get(layer) || defaultTileLayerCrs;
-        const leafletCrs = getLeafletCrs(crs);
-
-        if (this.map.options.crs === leafletCrs) {
-            return;
-        }
-
-        this.map.options.crs = leafletCrs;
-
-        if (!(this.map as LMap & { _loaded?: boolean })._loaded) {
-            (layer as { redraw?: () => void }).redraw?.();
-            return;
-        }
-
-        const center = this.map.getCenter();
-        const zoom = this.map.getZoom();
-        this.map.setView(center, zoom, { animate: false });
-        (layer as { redraw?: () => void }).redraw?.();
-        this.queueVisibilityRefresh();
     }
 
     /**
@@ -1171,38 +1118,6 @@ function escapeHtml(value: unknown) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-}
-
-/**
- * Возвращает поддерживаемую клиентом CRS подложки.
- *
- * @param crs - CRS из API.
- * @returns Поддерживаемая CRS.
- */
-function normalizeTileLayerCrs(crs: string): TileLayerCrs {
-    if (crs === "EPSG:3395") {
-        return "EPSG:3395";
-    } else if (crs === "EPSG:4326") {
-        return "EPSG:4326";
-    }
-
-    return "EPSG:3857";
-}
-
-/**
- * Преобразует имя CRS в объект Leaflet.
- *
- * @param crs - CRS подложки.
- * @returns CRS Leaflet.
- */
-function getLeafletCrs(crs: TileLayerCrs) {
-    if (crs === "EPSG:3395") {
-        return CRS.EPSG3395;
-    } else if (crs === "EPSG:4326") {
-        return CRS.EPSG4326;
-    }
-
-    return CRS.EPSG3857;
 }
 
 /**

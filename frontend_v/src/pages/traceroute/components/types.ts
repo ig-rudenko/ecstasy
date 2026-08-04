@@ -11,12 +11,10 @@ export interface VlanTracerouteOptions {
     deviceNameFilter: string;
     groupFilter: string;
     nodesOnly: boolean;
-    maximized: boolean;
     rendered: boolean;
 }
 
 export interface MacTracerouteOptions {
-    maximized: boolean;
     rendered: boolean;
     vlanFilter: number | null;
 }

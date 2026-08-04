@@ -3,10 +3,7 @@
         class="relative min-h-120 overflow-hidden sm:rounded-4xl sm:border border-gray-700 bg-neutral-950 shadow-inner"
         :class="maximized ? 'overflow-visible! rounded-none! border-0 shadow-none min-h-0 bg-transparent' : ''"
     >
-        <div
-            v-show="mode !== 'mac'"
-            :class="['relative h-150 min-h-120 sm:h-225', vlanMaximized ? 'maximized-shell' : '']"
-        >
+        <div v-show="mode !== 'mac'" :class="['relative h-150 min-h-120 sm:h-225', maximized ? 'maximized-shell' : '']">
             <div v-if="vlanRendered" class="absolute! top-3 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto">
                 <InputText
                     :model-value="graphNodeSearch"
@@ -44,11 +41,11 @@
             <Button
                 v-if="vlanRendered"
                 class="absolute! z-101 top-3 right-6"
-                :icon="vlanMaximized ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center' : 'pi pi-expand'"
+                :icon="maximized ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center' : 'pi pi-expand'"
                 rounded
                 severity="secondary"
-                v-tooltip.bottom="vlanMaximized ? 'Выйти из полного экрана' : 'На весь экран'"
-                @click="$emit('toggle-maximize-vlan')"
+                v-tooltip.bottom="maximized ? 'Выйти из полного экрана' : 'На весь экран'"
+                @click="$emit('toggle-maximize')"
             />
             <div
                 v-if="graphRenderLoading && mode !== 'mac'"
@@ -59,13 +56,10 @@
                     <span>{{ graphRenderProgress }}%</span>
                 </div>
             </div>
-            <div id="vlan-network" :class="['min-h-120 h-full w-full', vlanMaximized ? 'maximized' : '']" />
+            <div id="vlan-network" :class="['min-h-120 h-full w-full', maximized ? 'maximized' : '']" />
         </div>
 
-        <div
-            v-show="mode === 'mac'"
-            :class="['relative h-150 min-h-120 sm:h-225', macMaximized ? 'maximized-shell' : '']"
-        >
+        <div v-show="mode === 'mac'" :class="['relative h-150 min-h-120 sm:h-225', maximized ? 'maximized-shell' : '']">
             <div v-if="macRendered" class="absolute! top-6 right-30 left-3 z-101 flex items-center gap-2 sm:left-auto">
                 <InputText
                     :model-value="graphNodeSearch"
@@ -102,11 +96,11 @@
             <Button
                 v-if="macRendered"
                 class="absolute! z-101 top-6 right-6 rounded-xl!"
-                :icon="macMaximized ? 'pi pi-times' : 'pi pi-expand'"
+                :icon="maximized ? 'pi pi-times' : 'pi pi-expand'"
                 rounded
                 severity="secondary"
-                v-tooltip.bottom="macMaximized ? 'Выйти из полного экрана' : 'На весь экран'"
-                @click="$emit('toggle-maximize-mac')"
+                v-tooltip.bottom="maximized ? 'Выйти из полного экрана' : 'На весь экран'"
+                @click="$emit('toggle-maximize')"
             />
             <div
                 v-if="graphRenderLoading && mode === 'mac'"
@@ -117,7 +111,7 @@
                     <span>{{ graphRenderProgress }}%</span>
                 </div>
             </div>
-            <div id="mac-network" :class="['min-h-120 h-full w-full', macMaximized ? 'maximized' : '']" />
+            <div id="mac-network" :class="['min-h-120 h-full w-full', maximized ? 'maximized' : '']" />
         </div>
     </section>
 </template>
@@ -129,8 +123,6 @@ defineProps<{
     mode: TracerouteMode;
     vlanRendered: boolean;
     macRendered: boolean;
-    vlanMaximized: boolean;
-    macMaximized: boolean;
     maximized: boolean;
     graphNodeSearch: string;
     graphSearchMatchesCount: number;
@@ -144,8 +136,7 @@ defineEmits<{
     "update:graphNodeSearch": [value: string];
     "focus-node": [];
     "toggle-physics": [];
-    "toggle-maximize-vlan": [];
-    "toggle-maximize-mac": [];
+    "toggle-maximize": [];
 }>();
 </script>
 

@@ -72,25 +72,13 @@ export function saveLayers(mapID: string, map: LMap, overlays: LayersObject, til
 }
 
 /**
- * Функция loadLayers() используется для восстановления состояния активных слоев и подложки из localStorage.
+ * Функция loadLayers() используется для восстановления состояния активных слоев из localStorage.
  * Он извлекает состояние карты, используя имя ключа, которое включает путь к текущей странице.
  * Если в localStorage сохранены активные слои, он перебирает все наложения в объекте `layer_control` и добавляет
  * на карту наложения, находящиеся в массиве groups, и удаляет с карты наложения, которых нет в массиве groups. */
-export function loadLayers(
-    mapID: string,
-    map: LMap,
-    overlays: LayersObject,
-    tileLayers?: LayersObject
-): MapStorageState {
+export function loadLayers(mapID: string, map: LMap, overlays: LayersObject): MapStorageState {
     let keyName = getKeyName(mapID);
     let state = parseMapStorageState(localStorage.getItem(keyName));
-
-    if (state.tiles && tileLayers?.[state.tiles]) {
-        for (let name in tileLayers) {
-            map.removeLayer(tileLayers[name]);
-        }
-        map.addLayer(tileLayers[state.tiles]);
-    }
 
     if (state.groups.length) {
         for (let name in overlays) {

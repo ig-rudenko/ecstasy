@@ -93,18 +93,25 @@ import {
     latLngBounds,
     Map as LMap,
     polyline,
-    tileLayer,
     type CircleMarker,
     type FeatureGroup,
     type LatLngExpression,
+    type LayersControlEvent,
     type MarkerClusterGroup,
     type Marker,
     type Polyline,
-    type TileLayer,
 } from "leaflet";
 import * as Leaflet from "leaflet";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import api from "@/services/api";
+import {
+    createDefaultTileLayer,
+    defaultTileLayerCrs,
+    defaultTileLayerName,
+    getLeafletTileLayerCrs,
+    LeafletTileLayerManager,
+    type TileLayersObject,
+} from "@/services/mapTiles";
 import type { TracerouteMapData, TracerouteMapEdge, TracerouteMapNode } from "./types";
 import {
     createEdgePopup,
@@ -116,11 +123,14 @@ import {
 
 const props = defineProps<{
     data: TracerouteMapData;
+    maximized: boolean;
+}>();
+const emit = defineEmits<{
+    "toggle-maximize": [];
 }>();
 
 const mapElement = ref<HTMLElement | null>(null);
 const search = ref("");
-const maximized = ref(false);
 const clusterPorts = ref(false);
 let map: LMap | null = null;
 let nodesLayer: FeatureGroup<CircleMarker> | null = null;
@@ -130,6 +140,7 @@ let portClusterLayer: MarkerClusterGroup | null = null;
 let edgesLayer: FeatureGroup<Polyline> | null = null;
 let suspiciousEdgesLayer: FeatureGroup<Polyline> | null = null;
 let layersControl: Control.Layers | null = null;
+let tileLayerManager: LeafletTileLayerManager | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let refreshAnimationFrame: number | null = null;
 let markerClusterLoading: Promise<void> | null = null;
@@ -147,6 +158,7 @@ const PORT_OFFSET_RADIUS_METERS = 25;
 const PORT_OFFSET_RING_STEP_METERS = 9;
 const RADIAL_POINTS_PER_RING = 8;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const TRACEROUTE_TILE_LAYER_STORAGE_KEY = "traceroute_map_tile_layer";
 const defaultMarkerStyle = {
     radius: 7,
     color: "#e0f2fe",
@@ -180,11 +192,13 @@ function initMap(): void {
         return;
     }
 
-    const tiles = createMapTiles();
+    const defaultTileLayer = createDefaultTileLayer();
     map = new LMap(mapElement.value, {
-        layers: [tiles.osm],
+        layers: [defaultTileLayer],
         minZoom: 3,
+        crs: getLeafletTileLayerCrs(defaultTileLayerCrs),
     });
+    tileLayerManager = new LeafletTileLayerManager(map, defaultTileLayer, TRACEROUTE_TILE_LAYER_STORAGE_KEY);
     map.createPane("tracerouteEdges");
     map.createPane("tracerouteSuspiciousEdges");
     map.createPane("tracerouteNodes");
@@ -203,37 +217,49 @@ function initMap(): void {
     suspiciousNodesLayer = featureGroup<CircleMarker>().addTo(map);
     portsLayer = featureGroup<CircleMarker | Marker>().addTo(map);
     portClusterLayer = clusterPorts.value ? createPortClusterLayer() : null;
-    layersControl = new Control.Layers(
-        {
-            OSM: tiles.osm,
-            Google: tiles.geoGoogle,
-            ArcGIS: tiles.arcgisonline,
-        },
-        {
-            Узлы: nodesLayer,
-            Порты: portClusterLayer || portsLayer,
-            Связи: edgesLayer,
-            "Сомнительные узлы/порты": suspiciousNodesLayer,
-            "Сомнительные связи": suspiciousEdgesLayer,
-        }
-    ).addTo(map);
+    layersControl = new Control.Layers(tileLayerManager.getDefaultTileLayers(), {
+        Узлы: nodesLayer,
+        Порты: portClusterLayer || portsLayer,
+        Связи: edgesLayer,
+        "Сомнительные узлы/порты": suspiciousNodesLayer,
+        "Сомнительные связи": suspiciousEdgesLayer,
+    }).addTo(map);
+    map.on("baselayerchange", (event: LayersControlEvent) => {
+        tileLayerManager?.selectTileLayer(event.name, event.layer);
+    });
+    loadMapTileLayers(tileLayerManager, layersControl);
     if (portClusterLayer) {
         portClusterLayer.addTo(map);
     }
 }
 
 /**
- * Creates fresh tile layer instances for a Leaflet map instance.
+ * Loads API tile layers into the Leaflet control.
  */
-function createMapTiles(): { geoGoogle: TileLayer; arcgisonline: TileLayer; osm: TileLayer } {
-    const geoGoogle = tileLayer("https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}", {
-        attribution: "google",
-    });
-    const arcgisonline = tileLayer(
-        "http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-    );
-    const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
-    return { geoGoogle, arcgisonline, osm };
+async function loadMapTileLayers(manager: LeafletTileLayerManager, control: Control.Layers): Promise<void> {
+    try {
+        const tileLayers = await manager.getTileLayers();
+
+        if (tileLayerManager !== manager || layersControl !== control) {
+            return;
+        }
+
+        addLoadedTileLayersToControl(control, tileLayers);
+        manager.restoreStoredTileLayer(tileLayers);
+    } catch {
+        return;
+    }
+}
+
+/**
+ * Adds dynamically loaded tile layers to Leaflet control.
+ */
+function addLoadedTileLayersToControl(control: Control.Layers, tileLayers: TileLayersObject): void {
+    for (const name in tileLayers) {
+        if (name !== defaultTileLayerName) {
+            control.addBaseLayer(tileLayers[name], name);
+        }
+    }
 }
 
 /**
@@ -845,10 +871,7 @@ function resetEdgeHighlights(): void {
  * Toggles fullscreen-like map layout.
  */
 function toggleMaximize(): void {
-    maximized.value = !maximized.value;
-    document.body.classList.toggle("overflow-hidden", maximized.value);
-    document.documentElement.classList.toggle("overflow-hidden", maximized.value);
-    rebuildMap();
+    emit("toggle-maximize");
 }
 
 /**
@@ -1060,6 +1083,18 @@ watch(search, (value) => {
     }
 });
 
+watch(
+    () => props.maximized,
+    (value) => {
+        document.body.classList.toggle("overflow-hidden", value);
+        document.documentElement.classList.toggle("overflow-hidden", value);
+        if (map) {
+            rebuildMap();
+        }
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
     if (!mapElement.value) {
         return;
@@ -1097,6 +1132,7 @@ function destroyMap(): void {
     edgesLayer = null;
     suspiciousEdgesLayer = null;
     layersControl = null;
+    tileLayerManager = null;
     markersById.clear();
     markerDefaultStyles.clear();
 }

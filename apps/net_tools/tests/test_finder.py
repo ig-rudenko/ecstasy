@@ -4,10 +4,10 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.check.services.zabbix import DeviceCoords
-from apps.net_tools.services.traceroute.base import Traceroute, MultipleTraceroute
-from apps.net_tools.services.traceroute.types import TracerouteResult
+from apps.net_tools.services.traceroute.base import MultipleTraceroute, Traceroute
+from apps.net_tools.services.traceroute.graph import build_traceroute_map_data
 from apps.net_tools.services.traceroute.network import TracerouteNetwork
-from apps.net_tools.services.traceroute import build_traceroute_map_data
+from apps.net_tools.services.traceroute.types import TracerouteResult
 from devicemanager.device.interfaces import Interface, Interfaces
 
 
@@ -378,13 +378,16 @@ class TracerouteMapDataTestCase(SimpleTestCase):
 
         with (
             patch(
-                "apps.net_tools.services.traceroute.get_devices_coordinates",
+                "apps.net_tools.services.traceroute.graph.get_devices_coordinates",
                 return_value={
                     "dev-a": DeviceCoords(lat=44.1, lon=33.2),
                     "dev-b": DeviceCoords(lat=44.2, lon=33.3),
                 },
             ),
-            patch("apps.net_tools.services.traceroute._get_traceroute_map_devices", return_value=device_info),
+            patch(
+                "apps.net_tools.services.traceroute.graph._get_traceroute_map_devices",
+                return_value=device_info,
+            ),
         ):
             result = build_traceroute_map_data(graph_data)
 

@@ -171,7 +171,9 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
 
         inherited_index = inherited_count_by_parent.get(parent_node["id"], 0)
         inherited_count_by_parent[parent_node["id"]] = inherited_index + 1
-        lat, lon = _offset_traceroute_map_child_coordinates(parent_node["lat"], parent_node["lon"], inherited_index)
+        lat, lon = _offset_traceroute_map_child_coordinates(
+            parent_node["lat"], parent_node["lon"], inherited_index
+        )
         map_nodes.append(
             {
                 "id": node_id,
@@ -201,7 +203,9 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
     return data
 
 
-def _find_traceroute_map_parent_node(node_id: str, graph_edges: list[dict], map_nodes: list[dict]) -> dict | None:
+def _find_traceroute_map_parent_node(
+    node_id: str, graph_edges: list[dict], map_nodes: list[dict]
+) -> dict | None:
     """Find a coordinate-bearing neighbor for a node without its own coordinates."""
     map_nodes_by_id = {node["id"]: node for node in map_nodes}
     for edge in graph_edges:
@@ -214,7 +218,9 @@ def _find_traceroute_map_parent_node(node_id: str, graph_edges: list[dict], map_
     return None
 
 
-def _offset_traceroute_map_child_coordinates(parent_lat: float, parent_lon: float, index: int) -> tuple[float, float]:
+def _offset_traceroute_map_child_coordinates(
+    parent_lat: float, parent_lon: float, index: int
+) -> tuple[float, float]:
     """Place inherited child nodes around the parent device coordinate."""
     offsets = [
         (0.00008, 0),
