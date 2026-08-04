@@ -349,4 +349,4 @@ class BulkDeviceCommandExecutionSerializer(serializers.ModelSerializer):
 
 class ChangeDescriptionSerializer(serializers.Serializer):
     port = serializers.CharField(required=True)
-    description = serializers.CharField(required=True)
+    description = serializers.CharField(required=True, allow_blank=True)

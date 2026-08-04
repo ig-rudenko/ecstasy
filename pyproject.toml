@@ -59,6 +59,7 @@ dev = [
     "types-requests>=2.33.0.20260712",
     "django-extensions>=4.1",
     "ruff>=0.16.0",
+    "coverage>=7.15.3",
 ]
 
 [tool.uv]

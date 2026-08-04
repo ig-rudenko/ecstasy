@@ -319,7 +319,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         device_connect.return_value.get_interfaces.return_value = [("eth1", "up", "desc1")]
 
         # Отправка запроса.
-        request_data = {"port": "eth1"}
+        request_data = {"port": "eth1", "description": ""}
         resp = self.client.post(
             reverse("devices-api:set-description", args=(self.device.name,)),
             data=request_data,
@@ -457,8 +457,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
             [
                 {
                     "detail": (
-                        "Слишком длинное описание! "
-                        f"Укажите не более {set_description_result.max_length} символов."
+                        f"Слишком длинное описание! Укажите не более {set_description_result.max_length} символов."
                     ),
                     "field": "detail",
                 }
