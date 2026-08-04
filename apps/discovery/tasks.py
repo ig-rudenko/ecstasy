@@ -293,4 +293,4 @@ def cleanup_discovery_runs_task(retention_days: int) -> dict:
 def cleanup_discovery_candidate_task(retention_days: int) -> dict:
     """Удалить старые завершенные discovery candidate."""
     qs = DiscoveryCandidate.objects.all()
-    return _cleanup_discovery_objects(retention_days, "first_seen_at", qs)
+    return _cleanup_discovery_objects(retention_days, "last_seen_at", qs)
