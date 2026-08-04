@@ -79,6 +79,9 @@ class SnmpFingerprinter:
     def collect(self, ip: str) -> tuple[DeviceFingerprint, list[DiscoveryAttemptData]]:
         """Попробовать получить SNMP identity для IP."""
 
+        if not self.communities:
+            return DeviceFingerprint(ip=ip), []
+
         attempts = []
         for community in self.communities:
             started = monotonic()

@@ -274,8 +274,9 @@ def _cleanup_discovery_objects(
         raise ValueError("retention_days must be positive")
 
     cutoff = timezone.now() - timedelta(days=retention_days)
-
-    deleted_count, _ = qs.filter(**{f"{dt_field}__lt": cutoff}).delete()
+    qs = qs.filter(**{f"{dt_field}__lt": cutoff})
+    deleted_count = qs.count()
+    qs.delete()
     return {
         "deletedCount": deleted_count,
         "retentionDays": retention_days,

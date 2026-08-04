@@ -40,6 +40,44 @@ def find_duplicate_device(fingerprint: DeviceFingerprint) -> Devices | None:
     return Devices.objects.filter(ip=fingerprint.ip).first()
 
 
+def find_available_cli_protocol(candidate: DiscoveryCandidate) -> str | None:
+    """Выбрать доступный CLI-протокол кандидата."""
+
+    detected_protocols = candidate.detected_protocols
+    cli_protocol = str(candidate.raw_fingerprint.get("cliProtocol", "")).lower()
+    if cli_protocol in {"ssh", "telnet"} and detected_protocols.get(cli_protocol) is True:
+        return cli_protocol
+    for protocol in ("ssh", "telnet"):
+        if detected_protocols.get(protocol) is True:
+            return protocol
+    return None
+
+
+def update_created_device_protocols(candidate: DiscoveryCandidate) -> None:
+    """Заменить недоступные протоколы ранее созданного оборудования."""
+
+    if candidate.status != DiscoveryCandidate.Status.CREATED or candidate.device_id is None:
+        return
+
+    available_cli_protocol = find_available_cli_protocol(candidate)
+    if available_cli_protocol is None:
+        return
+
+    device = candidate.device
+    if not device:
+        return
+
+    update_fields = []
+    if candidate.detected_protocols.get(device.cmd_protocol) is False:
+        device.cmd_protocol = available_cli_protocol
+        update_fields.append("cmd_protocol")
+    if candidate.detected_protocols.get(device.port_scan_protocol) is False:
+        device.port_scan_protocol = available_cli_protocol
+        update_fields.append("port_scan_protocol")
+    if update_fields:
+        device.save(update_fields=update_fields)
+
+
 def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     """Создать или обновить discovery candidate по fingerprint."""
 
@@ -85,6 +123,8 @@ def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     }
 
     candidate, created = DiscoveryCandidate.objects.update_or_create(ip=fingerprint.ip, defaults=defaults)
+    if not created and candidate.status == DiscoveryCandidate.Status.CREATED:
+        update_created_device_protocols(candidate)
     if not created and candidate.status in {
         DiscoveryCandidate.Status.CREATED,
         DiscoveryCandidate.Status.IGNORED,

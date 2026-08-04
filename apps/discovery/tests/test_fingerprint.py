@@ -13,6 +13,16 @@ class SnmpFingerprinterTests(SimpleTestCase):
     """Тесты SNMP fingerprint без реальной сети."""
 
     @patch("apps.discovery.services.fingerprint.snmp.get_system_identity")
+    def test_snmp_without_communities_is_not_marked_unavailable(self, mock_get_identity):
+        """SNMP без community считается непроверенным, а не недоступным."""
+
+        fingerprint, attempts = SnmpFingerprinter([], timeout=1).collect("192.0.2.10")
+
+        self.assertEqual(fingerprint.detected_protocols, {})
+        self.assertEqual(attempts, [])
+        mock_get_identity.assert_not_called()
+
+    @patch("apps.discovery.services.fingerprint.snmp.get_system_identity")
     def test_snmp_timeout_returns_failed_attempt(self, mock_get_identity):
         """SNMP timeout не прерывает discovery scan целиком."""
 
