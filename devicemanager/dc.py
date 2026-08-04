@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pexpect
 
@@ -117,7 +117,7 @@ class SSHSpawn:
         SSHKnownHostsStore().accept_changed(
             self.ip,
             self.port,
-            datetime.now(UTC),
+            datetime.now(),
             ssh_output,
         )
 
@@ -127,14 +127,14 @@ class DeviceRemoteConnector:
     # Подключение к оборудованию, определение вендора и возврат соответствующего экземпляра класса
     """
 
-    prompt_expect = "|".join(  # noqa: FLY002
+    prompt_expect = "|".join(
         [
             r"[#>\]]\s*$",  # Normal prompt
             r"[#>\]]\s*\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x08$",  # ANSI escape sequence
         ]
     )
 
-    login_input_expect = "|".join(  # noqa: FLY002
+    login_input_expect = "|".join(
         [
             r"[Ll]ogin(?![-\siT]).*:\s*$",
             r"[Uu]ser\s(?![Alfp]).*:\s*$",
@@ -143,7 +143,7 @@ class DeviceRemoteConnector:
             r"Enter Login Name",
         ]
     )
-    password_input_expect = "|".join(  # noqa: FLY002
+    password_input_expect = "|".join(
         [
             r"[Pp]ass.*:\s*$",
             r"Please Enter Password",

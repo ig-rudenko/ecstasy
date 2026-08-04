@@ -54,6 +54,7 @@ from ..serializers import (
     ADSLProfileSerializer,
     BulkDeviceCommandExecutionResultSerializer,
     BulkDeviceCommandExecutionSerializer,
+    ChangeDescriptionSerializer,
     DeviceCommandsSerializer,
     InterfacesCommentsSerializer,
     PoEPortStatusSerializer,
@@ -154,12 +155,10 @@ class ChangeDescriptionAPIView(DeviceAPIView):
             }
 
         """
-
-        port = self.request.data.get("port", "")
-        new_description = self.request.data.get("description", "")
-        if not port:
-            raise ValidationError({"detail": "Необходимо указать порт"})
-
+        serializer = ChangeDescriptionSerializer(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        port = serializer.validated_data["port"]
+        new_description = serializer.validated_data["description"]
         device: models.Devices = self.get_object()
 
         # Проверяем права доступа пользователя к оборудованию

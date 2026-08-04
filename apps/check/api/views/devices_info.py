@@ -30,9 +30,8 @@ from ...services.zabbix import get_zabbix_host_map_and_uptime
 from ..decorators import except_connection_errors
 from ..filters import DeviceFilter
 from ..permissions import DevicesAdminPermission
-from ..queries import DeviceInterfaceQuery
+from ..queries import DeviceInterfaceQuery, DeviceInterfaceQuerySerializer
 from ..serializers import (
-    DeviceInterfaceQuerySerializer,
     DevicesDetailSerializer,
     DevicesDetailUpdateSerializer,
     DevicesSerializer,

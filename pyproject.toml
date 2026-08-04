@@ -69,48 +69,26 @@ line-length = 120
 
 [tool.ruff.lint]
 select = [
-    # pycodestyle
-    "E",
-    "W",
-    # Pyflakes
-    "F",
-    # pyupgrade
-    "UP",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # flake8-return
-    "RET",
-    # flake8-raise
-    "RSE",
-    # isort
-    "I",
-    # flake8-bugbear
-    "B",
-    # flake8-builtins
-    "A",
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "C", # mccabe
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "I", # isort
+    "SIM", # flake8-simplify
+    "RET", # flake8-return
+    "RSE", # flake8-raise
+    "UP", # pyupgrade
+    "W", # pycodestyle
 ]
 ignore = [
-    # Line too long
-    "E501",
-    # Functions with a high complexity
-    "C901",
-    # Use ternary operator instead of `if`-`else`-block
-    "SIM108",
-    # Module level import not at top of file
-    "E402",
-    # Trailing whitespace
-    "W291",
-    # Blank line contains whitespace
-    "W293",
-    "RUF012",
-    "RUF015",
-    "C408",
-    "BLE001",
-    "TRY002",
-    "TRY004",
-    "N999",
+    "C408", # Unnecessary collection call
+    "C901", # Functions with a high complexity
+    "E402", # Module level import not at top of file
+    "E501", # Line too long
+    "SIM108", # Use ternary operator instead of `if`-`else`-block
+    "W291", # Trailing whitespace
+    "W293", # Blank line contains whitespace
 ]
 
 [tool.mypy]

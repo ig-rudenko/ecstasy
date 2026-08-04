@@ -18,26 +18,6 @@ from ..models import (
     InterfacesComments,
     UsersActions,
 )
-from .queries import DeviceInterfaceQuery
-
-
-class DeviceInterfaceQuerySerializer(serializers.Serializer):
-    current_status = serializers.BooleanField(default=False)
-    vlans = serializers.BooleanField(default=False)
-    check_status = serializers.BooleanField(default=True)
-    add_links = serializers.BooleanField(default=True)
-    add_comments = serializers.BooleanField(default=True)
-    add_zabbix_graph = serializers.BooleanField(default=True)
-
-    def create(self, validated_data: Any) -> DeviceInterfaceQuery:
-        return DeviceInterfaceQuery(
-            current_status=validated_data["current_status"],
-            vlans=validated_data["vlans"],
-            check_status=validated_data["check_status"],
-            add_links=validated_data["add_links"],
-            add_comments=validated_data["add_comments"],
-            add_zabbix_graph=validated_data["add_zabbix_graph"],
-        )
 
 
 class DeviceCoordinatesValidationMixin:
@@ -365,3 +345,8 @@ class BulkDeviceCommandExecutionSerializer(serializers.ModelSerializer):
     def get_skippedCount(obj: BulkDeviceCommandExecution) -> int:
         """Return count of skipped device runs."""
         return sum(1 for result in obj.results.all() if result.status == result.STATUS_SKIPPED)
+
+
+class ChangeDescriptionSerializer(serializers.Serializer):
+    port = serializers.CharField(required=True)
+    description = serializers.CharField(required=True)

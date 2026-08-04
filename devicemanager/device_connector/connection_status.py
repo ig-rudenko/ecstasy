@@ -1,7 +1,7 @@
 import logging
 import threading
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from ipaddress import IPv4Address
 
 from devicemanager.device_connector.ssh_host_keys import PendingSSHHostKeyChange, SSHKnownHostsStore
@@ -24,7 +24,7 @@ class ConnectionStatusStore:
         """Initialize the store and injectable system dependencies."""
 
         self._host_key_store = host_key_store or SSHKnownHostsStore()
-        self._now = now or (lambda: datetime.now(UTC))
+        self._now = now or (lambda: datetime.now())
         self._errors: dict[str, dict[str, str]] = {}
         self._ssh_host_key_changes: dict[str, PendingSSHHostKeyChange] = {}
         self._lock = threading.RLock()

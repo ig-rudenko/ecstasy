@@ -10,8 +10,8 @@ from ...models import Devices
 @dataclass
 class DeviceView:
     username: str
-    started: datetime = field(default_factory=datetime.now)
-    updated: datetime = field(default_factory=datetime.now)
+    started: datetime = field(default_factory=timezone.now)
+    updated: datetime = field(default_factory=timezone.now)
 
 
 class DeviceUserViews:
