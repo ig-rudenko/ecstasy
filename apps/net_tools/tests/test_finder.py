@@ -4,8 +4,9 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.check.services.zabbix import DeviceCoords
-from apps.net_tools.services.finder import MultipleTraceroute, Traceroute, TracerouteResult
-from apps.net_tools.services.network import VlanNetwork
+from apps.net_tools.services.traceroute.base import Traceroute, MultipleTraceroute
+from apps.net_tools.services.traceroute.types import TracerouteResult
+from apps.net_tools.services.traceroute.network import TracerouteNetwork
 from apps.net_tools.services.traceroute import build_traceroute_map_data
 from devicemanager.device.interfaces import Interface, Interfaces
 
@@ -416,9 +417,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         visible_nodes = [node for node in network.nodes if not node.get("hidden")]
@@ -450,9 +451,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         self.assertEqual(len(network.edges), 1)
@@ -483,9 +484,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         self.assertEqual(len(network.edges), 1)
@@ -516,9 +517,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         nodes = {node["id"]: node for node in network.nodes if not node.get("hidden")}

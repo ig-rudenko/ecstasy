@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from django.core.cache import cache
 
-from ..models import TracerouteNodeKind, TracerouteNodeStyleRule
-from ..services.finder import TracerouteResult
+from apps.net_tools.models import TracerouteNodeKind, TracerouteNodeStyleRule
+from apps.net_tools.services.traceroute.types import TracerouteResult
 
 
 def build_traceroute_options(nodes_count: int, edges_count: int) -> dict:
@@ -80,7 +80,7 @@ class _PreparedRule:
     regex: re.Pattern[str] | None = None
 
 
-class VlanNetwork:
+class TracerouteNetwork:
     def __init__(self) -> None:
         self._nodes: list[dict] = []
         self._edges: list[dict] = []
@@ -430,14 +430,10 @@ class VlanNetwork:
     ) -> None:
         """Заменяет дубль ребра, если новое VLAN-совпадение точнее текущего."""
         existing_edge = self._edges[edge_index]
-        if self._get_edge_confidence_rank(edge_title) <= self._get_edge_confidence_rank(
-            existing_edge["title"]
-        ):
+        if self._get_edge_confidence_rank(edge_title) <= self._get_edge_confidence_rank(existing_edge["title"]):
             return
 
-        data = self._build_edge_data(
-            src_node, dst_node, line_width, edge_title, self._get_edge_options(edge_title)
-        )
+        data = self._build_edge_data(src_node, dst_node, line_width, edge_title, self._get_edge_options(edge_title))
         existing_edge.clear()
         existing_edge.update(data)
 
@@ -470,6 +466,3 @@ class VlanNetwork:
     ) -> None:
         """Add an edge to the traceroute graph payload."""
         self._edges.append(self._build_edge_data(src_node, dst_node, line_width, edge_title, edge_options))
-
-
-TracerouteNetwork = VlanNetwork

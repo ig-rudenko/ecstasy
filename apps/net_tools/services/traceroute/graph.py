@@ -1,18 +1,19 @@
 import re
 
+from django.contrib.auth.models import AbstractUser
 from rest_framework.exceptions import ValidationError
-from rest_framework.request import Request
 
 from apps.app_settings.models import TracerouteConfig
 from apps.check.models import Devices
 from apps.check.services.device_coordinates import get_devices_coordinates
 from apps.check.services.filters import filter_devices_qs_by_user
 from apps.gathering.services.mac.traceroute import MacTraceroute
-from apps.net_tools.services.finder import MultipleTraceroute, Traceroute
-from apps.net_tools.services.network import TracerouteNetwork
+
+from .base import MultipleTraceroute, Traceroute
+from .network import TracerouteNetwork
 
 
-def build_traceroute_graph_data(request: Request, query: dict) -> dict:
+def build_traceroute_graph_data(user: AbstractUser, query: dict) -> dict:
     """Build traceroute graph data shared by network and map visualizations."""
     mode = query["mode"]
     vlan = query.get("vlan")
@@ -45,7 +46,7 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
         )
 
     vlan_traceroute_settings = TracerouteConfig.load()
-    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), user)
 
     if vlan_traceroute_settings.start_device:
         devices_names = tuple(map(str.strip, vlan_traceroute_settings.start_device.split("\n")))
@@ -170,9 +171,7 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
 
         inherited_index = inherited_count_by_parent.get(parent_node["id"], 0)
         inherited_count_by_parent[parent_node["id"]] = inherited_index + 1
-        lat, lon = _offset_traceroute_map_child_coordinates(
-            parent_node["lat"], parent_node["lon"], inherited_index
-        )
+        lat, lon = _offset_traceroute_map_child_coordinates(parent_node["lat"], parent_node["lon"], inherited_index)
         map_nodes.append(
             {
                 "id": node_id,
@@ -202,9 +201,7 @@ def build_traceroute_map_data(graph_data: dict) -> dict:
     return data
 
 
-def _find_traceroute_map_parent_node(
-    node_id: str, graph_edges: list[dict], map_nodes: list[dict]
-) -> dict | None:
+def _find_traceroute_map_parent_node(node_id: str, graph_edges: list[dict], map_nodes: list[dict]) -> dict | None:
     """Find a coordinate-bearing neighbor for a node without its own coordinates."""
     map_nodes_by_id = {node["id"]: node for node in map_nodes}
     for edge in graph_edges:
@@ -217,9 +214,7 @@ def _find_traceroute_map_parent_node(
     return None
 
 
-def _offset_traceroute_map_child_coordinates(
-    parent_lat: float, parent_lon: float, index: int
-) -> tuple[float, float]:
+def _offset_traceroute_map_child_coordinates(parent_lat: float, parent_lon: float, index: int) -> tuple[float, float]:
     """Place inherited child nodes around the parent device coordinate."""
     offsets = [
         (0.00008, 0),

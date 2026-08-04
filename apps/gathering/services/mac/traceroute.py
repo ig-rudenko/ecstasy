@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.app_settings.models import TracerouteConfig
 from apps.net_tools.models import DescNameFormat, VlanName
-from apps.net_tools.services.network import build_traceroute_options
+from apps.net_tools.services.traceroute.network import build_traceroute_options
 
 from ...models import MacAddress
 
