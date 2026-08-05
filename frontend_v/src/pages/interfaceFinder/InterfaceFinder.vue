@@ -18,7 +18,7 @@
                                 </h1>
 
                                 <p
-                                    class="mt-3 max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base"
+                                    class="mt-3 max-w-4xl text-sm leading-7 text-gray-600 dark:text-gray-300 sm:text-base"
                                 >
                                     Вы сможете найти интерфейсы оборудования по различным параметрам, если они были
                                     собраны ранее.

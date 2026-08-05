@@ -2,6 +2,7 @@ import {
     Avatar,
     Badge,
     Button,
+    ButtonGroup,
     Checkbox,
     Column,
     ConfirmationService,
@@ -61,6 +62,7 @@ app.use(router);
 app.component("Avatar", Avatar);
 app.component("Badge", Badge);
 app.component("Button", Button);
+app.component("ButtonGroup", ButtonGroup);
 app.component("Checkbox", Checkbox);
 app.component("Column", Column);
 app.component("ConfirmPopup", ConfirmPopup);

@@ -49,7 +49,7 @@ const modelVisible = computed({
         modal
         maximizable
         :header="isEditMode ? 'Изменить discovery profile' : 'Новый discovery profile'"
-        class="w-[min(96vw,980px)]"
+        class="w-[min(96vw,980px)] font-mono"
     >
         <div class="grid gap-4 lg:grid-cols-2">
             <label class="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -63,6 +63,7 @@ const modelVisible = computed({
                     :options="deviceGroups"
                     optionLabel="name"
                     optionValue="id"
+                    panel-class="font-mono"
                     class="rounded-2xl"
                 />
             </label>
@@ -105,6 +106,7 @@ const modelVisible = computed({
                             :options="portScanProtocolOptions"
                             optionLabel="label"
                             optionValue="value"
+                            panel-class="font-mono"
                             class="rounded-2xl"
                         />
                     </label>
@@ -115,6 +117,7 @@ const modelVisible = computed({
                             :options="cmdProtocolOptions"
                             optionLabel="label"
                             optionValue="value"
+                            panel-class="font-mono"
                             class="rounded-2xl"
                         />
                     </label>
@@ -177,15 +180,21 @@ const modelVisible = computed({
             <div
                 class="flex flex-wrap flex-col gap-2 rounded-2xl border border-gray-200/80 p-3 dark:border-gray-700/80"
             >
-                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label
+                    class="w-fit cursor-pointer flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                >
                     <ToggleSwitch v-model="form.isActive" />
                     Профиль активен
                 </label>
-                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label
+                    class="w-fit cursor-pointer flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                >
                     <ToggleSwitch v-model="form.autoCreate" />
                     Автосоздание
                 </label>
-                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label
+                    class="w-fit cursor-pointer flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                >
                     <ToggleSwitch v-model="form.activateCreatedDevices" />
                     Создавать оборудование активным
                 </label>
