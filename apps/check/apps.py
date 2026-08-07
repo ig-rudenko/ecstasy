@@ -5,9 +5,11 @@ from django.db.models.signals import post_migrate
 def register_task(*args, **kwargs) -> None:
     """Register periodic/background tasks after migrations."""
     # pylint: disable-next=import-outside-toplevel
-    from django_celery_beat.models import CrontabSchedule, PeriodicTask
+    from django_celery_beat.models import PeriodicTask
 
-    crontab, _ = CrontabSchedule.objects.get_or_create(
+    from ecstasy_project.celery_schedules import get_crontab_schedule
+
+    crontab = get_crontab_schedule(
         minute="30",
         hour="3",
     )

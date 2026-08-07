@@ -25,7 +25,6 @@ class Migration(migrations.Migration):
                     models.URLField(
                         help_text="Шаблон URL с параметрами {x}, {y}, {z}",
                         max_length=2048,
-                        unique=True,
                         verbose_name="URL тайлов",
                     ),
                 ),

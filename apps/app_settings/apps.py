@@ -18,11 +18,13 @@ class AppSettingsConfig(AppConfig):
 
 def register_task(*args, **kwargs) -> None:
     """Registers periodic/background tasks after migrations."""
-    from django_celery_beat.models import CrontabSchedule, PeriodicTask
+    from django_celery_beat.models import PeriodicTask
+
+    from ecstasy_project.celery_schedules import get_crontab_schedule
 
     from .tasks import flush_expired_cookie_sessions, flush_expired_tokens
 
-    crontab, _ = CrontabSchedule.objects.get_or_create(minute="0", hour="4")
+    crontab = get_crontab_schedule(minute="0", hour="4")
     PeriodicTask.objects.get_or_create(
         name="Очистка истёкших JWT",
         defaults={

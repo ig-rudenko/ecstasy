@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -58,6 +59,15 @@ class TileLayerAPITests(APITestCase):
         create_default_tile_layers(sender=None)
 
         self.assertEqual(TileLayer.objects.count(), 2)
+
+    def test_initial_tile_layer_migration_does_not_create_unique_url_index(self):
+        """Начальная миграция подложек не создаёт длинный уникальный индекс URL."""
+
+        migration = importlib.import_module("apps.maps.migrations.0013_tilelayer")
+        create_model = migration.Migration.operations[0]
+        fields = dict(create_model.fields)
+
+        self.assertFalse(fields["url"].unique)
 
     def test_tile_layer_keeps_long_url_and_updates_its_hash(self):
         """Длинный URL сохраняется полностью, а уникальность обеспечивается его хэшем."""

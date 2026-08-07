@@ -38,11 +38,13 @@ def register_task(*args, **kwargs) -> None:
     """Создать периодические задачи discovery после миграций."""
 
     # pylint: disable-next=import-outside-toplevel
-    from django_celery_beat.models import CrontabSchedule, PeriodicTask
+    from django_celery_beat.models import PeriodicTask
+
+    from ecstasy_project.celery_schedules import get_crontab_schedule
 
     from .tasks import cleanup_discovery_candidate_task, cleanup_discovery_runs_task
 
-    crontab, _ = CrontabSchedule.objects.get_or_create(
+    crontab = get_crontab_schedule(
         minute="30",
         hour="4",
     )
