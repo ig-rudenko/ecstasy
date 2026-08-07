@@ -1,3 +1,5 @@
+import hashlib
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.urls import reverse
@@ -56,3 +58,18 @@ class TileLayerAPITests(APITestCase):
         create_default_tile_layers(sender=None)
 
         self.assertEqual(TileLayer.objects.count(), 2)
+
+    def test_tile_layer_keeps_long_url_and_updates_its_hash(self):
+        """Длинный URL сохраняется полностью, а уникальность обеспечивается его хэшем."""
+
+        url = "https://tiles.example.test/" + "a" * 1900
+        tile_layer = TileLayer.objects.create(name="Long URL", url=url, crs="EPSG:3857")
+
+        self.assertEqual(tile_layer.url, url)
+        self.assertEqual(tile_layer.url_hash, hashlib.sha256(url.encode("utf-8")).hexdigest())
+
+        updated_url = url + "/updated"
+        tile_layer.url = updated_url
+        tile_layer.save()
+
+        self.assertEqual(tile_layer.url_hash, hashlib.sha256(updated_url.encode("utf-8")).hexdigest())

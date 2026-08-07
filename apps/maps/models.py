@@ -1,3 +1,4 @@
+import hashlib
 import os
 from typing import Literal
 
@@ -29,9 +30,14 @@ class TileLayer(models.Model):
     )
     url = models.URLField(
         max_length=2048,
-        unique=True,
         verbose_name="URL тайлов",
         help_text="Шаблон URL с параметрами {x}, {y}, {z}",
+    )
+    url_hash = models.CharField(
+        max_length=64,
+        editable=False,
+        unique=True,
+        verbose_name="Хэш URL тайлов",
     )
     crs = models.CharField(
         max_length=20,
@@ -43,6 +49,12 @@ class TileLayer(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def save(self, *args, **kwargs):
+        """Сохранить подложку с актуальным хэшем URL."""
+
+        self.url_hash = hashlib.sha256(self.url.encode("utf-8")).hexdigest()
+        super().save(*args, **kwargs)
 
 
 class Layers(models.Model):
