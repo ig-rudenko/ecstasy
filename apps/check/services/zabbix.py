@@ -53,7 +53,12 @@ def get_device_uptime(zbx_session: ZabbixAPI, host_id: int | str) -> int:
         uptime_items = zbx_session.item.get(hostids=host_id, output=["itemid"], search={"key_": "uptime"})
         for item in uptime_items:
             uptime_value = zbx_session.history.get(
-                itemids=item["itemid"], output="extend", history=3, limit=1, sortfield="clock", sortorder="DESC"
+                itemids=item["itemid"],
+                output="extend",
+                history=3,
+                limit=1,
+                sortfield="clock",
+                sortorder="DESC",
             )
             if uptime_value and uptime_value[0]["value"].isdigit():
                 return int(uptime_value[0]["value"])
@@ -141,7 +146,9 @@ def get_zabbix_hosts_coordinates(devices_names: list[str]) -> dict[str, DeviceCo
                 selectInventory=["location_lat", "location_lon"],
             )
             return {
-                item["host"]: DeviceCoords(lat=item["inventory"]["location_lat"], lon=item["inventory"]["location_lon"])
+                item["host"]: DeviceCoords(
+                    lat=item["inventory"]["location_lat"], lon=item["inventory"]["location_lon"]
+                )
                 for item in info
                 if item["inventory"]
             }
