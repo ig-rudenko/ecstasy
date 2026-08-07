@@ -1,7 +1,7 @@
 <template>
     <div class="py-2">
         <div
-            class="rounded-4xl border border-gray-200/80 bg-white/85 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.45)] dark:border-gray-700/80 dark:bg-gray-900/55 sm:p-5"
+            class="sm:rounded-4xl border-y sm:border border-gray-200/80 bg-white/85 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.45)] dark:border-gray-700/80 dark:bg-gray-900/55 sm:p-5"
         >
             <div class="flex flex-col gap-5">
                 <div
@@ -9,10 +9,12 @@
                     class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
                 >
                     <div>
-                        <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">
+                        <div
+                            class="not-sm:hidden text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400"
+                        >
                             Configs
                         </div>
-                        <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        <div class="mt-2 sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
                             Конфигурации оборудования
                         </div>
                         <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -27,7 +29,7 @@
                             icon="pi pi-plus"
                             label="Собрать новую"
                             severity="success"
-                            class="rounded-2xl!"
+                            class="text-xs sm:text-sm rounded-2xl!"
                         />
                         <Button
                             @click="showDiffDialog = true"
@@ -35,17 +37,17 @@
                             label="Сравнение"
                             severity="secondary"
                             outlined
-                            class="rounded-2xl!"
+                            class="text-xs sm:text-sm rounded-2xl!"
                         />
                     </div>
                 </div>
 
                 <div
                     v-else
-                    class="flex items-center justify-center gap-3 rounded-3xl border border-sky-200/80 bg-sky-50/70 px-4 py-5 text-center text-sm font-medium text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-200"
+                    class="flex items-center justify-center gap-3 rounded-3xl border border-sky-200/80 bg-sky-50/70 px-4 py-2 sm:py-5 text-center text-sm font-medium text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-200"
                 >
                     <i class="pi pi-spin pi-spinner text-lg" />
-                    <span>Собираем текущую конфигурацию устройства</span>
+                    <span class="text-xs sm:text-sm">Собираем текущую конфигурацию устройства</span>
                 </div>
 
                 <Message v-if="collectNew.display" :severity="collectNew.status" class="rounded-3xl">
@@ -62,7 +64,7 @@
                     </div>
                 </Message>
 
-                <div v-if="files.length" class="grid gap-3">
+                <div v-if="files.length" class="overflow-auto grid gap-3">
                     <article
                         v-for="file in files"
                         :key="file.name"
@@ -77,7 +79,7 @@
                                     ></div>
                                     <div class="min-w-0">
                                         <button
-                                            class="max-w-full truncate text-left text-base font-semibold text-gray-900 transition group-hover:text-sky-700 dark:text-gray-100 dark:group-hover:text-sky-300"
+                                            class="max-w-full truncate text-left text-xs sm:text-sm font-semibold text-gray-900 transition group-hover:text-sky-700 dark:text-gray-100 dark:group-hover:text-sky-300"
                                             @click="toggleFileDisplay(file)"
                                         >
                                             {{ file.name }}
@@ -96,14 +98,14 @@
                                 </div>
                             </div>
 
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-1 sm:gap-2">
                                 <Button
                                     @click="toggleFileDisplay(file)"
                                     icon="pi pi-eye"
                                     label="Открыть"
                                     severity="contrast"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs sm:text-sm"
                                 />
                                 <Button
                                     @click="downloadFile(file)"
@@ -111,7 +113,7 @@
                                     label="Скачать"
                                     severity="secondary"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs sm:text-sm"
                                 />
                                 <Button
                                     v-if="canDeleteConfig"
@@ -120,7 +122,7 @@
                                     label="Удалить"
                                     severity="danger"
                                     outlined
-                                    class="rounded-2xl!"
+                                    class="rounded-2xl! text-xs sm:text-sm"
                                 />
                             </div>
                         </div>

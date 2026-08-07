@@ -144,9 +144,9 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_26%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.14),transparent_24%),radial-gradient(circle_at_72%_78%,rgba(45,212,191,0.14),transparent_22%),linear-gradient(135deg,rgba(255,255,255,0.38),transparent)] dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_72%_78%,rgba(45,212,191,0.16),transparent_22%),linear-gradient(135deg,rgba(15,23,42,0.4),transparent)]"
             />
 
-            <div class="relative px-5 py-6 sm:px-8 sm:py-8 xl:px-10 xl:py-10">
+            <div class="relative sm:px-8 sm:py-8 xl:px-10 xl:py-10">
                 <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem] xl:items-start">
-                    <div>
+                    <div class="not-sm:px-4">
                         <div
                             class="mt-5 max-w-5xl font-semibold tracking-wide text-slate-950 dark:text-white sm:text-5xl"
                         >
@@ -188,7 +188,7 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                 </section>
 
                 <section class="mt-8">
-                    <div class="flex items-center justify-between gap-4">
+                    <div class="not-sm:px-4 flex items-center justify-between gap-4">
                         <div>
                             <div
                                 class="sm:text-xs font-semibold sm:uppercase sm:tracking-[0.24em] text-slate-500 dark:text-slate-400"
@@ -206,12 +206,12 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                         </div>
                     </div>
 
-                    <div class="mt-5 grid gap-4 xl:grid-cols-2">
+                    <div class="mt-5 grid sm:gap-4 xl:grid-cols-2">
                         <router-link
                             v-for="module in modules"
                             :key="module.key"
                             :to="module.to"
-                            class="group relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/80 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700/80 dark:bg-gray-950/35"
+                            class="group relative overflow-hidden sm:rounded-3xl border-t sm:border border-gray-200/80 bg-white/80 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700/80 dark:bg-gray-950/35"
                         >
                             <div
                                 :class="[
@@ -250,9 +250,9 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                     </div>
                 </section>
 
-                <section class="mt-4 grid gap-4 xl:grid-cols-2">
+                <section class="sm:mt-4 grid sm:gap-4 xl:grid-cols-2">
                     <div
-                        class="rounded-[1.9rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
+                        class="sm:rounded-[1.9rem] border-t sm:border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
                     >
                         <div class="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
                             Другие возможности
@@ -270,14 +270,14 @@ const userDisplayName = computed(() => user?.firstName || user?.username || "о�
                     </div>
 
                     <div
-                        class="rounded-[1.9rem] border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
+                        class="sm:rounded-[1.9rem] border-t sm:border border-gray-200/80 bg-white/75 p-5 dark:border-gray-700/80 dark:bg-gray-900/60"
                     >
                         <div
-                            class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400"
+                            class="text-xs font-semibold uppercase sm:tracking-[0.24em] text-slate-500 dark:text-slate-400"
                         >
                             Поддерживаемые вендоры
                         </div>
-                        <div class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                        <div class="mt-2 sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                             С какими устройствами работает Ecstasy
                         </div>
 

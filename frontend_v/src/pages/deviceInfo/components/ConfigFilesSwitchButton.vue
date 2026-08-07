@@ -4,14 +4,12 @@
             :text="!configFiles.display"
             :outlined="configFiles.display"
             severity="contrast"
-            class="rounded-2xl shadow-sm border-none"
+            class="not-sm:px-2 rounded-2xl shadow-sm border-none"
         >
             <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="30"
-                height="30"
+                class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5"
                 fill="currentColor"
-                class="bi bi-file-earmark-code"
                 viewBox="0 0 16 16"
             >
                 <path

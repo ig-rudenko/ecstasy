@@ -32,15 +32,6 @@ function buildMenuItems(): MenuItem[] {
         },
     ];
 
-    // if (permissions.hasConsoleAccess()) {
-    //     built.push({
-    //         label: "Консоль",
-    //         icon: "console",
-    //         url: permissions.getConsoleUrl() || "#",
-    //         newPage: true,
-    //     });
-    // }
-
     if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Обнаружение",
@@ -219,17 +210,18 @@ const closeMobileMenu = () => {
                             >
                                 Ecstasy
                             </div>
-                            <div class="text-[11px] text-gray-500 dark:text-gray-400">Network equipment control</div>
+                            <div class="not-sm:hidden text-[11px] not-sm:leading-3 text-gray-500 dark:text-gray-400">
+                                Network equipment control
+                            </div>
                         </div>
                     </router-link>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center sm:gap-2">
                         <Button
                             icon="pi pi-bars"
                             severity="secondary"
                             outlined
                             size="small"
-                            v-tooltip.bottom="'Меню'"
                             @click="mobileMenuOpen = true"
                         />
 
@@ -253,7 +245,7 @@ const closeMobileMenu = () => {
                                 </div>
                                 <span
                                     v-if="!decorConfig.compactMenu"
-                                    class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                    class="not-sm:hidden text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
                                     >Консоль</span
                                 >
                             </div>
@@ -261,9 +253,8 @@ const closeMobileMenu = () => {
                         <Avatar
                             v-if="user"
                             :image="getAvatar(user.username)"
-                            class="cursor-pointer"
+                            class="cursor-pointer h-10 w-10"
                             @click="toggleProfile"
-                            size="large"
                         />
                     </div>
                 </div>

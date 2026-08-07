@@ -1,9 +1,9 @@
 <template>
-    <div class="mx-auto max-w-425 px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div class="mx-auto max-w-425 sm:px-6 lg:px-8 sm:py-8">
         <div class="flex flex-col gap-4">
             <div
                 v-if="generalInfo"
-                class="delay-0 transition hover:-translate-y-0.5 relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="delay-0 transition hover:-translate-y-0.5 relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <div
                     class="absolute inset-0 bg-linear-to-br from-sky-500/10 via-transparent to-indigo-500/10 pointer-events-none"
@@ -25,11 +25,19 @@
                 </div>
             </div>
 
-            <div v-if="generalInfo" class="gap-4 grid" :class="{ 'xl:grid-cols-2': deviceStats }">
+            <div
+                v-if="generalInfo"
+                class="gap-4"
+                :class="{
+                    'grid xl:grid-cols-2': deviceStats,
+                    'flex not-md:flex-wrap': !deviceStats || generalInfo.uptime,
+                }"
+            >
                 <div
-                    class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-4 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                    :class="{ 'w-full': !deviceStats }"
+                    class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 px-2 sm:p-4 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
                 >
-                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <div class="flex flex-wrap items-center justify-center gap-1 sm:gap-3">
                         <DeviceDetailInfo :general-info="generalInfo" />
                         <Commands v-if="canRunDeviceCommand" :device-name="deviceName" :interfaces="interfaces" />
 
@@ -53,10 +61,8 @@
                             :maps-data="generalInfo.zabbixInfo.maps"
                         />
 
-                        <div class="contents sm:contents">
-                            <DeviceVlanInfo :device-name="generalInfo.deviceName" />
-                            <UserActionsButton :device-name="generalInfo.deviceName" />
-                        </div>
+                        <DeviceVlanInfo :device-name="generalInfo.deviceName" />
+                        <UserActionsButton :device-name="generalInfo.deviceName" />
 
                         <a
                             v-if="generalInfo.consoleURL.length"
@@ -68,12 +74,11 @@
                                 outlined
                                 severity="contrast"
                                 v-tooltip.bottom="'Консоль'"
-                                class="rounded-2xl shadow-sm border-none"
+                                class="not-sm:px-2 rounded-2xl shadow-sm border-none"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    width="30"
-                                    height="30"
+                                    class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5"
                                     fill="currentColor"
                                     viewBox="0 0 16 16"
                                 >
@@ -87,8 +92,8 @@
                 </div>
 
                 <div
-                    v-if="deviceStats"
-                    class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                    v-if="deviceStats || generalInfo.uptime"
+                    class="not-sm:w-full sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 not-sm:px-2 sm:p-5 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
                 >
                     <DeviceStats :stats="deviceStats" :uptime="Number(generalInfo.uptime)" />
                 </div>
@@ -96,29 +101,35 @@
 
             <div
                 v-if="generalInfo && configFiles.display"
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 sm:p-5 backdrop-blur"
             >
                 <ConfigFiles :device-name="generalInfo.deviceName" :permissions="devicePermissions" />
             </div>
 
             <div
                 v-if="interfacesWorkload.count"
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 not-sm:p-2 sm:p-5 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <DeviceWorkloadBar v-if="interfacesWorkload" :workload="interfacesWorkload" />
             </div>
 
             <div
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-5 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 not-sm:p-2 sm:p-5 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
-                <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex flex-col gap-2 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="flex flex-1 flex-col gap-3">
                         <div
                             v-if="currentStatus"
-                            class="inline-flex w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
+                            class="inline-flex sm:w-fit items-center gap-3 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-3 py-2 text-sm text-gray-700 dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-300"
                         >
-                            <ToggleSwitch v-model="autoUpdateInterfaces" input-id="auto-update-interfaces" />
-                            <label for="auto-update-interfaces" class="cursor-pointer">Обновлять автоматически</label>
+                            <ToggleSwitch
+                                v-model="autoUpdateInterfaces"
+                                input-id="auto-update-interfaces"
+                                class="not-sm:h-5"
+                            />
+                            <label for="auto-update-interfaces" class="cursor-pointer text-xs sm:text-sm"
+                                >Обновлять автоматически</label
+                            >
                         </div>
                     </div>
 
@@ -129,7 +140,7 @@
             </div>
 
             <div
-                class="rounded-3xl border flex justify-center border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-2 sm:p-4 overflow-hidden"
+                class="sm:rounded-3xl border-y sm:border flex justify-center border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-2 sm:p-4 overflow-hidden"
             >
                 <div v-if="interfaces.length" class="overflow-x-auto">
                     <table class="min-w-full">
@@ -145,7 +156,7 @@
                                         size="small"
                                         @click="toggleInterfacesWithVlans"
                                         :label="withVlans ? 'no VLAN' : '+ VLAN'"
-                                        class="rounded-xl!"
+                                        class="rounded-xl! truncate"
                                     />
                                 </th>
                             </tr>

@@ -1,9 +1,9 @@
 <template>
-    <div class="flex w-full flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex flex-wrap items-center gap-4">
+    <div class="flex w-full flex-col gap-2 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center not-sm:justify-center gap-1 lg:gap-4">
             <span
                 v-if="status === 0"
-                class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300"
+                class="inline-flex h-6 sm:h-12 w-6 sm:w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -20,7 +20,7 @@
             </span>
             <span
                 v-else-if="status !== 1"
-                class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-gray-500/15 dark:text-gray-300"
+                class="inline-flex h-6 sm:h-12 w-6 sm:w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-gray-500/15 dark:text-gray-300"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +38,7 @@
             </span>
             <span
                 v-else
-                class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300"
+                class="inline-flex h-6 sm:h-12 w-6 sm:w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300"
             >
                 <span class="relative flex size-4">
                     <span
@@ -50,36 +50,36 @@
 
             <button
                 type="button"
-                class="cursor-pointer inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
+                class="cursor-pointer inline-flex h-7 sm:h-12 w-7 sm:w-12 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
                 @click="toggleStatus"
             >
-                <i class="pi pi-wrench text-lg" />
+                <i class="pi pi-wrench text-xs sm:text-lg" />
             </button>
 
-            <div class="flex flex-col gap-4">
+            <div class="pl-2 sm:pl-4 flex flex-col gap-1 sm:gap-4">
                 <div class="flex flex-wrap items-center gap-3">
                     <div
-                        class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl font-mono"
+                        class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl font-mono"
                     >
                         {{ device.name }}
                     </div>
                     <PinDevice :device="device" />
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-wrap items-center gap-1 sm:gap-3">
                     <div
                         v-show="device.ip"
-                        class="inline-flex items-center rounded-2xl bg-indigo-600 px-3.5 py-1.5 font-mono text-sm text-white sm:text-base"
+                        class="inline-flex items-center rounded-2xl bg-indigo-600 px-3.5 py-1.5 font-mono text-xs text-white sm:text-base"
                     >
                         {{ device.ip }}
                     </div>
                     <div class="relative">
                         <button
                             type="button"
-                            class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
+                            class="cursor-pointer inline-flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-2xl border border-gray-200/70 bg-white/80 text-gray-500 transition hover:text-indigo-600 dark:border-gray-700/70 dark:bg-gray-950/40 dark:text-gray-300 dark:hover:text-indigo-300"
                             @click="copyIP"
                         >
-                            <i class="pi pi-clone" />
+                            <i class="pi pi-clone text-xs sm:text-base" />
                         </button>
                         <span
                             v-if="copied"

@@ -19,10 +19,8 @@
         >
             <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="22"
-                height="22"
                 fill="currentColor"
-                class="text-amber-500 dark:text-amber-400"
+                class="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 dark:text-amber-400"
                 viewBox="0 0 16 16"
             >
                 <path
@@ -143,10 +141,8 @@
     >
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
             fill="currentColor"
-            class="text-gray-500 dark:text-gray-400"
+            class="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400"
             viewBox="0 0 16 16"
         >
             <path

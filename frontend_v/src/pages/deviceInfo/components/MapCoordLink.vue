@@ -17,9 +17,9 @@
             v-if="coords?.length"
             text
             v-tooltip.bottom="'Местоположение'"
-            class="rounded-2xl shadow-sm border-none"
+            class="not-sm:px-2 rounded-2xl shadow-sm border-none"
         >
-            <svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path
                     d="M12 1a9.002 9.002 0 0 0-6.366 15.362c1.63 1.63 5.466 3.988 5.693 6.465.034.37.303.673.673.673.37 0 .64-.303.673-.673.227-2.477 4.06-4.831 5.689-6.46A9.002 9.002 0 0 0 12 1z"
                     fill="#F43"

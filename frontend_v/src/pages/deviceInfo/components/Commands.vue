@@ -67,8 +67,18 @@ async function runCommand(command: DeviceCommandTemplate): Promise<void> {
 </script>
 
 <template>
-    <Button v-tooltip.right="'Команды'" outlined @click="openCommands" class="rounded-2xl shadow-sm border-none">
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+    <Button
+        v-tooltip.right="'Команды'"
+        outlined
+        @click="openCommands"
+        class="not-sm:px-2 rounded-2xl shadow-sm border-none"
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+        >
             <path
                 d="M2 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4a.5.5 0 0 1-1 0V4a1 1 0 0 0-1-1z"
             />
