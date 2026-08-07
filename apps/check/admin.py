@@ -13,16 +13,14 @@
 
 # pylint: disable=maybe-no-member
 import zipfile
-from datetime import datetime
 
 import orjson
 from django import forms
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.html import format_html, format_html_join, linebreaks
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
@@ -479,7 +477,7 @@ class DevicesAdmin(ModelAdmin, ImportExportModelAdmin):
         archive_storage_dir = settings.CONFIG_STORAGE_DIR / "archives"
         archive_storage_dir.mkdir(parents=True, exist_ok=True)
 
-        datetime_part = datetime.now().strftime("%d %b %Y %Hh %Mm")
+        datetime_part = timezone.now().strftime("%d %b %Y %Hh %Mm")
 
         zip_file_path = archive_storage_dir / f"devices_({len(config_files_path_list)})_{datetime_part}.zip"
 
@@ -582,48 +580,7 @@ class ProfileAdmin(ModelAdmin):
     def dev_groups(self, obj: Profile):
         """Отображение доступных групп для пользователя"""
         user_groups = obj.devices_groups.all()
-        groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])  # noqa
-        return mark_safe(groups_string)
-
-
-admin.site.unregister(User)  # Отменяем старую админку для пользователя
-
-
-@admin.register(User)
-class UserProfileAdmin(UserAdmin):
-    """Переопределенный класс для пользователя"""
-
-    list_display = [
-        "username",
-        "verbose_name",
-        "email",
-        "is_active",
-        "last_login",
-        "permission",
-        "dev_groups",
-    ]
-
-    @admin.display(description="")
-    def verbose_name(self, obj: User):
-        return f"{obj.first_name} {obj.last_name}"
-
-    @admin.display(description="Права")
-    def permission(self, obj: User):
-        """Отображение привилегий пользователя"""
-        return ", ".join(
-            permission.split(".", 1)[1] for permission in sorted(Profile.get_user_device_permissions(obj))
-        )
-
-    @admin.display(description="Группы")
-    def dev_groups(self, obj: User):
-        """Отображение доступных групп для пользователя"""
-        try:
-            profile: Profile = Profile.objects.get(user=obj)
-        except Profile.DoesNotExist:
-            return ""
-
-        user_groups = profile.devices_groups.all()
-        groups_string = "".join([f"<li>{group}</li>" for group in user_groups])
+        groups_string = "".join([f"<li>{group.name}</li>" for group in user_groups])
         return mark_safe(groups_string)
 
 
@@ -988,7 +945,7 @@ def render_command_line(command_line: str, name_styles: dict[str, str]):
 class DeviceCommandModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        uniq_vendors = list(sorted(set(Devices.objects.all().values_list("vendor", flat=True)), key=str))
+        uniq_vendors = sorted(set(Devices.objects.all().values_list("vendor", flat=True)), key=str)
         self.fields["device_vendor"].widget = UnfoldAdminSelectWidget(choices=[(v, v) for v in uniq_vendors])
 
     def clean_command(self) -> str:

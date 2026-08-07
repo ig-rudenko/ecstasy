@@ -50,7 +50,7 @@ class End3Resource(resources.ModelResource):
     address = fields.Field(
         column_name="address",
         attribute="address",
-        widget=ForeignKeyWidget(Address, "id"),  # noqa
+        widget=ForeignKeyWidget(Address, "id"),
     )
 
     class Meta:

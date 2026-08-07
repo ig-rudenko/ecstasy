@@ -1,8 +1,8 @@
 <template>
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 sm:py-10">
         <div v-if="rings.selectedRing === null" class="flex flex-col gap-6">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur"
+                class="not-sm:py-4 relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur"
             >
                 <div
                     class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10 pointer-events-none"
@@ -27,24 +27,24 @@
             </div>
 
             <div
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-4 sm:p-6"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur p-4 sm:p-6"
             >
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div class="flex flex-col gap-2 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div class="flex-1">
                         <div
-                            class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                            class="px-2 mb-1.5 text-xs font-medium sm:uppercase sm:tracking-wide text-gray-500 dark:text-gray-400"
                         >
                             Поиск
                         </div>
                         <InputText
-                            class="w-full rounded-2xl"
+                            class="w-full rounded-2xl text-sm sm:text-base"
                             placeholder="Введите имя головного узла"
                             v-model.trim="search"
                         />
                     </div>
 
                     <label
-                        class="cursor-pointer flex items-center gap-3 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
+                        class="cursor-pointer text-xs sm:text-sm flex items-center gap-3 sm:rounded-2xl sm:border border-gray-200/70 dark:border-gray-700/70 px-4 py-3 text-gray-700 dark:text-gray-200"
                     >
                         <Checkbox class="form-check-input" v-model="onlyNonNormal" binary input-id="onlyNonNormal" />
                         Показывать только неверно развернутые
@@ -52,7 +52,7 @@
                 </div>
             </div>
 
-            <div v-if="rings.list.length" class="grid gap-5 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            <div v-if="rings.list.length" class="not-sm:px-4 grid gap-5 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                 <button
                     v-for="ring in filteredRings"
                     :key="`${ring.head_name}-${ring.ports}`"
@@ -81,7 +81,7 @@
                     </div>
 
                     <div class="mt-5">
-                        <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <div class="text-base sm:text-lg font-mono font-semibold text-gray-900 dark:text-gray-100">
                             {{ ring.head_name }}
                         </div>
                         <div class="mt-1 font-mono text-sm text-gray-500 dark:text-gray-400">
@@ -104,7 +104,7 @@
 
             <div
                 v-else
-                class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 px-6 py-12 text-center backdrop-blur"
+                class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 px-6 py-12 text-center backdrop-blur"
             >
                 <ProgressSpinner />
             </div>
@@ -112,7 +112,7 @@
 
         <div
             v-else
-            class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-6 backdrop-blur"
+            class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 py-4 sm:p-6 backdrop-blur"
         >
             <AccessRingMenu :rings="rings" />
         </div>
@@ -139,7 +139,7 @@ export default {
     },
 
     async mounted() {
-        if (!permissions.has("auth.access_rings")) {
+        if (!permissions.has("accounting.access_rings")) {
             location.href = "/";
             return;
         }

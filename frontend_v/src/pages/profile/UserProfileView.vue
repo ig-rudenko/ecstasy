@@ -33,7 +33,7 @@ const filteredPermissions = computed<string[]>(() => {
 </script>
 
 <template>
-    <main class="mx-auto max-w-320 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <main class="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
         <section
             class="rounded-3xl border border-gray-200/80 bg-white/80 p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.45)] backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45 sm:p-7"
         >
@@ -49,43 +49,58 @@ const filteredPermissions = computed<string[]>(() => {
                 </a>
             </div>
 
-            <div class="mt-6 grid gap-4 lg:grid-cols-2">
+            <div class="mt-6 grid gap-4 lg:grid-cols-2 over">
                 <div
+                    v-if="user"
                     class="rounded-2xl border border-gray-200/80 bg-white/75 p-4 dark:border-gray-700/70 dark:bg-gray-900/50"
                 >
-                    <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    <div class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Личная информация
-                    </h2>
-                    <div class="mt-3 grid gap-3">
-                        <div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">ФИО</div>
-                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ fullName }}</div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">Логин</div>
-                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                {{ user?.username || "-" }}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">Email</div>
-                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                {{ user?.email || "-" }}
-                            </div>
-                        </div>
                     </div>
-                </div>
-
-                <div
-                    class="rounded-2xl border border-gray-200/80 bg-white/75 p-4 dark:border-gray-700/70 dark:bg-gray-900/50"
-                >
-                    <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                        Роли
-                    </h2>
-                    <div class="mt-3 flex gap-2 flex-wrap">
-                        <Tag :severity="user?.isSuperuser ? 'danger' : 'secondary'" value="Superuser" />
-                        <Tag :severity="user?.isStaff ? 'warn' : 'secondary'" value="Staff" />
-                        <Tag severity="info" :value="`ID: ${user?.id || '-'}`" />
+                    <div class="mt-3 grid gap-3 overflow-auto">
+                        <div class="flex not-sm:gap-4 sm:grid items-center grid-cols-2">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 font-mono">ID</div>
+                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                {{ user.id }}
+                            </div>
+                        </div>
+                        <div class="flex not-sm:gap-4 sm:grid items-center grid-cols-2">
+                            <div class="text-xs text-slate-500 dark:text-slate-400">ФИО</div>
+                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                {{ fullName }}
+                            </div>
+                        </div>
+                        <div class="flex not-sm:gap-4 sm:grid items-center grid-cols-2">
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Логин</div>
+                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                {{ user.username || "-" }}
+                            </div>
+                        </div>
+                        <div class="flex not-sm:gap-4 sm:grid items-center grid-cols-2">
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Email</div>
+                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">
+                                {{ user.email || "-" }}
+                            </div>
+                        </div>
+                        <div class="flex not-sm:gap-4 sm:grid items-center grid-cols-2">
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Роли</div>
+                            <div class="flex gap-2 flex-wrap">
+                                <Tag
+                                    size="small"
+                                    :severity="user.isSuperuser ? 'primary' : 'secondary'"
+                                    :icon="user.isSuperuser ? 'pi pi-check' : 'pi pi-times'"
+                                    class="font-mono"
+                                    value="Superuser"
+                                />
+                                <Tag
+                                    size="small"
+                                    :severity="user.isStaff ? 'primary' : 'secondary'"
+                                    :icon="user.isStaff ? 'pi pi-check' : 'pi pi-times'"
+                                    class="font-mono"
+                                    value="Staff"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

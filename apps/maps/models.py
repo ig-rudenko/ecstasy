@@ -1,13 +1,60 @@
+import hashlib
 import os
 from typing import Literal
 
-from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 
+from apps.accounting.models import User
 from apps.check.models import DeviceGroup
+
+
+class TileLayer(models.Model):
+    class Meta:
+        verbose_name = "Подложку карты"
+        verbose_name_plural = "Подложки карт"
+        ordering = ["-id"]
+
+    CRSTypes = [
+        ("EPSG:3857", "EPSG:3857"),
+        ("EPSG:3395", "EPSG:3395"),
+        ("EPSG:4326", "EPSG:4326"),
+    ]
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Название подложки",
+    )
+    url = models.URLField(
+        max_length=2048,
+        verbose_name="URL тайлов",
+        help_text="Шаблон URL с параметрами {x}, {y}, {z}",
+    )
+    url_hash = models.CharField(
+        max_length=64,
+        editable=False,
+        unique=True,
+        verbose_name="Хэш URL тайлов",
+    )
+    crs = models.CharField(
+        max_length=20,
+        choices=CRSTypes,
+        default=CRSTypes[0],
+        verbose_name="CRS",
+        help_text="Coordinate Reference System (Система координат)",
+    )
+
+    def __str__(self) -> str:
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Сохранить подложку с актуальным хэшем URL."""
+
+        self.url_hash = hashlib.sha256(self.url.encode("utf-8")).hexdigest()
+        super().save(*args, **kwargs)
 
 
 class Layers(models.Model):
@@ -150,8 +197,7 @@ class Maps(models.Model):
     interactive = models.BooleanField(
         default=False,
         verbose_name="Карта будет интерактивной?",
-        help_text="Автоматическое обновление состояния узлов сети"
-        " из тех слоев, что созданы через группу Zabbix",
+        help_text="Автоматическое обновление состояния узлов сети из тех слоев, что созданы через группу Zabbix",
     )
 
     from_file = models.FileField(
@@ -166,8 +212,7 @@ class Maps(models.Model):
         null=True,
         blank=True,
         verbose_name="URL Карты из другого ресурса",
-        help_text="URL должен быть абсолютным "
-        "т.е. содержать обозначение протокола (`http://` или `https://`)",
+        help_text="URL должен быть абсолютным т.е. содержать обозначение протокола (`http://` или `https://`)",
     )
 
     layers = models.ManyToManyField(

@@ -23,7 +23,7 @@ class PointInterfacesSerializer(serializers.Serializer):
 class PointRingSerializer(serializers.Serializer):
     name = serializers.CharField(source="device.name")
     ip = serializers.CharField(source="device.ip")
-    available = serializers.BooleanField(source="ping")
+    available = serializers.BooleanField(source="ping", allow_null=True)
     port_to_prev_dev = PointInterfacesSerializer()
     port_to_next_dev = PointInterfacesSerializer()
 

@@ -38,7 +38,7 @@ onMounted(loadNews);
 
 <template>
     <section
-        v-if="loading || loadError || news.length"
+        v-if="loadError || news.length"
         class="mx-auto max-w-375 px-2 sm:px-4 lg:px-8"
         aria-label="Объявления"
         :aria-busy="loading"

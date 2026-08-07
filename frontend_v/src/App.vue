@@ -1,6 +1,6 @@
 <template>
     <Snow v-if="[0, 1, 11].indexOf(new Date().getMonth()) !== -1 && decorConfig.winterDecor" />
-    <Toast>
+    <Toast class="not-sm:w-[85vw] not-sm:p-0! text-sm sm:text-base">
         <template #message="slotProps">
             <div class="flex flex-col items-start" style="flex: 1">
                 <div class="font-medium my-3" v-html="slotProps.message.summary"></div>

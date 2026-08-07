@@ -17,14 +17,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="mb-5 grid gap-3 lg:grid-cols-[1fr_16rem_16rem_auto]">
+    <div class="px-4 mb-5 grid gap-3 lg:grid-cols-[1fr_16rem_16rem_auto]">
         <IconField>
             <InputIcon class="pi pi-search" />
             <InputText
                 :modelValue="candidateSearch"
                 fluid
                 placeholder="IP, имя или hostname"
-                class="rounded-2xl"
+                class="rounded-2xl text-xs md:text-base"
                 @update:modelValue="(value) => emit('update:candidateSearch', String(value || ''))"
                 @keyup.enter="emit('search')"
             />
@@ -34,6 +34,8 @@ const emit = defineEmits<{
             :options="statusOptions"
             optionLabel="label"
             optionValue="value"
+            show-clear
+            input-class="text-xs md:text-base"
             class="w-full rounded-2xl"
             @update:modelValue="(value) => emit('update:candidateStatus', String(value || ''))"
             @change="emit('search')"
@@ -43,10 +45,18 @@ const emit = defineEmits<{
             :options="vendorOptions"
             optionLabel="label"
             optionValue="value"
-            class="w-full rounded-2xl"
+            show-clear
+            input-class="text-xs md:text-base"
+            class="w-full rounded-2xl text-xs md:text-base"
             @update:modelValue="(value) => emit('update:candidateVendor', String(value || ''))"
             @change="emit('search')"
         />
-        <Button icon="pi pi-search" label="Найти" class="rounded-2xl!" :loading="loading" @click="emit('search')" />
+        <Button
+            icon="pi pi-search"
+            label="Найти"
+            class="rounded-2xl! text-xs md:text-base"
+            :loading="loading"
+            @click="emit('search')"
+        />
     </div>
 </template>

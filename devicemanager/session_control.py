@@ -8,7 +8,7 @@ from typing import TypedDict
 from devicemanager import DeviceException
 from devicemanager.vendors import BaseDevice
 
-logger = logging.Logger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class PoolConnectionStatus(TypedDict):
@@ -54,7 +54,7 @@ class ConnectionPool:
         self._expanding = False
         self._lock = threading.RLock()
         self.expired_seconds = expired_seconds
-        self.expired = datetime.now() + timedelta(seconds=expired_seconds)
+        self.expired = datetime.now() + timedelta(seconds=expired_seconds)  # noqa: DTZ005
 
     def __bool__(self):
         with self._lock:
@@ -67,7 +67,7 @@ class ConnectionPool:
     @property
     def available(self) -> bool:
         with self._lock:
-            return self.expired >= datetime.now()
+            return self.expired >= datetime.now()  # noqa: DTZ005
 
     @property
     def is_created(self) -> bool:
@@ -130,7 +130,7 @@ class ConnectionPool:
 
     def get(self) -> GlobalSession | None:
         with self._lock:
-            if self.expired < datetime.now():
+            if self.expired < datetime.now():  # noqa: DTZ005
                 return None
 
             last_available = None
@@ -151,7 +151,7 @@ class ConnectionPool:
         """Продлить срок жизни пула после использования."""
 
         with self._lock:
-            self.expired = datetime.now() + timedelta(seconds=self.expired_seconds)
+            self.expired = datetime.now() + timedelta(seconds=self.expired_seconds)  # noqa: DTZ005
 
     def close_all(self) -> None:
         with self._lock:

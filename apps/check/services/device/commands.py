@@ -8,11 +8,11 @@ from ipaddress import IPv4Address
 from typing import Any
 
 import orjson
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
+from apps.accounting.models import User
 from devicemanager.device.interfaces import Interfaces
 from devicemanager.device_connector.types import RemoteCommand, RemoteCommandCondition
 from devicemanager.multifactory import DeviceMultiFactory

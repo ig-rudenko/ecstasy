@@ -7,7 +7,7 @@ const cards = [
         title: "Транспортные кольца",
         description: "Кольца агрегации, используются для разворота VLAN и контроля состояния магистрали.",
         route: "/ring-manager/transport-ring",
-        permission: "auth.access_transport_rings",
+        permission: "accounting.access_transport_rings",
         image: "/img/ring_manager/background/transport_ring.jpg",
     },
     {
@@ -15,27 +15,27 @@ const cards = [
         title: "Абонентские кольца",
         description: "Оборудование доступа с кольцевой топологией и быстрым переходом к диагностике.",
         route: "/ring-manager/access-ring",
-        permission: "auth.access_rings",
+        permission: "accounting.access_rings",
         image: "/img/ring_manager/background/access_ring.jpg",
     },
 ];
 </script>
 
 <template>
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 sm:py-10">
         <div class="flex flex-col gap-6">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
+                class="not-sm:py-6 relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
             >
                 <div
-                    class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10 pointer-events-none"
+                    class="absolute inset-0 bg-linear-to-br from-emerald-500/10 via-transparent to-sky-500/10 pointer-events-none"
                 />
                 <div class="relative p-6 sm:p-8">
                     <div class="max-w-3xl">
-                        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+                        <div class="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
                             Менеджер колец
-                        </h1>
-                        <p class="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+                        </div>
+                        <p class="mt-2 text-xs sm:text-base text-gray-600 dark:text-gray-300">
                             Выберите раздел для просмотра топологии, проверки состояния и выполнения операций по
                             кольцам.
                         </p>
@@ -43,7 +43,7 @@ const cards = [
                 </div>
             </div>
 
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="px-4 grid gap-6 md:grid-cols-2">
                 <router-link
                     v-for="card in cards.filter((card) => permissions.has(card.permission))"
                     :key="card.key"
@@ -55,10 +55,10 @@ const cards = [
                             class="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105"
                             :style="{ backgroundImage: `url('${card.image}')` }"
                         />
-                        <div class="absolute inset-0 bg-gradient-to-t from-gray-950/85 via-gray-950/35 to-gray-950/5" />
+                        <div class="absolute inset-0 bg-linear-to-t from-gray-950/85 via-gray-950/35 to-gray-950/5" />
                     </div>
 
-                    <div class="relative flex min-h-[22rem] flex-col justify-end p-6 sm:p-8">
+                    <div class="relative flex min-h-88 flex-col justify-end p-6 sm:p-8">
                         <div
                             class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur"
                         >

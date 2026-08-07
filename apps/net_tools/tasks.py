@@ -2,13 +2,14 @@ import logging
 
 from celery.result import AsyncResult
 from django.core.cache import cache
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from django_celery_beat.models import PeriodicTask
 from pyzabbix.api import logger
 
 from apps.check.models import Devices as ModelDevices
 from apps.check.services.device.interfaces_collector import DeviceDBSynchronizer
 from devicemanager.device import DeviceManager
 from ecstasy_project.celery import app
+from ecstasy_project.celery_schedules import get_crontab_schedule
 from ecstasy_project.task import ThreadUpdatedStatusTask
 
 
@@ -46,7 +47,7 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
 
     @classmethod
     def register_task(cls):
-        crontab, _ = CrontabSchedule.objects.get_or_create(
+        crontab = get_crontab_schedule(
             minute="0",
             hour="*/2",
         )

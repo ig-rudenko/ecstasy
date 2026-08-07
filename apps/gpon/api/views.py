@@ -248,7 +248,7 @@ class DevicePortsList(DevicesNamesListAPIView):
 
         interfaces = Interfaces(orjson.loads(device.devicesinfo.interfaces or "[]"))
 
-        interfaces_names = list(map(lambda x: x.name, interfaces))
+        interfaces_names = [x.name for x in interfaces]
         return Response(interfaces_names)
 
 

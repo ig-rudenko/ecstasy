@@ -3,8 +3,13 @@ import os
 from ipaddress import IPv4Address, IPv4Network
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+
+
+class User(AbstractUser):
+    id = models.AutoField(primary_key=True)
 
 
 def validate_ip_addresses(value):

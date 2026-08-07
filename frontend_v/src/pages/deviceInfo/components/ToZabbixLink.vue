@@ -5,10 +5,10 @@
             text
             :class="blockClasses"
             severity="danger"
-            class="rounded-2xl shadow-sm border-none"
+            class="not-sm:px-2 rounded-2xl shadow-sm border-none"
             v-tooltip.bottom="monitoringAvailable ? 'В Zabbix' : 'Снято с мониторинга'"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 64 64">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5" viewBox="0 0 64 64">
                 <path d="M0 0h64v64H0z" fill="#d31f26" />
                 <path
                     d="M18.8 15.382h26.393v3.424l-21.24 26.027h21.744v3.784H18.293v-3.43l21.24-26.02H18.8z"
@@ -19,8 +19,7 @@
             <svg
                 v-if="!monitoringAvailable"
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
+                class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5"
                 fill="currentColor"
                 viewBox="0 0 16 16"
             >

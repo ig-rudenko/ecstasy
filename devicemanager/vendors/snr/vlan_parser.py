@@ -33,12 +33,7 @@ def _parse_ports(text: str) -> list[str]:
 def _is_header_or_separator(line: str) -> bool:
     stripped = line.strip()
 
-    return (
-        not stripped
-        or stripped.startswith("Bridge")
-        or stripped.startswith("(u)-")
-        or stripped.startswith("=======")
-    )
+    return not stripped or stripped.startswith(("Bridge", "(u)-", "======="))
 
 
 def _is_port_continuation_line(line: str) -> bool:

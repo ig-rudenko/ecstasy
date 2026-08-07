@@ -1,12 +1,14 @@
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from requests import RequestException
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices
 from apps.net_tools.services.arp_find import MacIpFindResult
 from devicemanager.vendors.base.types import ArpInfoResult
+
+User = get_user_model()
 
 
 class IpMacInfoViewTestCase(TestCase):

@@ -4,9 +4,10 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.check.services.zabbix import DeviceCoords
-from apps.net_tools.services.finder import MultipleTraceroute, Traceroute, TracerouteResult
-from apps.net_tools.services.network import VlanNetwork
-from apps.net_tools.services.traceroute import build_traceroute_map_data
+from apps.net_tools.services.traceroute.base import MultipleTraceroute, Traceroute
+from apps.net_tools.services.traceroute.graph import build_traceroute_map_data
+from apps.net_tools.services.traceroute.network import TracerouteNetwork
+from apps.net_tools.services.traceroute.types import TracerouteResult
 from devicemanager.device.interfaces import Interface, Interfaces
 
 
@@ -61,7 +62,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
         """Трассировка рекурсивно обходит связанный подграф."""
         finder = self._make_finder()
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -80,7 +81,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
         """Device-name filter limits edges found after the root queryset is selected."""
         finder = self._make_finder()
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -106,7 +107,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             ]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -128,7 +129,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -148,7 +149,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=[98, 99, 100, 101, 102])]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -171,7 +172,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=[100])]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -195,7 +196,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth2", status="up", desc="dev-a", vlan=list(range(90, 111)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -268,7 +269,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=scattered_vlans)]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=1944,
             empty_ports=False,
@@ -290,7 +291,7 @@ class TracerouteTraversalTestCase(SimpleTestCase):
             [Interface(name="eth1", status="up", desc="dev-b", vlan=list(range(1, 711)))]
         )
 
-        finder.find_vlan(
+        finder.execute(
             device="dev-a",
             vlan_to_find=100,
             empty_ports=False,
@@ -338,7 +339,7 @@ class MultipleTracerouteTestCase(SimpleTestCase):
                 self.result = []
                 self.passed_devices = set()
 
-            def find_vlan(self, **kwargs) -> None:
+            def execute(self, **kwargs) -> None:
                 """Имитирует обход компоненты dev-a -> dev-b."""
                 self.calls.append(kwargs["device"])
                 self.passed_devices.update({"dev-a", "dev-b"})
@@ -377,13 +378,16 @@ class TracerouteMapDataTestCase(SimpleTestCase):
 
         with (
             patch(
-                "apps.net_tools.services.traceroute.get_devices_coordinates",
+                "apps.net_tools.services.traceroute.graph.get_devices_coordinates",
                 return_value={
                     "dev-a": DeviceCoords(lat=44.1, lon=33.2),
                     "dev-b": DeviceCoords(lat=44.2, lon=33.3),
                 },
             ),
-            patch("apps.net_tools.services.traceroute._get_traceroute_map_devices", return_value=device_info),
+            patch(
+                "apps.net_tools.services.traceroute.graph._get_traceroute_map_devices",
+                return_value=device_info,
+            ),
         ):
             result = build_traceroute_map_data(graph_data)
 
@@ -416,9 +420,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         visible_nodes = [node for node in network.nodes if not node.get("hidden")]
@@ -450,9 +454,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         self.assertEqual(len(network.edges), 1)
@@ -483,9 +487,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         self.assertEqual(len(network.edges), 1)
@@ -516,9 +520,9 @@ class VlanNetworkTestCase(SimpleTestCase):
                 admin_down_status="up",
             ),
         ]
-        network = VlanNetwork()
+        network = TracerouteNetwork()
 
-        with patch.object(VlanNetwork, "_get_kinds_and_rules", return_value=({}, [])):
+        with patch.object(TracerouteNetwork, "_get_kinds_and_rules", return_value=({}, [])):
             network.create_network(data)
 
         nodes = {node["id"]: node for node in network.nodes if not node.get("hidden")}

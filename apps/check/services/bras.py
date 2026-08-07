@@ -1,12 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
 from typing import TypedDict
 
-from django.contrib.auth.base_user import AbstractBaseUser
-
 from devicemanager.exceptions import BaseDeviceException
 
 from ..logging import log
-from ..models import Bras, Devices
+from ..models import Bras, Devices, User
 
 
 class BrasSession(TypedDict):
@@ -46,7 +44,7 @@ def get_bras_user_session(bras: Bras, mac: str, result: list[BrasSession]):
     result.append(item)
 
 
-def cut_bras_session(device: Devices | None, user: AbstractBaseUser, mac: str, port: str) -> dict:
+def cut_bras_session(device: Devices | None, user: User, mac: str, port: str) -> dict:
     """
     Cut bras session
     """

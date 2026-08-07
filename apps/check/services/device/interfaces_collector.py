@@ -67,10 +67,10 @@ class DeviceInterfacesGather:
         # Если необходимы интерфейсы с VLAN и они имеются в БД, то отправляем их
         if self.with_vlans and device_info.vlans:
             interfaces = Interfaces(orjson.loads(device_info.vlans or "[]"))
-            collected_time = device_info.vlans_date or timezone.now()
+            collected_time = (device_info.vlans_date or timezone.now()).astimezone()
         else:
             interfaces = Interfaces(orjson.loads(device_info.interfaces or "[]"))
-            collected_time = device_info.interfaces_date or timezone.now()
+            collected_time = (device_info.interfaces_date or timezone.now()).astimezone()
 
         return interfaces, collected_time
 
@@ -120,7 +120,7 @@ class DeviceDBSynchronizer(DeviceInterfacesGather):
 @dataclass(frozen=True, kw_only=True, slots=True)
 class DeviceInterfacesResult:
     interfaces: Interfaces
-    device_available: bool
+    device_available: bool | None
     collected: datetime
 
 
@@ -151,7 +151,7 @@ def get_device_interfaces(
 
         return DeviceInterfacesResult(
             interfaces=last_interfaces,
-            device_available=available > 0,
+            device_available=None if not check_status else available > 0,
             collected=last_datetime,
         )
 
@@ -170,7 +170,7 @@ def get_device_interfaces(
         # Возвращает пустой список интерфейсов.
         return DeviceInterfacesResult(
             interfaces=Interfaces(),
-            device_available=bool(available),
+            device_available=None if not check_status else bool(available),
             collected=timezone.now(),
         )
 

@@ -225,7 +225,7 @@ class Zyxel(BaseDevice):
                 "data": "",
             }
 
-        def color(val: int | float, s: str) -> str:
+        def color(val: float, s: str) -> str:
             """Определяем цвета в зависимости от числовых значений показателя"""
             if "margin" in s:
                 gradient = [5, 7, 10, 20]
@@ -359,7 +359,7 @@ class ZyxelFactory(AbstractDeviceFactory):
     def is_can_use_this_factory(session=None, version_output=None) -> bool:
         check_sentences = ["invalid command, valid commands are", "adsl", "switch"]
         output = str(version_output)
-        return version_output and all(map(lambda s: s in output, check_sentences))
+        return version_output and all(s in output for s in check_sentences)
 
     @classmethod
     def get_device(

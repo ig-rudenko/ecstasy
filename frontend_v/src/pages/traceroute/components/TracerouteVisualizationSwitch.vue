@@ -1,12 +1,12 @@
 <template>
     <section
-        class="rounded-4xl border border-gray-200/70 bg-white/80 p-3 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
+        class="sm:rounded-4xl sm:border border-gray-200/70 bg-white/80 px-3 sm:p-3 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/45"
     >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="pl-4">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Визуализация</div>
                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Граф связей или географическая карта по координатам Zabbix
+                    Граф связей или географическая карта по координатам
                 </div>
             </div>
             <div

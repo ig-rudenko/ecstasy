@@ -157,7 +157,7 @@ def parse_layer_file(file_path) -> dict:
         if colour:
             feature_types[feature_type]["colours"][colour] += 1
 
-    for _, data in feature_types.items():
+    for data in feature_types.values():
         data["percent"] = round(data["count"] / total_count, 2)
     return feature_types
 

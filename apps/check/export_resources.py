@@ -8,12 +8,12 @@ class DevicesResource(resources.ModelResource):
     auth_group = fields.Field(
         column_name="auth_group",
         attribute="auth_group",
-        widget=ForeignKeyWidget(AuthGroup, "name"),  # noqa
+        widget=ForeignKeyWidget(AuthGroup, "name"),
     )
     group = fields.Field(
         column_name="group",
         attribute="group",
-        widget=ForeignKeyWidget(DeviceGroup, "name"),  # noqa
+        widget=ForeignKeyWidget(DeviceGroup, "name"),
     )
 
     class Meta:

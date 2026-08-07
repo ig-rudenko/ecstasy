@@ -1,4 +1,3 @@
-import type { LayersControlEvent } from "leaflet";
 import {
     canvas,
     CircleMarker,
@@ -11,17 +10,23 @@ import {
     LatLngBounds,
     LatLngExpression,
     Layer,
+    LayersControlEvent,
     Map as LMap,
     marker,
     polygon,
     polyline,
-    tileLayer,
 } from "leaflet";
 
 import api from "@/services/api";
 import errorFmt from "@/errorFmt";
 import { Paginator } from "@/types/paginator";
 import { errorToast } from "@/services/my.toast";
+import {
+    createDefaultTileLayer,
+    defaultTileLayerCrs,
+    getLeafletTileLayerCrs,
+    LeafletTileLayerManager,
+} from "@/services/mapTiles";
 import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
 import { loadLayers, saveLayers } from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
@@ -86,21 +91,13 @@ interface StaticElementData {
     element?: any;
 }
 
-const popupDefaultOptions = { maxWidth: 1200 };
+const popupDefaultOptions = { maxWidth: Math.min(1200, window.innerWidth - 100) };
 const defaultMapZoom = 12;
 const renderBatchSize = 250;
 const viewportPadding = 0.2;
 const spatialCellSize = 0.25;
 
 export type MapsPage = Paginator<MapBrief>;
-
-const geoGoogle = tileLayer("https://www.google.com/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}", {
-    attribution: "google",
-});
-const arcgisonline = tileLayer(
-    "http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-);
-const osm = tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 
 /**
  * Загружает подробные данные карты.
@@ -133,17 +130,31 @@ export class MapService {
     private visiblePointIds: Set<string> = new Set();
     private visibleStaticElementIds: Set<string> = new Set();
     private pointsBySourceId: Map<string, PointData[]> = new Map();
+    private tileLayerManager: LeafletTileLayerManager;
     private initialViewReady = false;
 
     constructor(
         public mapID: string,
         public mapHTMLElementID: string
     ) {
-        this.map = new LMap(mapHTMLElementID, { layers: [osm], minZoom: 5, preferCanvas: true });
+        const defaultTileLayer = createDefaultTileLayer();
+        this.map = new LMap(mapHTMLElementID, {
+            layers: [defaultTileLayer],
+            minZoom: 5,
+            preferCanvas: true,
+            crs: getLeafletTileLayerCrs(defaultTileLayerCrs),
+        });
+        this.tileLayerManager = new LeafletTileLayerManager(this.map, defaultTileLayer, undefined, () =>
+            this.queueVisibilityRefresh()
+        );
         this.map.attributionControl.getContainer()?.remove();
         this.map.addControl(new Control.Scale());
+        this.map.on("baselayerchange", (event: LayersControlEvent) => {
+            this.tileLayerManager.selectTileLayer(event.name, event.layer);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
+        });
         this.map.on("overlayadd", (event: LayersControlEvent) => {
-            saveLayers(this.mapID, this.map, this.overlays);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
 
             if (this.initialViewReady) {
                 this.fitMapToLayer(event.name);
@@ -152,7 +163,7 @@ export class MapService {
             this.queueVisibilityRefresh();
         });
         this.map.on("overlayremove", () => {
-            saveLayers(this.mapID, this.map, this.overlays);
+            saveLayers(this.mapID, this.map, this.overlays, this.tileLayerManager.activeLayerName);
             this.queueVisibilityRefresh();
         });
         this.map.on("moveend zoomend", () => this.queueVisibilityRefresh());
@@ -177,6 +188,8 @@ export class MapService {
      * Создает группы слоев и панель переключения.
      */
     async renderMapGroups() {
+        const tileLayers = await this.getTileLayers();
+
         if (!this.mapGroups.length) {
             await this.getMapGroups();
         }
@@ -186,14 +199,32 @@ export class MapService {
         }
 
         this.map.addControl(
-            new Control.Layers(
-                { "Спутник старый": geoGoogle, "Спутник новый": arcgisonline, Схема: osm },
-                this.overlays,
-                { autoZIndex: true, collapsed: true, position: "topright", sortLayers: true }
-            )
+            new Control.Layers(tileLayers, this.overlays, {
+                autoZIndex: true,
+                collapsed: true,
+                position: "topright",
+                sortLayers: true,
+            })
         );
 
-        loadLayers(this.mapID, this.map, this.overlays);
+        const savedState = loadLayers(this.mapID, this.map, this.overlays);
+        if (savedState.tiles && tileLayers[savedState.tiles]) {
+            this.tileLayerManager.restoreTileLayer(tileLayers, savedState.tiles);
+        }
+    }
+
+    /**
+     * Создает список подложек карты.
+     *
+     * @returns Слои подложек для Leaflet control.
+     */
+    private async getTileLayers(): Promise<LayersObject> {
+        try {
+            return await this.tileLayerManager.getTileLayers();
+        } catch (error: any) {
+            errorToast("Не удалось загрузить подложки карт", errorFmt(error));
+            return this.tileLayerManager.getDefaultTileLayers();
+        }
     }
 
     /**

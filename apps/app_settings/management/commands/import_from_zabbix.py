@@ -1,4 +1,5 @@
 import re
+import sys
 from functools import lru_cache
 from typing import TypedDict
 
@@ -72,7 +73,7 @@ class Command(BaseCommand):
             return AuthGroup.objects.get(name=name)
         except AuthGroup.DoesNotExist:
             print("Не найдена группа авторизации:", name)
-            exit(1)
+            sys.exit(1)
 
     @staticmethod
     @lru_cache

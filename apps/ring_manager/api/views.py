@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -149,7 +148,7 @@ class CreateSubmitSolutionsAPIView(generics.GenericAPIView):
 
         # Записываем в БД
         ring.solutions = solution_manager.solutions
-        ring.solution_time = datetime.now()
+        ring.solution_time = timezone.now()
         ring.save(update_fields=["solutions", "solution_time"])
 
         return Response(

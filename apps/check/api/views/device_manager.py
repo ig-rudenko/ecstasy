@@ -54,6 +54,7 @@ from ..serializers import (
     ADSLProfileSerializer,
     BulkDeviceCommandExecutionResultSerializer,
     BulkDeviceCommandExecutionSerializer,
+    ChangeDescriptionSerializer,
     DeviceCommandsSerializer,
     InterfacesCommentsSerializer,
     PoEPortStatusSerializer,
@@ -154,12 +155,10 @@ class ChangeDescriptionAPIView(DeviceAPIView):
             }
 
         """
-
-        port = self.request.data.get("port", "")
-        new_description = self.request.data.get("description", "")
-        if not port:
-            raise ValidationError({"detail": "Необходимо указать порт"})
-
+        serializer = ChangeDescriptionSerializer(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        port = serializer.validated_data["port"]
+        new_description = serializer.validated_data["description"]
         device: models.Devices = self.get_object()
 
         # Проверяем права доступа пользователя к оборудованию
@@ -484,8 +483,6 @@ class ExecuteDeviceCommandAPIView(DeviceAPIView):
                     "command": command.name,
                 }
             ) from exc
-        except ValidationError as exc:
-            raise exc
 
         # Если есть проверка выполнения команды.
         if not command.valid_regexp or re.compile(command.valid_regexp).search(output):
@@ -512,7 +509,7 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
             raise NotFound("Command not found")
 
         try:
-            valid_command = validate_command(device, command.command, request.data)  # noqa
+            valid_command = validate_command(device, command.command, request.data)
         except InvalidMethod as exc:
             raise UnsupportedDeviceOperation(
                 {
@@ -522,8 +519,6 @@ class ValidateDeviceCommandAPIView(DeviceAPIView):
                     "command": command.name,
                 }
             ) from exc
-        except ValidationError as exc:
-            raise exc
 
         return Response({"command": valid_command})
 
@@ -566,10 +561,7 @@ class ExecuteBulkDeviceCommandAPIView(UserAuthenticatedAPIView):
                 continue
             devices.append(device)
 
-        try:
-            result = dispatch_bulk_execute_command_task(command, devices, context, self.current_user.id)
-        except ValidationError as exc:
-            raise exc
+        result = dispatch_bulk_execute_command_task(command, devices, context, self.current_user.id)
 
         result["skipped"] = [*result["skipped"], *skipped]
         return Response(result, status=status.HTTP_202_ACCEPTED)

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from django.core.cache import cache
+from django.utils import timezone
 
 from ...models import Devices
 
@@ -9,8 +10,8 @@ from ...models import Devices
 @dataclass
 class DeviceView:
     username: str
-    started: datetime = field(default_factory=datetime.now)
-    updated: datetime = field(default_factory=datetime.now)
+    started: datetime = field(default_factory=timezone.now)
+    updated: datetime = field(default_factory=timezone.now)
 
 
 class DeviceUserViews:
@@ -28,7 +29,7 @@ class DeviceUserViews:
 
         # Оставляем только те просмотры, которые обновлялись не позже `view_ttl` сек назад.
         filtered_views = list(
-            filter(lambda dv: dv.updated > (datetime.now() - timedelta(seconds=self.view_ttl)), views)
+            filter(lambda dv: dv.updated > (timezone.now() - timedelta(seconds=self.view_ttl)), views)
         )
 
         if update_expired and len(filtered_views) != len(views) and filtered_views:
@@ -41,7 +42,7 @@ class DeviceUserViews:
 
         for view in current_viewing:
             if view.username == username:
-                view.updated = datetime.now()
+                view.updated = timezone.now()
                 break
         else:
             current_viewing.append(DeviceView(username=username))

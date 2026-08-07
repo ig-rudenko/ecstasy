@@ -32,16 +32,7 @@ function buildMenuItems(): MenuItem[] {
         },
     ];
 
-    // if (permissions.hasConsoleAccess()) {
-    //     built.push({
-    //         label: "Консоль",
-    //         icon: "console",
-    //         url: permissions.getConsoleUrl() || "#",
-    //         newPage: true,
-    //     });
-    // }
-
-    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+    if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Обнаружение",
             icon: "discovery",
@@ -49,7 +40,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (user?.isSuperuser || permissions.has("auth.access_discovery")) {
+    if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Команды",
             icon: "bulk-commands",
@@ -57,7 +48,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.can_view_maps")) {
+    if (permissions.has("accounting.can_view_maps")) {
         built.push({
             label: "Карты",
             icon: "map",
@@ -65,15 +56,15 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_desc_search")) {
+    if (permissions.has("accounting.access_desc_search")) {
         built.push({
-            label: "Поиск",
+            label: "Интерфейсы",
             icon: "search",
-            url: "/tools/search",
+            url: "/tools/interfaces",
         });
     }
 
-    if (permissions.has("auth.access_traceroute")) {
+    if (permissions.has("accounting.access_traceroute")) {
         built.push({
             label: "Трассировка",
             icon: "topology",
@@ -81,7 +72,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_wtf_search")) {
+    if (permissions.has("accounting.access_wtf_search")) {
         built.push({
             label: "WTF",
             icon: "radar",
@@ -89,7 +80,7 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
-    if (permissions.has("auth.access_rings") || permissions.has("auth.access_transport_rings")) {
+    if (permissions.has("accounting.access_rings") || permissions.has("accounting.access_transport_rings")) {
         built.push({
             label: "Кольца",
             icon: "ring",
@@ -195,15 +186,13 @@ const mobileMenuOpen = ref(false);
 const closeMobileMenu = () => {
     mobileMenuOpen.value = false;
 };
-
-const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
 </script>
 
 <template>
     <div class="sticky top-0 z-30">
-        <div class="mx-auto px-2 sm:px-4 lg:px-8 py-2">
+        <div class="mx-auto sm:px-4 lg:px-8 sm:py-2">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
+                class="relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur transition hover:-translate-y-0.5 delay-20 hover:shadow-md"
             >
                 <div class="absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-sky-500/10" />
                 <!-- Mobile header -->
@@ -221,17 +210,18 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                             >
                                 Ecstasy
                             </div>
-                            <div class="text-[11px] text-gray-500 dark:text-gray-400">Network equipment control</div>
+                            <div class="not-sm:hidden text-[11px] not-sm:leading-3 text-gray-500 dark:text-gray-400">
+                                Network equipment control
+                            </div>
                         </div>
                     </router-link>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center sm:gap-2">
                         <Button
                             icon="pi pi-bars"
                             severity="secondary"
                             outlined
                             size="small"
-                            v-tooltip.bottom="'Меню'"
                             @click="mobileMenuOpen = true"
                         />
 
@@ -255,7 +245,7 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                                 </div>
                                 <span
                                     v-if="!decorConfig.compactMenu"
-                                    class="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
+                                    class="not-sm:hidden text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pr-1"
                                     >Консоль</span
                                 >
                             </div>
@@ -263,9 +253,8 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                         <Avatar
                             v-if="user"
                             :image="getAvatar(user.username)"
-                            class="cursor-pointer"
+                            class="cursor-pointer h-10 w-10"
                             @click="toggleProfile"
-                            size="large"
                         />
                     </div>
                 </div>
@@ -488,9 +477,6 @@ const isWinterMonth = [0, 1, 11].includes(new Date().getMonth());
                 <router-link to="/profile" class="w-full">
                     <Button label="Профиль" icon="pi pi-user" fluid severity="secondary" outlined />
                 </router-link>
-                <div v-if="isWinterMonth" class="text-xs text-gray-500 dark:text-gray-400">
-                    Переключатель зимнего декора перенесен в профиль.
-                </div>
             </div>
         </div>
     </Popover>

@@ -52,7 +52,7 @@ function statusClass(status: string): string {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden sm:rounded-2xl sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="overflow-x-auto">
             <table class="min-w-220 w-full text-sm">

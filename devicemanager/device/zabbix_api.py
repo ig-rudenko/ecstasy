@@ -6,6 +6,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.cache import BaseCache, cache
+from django.utils import timezone
 from pyzabbix import ZabbixAPI, ZabbixAPIException
 from requests import RequestException, Session
 
@@ -90,7 +91,7 @@ class ZabbixAPIConnector:
                 timeout=self.timeout,
                 session=self.get_session(),
             )
-            self.__session_created = datetime.now()
+            self.__session_created = timezone.now()
 
             try:
                 self._zabbix_connection.login(user=current_settings.login, password=current_settings.password)
@@ -166,7 +167,7 @@ class ZabbixAPIConnector:
         """Проверяет, истекло ли время жизни текущего подключения."""
         if self.__session_created is None:
             return False
-        return self.__session_created < datetime.now() - timedelta(seconds=self.__session_exists_timeout)
+        return self.__session_created < timezone.now() - timedelta(seconds=self.__session_exists_timeout)
 
 
 class ThreadLocalZabbixAPIConnector:

@@ -181,15 +181,13 @@ def get_zbx_group_data(zbx_session: ZabbixAPI, group_id: int, group_name: str, c
         if not _is_valid_zbx_host(host):
             continue
 
-        host["interfaces"] = set(
-            map(
-                lambda x: x["ip"],
-                filter(
-                    lambda x: x["ip"] != "127.0.0.1",
-                    host["interfaces"],
-                ),
+        host["interfaces"] = {
+            x["ip"]
+            for x in filter(
+                lambda x: x["ip"] != "127.0.0.1",
+                host["interfaces"],
             )
-        )
+        }
 
         features.append(
             {

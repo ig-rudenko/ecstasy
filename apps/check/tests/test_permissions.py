@@ -1,12 +1,15 @@
 from unittest.mock import Mock
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import RequestFactory, TestCase
 
 from .. import models
 from ..api.permissions import DevicePermission
 from ..models import AccessGroup, AuthGroup
 from ..permissions import profile_permission
+
+User = get_user_model()
 
 
 class NoDevicePermissionsDecoratorTest(TestCase):

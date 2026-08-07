@@ -189,9 +189,7 @@ class End3(models.Model):
         related_name="end3_set",
     )
     location = models.CharField(max_length=255)
-    type = models.CharField(
-        choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования"  # noqa
-    )
+    type = models.CharField(choices=Type.choices, max_length=16, verbose_name="Тип оконечного оборудования")
     capacity = models.PositiveSmallIntegerField(
         choices=[(2, 2), (4, 4), (8, 8), (16, 16), (24, 24)],
         help_text="Кол-во портов/волокон",
@@ -247,7 +245,7 @@ def create_tech_capabilities(sender, instance: End3, created: bool, **kwargs):
 
     tech_capability = []
 
-    for i in range(0, instance.capacity):
+    for i in range(instance.capacity):
         tech_capability.append(TechCapability(end3=instance, number=i + 1))
 
     TechCapability.objects.bulk_create(tech_capability)
@@ -267,7 +265,7 @@ class TechCapability(models.Model):
         bad = "bad"
 
     end3 = models.ForeignKey("gpon.End3", on_delete=models.CASCADE)
-    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)  # noqa
+    status = models.CharField(choices=Status.choices, default=Status.empty.value, max_length=16)
     number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(24)],
         verbose_name="Номер порта/волокна",
@@ -288,7 +286,7 @@ class Customer(models.Model):
         company = "company"
         contract = "contract"
 
-    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)  # noqa
+    type = models.CharField(choices=Type.choices, max_length=128, null=False, blank=False)
     company_name = models.CharField(max_length=256, null=True, blank=True)
     first_name = models.CharField(max_length=256, null=True, blank=True)
     surname = models.CharField(max_length=256, null=True, blank=True)

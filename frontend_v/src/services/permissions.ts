@@ -63,7 +63,7 @@ class Permissions {
     }
 
     hasBulkDeviceCommandExecutePermission(): boolean {
-        return this.has("auth.access_bulk_device_cmd");
+        return this.has("accounting.access_bulk_device_cmd");
     }
 
     getAll(): string[] {
@@ -73,15 +73,15 @@ class Permissions {
     getServiceAccess(): { key: string; label: string; enabled: boolean }[] {
         return [
             { key: "console", label: "Консоль", enabled: this.hasConsoleAccess() },
-            { key: "discovery", label: "Discovery", enabled: this.has("auth.access_discovery") },
-            { key: "maps", label: "Карты", enabled: this.has("auth.can_view_maps") },
-            { key: "search", label: "Поиск", enabled: this.has("auth.access_desc_search") },
-            { key: "traceroute", label: "Трассировка", enabled: this.has("auth.access_traceroute") },
-            { key: "wtf", label: "WTF", enabled: this.has("auth.access_wtf_search") },
+            { key: "discovery", label: "Discovery", enabled: this.has("accounting.access_discovery") },
+            { key: "maps", label: "Карты", enabled: this.has("accounting.can_view_maps") },
+            { key: "interfaces", label: "Интерфейсы", enabled: this.has("accounting.access_desc_search") },
+            { key: "traceroute", label: "Трассировка", enabled: this.has("accounting.access_traceroute") },
+            { key: "wtf", label: "WTF", enabled: this.has("accounting.access_wtf_search") },
             {
                 key: "rings",
                 label: "Кольца",
-                enabled: this.has("auth.access_rings") || this.has("auth.access_transport_rings"),
+                enabled: this.has("accounting.access_rings") || this.has("accounting.access_transport_rings"),
             },
             { key: "gpon", label: "GPON", enabled: this.hasGPONAnyPermission() },
             {

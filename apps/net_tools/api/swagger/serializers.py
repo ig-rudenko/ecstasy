@@ -17,7 +17,10 @@ class FoundInterfaceSerializer(serializers.Serializer):
     status = serializers.CharField()
     description = serializers.CharField()
     vlans = serializers.CharField()
-    savedTime = serializers.DateTimeField(help_text='Формат: "2 года, 6 месяцев назад"')
+    savedTime = serializers.DateTimeField()
+    vlansSavedTime = serializers.DateTimeField()
+    verboseSavedTime = serializers.CharField(help_text='Формат: "2 года, 6 месяцев назад"')
+    verboseVlansSavedTime = serializers.CharField(help_text='Формат: "2 года, 6 месяцев назад"')
 
 
 class FoundDeviceInterfacesSerializer(serializers.Serializer):
@@ -28,6 +31,7 @@ class FoundDeviceInterfacesSerializer(serializers.Serializer):
 
 class SearchInterfaceByDescResultSerializer(serializers.Serializer):
     interfaces = FoundDeviceInterfacesSerializer(many=True)
+    count = serializers.IntegerField(min_value=0)
 
 
 class FindByDescQuerySerializer(serializers.Serializer):

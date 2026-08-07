@@ -1,280 +1,16 @@
-import contextlib
 import json
 import re
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, NamedTuple, TypedDict
+from typing import Any
 
 import orjson
-from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.core.cache import cache
 from django.db.models import QuerySet
 
-from apps.check.models import Devices, InterfacesComments
+from apps.check.models import Devices
+from apps.net_tools.models import DescNameFormat, DevicesInfo
 from devicemanager.device import Interfaces
 
-from ..models import DescNameFormat, DevicesInfo
-
-
-@dataclass
-class InterfaceComment:
-    user: str
-    text: str
-    created_time: datetime
-
-    def to_dict(self) -> "InterfaceCommentDict":
-        return {"user": self.user, "text": self.text, "createdTime": self.created_time}
-
-
-@dataclass
-class DeviceInterfacesComments:
-    interfaces: dict[str, list[InterfaceComment]] = field(default_factory=dict)
-
-
-@dataclass
-class Comments:
-    devices: dict[str, DeviceInterfacesComments] = field(default_factory=dict)
-
-    def get_interface(self, device_name: str, interface_name: str) -> list[InterfaceComment]:
-        device_interfaces = self.devices.get(device_name)
-        if device_interfaces is not None:
-            return device_interfaces.interfaces.get(interface_name, [])
-        return []
-
-
-class InterfaceCommentDict(TypedDict):
-    user: str
-    text: str
-    createdTime: datetime
-
-
-class InterfaceInfoDict(TypedDict):
-    name: str
-    status: str
-    description: str
-    vlans: str
-    savedTime: str
-    vlansSavedTime: str
-
-
-class DescriptionFinderResult(TypedDict):
-    device: str
-    interface: InterfaceInfoDict
-    comments: list[InterfaceCommentDict]
-
-
-@dataclass
-class DeviceInterfacesData:
-    interfaces: Interfaces
-    vlans: Interfaces
-    interfaces_date: datetime | None
-    vlans_date: datetime | None
-
-    def get_interface_vlans(self, interface_name: str) -> str:
-        for interface_with_vlans in self.vlans:
-            if interface_with_vlans.name == interface_name:
-                return ", ".join(map(str, interface_with_vlans.vlan))
-        return ""
-
-
-class DescriptionFinder:
-    def __init__(self, devices: QuerySet[Devices]):
-        self._devices_qs = devices
-        self.dev_info_queryset = (
-            DevicesInfo.objects.filter(dev__in=devices)
-            .select_related("dev")
-            .values("interfaces", "interfaces_date", "vlans", "vlans_date", "dev__name")
-        )
-
-        self.devices: dict[str, DeviceInterfacesData] = {}
-        for dev_info in self.dev_info_queryset:
-            interfaces = Interfaces(orjson.loads(dev_info["interfaces"] or "[]"))
-            # Проверяем, пуста ли переменная interfaces.
-            if not interfaces:
-                continue
-            self.devices[dev_info["dev__name"]] = DeviceInterfacesData(
-                interfaces=interfaces,
-                vlans=Interfaces(orjson.loads(dev_info["vlans"] or "[]")),
-                interfaces_date=dev_info["interfaces_date"],
-                vlans_date=dev_info["vlans_date"],
-            )
-
-    def _build_interface_info(
-        self,
-        info: DeviceInterfacesData,
-        interface_name: str,
-        status: str,
-        description: str,
-    ) -> InterfaceInfoDict:
-        """Создает типизированную структуру данных интерфейса."""
-        return {
-            "name": interface_name,
-            "status": status,
-            "description": description,
-            "vlans": info.get_interface_vlans(interface_name),
-            "savedTime": self.get_natural_time(info.interfaces_date),
-            "vlansSavedTime": self.get_natural_time(info.vlans_date),
-        }
-
-    @staticmethod
-    def _build_description_result(
-        device_name: str,
-        comments: list[InterfaceCommentDict],
-        interface_info: InterfaceInfoDict,
-    ) -> DescriptionFinderResult:
-        """Создает типизированный результат поиска."""
-        return {
-            "device": device_name,
-            "comments": comments,
-            "interface": interface_info,
-        }
-
-    def find_description(self, pattern_str: str, is_regex: bool = False) -> list[DescriptionFinderResult]:
-        """
-        # Поиск портов на всем оборудовании, описание которых совпадает с finding_string или re_string
-
-        :param pattern_str: Регулярное выражение, по которому будет осуществляться поиск описания портов.
-        :param is_regex: Флаг, указывающий, является ли pattern_str регулярным выражением.
-        :return: Список результатов поиска
-        """
-        result: list[DescriptionFinderResult] = []
-
-        if not is_regex:
-            pattern_str = re.escape(pattern_str)  # Экранируем специальные символы
-        pattern: re.Pattern[str] = re.compile(pattern_str, flags=re.IGNORECASE)
-
-        comments: Comments = self.get_comments(pattern)
-
-        self._find_in_interfaces_history(pattern, comments, result)
-        self._add_comments_to_result(comments, result)
-
-        return result
-
-    def _find_in_interfaces_history(
-        self, pattern: re.Pattern[str], comments: Comments, result: list[DescriptionFinderResult]
-    ) -> None:
-        # Производим поочередный поиск
-        for device_name, info in self.devices.items():
-            for interface in info.interfaces:
-                find_on_desc = False
-
-                # Если нашли совпадение в описании порта
-                if pattern.search(interface.desc):
-                    find_on_desc = True
-
-                interface_comments = comments.get_interface(device_name, interface.name)
-
-                if find_on_desc or interface_comments:
-                    with contextlib.suppress(KeyError):  # Игнорируем, если ошибка ключа
-                        result.append(
-                            self._build_description_result(
-                                device_name=device_name,
-                                comments=[comment.to_dict() for comment in interface_comments],
-                                interface_info=self._build_interface_info(
-                                    info=info,
-                                    interface_name=interface.name,
-                                    status=interface.status,
-                                    description=interface.desc,
-                                ),
-                            )
-                        )
-
-                    # Удаляем найденные комментарии
-                    if interface_comments:
-                        del comments.devices[device_name].interfaces[interface.name]
-
-    def _add_comments_to_result(self, comments: Comments, result: list[DescriptionFinderResult]) -> None:
-        for dev_name, dev_intf_comments in comments.devices.items():
-            if dev_name not in self.devices:
-                continue
-
-            device_info = self.devices[dev_name]
-            for interface in dev_intf_comments.interfaces:
-                result.extend(
-                    [
-                        self._build_description_result(
-                            device_name=dev_name,
-                            comments=[comment.to_dict()],
-                            interface_info=self._build_interface_info(
-                                info=device_info,
-                                interface_name=interface,
-                                status=interface,
-                                description=comment.text,
-                            ),
-                        )
-                        for comment in dev_intf_comments.interfaces[interface]
-                    ]
-                )
-
-    @staticmethod
-    def get_natural_time(time_str: datetime | None) -> str:
-        if time_str is not None:
-            return naturaltime(time_str)
-        return "No Datetime"
-
-    def get_comments(self, regex: re.Pattern[str]) -> Comments:
-        """Возвращает список всех комментариев поискового запроса."""
-        comments = list(
-            InterfacesComments.objects.filter(comment__iregex=regex.pattern, device__in=self._devices_qs)
-            .select_related("user", "device")
-            .values("user__username", "device__name", "interface", "comment", "datetime")
-        )
-        comments_result: Comments = Comments()
-
-        for comment in comments:
-            comments_result.devices.setdefault(comment["device__name"], DeviceInterfacesComments())
-            comments_result.devices[comment["device__name"]].interfaces.setdefault(comment["interface"], [])
-
-            comments_result.devices[comment["device__name"]].interfaces[comment["interface"]].append(
-                InterfaceComment(
-                    user=comment["user__username"] or "Anonymous",
-                    text=comment["comment"],
-                    created_time=comment["datetime"],
-                )
-            )
-        return comments_result
-
-
-class TracerouteResult(NamedTuple):
-    """
-    Представляет собой именованный кортеж, который содержит информацию об узле сети, его
-    следующем узле, ширине линии, описании линии и статусе административного отключения.
-    """
-
-    node: str
-    next_node: str
-    line_width: int
-    line_description: dict[str, Any]
-    admin_down_status: str
-
-
-@dataclass(frozen=True)
-class VlanPortMatch:
-    """Описывает точность совпадения VLAN на порту."""
-
-    confidence: str
-    broad_trunk: bool
-    exact_match: bool
-    vlan_count: int
-    device_vlan_count: int
-    matched_range: tuple[int, int] | None
-    largest_range_size: int
-    reason: str
-
-    def to_dict(self) -> dict[str, Any]:
-        """Возвращает структуру для передачи во frontend."""
-        data: dict[str, Any] = {
-            "confidence": self.confidence,
-            "broad_trunk": self.broad_trunk,
-            "exact_match": self.exact_match,
-            "vlan_count": self.vlan_count,
-            "device_vlan_count": self.device_vlan_count,
-            "largest_range_size": self.largest_range_size,
-            "reason": self.reason,
-        }
-        if self.matched_range:
-            data["matched_range"] = {"from": self.matched_range[0], "to": self.matched_range[1]}
-        return data
+from .types import TracerouteResult, VlanPortMatch
 
 
 class Traceroute:
@@ -529,7 +265,7 @@ class Traceroute:
             or filter_value in interface_desc.casefold()
         )
 
-    def find_vlan(
+    def execute(
         self,
         device: str,
         vlan_to_find: int | None,
@@ -648,7 +384,7 @@ class Traceroute:
 
             # Проверка наличия следующего устройства в списке пройденных устройств.
             if next_device and next_device not in self.passed_devices:
-                self.find_vlan(
+                self.execute(
                     device=next_device,
                     vlan_to_find=vlan_to_find,
                     empty_ports=empty_ports,
@@ -902,8 +638,7 @@ class MultipleTraceroute:
                 continue
 
             self._finder.reset_state()
-            # Трассировка vlan
-            self._finder.find_vlan(
+            self._finder.execute(
                 device=device_name,
                 vlan_to_find=vlan,
                 empty_ports=empty_ports,

@@ -10,8 +10,8 @@ from .exceptions import (
 __all__ = [
     "AuthException",
     "DeviceException",
-    "UnknownDeviceError",
-    "TelnetConnectionError",
     "DeviceLoginError",
     "SSHConnectionError",
+    "TelnetConnectionError",
+    "UnknownDeviceError",
 ]

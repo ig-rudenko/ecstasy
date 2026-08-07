@@ -33,7 +33,7 @@ from .swagger.schemas import (
 class MacAddressQuerysetMixin:
     def get_queryset(self):
         """Filter MAC address rows by user device access and optional query params."""
-        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)  # noqa
+        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
         queryset = MacAddress.objects.filter(device__in=devices).select_related("device")
         return queryset.distinct().order_by("device__name", "address", "vlan", "port")
 
@@ -56,7 +56,7 @@ class MacAddressDetailAPIView(MacAddressQuerysetMixin, UserAuthenticatedAPIView,
 class VlanQuerysetMixin:
     def get_queryset(self):
         """Filter VLANs by user device access and optional query params."""
-        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)  # noqa
+        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
         queryset = Vlan.objects.filter(device__in=devices).select_related("device").prefetch_related("ports")
         return queryset.distinct().order_by("device__name", "vlan")
 
@@ -79,7 +79,7 @@ class VlanDetailAPIView(VlanQuerysetMixin, UserAuthenticatedAPIView, RetrieveAPI
 class VlanPortQuerysetMixin:
     def get_queryset(self):
         """Filter VLAN ports by user device access and optional query params."""
-        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)  # noqa
+        devices = filter_devices_qs_by_user(Devices.objects.all(), self.current_user)
         queryset = VlanPort.objects.filter(vlan__device__in=devices).select_related("vlan", "vlan__device")
         return queryset.distinct().order_by("vlan__device__name", "vlan__vlan", "port")
 

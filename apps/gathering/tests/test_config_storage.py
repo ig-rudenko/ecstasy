@@ -3,6 +3,7 @@ import shutil
 from datetime import datetime
 
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices
 
@@ -69,7 +70,9 @@ class TestLocalStorage(TestCase):
                     name=config_name,
                     size=file_stats.st_size,
                     # Время последней модификации
-                    modTime=datetime.fromtimestamp(file_stats.st_mtime).strftime("%H:%M %d.%m.%Y"),
+                    modTime=datetime.fromtimestamp(
+                        file_stats.st_mtime, tz=timezone.get_default_timezone()
+                    ).strftime("%H:%M %d.%m.%Y"),
                 ),
             )
 
@@ -126,6 +129,8 @@ class TestLocalStorage(TestCase):
                     name=config_name,
                     size=file_stats.st_size,
                     # Время последней модификации
-                    modTime=datetime.fromtimestamp(file_stats.st_mtime).strftime("%H:%M %d.%m.%Y"),
+                    modTime=datetime.fromtimestamp(
+                        file_stats.st_mtime, tz=timezone.get_default_timezone()
+                    ).strftime("%H:%M %d.%m.%Y"),
                 ),
             )

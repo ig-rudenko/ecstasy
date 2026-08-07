@@ -1,8 +1,12 @@
 from datetime import datetime
 
+from django.utils import timezone
 from pyzabbix.api import ZabbixAPI
 
+from ecstasy_project.decorators import cached
 
+
+@cached(20, key=lambda _, group: f"zabbix:group_problems:{group}")
 def get_group_problems(zbx_session: ZabbixAPI, zabbix_group_name: str) -> list[dict]:
     """
     Эта функция возвращает список проблем для данной группы хостов Zabbix, если она существует.
@@ -52,7 +56,9 @@ def get_host_acknowledges(zbx_session: ZabbixAPI, problem: dict) -> dict:
     acknowledges = [
         [
             ack["message"],
-            datetime.fromtimestamp(int(ack["clock"])).strftime("%H:%M %d-%m-%Y"),
+            datetime.fromtimestamp(int(ack["clock"]), tz=timezone.get_default_timezone()).strftime(
+                "%H:%M %d-%m-%Y"
+            ),
         ]
         for ack in problem["acknowledges"]
     ]

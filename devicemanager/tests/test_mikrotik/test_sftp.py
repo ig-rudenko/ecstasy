@@ -20,7 +20,7 @@ class TestMikroTikSFTP(SimpleTestCase):
         datetime_mock,
     ):
         """Download the generated backup and remove its remote copy."""
-        datetime_mock.now.return_value = datetime(2026, 6, 13, 14, 5)
+        datetime_mock.now.return_value = datetime(2026, 6, 13, 14, 5)  # noqa: DTZ001
         ssh_client = ssh_client_class.return_value.__enter__.return_value
         sftp_client = ssh_client.open_sftp.return_value.__enter__.return_value
         device = MikroTik.__new__(MikroTik)

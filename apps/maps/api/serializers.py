@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Layers, Maps
+from ..models import Layers, Maps, TileLayer
 
 
 class MapLayerField(serializers.CharField):
@@ -22,6 +22,12 @@ class MapDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Maps
         fields = ["id", "name", "description", "interactive", "preview_image", "type", "from_file", "map_url"]
+
+
+class TileLayerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TileLayer
+        fields = ["name", "url", "crs"]
 
 
 GroupsType = serializers.ListSerializer[MapLayerField]

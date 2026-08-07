@@ -1,5 +1,5 @@
 <template>
-    <div class="mx-auto max-w-7xl px-4 py-2 sm:px-6 sm:py-6 lg:px-8">
+    <div class="mx-auto max-w-7xl py-2 sm:px-6 sm:py-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:gap-6">
             <TracerouteHero :model-value="tracerouteMode" @update:model-value="setTracerouteMode" />
 
@@ -16,7 +16,7 @@
                 :started="tracerouteStarted"
                 @load="loadCurrentTraceroute"
                 @vlan-info="getInputVlanInfo"
-                @update:vlan="input.vlan = $event"
+                @update:vlan="setVlan"
                 @update:option="updateVlanTracerouteOption"
             />
 
@@ -27,8 +27,8 @@
                 :mac-options="macTracerouteOptions"
                 :started="tracerouteStarted"
                 @load="loadCurrentTraceroute"
-                @update:mac="input.mac = $event"
-                @update:mac-vlan-filter="macTracerouteOptions.vlanFilter = $event"
+                @update:mac="setMac"
+                @update:mac-vlan-filter="setMacVlanFilter"
                 @update:option="updateVlanTracerouteOption"
             />
 
@@ -66,9 +66,7 @@
                 :mode="tracerouteMode"
                 :vlan-rendered="vlanTracerouteOptions.rendered"
                 :mac-rendered="macTracerouteOptions.rendered"
-                :vlan-maximized="vlanTracerouteOptions.maximized"
-                :mac-maximized="macTracerouteOptions.maximized"
-                :maximized="graphMaximized"
+                :maximized="visualizationMaximized"
                 :graph-node-search="graphNodeSearch"
                 :graph-search-matches-count="graphSearchMatchesCount"
                 :graph-search-match-index="graphSearchMatchIndex"
@@ -78,11 +76,15 @@
                 @update:graph-node-search="graphNodeSearch = $event"
                 @focus-node="focusGraphNode"
                 @toggle-physics="togglePhysicsMenu"
-                @toggle-maximize-vlan="toggleMaximizeVlanTraceroute"
-                @toggle-maximize-mac="toggleMaximizeMACTraceroute"
+                @toggle-maximize="toggleVisualizationMaximized"
             />
 
-            <TracerouteMapArea v-if="mapVisible && tracerouteMapData" :data="tracerouteMapData" />
+            <TracerouteMapArea
+                v-if="mapVisible && tracerouteMapData"
+                :data="tracerouteMapData"
+                :maximized="visualizationMaximized"
+                @toggle-maximize="toggleVisualizationMaximized"
+            />
         </div>
     </div>
 
@@ -118,6 +120,7 @@ import type {
     TracerouteMapData,
     TracerouteMode,
     TracerouteVisualizationMode,
+    TrunkFilterMode,
     VlanCountInfo,
     VlanTracerouteOptions,
 } from "./components/types";
@@ -158,14 +161,13 @@ export default defineComponent({
                 deviceNameFilter: "",
                 groupFilter: "",
                 nodesOnly: false,
-                maximized: false,
                 rendered: false,
             } as VlanTracerouteOptions,
             macTracerouteOptions: {
-                maximized: false,
                 rendered: false,
                 vlanFilter: null as number | null,
             },
+            visualizationMaximized: false,
             macTracerouteVLANInfo: [] as VlanCountInfo[],
             tracerouteMapData: null as TracerouteMapData | null,
             mapRendered: false,
@@ -203,9 +205,6 @@ export default defineComponent({
         },
         tracerouteStarted(): boolean {
             return this.vlanTracerouteStarted || this.macTracerouteStarted || this.mapTracerouteStarted;
-        },
-        graphMaximized(): boolean {
-            return this.vlanTracerouteOptions.maximized || this.macTracerouteOptions.maximized;
         },
         selectedTracerouteNodeId(): string {
             if (!this.selectedTracerouteNode) {
@@ -277,6 +276,10 @@ export default defineComponent({
         this.macNetwork.setNodeClickHandler((node) => this.handleTracerouteNodeClick(node));
         this.vlanNetwork.setRenderProgressHandler((progress) => this.handleGraphRenderProgress(progress));
         this.macNetwork.setRenderProgressHandler((progress) => this.handleGraphRenderProgress(progress));
+
+        if (this.applyTracerouteParamsFromUrl() && this.hasRequiredTracerouteInput()) {
+            this.loadCurrentTraceroute();
+        }
     },
     unmounted() {
         this.cancelOngoingTraceroute();
@@ -284,16 +287,188 @@ export default defineComponent({
         this.macNetwork.cancelRender();
     },
     methods: {
+        getQueryStringValue(name: string): string {
+            const value = this.$route.query[name];
+
+            if (Array.isArray(value)) {
+                return typeof value[0] === "string" ? value[0] : "";
+            }
+
+            return typeof value === "string" ? value : "";
+        },
+        getQueryNumberValue(name: string): number | null {
+            const value = Number(this.getQueryStringValue(name));
+
+            return Number.isFinite(value) && value > 0 ? value : null;
+        },
+        getQueryBooleanValue(name: string, fallback: boolean): boolean {
+            const value = this.getQueryStringValue(name);
+
+            if (value === "true") {
+                return true;
+            }
+            if (value === "false") {
+                return false;
+            }
+
+            return fallback;
+        },
+        isTracerouteMode(value: string): value is TracerouteMode {
+            return value === "vlan" || value === "mac" || value === "neighbors";
+        },
+        isVisualizationMode(value: string): value is TracerouteVisualizationMode {
+            return value === "graph" || value === "map";
+        },
+        isTrunkFilterMode(value: string): value is TrunkFilterMode {
+            return value === "off" || value === "mark_broad" || value === "hide_broad";
+        },
+        hasTracerouteUrlParams(): boolean {
+            const queryKeys = [
+                "mode",
+                "tracerouteMode",
+                "visualization_mode",
+                "visualizationMode",
+                "maximized",
+                "vlan",
+                "mac",
+                "ep",
+                "ad",
+                "double_check",
+                "graph_min_length",
+                "nodes_only",
+                "trunk_filter_mode",
+                "mac_vlan",
+                "device_name",
+                "group",
+            ];
+
+            return queryKeys.some((key) => this.$route.query[key] !== undefined);
+        },
+        applyTracerouteParamsFromUrl(): boolean {
+            if (!this.hasTracerouteUrlParams()) {
+                return false;
+            }
+
+            const mode = this.getQueryStringValue("mode") || this.getQueryStringValue("tracerouteMode");
+            if (this.isTracerouteMode(mode)) {
+                this.tracerouteMode = mode;
+            }
+
+            const visualizationMode =
+                this.getQueryStringValue("visualization_mode") || this.getQueryStringValue("visualizationMode");
+            if (this.isVisualizationMode(visualizationMode)) {
+                this.visualizationMode = visualizationMode;
+            }
+            this.visualizationMaximized = this.getQueryBooleanValue("maximized", this.visualizationMaximized);
+
+            const vlan = this.getQueryNumberValue("vlan");
+            if (vlan !== null) {
+                this.input.vlan = vlan;
+                getInputVlanInfo(vlan).then((value) => (this.inputVlanInfo = value));
+            }
+
+            const mac = this.getQueryStringValue("mac");
+            if (mac) {
+                this.input.mac = mac;
+            }
+
+            const macVlan = this.getQueryNumberValue("mac_vlan");
+            this.macTracerouteOptions.vlanFilter = macVlan;
+
+            this.vlanTracerouteOptions.showEmptyPorts = this.getQueryBooleanValue(
+                "ep",
+                this.vlanTracerouteOptions.showEmptyPorts
+            );
+            this.vlanTracerouteOptions.adminDownPorts = this.getQueryBooleanValue(
+                "ad",
+                this.vlanTracerouteOptions.adminDownPorts
+            );
+            this.vlanTracerouteOptions.doubleCheckVlan = this.getQueryBooleanValue(
+                "double_check",
+                this.vlanTracerouteOptions.doubleCheckVlan
+            );
+            this.vlanTracerouteOptions.nodesOnly = this.getQueryBooleanValue(
+                "nodes_only",
+                this.vlanTracerouteOptions.nodesOnly
+            );
+
+            const graphMinLength = this.getQueryNumberValue("graph_min_length");
+            if (graphMinLength !== null) {
+                this.vlanTracerouteOptions.graphMinLength = graphMinLength;
+            }
+
+            const trunkFilterMode = this.getQueryStringValue("trunk_filter_mode");
+            if (this.isTrunkFilterMode(trunkFilterMode)) {
+                this.vlanTracerouteOptions.trunkFilterMode = trunkFilterMode;
+            }
+
+            this.vlanTracerouteOptions.deviceNameFilter = this.getQueryStringValue("device_name");
+            this.vlanTracerouteOptions.groupFilter = this.getQueryStringValue("group");
+
+            return true;
+        },
+        createTracerouteUrlParams(): URLSearchParams {
+            const params = this.createTracerouteParams();
+            params.set("visualization_mode", this.visualizationMode);
+            params.set("maximized", String(this.visualizationMaximized));
+            return params;
+        },
+        syncTracerouteUrlParams() {
+            const params = this.createTracerouteUrlParams();
+
+            if (params.toString() === this.getCurrentTracerouteQueryString()) {
+                return;
+            }
+
+            void router
+                .replace({
+                    name: "tools-traceroute",
+                    query: Object.fromEntries(params.entries()),
+                })
+                .catch(() => undefined);
+        },
+        getCurrentTracerouteQueryString(): string {
+            const params = new URLSearchParams();
+
+            Object.entries(this.$route.query).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach((item) => {
+                        if (typeof item === "string") {
+                            params.append(key, item);
+                        }
+                    });
+                    return;
+                }
+
+                if (typeof value === "string") {
+                    params.set(key, value);
+                }
+            });
+
+            return params.toString();
+        },
+        setVlan(value: number | null) {
+            this.input.vlan = value;
+            this.syncTracerouteUrlParams();
+        },
+        setMac(value: string) {
+            this.input.mac = value;
+            this.syncTracerouteUrlParams();
+        },
+        setMacVlanFilter(value: number | null) {
+            this.macTracerouteOptions.vlanFilter = value;
+            this.syncTracerouteUrlParams();
+        },
         setTracerouteMode(mode: TracerouteMode) {
             if (this.tracerouteMode !== mode) {
-                this.vlanTracerouteOptions.maximized = false;
-                this.macTracerouteOptions.maximized = false;
+                this.visualizationMaximized = false;
                 this.mapRendered = false;
                 this.tracerouteMapData = null;
                 this.tracerouteNotFound = false;
                 this.closeTracerouteNodePopup();
             }
             this.tracerouteMode = mode;
+            this.syncTracerouteUrlParams();
         },
         setVisualizationMode(mode: TracerouteVisualizationMode) {
             if (this.visualizationMode === mode) {
@@ -305,6 +480,7 @@ export default defineComponent({
                 this.cancelMapRender();
             }
             this.visualizationMode = mode;
+            this.syncTracerouteUrlParams();
             if (!this.hasRequiredTracerouteInput()) {
                 return;
             }
@@ -323,6 +499,7 @@ export default defineComponent({
         },
         updateVlanTracerouteOption(key: keyof VlanTracerouteOptions, value: string | number | boolean | null) {
             (this.vlanTracerouteOptions[key] as string | number | boolean | null) = value;
+            this.syncTracerouteUrlParams();
         },
         getInputVlanInfo(event: InputNumberInputEvent) {
             const vid = parseInt(event.value?.toString() || "");
@@ -427,6 +604,16 @@ export default defineComponent({
             this.vlanNetwork.setPhysicsConfiguratorVisible(this.physicsMenuVisible);
             this.macNetwork.setPhysicsConfiguratorVisible(this.physicsMenuVisible);
         },
+        toggleVisualizationMaximized() {
+            this.visualizationMaximized = !this.visualizationMaximized;
+            this.syncTracerouteUrlParams();
+            if (this.visualizationMaximized && this.visualizationMode === "graph") {
+                const networkElementId = this.tracerouteMode === "mac" ? "mac-network" : "vlan-network";
+                setTimeout(() =>
+                    document.getElementById(networkElementId)?.scrollIntoView({ behavior: "instant", block: "end" })
+                );
+            }
+        },
         hasRequiredTracerouteInput(): boolean {
             if (this.tracerouteMode === "vlan") {
                 return !!this.input.vlan;
@@ -437,6 +624,8 @@ export default defineComponent({
             return true;
         },
         loadCurrentTraceroute() {
+            this.syncTracerouteUrlParams();
+
             if (this.visualizationMode === "map") {
                 this.load_traceroute_map();
                 return;
@@ -529,17 +718,6 @@ export default defineComponent({
                     }
                 });
         },
-        toggleMaximizeVlanTraceroute() {
-            this.vlanTracerouteOptions.maximized = !this.vlanTracerouteOptions.maximized;
-            if (this.vlanTracerouteOptions.maximized) {
-                setTimeout(() =>
-                    document.getElementById("vlan-network")?.scrollIntoView({ behavior: "instant", block: "end" })
-                );
-            }
-        },
-        toggleMaximizeMACTraceroute() {
-            this.macTracerouteOptions.maximized = !this.macTracerouteOptions.maximized;
-        },
         // Удаляет из MAC адреса все символы, не являющиеся шестнадцатеричными.
         validateMac(mac: string): string {
             return String(mac).replace(/\W/g, "");
@@ -561,27 +739,9 @@ export default defineComponent({
             this.startGraphRenderProgress();
             const controller = new AbortController();
             this.macAbortController = controller;
-            const params: any = {
-                mode: "mac",
-                mac: validMac,
-                ep: this.vlanTracerouteOptions.showEmptyPorts,
-                ad: this.vlanTracerouteOptions.adminDownPorts,
-                graph_min_length: this.vlanTracerouteOptions.graphMinLength,
-                nodes_only: this.vlanTracerouteOptions.nodesOnly,
-            };
-            if (this.macTracerouteOptions.vlanFilter) {
-                params.mac_vlan = this.macTracerouteOptions.vlanFilter;
-            }
-            const deviceNameFilter = this.vlanTracerouteOptions.deviceNameFilter.trim();
-            if (deviceNameFilter) {
-                params.device_name = deviceNameFilter;
-            }
-            const groupFilter = this.vlanTracerouteOptions.groupFilter.trim();
-            if (groupFilter) {
-                params.group = groupFilter;
-            }
+            const params = this.createTracerouteParams();
 
-            api.get("/api/v1/tools/traceroute", { params: params, signal: controller.signal })
+            api.get("/api/v1/tools/traceroute?" + params.toString(), { signal: controller.signal })
                 .then(async (resp) => {
                     if (requestId !== this.activeRenderRequestId) {
                         return;
@@ -663,6 +823,7 @@ export default defineComponent({
         },
         tracerouteMACWithVlanFilter(vlan: number) {
             this.macTracerouteOptions.vlanFilter = this.macTracerouteOptions.vlanFilter === vlan ? null : vlan;
+            this.syncTracerouteUrlParams();
             this.loadCurrentTraceroute();
         },
     },

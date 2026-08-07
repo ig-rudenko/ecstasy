@@ -1,9 +1,10 @@
 from typing import cast
 
-from django.contrib.auth.models import User
 from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
+
+from apps.accounting.models import User
 
 
 class UserAuthenticatedAPIView(GenericAPIView):

@@ -51,7 +51,7 @@ async function updateDeviceViewing() {
 
 <template>
     <div v-if="otherViewingUsers.length" class="flex flex-col items-end gap-2">
-        <div class="text-sm">Смотрят сейчас:</div>
+        <div class="text-xs sm:text-sm">Смотрят сейчас:</div>
         <div v-if="viewings.length" class="flex flex-wrap gap-2">
             <Badge
                 v-for="viewing in otherViewingUsers"

@@ -78,6 +78,8 @@ INSTALLED_APPS = [
 ]
 if DEBUG:
     INSTALLED_APPS += ["debug_toolbar"]
+if ENV == "dev":
+    INSTALLED_APPS += ["django_extensions"]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
 DBBACKUP_STORAGE_OPTIONS = {"location": BASE_DIR / "db-backup"}
@@ -101,6 +103,7 @@ if DEBUG:
     MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
 
 ROOT_URLCONF = "ecstasy_project.urls"
+AUTH_USER_MODEL = "accounting.User"
 
 TEMPLATES = [
     {
@@ -176,7 +179,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 LANGUAGE_CODE = "ru-ru"
 
-TIME_ZONE = "Europe/Moscow"
+TIME_ZONE = os.getenv("TZ", "UTC")
 
 USE_I18N = True
 

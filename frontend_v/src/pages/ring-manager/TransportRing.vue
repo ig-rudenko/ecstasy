@@ -1,11 +1,11 @@
 <template>
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 sm:py-10">
         <div v-if="rings.selectedRing === null" class="flex flex-col gap-6">
             <div
-                class="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur"
+                class="not-sm:py-4 relative overflow-hidden sm:rounded-3xl border-b sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 backdrop-blur"
             >
                 <div
-                    class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 pointer-events-none"
+                    class="absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-emerald-500/10 pointer-events-none"
                 />
                 <div class="relative p-6 sm:p-8">
                     <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -26,7 +26,7 @@
                 </div>
             </div>
 
-            <div v-if="rings.list.length" class="grid gap-5 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            <div v-if="rings.list.length" class="not-sm:px-4 grid gap-5 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                 <button
                     v-for="ring in rings.list"
                     :key="ring.name"
@@ -76,7 +76,7 @@
 
         <div
             v-else
-            class="rounded-3xl border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 p-4 sm:p-6 backdrop-blur"
+            class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 py-4 sm:p-6 backdrop-blur"
         >
             <RingMenu :rings="rings" />
         </div>
@@ -101,7 +101,7 @@ export default {
     },
 
     async mounted() {
-        if (!permissions.has("auth.access_transport_rings")) {
+        if (!permissions.has("accounting.access_transport_rings")) {
             location.href = "/";
             return;
         }

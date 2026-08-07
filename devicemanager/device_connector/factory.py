@@ -12,7 +12,7 @@ from devicemanager.device_connector.exceptions import MethodError
 from devicemanager.session_control import DEVICE_SESSIONS, ConnectionPool
 from devicemanager.vendors import BaseDevice
 
-logger = logging.Logger(__file__)
+logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
 DEFAULT_POOL_SIZE = int(os.getenv("DEFAULT_POOL_SIZE", "3"))

@@ -160,7 +160,7 @@ def sidebar_navigation(request) -> list:
             "separator": False,
             "collapsible": True,
             "items": [
-                model_link("Users", "people", "auth", "user", perms),
+                model_link("Users", "people", "accounting", "user", perms),
                 model_link("Users profiles", "badge", "check", "profile", perms),
                 model_link("Groups", "person", "auth", "group", perms),
             ],
@@ -247,6 +247,7 @@ def sidebar_navigation(request) -> list:
             "items": [
                 model_link("Карты", "map", "maps", "maps", perms),
                 model_link("Слои", "layers", "maps", "layers", perms),
+                model_link("Tiles", "layers", "maps", "tilelayer", perms),
             ],
         },
         {
@@ -283,9 +284,9 @@ def sidebar_navigation(request) -> list:
                     perms,
                 ),
                 model_link("Traceroute", "route", "app_settings", "tracerouteconfig", perms),
-                model_link("VLAN traceroute node kind", "lan", "net_tools", "traceroutenodekind", perms),
+                model_link("Traceroute node kind", "lan", "net_tools", "traceroutenodekind", perms),
                 model_link(
-                    "VLAN traceroute node style rules", "lan", "net_tools", "traceroutenodestylerule", perms
+                    "Traceroute node style rules", "lan", "net_tools", "traceroutenodestylerule", perms
                 ),
                 model_link("Access rings", "tune", "app_settings", "accessringsettings", perms),
                 model_link("Elastic", "article", "app_settings", "logselasticstacksettings", perms),

@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.request import Request
@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from ..models import DeviceMedia, Devices, InterfacesComments
 
 
-def has_user_access_to_device(user: User | AnonymousUser, device: Devices) -> bool:
+def has_user_access_to_device(user: AbstractUser | AnonymousUser, device: Devices) -> bool:
     """Объединённая проверка доступа: через профиль или AccessGroup"""
     if not user.is_authenticated:
         return False
@@ -72,7 +72,7 @@ class DevicesAdminPermission(permissions.BasePermission):
 
 class BulkDeviceCommandExecutionPermission(permissions.BasePermission):
     def has_permission(self, request: Request, view):
-        perm = "auth.access_bulk_device_cmd"
+        perm = "accounting.access_bulk_device_cmd"
         return (
             request.user
             and request.user.is_authenticated

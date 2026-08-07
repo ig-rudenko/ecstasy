@@ -1,6 +1,6 @@
 <template>
     <div v-if="dev.interfaces_count && dev.interfaces_count.count">
-        <div style="width: 25rem">
+        <div class="w-70 sm:w-80 lg:w-100">
             <div class="flex rounded-xl text-center">
                 <!-- Абонентские порты UP С ОПИСАНИЕМ -->
                 <div

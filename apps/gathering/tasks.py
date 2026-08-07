@@ -4,7 +4,7 @@ from datetime import timedelta
 from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from django_celery_beat.models import PeriodicTask
 from pyzabbix.api import logger
 
 from apps.check.models import Devices
@@ -13,6 +13,7 @@ from devicemanager import snmp
 from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, Interfaces
 from ecstasy_project.celery import app
+from ecstasy_project.celery_schedules import get_crontab_schedule
 from ecstasy_project.task import ThreadUpdatedStatusTask
 
 from .models import MacAddress, Vlan
@@ -75,7 +76,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
 
     @classmethod
     def register_task(cls):
-        crontab, _ = CrontabSchedule.objects.get_or_create(
+        crontab = get_crontab_schedule(
             minute="0",
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )
@@ -153,7 +154,7 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
 
     @classmethod
     def register_task(cls):
-        crontab, _ = CrontabSchedule.objects.get_or_create(
+        crontab = get_crontab_schedule(
             minute="0",
             hour="2,6,10,14,18,22",  # Сбор через каждые 4 часа
         )
@@ -197,7 +198,7 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
 
     @classmethod
     def register_task(cls):
-        crontab, _ = CrontabSchedule.objects.get_or_create(
+        crontab = get_crontab_schedule(
             minute="30",
             hour="4",
         )
@@ -287,7 +288,7 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
 
     @classmethod
     def register_task(cls):
-        crontab, _ = CrontabSchedule.objects.get_or_create(
+        crontab = get_crontab_schedule(
             minute="0",
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )

@@ -30,13 +30,13 @@ export interface DeviceInterface {
 }
 
 export interface InterfaceComment {
-    id: number;
+    id?: number;
     user: string;
     text: string;
     createdTime: string;
 }
 
-export interface InterfaceDescriptionMatchResult {
+export interface InterfaceFinderResult {
     device: string;
     comments: InterfaceComment[];
     interface: {
@@ -45,8 +45,25 @@ export interface InterfaceDescriptionMatchResult {
         description: string;
         vlans: string;
         savedTime: string;
+        verboseSavedTime: string;
         vlansSavedTime: string;
+        verboseVlansSavedTime: string;
     };
+}
+
+export interface InterfaceFinderQuery {
+    descriptionPattern: string;
+    descriptionPatternRegex?: boolean;
+    deviceName?: string;
+    deviceNameRegex?: boolean;
+    interfaceName?: string;
+    interfaceNameRegex?: boolean;
+    interfaceStatus?: string | null;
+    hasComment?: boolean;
+    vlans?: string;
+    vlansSuperset?: string;
+    vlansExclude?: string;
+    discoveredDatetimeGt?: string;
 }
 
 export function calculateInterfacesWorkload(devices: Device[]): number[] {
@@ -71,20 +88,31 @@ export function calculateInterfacesWorkload(devices: Device[]): number[] {
     return [abonsUpWithDesc, abonsUpNoDesc, abonsDownWithDesc, abonsDownNoDesc, systems];
 }
 
-export async function findInterfacesByDescription(
-    pattern: string,
-    isRegex = false
-): Promise<InterfaceDescriptionMatchResult[]> {
-    const url = "/api/v1/tools/find-by-desc";
-    let params = {
-        pattern: pattern,
-        is_regex: isRegex ? "1" : "0",
+export async function findInterfaces(query: InterfaceFinderQuery): Promise<InterfaceFinderResult[]> {
+    const url = "/api/v1/tools/interfaces-finder";
+    const params: Record<string, string> = {
+        has_comment: query.hasComment ? "1" : "0",
     };
+
+    if (query.descriptionPatternRegex) {
+        params.desc_pattern_regex = query.descriptionPattern;
+    } else {
+        params.desc_pattern = query.descriptionPattern;
+    }
+
+    if (query.deviceName) params[query.deviceNameRegex ? "device_name_regex" : "device_name"] = query.deviceName;
+    if (query.interfaceName) params[query.interfaceNameRegex ? "interface_regex" : "interface"] = query.interfaceName;
+    if (query.interfaceStatus) params.interface_status = query.interfaceStatus;
+    if (query.vlans) params.vlans = query.vlans;
+    if (query.vlansSuperset) params.vlans_superset = query.vlansSuperset;
+    if (query.vlansExclude) params.vlans_exclude = query.vlansExclude;
+    if (query.discoveredDatetimeGt) params.discovered_datetime_gt = query.discoveredDatetimeGt;
+
     try {
-        const resp = await api.get<{ interfaces: InterfaceDescriptionMatchResult[] }>(url, { params });
+        const resp = await api.get<{ interfaces: InterfaceFinderResult[] }>(url, { params });
         return resp.data.interfaces;
     } catch (error: any) {
-        errorToast("Не удалось найти интерфейсы по описанию", errorFmt(error));
+        errorToast("Не удалось найти интерфейсы", errorFmt(error));
         return [];
     }
 }

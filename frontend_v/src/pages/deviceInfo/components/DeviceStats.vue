@@ -6,7 +6,7 @@
                 class="inline-flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-gray-50/80 px-3 py-2 text-xs text-gray-600 dark:border-gray-700/70 dark:bg-gray-800/60 dark:text-gray-300"
             >
                 <i class="pi pi-clock text-[0.8rem] text-indigo-500 dark:text-indigo-300" />
-                <span class="font-medium">{{ formatUptime(uptime) }}</span>
+                <span class="font-medium text-[0.6rem] sm:text-sm truncate">{{ formatUptime(uptime) }}</span>
             </div>
         </div>
 
@@ -24,11 +24,11 @@
                 </div>
                 <div class="min-w-0">
                     <div
-                        class="text-[11px] font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400 font-mono"
+                        class="text-[11px] font-semibold uppercase sm:tracking-[0.24em] text-gray-500 dark:text-gray-400 font-mono"
                     >
                         {{ item.label }}
                     </div>
-                    <div class="truncate text-gray-900 dark:text-gray-100 font-mono">
+                    <div class="truncate text-gray-900 dark:text-gray-100 text-xs sm:text-base font-mono">
                         {{ item.value }}
                     </div>
                 </div>
@@ -81,7 +81,7 @@ const TempIcon = iconWrapper([
 
 export default defineComponent({
     props: {
-        stats: { required: true, type: Object as PropType<HardwareStats> },
+        stats: { required: true, type: Object as PropType<HardwareStats | null> },
         uptime: { required: false, type: Number, default: -1 },
     },
     computed: {
@@ -92,6 +92,7 @@ export default defineComponent({
             return this.uptimeAvailable || this.statItems.length > 0;
         },
         tempColor(): string {
+            if (!this.stats) return "#94a3b8";
             if (!this.stats.temp || !this.hasNumber(this.stats.temp.value)) return "#94a3b8";
             if (this.stats.temp.status === "low") return "#2563eb";
             if (this.stats.temp.status === "normal") return "#16a34a";
@@ -99,6 +100,7 @@ export default defineComponent({
             return "#dc2626";
         },
         statItems(): StatItem[] {
+            if (!this.stats) return [];
             const items: StatItem[] = [];
 
             if (Array.isArray(this.stats.cpu?.util) && this.stats.cpu.util.length > 0) {

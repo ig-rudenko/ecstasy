@@ -4,15 +4,13 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
-from devicemanager.vendors.base.helpers import remove_ansi_escape_codes
-
 if TYPE_CHECKING:
-    from pexpect import spawn as Spawn  # noqa
+    from pexpect import spawn as Spawn
 else:
     from pexpect.spawnbase import SpawnBase as Spawn
 
 if TYPE_CHECKING or sys.platform != "win32":
-    from pexpect import spawn as Spawn  # noqa
+    from pexpect import spawn as Spawn
 
 logger = logging.getLogger(__name__)
 logger.setLevel(str(os.getenv("DEVICE_CONNECTOR_LOG_LEVEL", "INFO")))
@@ -20,7 +18,6 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class SessionSpawner(Spawn):
-
     def __init__(
         self,
         command: str,
@@ -68,6 +65,8 @@ class SessionSpawner(Spawn):
         return self._before_history
 
     def save_before(self) -> None:
+        from devicemanager.vendors.base.helpers import remove_ansi_escape_codes
+
         if self.before is not None:
             self._before_history += "\n" + remove_ansi_escape_codes(self.before)
 
@@ -79,16 +78,10 @@ class SessionSpawner(Spawn):
         logger.debug("Device: %s | send: %s", self.ip, s)
         return super().send(s)
 
-    def expect(
-        self,
-        pattern,
-        timeout=-1,
-        searchwindowsize=-1,
-        async_=False,
-    ):
+    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):
         logger.debug("Device: %s | expect: %s", self.ip, pattern)
 
-        res = super().expect(pattern, timeout, searchwindowsize, async_)  # noqa
+        res = super().expect(pattern, timeout, searchwindowsize, async_)
 
         logger.debug("Device: %s | expect: %s", self.ip, res)
         logger.debug("Device: %s | before: %s", self.ip, self.before)

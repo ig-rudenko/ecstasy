@@ -1,18 +1,19 @@
 import re
 
+from django.contrib.auth.models import AbstractUser
 from rest_framework.exceptions import ValidationError
-from rest_framework.request import Request
 
 from apps.app_settings.models import TracerouteConfig
 from apps.check.models import Devices
 from apps.check.services.device_coordinates import get_devices_coordinates
 from apps.check.services.filters import filter_devices_qs_by_user
 from apps.gathering.services.mac.traceroute import MacTraceroute
-from apps.net_tools.services.finder import MultipleTraceroute, Traceroute
-from apps.net_tools.services.network import TracerouteNetwork
+
+from .base import MultipleTraceroute, Traceroute
+from .network import TracerouteNetwork
 
 
-def build_traceroute_graph_data(request: Request, query: dict) -> dict:
+def build_traceroute_graph_data(user: AbstractUser, query: dict) -> dict:
     """Build traceroute graph data shared by network and map visualizations."""
     mode = query["mode"]
     vlan = query.get("vlan")
@@ -45,7 +46,7 @@ def build_traceroute_graph_data(request: Request, query: dict) -> dict:
         )
 
     vlan_traceroute_settings = TracerouteConfig.load()
-    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), request.user)  # noqa
+    devices_qs = filter_devices_qs_by_user(Devices.objects.all(), user)
 
     if vlan_traceroute_settings.start_device:
         devices_names = tuple(map(str.strip, vlan_traceroute_settings.start_device.split("\n")))

@@ -210,7 +210,7 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
 
 <template>
     <div
-        class="overflow-hidden rounded-[1.75rem] border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
+        class="overflow-hidden sm:rounded-2xl sm:border border-gray-200/70 bg-white/70 backdrop-blur dark:border-gray-700/70 dark:bg-gray-900/40"
     >
         <div class="border-b border-gray-200/70 p-3 dark:border-gray-700/70">
             <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -380,7 +380,6 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
             :sortField="sortField"
             :sortOrder="sortOrder"
             class="text-sm"
-            :tableStyle="{ minWidth: '120rem' }"
             @sort="handleSort"
             :pt="{
                 header: { class: 'hidden!' },
@@ -418,34 +417,36 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="name" header="Кандидат" :sortable="true">
+            <Column field="name" header="Кандидат" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="min-w-48">
-                        <div class="font-semibold text-gray-900 dark:text-gray-100">{{ data.name || "Без имени" }}</div>
-                        <div class="mt-1 font-mono text-xs text-gray-500">{{ data.ip }}</div>
+                    <div>
+                        <div class="text-gray-900 dark:text-gray-100 truncate font-mono">
+                            {{ data.name || "Без имени" }}
+                        </div>
+                        <div class="mt-1 font-mono">IP: {{ data.ip }}</div>
                     </div>
                 </template>
             </Column>
 
-            <Column field="model" header="Устройство" :sortable="true">
+            <Column field="model" header="Устройство" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="min-w-56">
+                    <div>
                         <div class="text-sm font-medium text-gray-800 dark:text-gray-200">
                             {{ [data.vendor, data.model].filter(Boolean).join(" · ") || "Не определено" }}
                         </div>
-                        <div class="mt-1 text-xs text-gray-500">ОС: {{ data.osVersion || "—" }}</div>
-                        <div class="mt-1 text-xs text-gray-500">
+                        <div class="mt-1 text-xs text-gray-500 font-mono">ОС: {{ data.osVersion || "—" }}</div>
+                        <div class="mt-1 text-xs text-gray-500 font-mono">
                             {{ data.serialNumber || data.sysName || data.sysDescr || "Без fingerprint" }}
                         </div>
                     </div>
                 </template>
             </Column>
 
-            <Column field="status" header="Discovery" :sortable="true">
+            <Column field="status" header="Status" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="min-w-28">
+                    <div>
                         <span
-                            class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                            class="inline-flex rounded-full px-3 py-1 font-semibold font-mono"
                             :class="statusClass(data.status)"
                         >
                             {{ data.status }}
@@ -454,19 +455,24 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="confidence" header="Confidence" :sortable="true">
+            <Column field="confidence" header="Confidence" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <span class="font-mono font-semibold text-gray-800 dark:text-gray-100">{{ data.confidence }}</span>
+                    <div class="text-center">
+                        <span class="font-mono font-semibold text-gray-800 dark:text-gray-100">{{
+                            data.confidence
+                        }}</span>
+                    </div>
                 </template>
             </Column>
 
-            <Column header="Протоколы">
+            <Column header="Протоколы" class="p-2!">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="flex min-w-36 flex-wrap gap-1">
+                    <div class="flex flex-wrap flex-col gap-0.5">
                         <Tag
                             v-for="protocol in getEnabledProtocols(data)"
                             :key="protocol"
                             severity="success"
+                            class="text-xs font-mono p-0 sm:p-0.5"
                             :value="protocol.toUpperCase()"
                         />
                         <span v-if="!getEnabledProtocols(data).length" class="text-xs text-gray-400"
@@ -476,18 +482,18 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="authCheckStatus" header="Проверка AuthGroup" :sortable="true">
+            <Column field="authCheckStatus" header="Проверка AuthGroup" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="min-w-96">
+                    <div>
                         <span
-                            class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1"
+                            class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 truncate"
                             :class="authCheckClass(data.authCheckStatus)"
                         >
                             {{ authCheckLabel(data.authCheckStatus) }}
                         </span>
                         <pre
                             v-if="data.authCheckError"
-                            class="mt-3 max-w-160 whitespace-pre-wrap wrap-break-word rounded-xl border border-rose-200/80 bg-rose-50/70 p-3 font-mono text-xs leading-5 text-rose-800 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"
+                            class="mt-3 min-w-76 max-w-160 whitespace-pre-wrap wrap-break-word rounded-xl border border-rose-200/80 bg-rose-50/70 p-3 font-mono text-xs leading-5 text-rose-800 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"
                             >{{ data.authCheckError }}</pre
                         >
                         <span v-else class="mt-2 block text-xs text-gray-400">Ошибки проверки нет</span>
@@ -495,31 +501,31 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                 </template>
             </Column>
 
-            <Column field="lastSeenAt" header="Последняя активность" :sortable="true">
+            <Column field="lastSeenAt" header="Последняя активность" class="p-2!" :sortable="true">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="min-w-80">
+                    <div>
                         <div class="text-sm text-gray-700 dark:text-gray-200">
                             {{ verboseDatetime(data.last_seen_at) }}
                         </div>
                         <pre
                             v-if="data.lastError"
-                            class="mt-3 max-w-120 whitespace-pre-wrap wrap-break-word rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 font-mono text-xs leading-5 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-100"
+                            class="mt-3 min-w-70 max-w-120 whitespace-pre-wrap wrap-break-word rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 font-mono text-xs leading-5 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-100"
                             >{{ data.lastError }}</pre
                         >
-                        <span v-else class="mt-2 block text-xs text-gray-400">Последней ошибки нет</span>
+                        <span v-else class="mt-2 block text-xs text-gray-400 truncate">Последней ошибки нет</span>
                     </div>
                 </template>
             </Column>
 
-            <Column header="Действия" headerStyle="width: 15rem" bodyStyle="width: 15rem">
+            <Column header="Действия" class="p-2!">
                 <template #body="{ data }: { data: DiscoveryCandidate }">
-                    <div class="flex flex-wrap w-56 gap-2">
-                        <div v-if="data.status === 'READY' || data.status === 'NEW'" class="grid grid-cols-2 gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-1">
+                        <div v-if="data.status === 'READY' || data.status === 'NEW'" class="flex flex-col">
                             <Button
                                 icon="pi pi-check"
                                 label="Принять"
                                 size="small"
-                                class="rounded-xl!"
+                                class="rounded-b-none rounded-t-xl!"
                                 @click="emit('accept', data)"
                             />
                             <Button
@@ -528,11 +534,11 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                                 size="small"
                                 severity="secondary"
                                 outlined
-                                class="rounded-xl!"
+                                class="rounded-t-none rounded-b-xl!"
                                 @click="emit('quick-accept', data)"
                             />
                         </div>
-                        <div class="grid grid-cols-3 gap-2">
+                        <ButtonGroup>
                             <Button
                                 v-if="data.status !== 'IGNORED' && data.status !== 'CREATED'"
                                 v-tooltip.top="'Игнорировать кандидата'"
@@ -540,18 +546,15 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                                 size="small"
                                 severity="secondary"
                                 outlined
-                                class="rounded-xl!"
                                 :aria-label="`Игнорировать кандидата ${data.name || data.ip}`"
                                 @click="emit('ignore', data)"
                             />
-                            <span v-else></span>
                             <Button
                                 v-tooltip.top="'Переопросить кандидата'"
                                 icon="pi pi-refresh"
                                 size="small"
                                 severity="secondary"
                                 outlined
-                                class="rounded-xl!"
                                 :aria-label="`Переопросить кандидата ${data.name || data.ip}`"
                                 :loading="rescanningCandidateId === data.id"
                                 @click="(event: MouseEvent) => emit('rescan', event, data)"
@@ -562,12 +565,11 @@ function authCheckLabel(status: DiscoveryCandidate["authCheckStatus"]): string {
                                 size="small"
                                 severity="danger"
                                 outlined
-                                class="rounded-xl!"
                                 :aria-label="`Удалить кандидата ${data.name || data.ip}`"
                                 :loading="deletingCandidateId === data.id"
                                 @click="(event: MouseEvent) => emit('delete', event, data)"
                             />
-                        </div>
+                        </ButtonGroup>
                     </div>
                 </template>
             </Column>

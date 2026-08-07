@@ -2,28 +2,29 @@
     <Button
         text
         v-tooltip.bottom="'Медиафайлы'"
-        class="flex items-center gap-2 rounded-2xl! shadow-md"
+        class="not-sm:px-2 rounded-2xl! shadow-md"
         :severity="items.length ? 'success' : 'secondary'"
         @click="dialogVisible = true"
     >
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="30"
-            height="30"
-            :fill="mediaToggleButtonColor"
-            viewBox="0 0 16 16"
-        >
-            <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-            <path
-                d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"
-            />
-        </svg>
-        <span
+        <div>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5.5 h-5.5 sm:w-7.5 sm:h-7.5"
+                :fill="mediaToggleButtonColor"
+                viewBox="0 0 16 16"
+            >
+                <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+                <path
+                    d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"
+                />
+            </svg>
+        </div>
+        <div
             v-if="items.length"
-            class="inline-flex min-w-6 items-center justify-center rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-semibold text-white"
+            class="inline-flex min-w-5 w-full sm:min-w-6 items-center justify-center rounded-full bg-emerald-500 px-0 sm:px-2 py-0.5 text-xs font-semibold text-white"
         >
             {{ items.length }}
-        </span>
+        </div>
     </Button>
 
     <Dialog

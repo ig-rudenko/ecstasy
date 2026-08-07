@@ -64,7 +64,7 @@ class DiscoveryCleanupTaskTests(TestCase):
 
         result = cleanup_discovery_runs_task(30)
 
-        self.assertEqual(result["deletedRuns"], 1)
+        self.assertEqual(result["deletedCount"], 1)
         self.assertFalse(DiscoveryRun.objects.filter(id=old_finished.id).exists())
         self.assertFalse(DiscoveryAttempt.objects.filter(run_id=old_finished.id).exists())
         self.assertTrue(DiscoveryRun.objects.filter(id=recent_finished.id).exists())
@@ -237,13 +237,13 @@ class DiscoveryTaskTests(TransactionTestCase):
             ),
             [],
         )
-        mock_upsert_candidate.side_effect = lambda fingerprint: (
-            database_thread_ids.append(get_ident()) or candidate
+        mock_upsert_candidate.side_effect = (
+            lambda fingerprint: database_thread_ids.append(get_ident()) or candidate
         )
         mock_save_attempts.side_effect = save_attempts
         run = DiscoveryRun.objects.create(profile=self.profile, dry_run=True)
 
-        discovery_run_task(run.id, ["192.0.2.70", "192.0.2.71"])
+        discovery_run_task(run.id, ["192.0.2.70", "192.0.2.71"])  # noqa
 
         self.assertTrue(network_thread_ids)
         self.assertTrue(all(thread_id != task_thread_id for thread_id in network_thread_ids))

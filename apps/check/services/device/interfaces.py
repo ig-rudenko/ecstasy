@@ -2,9 +2,9 @@ import re
 from typing import Any
 
 import orjson
-from django.contrib.auth.models import User
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 
+from apps.accounting.models import User
 from apps.net_tools.models import DevicesInfo
 from apps.net_tools.services.vlan_names import VlanNamesCache
 from devicemanager.device import Interfaces

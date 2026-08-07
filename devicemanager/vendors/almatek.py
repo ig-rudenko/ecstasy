@@ -99,7 +99,7 @@ class Almatek(BaseDevice, AbstractConfigDevice):
         result: InterfaceVLANListType = []
         for interface in interfaces:
             result.append(
-                (  # noqa
+                (
                     interface[0],
                     interface[1],
                     interface[2],

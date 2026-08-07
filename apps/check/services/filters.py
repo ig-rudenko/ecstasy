@@ -1,12 +1,10 @@
-from django.contrib.auth.models import AbstractUser, AnonymousUser, User
+from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.db.models import Q, QuerySet
 
 from ..models import Devices
 
 
-def filter_devices_qs_by_user(
-    qs: QuerySet[Devices], user: User | AnonymousUser | AbstractUser
-) -> QuerySet[Devices]:
+def filter_devices_qs_by_user(qs: QuerySet[Devices], user: AbstractUser | AnonymousUser) -> QuerySet[Devices]:
     """
     Функция фильтрации устройств по пользователю.
 

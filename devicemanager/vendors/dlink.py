@@ -5,6 +5,7 @@ from functools import partial
 from time import sleep
 from typing import Any, Literal
 
+import pexpect
 import textfsm
 
 from ecstasy_project.settings_utils import env_bool
@@ -12,7 +13,13 @@ from ecstasy_project.settings_utils import env_bool
 from .. import DeviceException
 from .base.device import AbstractCableTestDevice, AbstractConfigDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
-from .base.helpers import create_mac_regexp, normalize_cable_diag_result, parse_by_template, range_to_numbers
+from .base.helpers import (
+    create_mac_regexp,
+    normalize_cable_diag_result,
+    parse_by_template,
+    range_to_numbers,
+    remove_ansi_escape_codes,
+)
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
@@ -64,11 +71,11 @@ def validate_port(port: str) -> str | None:
 @contextmanager
 def no_clipaging(dev: "Dlink"):
     """Temporarily disable CLI paging for one possibly nested operation."""
-    if not dev._enable_clipaging_control:  # noqa
+    if not dev._enable_clipaging_control:
         yield
         return
 
-    depth = dev._no_clipaging_depth  # noqa
+    depth = dev._no_clipaging_depth
     dev._no_clipaging_depth = depth + 1
     try:
         if depth == 0:
@@ -105,7 +112,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
     """
 
     prompt = r"\S+#"
-    space_prompt = r"Quit.+?mSPACE.+?mENTER"
+    space_prompt = r"\n.+?Quit.+?mSPACE.+?(?:mENTER|Refresh)"
     mac_format = create_mac_regexp("00-11-22-33-44-55")
     vendor = "D-Link"
 
@@ -214,6 +221,63 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
             timeout=timeout,
         )
 
+    def send_command_for_clipaging(
+        self,
+        command: str,
+        space_prompt=None,
+        prompt=None,
+        timeout: int = 2,
+        pages: int = 6,
+    ) -> str:
+        """
+        Отправляет команду на оборудование и считывает её вывод.
+
+        :param command: Команда, которую необходимо выполнить на оборудовании.
+        :param space_prompt: Регулярное выражение, которое указывает на ожидание ввода клавиши,
+                             для последующего отображения информации.
+        :param prompt: Регулярное выражение, которое указывает на приглашение для ввода следующей команды.
+        :param timeout: Время ожидания ответа от оборудования.
+        :param pages: Кол-во страниц для обработки.
+        :return: Строка с результатом команды.
+        """
+
+        if space_prompt is None:
+            space_prompt = self.space_prompt
+        if prompt is None:
+            prompt = self.prompt
+
+        # Убираем предыдущий вывод до промпта, если он был.
+        self.session.expect([self.prompt, pexpect.EOF, pexpect.TIMEOUT], timeout=0)
+
+        output = ""
+        self.session.send(command + "\n")  # Отправляем команду
+
+        while True:
+            match = self.session.expect(
+                [
+                    prompt,  # 0 - конец
+                    space_prompt,  # 1 - далее
+                    pexpect.TIMEOUT,  # 2
+                ],
+                timeout=timeout,
+            )
+
+            output += remove_ansi_escape_codes(self.session.before)
+
+            if match == 0:
+                break
+            if match == 1:
+                # Отправляем символ пробела, для дальнейшего вывода
+                self.session.send(" p" + " " * pages)
+                self.session.send("q")
+
+                if output and output[-1] != "\n":
+                    output += "\n"
+            else:
+                break
+
+        return output
+
     @BaseDevice.lock_session
     def get_interfaces(self) -> InterfaceListType:
         """
@@ -227,12 +291,17 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
         """
 
         with no_clipaging(self):
-            output = self.send_command("show ports des")
+            output = self.send_command_for_clipaging("show ports des", timeout=2, pages=6)
 
         result: list[list[str]] = parse_by_template("interfaces/d-link.template", output)
 
+        passed_interfaces = set()
         interfaces = []
         for port_name, admin_status, link_status, desc in result:
+            if port_name in passed_interfaces:
+                continue
+            passed_interfaces.add(port_name)
+
             status: InterfaceType = "up"
             if admin_status != "Enabled":
                 status = "admin down"
@@ -241,7 +310,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
             interfaces.append((port_name, status, desc))
 
-        return interfaces
+        return sorted(interfaces, key=lambda x: int(self.find_or_empty(r"^\d+", x[0])) or 0)
 
     @BaseDevice.lock_session
     def get_vlan_table(self) -> VlanTableType:

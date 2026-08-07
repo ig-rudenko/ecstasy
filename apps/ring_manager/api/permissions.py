@@ -33,9 +33,9 @@ class RingPermission(BasePermission):
 
 class TransportRingPermission(BasePermission):
     def has_permission(self, request: Request, view: APIView):
-        return request.user.has_perm("auth.access_transport_rings")
+        return request.user.has_perm("accounting.access_transport_rings")
 
 
 class AccessRingPermission(BasePermission):
     def has_permission(self, request: Request, view: APIView):
-        return request.user.has_perm("auth.access_rings")
+        return request.user.has_perm("accounting.access_rings")

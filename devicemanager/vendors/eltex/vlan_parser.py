@@ -8,7 +8,7 @@ class VlanInfo(TypedDict):
     ports: list[str]
 
 
-COLUMN_RE = re.compile(r"-+")
+COLUMN_RE = re.compile(r"--+")
 PORT_RE = re.compile(r"\b(?P<prefix>[A-Za-z]+)(?P<numbers>\d+(?:/\d+)*)(?:-(?P<end>\d+))?\b")
 
 

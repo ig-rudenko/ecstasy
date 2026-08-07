@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pexpect
 
@@ -117,7 +117,7 @@ class SSHSpawn:
         SSHKnownHostsStore().accept_changed(
             self.ip,
             self.port,
-            datetime.now(UTC),
+            datetime.now(),
             ssh_output,
         )
 
@@ -365,10 +365,10 @@ class DeviceRemoteConnector:
                     )
                     session = ssh_spawn.get_session()
 
-        except Exception as exc:
+        except Exception:
             if session is not None and session.isalive():
                 session.close()
-            raise exc
+            raise
 
         session.save_before()
         return session
@@ -405,10 +405,10 @@ class DeviceRemoteConnector:
                 session.close()
                 raise DeviceLoginError(status, ip=self.ip)
 
-        except Exception as exc:
+        except Exception:
             if session is not None and session.isalive():
                 session.close()
-            raise exc
+            raise
 
         session.save_before()
         return session

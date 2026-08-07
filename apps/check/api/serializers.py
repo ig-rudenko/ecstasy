@@ -33,7 +33,7 @@ class DeviceCoordinatesValidationMixin:
 
         if has_latitude != has_longitude:
             raise ValidationError("Latitude and longitude must be provided together.")
-        if latitude == Decimal("0") and longitude == Decimal("0"):
+        if latitude == Decimal(0) and longitude == Decimal(0):
             raise ValidationError("Coordinates 0,0 are invalid.")
         return attrs
 
@@ -83,7 +83,7 @@ class DevicesSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSeria
         try:
             group = DeviceGroup.objects.get(name=group_name_dict["name"])
         except DeviceGroup.DoesNotExist as exc:
-            raise ValidationError(f"Group {group_name_dict["name"]} does not exist") from exc
+            raise ValidationError(f"Group {group_name_dict['name']} does not exist") from exc
         validated_data["group"] = group
         return super().create(validated_data)
 
@@ -101,7 +101,6 @@ class DeviceAuthGroupSerializer(serializers.ModelSerializer):
 
 
 class DevicesDetailUpdateSerializer(DeviceCoordinatesValidationMixin, serializers.ModelSerializer):
-
     class Meta:
         model = Devices
         fields = [
@@ -346,3 +345,8 @@ class BulkDeviceCommandExecutionSerializer(serializers.ModelSerializer):
     def get_skippedCount(obj: BulkDeviceCommandExecution) -> int:
         """Return count of skipped device runs."""
         return sum(1 for result in obj.results.all() if result.status == result.STATUS_SKIPPED)
+
+
+class ChangeDescriptionSerializer(serializers.Serializer):
+    port = serializers.CharField(required=True)
+    description = serializers.CharField(required=True, allow_blank=True)

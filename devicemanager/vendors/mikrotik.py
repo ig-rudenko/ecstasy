@@ -387,7 +387,7 @@ class MikroTik(BaseDevice, AbstractConfigDevice, AbstractPOEDevice):
     def get_current_configuration(self) -> pathlib.Path:
         local_folder_path = pathlib.Path(os.getenv("CONFIG_FOLDER_PATH", "temp_configs"))
 
-        config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"
+        config_file_name = f"backup_{datetime.now().strftime('%H:%M-%d.%m.%Y')}"  # noqa: DTZ005
 
         self.send_command(f"system backup save dont-encrypt=yes name={config_file_name}")
 
