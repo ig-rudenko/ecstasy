@@ -3,7 +3,7 @@
         <ViewPrintEditButtons
             @print="printData"
             @changeMode="(mode) => (editMode = mode)"
-            @exit="() => $router.push($route.query.backref || { name: 'gpon-tech-data' })"
+            @exit="() => $router.push(backRoute)"
             title="Техническая возможность"
             :has-permission-to-edit="hasAnyPermissionToUpdate"
             :is-mobile="isMobile"
@@ -123,16 +123,18 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import End3PortsViewEdit from "./components/End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getEnd3TechData, getGponPermissions, updateEnd3 } from "@/services/gpon";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
-import { getRizerFiberInfo } from "./components/rizerFiberColors.ts";
+import { getRizerFiberInfo, type RizerFiberInfo } from "./components/rizerFiberColors.ts";
+import { getRouteId, getSingleRouteValue } from "./gponRoute";
+import type { End3WithCapability, GponPermission } from "@/types/gpon";
 
 export default {
     name: "ViewEnd3TechData",
@@ -163,49 +165,54 @@ export default {
                     {
                         id: 1,
                         status: "empty",
-                        number: "1",
+                        number: 1,
                         subscribers: [
                             {
-                                id: 1,
-                                name: "ФИО",
+                                connectionID: 1,
+                                customerID: 1,
+                                customerName: "",
                                 transit: 1234567890,
                             },
                         ],
                     },
                 ],
-            },
-            errorStatus: null,
-            errorMessage: null,
-            errorSeverity: null,
+            } as End3WithCapability,
+            errorStatus: null as number | string | null | undefined,
+            errorMessage: null as string | null,
+            errorSeverity: undefined as "error" | "warn" | "info" | undefined,
 
-            userPermissions: [],
-            originalCapacity: null,
-            capacityWarning: null,
+            userPermissions: [] as GponPermission[],
+            originalCapacity: 0,
+            capacityWarning: null as string | null,
 
             windowWidth: window.innerWidth,
             editMode: false,
         };
     },
     mounted() {
-        api.get("/api/v1/gpon/permissions").then((resp) => {
-            this.userPermissions = resp.data;
+        getGponPermissions().then((permissions) => {
+            this.userPermissions = permissions;
         });
 
-        let url = window.location.href;
-        api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
-            .then((resp) => (this.detailData = resp.data))
+        getEnd3TechData(getRouteId(this.$route.params.id))
+            .then((detailData) => {
+                this.detailData = detailData;
+                this.originalCapacity = detailData.capacity;
+            })
             .catch((reason) => {
                 this.errorStatus = getErrorStatus(reason);
                 this.errorMessage = errorFmt(reason);
             });
-
-        this.originalCapacity = this.detailData.capacity;
         window.addEventListener("resize", () => {
             this.windowWidth = window.innerWidth;
         });
     },
 
     computed: {
+        backRoute() {
+            return getSingleRouteValue(this.$route.query.backref) || { name: "gpon-tech-data" };
+        },
+
         hasPermissionToUpdateEnd3() {
             return this.userPermissions.includes("gpon.change_end3");
         },
@@ -228,7 +235,8 @@ export default {
     },
 
     methods: {
-        changeCapacity() {
+        /** Updates the warning displayed when the endpoint capacity changes. */
+        changeCapacity(): void {
             if (this.detailData.capacity < this.originalCapacity) {
                 if (this.deletionUsersAffected()) {
                     this.errorSeverity = "error";
@@ -248,15 +256,15 @@ export default {
             }
         },
 
-        updateEnd3Info() {
-            this.handleRequest(api.patch("/api/v1/gpon/tech-data/end3/" + this.detailData.id, this.detailData));
+        updateEnd3Info(): void {
+            this.handleRequest(updateEnd3(this.detailData));
         },
 
         /**
          * Обрабатывает запрос и отображает всплывающее окно с результатом ответа
          * @param {Promise} request
          */
-        handleRequest(request) {
+        handleRequest(request: Promise<unknown>): Promise<void> {
             return request
                 .then(() => {
                     this.$toast.add({
@@ -277,7 +285,7 @@ export default {
                 });
         },
 
-        deletionUsersAffected() {
+        deletionUsersAffected(): boolean {
             const shift = this.originalCapacity - this.detailData.capacity;
             for (let i = shift - 1; i < this.detailData.capability.length; i++) {
                 if (this.detailData.capability[i].subscribers.length) {
@@ -287,11 +295,12 @@ export default {
             return false;
         },
 
-        rizerFiberInfo(number) {
+        rizerFiberInfo(number: number): RizerFiberInfo | null {
             return getRizerFiberInfo(number);
         },
 
-        printData() {
+        /** Prints the technical capability card. */
+        printData(): void {
             printElementById("tech-data-block");
         },
     },

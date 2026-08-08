@@ -35,9 +35,10 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getGponPermissions, getSubscriberList, hasGponPermissions } from "@/services/gpon";
+import type { GponPaginatedResponse, SubscriberListItem, SubscriberListQuery } from "@/types/gpon";
 
 import SubscriberDataTable from "./components/SubscriberDataTable.vue";
 
@@ -46,10 +47,10 @@ export default {
     components: { SubscriberDataTable },
     data() {
         return {
-            gponSubscriberData: null,
-            errorStatus: null,
-            errorMessage: null,
-            userPermissions: [],
+            gponSubscriberData: null as GponPaginatedResponse<SubscriberListItem> | null,
+            errorStatus: null as number | string | null,
+            errorMessage: null as string | null,
+            userPermissions: [] as string[],
             listQuery: {
                 page: 1,
                 page_size: 10,
@@ -66,33 +67,27 @@ export default {
         };
     },
     mounted() {
-        api.get("/api/v1/gpon/permissions").then((resp) => {
-            this.userPermissions = resp.data;
+        getGponPermissions().then((permissions) => {
+            this.userPermissions = permissions;
         });
 
         this.fetchSubscriberData();
     },
     computed: {
         hasPermissionsToCreate() {
-            return ["gpon.add_customer", "gpon.add_subscriberconnection"].every((elem) => {
-                return this.userPermissions.includes(elem);
-            });
+            return hasGponPermissions(this.userPermissions, ["gpon.add_customer", "gpon.add_subscriberconnection"]);
         },
     },
     methods: {
-        fetchSubscriberData(payload = {}) {
-            this.listQuery = {
-                ...this.listQuery,
-                ...payload,
-            };
-            api.get("/api/v1/gpon/subscriber-data", {
-                params: this.listQuery,
-            })
-                .then((resp) => (this.gponSubscriberData = resp.data))
-                .catch((reason) => {
-                    this.errorStatus = getErrorStatus(reason);
-                    this.errorMessage = errorFmt(reason);
-                });
+        /** Loads subscriber data with the current table filters. */
+        async fetchSubscriberData(payload: Partial<SubscriberListQuery> = {}): Promise<void> {
+            this.listQuery = { ...this.listQuery, ...payload };
+            try {
+                this.gponSubscriberData = await getSubscriberList(this.listQuery);
+            } catch (reason) {
+                this.errorStatus = getErrorStatus(reason) ?? null;
+                this.errorMessage = errorFmt(reason);
+            }
         },
     },
 };

@@ -119,9 +119,10 @@
     </Dialog>
 </template>
 
-<script>
+<script lang="ts">
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getCustomers } from "@/services/gpon";
+import type { GponCustomer, GponPageEvent } from "@/types/gpon";
 
 export default {
     name: "CustomerSearch",
@@ -133,15 +134,15 @@ export default {
         return {
             showDialog: false,
             search: "",
-            _subscribers: [],
+            _subscribers: [] as GponCustomer[],
             pagination: {
                 page: 1,
                 rows: 10,
                 total: 0,
             },
             error: {
-                message: null,
-                status: null,
+                message: null as string | null,
+                status: null as number | string | null,
             },
         };
     },
@@ -149,27 +150,24 @@ export default {
         this.loadCustomers(1);
     },
     methods: {
-        async loadCustomers(page = 1) {
+        /** Loads a page of customers matching the current query. */
+        async loadCustomers(page = 1): Promise<void> {
             try {
-                const response = await api.get("/api/v1/gpon/customers", {
-                    params: {
-                        page,
-                        page_size: this.pagination.rows,
-                        search: this.search || undefined,
-                    },
-                });
-                this._subscribers = response.data.results;
-                this.pagination.total = response.data.count;
+                const customers = await getCustomers(page, this.pagination.rows, this.search || undefined);
+                this._subscribers = customers.results;
+                this.pagination.total = customers.count;
                 this.pagination.page = page;
             } catch (reason) {
                 this.error.message = errorFmt(reason);
-                this.error.status = getErrorStatus(reason);
+                this.error.status = getErrorStatus(reason) ?? null;
             }
         },
-        onPage(event) {
+        /** Loads the page selected in the PrimeVue table. */
+        onPage(event: GponPageEvent): void {
             this.loadCustomers(event.page + 1);
         },
-        selected(value) {
+        /** Emits a detached customer value to the parent form. */
+        selected(value: GponCustomer): void {
             // Отправляем новый объект
             this.$emit("select", {
                 id: value.id,

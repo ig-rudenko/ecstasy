@@ -90,13 +90,13 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 export default {
     name: "StepMenu",
     props: {
-        currentStep: { required: true },
-        stepsText: { required: true, type: Array },
-        isMobile: { required: false, default: false },
+        currentStep: { required: true, type: Number },
+        stepsText: { required: true, type: Array<string> },
+        isMobile: { required: false, type: Boolean, default: false },
     },
 };
 </script>

@@ -1,4 +1,12 @@
-const RIZER_FIBER_COLORS = [
+/** Visual metadata for one fiber in a GPON riser. */
+export interface RizerFiberInfo {
+    name: string;
+    className: string;
+    marked: boolean;
+}
+
+/** Standard fiber color sequence used by GPON risers. */
+const RIZER_FIBER_COLORS: RizerFiberInfo[] = [
     { name: "Синий", className: "rizer-color-blue", marked: false },
     { name: "Оранжевый", className: "rizer-color-orange", marked: false },
     { name: "Зеленый", className: "rizer-color-green", marked: false },
@@ -25,7 +33,8 @@ const RIZER_FIBER_COLORS = [
     { name: "Бирюзовый", className: "rizer-color-aqua", marked: true },
 ];
 
-export function getRizerFiberInfo(num: number) {
+/** Returns visual metadata for a one-based riser fiber number. */
+export function getRizerFiberInfo(num: number): RizerFiberInfo | null {
     const index = Number(num) - 1;
     if (!Number.isFinite(index) || index < 0 || index >= RIZER_FIBER_COLORS.length) {
         return null;

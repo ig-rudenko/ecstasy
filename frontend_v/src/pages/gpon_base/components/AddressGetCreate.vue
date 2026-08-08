@@ -69,13 +69,26 @@
     </Dialog>
 </template>
 
-<script>
+<script lang="ts">
 import AddressForm from "./AddressForm.vue";
 import Asterisk from "./Asterisk.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 
 import { formatAddress } from "@/formats";
-import api from "@/services/api";
+import { getBuildingAddresses } from "@/services/gpon";
+import type { PropType } from "vue";
+import type { GponAddress, GponFilterEvent, GponLazyLoadEvent } from "@/types/gpon";
+
+/** Mutable address value shared with a parent form. */
+interface AddressHolder {
+    address: GponAddress | null;
+}
+
+/** OLT port used to limit available building addresses. */
+interface DevicePortSelection {
+    deviceName: string;
+    devicePort: string;
+}
 
 export default {
     name: "AddressGetCreate",
@@ -88,22 +101,22 @@ export default {
 
     props: {
         isMobile: { required: true, type: Boolean },
-        data: { required: true, type: Object },
-        allowCreate: { required: false, default: true },
-        getFromDevicePort: { required: false, default: null },
-        isSubscriberAddress: { required: false, default: false },
+        data: { required: true, type: Object as PropType<AddressHolder> },
+        allowCreate: { required: false, type: Boolean, default: true },
+        getFromDevicePort: { required: false, type: Object as PropType<DevicePortSelection | null>, default: null },
+        isSubscriberAddress: { required: false, type: Boolean, default: false },
         valid: { required: false, type: Boolean, default: true },
     },
 
     data() {
         return {
             show_new_address_form: false,
-            _addresses: [],
+            _addresses: [] as GponAddress[],
             searchQuery: "",
             isLoading: false,
             hasNextPage: true,
             nextPage: 1,
-            debounceTimer: null,
+            debounceTimer: null as ReturnType<typeof setTimeout> | null,
             pageSize: 20,
             formState: {
                 address: { valid: true },
@@ -111,7 +124,7 @@ export default {
                     return this.address.valid;
                 },
             },
-            _initData: null,
+            _initData: null as DevicePortSelection | null,
         };
     },
 
@@ -123,7 +136,8 @@ export default {
     updated() {
         if (
             this.getFromDevicePort &&
-            (this._initData.deviceName !== this.getFromDevicePort.deviceName ||
+            (!this._initData ||
+                this._initData.deviceName !== this.getFromDevicePort.deviceName ||
                 this._initData.devicePort !== this.getFromDevicePort.devicePort)
         ) {
             this.getAddresses({ reset: true });
@@ -144,7 +158,8 @@ export default {
     },
 
     methods: {
-        getFullAddress(address) {
+        /** Formats an address for display in the selector. */
+        getFullAddress(address: GponAddress): string {
             let address_string = formatAddress(address);
             if (this.isSubscriberAddress && address.building_type === "building") {
                 address_string += ` (${address.floor} этаж) кв. ${address.apartment}`;
@@ -152,7 +167,8 @@ export default {
             return address_string;
         },
 
-        validNewAddress(newAddress) {
+        /** Accepts a newly created address and updates the parent form. */
+        validNewAddress(newAddress: GponAddress): void {
             this.show_new_address_form = false;
             this.formState.address.valid = true;
             const copiedAddress = this.normalizeAddress(newAddress);
@@ -167,9 +183,9 @@ export default {
             this.data.address = null;
         },
 
-        getAddresses({ reset = false } = {}) {
-            if (this.isLoading) return;
-            if (!reset && !this.hasNextPage) return;
+        /** Loads a page of building addresses for the selector. */
+        async getAddresses({ reset = false }: { reset?: boolean } = {}): Promise<void> {
+            if (this.isLoading || (!reset && !this.hasNextPage)) return;
 
             if (reset) {
                 this._addresses = [];
@@ -177,31 +193,25 @@ export default {
                 this.hasNextPage = true;
             }
 
-            let url = "/api/v1/gpon/addresses/buildings";
-            if (this.getFromDevicePort) {
-                url += `?device=${this.getFromDevicePort.deviceName}&port=${this.getFromDevicePort.devicePort}`;
-            }
-
             this.isLoading = true;
-            api.get(url, {
-                params: {
+            try {
+                const page = await getBuildingAddresses({
                     page: this.nextPage,
                     page_size: this.pageSize,
                     search: this.searchQuery || undefined,
-                },
-            })
-                .then((resp) => {
-                    const newItems = resp.data.results || [];
-                    this._addresses = [...this._addresses, ...newItems];
-                    this.hasNextPage = Boolean(resp.data.next);
-                    this.nextPage += 1;
-                })
-                .finally(() => {
-                    this.isLoading = false;
+                    device: this.getFromDevicePort?.deviceName,
+                    port: this.getFromDevicePort?.devicePort,
                 });
+                this._addresses = [...this._addresses, ...page.results];
+                this.hasNextPage = Boolean(page.next);
+                this.nextPage += 1;
+            } finally {
+                this.isLoading = false;
+            }
         },
 
-        onAddressFilter(event) {
+        /** Restarts address loading after the search query changes. */
+        onAddressFilter(event: GponFilterEvent): void {
             this.searchQuery = (event.value || "").trim();
             if (this.debounceTimer) clearTimeout(this.debounceTimer);
             this.debounceTimer = setTimeout(() => {
@@ -209,7 +219,8 @@ export default {
             }, 250);
         },
 
-        onAddressesLazyLoad(event) {
+        /** Loads the next address page near the end of the virtual list. */
+        onAddressesLazyLoad(event?: GponLazyLoadEvent): void {
             if (!event) return;
             const remaining = this._addresses.length - event.last;
             if (remaining <= 5) {
@@ -217,13 +228,12 @@ export default {
             }
         },
 
-        addressesList() {
+        /** Combines the selected address with API results without duplicates. */
+        addressesList(): GponAddress[] {
             let allAddresses = this._addresses;
-            if (this.formState.isValid() && this.allowCreate && this.data.address) {
-                allAddresses = [
-                    this.data.address,
-                    ...this._addresses.filter((item) => item.id !== this.data.address.id),
-                ];
+            const selectedAddress = this.data.address;
+            if (this.formState.isValid() && this.allowCreate && selectedAddress) {
+                allAddresses = [selectedAddress, ...this._addresses.filter((item) => item.id !== selectedAddress.id)];
             }
             return allAddresses;
         },
@@ -235,7 +245,8 @@ export default {
             return this.getNewAddress();
         },
 
-        normalizeAddress(address) {
+        /** Normalizes optional API fields for address forms. */
+        normalizeAddress(address: Partial<GponAddress> | null): GponAddress {
             return {
                 id: address?.id ?? undefined,
                 building_id: address?.building_id ?? undefined,
@@ -253,7 +264,8 @@ export default {
             };
         },
 
-        getNewAddress() {
+        /** Creates the default address used by the GPON forms. */
+        getNewAddress(): GponAddress {
             return {
                 region: "Севастополь",
                 settlement: "Севастополь",

@@ -151,20 +151,23 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import Asterisk from "./Asterisk.vue";
 import BuildingIcon from "./BuildingIcon.vue";
+import type { PropType } from "vue";
+import type { GponAddress } from "@/types/gpon";
 
 export default {
     name: "AddressForm",
     components: { Asterisk, BuildingIcon },
     props: {
-        initAddress: { required: true, type: Object },
-        subscriberAddress: { required: false, default: false },
+        initAddress: { required: true, type: Object as PropType<GponAddress> },
+        subscriberAddress: { required: false, type: Boolean, default: false },
     },
+    emits: ["valid", "dismiss"],
     data() {
         return {
-            address: null,
+            address: {} as GponAddress,
             region: { valid: true },
             settlement: { valid: true },
             planStructure: { valid: true },
@@ -200,14 +203,16 @@ export default {
         },
     },
     methods: {
-        getClasses(field) {
+        /** Returns validation classes for an address field. */
+        getClasses(field: { valid: boolean }): string[] {
             if (field.valid) {
                 return [];
             } else {
                 return ["p-invalid"];
             }
         },
-        validate() {
+        /** Validates required address fields and emits the valid value. */
+        validate(): void {
             this.region.valid = this.address.region.length > 0;
             this.settlement.valid = this.address.settlement.length > 0;
             this.street.valid = this.address.street.length > 0 || this.address.planStructure.length > 0;
@@ -225,7 +230,8 @@ export default {
             }
         },
 
-        dismiss() {
+        /** Closes the form without saving the address. */
+        dismiss(): void {
             this.$emit("dismiss");
         },
     },

@@ -219,7 +219,7 @@
 
                         <div class="flex flex-wrap items-center justify-center gap-y-6 p-3">
                             <!-- ОБОРУДОВАНИЕ И ПОРТ -->
-                            <template v-if="!(editMode && hasPermissionToUpdateConnection)">
+                            <template v-if="connection.houseOLTState && !(editMode && hasPermissionToUpdateConnection)">
                                 <div class="flex flex-wrap sm:flex-col justify-center text-right">
                                     <!--DEVICE LINK-->
                                     <router-link
@@ -294,7 +294,7 @@
                                         :to="{
                                             name: 'gpon-end3-tech-data',
                                             params: { id: connection.end3.id },
-                                            query: { backref: $route.href },
+                                            query: { backref: $route.fullPath },
                                         }"
                                     >
                                         <Button
@@ -406,7 +406,7 @@
                                                 ONT ID
                                                 <Asterisk />
                                             </div>
-                                            <InputText
+                                            <InputNumber
                                                 v-model.number="connection.ont_id"
                                                 type="number"
                                                 fluid
@@ -444,7 +444,7 @@
                                         <div class="w-full">
                                             <div class="p-2">Номер наряда</div>
                                             <InputText
-                                                v-model.number="connection.order"
+                                                v-model="connection.order"
                                                 type="number"
                                                 fluid
                                                 class="rounded-2xl"
@@ -455,9 +455,11 @@
                                             <DatePicker
                                                 id="calendar-24h"
                                                 dateFormat="yy-mm-dd"
-                                                :model-value="new Date(connection.connected_at)"
+                                                :model-value="
+                                                    connection.connected_at ? new Date(connection.connected_at) : null
+                                                "
                                                 input-class="rounded-l-2xl"
-                                                @value-change="(value) => (connection.connected_at = value)"
+                                                @value-change="(value) => setConnectionDate(connection, value)"
                                                 showTime
                                                 fluid
                                                 show-icon
@@ -508,7 +510,7 @@
                                                 Транзит
                                                 <Asterisk />
                                             </h6>
-                                            <InputText
+                                            <InputNumber
                                                 v-model.number="connection.transit"
                                                 type="number"
                                                 class="rounded-2xl"
@@ -591,12 +593,25 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import Asterisk from "./components/Asterisk.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
-import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import errorFmt, { getErrorStatus, getErrorSummary } from "@/errorFmt";
+import {
+    deleteSubscriberConnection,
+    getCustomer,
+    getGponPermissions,
+    updateCustomer,
+    updateSubscriberConnection,
+} from "@/services/gpon";
+import type {
+    CustomerDetail,
+    CustomerType,
+    GponAddress,
+    SubscriberConnection,
+    UpdateCustomerPayload,
+} from "@/types/gpon";
 import { formatAddress, verboseDate } from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
 import printElementById from "@/helpers/print";
@@ -619,35 +634,37 @@ export default {
     data() {
         return {
             subscriberID: 0,
-            customer: null,
-            userPermissions: [],
+            customer: null as CustomerDetail | null,
+            userPermissions: [] as string[],
             windowWidth: window.innerWidth,
             editMode: false,
             error: {
-                status: null,
-                message: null,
+                status: null as number | string | null,
+                message: null as string | null,
             },
         };
     },
 
     mounted() {
-        this.subscriberID = this.$route.params.id;
+        this.subscriberID = Number(this.$route.params.id);
 
         window.addEventListener("resize", () => {
             this.windowWidth = window.innerWidth;
         });
-        api.get("/api/v1/gpon/permissions").then((resp) => {
-            this.userPermissions = resp.data;
+        getGponPermissions().then((permissions) => {
+            this.userPermissions = permissions;
         });
         this.getSubscriberData();
     },
 
     computed: {
         fullName() {
-            return this.customer.surname + " " + this.customer.firstName + " " + this.customer.lastName;
+            if (!this.customer) return "";
+            return [this.customer.surname, this.customer.firstName, this.customer.lastName].filter(Boolean).join(" ");
         },
 
         gender() {
+            if (!this.customer) return "man";
             if (this.customer.type === "company") return "company";
             if (this.customer.type === "contract") return "contract";
             const lastName = this.customer.lastName;
@@ -683,11 +700,12 @@ export default {
             history.go(-1);
         },
 
-        getSubscriberData() {
-            api.get("/api/v1/gpon/customers/" + this.subscriberID)
-                .then((resp) => (this.customer = resp.data))
+        /** Loads the customer card and its connections. */
+        getSubscriberData(): void {
+            getCustomer(this.subscriberID)
+                .then((customer) => (this.customer = customer))
                 .catch((reason) => {
-                    this.error.status = getErrorStatus(reason);
+                    this.error.status = getErrorStatus(reason) ?? null;
                     this.error.message = errorFmt(reason);
                 });
         },
@@ -696,7 +714,8 @@ export default {
             printElementById("subscriber-data-block");
         },
 
-        getFullAddress(address) {
+        /** Formats a subscriber connection address. */
+        getFullAddress(address: GponAddress): string {
             let address_string = formatAddress(address);
             if (address.apartment) {
                 address_string += ` кв. ${address.apartment}`;
@@ -707,12 +726,15 @@ export default {
             return address_string;
         },
 
-        rizerFiberInfo(number) {
+        /** Returns display metadata for a riser fiber number. */
+        rizerFiberInfo(number: number): ReturnType<typeof getRizerFiberInfo> {
             return getRizerFiberInfo(number);
         },
 
-        updateCustomerData() {
-            const data = {
+        /** Persists edits made to the customer card. */
+        updateCustomerData(): void {
+            if (!this.customer) return;
+            const data: UpdateCustomerPayload = {
                 type: this.customer.type,
                 companyName: this.customer.companyName,
                 firstName: this.customer.firstName,
@@ -721,23 +743,30 @@ export default {
                 phone: this.customer.phone,
                 contract: this.customer.contract,
             };
+            this.handleRequest(updateCustomer(this.customer.id, data), "Данные абонента были успешно обновлены");
+        },
+
+        /** Converts a DatePicker value into the ISO string expected by the API. */
+        setConnectionDate(
+            connection: SubscriberConnection,
+            value: Date | Date[] | (Date | null)[] | null | undefined
+        ): void {
+            connection.connected_at = value instanceof Date ? value.toISOString() : null;
+        },
+
+        /** Persists edits made to a subscriber connection. */
+        updateCustomerConnection(connection: SubscriberConnection): void {
+            if (!this.customer) return;
             this.handleRequest(
-                api.put("/api/v1/gpon/customers/" + this.customer.id, data),
-                "Данные абонента были успешно обновлены"
+                updateSubscriberConnection(connection, this.customer.id),
+                "Данные абонентского подключения были успешно обновлены"
             );
         },
 
-        updateCustomerConnection(connection) {
-            connection.customer = this.customer.id;
-            this.handleRequest(
-                api.put("/api/v1/gpon/subscriber-connection/" + connection.id, connection),
-                "Данные абонентского подключения были успешно обновлены"
-            ).then((value) => (connection = value));
-        },
-
-        deleteConnection(event, connection) {
+        /** Confirms and deletes a subscriber connection. */
+        deleteConnection(event: MouseEvent, connection: SubscriberConnection): void {
             this.$confirm.require({
-                target: event.currentTarget,
+                target: event.currentTarget as HTMLElement,
                 message: "Вы уверены, что хотите удалить данное подключение?",
                 icon: "pi pi-info-circle",
                 acceptLabel: "Да",
@@ -745,7 +774,7 @@ export default {
                 acceptClass: "p-button-danger p-button-sm",
                 defaultFocus: "reject",
                 accept: () => {
-                    api.delete("/api/v1/gpon/subscriber-connection/" + connection.id)
+                    deleteSubscriberConnection(connection.id)
                         .then(() => {
                             this.$toast.add({
                                 severity: "error",
@@ -758,7 +787,7 @@ export default {
                         .catch((reason) =>
                             this.$toast.add({
                                 severity: "error",
-                                summary: getErrorStatus(reason) || "Ошибка",
+                                summary: getErrorSummary(reason),
                                 detail: errorFmt(reason),
                                 life: 3000,
                             })
@@ -768,7 +797,8 @@ export default {
             });
         },
 
-        subscriberVerbose(type) {
+        /** Returns a localized customer type label. */
+        subscriberVerbose(type: CustomerType): string {
             return getSubscriberTypeVerbose(type);
         },
 
@@ -777,12 +807,12 @@ export default {
          * @param {Promise} request
          * @param {String} successInfo
          */
-        handleRequest(request, successInfo) {
+        handleRequest(request: Promise<unknown>, successInfo: string): Promise<void> {
             return request
                 .then(() => {
                     this.$toast.add({ severity: "success", summary: "Обновлено", detail: successInfo, life: 3000 });
                 })
-                .catch((reason) => {
+                .catch((reason: unknown) => {
                     const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",

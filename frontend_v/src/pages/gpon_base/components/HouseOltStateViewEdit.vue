@@ -70,12 +70,14 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import AddressGetCreate from "./AddressGetCreate.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { updateHouseOltState } from "@/services/gpon";
+import type { PropType } from "vue";
+import type { GponAddress, HouseOltState } from "@/types/gpon";
 import { formatAddress } from "@/formats";
 
 export default {
@@ -86,10 +88,13 @@ export default {
     },
 
     props: {
-        buildingData: { required: true, type: Object },
+        buildingData: {
+            required: true,
+            type: Object as PropType<HouseOltState & { address: GponAddress }>,
+        },
         isMobile: { required: true, type: Boolean },
         editMode: { required: true, type: Boolean },
-        userPermissions: { required: true, type: Array },
+        userPermissions: { required: true, type: Array as PropType<string[]> },
     },
 
     computed: {
@@ -103,15 +108,13 @@ export default {
     },
 
     methods: {
-        getFullAddress(address) {
+        /** Formats a building address for display. */
+        getFullAddress(address: GponAddress): string {
             return formatAddress(address);
         },
 
         updateBuildingInfo() {
-            this.handleRequest(
-                api.put("/api/v1/gpon/tech-data/house-olt-state/" + this.buildingData.id, this.buildingData),
-                "Данные дома были обновлены"
-            );
+            this.handleRequest(updateHouseOltState(this.buildingData), "Данные дома были обновлены");
         },
 
         /**
@@ -119,18 +122,17 @@ export default {
          * @param {Promise} request
          * @param {String} successInfo
          */
-        handleRequest(request, successInfo) {
+        handleRequest(request: Promise<unknown>, successInfo: string): void {
             request
-                .then((resp) => {
+                .then(() => {
                     this.$toast.add({
                         severity: "success",
                         summary: "Обновлено",
                         detail: successInfo,
                         life: 3000,
                     });
-                    this.editMode = false;
                 })
-                .catch((reason) => {
+                .catch((reason: unknown) => {
                     const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",

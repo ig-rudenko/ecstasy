@@ -61,15 +61,8 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { AxiosResponse } from "axios";
-
-import api from "@/services/api";
-import { PaginatedResponse } from "@/types/paginator";
-
-interface PortsStatistic {
-    oltPort: string;
-    count: number;
-}
+import { getOltPortSubscriberStatistics } from "@/services/gpon";
+import type { OltPortSubscriberStatistic } from "@/types/gpon";
 
 export default defineComponent({
     name: "OltPortsSubscriberStatistic",
@@ -80,7 +73,7 @@ export default defineComponent({
         return {
             visible: false,
             updatePortStatisticData: false,
-            portStatisticData: [] as PortsStatistic[],
+            portStatisticData: [] as OltPortSubscriberStatistic[],
         };
     },
     computed: {
@@ -93,41 +86,20 @@ export default defineComponent({
         },
     },
     methods: {
-        showDialog() {
+        /** Opens the dialog and lazily loads its statistics. */
+        showDialog(): void {
             if (this.visible) return;
             this.visible = true;
-            if (this.portStatisticData.length == 0) this.getPortsStatistic();
+            if (this.portStatisticData.length === 0) this.getPortsStatistic();
         },
-        getPortsStatistic() {
+        /** Loads all port statistics through the GPON repository. */
+        getPortsStatistic(): void {
             if (this.updatePortStatisticData) return;
 
             this.updatePortStatisticData = true;
-            api.get("/api/v1/gpon/statistic/subscribers-count/" + this.deviceName, {
-                params: {
-                    page: 1,
-                },
-            })
-                .then(async (value: AxiosResponse<PortsStatistic[] | PaginatedResponse<PortsStatistic>>) => {
-                    if (Array.isArray(value.data)) {
-                        this.portStatisticData = value.data;
-                        return;
-                    }
-
-                    const allResults = [...value.data.results];
-                    let page = 2;
-                    while (value.data.next && allResults.length < value.data.count) {
-                        const pageResponse = await api.get<PaginatedResponse<PortsStatistic>>(
-                            "/api/v1/gpon/statistic/subscribers-count/" + this.deviceName,
-                            {
-                                params: { page },
-                            }
-                        );
-                        allResults.push(...pageResponse.data.results);
-                        if (!pageResponse.data.next) break;
-                        page += 1;
-                    }
-
-                    this.portStatisticData = allResults;
+            getOltPortSubscriberStatistics(this.deviceName)
+                .then((statistics) => {
+                    this.portStatisticData = statistics;
                 })
                 .catch(() => {
                     this.portStatisticData = [];

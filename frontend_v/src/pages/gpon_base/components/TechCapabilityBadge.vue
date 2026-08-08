@@ -2,7 +2,7 @@
     <span class="px-2 rounded-full font-mono" :class="getStatusClasses">{{ status }}</span>
 </template>
 
-<script>
+<script lang="ts">
 export default {
     name: "TechCapabilityBadge",
     props: {

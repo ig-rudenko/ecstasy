@@ -7,7 +7,7 @@
                 class="flex flex-wrap justify-center sm:justify-start items-center gap-x-10 gap-y-4 p-2 first:rounded-t-2xl last:rounded-b-2xl odd:bg-gray-200 dark:odd:bg-gray-800"
             >
                 <router-link
-                    :to="{ name: 'gpon-end3-tech-data', params: { id: line.id }, query: { backref: $route.href } }"
+                    :to="{ name: 'gpon-end3-tech-data', params: { id: line.id }, query: { backref: $route.fullPath } }"
                 >
                     <Button text class="font-bold"> {{ customerLineTypeName(line.type) }} {{ index + 1 }} </Button>
                 </router-link>
@@ -171,7 +171,7 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import ConfirmPopup from "primevue/confirmpopup";
 
 import Asterisk from "./Asterisk.vue";
@@ -182,8 +182,11 @@ import End3PortsViewEdit from "./End3PortsViewEdit.vue";
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import CreateSubscriberData from "../CreateSubscriberData.vue";
 
-import api from "@/services/api";
-import errorFmt, { getErrorStatus } from "@/errorFmt";
+import { deleteEnd3 as deleteEnd3Request } from "@/services/gpon";
+import { End3Type } from "@/types/gpon";
+import type { PropType } from "vue";
+import type { End3CreateItem, End3WithCapability, GponAddress } from "@/types/gpon";
+import errorFmt, { getErrorSummary } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 
 export default {
@@ -199,11 +202,11 @@ export default {
         CreateSubscriberData,
     },
     props: {
-        customerLines: { required: true, type: Array },
-        userPermissions: { required: true, type: Array },
+        customerLines: { required: true, type: Array as PropType<End3WithCapability[]> },
+        userPermissions: { required: true, type: Array as PropType<string[]> },
         deviceName: { required: false, default: null, type: String },
         devicePort: { required: false, default: null, type: String },
-        buildingAddress: { required: false, default: null, type: Object },
+        buildingAddress: { required: false, type: Object as PropType<GponAddress | null>, default: null },
         editMode: { required: false, default: false, type: Boolean },
         showAddButton: { required: false, default: true, type: Boolean },
     },
@@ -214,10 +217,10 @@ export default {
         return {
             showAddNewEnd3Dialog: false,
             newEnd3: {
-                type: this.customerLines.length ? this.customerLines[0].type : "splitter",
+                type: this.customerLines.length ? this.customerLines[0].type : End3Type.splitter,
                 existingSplitter: null,
                 portCount: 4,
-                list: [],
+                list: [] as End3CreateItem[],
             },
             showRizerColors: false,
         };
@@ -230,7 +233,8 @@ export default {
     },
 
     methods: {
-        customerLineTypeName(type) {
+        /** Returns a localized endpoint type label. */
+        customerLineTypeName(type: End3Type): string {
             if (type === "splitter") {
                 return "Сплиттер";
             } else if (type === "rizer") {
@@ -240,29 +244,33 @@ export default {
             }
         },
 
-        customerLineNumbers(line) {
+        /** Returns a localized endpoint capacity label. */
+        customerLineNumbers(line: End3WithCapability): string {
             if (line.type === "splitter") {
                 return `${line.capacity} портов`;
             } else if (line.type === "rizer") {
                 return `${line.capacity} волокон`;
             } else {
-                return line;
+                return line.type;
             }
         },
 
-        getFullAddress(address) {
+        /** Formats an endpoint address for display. */
+        getFullAddress(address: GponAddress): string {
             return formatAddress(address);
         },
 
-        sendEventToCreateEnd3() {
+        /** Emits the endpoint draft to the parent page. */
+        sendEventToCreateEnd3(): void {
             this.$emit("createNewEnd3", this.newEnd3);
             this.showAddNewEnd3Dialog = false;
         },
 
-        deleteEnd3(event, end3, end3Index) {
+        /** Confirms and deletes an endpoint without active subscribers. */
+        deleteEnd3(event: MouseEvent, end3: End3WithCapability, end3Index: number): void {
             const end3VerboseType = this.customerLineTypeName(end3.type);
-            for (const end3Port of end3.detailInfo) {
-                if (end3Port.subscribers.length > 0) {
+            for (const end3Port of end3.detailInfo ?? end3.capability) {
+                if ((end3Port.subscribers ?? end3Port.subscriber ?? []).length > 0) {
                     this.$toast.add({
                         severity: "warn",
                         summary: "Warning",
@@ -274,7 +282,7 @@ export default {
             }
 
             this.$confirm.require({
-                target: event.currentTarget,
+                target: event.currentTarget as HTMLElement,
                 message: "Вы уверены, что хотите удалить данный " + end3VerboseType + "?",
                 icon: "pi pi-info-circle",
                 acceptLabel: "Да",
@@ -282,7 +290,7 @@ export default {
                 acceptClass: "p-button-danger p-button-sm",
                 defaultFocus: "reject",
                 accept: () => {
-                    api.delete("/api/v1/gpon/tech-data/end3/" + end3.id)
+                    deleteEnd3Request(end3.id)
                         .then(() => {
                             this.$toast.add({
                                 severity: "error",
@@ -292,10 +300,10 @@ export default {
                             });
                             this.$emit("deletedEnd3", end3, end3Index);
                         })
-                        .catch((reason) =>
+                        .catch((reason: unknown) =>
                             this.$toast.add({
                                 severity: "error",
-                                summary: getErrorStatus(reason) || "Ошибка",
+                                summary: getErrorSummary(reason),
                                 detail: errorFmt(reason),
                                 life: 3000,
                             })

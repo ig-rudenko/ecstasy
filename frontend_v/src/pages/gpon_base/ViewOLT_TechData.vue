@@ -254,7 +254,7 @@
                         <End3CollapsedView
                             @getInfo="(index) => getEnd3DetailInfo(BIndex, index)"
                             @deleteInfo="(index) => deleteEnd3DetailInfo(BIndex, index)"
-                            @deletedEnd3="(end3, end3Index) => deleteEnd3FromList(BIndex, end3Index)"
+                            @deletedEnd3="(_end3, end3Index) => deleteEnd3FromList(BIndex, end3Index)"
                             @createNewEnd3="(newEnd3List) => createNewEnd3(BIndex, newEnd3List)"
                             :customer-lines="building.customerLines"
                             :user-permissions="userPermissions"
@@ -274,7 +274,7 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import BuildingIcon from "./components/BuildingIcon.vue";
 import End3CollapsedView from "./components/End3CollapsedView.vue";
@@ -284,9 +284,19 @@ import ViewPrintEditButtons from "./components/ViewPrintEditButtons.vue";
 import OltPortsSubscriberStatistic from "./components/OltPortsSubscriberStatistic.vue";
 
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import {
+    addEnd3,
+    getEnd3TechData,
+    getGponDeviceNames,
+    getGponPermissions,
+    getGponPortNames,
+    getOltTechData,
+    updateOltState,
+} from "@/services/gpon";
 import { formatAddress } from "@/formats";
 import printElementById from "@/helpers/print";
+import { getSingleRouteValue } from "./gponRoute";
+import type { CreateTechDataPayload, GponAddress, GponPermission, OltTechData } from "@/types/gpon";
 
 export default {
     name: "ViewOLT_TechData",
@@ -304,22 +314,22 @@ export default {
             deviceName: "",
             oltPort: "",
 
-            detailData: null,
-            errorStatus: null,
-            errorMessage: null,
-            userPermissions: [],
+            detailData: null as OltTechData | null,
+            errorStatus: null as number | string | null | undefined,
+            errorMessage: null as string | null,
+            userPermissions: [] as GponPermission[],
             windowWidth: window.innerWidth,
             editMode: false,
-            _deviceNames: [],
-            _devicesPorts: [],
+            _deviceNames: [] as string[],
+            _devicesPorts: [] as string[],
         };
     },
     mounted() {
-        this.deviceName = this.$route.params.deviceName;
-        this.oltPort = this.$route.query.port;
+        this.deviceName = getSingleRouteValue(this.$route.params.deviceName);
+        this.oltPort = getSingleRouteValue(this.$route.query.port);
 
-        api.get("/api/v1/gpon/permissions").then((resp) => {
-            this.userPermissions = resp.data;
+        getGponPermissions().then((permissions) => {
+            this.userPermissions = permissions;
         });
 
         this.getTechData();
@@ -339,7 +349,9 @@ export default {
         },
 
         devicePortList() {
-            if (this.detailData.devicePort.length === 0 || this._devicesPorts.length === 0) this.getPortsNames();
+            if (this.detailData && (this.detailData.devicePort.length === 0 || this._devicesPorts.length === 0)) {
+                this.getPortsNames();
+            }
             return this._devicesPorts;
         },
 
@@ -365,18 +377,18 @@ export default {
     },
 
     methods: {
-        getTechData() {
-            let url = window.location.href;
-            // /api/v1/gpon/tech-data/{device_name}?port={olt_port}
-            api.get("/api/v1/gpon/" + url.match(/tech-data\S+/)[0])
-                .then((resp) => (this.detailData = resp.data))
+        /** Loads the selected OLT port and its connected buildings. */
+        getTechData(): void {
+            getOltTechData(this.deviceName, this.oltPort)
+                .then((detailData) => (this.detailData = detailData))
                 .catch((reason) => {
                     this.errorStatus = getErrorStatus(reason);
                     this.errorMessage = errorFmt(reason);
                 });
         },
 
-        getFullAddress(address) {
+        /** Formats a building address. */
+        getFullAddress(address: GponAddress): string {
             return formatAddress(address);
         },
 
@@ -385,25 +397,29 @@ export default {
          * @param {Number} BIndex Индекс в списке домов текущего OTL State
          * @param {Number} end3Index Индекс в списке end3 текущего end3
          */
-        getEnd3DetailInfo(BIndex, end3Index) {
-            const end3ID = this.detailData.structures[BIndex].customerLines[end3Index].id;
-            api.get("/api/v1/gpon/tech-data/end3/" + end3ID)
-                .then(
-                    (resp) =>
-                        (this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = resp.data.capability)
-                )
+        getEnd3DetailInfo(buildingIndex: number, end3Index: number): void {
+            const customerLine = this.detailData?.structures[buildingIndex]?.customerLines[end3Index];
+            if (!customerLine) {
+                return;
+            }
+
+            getEnd3TechData(customerLine.id)
+                .then((end3) => (customerLine.detailInfo = end3.capability))
                 .catch((reason) => {
-                    this.detailData.structures[BIndex].customerLines[end3Index].errorStatus = getErrorStatus(reason);
-                    this.detailData.structures[BIndex].customerLines[end3Index].errorMessage = errorFmt(reason);
+                    customerLine.errorStatus = getErrorStatus(reason);
+                    customerLine.errorMessage = errorFmt(reason);
                 });
         },
 
-        deleteEnd3DetailInfo(BIndex, end3Index) {
-            this.detailData.structures[BIndex].customerLines[end3Index].detailInfo = null;
+        deleteEnd3DetailInfo(buildingIndex: number, end3Index: number): void {
+            const customerLine = this.detailData?.structures[buildingIndex]?.customerLines[end3Index];
+            if (customerLine) {
+                customerLine.detailInfo = null;
+            }
         },
 
-        deleteEnd3FromList(BIndex, end3Index) {
-            this.detailData.structures[BIndex].customerLines.splice(end3Index, 1);
+        deleteEnd3FromList(buildingIndex: number, end3Index: number): void {
+            this.detailData?.structures[buildingIndex]?.customerLines.splice(end3Index, 1);
         },
 
         /**
@@ -411,12 +427,17 @@ export default {
          * @param {Number} BIndex Индекс House OTL State в списке домов
          * @param {Object} newEnd3 Объект с новыми данными End3
          */
-        createNewEnd3(BIndex, newEnd3) {
+        createNewEnd3(buildingIndex: number, newEnd3: CreateTechDataPayload["end3"]): void {
+            const building = this.detailData?.structures[buildingIndex];
+            if (!building) {
+                return;
+            }
             const data = {
-                houseOltStateID: this.detailData.structures[BIndex].id,
+                houseOltStateID: building.id,
                 end3: newEnd3,
             };
-            this.handleRequest(api.post("/api/v1/gpon/tech-data/end3", data), "Успешно создано").then(() => {
+            const request = addEnd3(data);
+            this.handleRequest(request, "Успешно создано").then(() => {
                 // Обновляем все данные, чтобы загрузить новый перечень End3
                 this.getTechData();
                 // Очищаем список только что созданных End3
@@ -424,11 +445,15 @@ export default {
             });
         },
 
-        printData() {
+        /** Prints the OLT technical data. */
+        printData(): void {
             printElementById("tech-data-block");
         },
 
-        updateOLTStateInfo() {
+        updateOLTStateInfo(): void {
+            if (!this.detailData) {
+                return;
+            }
             const data = {
                 deviceName: this.detailData.deviceName,
                 devicePort: this.detailData.devicePort,
@@ -436,11 +461,9 @@ export default {
                 description: this.detailData.description,
             };
             const olt_id = this.detailData.id;
+            const request = updateOltState({ id: olt_id, ...data });
 
-            this.handleRequest(
-                api.put("/api/v1/gpon/tech-data/olt-state/" + olt_id, data),
-                "Станционные данные были обновлены"
-            );
+            this.handleRequest(request, "Станционные данные были обновлены");
         },
 
         /**
@@ -448,7 +471,7 @@ export default {
          * @param {Promise} request
          * @param {String} successInfo
          */
-        handleRequest(request, successInfo) {
+        handleRequest(request: Promise<unknown>, successInfo: string): Promise<void> {
             return request
                 .then(() => {
                     this.$toast.add({ severity: "success", summary: "Обновлено", detail: successInfo, life: 3000 });
@@ -464,16 +487,24 @@ export default {
                 });
         },
 
-        getDeviceNames() {
-            api.get("/api/v1/gpon/devices-names").then((res) => (this._deviceNames = Array.from(res.data)));
+        getDeviceNames(): void {
+            getGponDeviceNames().then((deviceNames) => {
+                this._deviceNames = deviceNames;
+            });
         },
-        getPortsNames() {
-            api.get("/api/v1/gpon/ports-names/" + this.detailData.deviceName).then(
-                (res) => (this._devicesPorts = Array.from(res.data))
-            );
+        getPortsNames(): void {
+            if (!this.detailData) {
+                return;
+            }
+            getGponPortNames(this.detailData.deviceName).then((devicePorts) => {
+                this._devicesPorts = devicePorts;
+            });
         },
 
-        deviceNameSelected() {
+        deviceNameSelected(): void {
+            if (!this.detailData) {
+                return;
+            }
             this.detailData.devicePort = "";
             this.getPortsNames();
         },

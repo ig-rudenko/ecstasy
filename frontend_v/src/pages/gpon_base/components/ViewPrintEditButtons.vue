@@ -66,7 +66,7 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 export default {
     name: "ViewPrintEditButtons",
     props: {
@@ -76,7 +76,7 @@ export default {
         subTitle: { required: false, type: String, default: "" },
     },
 
-    emits: ["exit", "changeMode"],
+    emits: ["exit", "changeMode", "print"],
 
     data() {
         return {
@@ -89,7 +89,7 @@ export default {
             get() {
                 return this.__editMode;
             },
-            set(value) {
+            set(value: boolean) {
                 this.__editMode = value;
                 this.$emit("changeMode", value);
             },
