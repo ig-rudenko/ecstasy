@@ -5,9 +5,11 @@
 ![codecov](https://img.shields.io/codecov/c/github/ig-rudenko/ecstasy)
 ![CI](https://github.com/ig-rudenko/ecstasy/actions/workflows/django.yml/badge.svg)
 
-[![](https://skillicons.dev/icons?i=vite,vue,tailwind,python,django)](https://skillicons.dev)
-<img src="https://havola.uz/uploads/logos/90/sb4u0gqv.png" alt="celery" width="50" height="50"/>
-[![](https://skillicons.dev/icons?i=mysql,redis,docker)](https://skillicons.dev)
+![](https://go-skill-icons.vercel.app/api/icons?i=ts,vite,vue,primevue,leaflet,tailwind,prettier,eslint)
+
+![](https://skills.syvixor.com/api/icons?i=python,django,djangorestframework,flask,celery,astraluv,swagger,jwt)
+
+![](https://skills.syvixor.com/api/icons?i=nginx,docker,mysql,redis)
 
 ## Веб-приложение для взаимодействия с сетевым оборудованием
 
