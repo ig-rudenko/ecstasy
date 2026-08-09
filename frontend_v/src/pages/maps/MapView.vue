@@ -1,20 +1,26 @@
 <script setup lang="ts">
 import "leaflet/dist/leaflet.css";
 import { onMounted, onUnmounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import api from "@/services/api";
 import { getMapDetail, MapDetail, MapService } from "@/pages/maps/maps";
+import { createMapViewQuery, parseMapViewQuery } from "@/pages/maps/mapViewUrl";
 
 const route = useRoute();
+const router = useRouter();
 const search = ref("");
 const showSearch = ref(false);
 const fileMapUrl = ref("");
 const mapData = ref<MapDetail | null>(null);
 
+// Скрыто по умолчанию.
+const showSearchPanel = ref(false);
+
 let updateMapTimer: ReturnType<typeof setInterval> | null = null;
 let mapService: MapService | null = null;
 let isDisposed = false;
+let lastMapViewQuery = "";
 
 /**
  * Загружает HTML-карту в iframe и освобождает старый blob URL.
@@ -48,6 +54,31 @@ function searchElement() {
     }
 
     mapService?.searchPoint(search.value);
+}
+
+/**
+ * Updates URL query parameters with the current map position without adding a history entry.
+ */
+function updateMapViewQuery() {
+    if (!mapService) {
+        return;
+    }
+
+    const center = mapService.map.getCenter();
+    const mapViewQuery = createMapViewQuery({ lat: center.lat, lng: center.lng, zoom: mapService.map.getZoom() });
+    const serializedQuery = JSON.stringify(mapViewQuery);
+
+    if (serializedQuery === lastMapViewQuery) {
+        return;
+    }
+
+    lastMapViewQuery = serializedQuery;
+    void router.replace({
+        query: {
+            ...route.query,
+            ...mapViewQuery,
+        },
+    });
 }
 
 onMounted(async () => {
@@ -85,6 +116,17 @@ onMounted(async () => {
         return;
     }
 
+    const initialMapView = parseMapViewQuery(route.query, mapService.map.getMinZoom(), mapService.map.getMaxZoom());
+    if (initialMapView) {
+        mapService.map.setView([initialMapView.lat, initialMapView.lng], initialMapView.zoom, { animate: false });
+    }
+
+    const center = mapService.map.getCenter();
+    lastMapViewQuery = JSON.stringify(
+        createMapViewQuery({ lat: center.lat, lng: center.lng, zoom: mapService.map.getZoom() })
+    );
+    mapService.map.on("moveend zoomend", updateMapViewQuery);
+
     if (detail.interactive) {
         await mapService.update();
         updateMapTimer = setInterval(update, 5_000);
@@ -106,6 +148,7 @@ onUnmounted(() => {
     }
 
     if (mapService) {
+        mapService.map.off("moveend zoomend", updateMapViewQuery);
         mapService.map.remove();
     }
 
@@ -120,16 +163,29 @@ onUnmounted(() => {
         </div>
         <div v-else id="map" class="h-full w-full"></div>
 
-        <div class="pointer-events-none absolute inset-x-0 -top-8 z-500 px-16">
+        <div
+            class="pointer-events-none absolute inset-x-0 z-500 px-16"
+            :class="{ '-top-8': showSearchPanel, '-top-27 sm:-top-21': !showSearchPanel }"
+        >
             <div class="mx-auto flex max-w-7xl flex-col">
                 <div
                     class="pointer-events-auto w-full rounded-3xl border border-white/15 bg-slate-950/10 p-2 pt-10 text-white shadow-xl backdrop-blur-xl"
                 >
-                    <div class="flex sm:gap-4 items-center flex-row lg:items-center lg:justify-between">
-                        <div class="px-4">
+                    <div
+                        class="flex not-sm:flex-wrap gap-1 sm:gap-4 items-center flex-row lg:items-center lg:justify-between"
+                    >
+                        <div class="sm:px-4 flex not-sm:w-full not-sm:justify-between">
                             <router-link :to="'/maps'">
                                 <Button class="pi pi-arrow-left" severity="contrast" rounded text size="small" />
                             </router-link>
+                            <Button
+                                class="pi pi-angle-up"
+                                @click="showSearchPanel = !showSearchPanel"
+                                severity="contrast"
+                                rounded
+                                text
+                                size="small"
+                            />
                         </div>
 
                         <div v-if="showSearch" class="w-full lg:min-w-[24rem] lg:w-auto">
@@ -150,6 +206,9 @@ onUnmounted(() => {
                                 />
                             </div>
                         </div>
+                    </div>
+                    <div v-show="!showSearchPanel" class="flex justify-center mx-auto">
+                        <i class="cursor-pointer pi pi-angle-down" @click="showSearchPanel = !showSearchPanel" />
                     </div>
                 </div>
             </div>
