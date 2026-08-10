@@ -29,12 +29,12 @@
                 v-if="generalInfo"
                 class="gap-4"
                 :class="{
-                    'grid xl:grid-cols-2': deviceStats,
-                    'flex not-md:flex-wrap': !deviceStats || generalInfo.uptime,
+                    'grid xl:grid-cols-2': hwStatsNotEmpty,
+                    'flex not-md:flex-wrap': !hwStatsNotEmpty || generalInfo.uptime,
                 }"
             >
                 <div
-                    :class="{ 'w-full': !deviceStats }"
+                    :class="{ 'w-full': !hwStatsNotEmpty }"
                     class="sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 px-2 sm:p-4 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
                 >
                     <div class="flex flex-wrap items-center justify-center gap-1 sm:gap-3">
@@ -92,7 +92,7 @@
                 </div>
 
                 <div
-                    v-if="deviceStats || generalInfo.uptime"
+                    v-if="hwStatsNotEmpty || generalInfo.uptime > 0"
                     class="not-sm:w-full sm:rounded-3xl sm:border border-gray-200/70 dark:border-gray-700/70 bg-white/70 dark:bg-gray-900/40 not-sm:px-2 sm:p-5 backdrop-blur xl:sticky xl:top-4 transition hover:-translate-y-0.5 delay-0 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md"
                 >
                     <DeviceStats :stats="deviceStats" :uptime="Number(generalInfo.uptime)" />
@@ -313,7 +313,7 @@ import UserActionsButton from "./components/UserActionsButton.vue";
 
 import api from "@/services/api";
 import { GeneralInfo } from "./GeneralInfo";
-import { HardwareStats } from "./hardwareStats";
+import { HardwareStats, hwStatsNotEmpty } from "./hardwareStats";
 import { DeviceInterface, InterfacesCount, newInterfacesList, reconcileInterfacesList } from "@/services/interfaces";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
 import { errorToast } from "@/services/my.toast.ts";
@@ -405,6 +405,9 @@ export default defineComponent({
         },
         canViewConfigFiles(): boolean {
             return permissions.has("check.device_config_view");
+        },
+        hwStatsNotEmpty(): boolean {
+            return hwStatsNotEmpty(this.deviceStats);
         },
     },
 
